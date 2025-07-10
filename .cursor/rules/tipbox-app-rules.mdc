@@ -1,0 +1,14 @@
+This is a React Native + Expo project using TypeScript.
+
+The project follows a feature-based modular structure.
+
+UI components are built with GluestackUI and custom atomic components stored under /components/ui.
+
+State management is handled using Zustand.
+
+Navigation is implemented using React Navigation (stack, drawer, tab).
+
+API requests are managed with Axios in a dedicated service layer.
+
+SecureStore is used for authentication operations.
+
