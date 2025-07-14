@@ -14,8 +14,8 @@ interface ContainerProps extends ViewProps {
   pr?: keyof typeof space;
 }
 
-export const Container: React.FC<ContainerProps> = ({ 
-  children, 
+export const Container: React.FC<ContainerProps> = ({
+  children,
   bg = colors.background,
   p,
   px,
@@ -25,7 +25,7 @@ export const Container: React.FC<ContainerProps> = ({
   pl,
   pr,
   style,
-  ...props 
+  ...props
 }) => {
   const getContainerStyles = () => {
     return {
@@ -67,13 +67,25 @@ interface BoxProps extends ViewProps {
   mr?: keyof typeof space;
 }
 
-export const Box: React.FC<BoxProps> = ({ 
+export const Box: React.FC<BoxProps> = ({
   children,
   bg,
-  p, px, py, pt, pb, pl, pr,
-  m, mx, my, mt, mb, ml, mr,
+  p,
+  px,
+  py,
+  pt,
+  pb,
+  pl,
+  pr,
+  m,
+  mx,
+  my,
+  mt,
+  mb,
+  ml,
+  mr,
   style,
-  ...props 
+  ...props
 }) => {
   const getBoxStyles = () => {
     return {
@@ -107,12 +119,12 @@ interface SafeAreaProps extends ContainerProps {
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
 }
 
-export const SafeArea: React.FC<SafeAreaProps> = ({ 
+export const SafeArea: React.FC<SafeAreaProps> = ({
   children,
   edges = ['top'],
   pt = edges.includes('top') ? 12 : undefined,
   pb = edges.includes('bottom') ? 8 : undefined,
-  ...props 
+  ...props
 }) => {
   return (
     <Container pt={pt} pb={pb} {...props}>
@@ -124,11 +136,11 @@ export const SafeArea: React.FC<SafeAreaProps> = ({
 // Center Component
 export const Center: React.FC<BoxProps> = ({ children, ...props }) => {
   return (
-    <Box 
-      style={{ 
-        justifyContent: 'center', 
-        alignItems: 'center' 
-      }} 
+    <Box
+      style={{
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
       {...props}
     >
       {children}
@@ -141,18 +153,14 @@ interface StackProps extends BoxProps {
   spacing?: keyof typeof space;
 }
 
-export const HStack: React.FC<StackProps> = ({ 
-  children, 
+export const HStack: React.FC<StackProps> = ({
+  children,
   spacing = 2,
-  ...props 
+  ...props
 }) => {
   const childrenWithSpacing = React.Children.map(children, (child, index) => {
     if (index === 0) return child;
-    return (
-      <View style={{ marginLeft: space[spacing] }}>
-        {child}
-      </View>
-    );
+    return <View style={{ marginLeft: space[spacing] }}>{child}</View>;
   });
 
   return (
@@ -163,18 +171,14 @@ export const HStack: React.FC<StackProps> = ({
 };
 
 // VStack (Vertical Stack)
-export const VStack: React.FC<StackProps> = ({ 
-  children, 
+export const VStack: React.FC<StackProps> = ({
+  children,
   spacing = 2,
-  ...props 
+  ...props
 }) => {
   const childrenWithSpacing = React.Children.map(children, (child, index) => {
     if (index === 0) return child;
-    return (
-      <View style={{ marginTop: space[spacing] }}>
-        {child}
-      </View>
-    );
+    return <View style={{ marginTop: space[spacing] }}>{child}</View>;
   });
 
   return (
@@ -190,24 +194,21 @@ interface ScrollContainerProps extends ScrollViewProps {
   p?: keyof typeof space;
 }
 
-export const ScrollContainer: React.FC<ScrollContainerProps> = ({ 
+export const ScrollContainer: React.FC<ScrollContainerProps> = ({
   children,
   bg = colors.background,
   p = 5,
   contentContainerStyle,
-  ...props 
+  ...props
 }) => {
   return (
-    <ScrollView 
+    <ScrollView
       style={{ flex: 1, backgroundColor: bg }}
-      contentContainerStyle={[
-        { padding: space[p] },
-        contentContainerStyle
-      ]}
+      contentContainerStyle={[{ padding: space[p] }, contentContainerStyle]}
       showsVerticalScrollIndicator={false}
       {...props}
     >
       {children}
     </ScrollView>
   );
-}; 
+};

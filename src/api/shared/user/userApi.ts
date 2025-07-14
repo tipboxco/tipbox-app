@@ -7,28 +7,32 @@ import type {
   GetUsersParams,
   GetUsersResponse,
   User,
-} from './userTypes';
+} from './types';
 
 // Mevcut kullanıcı bilgilerini getir
 export const getCurrentUser = async (): Promise<User> => {
-  const response = await apiClient.get<GetCurrentUserResponse>(ENDPOINTS.AUTH.ME);
+  const response = await apiClient.get<GetCurrentUserResponse>(
+    ENDPOINTS.AUTH.ME
+  );
   return response.data.data;
 };
 
 // Kullanıcı bilgilerini güncelle
 export const updateUser = async (
-  id: string, 
+  id: string,
   data: UpdateUserRequest
 ): Promise<User> => {
   const response = await apiClient.put<UpdateUserResponse>(
-    ENDPOINTS.USERS.BY_ID(id), 
+    ENDPOINTS.USERS.BY_ID(id),
     data
   );
   return response.data.data;
 };
 
 // Tüm kullanıcıları getir (paginated)
-export const getUsers = async (params?: GetUsersParams): Promise<GetUsersResponse['data']> => {
+export const getUsers = async (
+  params?: GetUsersParams
+): Promise<GetUsersResponse['data']> => {
   const response = await apiClient.get<GetUsersResponse>(ENDPOINTS.USERS.BASE, {
     params,
   });
@@ -46,4 +50,4 @@ export const getUserById = async (id: string): Promise<User> => {
 // Kullanıcı sil
 export const deleteUser = async (id: string): Promise<void> => {
   await apiClient.delete(ENDPOINTS.USERS.BY_ID(id));
-}; 
+};

@@ -1,136 +1,51 @@
 import React from 'react';
-import { Alert } from 'react-native';
-import { 
-  SafeArea, 
-  ScrollContainer, 
-  VStack, 
-  HStack,
-  Box, 
-  Text, 
-  Card,
-  Button as PressableButton,
-  colors 
-} from '../../../components/ui';
-import { useAuthStore } from '../../../store';
+import { Pressable } from 'react-native';
+import { Text, Container, Center, VStack } from '@/src/components/ui';
+import { useAuthStore } from '@/src/store';
 
-export const ProfileScreen = () => {
+export const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuthStore();
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Çıkış Yap',
-      'Hesabınızdan çıkış yapmak istediğinizden emin misiniz?',
-      [
-        { text: 'İptal', style: 'cancel' },
-        { text: 'Çıkış Yap', style: 'destructive', onPress: logout },
-      ]
-    );
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
-    <SafeArea bg={colors.background}>
-      <ScrollContainer>
+    <Container bg='#f8fafc' p={6}>
+      <Center p={8}>
         <VStack spacing={6}>
-          {/* Profile Header */}
-          <Card variant="elevated" size="lg">
-            <VStack spacing={4} style={{ alignItems: 'center' }}>
-              {/* Avatar */}
-              <Box 
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  backgroundColor: colors.primary[100],
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}
-              >
-                <Text size="3xl" color={colors.primary[600]}>
-                  {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || '?'}
-                </Text>
-              </Box>
-              
-              {/* User Info */}
-              <VStack spacing={1} style={{ alignItems: 'center' }}>
-                <Text variant="subheading" size="xl" color={colors.gray[800]}>
-                  {user?.name || 'Kullanıcı'}
-                </Text>
-                <Text variant="body" color={colors.gray[600]}>
-                  {user?.email || 'email@example.com'}
-                </Text>
-              </VStack>
-            </VStack>
-          </Card>
+          <Text variant='heading' size='3xl' weight='bold' color='#333'>
+            Profil
+          </Text>
 
-          {/* Profile Info */}
-          <Card variant="elevated">
-            <VStack spacing={4}>
-              <Text variant="subheading" color={colors.gray[800]}>
-                Hesap Bilgileri
-              </Text>
-              
-              <VStack spacing={3}>
-                <HStack style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text variant="label" color={colors.gray[600]}>Ad Soyad:</Text>
-                  <Text variant="body" color={colors.gray[800]}>{user?.name || 'Belirtilmemiş'}</Text>
-                </HStack>
-                
-                <HStack style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text variant="label" color={colors.gray[600]}>Email:</Text>
-                  <Text variant="body" color={colors.gray[800]}>{user?.email || 'Belirtilmemiş'}</Text>
-                </HStack>
-                
-                <HStack style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text variant="label" color={colors.gray[600]}>Hesap Türü:</Text>
-                  <Text variant="body" color={colors.gray[800]}>
-                    {user?.name ? 'Kayıtlı Kullanıcı' : 'Misafir'}
-                  </Text>
-                </HStack>
-              </VStack>
-            </VStack>
-          </Card>
+          <VStack spacing={4}>
+            <Text variant='body' size='lg' color='#666'>
+              Merhaba, {user?.name || 'Kullanıcı'}!
+            </Text>
 
-          {/* Profile Actions */}
-          <Card variant="elevated">
-            <VStack spacing={4}>
-              <Text variant="subheading" color={colors.gray[800]}>
-                Profil İşlemleri
+            {user?.isGuest && (
+              <Text variant='caption' color='#f59e0b'>
+                Misafir hesap ile giriş yaptınız
               </Text>
-              
-              <VStack spacing={3}>
-                <PressableButton
-                  variant="outline"
-                  colorScheme="gray"
-                  size="lg"
-                  onPress={() => Alert.alert('Bilgi', 'Bu özellik yakında gelecek!')}
-                >
-                  Profili Düzenle
-                </PressableButton>
-                
-                <PressableButton
-                  variant="outline"
-                  colorScheme="gray"
-                  size="lg"
-                  onPress={() => Alert.alert('Bilgi', 'Bu özellik yakında gelecek!')}
-                >
-                  Şifre Değiştir
-                </PressableButton>
-                
-                <PressableButton
-                  variant="solid"
-                  colorScheme="red"
-                  size="lg"
-                  onPress={handleLogout}
-                >
-                  Çıkış Yap
-                </PressableButton>
-              </VStack>
-            </VStack>
-          </Card>
+            )}
+
+            <Pressable
+              onPress={handleLogout}
+              style={{
+                backgroundColor: '#ef4444',
+                padding: 12,
+                borderRadius: 8,
+                alignItems: 'center',
+                marginTop: 20,
+              }}
+            >
+              <Text weight='semibold' color='#fff'>
+                Çıkış Yap
+              </Text>
+            </Pressable>
+          </VStack>
         </VStack>
-      </ScrollContainer>
-    </SafeArea>
+      </Center>
+    </Container>
   );
 };
-
-// Styles are now handled by GlueStack components 

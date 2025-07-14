@@ -1,19 +1,20 @@
 import { create } from 'zustand';
+import type { Theme, Language } from '@/src/types';
 
 interface AppState {
-  theme: 'light' | 'dark';
-  language: 'tr' | 'en';
+  theme: Theme;
+  language: Language;
   isOnline: boolean;
-  setTheme: (theme: 'light' | 'dark') => void;
-  setLanguage: (language: 'tr' | 'en') => void;
-  setOnlineStatus: (status: boolean) => void;
+  setTheme: (theme: Theme) => void;
+  setLanguage: (language: Language) => void;
+  setOnlineStatus: (isOnline: boolean) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>()(set => ({
   theme: 'light',
   language: 'tr',
   isOnline: true,
-  setTheme: (theme) => set({ theme }),
-  setLanguage: (language) => set({ language }),
-  setOnlineStatus: (isOnline) => set({ isOnline }),
-})); 
+  setTheme: (theme: Theme) => set({ theme }),
+  setLanguage: (language: Language) => set({ language }),
+  setOnlineStatus: (isOnline: boolean) => set({ isOnline }),
+}));

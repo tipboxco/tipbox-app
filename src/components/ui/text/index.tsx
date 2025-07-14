@@ -9,14 +9,14 @@ interface TextProps extends RNTextProps {
   color?: string;
 }
 
-export const Text: React.FC<TextProps> = ({ 
-  children, 
+export const Text: React.FC<TextProps> = ({
+  children,
   variant = 'body',
   size,
   weight,
   color,
   style,
-  ...props 
+  ...props
 }) => {
   const getTextStyles = () => {
     let fontSize: number = fontSizes.md;
@@ -64,4 +64,4 @@ export const Text: React.FC<TextProps> = ({
       {children}
     </RNText>
   );
-}; 
+};

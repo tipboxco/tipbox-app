@@ -1,151 +1,93 @@
-import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { 
-  Container, 
-  SafeArea, 
-  ScrollContainer, 
-  VStack, 
-  Box, 
-  Text, 
-  Input, 
-  Button as PressableButton,
-  colors 
-} from '../../../components/ui';
-import { useAuthStore } from '../../../store';
-import * as authApi from '../api/authApi';
+import React from 'react';
+import { Pressable } from 'react-native';
+import { Text, Container, Center, VStack } from '@/src/components/ui';
+import { useAuthStore } from '@/src/store';
 
-interface LoginScreenProps {
-  navigation: any;
-}
-
-export const LoginScreen = ({ navigation }: LoginScreenProps) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuthStore();
-
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Hata', 'Email ve şifre alanları zorunludur.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // Gerçek API çağrısı olacak
-      const result = await authApi.login({ email, password });
-      await login(result.user, result.token);
-      // Navigation RootNavigator'da otomatik olacak
-    } catch (error) {
-      Alert.alert('Hata', 'Giriş yapılamadı. Bilgilerinizi kontrol edin.');
-    } finally {
-      setLoading(false);
-    }
-  };
+export const LoginScreen: React.FC = () => {
+  const { loginAsGuest, isLoading } = useAuthStore();
 
   const handleGuestLogin = async () => {
-    try {
-      setLoading(true);
-      // Misafir kullanıcı oluştur
-      const guestUser = {
-        id: 'guest-' + Date.now(),
-        email: 'misafir@tipbox.com',
-        name: 'Misafir Kullanıcı',
-      };
-      
-      await login(guestUser, 'guest-token');
-    } catch (error) {
-      Alert.alert('Hata', 'Misafir girişi yapılamadı.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const goToRegister = () => {
-    navigation.navigate('Register');
+    await loginAsGuest();
   };
 
   return (
-    <SafeArea bg={colors.background}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollContainer>
-          <VStack spacing={8}>
-            {/* Logo Section */}
-            <Box pt={16} pb={8}>
-              <Text variant="heading" size="4xl" color={colors.primary[500]} style={{ textAlign: 'center' }}>
-                TipBox
+    <Container bg='#f8fafc' p={6}>
+      <Center p={8}>
+        <VStack spacing={6}>
+          <Text variant='heading' size='4xl' weight='bold' color='#333'>
+            Tipbox
+          </Text>
+
+          <Text variant='body' size='lg' color='#666'>
+            Hesabınıza giriş yapın
+          </Text>
+
+          <VStack spacing={4}>
+            {/* Email Input Placeholder */}
+            <Pressable
+              style={{
+                backgroundColor: '#fff',
+                padding: 12,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#e2e8f0',
+              }}
+            >
+              <Text color='#9ca3af'>E-posta adresi</Text>
+            </Pressable>
+
+            {/* Password Input Placeholder */}
+            <Pressable
+              style={{
+                backgroundColor: '#fff',
+                padding: 12,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#e2e8f0',
+              }}
+            >
+              <Text color='#9ca3af'>Şifre</Text>
+            </Pressable>
+
+            {/* Login Button Placeholder */}
+            <Pressable
+              style={{
+                backgroundColor: '#6366f1',
+                padding: 14,
+                borderRadius: 8,
+                alignItems: 'center',
+              }}
+            >
+              <Text weight='semibold' color='#fff'>
+                Giriş Yap
               </Text>
-                             <Text variant="body" color={colors.gray[600]} style={{ textAlign: 'center', marginTop: 8 }}>
-                 Hesabınıza giriş yapın
-               </Text>
-            </Box>
+            </Pressable>
 
-            {/* Form Section */}
-            <Box bg={colors.white} p={6} style={{ borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}>
-              <VStack spacing={4}>
-                <Input
-                  label="Email"
-                  placeholder="Email adresinizi girin"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                />
-
-                <Input
-                  label="Şifre"
-                  placeholder="Şifrenizi girin"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoComplete="password"
-                />
-
-                <PressableButton
-                  variant="solid"
-                  colorScheme="primary"
-                  size="lg"
-                  isLoading={loading}
-                  onPress={handleLogin}
-                  disabled={loading}
-                >
-                  Giriş Yap
-                </PressableButton>
-
-                <PressableButton
-                  variant="solid"
-                  colorScheme="secondary"
-                  size="lg"
-                  isLoading={loading}
-                  onPress={handleGuestLogin}
-                  disabled={loading}
-                >
-                  Misafir Olarak Devam Et
-                </PressableButton>
-
-                                 <Box style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
-                  <Text variant="body" color={colors.gray[600]}>
-                    Hesabınız yok mu?{' '}
-                  </Text>
-                  <PressableButton
-                    variant="link"
-                    colorScheme="primary"
-                    onPress={goToRegister}
-                  >
-                    Kayıt Ol
-                  </PressableButton>
-                </Box>
-              </VStack>
-            </Box>
+            {/* Guest Login Button */}
+            <Pressable
+              onPress={handleGuestLogin}
+              disabled={isLoading}
+              style={{
+                backgroundColor: '#f1f5f9',
+                padding: 14,
+                borderRadius: 8,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#cbd5e1',
+                opacity: isLoading ? 0.6 : 1,
+              }}
+            >
+              <Text weight='medium' color='#475569'>
+                {isLoading ? 'Giriş yapılıyor...' : 'Misafir Olarak Giriş Yap'}
+              </Text>
+            </Pressable>
           </VStack>
-        </ScrollContainer>
-      </KeyboardAvoidingView>
-    </SafeArea>
+
+          <Text variant='caption' color='#94a3b8'>
+            Hesabınız yok mu? Kayıt olun
+          </Text>
+        </VStack>
+      </Center>
+    </Container>
   );
 };
-
-// Styles are now handled by GlueStack components 

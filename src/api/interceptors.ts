@@ -8,7 +8,7 @@ const requestInterceptor = (config: InternalAxiosRequestConfig) => {
   // if (token) {
   //   config.headers.Authorization = `Bearer ${token}`;
   // }
-  
+
   console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 };
@@ -26,27 +26,27 @@ const responseInterceptor = (response: AxiosResponse) => {
 
 const responseErrorInterceptor = (error: AxiosError) => {
   const { response } = error;
-  
+
   if (response) {
     const { status } = response;
     console.error(`❌ API Error: ${status} ${response.config.url}`);
-    
+
     // 401 Unauthorized - logout işlemi
     if (status === 401) {
       console.log('🔒 Unauthorized - Token geçersiz');
       // Logout logic buraya
     }
-    
+
     // 403 Forbidden
     if (status === 403) {
       console.log('🚫 Forbidden - Yetki yok');
     }
-    
+
     // 404 Not Found
     if (status === 404) {
       console.log('🔍 Not Found - Kaynak bulunamadı');
     }
-    
+
     // 500 Server Error
     if (status >= 500) {
       console.log('🔥 Server Error - Sunucu hatası');
@@ -54,7 +54,7 @@ const responseErrorInterceptor = (error: AxiosError) => {
   } else {
     console.error('🌐 Network Error - Ağ bağlantısı hatası');
   }
-  
+
   return Promise.reject(error);
 };
 
@@ -72,4 +72,4 @@ export const setupInterceptors = () => {
 };
 
 // Interceptor'ları başlat
-setupInterceptors(); 
+setupInterceptors();

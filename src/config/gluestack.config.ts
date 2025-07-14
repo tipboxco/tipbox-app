@@ -3,7 +3,7 @@ export const gluestackConfig = {
   colors: {
     primary: {
       50: '#f0f3ff',
-      100: '#e0e7ff', 
+      100: '#e0e7ff',
       500: '#6366f1',
       600: '#5b21b6',
       900: '#312e81',
@@ -133,4 +133,4 @@ export const gluestackConfig = {
   },
 } as const;
 
-export type GluestackConfig = typeof gluestackConfig; 
+export type GluestackConfig = typeof gluestackConfig;

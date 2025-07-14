@@ -1,2 +1,5 @@
-export { HomeScreen } from './screens/HomeScreen';
-export { HomeNavigator } from './navigation'; 
+// Screens
+export * from './screens/HomeScreen';
+
+// Navigation
+export * from './navigation';

@@ -50,4 +50,3 @@ src/
 ## Contributing
 
 Pull requests and contributions are welcome!
-

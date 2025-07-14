@@ -1,14 +1,20 @@
-This is a React Native + Expo project using TypeScript.
+---
+alwaysApply: true
+---
 
-The project follows a feature-based modular structure.
-
-UI components are built with GluestackUI and custom atomic components stored under /components/ui.
-
-State management is handled using Zustand.
-
-Navigation is implemented using React Navigation (stack, drawer, tab).
-
-API requests are managed with Axios in a dedicated service layer.
-
-SecureStore is used for authentication operations.
-
+1. This is a React Native + Expo project using TypeScript.
+2. The folder structure is **feature-based**: all domain code lives under `/src/features/<featureName>/`.
+3. This project uses Gluestack for all styling and UI components
+6. Each feature owns its own `navigation.tsx` and `index.ts`, and state is managed globally with Zustand (persist + devtools).
+7. All HTTP requests in the project are managed using **Axios**:
+    - A single Axios client, its configuration, and interceptors reside in `/src/api`
+    (`axios.ts`, `config.ts`, `interceptors.ts`).
+    - Cross-feature (shared) endpoint helpers are located under `/src/api/shared`.
+    - Each feature defines its own endpoint functions in`/src/features/<feature>/api/*.ts` but must reuse the shared Axios instance;
+    no feature may create a new Axios client or redefine interceptors.
+8. Authentication is JWT-based and token-driven:
+    - The backend issues **Access Token** (short-lived) and **Refresh Token** (long-lived).
+    - An Axios interceptor attaches the Access Token to every request’s `Authorization` header and automatically calls the refresh endpoint when the token expires.
+    - The Refresh Token and encrypted user profile are securely persisted with **Expo SecureStore**; the Access Token is kept in memory and rehydrated on app launch if still valid.
+    - If the refresh flow fails, both tokens are purged from SecureStore and the user is logged out.
+9. All SDK usage and device capabilities must be abstracted under `src/services`; services should expose only a clear public interface and must not be accessed directly from screens or feature modules.

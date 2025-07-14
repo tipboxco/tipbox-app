@@ -35,3 +35,12 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# linting & formatting
+.eslintcache
+.prettierignore.tmp
+
+# IDE - keep .vscode/settings.json and .vscode/extensions.json
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

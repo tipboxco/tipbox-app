@@ -1,1 +1,5 @@
-export { SettingsScreen } from './screens/SettingsScreen'; 
+// Screens
+export * from './screens/SettingsScreen';
+
+// Navigation
+export * from './navigation';

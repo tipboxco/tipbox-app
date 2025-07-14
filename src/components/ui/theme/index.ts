@@ -15,12 +15,12 @@ export const shadows = theme.shadows;
 export const getColor = (colorPath: string) => {
   const keys = colorPath.split('.');
   let color: any = colors;
-  
+
   for (const key of keys) {
     color = color[key];
     if (!color) return '#000000';
   }
-  
+
   return color;
 };
 
@@ -34,4 +34,4 @@ export const getFontSize = (sizeKey: keyof typeof fontSizes) => {
 
 export const getShadow = (shadowKey: keyof typeof shadows) => {
   return shadows[shadowKey] || shadows.sm;
-}; 
+};

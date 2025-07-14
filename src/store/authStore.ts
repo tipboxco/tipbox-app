@@ -1,107 +1,113 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
+import type { User } from '@/src/types';
+import type { AuthState } from '@/src/features/auth/types';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
-
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (user: User, token: string) => Promise<void>;
-  logout: () => Promise<void>;
-  setLoading: (loading: boolean) => void;
-  checkAuthStatus: () => Promise<void>;
-}
-
-// Secure Store keys
-const STORAGE_KEYS = {
-  USER: 'user_data',
-  TOKEN: 'auth_token',
+// SecureStore adapter for Zustand persist
+const secureStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    return await SecureStore.getItemAsync(name);
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    await SecureStore.setItemAsync(name, value);
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await SecureStore.deleteItemAsync(name);
+  },
 };
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: true,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    set => ({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      isLoading: false,
 
-  login: async (user: User, token: string) => {
-    try {
-      // Secure Store'a kaydet
-      await SecureStore.setItemAsync(STORAGE_KEYS.USER, JSON.stringify(user));
-      await SecureStore.setItemAsync(STORAGE_KEYS.TOKEN, token);
-      
-      set({ 
-        user, 
-        token, 
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (error) {
-      console.error('Login storage error:', error);
-      throw error;
+      setUser: (user: User) => {
+        set({ user, isAuthenticated: true });
+      },
+
+      setToken: (token: string) => {
+        set({ accessToken: token });
+      },
+
+      loginAsGuest: async () => {
+        set({ isLoading: true });
+
+        try {
+          // Geçici guest token oluştur
+          const guestToken = `guest_token_${Date.now()}`;
+          const guestUser: User = {
+            id: `guest_${Date.now()}`,
+            name: 'Misafir Kullanıcı',
+            isGuest: true,
+          };
+
+          set({
+            user: guestUser,
+            accessToken: guestToken,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          console.error('Guest login error:', error);
+          set({ isLoading: false });
+        }
+      },
+
+      logout: async () => {
+        set({ isLoading: true });
+
+        try {
+          await SecureStore.deleteItemAsync('auth-storage');
+          set({
+            user: null,
+            accessToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+        } catch (error) {
+          console.error('Logout error:', error);
+          set({ isLoading: false });
+        }
+      },
+
+      checkAuthStatus: async () => {
+        set({ isLoading: true });
+
+        try {
+          const storedData = await SecureStore.getItemAsync('auth-storage');
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            const { user, accessToken } = parsedData.state;
+
+            if (user && accessToken) {
+              set({
+                user,
+                accessToken,
+                isAuthenticated: true,
+                isLoading: false,
+              });
+              return;
+            }
+          }
+
+          set({ isLoading: false });
+        } catch (error) {
+          console.error('Check auth status error:', error);
+          set({ isLoading: false });
+        }
+      },
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => secureStorage),
+      partialize: state => ({
+        user: state.user,
+        accessToken: state.accessToken,
+      }),
     }
-  },
-
-  logout: async () => {
-    try {
-      // Secure Store'dan sil
-      await SecureStore.deleteItemAsync(STORAGE_KEYS.USER);
-      await SecureStore.deleteItemAsync(STORAGE_KEYS.TOKEN);
-      
-      set({ 
-        user: null, 
-        token: null, 
-        isAuthenticated: false,
-        isLoading: false,
-      });
-    } catch (error) {
-      console.error('Logout storage error:', error);
-    }
-  },
-
-  setLoading: (isLoading: boolean) => {
-    set({ isLoading });
-  },
-
-  checkAuthStatus: async () => {
-    try {
-      set({ isLoading: true });
-      
-      const [userString, token] = await Promise.all([
-        SecureStore.getItemAsync(STORAGE_KEYS.USER),
-        SecureStore.getItemAsync(STORAGE_KEYS.TOKEN),
-      ]);
-
-      if (userString && token) {
-        const user = JSON.parse(userString);
-        set({ 
-          user, 
-          token, 
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        set({ 
-          user: null, 
-          token: null, 
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      set({ 
-        user: null, 
-        token: null, 
-        isAuthenticated: false,
-        isLoading: false,
-      });
-    }
-  },
-})); 
+  )
+);

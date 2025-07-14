@@ -11,4 +11,4 @@ export { setupInterceptors } from './interceptors';
 export * as userApi from './shared/user/userApi';
 
 // Shared Types
-export type * from './shared/user/userTypes'; 
+export type * from './shared/user/types';
