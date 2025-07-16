@@ -9,17 +9,33 @@
       "android": {
         "gradleCommand": ":app:assembleDebug",
         "buildType": "apk"
+      },
+      "channel": "development",
+      "env": {
+        "APP_ENV": "development"
       }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "channel": "preview",
+      "env": {
+        "APP_ENV": "test"
       }
     },
-    "production": {}
+    "production": {
+      "channel": "production",
+      "env": {
+        "APP_ENV": "production"
+      }
+    }
   },
   "submit": {
     "production": {}
+  },
+  "updates": {
+    "url": "https://u.expo.dev/098fbee5-88e4-49ba-bb37-80601a5d47af"
   }
 }
