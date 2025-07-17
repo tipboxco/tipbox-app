@@ -10,14 +10,14 @@
     }
   },
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "start:dev": "copy .env.development .env && expo start",
     "start:test": "copy .env.test .env && expo start",
     "start:prod": "copy .env.production .env && expo start",
-    "android": "copy .env.development .env && set DARK_MODE=media && expo start --android",
+    "android": "expo run:android",
     "android:test": "copy .env.test .env && set DARK_MODE=media && expo start --android",
     "android:prod": "copy .env.production .env && set DARK_MODE=media && expo start --android",
-    "ios": "copy .env.development .env && set DARK_MODE=media && expo start --ios",
+    "ios": "expo run:ios",
     "ios:test": "copy .env.test .env && set DARK_MODE=media && expo start --ios",
     "ios:prod": "copy .env.production .env && set DARK_MODE=media && expo start --ios",
     "web": "copy .env.development .env && set DARK_MODE=media && expo start --web",
