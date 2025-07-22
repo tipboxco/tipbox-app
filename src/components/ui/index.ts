@@ -1,19 +1,18 @@
-// Gluestack UI Provider
-export * from './gluestack-ui-provider';
-
-// Layout Components
 export {
-  Container,
-  SafeArea,
-  Center,
-  HStack,
-  VStack,
-  ScrollContainer,
   Box,
-} from './layout';
+  Text,
+  Button,
+  ButtonText,
+  VStack,
+  HStack,
+  Center,
+  ScrollView,
+  View,
+  Input,
+  InputField,
+  Image,
+  Pressable,
+  Icon,
+} from '@gluestack-ui/themed';
 
-// Typography
-export * from './text';
-
-// Theme
-export * from './theme';
+export { GluestackProvider } from './gluestack-ui-provider';

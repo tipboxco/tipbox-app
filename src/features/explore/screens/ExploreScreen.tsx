@@ -1,24 +1,28 @@
 import React from 'react';
-import { Text, Container, Center, VStack } from '@/src/components/ui';
+import { Box, Text } from '@gluestack-ui/themed';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
-export const ExploreScreen: React.FC = () => {
+export const ExploreScreen = () => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
   return (
-    <Container bg='#f8fafc' p={6}>
-      <Center p={8}>
-        <VStack spacing={4}>
-          <Text variant='heading' size='3xl' weight='bold' color='#333'>
-            Keşfet
-          </Text>
-
-          <Text variant='body' size='lg' color='#666'>
-            Yeni içerikleri keşfedin
-          </Text>
-
-          <Text variant='caption' color='#94a3b8'>
-            Bu sayfa henüz geliştirme aşamasında...
-          </Text>
-        </VStack>
-      </Center>
-    </Container>
+    <Box
+      style={{
+        flex: 1,
+        backgroundColor: isDark ? 'rgb(17, 24, 39)' : 'rgb(249, 250, 251)',
+        padding: 16,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: isDark ? '#F9FAFB' : '#111827',
+        }}
+      >
+        Keşfet
+      </Text>
+    </Box>
   );
 };

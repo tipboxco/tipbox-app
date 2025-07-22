@@ -1,14 +1,11 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import '@/global.css';
-import { GluestackUIProvider } from '@/src/components/ui/gluestack-ui-provider';
-import { RootNavigator } from './src/navigation';
+import { Navigation } from '@/src/navigation';
+import { GluestackProvider } from '@/src/components/ui';
 
 export default function App() {
   return (
-    <GluestackUIProvider mode='light'>
-      <RootNavigator />
-      <StatusBar style='auto' />
-    </GluestackUIProvider>
+    <GluestackProvider>
+      <Navigation />
+    </GluestackProvider>
   );
 }

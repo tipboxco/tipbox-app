@@ -1,17 +1,28 @@
 import React from 'react';
-import { Text, Container, Center } from '@/src/components/ui';
+import { Box, Text } from '@gluestack-ui/themed';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
-export const HomeScreen: React.FC = () => {
+export const HomeScreen = () => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
   return (
-    <Container bg='#f5f5f5' p={4}>
-      <Center p={8}>
-        <Text variant='heading' size='3xl' weight='bold' color='#333'>
-          Tipbox App'e Hoşgeldin
-        </Text>
-        <Text variant='body' size='lg' color='#666'>
-          Basit ve temiz bir başlangıç
-        </Text>
-      </Center>
-    </Container>
+    <Box
+      style={{
+        flex: 1,
+        backgroundColor: isDark ? 'rgb(17, 24, 39)' : 'rgb(249, 250, 251)',
+        padding: 16,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: isDark ? '#F9FAFB' : '#111827',
+        }}
+      >
+        Ana Sayfa
+      </Text>
+    </Box>
   );
 };

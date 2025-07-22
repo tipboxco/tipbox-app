@@ -1,5 +1,5 @@
-import apiClient from '../../axios';
-import { ENDPOINTS } from '../../config';
+import { apiService } from '../..';
+import { ENDPOINTS } from '../../../../config/api.config';
 import type {
   GetCurrentUserResponse,
   UpdateUserRequest,
@@ -11,7 +11,7 @@ import type {
 
 // Mevcut kullanıcı bilgilerini getir
 export const getCurrentUser = async (): Promise<User> => {
-  const response = await apiClient.get<GetCurrentUserResponse>(
+  const response = await apiService.client.get<GetCurrentUserResponse>(
     ENDPOINTS.AUTH.ME
   );
   return response.data.data;
@@ -22,7 +22,7 @@ export const updateUser = async (
   id: string,
   data: UpdateUserRequest
 ): Promise<User> => {
-  const response = await apiClient.put<UpdateUserResponse>(
+  const response = await apiService.client.put<UpdateUserResponse>(
     ENDPOINTS.USERS.BY_ID(id),
     data
   );
@@ -33,7 +33,7 @@ export const updateUser = async (
 export const getUsers = async (
   params?: GetUsersParams
 ): Promise<GetUsersResponse['data']> => {
-  const response = await apiClient.get<GetUsersResponse>(ENDPOINTS.USERS.BASE, {
+  const response = await apiService.client.get<GetUsersResponse>(ENDPOINTS.USERS.BASE, {
     params,
   });
   return response.data.data;
@@ -41,7 +41,7 @@ export const getUsers = async (
 
 // ID ile kullanıcı getir
 export const getUserById = async (id: string): Promise<User> => {
-  const response = await apiClient.get<GetCurrentUserResponse>(
+  const response = await apiService.client.get<GetCurrentUserResponse>(
     ENDPOINTS.USERS.BY_ID(id)
   );
   return response.data.data;
@@ -49,5 +49,5 @@ export const getUserById = async (id: string): Promise<User> => {
 
 // Kullanıcı sil
 export const deleteUser = async (id: string): Promise<void> => {
-  await apiClient.delete(ENDPOINTS.USERS.BY_ID(id));
-};
+  await apiService.client.delete(ENDPOINTS.USERS.BY_ID(id));
+}; 

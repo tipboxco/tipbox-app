@@ -1,16 +1,20 @@
 import React from 'react';
-import { View } from 'react-native';
+import { GluestackUIProvider } from '@gluestack-ui/themed';
+import { config } from './config';
+import { useThemeStore } from '@/src/store/themeStore';
 
-type ModeType = 'light' | 'dark';
-
-interface GluestackUIProviderProps {
-  mode?: ModeType;
+interface GluestackProviderProps {
   children: React.ReactNode;
 }
 
-export const GluestackUIProvider: React.FC<GluestackUIProviderProps> = ({
-  children,
+export const GluestackProvider: React.FC<GluestackProviderProps> = ({ 
+  children
 }) => {
-  // GlueStack provider'ı yapacak, şimdilik basit bir wrapper
-  return <View style={{ flex: 1 }}>{children}</View>;
+  const colorMode = useThemeStore((state) => state.colorMode);
+
+  return (
+    <GluestackUIProvider config={config} colorMode={colorMode}>
+      {children}
+    </GluestackUIProvider>
+  );
 };

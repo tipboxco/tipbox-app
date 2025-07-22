@@ -3,7 +3,7 @@ export const API_CONFIG = {
   TIMEOUT: 10000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
-};
+} as const;
 
 export const ENDPOINTS = {
   AUTH: {
@@ -18,3 +18,6 @@ export const ENDPOINTS = {
     BY_ID: (id: string) => `/users/${id}`,
   },
 } as const;
+
+export type ApiConfig = typeof API_CONFIG;
+export type ApiEndpoints = typeof ENDPOINTS; 

@@ -1,71 +1,91 @@
 export const gluestackConfig = {
-  // Colors
-  colors: {
-    primary: {
-      50: '#f0f3ff',
-      100: '#e0e7ff',
-      500: '#6366f1',
-      600: '#5b21b6',
-      900: '#312e81',
+  light: {
+    colors: {
+      primary: {
+        50: '#f0f3ff',
+        100: '#e0e7ff',
+        500: '#6366f1',
+        600: '#5b21b6',
+        900: '#312e81',
+      },
+      secondary: {
+        50: '#f0fdf4',
+        100: '#dcfce7',
+        500: '#10b981',
+        600: '#059669',
+        900: '#064e3b',
+      },
+      gray: {
+        50: '#f9fafb',
+        100: '#f3f4f6',
+        200: '#e5e7eb',
+        300: '#d1d5db',
+        400: '#9ca3af',
+        500: '#6b7280',
+        600: '#4b5563',
+        700: '#374151',
+        800: '#1f2937',
+        900: '#111827',
+      },
+      background: {
+        50: '#f8fafc',
+        100: '#f1f5f9',
+        200: '#e2e8f0',
+        900: '#0f172a',
+      },
+      text: {
+        50: '#f8fafc',
+        100: '#f1f5f9',
+        500: '#64748b',
+        600: '#475569',
+        900: '#0f172a',
+      },
     },
-    secondary: {
-      50: '#f0fdf4',
-      100: '#dcfce7',
-      500: '#10b981',
-      600: '#059669',
-      900: '#064e3b',
+  },
+  dark: {
+    colors: {
+      primary: {
+        50: '#312e81',
+        100: '#4338ca',
+        500: '#6366f1',
+        600: '#818cf8',
+        900: '#e0e7ff',
+      },
+      secondary: {
+        50: '#064e3b',
+        100: '#065f46',
+        500: '#10b981',
+        600: '#34d399',
+        900: '#d1fae5',
+      },
+      gray: {
+        50: '#111827',
+        100: '#1f2937',
+        200: '#374151',
+        300: '#4b5563',
+        400: '#6b7280',
+        500: '#9ca3af',
+        600: '#d1d5db',
+        700: '#e5e7eb',
+        800: '#f3f4f6',
+        900: '#f9fafb',
+      },
+      background: {
+        50: '#0f172a',
+        100: '#1e293b',
+        200: '#334155',
+        900: '#f8fafc',
+      },
+      text: {
+        50: '#0f172a',
+        100: '#1e293b',
+        500: '#94a3b8',
+        600: '#cbd5e1',
+        900: '#f8fafc',
+      },
     },
-    gray: {
-      50: '#f9fafb',
-      100: '#f3f4f6',
-      200: '#e5e7eb',
-      300: '#d1d5db',
-      400: '#9ca3af',
-      500: '#6b7280',
-      600: '#4b5563',
-      700: '#374151',
-      800: '#1f2937',
-      900: '#111827',
-    },
-    red: {
-      50: '#fef2f2',
-      100: '#fee2e2',
-      500: '#ef4444',
-      600: '#dc2626',
-      900: '#7f1d1d',
-    },
-    white: '#ffffff',
-    black: '#000000',
-    background: '#f8fafc',
   },
-
-  // Typography
-  fonts: {
-    heading: 'System',
-    body: 'System',
-    mono: 'Courier',
-  },
-  fontSizes: {
-    xs: 12,
-    sm: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
-    '2xl': 24,
-    '3xl': 28,
-    '4xl': 32,
-    '5xl': 36,
-  },
-  fontWeights: {
-    light: '300',
-    normal: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
-    extrabold: '800',
-  },
-
-  // Spacing
+  // Shared tokens (same for both light and dark)
   space: {
     px: 1,
     0.5: 2,
@@ -87,8 +107,33 @@ export const gluestackConfig = {
     20: 80,
     24: 96,
   },
-
-  // Border Radius
+  fonts: {
+    heading: 'System',
+    body: 'System',
+    mono: 'System',
+  },
+  fontSizes: {
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    '2xl': 24,
+    '3xl': 30,
+    '4xl': 36,
+    '5xl': 48,
+  },
+  fontWeights: {
+    hairline: 100,
+    thin: 200,
+    light: 300,
+    normal: 400,
+    medium: 500,
+    semibold: 600,
+    bold: 700,
+    extrabold: 800,
+    black: 900,
+  },
   radii: {
     none: 0,
     sm: 4,
@@ -99,8 +144,6 @@ export const gluestackConfig = {
     '3xl': 24,
     full: 9999,
   },
-
-  // Shadows
   shadows: {
     xs: {
       shadowColor: '#000',

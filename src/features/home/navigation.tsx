@@ -1,29 +1,69 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from './screens';
+import { ExploreScreen } from '../explore/screens';
+import { ProfileScreen } from '../profile/screens';
+import { SettingsScreen } from '../settings/screens';
+import { Home, Search, User, Settings } from 'lucide-react-native';
 
-export type HomeStackParamList = {
-  HomeScreen: undefined;
+export type MainTabParamList = {
+  Home: undefined;
+  Explore: undefined;
+  Profile: undefined;
+  Settings: undefined;
 };
 
-const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
-export const HomeNavigator = () => {
+export const TabNavigator = () => {
   return (
-    <HomeStack.Navigator
+    <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
+        tabBarActiveTintColor: '#6366f1',
+        tabBarInactiveTintColor: '#94a3b8',
       }}
-      initialRouteName='HomeScreen'
     >
-      <HomeStack.Screen
-        name='HomeScreen'
+      <Tab.Screen
+        name="Home"
         component={HomeScreen}
         options={{
           title: 'Ana Sayfa',
+          tabBarIcon: ({ color, size }) => (
+            <Home color={color} size={size} />
+          ),
         }}
       />
-    </HomeStack.Navigator>
+      <Tab.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={{
+          title: 'Keşfet',
+          tabBarIcon: ({ color, size }) => (
+            <Search color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => (
+            <User color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Ayarlar',
+          tabBarIcon: ({ color, size }) => (
+            <Settings color={color} size={size} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 };

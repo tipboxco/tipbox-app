@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "tipbox-app",
+    "name": "${process.env.APP_NAME}",
     "slug": "tipbox-app",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -20,6 +20,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "scheme": "tipboxapp",
     "assetBundlePatterns": [
       "**/*"
     ],
