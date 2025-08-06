@@ -9,28 +9,22 @@ export const ThemeTab = () => {
 
   return (
     <Box
-      style={{
-        flex: 1,
-        backgroundColor: isDark ? 'rgb(17, 24, 39)' : 'rgb(249, 250, 251)',
-        padding: 16,
-      }}
+      flex={1}
+      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      p="$4"
     >
       <HStack
-        style={{
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: isDark ? 'rgb(31, 41, 55)' : 'rgb(243, 244, 246)',
-          padding: 16,
-          borderRadius: 8,
-        }}
+        alignItems="center"
+        justifyContent="space-between"
+        bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
+        p="$4"
+        rounded="$lg"
       >
-        <HStack style={{ alignItems: 'center', gap: 8 }}>
+        <HStack alignItems='center' gap={"$2"}>
           <Moon size={20} color={isDark ? '#F9FAFB' : '#111827'} />
           <Text
-            style={{
-              fontSize: 16,
-              color: isDark ? '#F9FAFB' : '#111827',
-            }}
+            fontSize="$md"
+            color={isDark ? '$textDark50' : '$textLight900'}
           >
             Dark Mode
           </Text>

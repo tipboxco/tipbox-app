@@ -43,30 +43,22 @@ export const NotificationTab = () => {
 
   return (
     <Box
-      style={{
-        flex: 1,
-        backgroundColor: isDark ? 'rgb(17, 24, 39)' : 'rgb(249, 250, 251)',
-        padding: 16,
-      }}
+      flex={1}
+      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      p="$4"
     >
-      <VStack style={{ gap: 16 }}>
+      <VStack gap={"$4"}>
         <Button
-          style={{
-            backgroundColor: isDark ? '#4F46E5' : '#6366F1',
-            padding: 16,
-            borderRadius: 8,
-          }}
+          bg={isDark ? '$primary600' : '$primary500'}
+          rounded="$lg"
           onPress={sendTestNotification}
         >
           <ButtonText>Test Bildirimi Gönder</ButtonText>
         </Button>
 
         <Button
-          style={{
-            backgroundColor: isDark ? '#4F46E5' : '#6366F1',
-            padding: 16,
-            borderRadius: 8,
-          }}
+          bg={isDark ? '$primary600' : '$primary500'}
+          rounded="$lg"
           onPress={sendDelayedNotification}
         >
           <ButtonText>1 Dakika Sonra Bildirim Gönder</ButtonText>

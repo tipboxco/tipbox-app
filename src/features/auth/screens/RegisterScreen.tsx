@@ -8,41 +8,38 @@ export const RegisterScreen = () => {
 
   return (
     <Box
-      style={{
-        flex: 1,
-        backgroundColor: isDark ? 'rgb(17, 24, 39)' : 'rgb(249, 250, 251)',
-        padding: 16,
-      }}
+      flex={1}
+      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      p="$4"
     >
-      <VStack style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 24 }}>
+      <VStack
+        flex={1}
+        justifyContent="center"
+        alignItems="center"
+        space="xl"
+      >
         <Text
-          style={{
-            fontSize: 32,
-            fontWeight: 'bold',
-            color: isDark ? '#F9FAFB' : '#111827',
-            textAlign: 'center',
-          }}
+          fontSize="$4xl"
+          fontWeight="$bold"
+          color={isDark ? '$textDark50' : '$textLight900'}
+          textAlign="center"
         >
           Hesap Oluştur
         </Text>
         
         <Text
-          style={{
-            fontSize: 18,
-            color: isDark ? '#D1D5DB' : '#4B5563',
-            textAlign: 'center',
-          }}
+          fontSize="$xl"
+          color={isDark ? '$textDark300' : '$textLight600'}
+          textAlign="center"
         >
           Yeni bir hesap oluşturun
         </Text>
 
         <Button
-          style={{
-            backgroundColor: isDark ? '#4F46E5' : '#6366F1',
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            borderRadius: 8,
-          }}
+          bg={isDark ? '$primary600' : '$primary500'}
+          py="$3"
+          px="$6"
+          rounded="$lg"
         >
           <ButtonText>Kayıt Ol</ButtonText>
         </Button>

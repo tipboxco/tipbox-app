@@ -33,41 +33,33 @@ export const SettingsScreen = () => {
 
   return (
     <Box
-      style={{
-        flex: 1,
-        backgroundColor: isDark ? 'rgb(17, 24, 39)' : 'rgb(249, 250, 251)',
-      }}
+      flex={1}
+      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
     >
       <HStack
-        style={{
-          backgroundColor: isDark ? 'rgb(31, 41, 55)' : 'rgb(243, 244, 246)',
-          padding: 4,
-          margin: 16,
-          borderRadius: 8,
-        }}
+        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+        p="$1"
+        m="$4"
+        rounded="$lg"
       >
         {tabs.map((tab) => (
           <Pressable
             key={tab.id}
-            style={{
-              flex: 1,
-              backgroundColor:
-                activeTab === tab.id
-                  ? isDark
-                    ? 'rgb(17, 24, 39)'
-                    : 'rgb(249, 250, 251)'
-                  : 'transparent',
-              padding: 12,
-              borderRadius: 6,
-              alignItems: 'center',
-            }}
+            flex={1}
+            bg={
+              activeTab === tab.id
+                ? isDark 
+                ? '$backgroundDark50' : '$backgroundLight0'
+                : 'transparent'
+            }
+            p="$3"
+            rounded="$md"
+            alignItems="center"
             onPress={() => setActiveTab(tab.id)}
           >
             <Text
-              style={{
-                color: isDark ? '#F9FAFB' : '#111827',
-                fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-              }}
+              color={isDark ? '$textDark50' : '$textLight900'}
+              fontWeight={activeTab === tab.id ? '$bold' : '$normal'}
             >
               {tab.label}
             </Text>

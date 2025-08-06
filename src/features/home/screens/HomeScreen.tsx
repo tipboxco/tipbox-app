@@ -8,18 +8,14 @@ export const HomeScreen = () => {
 
   return (
     <Box
-      style={{
-        flex: 1,
-        backgroundColor: isDark ? 'rgb(17, 24, 39)' : 'rgb(249, 250, 251)',
-        padding: 16,
-      }}
+      flex={1}
+      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      p="$4"
     >
       <Text
-        style={{
-          fontSize: 24,
-          fontWeight: 'bold',
-          color: isDark ? '#F9FAFB' : '#111827',
-        }}
+        fontSize="$2xl"
+        fontWeight="$bold"
+        color={isDark ? '$textDark50' : '$textLight900'}
       >
         Ana Sayfa
       </Text>
