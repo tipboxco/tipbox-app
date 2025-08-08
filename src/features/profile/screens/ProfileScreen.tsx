@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, Text } from '@gluestack-ui/themed';
+import { Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { Header } from '@/src/components/Header';
 
 export const ProfileScreen = () => {
   const { colorMode } = useColorMode();
@@ -10,15 +11,8 @@ export const ProfileScreen = () => {
     <Box
       flex={1}
       bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-      p="$4"
     >
-      <Text
-        fontSize="$2xl"
-        fontWeight="$bold"
-        color={isDark ? '$textDark50' : '$textLight900'}
-      >
-        Profil
-      </Text>
+      <Header title="Profile" />
     </Box>
   );
 };

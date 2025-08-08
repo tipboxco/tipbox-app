@@ -9,7 +9,9 @@ export const LoginScreen = () => {
   const { loginAsGuest } = useAuthStore();
 
   const handleGuestLogin = async () => {
+    console.log('Misafir girişi başlatılıyor...');
     await loginAsGuest();
+    console.log('Misafir girişi tamamlandı!');
   };
 
   return (

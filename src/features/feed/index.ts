@@ -1,5 +1,5 @@
 // Screens
-export * from './screens/HomeScreen';
+export * from './screens/FeedScreen';
 
 // Navigation
 export * from './navigation';

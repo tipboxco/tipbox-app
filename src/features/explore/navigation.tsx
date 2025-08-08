@@ -4,6 +4,8 @@ import { ExploreScreen } from './screens';
 
 export type ExploreStackParamList = {
   ExploreScreen: undefined;
+  SearchResults: { query: string };
+  CategoryDetail: { categoryId: string };
 };
 
 const ExploreStack = createNativeStackNavigator<ExploreStackParamList>();
@@ -15,14 +17,10 @@ export const ExploreNavigator = () => {
         headerShown: false,
         gestureEnabled: true,
       }}
-      initialRouteName='ExploreScreen'
     >
       <ExploreStack.Screen
-        name='ExploreScreen'
+        name="ExploreScreen"
         component={ExploreScreen}
-        options={{
-          title: 'Keşfet',
-        }}
       />
     </ExploreStack.Navigator>
   );

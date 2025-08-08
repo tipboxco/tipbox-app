@@ -12,7 +12,7 @@ export default function App() {
   const isDark = colorMode === 'dark';
 
   const backgroundColor = isDark 
-    ? config.tokens.colors.backgroundDark50 
+    ? config.tokens.colors.backgroundDark950 
     : config.tokens.colors.backgroundLight0;
 
   return (

@@ -1,77 +1,82 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { HomeNavigator } from '@/src/features/home/navigation';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Pressable } from '@gluestack-ui/themed';
+import { ChevronLeft } from 'lucide-react-native';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { useAuthStore } from '@/src/store';
+import { MainNavigator } from './MainNavigator';
+
+// Feature Navigators
+import { AuthNavigator } from '@/src/features/auth/navigation';
+import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
+import { CatalogNavigator } from '@/src/features/catalog/navigation';
+import { InventoryNavigator } from '@/src/features/inventory/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
 import { SettingsNavigator } from '@/src/features/settings/navigation';
-import { Home, Search, User, Settings } from 'lucide-react-native';
-import { useColorMode } from '@/src/hooks/useColorMode';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 
-const Tab = createBottomTabNavigator();
+import { RootStackParamList } from './navigation.types';
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
   const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-
-  // Renk değerlerini config'den alalım
-  const activeColor = isDark ? config.tokens.colors.textDark50 : config.tokens.colors.textLight900;
-  const inactiveColor = isDark ? config.tokens.colors.textDark500 : config.tokens.colors.textLight400;
+  const { isAuthenticated } = useAuthStore();
 
   return (
-    <Tab.Navigator
+    <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: isDark ? '$backgroundDark50' : '$backgroundLight0',
-          borderTopColor: isDark ? '$backgroundDark200' : '$backgroundLight200',
-          borderTopWidth: 1,
-          elevation: 0,
-          shadowOpacity: 0,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: activeColor,
-        tabBarInactiveTintColor: inactiveColor,
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-        },
       }}
     >
-      <Tab.Screen
-        name="HomeNavigation"
-        component={HomeNavigator}
-        options={{
-          tabBarLabel: 'Ana Sayfa',
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="ExploreNavigation"
-        component={ExploreNavigator}
-        options={{
-          tabBarLabel: 'Keşfet',
-          tabBarIcon: ({ color, size }) => <Search size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="ProfileNavigation"
-        component={ProfileNavigator}
-        options={{
-          tabBarLabel: 'Profil',
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="SettingsNavigation"
-        component={SettingsNavigator}
-        options={{
-          tabBarLabel: 'Ayarlar',
-          tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
-        }}
-      />
-    </Tab.Navigator>
+      {!isAuthenticated ? (
+        // Auth Stack - Kullanıcı giriş yapmamışsa
+        <Stack.Group screenOptions={{ gestureEnabled: false }}>
+          <Stack.Screen 
+            name="Auth" 
+            component={AuthNavigator} 
+          />
+        </Stack.Group>
+      ) : (
+        // Main App Flow - Kullanıcı giriş yapmışsa
+        <Stack.Group>
+          <Stack.Screen 
+            name="Main" 
+            component={MainNavigator} 
+          />
+        </Stack.Group>
+      )}
+
+      {/* Modal Screens */}
+      <Stack.Group screenOptions={{ presentation: 'modal' }}>
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsNavigator}
+          options={({ navigation }) => ({
+            headerShown: true,
+            headerTitle: 'Ayarlar',
+            headerLeft: () => (
+              <Pressable
+                onPress={() => navigation.goBack()}
+                px="$3"
+                py="$2"
+              >
+                <ChevronLeft size={24} color={colorMode === 'dark' ? '#FFFFFF' : '#000000'} />
+              </Pressable>
+            ),
+            headerStyle: {
+              backgroundColor: colorMode === 'dark' ? '#121212' : '#FFFFFF',
+            },
+            headerTitleStyle: {
+              color: colorMode === 'dark' ? '#FFFFFF' : '#000000',
+              fontSize: 16,
+              fontWeight: '600',
+            },
+            headerShadowVisible: false,
+            animation: 'slide_from_right'
+          })}
+        />
+      </Stack.Group>
+    </Stack.Navigator>
   );
 };
