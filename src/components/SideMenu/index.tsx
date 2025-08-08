@@ -10,6 +10,7 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
@@ -58,7 +59,7 @@ export const SideMenu = ({
   menuItems,
 }: SideMenuProps) => {
   const { colorMode } = useColorMode();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const isDark = colorMode === 'dark';
 
   if (!visible) return null;
@@ -236,7 +237,7 @@ export const SideMenu = ({
         {/* Settings and Help */}
         <VStack space="sm" px="$4" py="$4">
           <Pressable
-            onPress={() => navigation.navigate('Settings')}
+            onPress={() => navigation.navigate('Settings' as never)}
             py="$2"
             px="$3"
             rounded="$lg"

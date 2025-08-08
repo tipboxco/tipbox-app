@@ -1,4 +1,1 @@
-// Screens
-export * from './screens';
-// Navigation
-export * from './navigation';
+export { ProfileNavigator } from './navigation';
