@@ -50,7 +50,7 @@ export const MediaTab = () => {
   return (
     <Box
       flex={1}
-      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       p="$4"
     >
       <VStack gap="$4">

@@ -1,16 +1,17 @@
 import React from 'react';
-import { Box, HStack, Switch, Text } from '@gluestack-ui/themed';
+import { Box, HStack, Switch, Text, VStack } from '@gluestack-ui/themed';
 import { Moon } from 'lucide-react-native';
+import { OTAUpdateCard } from '../../components/OTAUpdateCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
-export const ThemeTab = () => {
+export const SettingsTab = () => {
   const { colorMode, toggleColorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
   return (
     <Box
       flex={1}
-      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       p="$4"
     >
       <HStack
@@ -36,6 +37,9 @@ export const ThemeTab = () => {
           thumbColor={isDark ? '#818CF8' : '#FFFFFF'}
         />
       </HStack>
+      <VStack mt="$4" space="lg">
+        <OTAUpdateCard />
+      </VStack>
     </Box>
   );
 }; 

@@ -9,7 +9,7 @@ import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { InventoryNavigator } from '@/src/features/inventory/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
 
-export type RootTabParamList = {
+export type TabParamList = {
   Feed: undefined;
   Explore: undefined;
   Catalog: undefined;
@@ -17,9 +17,9 @@ export type RootTabParamList = {
   Profile: undefined;
 };
 
-const Tab = createBottomTabNavigator<RootTabParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
 
-const RootNavigator = () => {
+export const TabNavigator = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -53,7 +53,7 @@ const RootNavigator = () => {
         tabBarActiveTintColor: isDark ? '#C2E607' : '#BBFF4E',
         tabBarInactiveTintColor: isDark ? '#536471' : '#6D6D6D',
         tabBarStyle: {
-          backgroundColor: isDark ? '#121212' : '#FFFFFF',
+          backgroundColor: isDark ? '#020617' : '#FFFFFF',
           borderTopColor: isDark ? '#272727' : '#E5E5E5',
         },
       })}
@@ -86,5 +86,3 @@ const RootNavigator = () => {
     </Tab.Navigator>
   );
 };
-
-export default RootNavigator;

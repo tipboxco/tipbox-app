@@ -145,7 +145,7 @@ export const OTAUpdateCard = () => {
             value={downloadProgress}
             w="100%"
             size="sm"
-            bg={isDark ? '$backgroundDark200' : '$backgroundLight200'}
+            bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
           >
             <Progress.FilledTrack />
           </Progress>
@@ -179,7 +179,7 @@ export const OTAUpdateCard = () => {
 
   return (
     <Box
-      bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
+      bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
       borderRadius="$lg"
       p="$4"
       borderWidth={1}
