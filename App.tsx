@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigation } from '@/src/navigation';
+import Navigation from '@/src/navigation';
 import { GluestackProvider } from '@/src/components/ui';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';

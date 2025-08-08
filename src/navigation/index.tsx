@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { RootNavigator } from './RootNavigator';
+import RootNavigator from './RootNavigator';
 
-export const Navigation = () => {
+const Navigation = () => {
   return (
     <NavigationContainer>
       <RootNavigator />
@@ -10,4 +10,4 @@ export const Navigation = () => {
   );
 };
 
-export * from './navigation.types'; 
+export default Navigation;

@@ -3,27 +3,9 @@ import { Box, HStack, Image, Pressable, Text, VStack } from '@gluestack-ui/theme
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
 
-interface FeedImageContentCardProps {
-  title: string;
-  content: string;
-  mainImage: any;
-  productImage: any;
-  productName: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  bookmarks: number;
-  rating: number;
-  usageDuration: string;
-  experience: string;
-  userImage: any;
-  userName: string;
-  userBadge: string;
-  userAction: string;
-  onPress?: (review: any) => void;
-}
+import type { ReviewImageCardProps } from './types';
 
-export const FeedImageContentCard = ({
+export const ReviewImageCard = ({
   title,
   content,
   mainImage,
@@ -40,7 +22,7 @@ export const FeedImageContentCard = ({
   userBadge,
   userAction,
   onPress,
-}: FeedImageContentCardProps) => {
+}: ReviewImageCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 

@@ -1,5 +1,4 @@
 // Screens
-export * from './screens/ProfileScreen';
-
+export * from './screens';
 // Navigation
 export * from './navigation';

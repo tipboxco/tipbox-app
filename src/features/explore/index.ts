@@ -1,5 +1,1 @@
-// Screens
-export * from './screens/ExploreScreen';
-
-// Navigation
-export * from './navigation';
+export { ExploreNavigator } from './navigation';

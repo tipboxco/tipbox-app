@@ -3,9 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ExploreScreen } from './screens';
 
 export type ExploreStackParamList = {
-  ExploreScreen: undefined;
-  SearchResults: { query: string };
-  CategoryDetail: { categoryId: string };
+  ExploreMain: undefined;
 };
 
 const ExploreStack = createNativeStackNavigator<ExploreStackParamList>();
@@ -13,13 +11,13 @@ const ExploreStack = createNativeStackNavigator<ExploreStackParamList>();
 export const ExploreNavigator = () => {
   return (
     <ExploreStack.Navigator
+      initialRouteName="ExploreMain"
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
       }}
     >
       <ExploreStack.Screen
-        name="ExploreScreen"
+        name="ExploreMain"
         component={ExploreScreen}
       />
     </ExploreStack.Navigator>

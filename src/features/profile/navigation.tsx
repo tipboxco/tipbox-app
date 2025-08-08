@@ -1,9 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ProfileScreen, BadgesScreen, FeedScreen, InventoryScreen, WishlistScreen } from './screens';
+import { BadgesScreen, FeedScreen, InventoryScreen, WishlistScreen } from './screens';
 
 export type ProfileStackParamList = {
-  ProfileScreen: undefined;
   BadgesScreen: undefined;
   ProfileFeed: undefined;
   ProfileInventory: undefined;
@@ -21,10 +20,6 @@ export const ProfileNavigator = () => {
         gestureEnabled: true,
       }}
     >
-      <ProfileStack.Screen
-        name="ProfileScreen"
-        component={ProfileScreen}
-      />
       <ProfileStack.Screen
         name="BadgesScreen"
         component={BadgesScreen}

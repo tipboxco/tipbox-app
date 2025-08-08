@@ -1,82 +1,90 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Pressable } from '@gluestack-ui/themed';
-import { ChevronLeft } from 'lucide-react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useAuthStore } from '@/src/store';
-import { MainNavigator } from './MainNavigator';
+import { Feather } from '@expo/vector-icons';
 
-// Feature Navigators
-import { AuthNavigator } from '@/src/features/auth/navigation';
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
 import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { InventoryNavigator } from '@/src/features/inventory/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
-import { SettingsNavigator } from '@/src/features/settings/navigation';
 
-import { RootStackParamList } from './navigation.types';
+export type RootTabParamList = {
+  Feed: undefined;
+  Explore: undefined;
+  Catalog: undefined;
+  Inventory: undefined;
+  Profile: undefined;
+};
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<RootTabParamList>();
 
-export const RootNavigator = () => {
+const RootNavigator = () => {
   const { colorMode } = useColorMode();
-  const { isAuthenticated } = useAuthStore();
+  const isDark = colorMode === 'dark';
 
   return (
-    <Stack.Navigator
-      screenOptions={{
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
         headerShown: false,
-      }}
-    >
-      {!isAuthenticated ? (
-        // Auth Stack - Kullanıcı giriş yapmamışsa
-        <Stack.Group screenOptions={{ gestureEnabled: false }}>
-          <Stack.Screen 
-            name="Auth" 
-            component={AuthNavigator} 
-          />
-        </Stack.Group>
-      ) : (
-        // Main App Flow - Kullanıcı giriş yapmışsa
-        <Stack.Group>
-          <Stack.Screen 
-            name="Main" 
-            component={MainNavigator} 
-          />
-        </Stack.Group>
-      )}
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Feather.glyphMap = 'home';
 
-      {/* Modal Screens */}
-      <Stack.Group screenOptions={{ presentation: 'modal' }}>
-        <Stack.Screen 
-          name="Settings" 
-          component={SettingsNavigator}
-          options={({ navigation }) => ({
-            headerShown: true,
-            headerTitle: 'Ayarlar',
-            headerLeft: () => (
-              <Pressable
-                onPress={() => navigation.goBack()}
-                px="$3"
-                py="$2"
-              >
-                <ChevronLeft size={24} color={colorMode === 'dark' ? '#FFFFFF' : '#000000'} />
-              </Pressable>
-            ),
-            headerStyle: {
-              backgroundColor: colorMode === 'dark' ? '#121212' : '#FFFFFF',
-            },
-            headerTitleStyle: {
-              color: colorMode === 'dark' ? '#FFFFFF' : '#000000',
-              fontSize: 16,
-              fontWeight: '600',
-            },
-            headerShadowVisible: false,
-            animation: 'slide_from_right'
-          })}
-        />
-      </Stack.Group>
-    </Stack.Navigator>
+          switch (route.name) {
+            case 'Feed':
+              iconName = 'home';
+              break;
+            case 'Explore':
+              iconName = 'search';
+              break;
+            case 'Catalog':
+              iconName = 'grid';
+              break;
+            case 'Inventory':
+              iconName = 'package';
+              break;
+            case 'Profile':
+              iconName = 'user';
+              break;
+          }
+
+          return <Feather name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: isDark ? '#C2E607' : '#BBFF4E',
+        tabBarInactiveTintColor: isDark ? '#536471' : '#6D6D6D',
+        tabBarStyle: {
+          backgroundColor: isDark ? '#121212' : '#FFFFFF',
+          borderTopColor: isDark ? '#272727' : '#E5E5E5',
+        },
+      })}
+    >
+      <Tab.Screen
+        name="Feed"
+        component={FeedNavigator}
+        options={{ tabBarLabel: 'Ana Sayfa' }}
+      />
+      <Tab.Screen
+        name="Explore"
+        component={ExploreNavigator}
+        options={{ tabBarLabel: 'Keşfet' }}
+      />
+      <Tab.Screen
+        name="Catalog"
+        component={CatalogNavigator}
+        options={{ tabBarLabel: 'Katalog' }}
+      />
+      <Tab.Screen
+        name="Inventory"
+        component={InventoryNavigator}
+        options={{ tabBarLabel: 'Envanter' }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileNavigator}
+        options={{ tabBarLabel: 'Profil' }}
+      />
+    </Tab.Navigator>
   );
 };
+
+export default RootNavigator;
