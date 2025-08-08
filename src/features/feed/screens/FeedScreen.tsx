@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Box, ScrollView } from '@gluestack-ui/themed';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { FeedStackParamList } from '../navigation';
 import { FilterBar } from '../components/FilterBar';
 import { FeedContentCard } from '../components/FeedContentCard';
 import { FeedImageContentCard } from '../components/FeedImageContentCard';
@@ -79,10 +82,17 @@ const MENU_ITEMS: Array<{
   },
 ];
 
+type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList, 'FeedScreen'>;
+
 export const FeedScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const navigation = useNavigation<FeedScreenNavigationProp>();
+
+  const handleReviewPress = () => {
+    navigation.navigate('ReviewDetail');
+  };
 
   return (
     <Box
@@ -114,6 +124,7 @@ export const FeedScreen = () => {
           userName="Salvador Costa"
           userBadge="Home Wizard"
           userAction="Added a new product and experiences to your inventory!"
+          onPress={handleReviewPress}
         />
         <FeedImageContentCard
           title="Okay Coffee Maker, Nothing Special"
@@ -132,6 +143,7 @@ export const FeedScreen = () => {
           userName="Teresa Randolph"
           userBadge="Kitchen Specialist"
           userAction="Added a new product and experiences to your inventory!"
+          onPress={handleReviewPress}
         />
       </ScrollView>
       <SideMenu

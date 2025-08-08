@@ -20,6 +20,7 @@ interface FeedImageContentCardProps {
   userName: string;
   userBadge: string;
   userAction: string;
+  onPress?: (review: any) => void;
 }
 
 export const FeedImageContentCard = ({
@@ -38,19 +39,37 @@ export const FeedImageContentCard = ({
   userName,
   userBadge,
   userAction,
+  onPress,
 }: FeedImageContentCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
   return (
-    <Box
-      borderWidth={1}
-      borderColor={isDark ? '$backgroundDark200' : '$borderLight200'}
-      rounded="$lg"
-      bg={isDark ? '$backgroundDark900' : '$backgroundLight0'}
-      overflow="hidden"
-      mb="$4"
-    >
+    <Pressable onPress={() => onPress?.({
+      title,
+      content,
+      mainImage,
+      productName,
+      likes,
+      comments,
+      shares,
+      bookmarks,
+      rating,
+      usageDuration,
+      experience,
+      userImage,
+      userName,
+      userBadge,
+      userAction,
+    })}>
+      <Box
+        borderWidth={1}
+        borderColor={isDark ? '$backgroundDark200' : '$borderLight200'}
+        rounded="$lg"
+        bg={isDark ? '$backgroundDark900' : '$backgroundLight0'}
+        overflow="hidden"
+        mb="$4"
+      >
       {/* User Info */}
       <HStack p="$4" space="md" alignItems="center">
         <Image
@@ -247,5 +266,6 @@ export const FeedImageContentCard = ({
         </HStack>
       </HStack>
     </Box>
+    </Pressable>
   );
 };
