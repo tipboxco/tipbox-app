@@ -11,7 +11,7 @@ const ExploreScreen: React.FC = () => {
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Header title="Keşfet" hasNotification hasMessage />
+      <Header title="Explore" hasNotification hasMessage />
       <ScrollView>
         <Box px="$4" py="$2">
           <ReviewCard

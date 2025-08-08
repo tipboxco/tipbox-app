@@ -26,7 +26,7 @@ export const ProfileTabs = ({ activeTab, onChangeTab }: ProfileTabsProps) => {
   const isDark = colorMode === 'dark';
 
   return (
-    <HStack space="xl" p="$4" justifyContent="space-between">
+    <HStack space="xl" p="$4" my="$4" justifyContent="space-between">
       {TABS.map((tab) => (
         <Pressable
           key={tab.key}

@@ -61,27 +61,27 @@ const RootNavigator = () => {
       <Tab.Screen
         name="Feed"
         component={FeedNavigator}
-        options={{ tabBarLabel: 'Ana Sayfa' }}
+        options={{ tabBarLabel: 'Feed' }}
       />
       <Tab.Screen
         name="Explore"
         component={ExploreNavigator}
-        options={{ tabBarLabel: 'Keşfet' }}
+        options={{ tabBarLabel: 'Explore' }}
       />
       <Tab.Screen
         name="Catalog"
         component={CatalogNavigator}
-        options={{ tabBarLabel: 'Katalog' }}
+        options={{ tabBarLabel: 'Catalog' }}
       />
       <Tab.Screen
         name="Inventory"
         component={InventoryNavigator}
-        options={{ tabBarLabel: 'Envanter' }}
+        options={{ tabBarLabel: 'Inventory' }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileNavigator}
-        options={{ tabBarLabel: 'Profil' }}
+        options={{ tabBarLabel: 'Profile' }}
       />
     </Tab.Navigator>
   );
