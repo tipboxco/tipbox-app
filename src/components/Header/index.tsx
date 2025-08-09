@@ -31,7 +31,7 @@ export const Header = ({
       <Box mt="$6">
         <HStack space="md" alignItems="center" justifyContent="space-between">
           <Pressable onPress={onMenuPress}>
-            <Feather name="menu" size={24} color="#FFFFFF" />
+            <Feather name="menu" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
           </Pressable>
           <Text
             color={isDark ? '$textDark50' : '$textLight900'}
@@ -43,7 +43,7 @@ export const Header = ({
           <HStack space="lg" alignItems="center">
             <Pressable>
               <Box position="relative">
-                <Feather name="bell" size={26} color="#FFFFFF" />
+                <Feather name="bell" size={26} color={isDark ? '#FFFFFF' : '#000000'} />
                 {hasNotification && (
                   <Box
                     position="absolute"
@@ -59,7 +59,7 @@ export const Header = ({
             </Pressable>
             <Pressable>
               <Box position="relative">
-                <Feather name="message-circle" size={24} color="#FFFFFF" />
+                <Feather name="message-circle" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
                 {hasMessage && (
                   <Box
                     position="absolute"

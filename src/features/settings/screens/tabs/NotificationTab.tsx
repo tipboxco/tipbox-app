@@ -8,6 +8,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -21,10 +23,7 @@ export const NotificationTab = () => {
         title: 'Test Bildirimi',
         body: 'Bu bir test bildirimidir.',
       },
-      trigger: {
-        seconds: 1,
-        repeats: false,
-      },
+      trigger: null, // Anında bildirim için null kullanıyoruz
     });
   };
 
@@ -36,8 +35,7 @@ export const NotificationTab = () => {
       },
       trigger: {
         seconds: 60,
-        repeats: false,
-      },
+      } as any, // Type casting kullanarak geçici çözüm
     });
   };
 
@@ -66,4 +64,4 @@ export const NotificationTab = () => {
       </VStack>
     </Box>
   );
-}; 
+};

@@ -65,6 +65,7 @@
     "react-native": "0.79.5",
     "react-native-css-interop": "^0.1.22",
     "react-native-dotenv": "^3.4.11",
+    "react-native-exception-handler": "^2.10.10",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box } from '@gluestack-ui/themed';
+import { Box, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
@@ -92,7 +92,7 @@ export const CatalogScreen = () => {
         hasMessage
         onMenuPress={() => setIsMenuVisible(true)}
       />
-
+      <Text>Welcome to Catalog</Text>
       <SideMenu
         visible={isMenuVisible}
         onClose={() => setIsMenuVisible(false)}

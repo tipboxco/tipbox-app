@@ -30,7 +30,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
       {/* Profile Background with Gradient */}
       <Box position="relative" height={150}>
         <LinearGradient
-          colors={isDark ? ['#4A1D96', '#1E293B'] : ['#E2E8F0', '#F8FAFC']}
+          colors={['#4A1D96', '#1E293B']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}

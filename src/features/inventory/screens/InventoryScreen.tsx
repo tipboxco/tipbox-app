@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box } from '@gluestack-ui/themed';
+import { Box, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 
@@ -92,7 +92,7 @@ export const InventoryScreen = () => {
         hasMessage
         onMenuPress={() => setIsMenuVisible(true)}
       />
-
+      <Text>Welcome to Inventory</Text>
       <SideMenu
         visible={isMenuVisible}
         onClose={() => setIsMenuVisible(false)}
