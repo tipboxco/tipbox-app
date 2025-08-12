@@ -42,7 +42,7 @@ export const FilterBar = () => {
   const isDark = colorMode === 'dark';
 
   return (
-    <HStack justifyContent='space-evenly' space="sm" px="$4" py="$2">
+    <HStack justifyContent='space-evenly' space="sm" px="$4" py="$2" mt="$2">
       {FILTER_OPTIONS.map((option) => (
         <Pressable
           key={option.id}

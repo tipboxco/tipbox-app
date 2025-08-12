@@ -2,6 +2,26 @@
 
 import type { User, BaseEntity } from '@/src/types';
 
+// ProfileCard Types
+export interface Badge {
+  id: string;
+  name: string;
+  icon: string;
+  description?: string;
+}
+
+export interface UserData {
+  username: string;
+  handle: string;
+  badge: Badge;
+  stats: UserStats;
+}
+
+export interface ProfileCardProps {
+  userData: UserData;
+  onPress?: () => void;
+}
+
 // Profile Types
 export interface UserProfile extends User {
   bio?: string;
@@ -14,11 +34,9 @@ export interface UserProfile extends User {
 }
 
 export interface UserStats {
-  tipsCount: number;
-  likesCount: number;
-  commentsCount: number;
-  followersCount: number;
-  followingCount: number;
+  trust: number;
+  truster: number;
+  supporter: number;
 }
 
 export interface UserPreferences {

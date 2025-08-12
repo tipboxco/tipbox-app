@@ -23,19 +23,18 @@ export const Header = ({
     <Box
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       px="$4"
-      py="$2"
       borderBottomWidth={1}
       borderBottomColor={isDark ? '$backgroundDark100' : '$backgroundLight200'}
-      h={98}
+      justifyContent="center"
     >
-      <Box mt="$6">
+      <Box my="$2">
         <HStack space="md" alignItems="center" justifyContent="space-between">
           <Pressable onPress={onMenuPress}>
-            <Feather name="menu" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+            <Feather name="menu" size={22} color={isDark ? '#FFFFFF' : '#000000'} />
           </Pressable>
           <Text
             color={isDark ? '$textDark50' : '$textLight900'}
-            fontSize="$xl"
+            fontSize="$lg"
             fontWeight="$bold"
           >
             {title}
@@ -43,14 +42,14 @@ export const Header = ({
           <HStack space="lg" alignItems="center">
             <Pressable>
               <Box position="relative">
-                <Feather name="bell" size={26} color={isDark ? '#FFFFFF' : '#000000'} />
+                <Feather name="bell" size={22} color={isDark ? '#FFFFFF' : '#000000'} />
                 {hasNotification && (
                   <Box
                     position="absolute"
                     top={1}
                     right={1}
-                    w={8}
-                    h={8}
+                    w={6}
+                    h={6}
                     rounded="$full"
                     bg="$tertiary400"
                   />
@@ -59,14 +58,14 @@ export const Header = ({
             </Pressable>
             <Pressable>
               <Box position="relative">
-                <Feather name="message-circle" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+                <Feather name="message-circle" size={22} color={isDark ? '#FFFFFF' : '#000000'} />
                 {hasMessage && (
                   <Box
                     position="absolute"
                     top={1}
                     right={1}
-                    w={8}
-                    h={8}
+                    w={6}
+                    h={6}
                     rounded="$full"
                     bg="$tertiary400"
                   />

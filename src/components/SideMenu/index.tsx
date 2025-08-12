@@ -10,7 +10,6 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
@@ -37,8 +36,58 @@ interface SideMenuProps {
       borderColor: string;
     };
   };
-  menuItems: MenuItem[];
 }
+
+const MENU_ITEMS: MenuItem[] = [
+  {
+    id: 'profile',
+    icon: 'user',
+    label: 'Profil',
+    onPress: () => {},
+  },
+  {
+    id: 'wishlist',
+    icon: 'heart',
+    label: 'Wishlist',
+    onPress: () => {},
+  },
+  {
+    id: 'bridge',
+    icon: 'link',
+    label: 'Bridge',
+    onPress: () => {},
+  },
+  {
+    id: 'wishbox',
+    icon: 'package',
+    label: 'Wishbox',
+    onPress: () => {},
+  },
+  {
+    id: 'achievements',
+    icon: 'trending-up',
+    label: 'Başarım Merdiveni',
+    onPress: () => {},
+  },
+  {
+    id: 'collection',
+    icon: 'grid',
+    label: 'Koleksiyon Vitrini',
+    onPress: () => {},
+  },
+  {
+    id: 'assets',
+    icon: 'package',
+    label: 'Varlıklarım',
+    onPress: () => {},
+  },
+  {
+    id: 'bookmarks',
+    icon: 'bookmark',
+    label: 'Kaydedilenler',
+    onPress: () => {},
+  },
+];
 
 type FeatherIconName = keyof typeof FeatherIcon.glyphMap;
 
@@ -56,7 +105,6 @@ export const SideMenu = ({
   visible,
   onClose,
   userProfile,
-  menuItems,
 }: SideMenuProps) => {
   const { colorMode } = useColorMode();
   const navigation = useNavigation<any>();
@@ -202,7 +250,7 @@ export const SideMenu = ({
 
         {/* Menu Items */}
         <VStack space="sm" px="$4">
-          {menuItems.map((item) => (
+          {MENU_ITEMS.map((item: MenuItem) => (
             <Pressable
               key={item.id}
               onPress={item.onPress}

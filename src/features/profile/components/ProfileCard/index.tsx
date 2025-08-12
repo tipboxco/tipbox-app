@@ -4,29 +4,19 @@ import { Box, Text, Image, HStack, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-
-interface ProfileCardProps {
-  username: string;
-  handle: string;
-  badge: string;
-  stats: {
-    trust: number;
-    truster: number;
-    supporter: number;
-  };
-}
+import { ProfileCardProps } from '../../types';
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
-  username,
-  handle,
-  badge,
-  stats,
+  userData,
+  onPress
 }) => {
+  const { username, handle, badge, stats } = userData;
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
   return (
-    <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <Pressable onPress={onPress}>
+      <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Profile Background with Gradient */}
       <Box position="relative" height={150}>
         <LinearGradient
@@ -103,7 +93,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             fontSize="$xs"
             fontWeight="$semibold"
           >
-            {badge}
+            {badge.name}
           </Text>
         </Box>
 
@@ -208,6 +198,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
         </HStack>
       </Box>
     </Box>
+    </Pressable>
   );
 };
 
