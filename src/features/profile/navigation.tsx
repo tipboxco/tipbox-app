@@ -1,12 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ProfileScreen, TrustListScreen } from './screens';
+import { ProfileScreen, TrustListScreen, TrusterListScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 // Profile Stack için type tanımlaması
 export type ProfileStackParamList = {
   ProfileMain: undefined;
   TrustList: undefined;
+  TrusterList: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -31,6 +32,10 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="TrustList"
         component={TrustListScreen}
+      />
+      <Stack.Screen
+        name="TrusterList"
+        component={TrusterListScreen}
       />
     </Stack.Navigator>
   );

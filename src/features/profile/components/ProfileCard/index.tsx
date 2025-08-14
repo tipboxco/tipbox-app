@@ -122,21 +122,23 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
             </VStack>
           </Pressable>
           <Box width={1} height={38} bg={isDark ? '#515151' : '#E5E5E5'} mx="$4" />
-          <VStack alignItems="center">
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$lg"
-              fontWeight="$bold"
-            >
-              {stats.truster}
-            </Text>
-            <Text
-              color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize="$sm"
-            >
-              Truster
-            </Text>
-          </VStack>
+          <Pressable onPress={() => navigation.navigate('TrusterList')}>
+            <VStack alignItems="center">
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$lg"
+                fontWeight="$bold"
+              >
+                {stats.truster}
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '$textLight500'}
+                fontSize="$sm"
+              >
+                Truster
+              </Text>
+            </VStack>
+          </Pressable>
           <Box width={1} height={38} bg={isDark ? '#515151' : '#E5E5E5'} mx="$4" />
           <VStack alignItems="center">
             <Text
@@ -169,7 +171,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 fontSize="$sm"
                 fontWeight="$semibold"
               >
-                Trust
+                Profili Düzenle
               </Text>
             </Box>
           </Pressable>
@@ -185,21 +187,8 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 fontSize="$sm"
                 fontWeight="$semibold"
               >
-                Request 1-on-1
+                Profili Paylaş
               </Text>
-            </Box>
-          </Pressable>
-          <Pressable>
-            <Box
-              bg={isDark ? '#353535' : '#F5F5F5'}
-              p="$2"
-              borderRadius="$lg"
-            >
-              <Feather 
-                name="message-circle" 
-                size={20} 
-                color={isDark ? '#FFFFFF' : '#000000'} 
-              />
             </Box>
           </Pressable>
         </HStack>
