@@ -11,6 +11,7 @@ export interface Badge {
 }
 
 export interface UserData {
+  id: string;
   username: string;
   handle: string;
   badge: Badge;
@@ -74,6 +75,26 @@ export interface UpdateProfileData {
   bio?: string;
   location?: string;
   website?: string;
+}
+
+// Trust Types
+export interface TrustUser extends BaseEntity {
+  username: string;
+  handle: string;
+  avatar?: string;
+  trustDate: string;
+  trustScore: number;
+  badge: {
+    name: string;
+    color: string;
+  };
+  mutualFriendsText: string;
+}
+
+export interface TrustListBottomSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string;
 }
 
 // Profile Activity

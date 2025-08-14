@@ -6,32 +6,35 @@ import { StatusBar } from 'react-native';
 import { PortalProvider } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function App() {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  const backgroundColor = isDark 
-    ? config.tokens.colors.backgroundDark950 
+  const backgroundColor = isDark
+    ? config.tokens.colors.backgroundDark950
     : config.tokens.colors.backgroundLight0;
 
   return (
     <SafeAreaProvider>
       <PortalProvider>
-        <GluestackProvider>
-          <StatusBar
-            barStyle={isDark ? 'light-content' : 'dark-content'}
-            backgroundColor={backgroundColor}
-          />
-          <SafeAreaView 
-            style={{ 
-              flex: 1,
-              backgroundColor
-            }}
-          >
-            <Navigation />
-          </SafeAreaView>
-        </GluestackProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <GluestackProvider>
+            <StatusBar
+              barStyle={isDark ? 'light-content' : 'dark-content'}
+              backgroundColor={backgroundColor}
+            />
+            <SafeAreaView
+              style={{
+                flex: 1,
+                backgroundColor
+              }}
+            >
+              <Navigation />
+            </SafeAreaView>
+          </GluestackProvider>
+        </GestureHandlerRootView>
       </PortalProvider>
     </SafeAreaProvider>
   );

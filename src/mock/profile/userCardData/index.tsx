@@ -1,6 +1,7 @@
 import { UserData } from '@/src/features/profile/types';
 
 export const mock_user_card: UserData = {
+    id: "1",
     username: "Ozan Mutluoğlu",
     handle: "@ozanmutluoglu",
     badge: {

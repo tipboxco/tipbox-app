@@ -5,6 +5,9 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ProfileCardProps } from '../../types';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '../../navigation';
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
   userData,
@@ -13,10 +16,12 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   const { username, handle, badge, stats } = userData;
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
 
   return (
-    <Pressable onPress={onPress}>
-      <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <>
+      <Pressable onPress={onPress}>
+        <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Profile Background with Gradient */}
       <Box position="relative" height={150}>
         <LinearGradient
@@ -99,21 +104,23 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
 
         {/* Stats */}
         <HStack space="md" mt="$6" alignItems="center">
-          <VStack alignItems="center">
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$lg"
-              fontWeight="$bold"
-            >
-              {stats.trust}
-            </Text>
-            <Text
-              color={isDark ? '$textDark400' : '$textLight500'}
-              fontSize="$sm"
-            >
-              Trust
-            </Text>
-          </VStack>
+          <Pressable onPress={() => navigation.navigate('TrustList')}>
+            <VStack alignItems="center">
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$lg"
+                fontWeight="$bold"
+              >
+                {stats.trust}
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '$textLight500'}
+                fontSize="$sm"
+              >
+                Trust
+              </Text>
+            </VStack>
+          </Pressable>
           <Box width={1} height={38} bg={isDark ? '#515151' : '#E5E5E5'} mx="$4" />
           <VStack alignItems="center">
             <Text
@@ -199,6 +206,8 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
       </Box>
     </Box>
     </Pressable>
+
+    </>
   );
 };
 

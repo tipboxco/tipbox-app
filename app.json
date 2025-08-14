@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "${process.env.APP_NAME}",
+    "name": "tipbox-app",
     "slug": "tipbox-app",
     "version": "1.0.0",
     "runtimeVersion": {
