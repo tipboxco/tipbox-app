@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ScrollView } from 'react-native';
 import { Box } from '@gluestack-ui/themed';
 import ProfileCard from '../components/ProfileCard';
 import { ProfileTabs } from '../components/ProfileTabs';
@@ -28,9 +29,18 @@ export const ProfileScreen = () => {
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <ProfileCard userData={mock_user_card} />
-      <ProfileTabs activeTab={activeTab} onChangeTab={setActiveTab} />
-      {renderTabContent()}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]} // ProfileTabs'i sticky yapar
+      >
+        <ProfileCard userData={mock_user_card} />
+        <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+          <ProfileTabs activeTab={activeTab} onChangeTab={setActiveTab} />
+        </Box>
+        <Box minHeight={600}>
+          {renderTabContent()}
+        </Box>
+      </ScrollView>
     </Box>
   );
 };
