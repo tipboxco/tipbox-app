@@ -103,3 +103,23 @@ export interface ProfileActivity extends BaseEntity {
   description: string;
   metadata?: Record<string, any>;
 }
+
+export interface WishlistItem extends BaseEntity {
+  title: string;
+  description: string;
+  date: string;
+  itemCount: number;
+  image: any;
+  badgeColor: string;
+  badgeBorderColor: string;
+}
+
+export interface WishlistDetailItem extends BaseEntity {
+  productName: string;
+  price: string;
+  image: any;
+  store: string;
+  storeImage: any;
+  addedDate: string;
+  isAvailable: boolean;
+}
