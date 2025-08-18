@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Text,
@@ -10,12 +10,16 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ChevronLeft, Heart, MessageCircle, Share2, Bookmark } from 'lucide-react-native';
+import { CommentsBottomSheet } from '@/src/components/CommentsBottomSheet';
 
 interface ReviewDetailProps {
   navigation: any;
 }
 
 export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
+  const [isCommentsVisible, setIsCommentsVisible] = useState(false);
+  const [commentCount] = useState(32);
+  
   const mockReview = {
     title: "This Robot Vacuum Made My Life So Much Easier!",
     summary: "I don't worry about vacuuming anymore. This robot cleans on its own, avoids furniture, and switches between carpets and floors easily. Coming home to a clean house every day feels great! 😌",
@@ -48,14 +52,15 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
     },
     product: {
       name: "Xiaomi Robot Vacuum S20 Plus",
-      image: require('@/assets/product/product_01.png')
+      image: require('@/assets/product/product_01.png'),
+      category: "Ana Kategori > Alt Kategori > Ürün Grubu"
     }
   };
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark900' : '$backgroundLight0'}>
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <HStack
         h="$12"
@@ -81,7 +86,7 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
         {/* User Info */}
         <HStack space="md" p="$4" alignItems="center">
           <Image
-                          source={mockReview.user.avatar}
+            source={mockReview.user.avatar}
             alt={mockReview.user.name}
             size="md"
             rounded="$full"
@@ -128,11 +133,11 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
           <HStack space="sm">
             {Array.from({ length: 5 }).map((_, index) => (
               <Box
-                              key={index}
-              w="$3"
-              h="$3"
-              rounded="$full"
-              bg={index < mockReview.rating ? '#C2E607' : isDark ? '$backgroundDark400' : '$backgroundLight400'}
+                key={index}
+                w="$3"
+                h="$3"
+                rounded="$full"
+                bg={index < mockReview.rating ? '#C2E607' : isDark ? '$backgroundDark400' : '$backgroundLight400'}
               />
             ))}
           </HStack>
@@ -142,14 +147,14 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
             <Box
               p="$4"
               rounded="$lg"
-              bg={isDark ? '$backgroundDark800' : '$backgroundLight100'}
+              bg={isDark ? '$backgroundDark950' : '$backgroundLight100'}
               borderWidth={1}
               borderColor={isDark ? '$backgroundDark700' : '$backgroundLight200'}
             >
               <HStack space="sm" alignItems="center" mb="$2">
                 <Text
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontWeight="$semibold"
+                  fontWeight="$bold"
                   fontSize="$sm"
                 >
                   Price and Shopping Experience
@@ -163,14 +168,14 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
             <Box
               p="$4"
               rounded="$lg"
-              bg={isDark ? '$backgroundDark800' : '$backgroundLight100'}
+              bg={isDark ? '$backgroundDark950' : '$backgroundLight100'}
               borderWidth={1}
               borderColor={isDark ? '$backgroundDark700' : '$backgroundLight200'}
             >
               <HStack space="sm" alignItems="center" mb="$2">
                 <Text
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontWeight="$semibold"
+                  fontWeight="$bold"
                   fontSize="$sm"
                 >
                   Product and Usage Experience
@@ -204,7 +209,7 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
           <Box
             p="$4"
             rounded="$lg"
-            bg={isDark ? '$backgroundDark800' : '$backgroundLight100'}
+            bg={isDark ? '$backgroundDark950' : '$backgroundLight100'}
             borderWidth={1}
             borderColor={isDark ? '$backgroundDark700' : '$backgroundLight200'}
           >
@@ -215,14 +220,23 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
                 size="md"
                 rounded="$md"
               />
-              <Text
-                flex={1}
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontWeight="$bold"
-                fontSize="$sm"
-              >
-                {mockReview.product.name}
-              </Text>
+              <VStack>
+                <Text
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontWeight="$bold"
+                  fontSize="$md"
+                >
+                  {mockReview.product.name}
+                </Text>
+                <Text
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontWeight="$semibold"
+                  fontSize="$xs"
+                  mt="$2"
+                >
+                  {mockReview.product.category}
+                </Text>
+              </VStack>
             </HStack>
           </Box>
 
@@ -287,12 +301,17 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
                 {mockReview.stats.likes}
               </Text>
             </HStack>
-            <HStack space="xs" alignItems="center">
+            <Pressable
+              onPress={() => setIsCommentsVisible(true)}
+              flexDirection="row"
+              alignItems="center"
+              gap="$2"
+            >
               <MessageCircle size={20} color={isDark ? '#DCDCDC' : '#666666'} />
               <Text color={isDark ? '$textDark200' : '$textLight700'} fontSize="$sm">
-                {mockReview.stats.comments}
+                {commentCount}
               </Text>
-            </HStack>
+            </Pressable>
             <HStack space="xs" alignItems="center">
               <Share2 size={20} color={isDark ? '#DCDCDC' : '#666666'} />
               <Text color={isDark ? '$textDark200' : '$textLight700'} fontSize="$sm">
@@ -308,6 +327,12 @@ export const ReviewDetail: React.FC<ReviewDetailProps> = ({ navigation }) => {
           </HStack>
         </HStack>
       </ScrollView>
+      
+      {/* Comments Bottom Sheet */}
+      <CommentsBottomSheet
+        isVisible={isCommentsVisible}
+        onClose={() => setIsCommentsVisible(false)}
+      />
     </Box>
   );
 };

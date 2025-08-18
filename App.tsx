@@ -17,9 +17,9 @@ export default function App() {
     : config.tokens.colors.backgroundLight0;
 
   return (
-    <SafeAreaProvider>
-      <PortalProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <PortalProvider>
           <GluestackProvider>
             <StatusBar
               barStyle={isDark ? 'light-content' : 'dark-content'}
@@ -34,8 +34,8 @@ export default function App() {
               <Navigation />
             </SafeAreaView>
           </GluestackProvider>
-        </GestureHandlerRootView>
-      </PortalProvider>
-    </SafeAreaProvider>
+        </PortalProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
