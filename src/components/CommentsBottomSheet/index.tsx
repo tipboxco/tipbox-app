@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, BackHandler } from 'react-native';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Heart, Send, ChevronDown } from 'lucide-react-native';
@@ -20,6 +20,12 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
   const [isFullscreenEditor, setIsFullscreenEditor] = useState(false);
 
   const snapPoints = useMemo(() => ['50%', '100%'], []);
+
+  // Back handler for fullscreen editor
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    return () => backHandler.remove();
+  }, [isFullscreenEditor]);
 
   const handleSheetChanges = useCallback((index: number) => {
     if (index === -1) {
@@ -42,6 +48,14 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
 
   const handleCloseEditor = () => {
     setIsFullscreenEditor(false);
+  };
+
+  const handleBackPress = () => {
+    if (isFullscreenEditor) {
+      setIsFullscreenEditor(false);
+      return true;
+    }
+    return false;
   };
 
   const handleLikeComment = (commentId: string) => {
@@ -206,79 +220,96 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
              </BottomSheetView>
        </BottomSheet>
 
-       {/* Fullscreen Comment Editor */}
-       {isFullscreenEditor && (
-         <Portal>
-           <View style={{
-             position: 'absolute',
-             top: 0,
-             left: 0,
-             right: 0,
-             bottom: 0,
-             backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-             zIndex: 1000
-           }}>
-             {/* Header */}
-             <View style={{
-               flexDirection: 'row',
-               justifyContent: 'space-between',
-               alignItems: 'center',
-               paddingTop: 50,
-               paddingHorizontal: 16,
-               paddingBottom: 16,
-               borderBottomWidth: 1,
-               borderBottomColor: isDark ? '#333333' : '#E5E5E5'
-             }}>
-               <TouchableOpacity onPress={handleCloseEditor}>
-                 <Text style={{
-                   color: isDark ? '#007AFF' : '#007AFF',
-                   fontSize: 16
-                 }}>
-                   İptal
-                 </Text>
-               </TouchableOpacity>
-               <Text style={{
-                 color: isDark ? '#FFFFFF' : '#000000',
-                 fontWeight: 'bold',
-                 fontSize: 18
-               }}>
-                 Yorum Yaz
-               </Text>
-               <TouchableOpacity 
-                 onPress={handleSendComment}
-                 disabled={!newComment.trim()}
-               >
-                 <Text style={{
-                   color: newComment.trim() ? (isDark ? '#007AFF' : '#007AFF') : (isDark ? '#666666' : '#999999'),
-                   fontSize: 16,
-                   fontWeight: 'bold'
-                 }}>
-                   Gönder
-                 </Text>
-               </TouchableOpacity>
-             </View>
+               {/* Fullscreen Comment Editor */}
+        {isFullscreenEditor && (
+          <Portal>
+            <View style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              zIndex: 1000
+            }}>
+              {/* Text Input Area */}
+              <View style={{ 
+                flex: 1, 
+                paddingTop: 50,
+                paddingHorizontal: 16,
+                paddingBottom: 16
+              }}>
+                <TextInput
+                  style={{
+                    flex: 1,
+                    textAlignVertical: 'top',
+                    color: isDark ? '#FFFFFF' : '#000000',
+                    fontSize: 16,
+                    lineHeight: 24,
+                    backgroundColor: 'transparent'
+                  }}
+                  placeholder="Yorumunuzu yazın..."
+                  placeholderTextColor={isDark ? '#666666' : '#999999'}
+                  value={newComment}
+                  onChangeText={setNewComment}
+                  multiline
+                  autoFocus
+                />
+              </View>
 
-             {/* Text Input */}
-             <View style={{ flex: 1, padding: 16 }}>
-               <TextInput
-                 style={{
-                   flex: 1,
-                   textAlignVertical: 'top',
-                   color: isDark ? '#FFFFFF' : '#000000',
-                   fontSize: 16,
-                   lineHeight: 24
-                 }}
-                 placeholder="Yorumunuzu yazın..."
-                 placeholderTextColor={isDark ? '#666666' : '#999999'}
-                 value={newComment}
-                 onChangeText={setNewComment}
-                 multiline
-                 autoFocus
-               />
-             </View>
-           </View>
-         </Portal>
-       )}
+              {/* Input Toolbar */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
+                borderTopWidth: 1,
+                borderTopColor: isDark ? '#333333' : '#E5E5E5'
+              }}>
+                {/* Toolbar Icons */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <TouchableOpacity style={{ marginRight: 16 }}>
+                    <Text style={{ fontSize: 20, color: isDark ? '#FFFFFF' : '#000000' }}>+</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ marginRight: 16 }}>
+                    <Text style={{ fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>Aa</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ marginRight: 16 }}>
+                    <Text style={{ fontSize: 18, color: isDark ? '#FFFFFF' : '#000000' }}>😊</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ marginRight: 16 }}>
+                    <Text style={{ fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>@</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity>
+                    <Text style={{ fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>×</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Send Button */}
+                <TouchableOpacity 
+                  onPress={handleSendComment}
+                  disabled={!newComment.trim()}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: newComment.trim() 
+                      ? (isDark ? '#4CAF50' : '#4CAF50') 
+                      : (isDark ? '#444444' : '#CCCCCC'),
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}
+                >
+                  <Send
+                    size={18}
+                    color={newComment.trim() ? '#FFFFFF' : (isDark ? '#666666' : '#999999')}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Portal>
+        )}
      </Portal>
    );
  };
