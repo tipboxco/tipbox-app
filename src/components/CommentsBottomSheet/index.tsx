@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, BackHandler } from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { TouchableOpacity, ScrollView, BackHandler } from 'react-native';
+import { Text, View, Image, } from '@gluestack-ui/themed';
+import BottomSheet, { BottomSheetView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Heart, Send, ChevronDown } from 'lucide-react-native';
+import { Heart, Send } from 'lucide-react-native';
 import { mockComments } from '@/src/mock/common/comments';
 import { Portal } from '@gorhom/portal';
 import { Comment, CommentsBottomSheetProps } from './types';
@@ -13,24 +14,22 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const inputRef = useRef<any>(null);
+
   const [newComment, setNewComment] = useState('');
   const [comments] = useState<Comment[]>(mockComments);
-  const [isFullscreenEditor, setIsFullscreenEditor] = useState(false);
 
-  const snapPoints = useMemo(() => ['50%', '100%'], []);
-
-  // Back handler for fullscreen editor
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-    return () => backHandler.remove();
-  }, [isFullscreenEditor]);
+  const snapPoints = useMemo(() => ['100%'], []);
 
   const handleSheetChanges = useCallback((index: number) => {
     if (index === -1) {
       onClose();
-      setIsFullscreenEditor(false);
+    } else if (index >= 0){
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
     }
   }, [onClose]);
 
@@ -38,24 +37,7 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
     if (newComment.trim()) {
       setNewComment('');
       console.log('Yorum gönderildi:', newComment);
-      setIsFullscreenEditor(false);
     }
-  };
-
-  const handleInputPress = () => {
-    setIsFullscreenEditor(true);
-  };
-
-  const handleCloseEditor = () => {
-    setIsFullscreenEditor(false);
-  };
-
-  const handleBackPress = () => {
-    if (isFullscreenEditor) {
-      setIsFullscreenEditor(false);
-      return true;
-    }
-    return false;
   };
 
   const handleLikeComment = (commentId: string) => {
@@ -72,9 +54,9 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
         />
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <Text style={{ 
-              color: isDark ? '#FFFFFF' : '#000000', 
-              fontWeight: 'bold', 
+            <Text style={{
+              color: isDark ? '#FFFFFF' : '#000000',
+              fontWeight: 'bold',
               fontSize: 14,
               marginRight: 8
             }}>
@@ -95,31 +77,31 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                 </Text>
               </View>
             )}
-            <Text style={{ 
-              color: isDark ? '#999999' : '#666666', 
-              fontSize: 12 
+            <Text style={{
+              color: isDark ? '#999999' : '#666666',
+              fontSize: 12
             }}>
               {comment.timestamp}
             </Text>
           </View>
-          
-          <Text style={{ 
-            color: isDark ? '#CCCCCC' : '#333333', 
-            fontSize: 14, 
+
+          <Text style={{
+            color: isDark ? '#CCCCCC' : '#333333',
+            fontSize: 14,
             lineHeight: 20,
             marginBottom: 8
           }}>
             {comment.content}
           </Text>
-          
+
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
               onPress={() => handleLikeComment(comment.id)}
               style={{ flexDirection: 'row', alignItems: 'center' }}
             >
               <Heart size={16} color={isDark ? '#DCDCDC' : '#666666'} />
-              <Text style={{ 
-                color: isDark ? '#999999' : '#666666', 
+              <Text style={{
+                color: isDark ? '#999999' : '#666666',
                 fontSize: 12,
                 marginLeft: 4
               }}>
@@ -127,7 +109,7 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           {comment.replies && comment.replies.length > 0 && (
             <View style={{ marginTop: 12 }}>
               {comment.replies.map(reply => renderComment(reply, true))}
@@ -142,43 +124,43 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
 
   return (
     <Portal>
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        onChange={handleSheetChanges}
-        enablePanDownToClose
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#666666' : '#CCCCCC',
-        }}
-      >
-             <BottomSheetView style={{ flex: 1, paddingHorizontal: 16 }}>
-         {/* Header */}
-         <View style={{
-           flexDirection: 'row',
-           justifyContent: 'space-between',
-           alignItems: 'center',
-           paddingVertical: 16,
-           borderBottomWidth: 1,
-           borderBottomColor: isDark ? '#333333' : '#E5E5E5'
-         }}>
-           <Text style={{
-             color: isDark ? '#FFFFFF' : '#000000',
-             fontWeight: 'bold',
-             fontSize: 18
+             <BottomSheet
+         ref={bottomSheetRef}
+         topInset={0}
+         index={0}
+         snapPoints={snapPoints}
+         onChange={handleSheetChanges}
+         enablePanDownToClose
+         android_keyboardInputMode='adjustResize'
+         keyboardBehavior="interactive"
+         keyboardBlurBehavior="restore"
+         enableOverDrag={true}
+         backgroundStyle={{
+           backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+         }}
+         handleIndicatorStyle={{
+           backgroundColor: isDark ? '#666666' : '#CCCCCC',
+         }}
+       >
+         <BottomSheetView style={{ flex: 1, height: "100%", paddingHorizontal: 16 }}>
+           {/* Header */}
+           <View style={{
+             flexDirection: 'row',
+             justifyContent: 'center',
+             paddingVertical: 16,
+             borderBottomWidth: 1,
+             borderBottomColor: isDark ? '#333333' : '#E5E5E5'
            }}>
-             Yorumlar
-           </Text>
-           <TouchableOpacity onPress={onClose}>
-             <ChevronDown size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-           </TouchableOpacity>
-         </View>
+             <Text
+               style={{
+                 color: isDark ? '#FFFFFF' : '#000000',
+                 fontWeight: 'bold',
+                 fontSize: 18
+               }}>
+               Yorumlar
+             </Text>
+           </View>
 
-         {/* Content Container */}
-         <View style={{ flex: 1, flexDirection: 'column' }}>
            {/* Comments List */}
            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
              <View style={{ paddingVertical: 16 }}>
@@ -190,10 +172,12 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
            <View style={{
              paddingVertical: 16,
              borderTopWidth: 1,
-             borderTopColor: isDark ? '#333333' : '#E5E5E5'
+             borderTopColor: isDark ? '#333333' : '#E5E5E5',
+             backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF'
            }}>
              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-               <TouchableOpacity
+               <BottomSheetTextInput
+                 ref={inputRef}
                  style={{
                    flex: 1,
                    height: 40,
@@ -203,113 +187,38 @@ export const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                    paddingHorizontal: 12,
                    marginRight: 8,
                    backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
-                   justifyContent: 'center'
-                 }}
-                 onPress={handleInputPress}
-               >
-                 <Text style={{
-                   color: isDark ? '#666666' : '#999999',
+                   color: isDark ? '#FFFFFF' : '#000000',
                    fontSize: 14
-                 }}>
-                   Bir yorum yaz...
-                 </Text>
+                 }}
+                 placeholder="Bir yorum yaz..."
+                 placeholderTextColor={isDark ? '#666666' : '#999999'}
+                 value={newComment}
+                 onChangeText={setNewComment}
+                 multiline={false}
+               />
+               <TouchableOpacity
+                 onPress={handleSendComment}
+                 disabled={!newComment.trim()}
+                 style={{
+                   width: 36,
+                   height: 36,
+                   borderRadius: 18,
+                   backgroundColor: newComment.trim()
+                     ? (isDark ? '#4CAF50' : '#4CAF50')
+                     : (isDark ? '#444444' : '#CCCCCC'),
+                   justifyContent: 'center',
+                   alignItems: 'center'
+                 }}
+               >
+                 <Send
+                   size={18}
+                   color={newComment.trim() ? '#FFFFFF' : (isDark ? '#666666' : '#999999')}
+                 />
                </TouchableOpacity>
              </View>
            </View>
-         </View>
-             </BottomSheetView>
+         </BottomSheetView>
        </BottomSheet>
-
-               {/* Fullscreen Comment Editor */}
-        {isFullscreenEditor && (
-          <Portal>
-            <View style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-              zIndex: 1000
-            }}>
-              {/* Text Input Area */}
-              <View style={{ 
-                flex: 1, 
-                paddingTop: 50,
-                paddingHorizontal: 16,
-                paddingBottom: 16
-              }}>
-                <TextInput
-                  style={{
-                    flex: 1,
-                    textAlignVertical: 'top',
-                    color: isDark ? '#FFFFFF' : '#000000',
-                    fontSize: 16,
-                    lineHeight: 24,
-                    backgroundColor: 'transparent'
-                  }}
-                  placeholder="Yorumunuzu yazın..."
-                  placeholderTextColor={isDark ? '#666666' : '#999999'}
-                  value={newComment}
-                  onChangeText={setNewComment}
-                  multiline
-                  autoFocus
-                />
-              </View>
-
-              {/* Input Toolbar */}
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
-                borderTopWidth: 1,
-                borderTopColor: isDark ? '#333333' : '#E5E5E5'
-              }}>
-                {/* Toolbar Icons */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <TouchableOpacity style={{ marginRight: 16 }}>
-                    <Text style={{ fontSize: 20, color: isDark ? '#FFFFFF' : '#000000' }}>+</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ marginRight: 16 }}>
-                    <Text style={{ fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>Aa</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ marginRight: 16 }}>
-                    <Text style={{ fontSize: 18, color: isDark ? '#FFFFFF' : '#000000' }}>😊</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ marginRight: 16 }}>
-                    <Text style={{ fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>@</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity>
-                    <Text style={{ fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>×</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Send Button */}
-                <TouchableOpacity 
-                  onPress={handleSendComment}
-                  disabled={!newComment.trim()}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: newComment.trim() 
-                      ? (isDark ? '#4CAF50' : '#4CAF50') 
-                      : (isDark ? '#444444' : '#CCCCCC'),
-                    justifyContent: 'center',
-                    alignItems: 'center'
-                  }}
-                >
-                  <Send
-                    size={18}
-                    color={newComment.trim() ? '#FFFFFF' : (isDark ? '#666666' : '#999999')}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Portal>
-        )}
-     </Portal>
-   );
- };
+    </Portal>
+  );
+};

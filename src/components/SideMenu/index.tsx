@@ -12,6 +12,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
+import { useAuthStore } from '@/src/store';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
 
 interface MenuItem {
@@ -109,6 +110,7 @@ export const SideMenu = ({
   const { colorMode } = useColorMode();
   const navigation = useNavigation<any>();
   const isDark = colorMode === 'dark';
+  const logout = useAuthStore(state => state.logout);
 
   if (!visible) return null;
 
@@ -319,6 +321,37 @@ export const SideMenu = ({
                 fontWeight="$semibold"
               >
                 Yardım Merkezi
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable
+            onPress={async () => {
+              await logout();
+              onClose(); // Side menüyü kapat
+              navigation.reset({
+                index: 0,
+                routes: [{ 
+                  name: 'Auth',
+                  state: {
+                    routes: [{ name: 'Register' }]
+                  }
+                }],
+              });
+            }}
+            py="$2"
+            px="$3"
+            rounded="$lg"
+            bg="transparent"
+            $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
+          >
+            <HStack space="md" alignItems="center">
+              <FeatherIcon name="log-out" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+              <Text 
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$2xs"
+                fontWeight="$semibold"
+              >
+                Çıkış Yap
               </Text>
             </HStack>
           </Pressable>
