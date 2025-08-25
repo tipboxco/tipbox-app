@@ -29,16 +29,17 @@ export const VerifyCodeScreen = () => {
 
   const handleVerify = async () => {
     const verificationCode = code.join('');
-    if (verificationCode.length === 6) {
+    if (verificationCode === '123456') { // Default doğrulama kodu
       try {
-        //  await verifyEmail(email, verificationCode);
-        console.log("Verify Email API call:", { email, verificationCode });
-        // TODO: Başarılı doğrulama sonrası yönlendirme
-        navigation.navigate('Login');
+        console.log('Verification successful');
+        navigation.navigate('SetupProfile');
       } catch (error) {
         console.error('Verification error:', error);
         // TODO: Hata mesajını kullanıcıya göster
       }
+    } else if (verificationCode.length === 6) {
+      console.error('Invalid verification code');
+      // TODO: Hata mesajını kullanıcıya göster
     }
   };
 
@@ -70,7 +71,7 @@ export const VerifyCodeScreen = () => {
 
         <Button
           bg="$yellow400"
-          py="$3"
+          py="$1"
           rounded="$lg"
           mt="$4"
           onPress={handleVerify}

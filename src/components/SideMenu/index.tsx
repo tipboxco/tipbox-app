@@ -333,7 +333,7 @@ export const SideMenu = ({
                 routes: [{ 
                   name: 'Auth',
                   state: {
-                    routes: [{ name: 'Register' }]
+                    routes: [{ name: 'Welcome' }]
                   }
                 }],
               });

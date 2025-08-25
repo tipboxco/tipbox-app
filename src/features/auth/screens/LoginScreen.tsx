@@ -35,6 +35,7 @@ export const LoginScreen = () => {
     if (isEmailValid && isPasswordValid) {
       console.log('Login attempt:', { email, password });
       // TODO: API entegrasyonu yapılacak
+      navigation.navigate('VerifyCode', { email });
     }
   };
 
@@ -45,9 +46,16 @@ export const LoginScreen = () => {
       console.log('Misafir girişi tamamlandı!');
       
       // Ana sayfaya yönlendir
-      navigation.reset({
+      navigation.getParent()?.reset({
         index: 0,
-        routes: [{ name: 'Main' }],
+        routes: [
+          {
+            name: 'Main',
+            state: {
+              routes: [{ name: 'Home' }]
+            }
+          }
+        ],
       });
     } catch (error) {
       console.error('Misafir girişi hatası:', error);

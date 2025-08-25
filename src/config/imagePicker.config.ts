@@ -4,18 +4,23 @@ export const imagePickerConfig = {
   camera: {
     mediaTypes: 'Images' as const,
     allowsEditing: true,
-    aspect: [4, 3] as [number, number],
+    aspect: [1, 1] as [number, number],
     quality: 0.7,
     base64: false,
+    exif: false,
+    cropperCircleOverlay: true, // Yuvarlak crop overlay
+    useFrontCamera: true, // Ön kamera kullan
   } satisfies ImagePickerOptions,
 
   gallery: {
     mediaTypes: 'Images' as const,
     allowsEditing: true,
-    aspect: [4, 3] as [number, number],
+    aspect: [1, 1] as [number, number],
     quality: 0.7,
     allowsMultipleSelection: false,
     base64: false,
+    exif: false,
+    cropperCircleOverlay: true, // Yuvarlak crop overlay
   } satisfies ImagePickerOptions,
 
   // Yükleme limitleri
