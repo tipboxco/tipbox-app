@@ -1,14 +1,15 @@
 import React, { useRef } from 'react';
 import { ScrollView, Pressable } from 'react-native';
-import { Box, Text, VStack, HStack } from '@gluestack-ui/themed';
+import { Box, Text, VStack, HStack, Image } from '@gluestack-ui/themed';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { Header } from '../../../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { ComboBox } from '@/src/components/ComboBox';
-import { StarRating } from '@/src/components/StarRating';
+import { Star } from 'lucide-react-native';
 import { CategoryBottomSheet } from '../components/CategoryBottomSheet';
+import type { Product, MainCategory, SubCategory, ProductGroup } from '@/src/mock/inventory/AllCategories';
 
 const USAGE_DURATION_OPTIONS = [
   '1 Ay - 6 Ay',
@@ -33,9 +34,39 @@ export const AddProductScreen = () => {
   const [usageDuration, setUsageDuration] = React.useState<string | null>(null);
   const [usageLocation, setUsageLocation] = React.useState<string | null>(null);
   const [usagePurpose, setUsagePurpose] = React.useState<string | null>(null);
-  const [rating, setRating] = React.useState(0);
+
   const [showCategorySheet, setShowCategorySheet] = React.useState(false);
+  const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
+  const [selection, setSelection] = React.useState<{
+    mainCategory?: MainCategory;
+    subCategory?: SubCategory;
+    productGroup?: ProductGroup;
+  }>({});
   const bottomSheetRef = useRef<BottomSheet>(null);
+
+  // Form validasyonu
+  const isFormValid = React.useMemo(() => {
+    // Ürün seçili mi?
+    if (!selectedProduct) return false;
+
+    // Kullanım süresi seçili mi?
+    if (!usageDuration) return false;
+
+    // Kullanım yeri seçili mi?
+    if (!usageLocation) return false;
+
+    // Kullanım amacı seçili mi?
+    if (!usagePurpose) return false;
+
+    // Ürünün yıldız derecelendirmesi var mı?
+    if (!selectedProduct?.rating || selectedProduct.rating < 1) return false;
+
+    // Ürün sahipliği seçili mi?
+    if (!selectedOption) return false;
+
+    // Tüm kontroller geçildi
+    return true;
+  }, [selectedProduct, usageDuration, usageLocation, usagePurpose, selectedOption]);
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
@@ -56,7 +87,6 @@ export const AddProductScreen = () => {
               Ürün
             </Text>
             <HStack space="md">
-              {/* Fotoğraf Ekleme Alanı */}
               <Pressable onPress={() => setShowCategorySheet(true)}>
                 <Box
                   bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
@@ -65,44 +95,111 @@ export const AddProductScreen = () => {
                   height={120}
                   alignItems="center"
                   justifyContent="center"
+                  overflow="hidden"
                 >
-                  <Text
-                    color={isDark ? '$textDark400' : '$textLight500'}
-                    fontSize="$3xl"
-                  >
-                    +
-                  </Text>
+                  {selectedProduct ? (
+                    <Image
+                      source={{ uri: selectedProduct.image }}
+                      alt={selectedProduct.name}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text
+                      color={isDark ? '$textDark400' : '$textLight500'}
+                      fontSize="$3xl"
+                    >
+                      +
+                    </Text>
+                  )}
                 </Box>
               </Pressable>
               {/* Fotoğraf Önizleme Alanı */}
               <Box flex={1}>
                 <VStack space="sm">
-                  <Box
-                    bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
-                    height={24}
-                    borderRadius="$sm"
-                  />
-                  <Box
-                    bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
-                    height={15}
-                    width="80%"
-                    borderRadius="$sm"
-                  />
-                  <Box
-                    bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
-                    height={15}
-                    width="60%"
-                    borderRadius="$sm"
-                  />
+                  {selectedProduct ? (
+                    <>
+                      <Text
+                        color={isDark ? '$textDark50' : '$textLight900'}
+                        fontSize="$lg"
+                        fontWeight="$bold"
+                      >
+                        {selectedProduct.name}
+                      </Text>
+                      <HStack space="sm" flexWrap="wrap">
+                        <Box
+                          bg={isDark ? '$backgroundDark800' : '$backgroundLight200'}
+                          px="$2"
+                          py="$1"
+                          borderRadius="$sm"
+                        >
+                          <Text
+                            color={isDark ? '$textDark300' : '$textLight600'}
+                            fontSize="$xs"
+                          >
+                            {selection.mainCategory?.name}
+                          </Text>
+                        </Box>
+                        <Box
+                          bg={isDark ? '$backgroundDark800' : '$backgroundLight200'}
+                          px="$2"
+                          py="$1"
+                          borderRadius="$sm"
+                        >
+                          <Text
+                            color={isDark ? '$textDark300' : '$textLight600'}
+                            fontSize="$xs"
+                          >
+                            {selection.subCategory?.name}
+                          </Text>
+                        </Box>
+                        <Box
+                          bg={isDark ? '$backgroundDark800' : '$backgroundLight200'}
+                          px="$2"
+                          py="$1"
+                          borderRadius="$sm"
+                        >
+                          <Text
+                            color={isDark ? '$textDark300' : '$textLight600'}
+                            fontSize="$xs"
+                          >
+                            {selection.productGroup?.name}
+                          </Text>
+                        </Box>
+                      </HStack>
+                    </>
+                  ) : (
+                    <>
+                      <Box
+                        bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
+                        height={24}
+                        borderRadius="$sm"
+                      />
+                      <Box
+                        bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
+                        height={15}
+                        width="80%"
+                        borderRadius="$sm"
+                      />
+                      <Box
+                        bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
+                        height={15}
+                        width="60%"
+                        borderRadius="$sm"
+                      />
+                    </>
+                  )}
                 </VStack>
-                <Box mt="$4">
-                  <StarRating
-                    rating={rating}
-                    onRate={setRating}
-                    size={20}
-                    color="#FFD700"
-                  />
-                </Box>
+                <HStack mt="$4" space="sm">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={20}
+                      color="#FFD700"
+                      fill={star <= (selectedProduct?.rating || 0) ? "#FFD700" : "transparent"}
+                    />
+                  ))}
+                </HStack>
               </Box>
             </HStack>
           </VStack>
@@ -186,19 +283,23 @@ export const AddProductScreen = () => {
         p="$4"
         bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       >
-        <Pressable onPress={() => { }}>
+        <Pressable 
+          onPress={() => { }}
+          disabled={!isFormValid}
+        >
           <Box
-            bg="#D8FF08"
+            bg={isFormValid ? "#D8FF08" : isDark ? "$backgroundDark800" : "$backgroundLight200"}
             borderRadius="$lg"
             p="$3"
             alignItems="center"
+            opacity={isFormValid ? 1 : 0.5}
           >
             <Text
-              color="#000000"
+              color={isFormValid ? "#000000" : isDark ? "$textDark400" : "$textLight500"}
               fontWeight="$bold"
               size="md"
             >
-              Onayla
+              {isFormValid ? "Onayla" : "Tüm Alanları Doldurun"}
             </Text>
           </Box>
         </Pressable>
@@ -208,8 +309,13 @@ export const AddProductScreen = () => {
         ref={bottomSheetRef}
         visible={showCategorySheet}
         onClose={() => setShowCategorySheet(false)}
-        onSelect={(category) => {
-          console.log('Selected category:', category);
+        onSelect={(product, currentSelection) => {
+          setSelectedProduct(product);
+          setSelection({
+            mainCategory: currentSelection.mainCategory,
+            subCategory: currentSelection.subCategory,
+            productGroup: currentSelection.productGroup
+          });
           setShowCategorySheet(false);
           bottomSheetRef.current?.close();
         }}
