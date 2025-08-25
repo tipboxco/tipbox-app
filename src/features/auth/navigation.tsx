@@ -58,6 +58,7 @@ export const AuthNavigator = () => {
         component={SetupProfileScreen}
         options={{
           title: 'Profil Düzenle',
+          gestureEnabled: false,
         }}
       />
       <AuthStack.Screen
@@ -65,6 +66,7 @@ export const AuthNavigator = () => {
         component={SelectCategoriesScreen}
         options={{
           title: 'İlgi Alanları',
+          gestureEnabled: false,
         }}
       />
     </AuthStack.Navigator>

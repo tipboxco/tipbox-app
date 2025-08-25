@@ -1,27 +1,23 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { InventoryScreen } from './screens';
+import { InventoryScreen, AddProductScreen } from './screens';
 
 export type InventoryStackParamList = {
-  InventoryScreen: undefined;
-  ItemDetail: { itemId: string };
-  AddItem: undefined;
+  InventoryHome: undefined;
+  AddProduct: undefined;
 };
 
-const InventoryStack = createNativeStackNavigator<InventoryStackParamList>();
+const Stack = createNativeStackNavigator<InventoryStackParamList>();
 
 export const InventoryNavigator = () => {
   return (
-    <InventoryStack.Navigator
+    <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
       }}
     >
-      <InventoryStack.Screen
-        name="InventoryScreen"
-        component={InventoryScreen}
-      />
-    </InventoryStack.Navigator>
+      <Stack.Screen name="InventoryHome" component={InventoryScreen} />
+      <Stack.Screen name="AddProduct" component={AddProductScreen} />
+    </Stack.Navigator>
   );
 };

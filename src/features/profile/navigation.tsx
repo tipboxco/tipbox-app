@@ -9,6 +9,8 @@ export type ProfileStackParamList = {
   TrustList: undefined;
   TrusterList: undefined;
   WishlistDetail: undefined;
+  SetupProfile: undefined;
+  SelectCategories: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();

@@ -6,11 +6,13 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
+import { useAuthStore } from '@/src/store/authStore';
 
 type VerifyCodeScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'VerifyCode'>;
 type VerifyCodeScreenRouteProp = RouteProp<AuthStackParamList, 'VerifyCode'>;
 
 export const VerifyCodeScreen = () => {
+  const { setTempUser } = useAuthStore();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<VerifyCodeScreenNavigationProp>();
@@ -32,6 +34,18 @@ export const VerifyCodeScreen = () => {
     if (verificationCode === '123456') { // Default doğrulama kodu
       try {
         console.log('Verification successful');
+        // Mock kullanıcı verisi
+        const mockUser = {
+          id: '1',
+          email,
+          username: email.split('@')[0],
+        };
+        const mockAccessToken = 'mock-access-token';
+        
+        // Kullanıcıyı giriş yapmış olarak işaretle
+        setTempUser(mockUser, mockAccessToken);
+        
+        // SetupProfile ekranına yönlendir
         navigation.navigate('SetupProfile');
       } catch (error) {
         console.error('Verification error:', error);
@@ -55,7 +69,7 @@ export const VerifyCodeScreen = () => {
           fontWeight="$bold"
           color={isDark ? '$textDark50' : '$textLight900'}
         >
-          Enter the confirmation code
+          Doğrulama kodunu girin
         </Text>
         
         <Text
@@ -63,7 +77,7 @@ export const VerifyCodeScreen = () => {
           color={isDark ? '$textDark300' : '$textLight600'}
           mb="$4"
         >
-          To confirm your account, enter the 6-digit code we sent to{'\n'}
+          Hesabınızı doğrulamak için size gönderdiğimiz 6 haneli kodu girin{'\n'}
           {email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length))}
         </Text>
 
@@ -78,7 +92,7 @@ export const VerifyCodeScreen = () => {
           opacity={code.every(digit => digit !== '') ? 1 : 0.5}
           disabled={!code.every(digit => digit !== '')}
         >
-          <ButtonText color="$textLight900">Next</ButtonText>
+          <ButtonText color="$textLight900">Devam Et</ButtonText>
         </Button>
       </VStack>
     </Box>

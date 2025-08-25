@@ -35,7 +35,15 @@ export const LoginScreen = () => {
     if (isEmailValid && isPasswordValid) {
       console.log('Login attempt:', { email, password });
       // TODO: API entegrasyonu yapılacak
-      navigation.navigate('VerifyCode', { email });
+      // Şimdilik mock bir login işlemi yapıyoruz
+      const mockUser = {
+        id: '1',
+        email,
+        username: email.split('@')[0],
+      };
+      const mockAccessToken = 'mock-access-token';
+      
+      useAuthStore.getState().login(mockUser, mockAccessToken);
     }
   };
 
@@ -46,16 +54,15 @@ export const LoginScreen = () => {
       console.log('Misafir girişi tamamlandı!');
       
       // Ana sayfaya yönlendir
-      navigation.getParent()?.reset({
+      navigation.reset({
         index: 0,
-        routes: [
-          {
-            name: 'Main',
-            state: {
-              routes: [{ name: 'Home' }]
-            }
+        routes: [{ 
+          name: 'Main' as never,
+          params: {
+            screen: 'Feed',
+            params: {}
           }
-        ],
+        }],
       });
     } catch (error) {
       console.error('Misafir girişi hatası:', error);

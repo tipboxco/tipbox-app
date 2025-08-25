@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
+import { useAuthStore } from '@/src/store/authStore';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import categories from '@/src/mock/auth/categorys';
@@ -59,9 +60,8 @@ export const SelectCategoriesScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
+  const { completeRegistration } = useAuthStore();
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
-
-  console.log('Categories:', categories); // Debug için eklendi
 
   const handleSelectSubCategory = (subCategoryId: string) => {
     setSelectedSubCategories((prev) => {
@@ -76,16 +76,19 @@ export const SelectCategoriesScreen = () => {
     if (selectedSubCategories.length > 0) {
       console.log('Selected categories:', selectedSubCategories);
       // TODO: API entegrasyonu yapılacak
-      navigation.getParent()?.reset({
+      
+      // Kullanıcıyı giriş yapmış olarak işaretle
+      completeRegistration();
+      
+      // Ana ekrana yönlendir
+      navigation.reset({
         index: 0,
-        routes: [
-          {
-            name: 'Main',
-            state: {
-              routes: [{ name: 'Home' }]
-            }
+        routes: [{ 
+          name: 'Main' as never,
+          params: {
+            screen: 'Feed'
           }
-        ],
+        }],
       });
     }
   };

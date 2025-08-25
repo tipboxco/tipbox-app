@@ -6,6 +6,7 @@ interface User {
   id?: string;
   name?: string;
   email?: string;
+  username?: string;
   isGuest?: boolean;
 }
 
@@ -14,6 +15,10 @@ interface AuthState {
   isLoading: boolean;
   error: Error | null;
   user: User | null;
+  accessToken: string | null;
+  login: (user: User, accessToken: string) => void;
+  setTempUser: (user: User, accessToken: string) => void;
+  completeRegistration: () => void;
   loginAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -25,6 +30,32 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
       user: null,
+      accessToken: null,
+
+      setTempUser: (user: User, accessToken: string) => {
+        set({
+          user,
+          accessToken,
+          isAuthenticated: false,
+          error: null,
+        });
+      },
+
+      completeRegistration: () => {
+        set((state) => ({
+          isAuthenticated: true,
+        }));
+      },
+
+      login: (user: User, accessToken: string) => {
+        set({
+          user,
+          accessToken,
+          isAuthenticated: true,
+          error: null,
+        });
+      },
+
       loginAsGuest: async () => {
         try {
           set({ isLoading: true, error: null });
@@ -37,11 +68,13 @@ export const useAuthStore = create<AuthState>()(
               name: 'Misafir Kullanıcı',
               isGuest: true,
             },
+            accessToken: null,
           });
         } catch (error) {
           set({ error: error as Error, isLoading: false });
         }
       },
+
       logout: async () => {
         try {
           set({ isLoading: true, error: null });
@@ -49,7 +82,9 @@ export const useAuthStore = create<AuthState>()(
           set({
             isAuthenticated: false,
             user: null,
+            accessToken: null,
             isLoading: false,
+            error: null,
           });
         } catch (error) {
           set({ error: error as Error, isLoading: false });
@@ -62,6 +97,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
+        accessToken: state.accessToken,
       }),
     }
   )

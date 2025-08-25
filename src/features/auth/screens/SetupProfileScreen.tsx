@@ -61,58 +61,58 @@ export const SetupProfileScreen = () => {
           color={isDark ? '$textDark50' : '$textLight900'}
           textAlign="center"
         >
-          Set up Profile
+          Profil Bilgilerinizi Girin
         </Text>
 
         {/* Profile Photo */}
-                  <Box alignItems="center" mt="$4">
-            <Box position="relative">
-              <Box
-                rounded="$full"
-                justifyContent="center"
-                alignItems="center"
-                bg="$gray100"
-                overflow="hidden"
-                style={{ width: 120, height: 120, borderWidth: 1, borderColor: 'red' }}
-              >
-                {profileImage ? (
-                  <Image
-                    source={{ uri: profileImage }}
-                    alt="Profile Photo"
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <Icon as={User} size="xl" color="$gray400" />
-                )}
-              </Box>
-              <Pressable
-                position="absolute"
-                top={80}
-                right={-5}
-                bg="$white"
-                p="$3"
-                rounded="$full"
-                borderWidth={1}
-                borderColor="$gray200"
-                onPress={handleTakePhoto}
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 3.84,
-                  elevation: 5,
-                }}
-              >
-                <Icon as={Camera} size="lg" color="$gray800" />
-              </Pressable>
+        <Box alignItems="center" mt="$4">
+          <Box position="relative">
+            <Box
+              rounded="$full"
+              justifyContent="center"
+              alignItems="center"
+              bg="$gray100"
+              overflow="hidden"
+              style={{ width: 120, height: 120, borderWidth: 1, borderColor: 'red' }}
+            >
+              {profileImage ? (
+                <Image
+                  source={{ uri: profileImage }}
+                  alt="Profile Photo"
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Icon as={User} size="xl" color="$gray400" />
+              )}
             </Box>
+            <Pressable
+              position="absolute"
+              top={80}
+              right={-5}
+              bg="$white"
+              p="$3"
+              rounded="$full"
+              borderWidth={1}
+              borderColor="$gray200"
+              onPress={handleTakePhoto}
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+              }}
+            >
+              <Icon as={Camera} size="lg" color="$gray800" />
+            </Pressable>
           </Box>
+        </Box>
 
         <VStack space="md" mt="$4">
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Full Name</FormControlLabelText>
+              <FormControlLabelText>Ad Soyad</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -130,7 +130,7 @@ export const SetupProfileScreen = () => {
 
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Username</FormControlLabelText>
+              <FormControlLabelText>Kullanıcı Adı</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -163,7 +163,7 @@ export const SetupProfileScreen = () => {
           opacity={fullName && isUsernameValid ? 1 : 0.5}
           disabled={!fullName || !isUsernameValid}
         >
-          <ButtonText color="$textLight900">Next</ButtonText>
+          <ButtonText color="$textLight900">Devam Et</ButtonText>
         </Button>
       </VStack>
     </Box>
