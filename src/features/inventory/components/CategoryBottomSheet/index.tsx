@@ -3,9 +3,10 @@ import { Dimensions } from 'react-native';
 import { Box, Text, VStack, ScrollView, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import BottomSheet, {
-  BottomSheetBackdrop,
+  BottomSheetView,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
+import { Portal } from '@gorhom/portal';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_MARGIN = 8;
@@ -80,7 +81,7 @@ export const CategoryBottomSheet = React.forwardRef<
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
   // Variables
-  const snapPoints = useMemo(() => ['80%'], []);
+  const snapPoints = useMemo(() => ['80%', "100%"], []);
 
   // Callbacks
   const handleSheetChanges = useCallback((index: number) => {
@@ -89,61 +90,55 @@ export const CategoryBottomSheet = React.forwardRef<
     }
   }, [onClose]);
 
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.3}
-      />
-    ),
-    []
-  );
 
   if (!visible) return null;
 
   return (
-    <BottomSheet
-      ref={ref}
-      index={0}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{
-        backgroundColor: isDark ? '$backgroundDark950' : '$backgroundLight100',
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: isDark ? '#666666' : '#999999',
-        width: 70,
-        height: 5,
-      }}
-    >
-      <Box px="$4">
-        <Text
-          fontSize="$lg"
-          fontWeight="$bold"
-          textAlign="center"
-          mb="$4"
-          color={isDark ? '$textDark50' : '$textLight900'}
-        >
-          Ana Kategori
-        </Text>
-        <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-          <Box flexDirection="row" flexWrap="wrap" justifyContent="flex-start">
-            {Array.from({ length: 15 }).map((_, index) => (
-              <CategoryCard
-                key={index}
-                selected={selectedCategory === `category-${index}`}
-                onPress={() => {
-                  setSelectedCategory(`category-${index}`);
-                  onSelect(`category-${index}`);
-                }}
-              />
-            ))}
-          </Box>
-        </BottomSheetScrollView>
-      </Box>
-    </BottomSheet>
+    <Portal>
+      <BottomSheet
+        ref={ref}
+        topInset={0}
+        index={0}
+        snapPoints={snapPoints}
+        onChange={handleSheetChanges}
+        enablePanDownToClose
+        enableOverDrag={true}
+        backgroundComponent={({ style }) => (
+          <Box bg={isDark ? '#0F172A' : '#F9FAFB'} />
+        )}
+        backgroundStyle={{
+          backgroundColor: isDark ? '#0F172A' : '#F9FAFB',
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: isDark ? '#666666' : '#CCCCCC',
+        }}
+      >
+        <BottomSheetView style={{ flex: 1, height: "100%", paddingHorizontal: 16 }}>
+          <Text
+            fontSize="$lg"
+            fontWeight="$bold"
+            textAlign="center"
+            mb="$4"
+            color={isDark ? '$textDark50' : '$textLight900'}
+          >
+            Ana Kategori
+          </Text>
+          <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+            <Box flexDirection="row" flexWrap="wrap" justifyContent="flex-start">
+              {Array.from({ length: 15 }).map((_, index) => (
+                <CategoryCard
+                  key={index}
+                  selected={selectedCategory === `category-${index}`}
+                  onPress={() => {
+                    setSelectedCategory(`category-${index}`);
+                    onSelect(`category-${index}`);
+                  }}
+                />
+              ))}
+            </Box>
+          </BottomSheetScrollView>
+        </BottomSheetView>
+      </BottomSheet>
+    </Portal>
   );
 });
