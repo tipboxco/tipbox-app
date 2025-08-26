@@ -26,7 +26,7 @@ export const WishlistScreen = () => {
       <Header
         title="Wishlist"
         showBackButton
-        onMenuPress={() => navigation.goBack()}
+        onBackPress={() => navigation.goBack()}
       />
 
       {/* Selected Wishlist Info */}

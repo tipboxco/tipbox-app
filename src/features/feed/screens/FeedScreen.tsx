@@ -31,7 +31,7 @@ export const FeedScreen = () => {
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
     >
       <Header
-        title="Feed"
+        title="Akış"
         hasNotification
         hasMessage
         onMenuPress={() => setIsMenuVisible(true)}

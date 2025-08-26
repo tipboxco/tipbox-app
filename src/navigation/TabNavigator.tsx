@@ -63,27 +63,27 @@ export const TabNavigator = () => {
       <Tab.Screen
         name="Feed"
         component={FeedNavigator}
-        options={{ tabBarLabel: 'Feed' }}
+        options={{ tabBarLabel: 'Akış' }}
       />
       <Tab.Screen
         name="Explore"
         component={ExploreNavigator}
-        options={{ tabBarLabel: 'Explore' }}
+        options={{ tabBarLabel: 'Keşfet' }}
       />
       <Tab.Screen
         name="Catalog"
         component={CatalogNavigator}
-        options={{ tabBarLabel: 'Catalog' }}
+        options={{ tabBarLabel: 'Katalog' }}
       />
       <Tab.Screen
         name="Inventory"
         component={InventoryNavigator}
-        options={{ tabBarLabel: 'Inventory' }}
+        options={{ tabBarLabel: 'Envanter' }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileNavigator}
-        options={{ tabBarLabel: 'Profile' }}
+        options={{ tabBarLabel: 'Profil' }}
       />
     </Tab.Navigator>
   );

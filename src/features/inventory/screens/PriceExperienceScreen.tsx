@@ -35,7 +35,7 @@ export const PriceExperienceScreen = () => {
       <Header
         title="Deneyim Paylaş"
         showBackButton
-        onMenuPress={() => navigation.goBack()}
+        onBackPress={() => navigation.goBack()}
       />
 
       <VStack space="lg" p="$4" flex={1}>

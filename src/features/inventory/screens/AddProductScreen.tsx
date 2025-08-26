@@ -75,7 +75,7 @@ export const AddProductScreen = () => {
       <Header
         title="Ürün Ekle"
         showBackButton
-        onMenuPress={() => navigation.goBack()}
+        onBackPress={() => navigation.goBack()}
       />
       <ScrollView>
         <VStack space="lg" p="$4">

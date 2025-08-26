@@ -151,7 +151,7 @@ export const TrusterListScreen = () => {
             <Header
                 title="Truster List"
                 showBackButton
-                onMenuPress={() => navigation.goBack()}
+                onBackPress={() => navigation.goBack()}
             />
             <ScrollView>
                 <VStack space="sm" p="$4">
