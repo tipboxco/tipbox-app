@@ -193,6 +193,7 @@ export const BridgeDetailScreen = () => {
                     px="$4"
                     alignSelf="flex-start"
                     mt="$2"
+                    onPress={() => navigation.navigate('SurveysAndGamification')}
                   >
                     <Text
                       fontSize={9}
@@ -238,6 +239,7 @@ export const BridgeDetailScreen = () => {
                     px="$4"
                     alignSelf="flex-start"
                     mt="$2"
+                    onPress={() => navigation.navigate('BrandProducts', { brandName })}
                   >
                     <Text
                       fontSize={9}
