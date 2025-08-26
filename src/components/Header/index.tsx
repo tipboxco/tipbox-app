@@ -8,7 +8,10 @@ interface HeaderProps {
   hasNotification?: boolean;
   hasMessage?: boolean;
   onMenuPress?: () => void;
+  onNotificationPress?: () => void;
+  onMessagePress?: () => void;
   showBackButton?: boolean;
+  onBackPress?: () => void;
 }
 
 export const Header = ({ 
@@ -16,7 +19,10 @@ export const Header = ({
   hasNotification = false, 
   hasMessage = false,
   onMenuPress,
-  showBackButton = false
+  onNotificationPress,
+  onMessagePress,
+  showBackButton = false,
+  onBackPress
 }: HeaderProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -31,7 +37,7 @@ export const Header = ({
     >
       <Box my="$2">
         <HStack space="md" alignItems="center" justifyContent="space-between">
-          <Pressable onPress={onMenuPress}>
+          <Pressable onPress={showBackButton ? onBackPress : onMenuPress}>
             <Feather 
               name={showBackButton ? "arrow-left" : "menu"} 
               size={22} 
@@ -46,7 +52,7 @@ export const Header = ({
             {title}
           </Text>
           <HStack space="lg" alignItems="center">
-            <Pressable>
+            <Pressable onPress={onNotificationPress}>
               <Box position="relative">
                 <Feather name="bell" size={22} color={isDark ? '#FFFFFF' : '#000000'} />
                 {hasNotification && (
@@ -62,7 +68,7 @@ export const Header = ({
                 )}
               </Box>
             </Pressable>
-            <Pressable>
+            <Pressable onPress={onMessagePress}>
               <Box position="relative">
                 <Feather name="message-circle" size={22} color={isDark ? '#FFFFFF' : '#000000'} />
                 {hasMessage && (

@@ -47,7 +47,7 @@ export const PriceExperienceScreen = () => {
             fontWeight="$bold"
             color={isDark ? '$textDark50' : '$textLight900'}
           >
-            Fiyat ve Alışveriş Deneyimi
+            Fiyat Deneyimi
           </Text>
         </HStack>
 
@@ -56,7 +56,7 @@ export const PriceExperienceScreen = () => {
           fontSize="$sm"
           color={isDark ? '$textDark300' : '$textLight600'}
         >
-          "{productName}" ürünü için fiyat ve alışveriş deneyiminizi girin.
+          "{productName}" ürünü için fiyat deneyiminizi girin.
         </Text>
 
         {/* Deneyim Girişi */}

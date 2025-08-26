@@ -3,6 +3,7 @@ import { Box, ScrollView } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { FilterBar } from '../components/FilterBar';
 import { ReviewCard, ReviewImageCard } from '@/src/components/ReviewCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -12,7 +13,7 @@ import { mock_review_card, mock_review_card_image, mock_user_profile } from '@/s
 
 
 
-type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList, 'FeedScreen'>;
+type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
 export const FeedScreen = () => {
   const { colorMode } = useColorMode();

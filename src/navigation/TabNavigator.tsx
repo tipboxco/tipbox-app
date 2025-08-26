@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 
@@ -22,6 +23,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation();
 
   return (
     <Tab.Navigator

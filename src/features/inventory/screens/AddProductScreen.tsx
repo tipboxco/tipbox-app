@@ -6,7 +6,6 @@ import { Header } from '../../../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { InventoryStackParamList } from '../types';
-import type { ExperienceStackParamList } from '../navigation/ExperienceStack';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { ComboBox } from '@/src/components/ComboBox';

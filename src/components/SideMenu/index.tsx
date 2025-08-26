@@ -39,57 +39,6 @@ interface SideMenuProps {
   };
 }
 
-const MENU_ITEMS: MenuItem[] = [
-  {
-    id: 'profile',
-    icon: 'user',
-    label: 'Profil',
-    onPress: () => {},
-  },
-  {
-    id: 'wishlist',
-    icon: 'heart',
-    label: 'Wishlist',
-    onPress: () => {},
-  },
-  {
-    id: 'bridge',
-    icon: 'link',
-    label: 'Bridge',
-    onPress: () => {},
-  },
-  {
-    id: 'wishbox',
-    icon: 'package',
-    label: 'Wishbox',
-    onPress: () => {},
-  },
-  {
-    id: 'achievements',
-    icon: 'trending-up',
-    label: 'Başarım Merdiveni',
-    onPress: () => {},
-  },
-  {
-    id: 'collection',
-    icon: 'grid',
-    label: 'Koleksiyon Vitrini',
-    onPress: () => {},
-  },
-  {
-    id: 'assets',
-    icon: 'package',
-    label: 'Varlıklarım',
-    onPress: () => {},
-  },
-  {
-    id: 'bookmarks',
-    icon: 'bookmark',
-    label: 'Kaydedilenler',
-    onPress: () => {},
-  },
-];
-
 type FeatherIconName = keyof typeof FeatherIcon.glyphMap;
 
 const styles = StyleSheet.create({
@@ -111,6 +60,72 @@ export const SideMenu = ({
   const navigation = useNavigation<any>();
   const isDark = colorMode === 'dark';
   const logout = useAuthStore(state => state.logout);
+
+  const MENU_ITEMS: MenuItem[] = [
+    {
+      id: 'profile',
+      icon: 'user',
+      label: 'Profil',
+      onPress: () => {
+        onClose(); // Side menüyü kapat
+        navigation.navigate('Main', {
+          screen: 'Profile'
+        });
+      },
+    },
+    {
+      id: 'wishlist',
+      icon: 'heart',
+      label: 'Wishlist',
+      onPress: () => {},
+    },
+    {
+      id: 'bridge',
+      icon: 'link',
+      label: 'Bridge',
+      onPress: () => {
+        onClose(); // Side menüyü kapat
+        navigation.navigate('Bridge', {
+          screen: 'BridgeScreen'
+        });
+      },
+    },
+    {
+      id: 'wishbox',
+      icon: 'package',
+      label: 'Wishbox',
+      onPress: () => {},
+    },
+    {
+      id: 'achievements',
+      icon: 'trending-up',
+      label: 'Başarım Merdiveni',
+      onPress: () => {
+        onClose(); // Side menüyü kapat
+        navigation.navigate('Ladder', {
+          screen: 'LadderScreen'
+        });
+      },
+    },
+    {
+      id: 'collection',
+      icon: 'grid',
+      label: 'Koleksiyon Vitrini',
+      onPress: () => {},
+    },
+    {
+      id: 'assets',
+      icon: 'package',
+      label: 'Varlıklarım',
+      onPress: () => {},
+    },
+    {
+      id: 'bookmarks',
+      icon: 'bookmark',
+      label: 'Kaydedilenler',
+      onPress: () => {},
+    },
+  ];
 
   if (!visible) return null;
 

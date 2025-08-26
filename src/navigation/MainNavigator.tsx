@@ -3,6 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TabNavigator } from './TabNavigator';
 import { SettingsNavigator } from '@/src/features/settings/navigation';
 import { AuthNavigator } from '@/src/features/auth/navigation';
+import { BridgeNavigator } from '@/src/features/bridge/navigation';
+import { LadderNavigator } from '@/src/features/ladder/navigation';
 import { RootStackParamList } from './navigation.types';
 import { useAuthStore } from '@/src/store/authStore';
 
@@ -23,6 +25,8 @@ export const MainNavigator = () => {
         <>
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="Settings" component={SettingsNavigator} />
+          <Stack.Screen name="Bridge" component={BridgeNavigator} />
+          <Stack.Screen name="Ladder" component={LadderNavigator} />
         </>
       )}
     </Stack.Navigator>

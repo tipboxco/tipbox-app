@@ -18,7 +18,9 @@ export const InventoryScreen = () => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Envanter"
-        showBackButton={false}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+        onNotificationPress={() => navigation.navigate('Notifications' as never)}
       />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <Center flex={1} p="$4">

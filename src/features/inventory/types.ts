@@ -17,3 +17,5 @@ export type InventoryStackParamList = {
     shoppingExperience: string;
   };
 };
+
+export default InventoryStackParamList;
