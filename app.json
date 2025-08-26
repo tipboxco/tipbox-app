@@ -26,7 +26,11 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.devkocmehmet.tipboxapp"
+      "bundleIdentifier": "com.devkocmehmet.tipboxapp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",
+        "NSMicrophoneUsageDescription": "Video kaydı için mikrofona ihtiyaç var."
+      }
     },
     "android": {
       "package": "com.devkocmehmet.tipboxapp",
@@ -45,7 +49,11 @@
           "icon": "./assets/icon.png",
           "color": "#ffffff"
         }
-      ]
+      ],
+      ["expo-camera", {
+        "cameraPermission": "Fotoğraf çekmek için kameraya ihtiyaç var.",
+        "microphonePermission": "Video için mikrofona ihtiyaç var."
+      }]
     ],
     "extra": {
       "eas": {
