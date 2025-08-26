@@ -4,6 +4,9 @@ import { Box, Text, VStack, HStack, Image } from '@gluestack-ui/themed';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { Header } from '../../../components/Header';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { InventoryStackParamList } from '../types';
+import type { ExperienceStackParamList } from '../navigation/ExperienceStack';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { ComboBox } from '@/src/components/ComboBox';
@@ -27,7 +30,7 @@ const USAGE_PURPOSE_OPTIONS = [
 ];
 
 export const AddProductScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<InventoryStackParamList>>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [selectedOption, setSelectedOption] = React.useState<'own' | 'experienced' | null>(null);
@@ -284,7 +287,14 @@ export const AddProductScreen = () => {
         bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       >
         <Pressable 
-          onPress={() => { }}
+          onPress={() => {
+            if (selectedProduct) {
+              navigation.navigate('PriceExperience', {
+                productId: selectedProduct.id,
+                productName: selectedProduct.name,
+              });
+            }
+          }}
           disabled={!isFormValid}
         >
           <Box
