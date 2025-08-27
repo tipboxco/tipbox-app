@@ -10,10 +10,10 @@ type TabItem = {
 };
 
 const TABS: TabItem[] = [
-  { key: 'posts', title: 'Posts', icon: 'grid' },
+  { key: 'posts', title: 'Akış', icon: 'grid' },
   { key: 'inventory', title: 'Envanter', icon: 'box' },
   { key: 'wishlist', title: 'Wishlist', icon: 'bookmark' },
-  { key: 'badges', title: 'Badges', icon: 'award' },
+  { key: 'badges', title: 'Rozetler', icon: 'award' },
 ];
 
 type ProfileTabsProps = {

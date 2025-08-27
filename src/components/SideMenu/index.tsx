@@ -242,7 +242,7 @@ export const SideMenu = ({
                 {userProfile.friends}
               </Text>
               <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$2xs">
-                Friends
+                Supporter
               </Text>
             </VStack>
           </HStack>

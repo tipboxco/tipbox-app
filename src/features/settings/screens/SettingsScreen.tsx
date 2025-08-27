@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Box, HStack, Pressable, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useNavigation } from '@react-navigation/native';
+import { Header } from '@/src/components/Header';
 import { SettingsTab } from './tabs/SettingsTab';
 import { NotificationTab } from './tabs/NotificationTab';
 import { MediaTab } from './tabs/MediaTab';
@@ -10,6 +12,7 @@ type TabType = 'theme' | 'notification' | 'media';
 export const SettingsScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<TabType>('theme');
 
   const tabs = [
@@ -36,6 +39,12 @@ export const SettingsScreen = () => {
       flex={1}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
     >
+      <Header
+        title="Ayarlar"
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+      />
+      
       <HStack
         bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
         p="$1"

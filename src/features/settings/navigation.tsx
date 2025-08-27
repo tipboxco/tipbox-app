@@ -16,7 +16,7 @@ export const SettingsNavigator = () => {
   return (
     <SettingsStack.Navigator
       screenOptions={{
-        headerShown: true,
+        headerShown: false,
         gestureEnabled: true,
         headerStyle: {
           backgroundColor: isDark ? '#020617' : '#FFFFFF',
