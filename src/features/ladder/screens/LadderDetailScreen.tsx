@@ -129,7 +129,7 @@ export const LadderDetailScreen: React.FC<LadderDetailScreenProps> = ({
       >
         <HStack space="md">
           <Image
-            source={{ uri: item.image }}
+            source={require('@/assets/bridge/card-icon.png')}
             alt="task image"
             width={60}
             height={60}
