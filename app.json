@@ -34,6 +34,7 @@
     },
     "android": {
       "package": "com.devkocmehmet.tipboxapp",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

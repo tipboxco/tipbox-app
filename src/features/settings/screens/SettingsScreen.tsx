@@ -6,8 +6,9 @@ import { Header } from '@/src/components/Header';
 import { SettingsTab } from './tabs/SettingsTab';
 import { NotificationTab } from './tabs/NotificationTab';
 import { MediaTab } from './tabs/MediaTab';
+import { SlackComposer } from './tabs/Keyboard';
 
-type TabType = 'theme' | 'notification' | 'media';
+type TabType = 'theme' | 'notification' | 'media' | 'keyboard';
 
 export const SettingsScreen = () => {
   const { colorMode } = useColorMode();
@@ -19,6 +20,7 @@ export const SettingsScreen = () => {
     { id: 'theme' as TabType, label: 'Settings' },
     { id: 'notification' as TabType, label: 'Notification' },
     { id: 'media' as TabType, label: 'Media' },
+    { id: 'keyboard' as TabType, label: 'Keyboard' },
   ];
 
   const renderContent = () => {
@@ -29,6 +31,8 @@ export const SettingsScreen = () => {
         return <NotificationTab />;
       case 'media':
         return <MediaTab />;
+      case 'keyboard':
+        return <SlackComposer />;
       default:
         return null;
     }
@@ -44,7 +48,7 @@ export const SettingsScreen = () => {
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
-      
+
       <HStack
         bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
         p="$1"
@@ -57,8 +61,8 @@ export const SettingsScreen = () => {
             flex={1}
             bg={
               activeTab === tab.id
-                ? isDark 
-                ? '$backgroundDark0' : '$backgroundLight0'
+                ? isDark
+                  ? '$backgroundDark0' : '$backgroundLight0'
                 : 'transparent'
             }
             p="$3"
