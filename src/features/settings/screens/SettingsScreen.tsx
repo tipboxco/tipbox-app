@@ -6,7 +6,7 @@ import { Header } from '@/src/components/Header';
 import { SettingsTab } from './tabs/SettingsTab';
 import { NotificationTab } from './tabs/NotificationTab';
 import { MediaTab } from './tabs/MediaTab';
-import { SlackComposer } from './tabs/Keyboard';
+import { Keyboard } from './tabs/Keyboard';
 
 type TabType = 'theme' | 'notification' | 'media' | 'keyboard';
 
@@ -32,7 +32,7 @@ export const SettingsScreen = () => {
       case 'media':
         return <MediaTab />;
       case 'keyboard':
-        return <SlackComposer />;
+        return <Keyboard />;
       default:
         return null;
     }

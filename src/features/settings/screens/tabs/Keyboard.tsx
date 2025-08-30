@@ -1,181 +1,195 @@
-// SlackComposer.tsx
-import React, { useMemo } from 'react';
-import { StyleSheet, Platform, Keyboard, useWindowDimensions, TextInput, TouchableOpacity } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  clamp,
-  runOnJS,
-  useDerivedValue,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAnimatedKeyboard } from 'react-native-reanimated';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Dimensions } from 'react-native';
+import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Box, HStack, VStack, Icon, Pressable } from '@gluestack-ui/themed';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { ImageIcon, SendIcon, SmileIcon } from 'lucide-react-native';
 
-type Props = {
-  placeholder?: string;
-  onSend?: (text: string) => void;
-};
+interface KeyboardProps {}
 
-export const SlackComposer: React.FC<Props> = ({ placeholder = 'Mesaj yaz…', onSend }) => {
-  const insets = useSafeAreaInsets();
-  const { height: screenH } = useWindowDimensions();
+export const Keyboard: React.FC<KeyboardProps> = () => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  
+  const [message, setMessage] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [sheetHeight, setSheetHeight] = useState(80); // Başlangıç height'i artırıldı
+  const [isDragging, setIsDragging] = useState(false);
+  
+  const { height: screenHeight } = Dimensions.get('window');
+  const minHeight = 80; // Minimum height de artırıldı
+  const maxHeight = screenHeight; // Fullscreen için
+  const threshold = 100; // Sadece 100px sürükleme yeterli
 
-  // Klavye takibi (yükseklik/visibility)
-  const kb = useAnimatedKeyboard(); // Reanimated 3: keyboard.height, .state
-  const keyboardH = useDerivedValue(() => kb.height.value, [kb]);
-
-  // Snap noktaları
-  const COLLAPSED = 56; // alt bar yüksekliği
-  const MAX_HEIGHT = useDerivedValue(() => {
-    // "Yarım ekran klavye + yarım ekran composer" hedefi: ekrandan klavye yüksekliğini düşelim
-    const max = Math.max(200, screenH - keyboardH.value - insets.top * 0.5);
-    return max;
-  }, [screenH, insets.top]);
-
-  // Yükseklik animasyonu (başlangıçta collapsed)
-  const height = useSharedValue(COLLAPSED);
-
-  // İçerik metni (kontrollü değil, basit tutuyoruz — istersen state ekleyebilirsin)
-  const textRef = React.useRef<string>('');
-
-  // Pan jesti: yukarı çekince büyür, aşağı çekince küçülür
-  const drag = Gesture.Pan()
-    .onUpdate((e) => {
-      // Yukarı drag => e.translationY negatif, yüksekliği arttır
-      const next = height.value - e.translationY; // translationY: frame-to-frame delta
-      height.value = clamp(next, COLLAPSED, MAX_HEIGHT.value);
-    })
-    .onEnd(() => {
-      // Snap: ara değerlerden yakın olana atla
-      const mid = COLLAPSED + (MAX_HEIGHT.value - COLLAPSED) * 0.35;
-      const dest = height.value >= mid ? MAX_HEIGHT.value : COLLAPSED;
-      height.value = withSpring(dest, { damping: 18, stiffness: 220 });
-    });
-
-  // Composer'a dokununca klavye açık değilse açılmasını istersen:
-  const tap = Gesture.Tap().onEnd(() => {
-    if (Platform.OS === 'android') {
-      // Android'de genelde otomatik açılıyor; garanti için:
+  const handleGestureEvent = (event: any) => {
+    const { translationY, state } = event.nativeEvent;
+    
+    if (state === State.BEGAN) {
+      setIsDragging(true);
+    } else if (state === State.ACTIVE) {
+      // Daha hassas sürükleme - parmak hareketi ile eş zamanlı
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, minHeight - translationY));
+      setSheetHeight(newHeight);
+    } else if (state === State.END) {
+      setIsDragging(false);
+      
+      if (sheetHeight > threshold) {
+        // Kullanıcı yukarı sürükledi ve threshold'u geçti
+        setSheetHeight(maxHeight);
+        setIsExpanded(true);
+      } else {
+        // Kullanıcı yeterince yukarı sürüklemedi
+        setSheetHeight(minHeight);
+        setIsExpanded(false);
+      }
     }
-  });
+  };
 
-  const composed = Gesture.Simultaneous(drag, tap);
+  const handleSendMessage = () => {
+    if (message.trim()) {
+      console.log('Mesaj gönderildi:', message);
+      setMessage('');
+      setSheetHeight(minHeight);
+      setIsExpanded(false);
+    }
+  };
 
-  const containerStyle = useAnimatedStyle(() => {
-    return {
-      height: height.value,
-      borderTopLeftRadius: withSpring(height.value > COLLAPSED + 8 ? 16 : 10),
-      borderTopRightRadius: withSpring(height.value > COLLAPSED + 8 ? 16 : 10),
-    };
-  });
+  const handleAddImage = () => {
+    console.log('Görsel ekleme');
+  };
 
-  const handleSend = () => {
-    const txt = textRef.current?.trim?.() ?? '';
-    if (txt.length === 0) return;
-    onSend?.(txt);
-    textRef.current = '';
-    // Gönderdikten sonra istersen collapse et:
-    height.value = withSpring(COLLAPSED);
-    Keyboard.dismiss();
+  const handleAddEmoji = () => {
+    console.log('Emoji ekleme');
   };
 
   return (
-    <Animated.View style={[styles.wrapper, { paddingBottom: insets.bottom }]}>
-      {/* Arkaplan tıklanınca collapse etmek istersen bir backdrop ekleyebilirsin */}
-      <GestureDetector gesture={composed}>
-        <Animated.View style={[styles.composer, containerStyle]}>
-          {/* Tutacak alan (Slack'te üstte ince bir bar/handle vardır) */}
-          <Animated.View style={styles.handleHit}>
-            <Animated.View style={styles.handle} />
-          </Animated.View>
-
-          {/* Çok satırlı metin alanı */}
-          <Animated.ScrollView
-            bounces
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.scrollContent}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: isDark ? '#0F172A' : '#F9FAFB' 
+      }}>
+        {/* Bottom Sheet benzeri mesaj giriş alanı */}
+        <PanGestureHandler onGestureEvent={handleGestureEvent}>
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: sheetHeight,
+              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+              borderTopLeftRadius: isExpanded ? 0 : 20,
+              borderTopRightRadius: isExpanded ? 0 : 20,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 8,
+              zIndex: 1000,
+            }}
           >
-            <TextInput
-              style={styles.input}
-              placeholder={placeholder}
-              placeholderTextColor="#8F9BB3"
-              multiline
-              scrollEnabled
-              onChangeText={(t: string) => {
-                textRef.current = t;
+            {/* Sürükleme göstergesi */}
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                backgroundColor: isDark ? '#475569' : '#D1D5DB',
+                borderRadius: 2,
+                alignSelf: 'center',
+                marginTop: 8,
+                marginBottom: 8,
               }}
-              // iOS'ta satır üstten başlasın
-              textAlignVertical="top"
-              // Otomatik odak istersen:
-              // autoFocus
-              // return tuşu yerine "send":
-              returnKeyType="send"
-              onSubmitEditing={handleSend}
             />
-          </Animated.ScrollView>
 
-          {/* Alt aksiyon barı */}
-          <Animated.View style={styles.bottomBar}>
-            {/* Ek butonları koy (dosya, foto, @, # vs.) */}
-            <TouchableOpacity style={styles.action} onPress={handleSend}>
-              <Animated.Text style={styles.sendText}>Gönder</Animated.Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </Animated.View>
-      </GestureDetector>
-    </Animated.View>
+            {/* Mesaj giriş alanı */}
+            <View style={{ 
+              flex: 1, 
+              paddingHorizontal: 16,
+              paddingTop: 0, // En üstten başla
+              paddingBottom: isExpanded ? 20 : 8,
+            }}>
+              <TextInput
+                style={{
+                  flex: 1,
+                  fontSize: isExpanded ? 18 : 16,
+                  color: isDark ? '#F1F5F9' : '#111827',
+                  textAlignVertical: 'top',
+                  paddingTop: 0, // En üstten başla
+                  paddingBottom: 8,
+                  lineHeight: isExpanded ? 24 : 20,
+                }}
+                placeholder="Mesajınızı yazın..."
+                placeholderTextColor={isDark ? '#94A3B8' : '#6B7280'}
+                value={message}
+                onChangeText={setMessage}
+                multiline={isExpanded}
+                numberOfLines={isExpanded ? 15 : 1}
+              />
+            </View>
+
+            {/* Alt butonlar */}
+            <HStack
+              space="md"
+              alignItems="center"
+              justifyContent="space-between"
+              paddingHorizontal={16}
+              paddingBottom={isExpanded ? 40 : 16}
+              paddingTop={8}
+            >
+              <HStack space="sm" alignItems="center">
+                <Pressable
+                  onPress={handleAddImage}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: isDark ? '#334155' : '#F3F4F6',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon as={ImageIcon} size="sm" color={isDark ? '#94A3B8' : '#6B7280'} />
+                </Pressable>
+                
+                <Pressable
+                  onPress={handleAddEmoji}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: isDark ? '#334155' : '#F3F4F6',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon as={SmileIcon} size="sm" color={isDark ? '#94A3B8' : '#6B7280'} />
+                </Pressable>
+              </HStack>
+
+              <Pressable
+                onPress={handleSendMessage}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: message.trim() ? '#6366F1' : (isDark ? '#475569' : '#E5E7EB'),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                disabled={!message.trim()}
+              >
+                <Icon
+                  as={SendIcon}
+                  size="sm"
+                  color={message.trim() ? 'white' : (isDark ? '#94A3B8' : '#6B7280')}
+                />
+              </Pressable>
+            </HStack>
+          </View>
+        </PanGestureHandler>
+      </View>
+    </GestureHandlerRootView>
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {
-    position: 'absolute',
-    left: 0, right: 0, bottom: 0,
-  },
-  composer: {
-    backgroundColor: '#101114',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    overflow: 'hidden',
-  },
-  handleHit: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  handle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#2B2F36',
-  },
-  scrollContent: {
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-  },
-  input: {
-    minHeight: 28,
-    fontSize: 16,
-    color: '#E6E8EB',
-    padding: 10,
-    backgroundColor: '#161A20',
-    borderRadius: 10,
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#23262D',
-  },
-  action: {
-    marginLeft: 'auto',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#2F6FED',
-  },
-  sendText: { color: 'white', fontWeight: '600' },
-});
+export default Keyboard;
