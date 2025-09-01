@@ -19,14 +19,16 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
   // Smooth animasyon için Animated.Value
   const animatedHeight = useRef(new Animated.Value(140)).current;
   
-  // Drag başlangıç noktasını takip etmek için
+  // Drag durumu için ref'ler
   const dragStartHeight = useRef(140);
+  const isDraggingRef = useRef(false);
+  const currentAnimatedHeight = useRef(140);
   
   const { height: screenHeight } = Dimensions.get('window');
   const minHeight = 140; // Minimum height de artırıldı
   const maxHeight = screenHeight; // Fullscreen için
-  const upThreshold = 60; // Yukarı sürükleme için 60px (daha kolay tetiklenme)
-  const downThreshold = 40; // Aşağı sürükleme için 40px (daha kolay tetiklenme)
+  const upThreshold = 50; // Yukarı sürükleme için 50px (daha güvenilir)
+  const downThreshold = 30; // Aşağı sürükleme için 30px (daha güvenilir)
 
   // Smooth animasyon fonksiyonları
   const animateToHeight = (targetHeight: number, duration: number = 300) => {
@@ -34,34 +36,48 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
       toValue: targetHeight,
       duration,
       useNativeDriver: false,
-    }).start();
+    }).start(() => {
+      // Animasyon bittiğinde currentAnimatedHeight ref'ini güncelle
+      currentAnimatedHeight.current = targetHeight;
+    });
   };
 
   // Başlangıç animasyonu
   useEffect(() => {
     animatedHeight.setValue(minHeight);
     dragStartHeight.current = minHeight;
-  }, []);
+  }, [minHeight]);
 
   const handleGestureEvent = (event: any) => {
-    const { translationY, state, velocityY } = event.nativeEvent;
+    const { translationY } = event.nativeEvent;
+    
+    // Sadece sürükleme hareketini takip et
+    if (isDraggingRef.current) {
+      // Doğrudan translationY kullanarak daha basit hesaplama
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, dragStartHeight.current - translationY));
+      // Sadece animatedHeight güncelle - setState çağırma
+      animatedHeight.setValue(newHeight);
+      // currentAnimatedHeight ref'ini de güncelle
+      currentAnimatedHeight.current = newHeight;
+    }
+  };
+
+  const handleStateChange = (event: any) => {
+    const { translationY, state } = event.nativeEvent;
     
     if (state === State.BEGAN) {
       setIsDragging(true);
-      // Drag başlangıcında mevcut height'ı kaydet
-      dragStartHeight.current = sheetHeight;
+      isDraggingRef.current = true;
+      // Drag başlangıcında mevcut height'ı kaydet - currentAnimatedHeight ref'inden al
+      dragStartHeight.current = currentAnimatedHeight.current;
       console.log('Drag başladı, başlangıç height:', dragStartHeight.current);
-    } else if (state === State.ACTIVE) {
-      // Daha hassas sürükleme - parmak hareketi ile eş zamanlı
-      const newHeight = Math.max(minHeight, Math.min(maxHeight, dragStartHeight.current - translationY));
-      setSheetHeight(newHeight);
-      animatedHeight.setValue(newHeight);
-    } else if (state === State.END) {
+    } else if (state === State.END || state === State.CANCELLED || state === State.FAILED) {
       setIsDragging(false);
+      isDraggingRef.current = false;
       
       // Snap point mantığı - bottom sheet gibi
-      const currentHeight = sheetHeight;
-      const dragDistance = minHeight - currentHeight; // Negatif değer yukarı sürükleme
+      // currentAnimatedHeight ref'inden mevcut değeri al
+      const currentHeight = currentAnimatedHeight.current;
       
       // Drag başlangıç noktasından itibaren ne kadar sürüklendiğini hesapla
       const totalDragDistance = dragStartHeight.current - currentHeight;
@@ -70,16 +86,15 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
       console.log('Drag Start Height:', dragStartHeight.current);
       console.log('Current Height:', currentHeight);
       console.log('Total Drag Distance:', totalDragDistance);
-      console.log('Up Threshold (-60):', -upThreshold);
-      console.log('Down Threshold (40):', downThreshold);
+      console.log('Up Threshold (-50):', -upThreshold);
+      console.log('Down Threshold (30):', downThreshold);
       console.log('Yukarı sürükleme için:', totalDragDistance < -upThreshold);
       console.log('Aşağı sürükleme için:', totalDragDistance > downThreshold);
       
       // Snap point kararı - drag başlangıcından itibaren hesaplanan mesafe
       if (totalDragDistance < -upThreshold) {
-        // Kullanıcı yukarı doğru 100px'den fazla sürükledi - fullscreen'e snap
-        // totalDragDistance negatif olduğunda yukarı sürükleme
-        console.log('Yukarı sürükleme 100px geçildi, fullscreen açılıyor');
+        // Kullanıcı yukarı doğru 50px'den fazla sürükledi - fullscreen'e snap
+        console.log('Yukarı sürükleme 50px geçildi, fullscreen açılıyor');
         console.log('Total Drag Distance:', totalDragDistance, 'Up Threshold:', -upThreshold);
         animateToHeight(maxHeight, 400);
         setSheetHeight(maxHeight);
@@ -87,9 +102,8 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
         // Drag başlangıç noktasını güncelle
         dragStartHeight.current = maxHeight;
       } else if (totalDragDistance > downThreshold) {
-        // Kullanıcı aşağı doğru 50px'den fazla sürükledi - minHeight'e snap
-        // totalDragDistance pozitif olduğunda aşağı sürükleme
-        console.log('Aşağı sürükleme 50px geçildi, minHeight\'e snap ediliyor');
+        // Kullanıcı aşağı doğru 30px'den fazla sürükledi - minHeight'e snap
+        console.log('Aşağı sürükleme 30px geçildi, minHeight\'e snap ediliyor');
         console.log('Total Drag Distance:', totalDragDistance, 'Down Threshold:', downThreshold);
         animateToHeight(minHeight, 300);
         setSheetHeight(minHeight);
@@ -102,6 +116,8 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
         console.log('Total Drag Distance:', totalDragDistance);
         // Mevcut height'ı koru ve drag başlangıç noktasını güncelle
         dragStartHeight.current = currentHeight;
+        // Mevcut height'ı state'e de kaydet
+        setSheetHeight(currentHeight);
       }
     }
   };
@@ -134,7 +150,10 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
         backgroundColor: isDark ? '#0F172A' : '#F9FAFB' 
       }}>
         {/* Bottom Sheet benzeri mesaj giriş alanı */}
-        <PanGestureHandler onGestureEvent={handleGestureEvent}>
+        <PanGestureHandler 
+          onGestureEvent={handleGestureEvent}
+          onHandlerStateChange={handleStateChange}
+        >
           <Animated.View
             style={{
               position: 'absolute',
