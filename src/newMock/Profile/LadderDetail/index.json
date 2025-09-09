@@ -1,0 +1,173 @@
+{
+    "LadderDetails": [
+      {
+        "Id": "lad_001",
+        "Badge": {
+          "name": "Yorum Ustası",
+          "description": "Topluluktaki gönderilere düzenli ve yapıcı yorumlar yap. Ödülleri kazanmak için görev listesindeki tüm görevleri tamamla! Buraya karakter sınırı belirlenecek; en fazla şu kadar olsa süper.",
+          "image": "https://cdn.example.com/badges/comment-master.png"
+        },
+        "statistics": {
+          "percentage": "0",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "Yorum Ustası",
+          "image": "https://cdn.example.com/badges/comment-master.png"
+        },
+        "Tasks": [
+          { "TaskName": "10 Yorum Yap", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/comments.png" },
+          { "TaskName": "Günde 3 Yorum", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/daily.png" },
+          { "TaskName": "Yorumlara Dönüt Ver", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/reply.png" }
+        ]
+      },
+      {
+        "Id": "lad_002",
+        "Badge": {
+          "name": "Rozet Avcısı",
+          "description": "Görevleri tamamlayarak yeni rozetler topla ve koleksiyonunu büyüt. Tüm görevleri bitir, ödülü kap!",
+          "image": "https://cdn.example.com/badges/badge-hunter.png"
+        },
+        "statistics": {
+          "percentage": "20",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "Rozet Avcısı",
+          "image": "https://cdn.example.com/badges/badge-hunter.png"
+        },
+        "Tasks": [
+          { "TaskName": "3 Rozet Kazan", "ProgressPercentage": 60, "Image": "https://cdn.example.com/tasks/badges.png" },
+          { "TaskName": "1 Etkinlik Tamamla", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/event.png" },
+          { "TaskName": "Günlük Giriş Serisi 5", "ProgressPercentage": 20, "Image": "https://cdn.example.com/tasks/streak.png" }
+        ]
+      },
+      {
+        "Id": "lad_003",
+        "Badge": {
+          "name": "İlk Deneyimini Paylaş",
+          "description": "İlk ürün deneyimini paylaş ve topluluğa katıl. Görevleri tamamlayarak ödülünü kazan!",
+          "image": "https://cdn.example.com/badges/first-experience.png"
+        },
+        "statistics": {
+          "percentage": "20",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "İlk Deneyimini Paylaş",
+          "image": "https://cdn.example.com/badges/first-experience.png"
+        },
+        "Tasks": [
+          { "TaskName": "1 Deneyim Yaz", "ProgressPercentage": 100, "Image": "https://cdn.example.com/tasks/write.png" },
+          { "TaskName": "1 Fotoğraf Ekle", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/photo.png" },
+          { "TaskName": "1 Ürünü Etiketle", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/tag.png" }
+        ]
+      },
+      {
+        "Id": "lad_004",
+        "Badge": {
+          "name": "Haftalık Görevler",
+          "description": "Hafta boyunca verilen görevleri tamamla ve istikrarını göster. Tüm görevler bittiğinde ödül senin!",
+          "image": "https://cdn.example.com/badges/weekly-master.png"
+        },
+        "statistics": {
+          "percentage": "100",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "Haftalık Görevler",
+          "image": "https://cdn.example.com/badges/weekly-master.png"
+        },
+        "Tasks": [
+          { "TaskName": "Haftalık 5 Görev", "ProgressPercentage": 100, "Image": "https://cdn.example.com/tasks/weekly.png" },
+          { "TaskName": "3 Gün Üst Üste Giriş", "ProgressPercentage": 100, "Image": "https://cdn.example.com/tasks/streak.png" },
+          { "TaskName": "2 Ürün İncelemesi", "ProgressPercentage": 100, "Image": "https://cdn.example.com/tasks/review.png" }
+        ]
+      },
+      {
+        "Id": "lad_005",
+        "Badge": {
+          "name": "Deneyim Serisi",
+          "description": "Art arda günlerde deneyim paylaşarak ritmini yakala. Tüm görevleri bitir, rozetini al!",
+          "image": "https://cdn.example.com/badges/series.png"
+        },
+        "statistics": {
+          "percentage": "0",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "Deneyim Serisi",
+          "image": "https://cdn.example.com/badges/series.png"
+        },
+        "Tasks": [
+          { "TaskName": "5 Gün Üst Üste Paylaş", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/streak.png" },
+          { "TaskName": "Toplam 3 Paylaşım", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/write.png" },
+          { "TaskName": "1 Video Ekle", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/video.png" }
+        ]
+      },
+      {
+        "Id": "lad_006",
+        "Badge": {
+          "name": "Topluluk Rehberi",
+          "description": "Uygulama içerisinde aktif olarak diğer kullanıcılarla etkileşime geç. Ödülleri kazanmak için görev listesindeki tüm görevleri tamamla! Buraya karakter sınırı belirlenecek; en fazla şu kadar olsa süper.",
+          "image": "https://cdn.example.com/badges/community-guide.png"
+        },
+        "statistics": {
+          "percentage": "80",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "Topluluk Rehberi",
+          "image": "https://cdn.example.com/badges/community-guide.png"
+        },
+        "Tasks": [
+          { "TaskName": "3 Soruya Yardımcı Ol", "ProgressPercentage": 80, "Image": "https://cdn.example.com/tasks/help.png" },
+          { "TaskName": "1 Yeni Üyeye Mentorluk", "ProgressPercentage": 60, "Image": "https://cdn.example.com/tasks/mentor.png" },
+          { "TaskName": "1 Rehber Yazısı", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/guide.png" }
+        ]
+      },
+      {
+        "Id": "lad_007",
+        "Badge": {
+          "name": "Geri Bildirim Ustası",
+          "description": "Ürünlere ayrıntılı ve yapıcı geri bildirimler yaz. Tüm görevleri tamamlayarak ödül rozetini kazan!",
+          "image": "https://cdn.example.com/badges/feedback-master.png"
+        },
+        "statistics": {
+          "percentage": "100",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "Geri Bildirim Ustası",
+          "image": "https://cdn.example.com/badges/feedback-master.png"
+        },
+        "Tasks": [
+          { "TaskName": "10 Ayrıntılı Geri Bildirim", "ProgressPercentage": 100, "Image": "https://cdn.example.com/tasks/feedback.png" },
+          { "TaskName": "5 Ürüne Puan Ver", "ProgressPercentage": 100, "Image": "https://cdn.example.com/tasks/rate.png" },
+          { "TaskName": "3 İyileştirme Önerisi", "ProgressPercentage": 100, "Image": "https://cdn.example.com/tasks/idea.png" }
+        ]
+      },
+      {
+        "Id": "lad_008",
+        "Badge": {
+          "name": "Fotoğrafçı",
+          "description": "Ürün fotoğraflarıyla deneyimlerini görselleştir. Görevleri tamamla, rozetini kazan!",
+          "image": "https://cdn.example.com/badges/photographer.png"
+        },
+        "statistics": {
+          "percentage": "0",
+          "totalUser": "of 1M+ User"
+        },
+        "rewards": {
+          "name": "Fotoğrafçı",
+          "image": "https://cdn.example.com/badges/photographer.png"
+        },
+        "Tasks": [
+          { "TaskName": "5 Ürün Fotoğrafı Yükle", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/photo.png" },
+          { "TaskName": "1 Kapak Fotoğrafı Seç", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/cover.png" },
+          { "TaskName": "1 Karusel Oluştur", "ProgressPercentage": 0, "Image": "https://cdn.example.com/tasks/carousel.png" }
+        ]
+      }
+    ]
+  }
+  

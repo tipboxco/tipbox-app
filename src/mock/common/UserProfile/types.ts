@@ -9,6 +9,6 @@ export interface UserProfile {
   avatar: any; // React Native require() tipini desteklemek için
   trust: number;
   truster: number;
-  friends: number;
+  posts: number;
   badge: UserBadge;
 }

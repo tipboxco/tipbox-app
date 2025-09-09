@@ -30,7 +30,7 @@ interface SideMenuProps {
     avatar: any;
     trust: number;
     truster: number;
-    friends: number;
+    posts: number;
     badge?: {
       text: string;
       color: string;
@@ -63,73 +63,65 @@ export const SideMenu = ({
 
   const MENU_ITEMS: MenuItem[] = [
     {
-      id: 'profile',
+      id: 'account',
       icon: 'user',
-      label: 'Profil',
+      label: 'Account',
       onPress: () => {
-        onClose(); // Side menüyü kapat
+        onClose();
         navigation.navigate('Main', {
           screen: 'Profile'
         });
       },
     },
     {
-      id: 'wishlist',
-      icon: 'heart',
-      label: 'Wishlist',
-      onPress: () => {},
-    },
-    {
-      id: 'bridge',
-      icon: 'link',
-      label: 'Bridge',
-      onPress: () => {
-        onClose(); // Side menüyü kapat
-        navigation.navigate('Bridge', {
-          screen: 'BridgeScreen'
-        });
-      },
-    },
-    {
-      id: 'wishbox',
-      icon: 'package',
-      label: 'Wishbox',
-      onPress: () => {},
-    },
-    {
-      id: 'achievements',
-      icon: 'trending-up',
-      label: 'Başarım Merdiveni',
-      onPress: () => {
-        onClose(); // Side menüyü kapat
-        navigation.navigate('Ladder', {
-          screen: 'LadderScreen'
-        });
-      },
-    },
-    {
-      id: 'collection',
-      icon: 'grid',
-      label: 'Koleksiyon Vitrini',
-      onPress: () => {},
-    },
-    {
-      id: 'assets',
-      icon: 'package',
-      label: 'Varlıklarım',
+      id: 'wallet',
+      icon: 'credit-card',
+      label: 'Wallet',
       onPress: () => {},
     },
     {
       id: 'bookmarks',
       icon: 'bookmark',
-      label: 'Kaydedilenler',
+      label: 'Bookmarks',
       onPress: () => {},
+    },
+    {
+      id: 'marketplace',
+      icon: 'shopping-bag',
+      label: 'Marketplace',
+      onPress: () => {},
+    },
+    {
+      id: 'prime-pass',
+      icon: 'award',
+      label: 'Prime Pass',
+      onPress: () => {},
+    },
+    {
+      id: 'settings',
+      icon: 'settings',
+      label: 'Settings',
+      onPress: () => {
+        onClose();
+        navigation.navigate('Settings');
+      },
     },
   ];
 
   if (!visible) return null;
 
   return (
+    <>
+      <Pressable
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        bg="rgba(0, 0, 0, 0.5)"
+        zIndex={998}
+        onPress={onClose}
+      />
     <Box
       position="absolute"
       top={0}
@@ -155,94 +147,103 @@ export const SideMenu = ({
       </Pressable>
       <ScrollView>
         {/* Banner Section */}
-        <Box h={80} w="100%" overflow="hidden">
-          <LinearGradient
-            colors={['#4A1D96', '#1E293B']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradient}
-          />
-        </Box>
-
-        {/* Profile Section */}
-        <Box px="$6" mt={-40}>
-          <Box alignItems="center">
-            <Box
-              borderWidth={4}
-              borderColor={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-              rounded="$full"
-              overflow="hidden"
-            >
-              <Image
-                source={userProfile.avatar}
-                alt={userProfile.name}
-                size="xl"
-                rounded="$full"
-              />
-            </Box>
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$md"
-              fontWeight="$bold"
-              mt="$2"
-            >
-              {userProfile.name}
-            </Text>
-            {userProfile.badge && (
-              <Box
-                mt="$1"
-                px="$2"
-                py="$1"
-                rounded="$lg"
-                borderWidth={1}
-                borderColor={userProfile.badge.borderColor}
-                bg={userProfile.badge.color}
-              >
-                <Text fontSize="$2xs" color="#FFFFFF">
-                  {userProfile.badge.text}
-                </Text>
-              </Box>
-            )}
+        <Box h={280} w="100%" position="relative" bg="$white">
+          {/* Banner */}
+          <Box h={120} w="100%" overflow="hidden">
+            <LinearGradient
+              colors={['#4A1D96', '#1E293B']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.gradient, { height: 120 }]}
+            />
           </Box>
-
-          {/* Stats Section */}
-          <HStack justifyContent="space-between" mt="$4" mb="$6">
-            <VStack alignItems="center">
+          
+          {/* Profile Section */}
+          <Box position="absolute" top={70} left={0} right={0} px="$6">
+            <Box alignItems="center">
+              <Box
+                borderWidth={4}
+                borderColor={isDark ? '$backgroundDark950' : '$white'}
+                rounded="$full"
+                overflow="hidden"
+                w={100}
+                h={100}
+                bg="$white"
+              >
+                <Image
+                  source={userProfile.avatar}
+                  alt={userProfile.name}
+                  w="100%"
+                  h="100%"
+                  rounded="$full"
+                />
+              </Box>
               <Text
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize="$sm"
+                fontSize={18}
+                fontWeight="$bold"
+                mt="$2"
+              >
+                {userProfile.name}
+              </Text>
+              {userProfile.badge && (
+                <Box
+                  mt="$1"
+                  px="$3"
+                  py="$1"
+                  rounded="$full"
+                  borderWidth={1}
+                  borderColor="#FF0842"
+                  bg="rgba(255, 8, 152, 0.4)"
+                >
+                  <Text fontSize={12} color="#FFFFFF">
+                    {userProfile.badge.text}
+                  </Text>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Stats Section */}
+        <Box mt={-20} mb="$4" px="$6">
+          <HStack justifyContent="space-between">
+            <VStack alignItems="center" space="xs">
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize={14}
+                fontWeight="$bold"
+              >
+                {userProfile.posts}
+              </Text>
+              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                Posts
+              </Text>
+            </VStack>
+            <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
+            <VStack alignItems="center" space="xs">
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize={14}
                 fontWeight="$bold"
               >
                 {userProfile.trust}
               </Text>
-              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$2xs">
+              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
                 Trust
               </Text>
             </VStack>
-            <Box w={0.5} h="$8" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
-            <VStack alignItems="center">
+            <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
+            <VStack alignItems="center" space="xs">
               <Text
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize="$sm"
+                fontSize={14}
                 fontWeight="$bold"
               >
                 {userProfile.truster}
               </Text>
-              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$2xs">
+              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
                 Truster
-              </Text>
-            </VStack>
-            <Box w={0.5} h="$8" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
-            <VStack alignItems="center">
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize="$sm"
-                fontWeight="$bold"
-              >
-                {userProfile.friends}
-              </Text>
-              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$2xs">
-                Supporter
               </Text>
             </VStack>
           </HStack>
@@ -250,39 +251,51 @@ export const SideMenu = ({
 
         {/* Premium Banner */}
         <Box
-          mx="$4"
-          p="$4"
-          bg={isDark ? '$backgroundDark800' : '$backgroundLight100'}
-          rounded="$lg"
-          mb="$4"
+          mx="-$3"
+          mb="$3"
         >
-          <Text
-            color={isDark ? '$textDark50' : '$textLight900'}
-            fontSize="$xs"
-            fontWeight="$semibold"
+          <Box
+            w="100%"
+            h={0.5}
+            bg={isDark ? '$backgroundDark200' : '$backgroundLight200'}
+          />
+          <Box
+            w="100%"
+            h={57}
+            bg={isDark ? '$backgroundDark800' : '$backgroundLight50'}
+            justifyContent="center"
+            px="$6"
           >
-            Premium Satma Tasarımı Küçük Banner
-          </Text>
+            <Text
+              color={isDark ? '$textDark50' : '$textLight900'}
+              fontSize={12}
+              fontWeight="$semibold"
+            >
+              Premium Selling Design Small Banner
+            </Text>
+          </Box>
         </Box>
 
         {/* Menu Items */}
-        <VStack space="sm" px="$4">
+        <VStack px="$6">
           {MENU_ITEMS.map((item: MenuItem) => (
             <Pressable
               key={item.id}
               onPress={item.onPress}
-              py="$2"
-              px="$3"
-              rounded="$lg"
+              h={40}
+              justifyContent="center"
               bg="transparent"
               $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
             >
               <HStack space="md" alignItems="center">
-                <FeatherIcon name={item.icon} size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                <Box w={24} h={24} justifyContent="center" alignItems="center">
+                  <FeatherIcon name={item.icon} size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
                 <Text 
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize="$xs"
+                  fontSize={12}
                   fontWeight="$semibold"
+                  w={110}
                 >
                   {item.label}
                 </Text>
@@ -293,56 +306,82 @@ export const SideMenu = ({
 
         {/* Bottom Line */}
         <Box
-          h={1}
-          w="100%"
+          h={0.5}
+          w={314}
           bg={isDark ? '$backgroundDark200' : '$backgroundLight200'}
-          mt="$6"
+          mt={20}
+          mx="-$3"
         />
 
         {/* Settings and Help */}
-        <VStack space="sm" px="$4" py="$4">
+        <VStack px="$6">
           <Pressable
-            onPress={() => navigation.navigate('Settings' as never)}
-            py="$2"
-            px="$3"
-            rounded="$lg"
+            onPress={() => {}}
+            h={40}
+            justifyContent="center"
             bg="transparent"
             $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
           >
             <HStack space="md" alignItems="center">
-              <FeatherIcon name="settings" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+              <Box w={20} h={20} justifyContent="center" alignItems="center">
+                <FeatherIcon name="star" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize="$2xs"
+                fontSize={10}
                 fontWeight="$semibold"
+                w={110}
               >
-                Ayarlar
+                Vote New Features
               </Text>
             </HStack>
           </Pressable>
           <Pressable
             onPress={() => {}}
-            py="$2"
-            px="$3"
-            rounded="$lg"
+            h={40}
+            justifyContent="center"
             bg="transparent"
             $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
           >
             <HStack space="md" alignItems="center">
-              <FeatherIcon name="help-circle" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+              <Box w={20} h={20} justifyContent="center" alignItems="center">
+                <FeatherIcon name="help-circle" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize="$2xs"
+                fontSize={10}
                 fontWeight="$semibold"
+                w={110}
               >
-                Yardım Merkezi
+                Help Center
+              </Text>
+            </HStack>
+          </Pressable>
+          <Pressable
+            onPress={() => {}}
+            h={40}
+            justifyContent="center"
+            bg="transparent"
+            $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
+          >
+            <HStack space="md" alignItems="center">
+              <Box w={20} h={20} justifyContent="center" alignItems="center">
+                <FeatherIcon name="clock" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
+              <Text 
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize={10}
+                fontWeight="$semibold"
+                w={110}
+              >
+                Purchase History
               </Text>
             </HStack>
           </Pressable>
           <Pressable
             onPress={async () => {
               await logout();
-              onClose(); // Side menüyü kapat
+              onClose();
               navigation.reset({
                 index: 0,
                 routes: [{ 
@@ -353,25 +392,28 @@ export const SideMenu = ({
                 }],
               });
             }}
-            py="$2"
-            px="$3"
-            rounded="$lg"
+            h={40}
+            justifyContent="center"
             bg="transparent"
             $hover={{ bg: isDark ? '$backgroundDark100' : '$backgroundLight100' }}
           >
             <HStack space="md" alignItems="center">
-              <FeatherIcon name="log-out" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+              <Box w={20} h={20} justifyContent="center" alignItems="center">
+                <FeatherIcon name="log-out" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize="$2xs"
+                fontSize={10}
                 fontWeight="$semibold"
+                w={110}
               >
-                Çıkış Yap
+                Log out
               </Text>
             </HStack>
           </Pressable>
         </VStack>
       </ScrollView>
     </Box>
+    </>
   );
 };

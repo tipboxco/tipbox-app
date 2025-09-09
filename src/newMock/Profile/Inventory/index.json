@@ -1,0 +1,44 @@
+{
+    "inventory": [
+    {
+      "Product": {
+        "id": "prd_001",
+        "name": "PHILIPS Azur DST8050/20",
+        "categorys": ["Ütü", "Ev Aletleri"],
+        "Image": "https://cdn.example.com/products/prd_001.jpg"
+      },
+      "IsOwner": true,
+      "CreatedAt": "2025-02-15T09:41:00Z"
+    },
+    {
+      "Product": {
+        "id": "prd_002",
+        "name": "PHILIPS Azur DST8020/30",
+        "categorys": ["Ütü", "Ev Aletleri"],
+        "Image": "https://cdn.example.com/products/prd_002.jpg"
+      },
+      "IsOwner": true,
+      "CreatedAt": "2025-02-12T14:08:00Z"
+    },
+    {
+      "Product": {
+        "id": "prd_003",
+        "name": "PHILIPS Azur Plus",
+        "categorys": ["Ütü", "Ev Aletleri"],
+        "Image": "https://cdn.example.com/products/prd_003.jpg"
+      },
+      "IsOwner": true,
+      "CreatedAt": "2025-01-28T18:22:00Z"
+    },
+    {
+      "Product": {
+        "id": "prd_004",
+        "name": "PHILIPS Azur Advanced",
+        "categorys": ["Ütü", "Ev Aletleri"],
+        "Image": "https://cdn.example.com/products/prd_004.jpg"
+      },
+      "IsOwner": false,
+      "CreatedAt": "2025-01-10T10:05:00Z"
+    }
+  ]
+}

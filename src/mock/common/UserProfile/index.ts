@@ -5,7 +5,7 @@ export const mock_user_profile: UserProfile = {
   avatar: require('@/assets/avatar/ozan.png'),
   trust: 776,
   truster: 556,
-  friends: 556,
+  posts: 556,
   badge: {
     text: 'Kitchen Specialist',
     color: '#FF0842',
