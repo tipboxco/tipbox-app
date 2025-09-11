@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { FilterBar } from '../components/FilterBar';
-import { ReviewCard, ReviewImageCard } from '@/src/components/ReviewCard';
+//import { ReviewCard, ReviewImageCard } from '@/src/components/ReviewCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
@@ -22,7 +22,7 @@ export const FeedScreen = () => {
   const navigation = useNavigation<FeedScreenNavigationProp>();
 
   const handleReviewPress = () => {
-    navigation.navigate('ReviewDetail');
+    //navigation.navigate('ReviewDetail');
   };
 
   return (
@@ -38,14 +38,14 @@ export const FeedScreen = () => {
       />
       <FilterBar />
       <ScrollView flex={1} px="$4" py="$2">
-        <ReviewCard
+        {/* <ReviewCard
           {...mock_review_card}
           onPress={handleReviewPress}
         />
         <ReviewImageCard
           {...mock_review_card_image}
           onPress={handleReviewPress}
-        />
+        /> */}
       </ScrollView>
       <SideMenu
         visible={isMenuVisible}

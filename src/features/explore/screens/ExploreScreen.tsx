@@ -3,7 +3,7 @@ import { ScrollView } from 'react-native';
 import { Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { ReviewCard, ReviewImageCard } from '@/src/components/ReviewCard';
+//import { ReviewCard, ReviewImageCard } from '@/src/components/ReviewCard';
 import { SideMenu } from '@/src/components/SideMenu';
 import { mock_review_card, mock_review_card_image, mock_user_profile } from '@/src/mock/common';
 
@@ -23,7 +23,7 @@ const ExploreScreen: React.FC = () => {
         onMenuPress={() => setIsMenuVisible(true)}
       />
       <ScrollView>
-        <Box px="$4" py="$2">
+        {/* <Box px="$4" py="$2">
           <ReviewCard
             {...mock_review_card}
             onPress={() => {}}
@@ -32,7 +32,7 @@ const ExploreScreen: React.FC = () => {
             {...mock_review_card_image}
             onPress={() => {}}
           />
-        </Box>
+        </Box> */}
       </ScrollView>
       <SideMenu
         visible={isMenuVisible}

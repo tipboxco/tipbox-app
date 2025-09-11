@@ -68,9 +68,7 @@ export const SideMenu = ({
       label: 'Account',
       onPress: () => {
         onClose();
-        navigation.navigate('Main', {
-          screen: 'Profile'
-        });
+        navigation.navigate('Profile');
       },
     },
     {

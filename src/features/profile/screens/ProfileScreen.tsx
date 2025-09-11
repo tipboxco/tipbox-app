@@ -4,24 +4,28 @@ import { Box } from '@gluestack-ui/themed';
 import ProfileCard from '../components/ProfileCard';
 import { ProfileTabs } from '../components/ProfileTabs';
 import { PostsTab, InventoryTab, WishlistTab, BadgesTab } from '../components/TabContents';
-import { mock_user_card } from '@/src/mock/profile';
+import { mock_user_card } from '@/src/mock/profile/userCardData';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export const ProfileScreen = () => {
-  const [activeTab, setActiveTab] = useState('posts');
+  const [activeTab, setActiveTab] = useState('feed');
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'posts':
+      case 'feed':
         return <PostsTab />;
-      case 'inventory':
-        return <InventoryTab />;
-      case 'wishlist':
+      case 'reviews':
+        return <PostsTab />;
+      case 'benchmarks':
+        return <PostsTab />;
+      case 'tips':
+        return <PostsTab />;
+      case 'replies':
+        return <PostsTab />;
+      case 'bookmarks':
         return <WishlistTab />;
-      case 'badges':
-        return <BadgesTab />;
       default:
         return <PostsTab />;
     }

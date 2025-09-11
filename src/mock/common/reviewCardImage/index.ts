@@ -1,3 +1,4 @@
+/*
 import { ReviewImageCardProps } from '@/src/components/ReviewCard/types';
 
 export const mock_review_card_image: Omit<ReviewImageCardProps, 'onPress'> = {
@@ -18,3 +19,5 @@ export const mock_review_card_image: Omit<ReviewImageCardProps, 'onPress'> = {
     userBadge: "Kitchen Specialist",
     userAction: "Added a new product and experiences to your inventory!"
 };
+
+*/

@@ -22,6 +22,7 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
+  Profile: NavigatorScreenParams<ProfileStackParamList>;
   Settings: NavigatorScreenParams<SettingsStackParamList>;
   Bridge: NavigatorScreenParams<BridgeStackParamList>;
   Ladder: NavigatorScreenParams<LadderStackParamList>;

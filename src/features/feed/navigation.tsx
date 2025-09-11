@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FeedScreen } from './screens';
-import { ReviewDetail } from '@/src/components/ReviewDetail';
+//import { ReviewDetail } from '@/src/components/ReviewDetail';
 
 export type FeedStackParamList = {
   FeedScreen: undefined;
@@ -23,14 +23,14 @@ export const FeedNavigator = () => {
         name="FeedScreen"
         component={FeedScreen}
       />
-      <FeedStack.Screen
+      {/* <FeedStack.Screen
         name="ReviewDetail"
         component={ReviewDetail}
         options={{
           presentation: 'modal',
           animation: 'slide_from_bottom'
         }}
-      />
+      /> */}
     </FeedStack.Navigator>
   );
 };

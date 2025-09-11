@@ -14,8 +14,9 @@ export type TabParamList = {
   Feed: undefined;
   Explore: undefined;
   Catalog: undefined;
-  Inventory: undefined;
-  Profile: undefined;
+  Events: undefined;
+  Notification: undefined;
+  Messages: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -42,48 +43,54 @@ export const TabNavigator = () => {
             case 'Catalog':
               iconName = 'grid';
               break;
-            case 'Inventory':
-              iconName = 'package';
+            case 'Events':
+              iconName = 'calendar';
               break;
-            case 'Profile':
-              iconName = 'user';
+            case 'Notification':
+              iconName = 'bell';
+              break;
+            case 'Messages':
+              iconName = 'message-circle';
               break;
           }
 
           return <Feather name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: isDark ? '#C2E607' : '#BBFF4E',
-        tabBarInactiveTintColor: isDark ? '#536471' : '#6D6D6D',
+        tabBarActiveTintColor: '#829905',
+        tabBarInactiveTintColor: '#000000',
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: isDark ? '#020617' : '#FFFFFF',
-          borderTopColor: isDark ? '#272727' : '#E5E5E5',
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#E5E5E5',
+          height: 45,
+          paddingTop: 4,
+          paddingBottom: 34,
         },
       })}
     >
       <Tab.Screen
         name="Feed"
         component={FeedNavigator}
-        options={{ tabBarLabel: 'Akış' }}
       />
       <Tab.Screen
         name="Explore"
         component={ExploreNavigator}
-        options={{ tabBarLabel: 'Keşfet' }}
       />
       <Tab.Screen
         name="Catalog"
         component={CatalogNavigator}
-        options={{ tabBarLabel: 'Katalog' }}
       />
       <Tab.Screen
-        name="Inventory"
-        component={InventoryNavigator}
-        options={{ tabBarLabel: 'Envanter' }}
+        name="Events"
+        component={FeedNavigator}
       />
       <Tab.Screen
-        name="Profile"
-        component={ProfileNavigator}
-        options={{ tabBarLabel: 'Profil' }}
+        name="Notification"
+        component={FeedNavigator}
+      />
+      <Tab.Screen
+        name="Messages"
+        component={FeedNavigator}
       />
     </Tab.Navigator>
   );
