@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useNavigation } from '@react-navigation/native';
 import { UserCardData } from '@/src/mock/profile/userCardData/types';
 
 interface ProfileCardProps {
@@ -23,6 +24,7 @@ const styles = StyleSheet.create({
 export const ProfileCard = ({ userData }: ProfileCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation();
 
   return (
     <Box>
@@ -38,9 +40,14 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
       </Box>
 
       {/* Back Button */}
-      <Box position="absolute" top={20} left={16}>
+      <Pressable 
+        position="absolute" 
+        top={20} 
+        left={16}
+        onPress={() => navigation.goBack()}
+      >
         <Feather name="chevron-left" size={24} color="#fff" />
-      </Box>
+      </Pressable>
 
       {/* Menu Button */}
       <Box position="absolute" top={20} right={16}>

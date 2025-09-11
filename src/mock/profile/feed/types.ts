@@ -40,3 +40,5 @@ export interface PostCard {
   tags: string[];
   createdAt: string;
 }
+
+export type PostCards = PostCard[];

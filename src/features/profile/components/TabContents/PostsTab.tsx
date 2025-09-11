@@ -1,12 +1,16 @@
 import React from 'react';
-import { Box } from '@gluestack-ui/themed';
+import { VStack } from '@gluestack-ui/themed';
 import { PostCard } from '@/src/components/PostCard';
-import { mock_post_card } from '@/src/mock/profile/feed';
+import { mock_post_cards } from '@/src/mock/profile/feed';
 
-export const PostsTab = () => {
+const PostsTab = () => {
   return (
-    <Box flex={1} px={15}>
-      <PostCard data={mock_post_card} />
-    </Box>
+    <VStack flex={1} px={15}>
+      {mock_post_cards.map((post) => (
+        <PostCard key={post.id} data={post} />
+      ))}
+    </VStack>
   );
 };
+
+export default PostsTab;

@@ -18,7 +18,7 @@ export const PostCard = ({ data }: PostCardProps) => {
       borderWidth={1}
       borderColor={isDark ? '$borderDark800' : '#E9E9E9'}
       borderRadius={5}
-      mt={15}
+      my={8}
     >
       {/* Action Button */}
       <Pressable
