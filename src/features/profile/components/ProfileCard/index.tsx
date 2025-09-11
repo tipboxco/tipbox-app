@@ -292,7 +292,7 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
           bg="$backgroundLight50"
           borderRadius={5}
           p={8}
-          h={120}
+          h={130}
         >
           <HStack space="md" justifyContent="space-between">
             {userData.badges.map((badge) => (
@@ -328,12 +328,12 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
           </HStack>
           <Text
             color={isDark ? '$textDark400' : '$textLight600'}
-            fontSize={8}
+            fontSize={11}
             textAlign="center"
-            mt={8}
+            mt={12}
             fontWeight="$bold"
           >
-            See More Badges
+            See More Collections
           </Text>
         </Box>
       </Box>

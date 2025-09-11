@@ -9,7 +9,8 @@ export const mock_ladders: Ladder[] = [
     progress: {
       current: 3,
       total: 5
-    }
+    },
+    isCompleted: false
   },
   {
     id: '2',
@@ -19,7 +20,8 @@ export const mock_ladders: Ladder[] = [
     progress: {
       current: 2,
       total: 3
-    }
+    },
+    isCompleted: false
   },
   {
     id: '3',
@@ -40,6 +42,7 @@ export const mock_ladders: Ladder[] = [
     progress: {
       current: 1,
       total: 3
-    }
+    },
+    isCompleted: false
   }
 ];

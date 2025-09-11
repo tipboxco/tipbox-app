@@ -15,6 +15,7 @@ export interface LadderItem {
     totalTasks: number;
     avatar?: string;
   };
+  isCompleted?: boolean;
 }
 
 export interface LadderScreenProps {

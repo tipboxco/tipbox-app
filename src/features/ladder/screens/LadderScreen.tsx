@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import {
   Box,
@@ -8,6 +8,8 @@ import {
   Input,
   InputField,
   Pressable,
+  Button,
+  ButtonText,
 } from '@gluestack-ui/themed';
 import { Header } from '@/src/components/Header';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
@@ -23,9 +25,33 @@ export const LadderScreen: React.FC<LadderScreenProps> = ({ navigation }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedFilter, setSelectedFilter] = React.useState<'all' | 'in_progress' | 'completed'>('all');
+
   const handlePresentModalPress = useCallback((item: typeof ladderCards[0]) => {
     navigation.navigate('LadderDetail', { item });
   }, [navigation]);
+
+  const filteredLadderCards = useMemo(() => {
+    let filtered = ladderCards;
+    
+    // Önce arama filtresini uygula
+    if (searchQuery) {
+      filtered = filtered.filter(card => 
+        card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Sonra durum filtresini uygula
+    switch (selectedFilter) {
+      case 'in_progress':
+        return filtered.filter(card => card.progress < 100);
+      case 'completed':
+        return filtered.filter(card => card.progress === 100);
+      default:
+        return filtered;
+    }
+  }, [searchQuery, selectedFilter]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -42,7 +68,7 @@ export const LadderScreen: React.FC<LadderScreenProps> = ({ navigation }) => {
         onBackPress={handleBackPress}
       />
 
-      <Box px="$4" mt="$4">
+      <VStack px="$4" mt="$4" space="md">
         <Input
           variant="outline"
           size="md"
@@ -64,7 +90,66 @@ export const LadderScreen: React.FC<LadderScreenProps> = ({ navigation }) => {
             />
           </HStack>
         </Input>
-      </Box>
+
+        <HStack space="sm" justifyContent="flex-start" w="100%">
+          <Button
+            variant="outline"
+            size="sm"
+            borderRadius={10}
+            borderColor={isDark ? '$borderDark700' : '#EFEFEF'}
+            bg={selectedFilter === 'all' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
+            onPress={() => setSelectedFilter('all')}
+            px="$3"
+            py="$1.5"
+          >
+            <ButtonText
+              fontSize="$xs"
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '$textLight900'}
+            >
+              All
+            </ButtonText>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            borderRadius={10}
+            borderColor={isDark ? '$borderDark700' : '#EFEFEF'}
+            bg={selectedFilter === 'in_progress' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
+            onPress={() => setSelectedFilter('in_progress')}
+            px="$3"
+            py="$1.5"
+          >
+            <ButtonText
+              fontSize="$xs"
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '$textLight900'}
+            >
+              In Progress
+            </ButtonText>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            borderRadius={10}
+            borderColor={isDark ? '$borderDark700' : '#EFEFEF'}
+            bg={selectedFilter === 'completed' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
+            onPress={() => setSelectedFilter('completed')}
+            px="$3"
+            py="$1.5"
+          >
+            <ButtonText
+              fontSize="$xs"
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '$textLight900'}
+            >
+              Completed
+            </ButtonText>
+          </Button>
+        </HStack>
+      </VStack>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -76,7 +161,7 @@ export const LadderScreen: React.FC<LadderScreenProps> = ({ navigation }) => {
             onDetailPress={() => navigation.navigate('TimeLadderDetail', { item: timeLadderData.item })}
             onPress={() => navigation.navigate('TimeLadderDetail', { item: timeLadderData.item })}
           />
-          {ladderCards.map((item) => (
+          {filteredLadderCards.map((item) => (
             <LadderCard
               key={item.id}
               item={item}

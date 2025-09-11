@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { FlatList, Dimensions, TouchableOpacity } from 'react-native';
+import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -14,11 +14,43 @@ const NUM_COLUMNS = 2;
 const CARD_MARGIN = 15;
 const CARD_WIDTH = (width - (CARD_MARGIN * 2) - (COLUMN_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS;
 
+// Android için layout animasyonlarını etkinleştir
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 const LadderTab = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [selectedLadder, setSelectedLadder] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Filtreleme değiştiğinde animasyon için
+  const handleFilterChange = (newFilter: 'all' | 'in_progress' | 'completed') => {
+    // Önce fade out animasyonu
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Layout animasyonunu yapılandır
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      
+      // Filtre değerini güncelle
+      setSelectedFilter(newFilter);
+      
+      // Fade in animasyonu
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
 
   // variables
   const snapPoints = useMemo(() => ['90%'], []);
@@ -125,20 +157,95 @@ const LadderTab = () => {
     </TouchableOpacity>
   );
 
+  const filteredLadders = useMemo(() => {
+    switch (selectedFilter) {
+      case 'in_progress':
+        return mock_ladders.filter(ladder => !ladder.isCompleted);
+      case 'completed':
+        return mock_ladders.filter(ladder => ladder.isCompleted);
+      default:
+        return mock_ladders;
+    }
+  }, [selectedFilter]);
+
   return (
     <VStack flex={1} px={CARD_MARGIN} py={10}>
-      <FlatList
-        data={mock_ladders}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        numColumns={NUM_COLUMNS}
-        columnWrapperStyle={{
-          justifyContent: 'space-between',
-          gap: COLUMN_GAP,
-        }}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={false}
-      />
+      <HStack space="sm" mb={15}>
+        <Box
+          bg={selectedFilter === 'all' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
+          borderWidth={1}
+          borderColor={isDark ? '$borderDark700' : '#EFEFEF'}
+          borderRadius={100}
+          px={16}
+          py={8}
+        >
+          <TouchableOpacity onPress={() => handleFilterChange('all')}>
+            <Text
+              fontSize={12}
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '#000'}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+        </Box>
+
+        <Box
+          bg={selectedFilter === 'in_progress' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
+          borderWidth={1}
+          borderColor={isDark ? '$borderDark700' : '#EFEFEF'}
+          borderRadius={100}
+          px={16}
+          py={8}
+        >
+          <TouchableOpacity onPress={() => handleFilterChange('in_progress')}>
+            <Text
+              fontSize={12}
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '#000'}
+            >
+              In Progress
+            </Text>
+          </TouchableOpacity>
+        </Box>
+
+        <Box
+          bg={selectedFilter === 'completed' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
+          borderWidth={1}
+          borderColor={isDark ? '$borderDark700' : '#EFEFEF'}
+          borderRadius={100}
+          px={16}
+          py={8}
+        >
+          <TouchableOpacity onPress={() => handleFilterChange('completed')}>
+            <Text
+              fontSize={12}
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '#000'}
+            >
+              Completed
+            </Text>
+          </TouchableOpacity>
+        </Box>
+      </HStack>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <FlatList
+          data={filteredLadders}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          numColumns={NUM_COLUMNS}
+          columnWrapperStyle={{
+            justifyContent: 'space-between',
+            gap: COLUMN_GAP,
+          }}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          // Layout animasyonu için
+          onLayout={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          }}
+        />
+      </Animated.View>
 
       <Portal>
         <BottomSheet
