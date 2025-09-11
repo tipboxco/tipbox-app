@@ -6,8 +6,11 @@ import {
   TrusterListScreen, 
   WishlistScreen,
   SetupProfileScreen,
-  SelectCategoriesScreen
+  SelectCategoriesScreen,
+  InventoryScreen,
+  InventoryDetailScreen
 } from './screens';
+import { ChevronLeft } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 // Profile Stack için type tanımlaması
@@ -18,6 +21,8 @@ export type ProfileStackParamList = {
   WishlistDetail: undefined;
   SetupProfile: undefined;
   SelectCategories: undefined;
+  InventoryList: undefined;
+  InventoryDetail: { itemId: string };
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -58,6 +63,14 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="SelectCategories"
         component={SelectCategoriesScreen}
+      />
+      <Stack.Screen
+        name="InventoryList"
+        component={InventoryScreen}
+      />
+      <Stack.Screen
+        name="InventoryDetail"
+        component={InventoryDetailScreen}
       />
     </Stack.Navigator>
   );

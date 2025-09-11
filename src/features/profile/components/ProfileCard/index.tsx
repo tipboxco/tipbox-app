@@ -1,10 +1,12 @@
 import React from 'react';
-import { Box, VStack, Text, HStack, Image, Pressable } from '@gluestack-ui/themed';
-import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
+import { useNavigation, type NativeStackNavigationProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Box, VStack, Text, HStack, Image, Pressable } from '@gluestack-ui/themed';
+
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { ProfileStackParamList } from '../../navigation';
 import { UserCardData } from '@/src/mock/profile/userCardData/types';
 
 interface ProfileCardProps {
@@ -24,7 +26,7 @@ const styles = StyleSheet.create({
 export const ProfileCard = ({ userData }: ProfileCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
 
   return (
     <Box>
@@ -270,7 +272,7 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
             h="100%"
             justifyContent="center"
             alignItems="center"
-            onPress={() => navigation.navigate('Inventory')}
+            onPress={() => navigation.navigate('InventoryList')}
           >
             <Text
               color="$white"

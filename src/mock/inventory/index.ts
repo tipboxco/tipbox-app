@@ -11,7 +11,27 @@ export const mock_inventory: InventoryGroup[] = [
         model: 'MacBook Air M4',
         specs: '16GB 256GB SSD',
         image: require('@/assets/inventory/product_01.png'),
-        isNew: true
+        isNew: true,
+        price: '$529',
+        rating: {
+          price: 4.5,
+          product: 4.8
+        },
+        reviews: {
+          price: {
+            text: "Bought the Apple Watch Series 9 for $529 at launch. Checkout with Apple Pay was quick, and delivery came in 2 days. Packaging was sleek and minimal, but the stainless steel model...",
+            rating: 4.5
+          },
+          product: {
+            text: "The display is bright even outdoors and battery lasts a full day. Build quality feels premium, and integration with my iPhone is seamless. The sport band, however, looks too casual for formal...",
+            rating: 4.8
+          }
+        },
+        features: {
+          warranty: "3 Weeks",
+          delivery: "Fast Delivery",
+          quality: "Premium Quality"
+        }
       }
     ]
   },
@@ -24,7 +44,27 @@ export const mock_inventory: InventoryGroup[] = [
         brand: 'Apple',
         model: 'Airpods Max',
         specs: 'Midnight',
-        image: require('@/assets/inventory/product_02.png')
+        image: require('@/assets/inventory/product_02.png'),
+        price: '$549',
+        rating: {
+          price: 4.2,
+          product: 4.5
+        },
+        reviews: {
+          price: {
+            text: "Purchased the AirPods Max for $549. Premium packaging and fast delivery. The price is steep but the build quality justifies it. Apple Pay checkout was seamless...",
+            rating: 4.2
+          },
+          product: {
+            text: "Sound quality is exceptional, noise cancellation works great. The headband is comfortable for long sessions. The only downside is the weight after extended use...",
+            rating: 4.5
+          }
+        },
+        features: {
+          warranty: "2 Weeks",
+          delivery: "Fast Delivery",
+          quality: "Premium Quality"
+        }
       }
     ]
   },
@@ -37,7 +77,27 @@ export const mock_inventory: InventoryGroup[] = [
         brand: 'Samsung',
         model: 'Galaxy Z Fold 7',
         specs: '1 TB 16 GB Ram',
-        image: require('@/assets/inventory/product_03.png')
+        image: require('@/assets/inventory/product_03.png'),
+        price: '$1899',
+        rating: {
+          price: 4.0,
+          product: 4.7
+        },
+        reviews: {
+          price: {
+            text: "The Galaxy Z Fold 7 is expensive at $1899, but the pre-order bonus and trade-in value made it more reasonable. Samsung's delivery was quick and packaging was secure...",
+            rating: 4.0
+          },
+          product: {
+            text: "Amazing device that transforms from phone to tablet. Screen quality is outstanding and multitasking is a breeze. Battery life could be better but fast charging helps...",
+            rating: 4.7
+          }
+        },
+        features: {
+          warranty: "4 Weeks",
+          delivery: "Express Delivery",
+          quality: "Premium Quality"
+        }
       }
     ]
   },

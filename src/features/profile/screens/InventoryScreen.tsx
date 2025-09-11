@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { FlatList, Dimensions } from 'react-native';
-import { VStack, Box, Input, InputField } from '@gluestack-ui/themed';
-import { useColorMode } from '@/src/hooks/useColorMode';
-import { mock_inventory } from '@/src/mock/inventory';
-import { Search, ChevronLeft } from 'lucide-react-native';
+import { FlatList, Dimensions, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Search } from 'lucide-react-native';
+import { VStack, Box, Input, InputField } from '@gluestack-ui/themed';
+
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { Header } from '@/src/components/Header';
+import { mock_inventory } from '@/src/mock/inventory';
+import { ProfileStackParamList } from '../navigation';
+import { InventoryItem } from '../types';
 import InventoryCard from '../components/InventoryCard';
 
 const { width } = Dimensions.get('window');
@@ -17,7 +22,7 @@ const InventoryScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
 
   const filteredInventory = mock_inventory.flatMap(group => 
     group.items.filter(item => 
@@ -29,6 +34,12 @@ const InventoryScreen = () => {
 
   return (
     <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <Header
+        title="Inventory"
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+      />
+
       {/* Search Bar */}
       <Box px={15} py={10}>
         <Input

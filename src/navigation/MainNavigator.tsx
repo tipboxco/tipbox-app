@@ -6,7 +6,6 @@ import { AuthNavigator } from '@/src/features/auth/navigation';
 import { BridgeNavigator } from '@/src/features/bridge/navigation';
 import { LadderNavigator } from '@/src/features/ladder/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
-import { InventoryNavigator } from '@/src/features/inventory/navigation';
 import { RootStackParamList } from './navigation.types';
 import { useAuthStore } from '@/src/store/authStore';
 
@@ -30,7 +29,6 @@ export const MainNavigator = () => {
           <Stack.Screen name="Settings" component={SettingsNavigator} />
           <Stack.Screen name="Bridge" component={BridgeNavigator} />
           <Stack.Screen name="Ladder" component={LadderNavigator} />
-          <Stack.Screen name="Inventory" component={InventoryNavigator} />
         </>
       )}
     </Stack.Navigator>
