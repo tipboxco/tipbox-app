@@ -1,97 +1,82 @@
-import React from 'react';
-import { ScrollView, Dimensions, Pressable } from 'react-native';
-import { Box, Text, VStack, Center, Image } from '@gluestack-ui/themed';
-import { Header } from '../../../components/Header';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { FlatList, Dimensions } from 'react-native';
+import { VStack, Box, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { mock_inventory } from '@/src/mock/inventory';
+import { Search, ChevronLeft } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import InventoryCard from '../components/InventoryCard';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const EMPTY_STATE_IMAGE_SIZE = SCREEN_WIDTH * 0.5;
+const { width } = Dimensions.get('window');
+const CARD_GAP = 6;
+const CARDS_PER_ROW = 3;
+const HORIZONTAL_PADDING = 15;
+const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - (CARD_GAP * (CARDS_PER_ROW - 1))) / CARDS_PER_ROW;
 
-export const InventoryScreen = () => {
-  const navigation = useNavigation();
+const InventoryScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigation = useNavigation();
+
+  const filteredInventory = mock_inventory.flatMap(group => 
+    group.items.filter(item => 
+      item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.specs.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Header
-        title="Envanter"
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-        onNotificationPress={() => navigation.navigate('Notifications' as never)}
+    <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      {/* Search Bar */}
+      <Box px={15} py={10}>
+        <Input
+          variant="outline"
+          size="md"
+          borderRadius={5}
+          borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
+          bg={isDark ? '$backgroundDark800' : '$white'}
+        >
+          <Box
+            position="absolute"
+            left={15}
+            height="100%"
+            alignItems="center"
+            justifyContent="center"
+            zIndex={1}
+          >
+            <Search size={16} color={isDark ? '#666666' : '#B9B9B9'} strokeWidth={2.5} />
+          </Box>
+          <InputField
+            pl={45}
+            placeholder="Search product in your inventory"
+            placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
+            fontSize={11}
+            color={isDark ? '$textDark50' : '#000'}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </Input>
+      </Box>
+
+      <FlatList
+        data={filteredInventory}
+        renderItem={({ item }) => (
+          <InventoryCard
+            item={item}
+            width={CARD_WIDTH}
+            onPress={() => navigation.navigate('InventoryDetail', { itemId: item.id })}
+          />
+        )}
+        keyExtractor={(item) => item.id}
+        numColumns={CARDS_PER_ROW}
+        contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING }}
+        columnWrapperStyle={{ gap: CARD_GAP }}
+        showsVerticalScrollIndicator={false}
       />
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <Center flex={1} p="$4">
-          <VStack space="lg" alignItems="center" width="100%">
-            <Box
-              bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
-              borderRadius="$lg"
-              p="$8"
-              width={EMPTY_STATE_IMAGE_SIZE}
-              height={EMPTY_STATE_IMAGE_SIZE}
-              alignItems="center"
-              justifyContent="center"
-              borderWidth={1}
-              borderColor={isDark ? '$backgroundDark100' : '$backgroundLight200'}
-            >
-              <Box
-                width={EMPTY_STATE_IMAGE_SIZE * 0.6}
-                height={EMPTY_STATE_IMAGE_SIZE * 0.6}
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Feather
-                  name="box"
-                  size={EMPTY_STATE_IMAGE_SIZE * 0.4}
-                  color={isDark ? '#666666' : '#999999'}
-                />
-              </Box>
-            </Box>
-            <VStack space="sm" alignItems="center">
-              <Text
-                size="lg"
-                fontWeight="$bold"
-                color={isDark ? '$textDark50' : '$textLight900'}
-                textAlign="center"
-              >
-                Henüz ürün eklenmemiş
-              </Text>
-              <Text
-                size="sm"
-                color={isDark ? '$textDark400' : '$textLight500'}
-                textAlign="center"
-              >
-                Ürün ekleyerek envanterinizi oluşturmaya başlayın
-              </Text>
-            </VStack>
-            <Pressable onPress={() => navigation.navigate('AddProduct' as never)}>
-              <Box
-                bg="#E8FF6B"
-                borderWidth={1}
-                borderColor="#D8FF08"
-                borderRadius="$xl"
-                py="$2"
-                px="$5"
-                flexDirection="row"
-                alignItems="center"
-                mt="$4"
-              >
-                <Feather name="plus" size={14} color="#000000" />
-                <Text
-                  ml="$1"
-                  color="#000000"
-                  fontWeight="$bold"
-                  size="sm"
-                >
-                  Ürün Ekle
-                </Text>
-              </Box>
-            </Pressable>
-          </VStack>
-        </Center>
-      </ScrollView>
-    </Box>
+    </VStack>
   );
 };
+
+export default InventoryScreen;

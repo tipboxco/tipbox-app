@@ -152,3 +152,5 @@ export const WishlistScreen = () => {
     </Box>
   );
 };
+
+export default WishlistScreen;

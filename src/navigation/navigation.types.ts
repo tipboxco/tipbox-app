@@ -26,4 +26,5 @@ export type RootStackParamList = {
   Settings: NavigatorScreenParams<SettingsStackParamList>;
   Bridge: NavigatorScreenParams<BridgeStackParamList>;
   Ladder: NavigatorScreenParams<LadderStackParamList>;
+  Inventory: NavigatorScreenParams<InventoryStackParamList>;
 };

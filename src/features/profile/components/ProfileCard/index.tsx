@@ -264,12 +264,13 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
           />
 
           {/* Text */}
-          <Box
+          <Pressable
             position="absolute"
             w="100%"
             h="100%"
             justifyContent="center"
             alignItems="center"
+            onPress={() => navigation.navigate('Inventory')}
           >
             <Text
               color="$white"
@@ -279,7 +280,7 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
             >
               {userData.name}'s Inventory
             </Text>
-          </Box>
+          </Pressable>
         </Box>
       </Box>
 

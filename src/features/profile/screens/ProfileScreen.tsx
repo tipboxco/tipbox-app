@@ -24,7 +24,7 @@ const TABS = [
   { key: 'bookmarks', title: 'Bookmarks' },
 ];
 
-export const ProfileScreen = () => {
+const ProfileScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -91,3 +91,5 @@ export const ProfileScreen = () => {
     </Box>
   );
 };
+
+export default ProfileScreen;

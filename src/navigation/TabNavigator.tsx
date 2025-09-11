@@ -7,7 +7,6 @@ import { Feather } from '@expo/vector-icons';
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
 import { CatalogNavigator } from '@/src/features/catalog/navigation';
-import { InventoryNavigator } from '@/src/features/inventory';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
 
 export type TabParamList = {

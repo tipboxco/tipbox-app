@@ -1,6 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ProfileScreen, TrustListScreen, TrusterListScreen, WishlistScreen } from './screens';
+import { 
+  ProfileScreen, 
+  TrustListScreen, 
+  TrusterListScreen, 
+  WishlistScreen,
+  SetupProfileScreen,
+  SelectCategoriesScreen
+} from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 // Profile Stack için type tanımlaması
@@ -43,6 +50,14 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="WishlistDetail"
         component={WishlistScreen}
+      />
+      <Stack.Screen
+        name="SetupProfile"
+        component={SetupProfileScreen}
+      />
+      <Stack.Screen
+        name="SelectCategories"
+        component={SelectCategoriesScreen}
       />
     </Stack.Navigator>
   );

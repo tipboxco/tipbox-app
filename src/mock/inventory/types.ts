@@ -18,8 +18,3 @@ export interface InventoryState {
   groups: InventoryGroup[];
   selectedItem?: string;
 }
-
-export type InventoryStackParamList = {
-  InventoryList: undefined;
-  InventoryDetail: { itemId: string };
-};

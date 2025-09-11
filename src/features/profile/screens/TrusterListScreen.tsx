@@ -193,3 +193,5 @@ export const TrusterListScreen = () => {
         </Box>
     );
 };
+
+export default TrusterListScreen;
