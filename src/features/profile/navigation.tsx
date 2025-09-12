@@ -8,7 +8,8 @@ import {
   SetupProfileScreen,
   SelectCategoriesScreen,
   InventoryScreen,
-  InventoryDetailScreen
+  InventoryDetailScreen,
+  CollectionsScreen
 } from './screens';
 import { ChevronLeft } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -23,6 +24,7 @@ export type ProfileStackParamList = {
   SelectCategories: undefined;
   InventoryList: undefined;
   InventoryDetail: { itemId: string };
+  Collections: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -71,6 +73,21 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="InventoryDetail"
         component={InventoryDetailScreen}
+      />
+      <Stack.Screen
+        name="Collections"
+        component={CollectionsScreen}
+        options={{
+          headerShown: true,
+          headerTitle: '',
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <ChevronLeft
+              size={24}
+              color={isDark ? '#FFFFFF' : '#000000'}
+            />
+          ),
+        }}
       />
     </Stack.Navigator>
   );

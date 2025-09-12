@@ -6,3 +6,4 @@ export { default as SetupProfileScreen } from './SetupProfileScreen';
 export { default as SelectCategoriesScreen } from './SelectCategoriesScreen';
 export { default as InventoryScreen } from './InventoryScreen';
 export { default as InventoryDetailScreen } from './InventoryDetailScreen';
+export { default as CollectionsScreen } from './CollectionsScreen';

@@ -3,18 +3,15 @@ import { AuthStackParamList } from '@/src/features/auth/navigation';
 import { FeedStackParamList } from '@/src/features/feed/navigation';
 import { ExploreStackParamList } from '@/src/features/explore/navigation';
 import { CatalogStackParamList } from '@/src/features/catalog/navigation';
-import { InventoryStackParamList } from '@/src/features/inventory/types';
 import { ProfileStackParamList } from '@/src/features/profile/navigation';
 import { SettingsStackParamList } from '@/src/features/settings/navigation';
 import { BridgeStackParamList } from '@/src/features/bridge/types';
-import { LadderStackParamList } from '@/src/features/ladder/types';
 
 // Main Tab Navigator için type tanımlaması
 export type MainTabParamList = {
   Feed: NavigatorScreenParams<FeedStackParamList>;
   Explore: NavigatorScreenParams<ExploreStackParamList>;
   Catalog: NavigatorScreenParams<CatalogStackParamList>;
-  Inventory: NavigatorScreenParams<InventoryStackParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
 
@@ -25,6 +22,4 @@ export type RootStackParamList = {
   Profile: NavigatorScreenParams<ProfileStackParamList>;
   Settings: NavigatorScreenParams<SettingsStackParamList>;
   Bridge: NavigatorScreenParams<BridgeStackParamList>;
-  Ladder: NavigatorScreenParams<LadderStackParamList>;
-  Inventory: NavigatorScreenParams<InventoryStackParamList>;
 };

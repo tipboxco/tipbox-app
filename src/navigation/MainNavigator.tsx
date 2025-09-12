@@ -4,7 +4,6 @@ import { TabNavigator } from './TabNavigator';
 import { SettingsNavigator } from '@/src/features/settings/navigation';
 import { AuthNavigator } from '@/src/features/auth/navigation';
 import { BridgeNavigator } from '@/src/features/bridge/navigation';
-import { LadderNavigator } from '@/src/features/ladder/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
 import { RootStackParamList } from './navigation.types';
 import { useAuthStore } from '@/src/store/authStore';
@@ -28,7 +27,6 @@ export const MainNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileNavigator} />
           <Stack.Screen name="Settings" component={SettingsNavigator} />
           <Stack.Screen name="Bridge" component={BridgeNavigator} />
-          <Stack.Screen name="Ladder" component={LadderNavigator} />
         </>
       )}
     </Stack.Navigator>

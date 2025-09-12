@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { mock_ladders } from '@/src/mock/profile/ladders';
@@ -144,14 +145,30 @@ const LadderTab = () => {
         </VStack>
 
         {ladder.isCompleted && (
-          <Box
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            bg="rgba(47, 61, 36, 0.25)"
-          />
+          <>
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg="rgba(47, 61, 36, 0.25)"
+            />
+            <Box
+              position="absolute"
+              top={12}
+              right={12}
+              bg="$success600"
+              borderRadius={100}
+              w={18}
+              h={18}
+              alignItems="center"
+              justifyContent="center"
+              zIndex={10}
+            >
+              <Feather name="check" size={16} color="#fff" />
+            </Box>
+          </>
         )}
       </Box>
     </TouchableOpacity>
