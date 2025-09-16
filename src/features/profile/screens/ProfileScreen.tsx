@@ -1,14 +1,7 @@
 import React from 'react';
+import { Box, Text, HStack, Pressable } from '@gluestack-ui/themed';
+import { Tabs } from 'react-native-collapsible-tab-view';
 import { ScrollView } from 'react-native';
-import {
-  Box,
-  Tabs,
-  TabsTabList,
-  TabsTab,
-  TabsTabTitle,
-  TabsTabPanels,
-  TabsTabPanel,
-} from '@gluestack-ui/themed';
 import ProfileCard from '../components/ProfileCard';
 import { PostsTab, LadderTab } from '../components/TabContents';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
@@ -28,66 +21,70 @@ const ProfileScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
+  const renderHeader = () => {
+    return <ProfileCard userData={mock_user_card} />;
+  };
+
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[1]}
-      >
-        <ProfileCard userData={mock_user_card} />
-        
-        <Tabs
-          value="feed"
-          width="100%"
-          bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-        >
-          <TabsTabList
-            borderBottomWidth={1}
-            borderBottomColor={isDark ? '$borderDark800' : '$borderLight200'}
-          >
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {TABS.map((tab) => (
-                <TabsTab key={tab.key} value={tab.key}>
-                  <TabsTabTitle
-                    fontSize="$xs"
-                    color={isDark ? '$textDark400' : '$textLight500'}
-                    $active={{
-                      color: isDark ? '$textDark50' : '$textLight900',
-                      fontWeight: '$bold',
+      <Tabs.Container
+        renderHeader={renderHeader}
+        headerHeight={200}
+        containerStyle={{
+          backgroundColor: isDark ? '#171717' : '#FFFFFF',
+        }}
+        tabBarStyle={{
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? '#333' : '#eee',
+          height: 48,
+        }}
+        renderTabBar={props => (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <HStack space="xl" px="$4">
+              {props.tabNames.map((name, i) => {
+                const tab = TABS.find(t => t.key === name);
+                if (!tab) return null;
+                
+                return (
+                  <Pressable 
+                    key={name}
+                    onPress={() => {
+                      if (props.onTabPress) {
+                        props.onTabPress(i);
+                      }
                     }}
+                    py="$3"
+                    px="$4"
                   >
-                    {tab.title}
-                  </TabsTabTitle>
-                </TabsTab>
-              ))}
-            </ScrollView>
-          </TabsTabList>
-
-          <TabsTabPanels>
-            <TabsTabPanel value="feed">
-              <PostsTab />
-            </TabsTabPanel>
-            <TabsTabPanel value="reviews">
-              <PostsTab />
-            </TabsTabPanel>
-            <TabsTabPanel value="ladders">
-              <LadderTab />
-            </TabsTabPanel>
-            <TabsTabPanel value="benchmarks">
-              <PostsTab />
-            </TabsTabPanel>
-            <TabsTabPanel value="tips">
-              <PostsTab />
-            </TabsTabPanel>
-            <TabsTabPanel value="replies">
-              <PostsTab />
-            </TabsTabPanel>
-            <TabsTabPanel value="bookmarks">
-              <PostsTab />
-            </TabsTabPanel>
-          </TabsTabPanels>
-        </Tabs>
-      </ScrollView>
+                    <Text
+                      size="sm"
+                      color={props.activeIndex === i 
+                        ? (isDark ? '$textDark50' : '$textLight900')
+                        : (isDark ? '$textDark400' : '$textLight500')}
+                      fontWeight={props.activeIndex === i ? '$bold' : '$normal'}
+                    >
+                      {tab.title}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </HStack>
+          </ScrollView>
+        )}
+      >
+        {TABS.map(tab => (
+          <Tabs.Tab 
+            name={tab.key} 
+            key={tab.key}
+          >
+            <Tabs.ScrollView>
+              {tab.key === 'ladders' ? <LadderTab /> : <PostsTab />}
+            </Tabs.ScrollView>
+          </Tabs.Tab>
+        ))}
+      </Tabs.Container>
     </Box>
   );
 };

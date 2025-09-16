@@ -6,9 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { mockWishlistDetail } from '@/src/mock/profile/wishlist/wishlistDetail';
 import { mockWishlistItems } from '@/src/mock/profile/wishlist';
-import { ProductCard } from '../components/ProductCard';
 import { Feather } from '@expo/vector-icons';
-import { AddProductCard } from '../components/ProductCard/AddProductCard';
 
 export const WishlistScreen = () => {
   const navigation = useNavigation();
@@ -139,12 +137,14 @@ export const WishlistScreen = () => {
           <HStack px="$4" space="md" flexWrap="wrap" justifyContent="space-between">
             {mockWishlistDetail.map((item) => (
               <Box key={item.id} mb="$4">
-                <ProductCard item={item} />
+                {/* <ProductCard item={item} />*/}
               </Box>
             ))}
             <Box mb="$4">
+              {/* 
               <ProductCard onPress={handleAddProduct} />
               <AddProductCard onPress={handleAddProduct} />
+              */}
             </Box>
           </HStack>
         </Box>

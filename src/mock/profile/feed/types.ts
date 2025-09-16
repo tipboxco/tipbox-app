@@ -21,6 +21,7 @@ export interface PostUser {
 export interface PostProduct {
   id: string;
   name: string;
+  subName: string;
   image: any;
   rating: number;
 }
@@ -38,6 +39,7 @@ export interface PostCard {
   content: PostContent[];
   stats: PostStats;
   tags: string[];
+  images: any[];
   createdAt: string;
 }
 

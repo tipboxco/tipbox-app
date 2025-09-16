@@ -67,6 +67,8 @@ export const config = createConfig({
       mono: 'System',
     },
     fontSizes: {
+      '4xs': 8,
+      '3xs': 9,
       '2xs': 10,
       xs: 12,
       sm: 14,
@@ -103,6 +105,7 @@ export const config = createConfig({
       '2xl': 16,
       '3xl': 24,
       full: 9999,
+      'postcard': 5
     },
     shadows: {
       xs: {

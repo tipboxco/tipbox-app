@@ -1,13 +1,13 @@
 import React from 'react';
 import { VStack } from '@gluestack-ui/themed';
-import { PostCard } from '@/src/components/PostCard';
+import { ExperiencePostCard } from '@/src/components/ExperiencePostCard';
 import { mock_post_cards } from '@/src/mock/profile/feed';
 
 const PostsTab = () => {
   return (
-    <VStack flex={1} px={15}>
+    <VStack px={16} py={16} flex={1}>
       {mock_post_cards.map((post) => (
-        <PostCard key={post.id} data={post} />
+        <ExperiencePostCard key={post.id} data={post} />
       ))}
     </VStack>
   );
