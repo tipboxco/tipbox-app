@@ -1,12 +1,11 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { PostCard as PostCardType } from '@/src/mock/profile/feed/types';
-import { useSharedValue } from 'react-native-reanimated';
-import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated-carousel';
 import { Dimensions } from 'react-native';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import CardImageCarousel from '../CardImageCarousel';
 
 
 interface PostCardProps {
@@ -16,19 +15,6 @@ interface PostCardProps {
 export const ExperiencePostCard = ({ data }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const carouselRef = useRef<ICarouselInstance>(null);
-  const progress = useSharedValue<number>(0);
-
-  const onPressPagination = (index: number) => {
-    carouselRef.current?.scrollTo({
-      /**
-       * Calculate the difference between the current index and the target index
-       * to ensure that the carousel scrolls to the nearest index
-       */
-      count: index - progress.value,
-      animated: true,
-    });
-  };
 
   return (
     <VStack
@@ -114,7 +100,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
       {/* Content */}
       <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         {data.content.map((item, index) => (
-          <VStack key={index} space="xs">
+          <VStack key={index} py={8}>
             <HStack space="sm" alignItems="center">
               <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
               <Text
@@ -127,12 +113,13 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
             </HStack>
             <Text
               color={isDark ? '$textDark50' : '#000'}
+              numberOfLines={3}
               fontSize={'$2xs'}
               ml={26}
             >
               {item.text}
             </Text>
-            <HStack ml={26}>
+            <HStack ml={26} mt={8}>
               {item.rating.map((star, idx) => (
                 <Feather
                   key={idx}
@@ -170,66 +157,11 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
         ))}
       </HStack>
 
-      {data.images?.length > 0 && (
-        <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <Box
-            style={{
-              width: Dimensions.get('window').width,          
-              height: 300,
-              borderRadius: 8,
-              paddingHorizontal: 16,
-              overflow: 'hidden',
-              position: 'relative',
-              alignSelf: 'center',
-            }}
-          >
-            <Carousel
-              ref={carouselRef}
-              width={Dimensions.get('window').width}          
-              height={300}
-              data={data.images}
-              onProgressChange={progress}
-              renderItem={({ index }) => (
-                <Image
-                  source={data.images[index]}
-                  alt="Post image"
-                  resizeMode="cover"
-                  style={{
-                    width: Dimensions.get('window').width - 32,
-                    height: 300,
-                    borderRadius: 8,
-                  }}
-                />
-              )}
-            />
-
-            <Pagination.Basic
-              progress={progress}
-              data={data.images}
-              onPress={onPressPagination}
-              containerStyle={{
-                position: 'absolute',
-                bottom: 10,
-                left: 0,
-                right: 0,
-                alignItems: 'center',
-                justifyContent: 'center',
-                // istersen hafif arka plan:
-                // paddingHorizontal: 8, paddingVertical: 4,
-                // backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 999,
-              }}
-              dotStyle={{
-                width: 8,
-                height: 8,
-                borderRadius: 50,
-                backgroundColor: 'rgba(255,255,255,0.9)',
-                marginHorizontal: 4,      // <= nokta aralığı
-              }}
-            // activeDotStyle={{ backgroundColor: '#fff' }} // opsiyonel
-            />
-          </Box>
-        </VStack>
-      )}
+       {data.images?.length > 0 && (
+         <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+           <CardImageCarousel images={data.images} />
+         </VStack>
+       )}
       {/* Stats */}
       <HStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={config.tokens.radii['postcard'] as number} borderBottomLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9"
       >

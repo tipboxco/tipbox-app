@@ -1,0 +1,186 @@
+import React from 'react';
+import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { QuestionPost } from '@/src/mock/profile/questions/types';
+import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import CardImageCarousel from '../CardImageCarousel';
+
+interface QuestionPostCardProps {
+  data: QuestionPost;
+}
+
+export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
+  return (
+    <VStack
+      bg={isDark ? '$backgroundDark900' : '$white'}
+      mb={16}
+    >
+      {/* Header */}
+      <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+        <HStack alignItems="center" space="xs">
+          <Image
+            source={data.user.avatar}
+            alt={data.user.name}
+            mr={8}
+            width={42}
+            height={42}
+            borderRadius={100}
+          />
+          <VStack flex={1}>
+            <Text
+              color={isDark ? '$textDark50' : '#000'}
+              fontSize="$xs"
+              fontWeight="$bold"
+            >
+              {data.user.name}
+            </Text>
+            <Text
+              color={isDark ? '$textDark400' : '#787878'}
+              fontSize={config.tokens.fontSizes['3xs'] as number}
+              numberOfLines={1}
+              maxWidth={250}
+            >
+              {data.user.title}
+            </Text>
+          </VStack>
+          <Pressable>
+            <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
+          </Pressable>
+        </HStack>
+      </VStack>
+
+      {/* Product */}
+      <HStack px={16} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+        <Image
+          width={42}
+          height={42}
+          mr={8}
+          source={data.product.image}
+          alt={data.product.name}
+          borderRadius={5}
+        />
+        <VStack flex={1}>
+          <Text
+            color={isDark ? '$textDark50' : '#000'}
+            fontSize="$xs"
+            numberOfLines={2}
+          >
+            {data.product.name}
+          </Text>
+          <Text
+            color={isDark ? '$textDark50' : '#000'}
+            fontSize="$xs"
+          >
+            {data.product.subName}
+          </Text>
+        </VStack>
+      </HStack>
+      
+      {/* Badges */}
+      <HStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Box
+          bg={isDark ? '$backgroundDark900' : '$white'}
+          borderWidth={2}
+          borderColor="#CFE556"
+          bgColor='#829905'
+          borderRadius={20}
+          width={90}
+          px={10}
+          py={6}
+          mr={16}
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="space-evenly"
+        >
+          <Feather name="help-circle" size={12} color={'#fff'} />
+          <Text
+            fontSize={config.tokens.fontSizes['4xs'] as number}
+            fontWeight="$semibold"
+            ml={5}
+            color={'#fff'}
+          >
+            Question
+          </Text>
+        </Box>
+
+        {data.isBoosted && (
+          <Box
+            bgColor="#99055E"
+            borderWidth={2}
+            borderColor="#E059AA"
+            borderRadius={20}
+            width={90}
+            px={10}
+            py={6}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-evenly"
+          >
+            <Feather name="rocket" size={12} color="#fff" />
+            <Text
+              fontSize={config.tokens.fontSizes['4xs'] as number}
+              fontWeight="$semibold"
+              ml={5}
+              color="#fff"
+            >
+              Boosted
+            </Text>
+          </Box>
+        )}
+      </HStack>
+
+      {/* Content */}
+      <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Text
+          color={isDark ? '$textDark50' : '#000'}
+          fontSize={config.tokens.fontSizes['2xs'] as number}
+          numberOfLines={6}
+        >
+          {data.content}
+        </Text>
+      </VStack>
+
+      {/* Images */} 
+      {data.images && data.images?.length > 0 && (
+        <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} />
+        </VStack>
+      )}
+
+      {/* Stats */}
+      <HStack 
+        px={16} 
+        py={8} 
+        borderRightWidth={1} 
+        borderLeftWidth={1} 
+        borderBottomWidth={1} 
+        borderBottomRightRadius={config.tokens.radii['postcard'] as number} 
+        borderBottomLeftRadius={config.tokens.radii['postcard'] as number} 
+        borderColor="#E9E9E9"
+      >
+        <HStack mr={10} alignItems="center">
+          <Feather name="heart" size={24} color={isDark ? '#fff' : '#000'} />
+          <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.likes}</Text>
+        </HStack>
+        <HStack mr={10} alignItems="center">
+          <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+          <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.comments}</Text>
+        </HStack>
+        <HStack mr={10} alignItems="center">
+          <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+          <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.shares}</Text>
+        </HStack>
+        <HStack mr={10} alignItems="center">
+          <Feather name="bookmark" size={24} color={isDark ? '#fff' : '#000'} />
+          <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.bookmarks}</Text>
+        </HStack>
+      </HStack>
+    </VStack>
+  );
+};
+
+export default QuestionPostCard;
