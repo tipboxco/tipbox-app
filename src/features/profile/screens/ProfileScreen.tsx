@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Box } from '@gluestack-ui/themed';
 import { Tabs, MaterialTabBar } from 'react-native-collapsible-tab-view';
 import ProfileCard from '../components/ProfileCard';
-import { PostsTab, LadderTab, RepliesTab } from '../components/TabContents';
+import { ReviewsTab, LadderTab, RepliesTab, TipsTab, FeedTab, BenchmarksTab } from '../components/TabContents';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
@@ -71,9 +71,13 @@ const ProfileScreen = () => {
       >
         {TABS.map((tab) => {
           const TabContent = () => {
+            if (tab.key === 'feed') return <FeedTab />;
             if (tab.key === 'ladders') return <LadderTab />;
             if (tab.key === 'replies') return <RepliesTab />;
-            return <PostsTab />;
+            if (tab.key === 'tips') return <TipsTab />;
+            if (tab.key === 'reviews') return <ReviewsTab />;
+            if (tab.key === 'benchmarks') return <BenchmarksTab />;
+            return <FeedTab />;
           };
 
           return (

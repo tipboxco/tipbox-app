@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { QuestionPost } from '@/src/mock/profile/questions/types';
+import { Post } from '@/src/mock/profile/posts/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../CardImageCarousel';
 
-interface QuestionPostCardProps {
-  data: QuestionPost;
+interface PostCardProps {
+  data: Post;
 }
 
-export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
+const PostCard = ({ data }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -78,64 +78,13 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
             {data.product.subName}
           </Text>
         </VStack>
-        <Image
-          source={require('@/assets/common/percentage_01.png')}
-          alt={'percantage'}
-          width={30}
-          height={30}
-        />
-      </HStack>
-
-      {/* Badges */}
-      <HStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        <Box
-          bg={isDark ? '$backgroundDark900' : '$white'}
-          borderWidth={2}
-          borderColor="#CFE556"
-          bgColor='#829905'
-          borderRadius={20}
-          width={90}
-          px={10}
-          py={6}
-          mr={16}
-          flexDirection="row"
-          alignItems="center"
-          justifyContent="space-evenly"
-        >
-          <Feather name="help-circle" size={12} color={'#fff'} />
-          <Text
-            fontSize={config.tokens.fontSizes['4xs'] as number}
-            fontWeight="$semibold"
-            ml={5}
-            color={'#fff'}
-          >
-            Question
-          </Text>
-        </Box>
-
-        {data.isBoosted && (
-          <Box
-            bgColor="#99055E"
-            borderWidth={2}
-            borderColor="#E059AA"
-            borderRadius={20}
-            width={90}
-            px={10}
-            py={6}
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="space-evenly"
-          >
-            <Feather name="send" size={12} color="#fff" />
-            <Text
-              fontSize={config.tokens.fontSizes['4xs'] as number}
-              fontWeight="$semibold"
-              ml={5}
-              color="#fff"
-            >
-              Boosted
-            </Text>
-          </Box>
+        {data.product.hasDiscount && (
+          <Image
+            source={require('@/assets/common/percentage_01.png')}
+            alt={'percentage'}
+            width={30}
+            height={30}
+          />
         )}
       </HStack>
 
@@ -160,7 +109,7 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
       {/* Stats */}
       <HStack
         px={12}
-        py={10}
+        py={8}
         borderRightWidth={1}
         borderLeftWidth={1}
         borderBottomWidth={1}
@@ -200,4 +149,4 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
   );
 };
 
-export default QuestionPostCard;
+export default memo(PostCard);

@@ -32,7 +32,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
       </Pressable>
 
       {/* Header */}
-      <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+      <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           <Image
             source={data.user.avatar}
@@ -70,7 +70,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
       </VStack>
 
       {/* Product */}
-      <HStack px={16} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+      <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
         <Image
           width={42}
           height={42}
@@ -94,11 +94,16 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
             {data.product.subName}
           </Text>
         </VStack>
-        <Feather name="clock" size={20} color={isDark ? '#fff' : '#A3A3A3'} />
+        <Image
+          source={require('@/assets/common/percentage_01.png')}
+          alt={'percantage'}
+          width={30}
+          height={30}
+        />
       </HStack>
 
       {/* Content */}
-      <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         {data.content.map((item, index) => (
           <VStack key={index} py={8}>
             <HStack space="sm" alignItems="center">
@@ -113,7 +118,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
             </HStack>
             <Text
               color={isDark ? '$textDark50' : '#000'}
-              numberOfLines={3}
+              numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
               fontSize={'$2xs'}
               ml={26}
             >
@@ -135,7 +140,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
       </VStack>
 
       {/* Tags */}
-      <HStack px={15} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" flexWrap="wrap">
+      <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" flexWrap="wrap">
         {data.tags.map((tag, index) => (
           <HStack
             key={index}
@@ -145,6 +150,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
             rounded={'$full'}
             px={16}
             py={6}
+            mr={4}
           >
             <Text
               color={isDark ? '$textDark50' : '#000'}
@@ -157,13 +163,13 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
         ))}
       </HStack>
 
-       {data.images?.length > 0 && (
-         <VStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-           <CardImageCarousel images={data.images} />
-         </VStack>
-       )}
+      {data.images?.length > 0 && (
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} />
+        </VStack>
+      )}
       {/* Stats */}
-      <HStack px={16} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={config.tokens.radii['postcard'] as number} borderBottomLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9"
+      <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderBottomWidth={1} borderBottomRightRadius={config.tokens.radii['postcard'] as number} borderBottomLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9"
       >
         <HStack mr={10} alignItems="center">
           <Feather name="heart" size={24} color={isDark ? '#fff' : '#000'} />

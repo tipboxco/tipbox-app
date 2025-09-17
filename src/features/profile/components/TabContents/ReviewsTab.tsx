@@ -3,7 +3,7 @@ import { VStack } from '@gluestack-ui/themed';
 import { ExperiencePostCard } from '@/src/components/ExperiencePostCard';
 import { mock_post_cards } from '@/src/mock/profile/feed';
 
-const PostsTab = () => {
+const ReviewsTab = () => {
   return (
     <VStack px={16} py={16} flex={1}>
       {mock_post_cards.map((post) => (
@@ -13,4 +13,4 @@ const PostsTab = () => {
   );
 };
 
-export default PostsTab;
+export default ReviewsTab;

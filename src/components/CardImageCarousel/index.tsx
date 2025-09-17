@@ -28,7 +28,7 @@ export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
         width: Dimensions.get('window').width,          
         height: 300,
         borderRadius: 8,
-        paddingHorizontal: 16,
+        paddingHorizontal: 28,
         overflow: 'hidden',
         position: 'relative',
         alignSelf: 'center',
@@ -46,7 +46,7 @@ export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
             alt="Post image"
             resizeMode="cover"
             style={{
-              width: Dimensions.get('window').width - 32,
+              width: Dimensions.get('window').width - 56,
               height: 300,
               borderRadius: 8,
             }}
