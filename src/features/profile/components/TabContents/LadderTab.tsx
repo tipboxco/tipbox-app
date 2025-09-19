@@ -20,7 +20,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const LadderTab = () => {
+export const LadderTab = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [selectedLadder, setSelectedLadder] = useState<string | null>(null);

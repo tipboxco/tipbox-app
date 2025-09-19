@@ -12,3 +12,4 @@ export const BenchmarksTab = () => {
     </VStack>
   );
 };
+export default BenchmarksTab;

@@ -3,7 +3,7 @@ import { VStack } from '@gluestack-ui/themed';
 import QuestionPostCard from '@/src/components/QuestionPostCard';
 import { mock_questions } from '@/src/mock/profile/questions';
 
-const RepliesTab = () => {
+export const RepliesTab = () => {
   return (
     <VStack px={16} py={16}>
       {mock_questions.map((question) => (
@@ -12,5 +12,4 @@ const RepliesTab = () => {
     </VStack>
   );
 };
-
 export default RepliesTab;

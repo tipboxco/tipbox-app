@@ -12,3 +12,4 @@ export const FeedTab = () => {
     </VStack>
   );
 };
+export default FeedTab;

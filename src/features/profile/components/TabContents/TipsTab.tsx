@@ -12,3 +12,4 @@ export const TipsTab = () => {
     </VStack>
   );
 };
+export default TipsTab;

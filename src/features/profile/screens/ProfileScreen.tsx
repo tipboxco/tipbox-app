@@ -12,8 +12,7 @@ const TABS = [
   { key: 'ladders',     title: 'Ladders' },
   { key: 'benchmarks',  title: 'Benchmarks' },
   { key: 'tips',        title: 'Tips & tricks' },
-  { key: 'replies',     title: 'Replies' },
-  { key: 'bookmarks',   title: 'Bookmarks' },
+  { key: 'replies',     title: 'Replies' }
 ];
 
 const ProfileScreen = () => {
