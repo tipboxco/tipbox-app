@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRef } from 'react';
-import { Box, Image } from '@gluestack-ui/themed';
+import { Box, Image, Pressable, Text } from '@gluestack-ui/themed';
 import { Dimensions } from 'react-native';
 import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated-carousel';
 import { useSharedValue } from 'react-native-reanimated';
@@ -24,20 +24,17 @@ export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
 
   return (
     <Box
-      style={{
-        width: Dimensions.get('window').width,          
-        height: 300,
-        borderRadius: 8,
-        paddingHorizontal: 28,
-        overflow: 'hidden',
-        position: 'relative',
-        alignSelf: 'center',
-      }}
+      w={Dimensions.get('window').width}
+      h={360}
+      paddingHorizontal={28}
+      overflow="hidden"
+      position="relative"
+      alignSelf="center"
     >
       <Carousel
         ref={carouselRef}
-        width={Dimensions.get('window').width}          
-        height={300}
+        width={Dimensions.get('window').width}
+        height={360}
         data={images}
         onProgressChange={progress}
         renderItem={({ index }) => (
@@ -46,8 +43,8 @@ export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
             alt="Post image"
             resizeMode="cover"
             style={{
-              width: Dimensions.get('window').width - 56,
-              height: 300,
+              width: 355,
+              height: 355,
               borderRadius: 8,
             }}
           />
@@ -74,7 +71,7 @@ export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
           marginHorizontal: 4,
         }}
         activeDotStyle={{
-            backgroundColor: '#829905'
+          backgroundColor: '#829905'
         }}
       />
     </Box>

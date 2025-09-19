@@ -54,39 +54,74 @@ const PostCard = ({ data }: PostCardProps) => {
       </VStack>
 
       {/* Product */}
-      <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
-        <Image
-          width={42}
-          height={42}
-          mr={8}
-          source={data.product.image}
-          alt={data.product.name}
-          borderRadius={5}
-        />
-        <VStack flex={1}>
-          <Text
-            color={isDark ? '$textDark50' : '#000'}
-            fontSize="$xs"
-            numberOfLines={2}
-          >
-            {data.product.name}
-          </Text>
-          <Text
-            color={isDark ? '$textDark50' : '#000'}
-            fontSize="$xs"
-          >
-            {data.product.subName}
-          </Text>
-        </VStack>
-        {data.product.hasDiscount && (
-          <Image
-            source={require('@/assets/common/percentage_01.png')}
-            alt={'percentage'}
-            width={30}
-            height={30}
-          />
-        )}
-      </HStack>
+      {
+        data.category && data.category.product ? (
+          <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+            <Image
+              width={42}
+              height={42}
+              mr={8}
+              source={data.category.product.image}
+              alt={data.category.product.name}
+              borderRadius={5}
+            />
+            <VStack flex={1}>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$xs"
+                numberOfLines={2}
+              >
+                {data.category.product.name}
+              </Text>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$xs"
+              >
+                {data.category.product.subName}
+              </Text>
+            </VStack>
+            {data.category.product.hasDiscount && (
+              <Image
+                source={require('@/assets/common/percentage_01.png')}
+                alt={'percentage'}
+                width={30}
+                height={30}
+              />
+            )}
+          </HStack>
+        ) : (
+          <Pressable onPress={() => {console.log('Category sayfasına yönlendir');}}>
+            <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+              <Image
+                width={42}
+                height={42}
+                mr={8}
+                source={data.category.image}
+                alt={data.category.name}
+                borderRadius={5}
+              />
+              <VStack flex={1}>
+                <Text
+                  color={isDark ? '#A3A3A3' : '#A3A3A3'}
+                  fontSize="$xs"
+                  numberOfLines={1}
+                  fontWeight="$bold"
+                >
+                  {data.category.name}
+                </Text>
+                <Text
+                  color={isDark ? '#A3A3A3' : '#A3A3A3'}
+                  fontSize="$xs"
+                  numberOfLines={1}
+                >
+                  {data.category.subCategory}
+                </Text>
+              </VStack>
+              <Feather name="chevron-right" size={24} color={isDark ? '#fff' : '#A3A3A3'} />
+            </HStack>
+          </Pressable>
+        )
+      }
 
       {/* Content */}
       <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
@@ -100,11 +135,13 @@ const PostCard = ({ data }: PostCardProps) => {
       </VStack>
 
       {/* Images */}
-      {data.images && data.images?.length > 0 && (
-        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} />
-        </VStack>
-      )}
+      {
+        data.images && data.images?.length > 0 && (
+          <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <CardImageCarousel images={data.images} />
+          </VStack>
+        )
+      }
 
       {/* Stats */}
       <HStack
@@ -145,7 +182,7 @@ const PostCard = ({ data }: PostCardProps) => {
           />
         </Box>
       </HStack>
-    </VStack>
+    </VStack >
   );
 };
 

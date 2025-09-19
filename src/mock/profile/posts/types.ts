@@ -22,10 +22,18 @@ export interface PostStats {
   bookmarks: number;
 }
 
+export interface PostCategory {
+  id: string;
+  name: string;
+  subCategory: string;
+  image: ImageSourcePropType;
+  product?: PostProduct;
+}
+
 export interface Post {
   id: string;
   user: PostUser;
-  product: PostProduct;
+  category: PostCategory;
   content: string;
   images?: ImageSourcePropType[];
   stats: PostStats;

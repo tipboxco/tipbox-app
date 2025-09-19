@@ -1,15 +1,12 @@
 export interface QuestionPost {
   id: string;
   user: {
+    id: string;
     name: string;
     title: string;
     avatar: any;
   };
-  product: {
-    name: string;
-    subName: string;
-    image: any;
-  };
+  category: QuestionCategory;
   content: string;
   isBoosted?: boolean;
   images?: any[];
@@ -19,4 +16,19 @@ export interface QuestionPost {
     shares: number;
     bookmarks: number;
   };
+}
+
+export interface QuestionCategory {
+  id: string;
+  name: string;
+  subCategory: string;
+  image: any;
+  product?: QuestionProduct;
+}
+
+export interface QuestionProduct {
+  id: string;
+  name: string;
+  subName: string;
+  image: any;
 }

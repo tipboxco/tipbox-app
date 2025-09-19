@@ -9,11 +9,17 @@ export const mock_tips_and_tricks_posts: TipsAndTricksPost[] = [
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
       avatar: require('@/assets/avatar/ozan.png'),
     },
-    product: {
+    category: {
       id: '1',
-      name: 'MacBook Pro M2',
-      subName: 'Apple',
+      name: 'Technology',
+      subCategory: 'Computer / Tablets',
       image: require('@/assets/product/product_01.png'),
+      product: {
+        id: '1',
+        name: 'MacBook Pro M2',
+        subName: 'Apple',
+        image: require('@/assets/product/product_01.png'),
+      },
     },
     content: 'MacBook Pro M2 kullanıcıları için önemli bir ipucu: Batarya ömrünü uzatmak için "Optimized Battery Charging" özelliğini aktif tutun. Bu özellik, kullanım alışkanlıklarınızı öğrenerek şarj döngüsünü optimize eder. MacBook Pro M2 kullanıcıları için önemli bir ipucu: Batarya ömrünü uzatmak için "Optimized Battery Charging" özelliğini aktif tutun. Bu özellik, kullanım alışkanlıklarınızı öğrenerek şarj döngüsünü optimize eder.',
     images: [],
@@ -34,11 +40,45 @@ export const mock_tips_and_tricks_posts: TipsAndTricksPost[] = [
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
       avatar: require('@/assets/avatar/ozan.png'),
     },
-    product: {
+    category: {
       id: '2',
-      name: 'iPhone 15 Pro Max',
-      subName: 'Apple',
-      image: require('@/assets/product/product_02.png'),
+      name: 'Technology',
+      subCategory: 'Smartphones',
+      image: require('@/assets/inventory/product_03.png'),
+      product: {
+        id: '2',
+        name: 'iPhone 15 Pro Max',
+        subName: 'Apple',
+        image: require('@/assets/inventory/product_03.png'),
+      },
+    },
+    content: 'iPhone 15 Pro Max kamera ayarları için profesyonel ipuçları! Swipe ile paylaştığım ayarları kullanarak gece çekimlerinizde çok daha iyi sonuçlar alabilirsiniz. iPhone 15 Pro Max kamera ayarları için profesyonel ipuçları! Swipe ile paylaştığım ayarları kullanarak gece çekimlerinizde çok daha iyi sonuçlar alabilirsiniz.',
+    images: [
+      require('@/assets/product/Cat.png'),
+      require('@/assets/product/Cat.png'),
+    ],
+    stats: {
+      likes: 567,
+      comments: 89,
+      shares: 34,
+      bookmarks: 123,
+    },
+    tag: 'Camera',
+    createdAt: '2024-03-17T09:15:00Z',
+  },
+  {
+    id: '3',
+    user: {
+      id: '3',
+      name: 'Jane Smith',
+      title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
+      avatar: require('@/assets/avatar/ozan.png'),
+    },
+    category: {
+      id: '3',
+      name: 'Electrical Home Appliances',
+      subCategory: 'Air Purification',
+      image: require('@/assets/inventory/product_05.png'),
     },
     content: 'iPhone 15 Pro Max kamera ayarları için profesyonel ipuçları! Swipe ile paylaştığım ayarları kullanarak gece çekimlerinizde çok daha iyi sonuçlar alabilirsiniz. iPhone 15 Pro Max kamera ayarları için profesyonel ipuçları! Swipe ile paylaştığım ayarları kullanarak gece çekimlerinizde çok daha iyi sonuçlar alabilirsiniz.',
     images: [

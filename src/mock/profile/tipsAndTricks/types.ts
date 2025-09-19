@@ -21,10 +21,18 @@ export interface TipsAndTricksStats {
   bookmarks: number;
 }
 
+export interface TipsAndTricksCategory {
+  id: string;
+  name: string;
+  subCategory: string;
+  product?: TipsAndTricksProduct;
+  image: ImageSourcePropType;
+}
+
 export interface TipsAndTricksPost {
   id: string;
   user: TipsAndTricksUser;
-  product: TipsAndTricksProduct;
+  category: TipsAndTricksCategory;
   content: string;
   images?: ImageSourcePropType[];
   stats: TipsAndTricksStats;
