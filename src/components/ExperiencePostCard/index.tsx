@@ -6,6 +6,9 @@ import { PostCard as PostCardType } from '@/src/mock/profile/feed/types';
 import { Dimensions } from 'react-native';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../CardImageCarousel';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/src/navigation/navigation.types';
 
 
 interface PostCardProps {
@@ -15,6 +18,7 @@ interface PostCardProps {
 export const ExperiencePostCard = ({ data }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <VStack
@@ -70,7 +74,13 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
       </VStack>
 
       {/* Product */}
-      <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+      <Pressable onPress={() => {
+        navigation.navigate('Post', {
+          screen: 'PostDetailScreen',
+          params: { postData: data, type: 'experience' }
+        });
+      }}>
+        <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
         <Image
           width={42}
           height={42}
@@ -100,44 +110,52 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
           width={30}
           height={30}
         />
-      </HStack>
+        </HStack>
+      </Pressable>
 
       {/* Content */}
-      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        {data.content.map((item, index) => (
-          <VStack key={index} py={8}>
-            <HStack space="sm" alignItems="center">
-              <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
+      <Pressable onPress={() => {
+        navigation.navigate('Post', {
+          screen: 'PostDetailScreen',
+          params: { postData: data, type: 'experience' }
+        });
+      }}>
+        <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          {data.content.map((item, index) => (
+            <VStack key={index} py={8}>
+              <HStack space="sm" alignItems="center">
+                <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={'$xs'}
+                  fontWeight="$bold"
+                >
+                  {item.tag.title}
+                </Text>
+              </HStack>
               <Text
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize={'$xs'}
-                fontWeight="$bold"
+                numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
+                fontSize={'$2xs'}
+                ml={26}
               >
-                {item.tag.title}
+                {item.text}
               </Text>
-            </HStack>
-            <Text
-              color={isDark ? '$textDark50' : '#000'}
-              numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
-              fontSize={'$2xs'}
-              ml={26}
-            >
-              {item.text}
-            </Text>
-            <HStack ml={26} mt={8}>
-              {item.rating.map((star, idx) => (
-                <Feather
-                  key={idx}
-                  name={star ? 'star' : 'star'}
-                  size={12}
-                  color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                  fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                />
-              ))}
-            </HStack>
-          </VStack>
-        ))}
-      </VStack>
+              <HStack ml={26} mt={8}>
+                {item.rating.map((star, idx) => (
+                  <Feather
+                    key={idx}
+                    name={star ? 'star' : 'star'}
+                    size={12}
+                    color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
+                    fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
+                  />
+                ))}
+              </HStack>
+            </VStack>
+          ))}
+        </VStack>
+      </Pressable>
 
       {/* Tags */}
       <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" flexWrap="wrap">
