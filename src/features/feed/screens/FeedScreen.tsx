@@ -9,7 +9,7 @@ import { FilterBar } from '../components/FilterBar';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
-import { mock_review_card, mock_review_card_image, mock_user_profile } from '@/src/mock/common';
+import { mock_user_profile } from '@/src/mock/common';
 
 
 
@@ -32,8 +32,6 @@ export const FeedScreen = () => {
     >
       <Header
         title="Akış"
-        hasNotification
-        hasMessage
         onMenuPress={() => setIsMenuVisible(true)}
       />
       <FilterBar />

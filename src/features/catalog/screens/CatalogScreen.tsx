@@ -35,8 +35,6 @@ export const CatalogScreen = () => {
     >
       <Header
         title="Katalog"
-        hasNotification
-        hasMessage
         onMenuPress={() => setIsMenuVisible(true)}
       />
       

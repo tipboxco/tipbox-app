@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Pressable } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Tag, Package, Star, Layers } from 'lucide-react-native';
@@ -9,7 +9,6 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { mock_inventory } from '@/src/mock/inventory';
 import { ProfileStackParamList } from '../navigation';
-import { InventoryItem } from '../types';
 
 const InventoryDetailScreen = () => {
   const { colorMode } = useColorMode();
