@@ -9,6 +9,7 @@ import { PostStackParamList } from '../navigation';
 import { PostDetailCard } from '@/src/components/PostDetailCard';
 import { TipsAndTricksPostCardDetail } from '@/src/components/TipsAndTricksPostCardDetail';
 import { QuestionPostCardDetail } from '@/src/components/QuestionPostCardDetail';
+import { BenchmarkPostCardDetail } from '@/src/components/BenchmarkPostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 
@@ -84,6 +85,7 @@ export const PostDetailScreen = () => {
                 title={
                     type === 'tipsAndTricks' ? "Tips & Tricks Details" : 
                     type === 'question' ? "Question Details" : 
+                    type === 'benchmark' ? "Benchmark Details" :
                     "Product Details"
                 }
                 showBackButton
@@ -99,6 +101,8 @@ export const PostDetailScreen = () => {
                     <TipsAndTricksPostCardDetail data={postData} />
                 ) : type === 'question' ? (
                     <QuestionPostCardDetail data={postData} />
+                ) : type === 'benchmark' ? (
+                    <BenchmarkPostCardDetail data={postData} />
                 ) : (
                     <PostDetailCard data={postData} />
                 )}

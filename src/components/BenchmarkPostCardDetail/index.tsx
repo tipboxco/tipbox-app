@@ -4,11 +4,8 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BenchmarkPost, BenchmarkProduct } from '@/src/mock/profile/benchmark/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 
-interface BenchmarkPostCardProps {
+interface BenchmarkPostCardDetailProps {
     data: BenchmarkPost;
 }
 
@@ -62,10 +59,9 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
     </HStack>
 );
 
-export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
+export const BenchmarkPostCardDetail = ({ data }: BenchmarkPostCardDetailProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     return (
         <VStack
@@ -107,31 +103,17 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
             </VStack>
 
             {/* Content */}
-            <Pressable onPress={() => {
-                navigation.navigate('Post', {
-                    screen: 'PostDetailScreen',
-                    params: { postData: data, type: 'benchmark' }
-                });
-            }}>
-                <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
-                    <Text
-                        color={isDark ? '$textDark50' : '#000'}
-                        fontSize={config.tokens.fontSizes['2xs'] as number}
-                        numberOfLines={3}
-                    >
-                        {data.content}
-                    </Text>
-                </VStack>
-            </Pressable>
+            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
+                <Text
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={config.tokens.fontSizes['2xs'] as number}
+                >
+                    {data.content}
+                </Text>
+            </VStack>
 
             {/* Product Comparison */}
-            <Pressable onPress={() => {
-                navigation.navigate('Post', {
-                    screen: 'PostDetailScreen',
-                    params: { postData: data, type: 'benchmark' }
-                });
-            }}>
-                <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                 <Box position="relative" width="100%">
                     <HStack justifyContent="space-between" width="100%">
                         {data.products.map((product, index) => (
@@ -156,8 +138,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                         />
                     </Box>
                 </Box>
-                </VStack>
-            </Pressable>
+            </VStack>
 
             {/* Stats */}
             <HStack
@@ -201,4 +182,3 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
         </VStack>
     );
 };
-export default BenchmarkPostCard;
