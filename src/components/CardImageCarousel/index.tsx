@@ -7,11 +7,18 @@ import { useSharedValue } from 'react-native-reanimated';
 
 interface CardImageCarouselProps {
   images: any[];
+  width?: number;
+  height?: number;
+  paddingHorizontal?: number;
 }
 
-export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
+export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarouselProps) => {
   const carouselRef = useRef<ICarouselInstance>(null);
   const progress = useSharedValue<number>(0);
+
+  const carouselPadding = paddingHorizontal ? paddingHorizontal : 28;
+  const carouselWidth = Dimensions.get('window').width;
+  const carouselHeight = Dimensions.get('window').width - carouselPadding;
 
   const onPressPagination = (index: number) => {
     carouselRef.current?.scrollTo({
@@ -24,17 +31,17 @@ export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
 
   return (
     <Box
-      w={Dimensions.get('window').width}
-      h={360}
-      paddingHorizontal={28}
+      w={carouselWidth}
+      h={carouselHeight}
+      paddingHorizontal={carouselPadding}
       overflow="hidden"
       position="relative"
       alignSelf="center"
     >
       <Carousel
         ref={carouselRef}
-        width={Dimensions.get('window').width}
-        height={360}
+        width={carouselWidth}
+        height={carouselHeight}
         data={images}
         onProgressChange={progress}
         renderItem={({ index }) => (
@@ -43,8 +50,8 @@ export const CardImageCarousel = ({ images }: CardImageCarouselProps) => {
             alt="Post image"
             resizeMode="cover"
             style={{
-              width: 355,
-              height: 355,
+              width: carouselWidth - (carouselPadding * 2),
+              height: carouselHeight,
               borderRadius: 8,
             }}
           />

@@ -1,22 +1,18 @@
-import React, { memo } from 'react';
-import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import React from 'react';
+import { VStack, Text, HStack, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../CardImageCarousel';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 
-interface TipsAndTricksPostCardProps {
+interface TipsAndTricksPostCardDetailProps {
     data: TipsAndTricksPost;
 }
 
-const TipsAndTricksPostCard = ({ data }: TipsAndTricksPostCardProps) => {
+export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetailProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     return (
         <VStack
@@ -24,7 +20,7 @@ const TipsAndTricksPostCard = ({ data }: TipsAndTricksPostCardProps) => {
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+            <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={data.user.avatar}
@@ -60,47 +56,40 @@ const TipsAndTricksPostCard = ({ data }: TipsAndTricksPostCardProps) => {
             {/* Product */}
             {
                 data.category && data.category.product ? (
-                    <Pressable onPress={() => {
-                        navigation.navigate('Post', {
-                            screen: 'PostDetailScreen',
-                            params: { postData: data, type: 'tipsAndTricks' }
-                        });
-                    }}>
-                        <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
-                            <Image
-                                width={42}
-                                height={42}
-                                mr={8}
-                                source={data.category.product.image}
-                                alt={data.category.product.name}
-                                borderRadius={5}
-                            />
-                            <VStack flex={1}>
-                                <Text
-                                    color={isDark ? '$textDark50' : '#000'}
-                                    fontSize="$xs"
-                                    numberOfLines={2}
-                                >
-                                    {data.category.product.name}
-                                </Text>
-                                <Text
-                                    color={isDark ? '$textDark50' : '#000'}
-                                    fontSize="$xs"
-                                >
-                                    {data.category.product.subName}
-                                </Text>
-                            </VStack>
-                            <Image
-                                source={require('@/assets/common/percentage_01.png')}
-                                alt={'percantage'}
-                                width={30}
-                                height={30}
-                            />
-                        </HStack>
-                    </Pressable>
+                    <HStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9" alignItems="center">
+                        <Image
+                            width={42}
+                            height={42}
+                            mr={8}
+                            source={data.category.product.image}
+                            alt={data.category.product.name}
+                            borderRadius={5}
+                        />
+                        <VStack flex={1}>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$xs"
+                                numberOfLines={2}
+                            >
+                                {data.category.product.name}
+                            </Text>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$xs"
+                            >
+                                {data.category.product.subName}
+                            </Text>
+                        </VStack>
+                        <Image
+                            source={require('@/assets/common/percentage_01.png')}
+                            alt={'percentage'}
+                            width={30}
+                            height={30}
+                        />
+                    </HStack>
                 ) : (
                     <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
-                        <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+                        <HStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9" alignItems="center">
                             <Image
                                 width={42}
                                 height={42}
@@ -130,10 +119,10 @@ const TipsAndTricksPostCard = ({ data }: TipsAndTricksPostCardProps) => {
                         </HStack>
                     </Pressable>
                 )
-            };
+            }
 
             {/* Badges */}
-            <HStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
+            <HStack px={12} pb={8} justifyContent="space-between" alignItems="center">
                 <Box
                     bg={isDark ? '$backgroundDark900' : '$white'}
                     borderWidth={2}
@@ -179,27 +168,19 @@ const TipsAndTricksPostCard = ({ data }: TipsAndTricksPostCardProps) => {
             </HStack>
 
             {/* Content */}
-            <Pressable onPress={() => {
-                navigation.navigate('Post', {
-                    screen: 'PostDetailScreen',
-                    params: { postData: data, type: 'tipsAndTricks' }
-                });
-            }}>
-                <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                    <Text
-                        color={isDark ? '$textDark50' : '#000'}
-                        fontSize={config.tokens.fontSizes['2xs'] as number}
-                        numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
-                    >
-                        {data.content}
-                    </Text>
-                </VStack>
-            </Pressable>
+            <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                <Text
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={config.tokens.fontSizes['2xs'] as number}
+                >
+                    {data.content}
+                </Text>
+            </VStack>
 
             {/* Images */}
             {data.images && data.images?.length > 0 && (
-                <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                    <CardImageCarousel images={data.images} />
+                <VStack px={12}>
+                    <CardImageCarousel images={data.images} paddingHorizontal={12} />
                 </VStack>
             )}
 
@@ -207,11 +188,7 @@ const TipsAndTricksPostCard = ({ data }: TipsAndTricksPostCardProps) => {
             <HStack
                 px={12}
                 py={8}
-                borderRightWidth={1}
-                borderLeftWidth={1}
                 borderBottomWidth={1}
-                borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-                borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
                 borderColor="#E9E9E9"
                 justifyContent="space-between"
             >
@@ -245,5 +222,3 @@ const TipsAndTricksPostCard = ({ data }: TipsAndTricksPostCardProps) => {
         </VStack>
     );
 };
-
-export default memo(TipsAndTricksPostCard);

@@ -132,8 +132,8 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
             {/* Images */}
             {
                 data.images && data.images?.length > 0 && (
-                    <VStack px={12} borderColor="#E9E9E9">
-                        <CardImageCarousel images={data.images} />
+                    <VStack px={12}>
+                        <CardImageCarousel images={data.images} paddingHorizontal={12} />
                     </VStack>
                 )
             }

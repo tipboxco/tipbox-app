@@ -7,6 +7,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../navigation';
 import { PostDetailCard } from '@/src/components/PostDetailCard';
+import { TipsAndTricksPostCardDetail } from '@/src/components/TipsAndTricksPostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 
@@ -71,7 +72,7 @@ export const PostDetailScreen = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<NativeStackNavigationProp<PostStackParamList>>();
     const route = useRoute<PostDetailScreenRouteProp>();
-    const { postData } = route.params;
+    const { postData, type } = route.params;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
 
@@ -79,7 +80,7 @@ export const PostDetailScreen = () => {
         <VStack flex={1} bg={isDark ? '#000000' : '#fff'}>
             {/* Status Bar & Header */}
             <Header
-                title="Product Details"
+                title={type === 'tipsAndTricks' ? "Tips & Tricks Details" : "Product Details"}
                 showBackButton
                 onBackPress={() => navigation.goBack()}
             />
@@ -88,8 +89,12 @@ export const PostDetailScreen = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100 }}
             >
-                {/* Post Detail Card */}
-                <PostDetailCard data={postData} />
+                {/* Detail Card */}
+                {type === 'tipsAndTricks' ? (
+                    <TipsAndTricksPostCardDetail data={postData} />
+                ) : (
+                    <PostDetailCard data={postData} />
+                )}
 
                 {/* Comments Section */}
                 <VStack py={8}>

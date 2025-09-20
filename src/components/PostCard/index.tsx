@@ -11,9 +11,10 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 
 interface PostCardProps {
   data: Post;
+  type?: 'post' | 'tipsAndTricks';
 }
 
-const PostCard = ({ data }: PostCardProps) => {
+const PostCard = ({ data, type = 'post' }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -63,7 +64,7 @@ const PostCard = ({ data }: PostCardProps) => {
           <Pressable onPress={() => {
             navigation.navigate('Post', {
               screen: 'PostDetailScreen',
-              params: { postData: data }
+              params: { postData: data, type: type }
             });
           }}>
             <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
@@ -138,7 +139,7 @@ const PostCard = ({ data }: PostCardProps) => {
       <Pressable onPress={() => {
         navigation.navigate('Post', {
           screen: 'PostDetailScreen',
-          params: { postData: data }
+          params: { postData: data, type: type }
         });
       }}>
         <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
