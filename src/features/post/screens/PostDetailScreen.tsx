@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../navigation';
 import { PostDetailCard } from '@/src/components/PostDetailCard';
 import { TipsAndTricksPostCardDetail } from '@/src/components/TipsAndTricksPostCardDetail';
+import { QuestionPostCardDetail } from '@/src/components/QuestionPostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 
@@ -80,7 +81,11 @@ export const PostDetailScreen = () => {
         <VStack flex={1} bg={isDark ? '#000000' : '#fff'}>
             {/* Status Bar & Header */}
             <Header
-                title={type === 'tipsAndTricks' ? "Tips & Tricks Details" : "Product Details"}
+                title={
+                    type === 'tipsAndTricks' ? "Tips & Tricks Details" : 
+                    type === 'question' ? "Question Details" : 
+                    "Product Details"
+                }
                 showBackButton
                 onBackPress={() => navigation.goBack()}
             />
@@ -92,6 +97,8 @@ export const PostDetailScreen = () => {
                 {/* Detail Card */}
                 {type === 'tipsAndTricks' ? (
                     <TipsAndTricksPostCardDetail data={postData} />
+                ) : type === 'question' ? (
+                    <QuestionPostCardDetail data={postData} />
                 ) : (
                     <PostDetailCard data={postData} />
                 )}

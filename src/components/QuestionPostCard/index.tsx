@@ -5,6 +5,9 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { QuestionPost } from '@/src/mock/profile/questions/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../CardImageCarousel';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/src/navigation/navigation.types';
 
 interface QuestionPostCardProps {
   data: QuestionPost;
@@ -13,6 +16,7 @@ interface QuestionPostCardProps {
 export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <VStack
@@ -56,7 +60,13 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
       {/* Product */}
       {
         data.category && data.category.product ? (
-          <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+          <Pressable onPress={() => {
+            navigation.navigate('Post', {
+              screen: 'PostDetailScreen',
+              params: { postData: data, type: 'question' }
+            });
+          }}>
+            <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
             <Image
               width={42}
               height={42}
@@ -87,6 +97,7 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
               height={30}
             />
           </HStack>
+          </Pressable>
         ) : (
           <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
             <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
@@ -175,15 +186,22 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
       </HStack>
 
       {/* Content */}
-      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        <Text
-          color={isDark ? '$textDark50' : '#000'}
-          fontSize={config.tokens.fontSizes['2xs'] as number}
-          numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
-        >
-          {data.content}
-        </Text>
-      </VStack>
+      <Pressable onPress={() => {
+        navigation.navigate('Post', {
+          screen: 'PostDetailScreen',
+          params: { postData: data, type: 'question' }
+        });
+      }}>
+        <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <Text
+            color={isDark ? '$textDark50' : '#000'}
+            fontSize={config.tokens.fontSizes['2xs'] as number}
+            numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
+          >
+            {data.content}
+          </Text>
+        </VStack>
+      </Pressable>
 
       {/* Images */}
       {data.images && data.images?.length > 0 && (

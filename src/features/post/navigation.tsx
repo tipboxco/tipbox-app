@@ -5,7 +5,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 
 // Post Stack için type tanımlaması
 export type PostStackParamList = {
-  PostDetailScreen: { postData: any; type: 'post' | 'tipsAndTricks' };
+  PostDetailScreen: { postData: any; type: 'post' | 'tipsAndTricks' | 'question' };
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();
