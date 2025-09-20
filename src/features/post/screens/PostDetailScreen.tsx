@@ -6,10 +6,10 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PostStackParamList } from '../navigation';
-import { PostDetailCard } from '@/src/components/PostDetailCard';
-import { TipsAndTricksPostCardDetail } from '@/src/components/TipsAndTricksPostCardDetail';
-import { QuestionPostCardDetail } from '@/src/components/QuestionPostCardDetail';
-import { BenchmarkPostCardDetail } from '@/src/components/BenchmarkPostCardDetail';
+import { PostDetailCard } from '../components/PostDetailCard';
+import { TipsAndTricksPostCardDetail } from '../components/TipsAndTricksPostCardDetail';
+import { QuestionPostCardDetail } from '../components/QuestionPostCardDetail';
+import { BenchmarkPostCardDetail } from '../components/BenchmarkPostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 

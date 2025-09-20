@@ -1,16 +1,16 @@
 import React from 'react';
-import { VStack, Text, HStack, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
+import { QuestionPost } from '@/src/mock/profile/questions/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
-import CardImageCarousel from '../CardImageCarousel';
+import CardImageCarousel from '@/src/components/CardImageCarousel';
 
-interface TipsAndTricksPostCardDetailProps {
-    data: TipsAndTricksPost;
+interface QuestionPostCardDetailProps {
+    data: QuestionPost;
 }
 
-export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetailProps) => {
+export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
@@ -20,7 +20,7 @@ export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetai
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8}>
+            <VStack px={12} py={8} >
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={data.user.avatar}
@@ -122,53 +122,60 @@ export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetai
             }
 
             {/* Badges */}
-            <HStack px={12} pb={8} justifyContent="space-between" alignItems="center">
+            <HStack px={12} pb={8}>
                 <Box
                     bg={isDark ? '$backgroundDark900' : '$white'}
                     borderWidth={2}
-                    borderColor="#56CFE5"
-                    bgColor='#059982'
+                    borderColor="#CFE556"
+                    bgColor='#829905'
                     borderRadius={20}
-                    width={100}
+                    width={90}
                     px={10}
                     py={6}
+                    mr={16}
                     flexDirection="row"
                     alignItems="center"
                     justifyContent="space-evenly"
                 >
-                    <Feather name="info" size={12} color={'#fff'} />
+                    <Feather name="help-circle" size={12} color={'#fff'} />
                     <Text
                         fontSize={config.tokens.fontSizes['4xs'] as number}
                         fontWeight="$semibold"
                         ml={5}
                         color={'#fff'}
                     >
-                        Tips & Tricks
+                        Question
                     </Text>
                 </Box>
 
-                <HStack
-                    alignItems="center"
-                    space="xs"
-                    px={8}
-                >
-                    <Text
-                        mr={4}
-                        color={isDark ? '$textDark400' : '#666'}
-                        fontSize={config.tokens.fontSizes['2xs'] as number}
+                {data.isBoosted && (
+                    <Box
+                        bgColor="#99055E"
+                        borderWidth={2}
+                        borderColor="#E059AA"
+                        borderRadius={20}
+                        width={90}
+                        px={10}
+                        py={6}
+                        flexDirection="row"
+                        alignItems="center"
+                        justifyContent="space-evenly"
                     >
-                        {data.tag}
-                    </Text>
-                    <Feather
-                        name="layers"
-                        size={16}
-                        color={isDark ? '#fff' : '#666'}
-                    />
-                </HStack>
+                        <Feather name="send" size={12} color="#fff" />
+                        <Text
+                            fontSize={config.tokens.fontSizes['4xs'] as number}
+                            fontWeight="$semibold"
+                            ml={5}
+                            color="#fff"
+                        >
+                            Boosted
+                        </Text>
+                    </Box>
+                )}
             </HStack>
 
             {/* Content */}
-            <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <VStack px={12} pb={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
                     fontSize={config.tokens.fontSizes['2xs'] as number}
@@ -187,8 +194,12 @@ export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetai
             {/* Stats */}
             <HStack
                 px={12}
-                py={8}
+                py={10}
+                borderRightWidth={1}
+                borderLeftWidth={1}
                 borderBottomWidth={1}
+                borderBottomRightRadius={config.tokens.radii['postcard'] as number}
+                borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
                 borderColor="#E9E9E9"
                 justifyContent="space-between"
             >

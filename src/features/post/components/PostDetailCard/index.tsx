@@ -1,26 +1,24 @@
 import React from 'react';
-import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { VStack, Text, Image, HStack, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
-import { useColorMode } from '@/src/hooks/useColorMode';
-import { QuestionPost } from '@/src/mock/profile/questions/types';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
-import CardImageCarousel from '../CardImageCarousel';
+import CardImageCarousel from '@/src/components/CardImageCarousel';
 
-interface QuestionPostCardDetailProps {
-    data: QuestionPost;
+import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { Post } from '@/src/mock/profile/posts/types';
+
+interface PostDetailCardProps {
+    data: Post;
 }
 
-export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) => {
+export const PostDetailCard = ({ data }: PostDetailCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
     return (
-        <VStack
-            bg={isDark ? '$backgroundDark900' : '$white'}
-            mb={16}
-        >
+        <VStack bg={isDark ? '$backgroundDark900' : '$white'}>
             {/* Header */}
-            <VStack px={12} py={8} >
+            <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={data.user.avatar}
@@ -80,12 +78,14 @@ export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) =>
                                 {data.category.product.subName}
                             </Text>
                         </VStack>
-                        <Image
-                            source={require('@/assets/common/percentage_01.png')}
-                            alt={'percentage'}
-                            width={30}
-                            height={30}
-                        />
+                        {data.category.product.hasDiscount && (
+                            <Image
+                                source={require('@/assets/common/percentage_01.png')}
+                                alt={'percentage'}
+                                width={30}
+                                height={30}
+                            />
+                        )}
                     </HStack>
                 ) : (
                     <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
@@ -102,7 +102,6 @@ export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) =>
                                 <Text
                                     color={isDark ? '#A3A3A3' : '#A3A3A3'}
                                     fontSize="$xs"
-                                    numberOfLines={1}
                                     fontWeight="$bold"
                                 >
                                     {data.category.name}
@@ -110,7 +109,6 @@ export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) =>
                                 <Text
                                     color={isDark ? '#A3A3A3' : '#A3A3A3'}
                                     fontSize="$xs"
-                                    numberOfLines={1}
                                 >
                                     {data.category.subCategory}
                                 </Text>
@@ -121,61 +119,8 @@ export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) =>
                 )
             }
 
-            {/* Badges */}
-            <HStack px={12} pb={8}>
-                <Box
-                    bg={isDark ? '$backgroundDark900' : '$white'}
-                    borderWidth={2}
-                    borderColor="#CFE556"
-                    bgColor='#829905'
-                    borderRadius={20}
-                    width={90}
-                    px={10}
-                    py={6}
-                    mr={16}
-                    flexDirection="row"
-                    alignItems="center"
-                    justifyContent="space-evenly"
-                >
-                    <Feather name="help-circle" size={12} color={'#fff'} />
-                    <Text
-                        fontSize={config.tokens.fontSizes['4xs'] as number}
-                        fontWeight="$semibold"
-                        ml={5}
-                        color={'#fff'}
-                    >
-                        Question
-                    </Text>
-                </Box>
-
-                {data.isBoosted && (
-                    <Box
-                        bgColor="#99055E"
-                        borderWidth={2}
-                        borderColor="#E059AA"
-                        borderRadius={20}
-                        width={90}
-                        px={10}
-                        py={6}
-                        flexDirection="row"
-                        alignItems="center"
-                        justifyContent="space-evenly"
-                    >
-                        <Feather name="send" size={12} color="#fff" />
-                        <Text
-                            fontSize={config.tokens.fontSizes['4xs'] as number}
-                            fontWeight="$semibold"
-                            ml={5}
-                            color="#fff"
-                        >
-                            Boosted
-                        </Text>
-                    </Box>
-                )}
-            </HStack>
-
             {/* Content */}
-            <VStack px={12} pb={8}>
+            <VStack px={12} pb={8} borderColor="#E9E9E9">
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
                     fontSize={config.tokens.fontSizes['2xs'] as number}
@@ -185,21 +130,19 @@ export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) =>
             </VStack>
 
             {/* Images */}
-            {data.images && data.images?.length > 0 && (
-                <VStack px={12}>
-                    <CardImageCarousel images={data.images} paddingHorizontal={12} />
-                </VStack>
-            )}
+            {
+                data.images && data.images?.length > 0 && (
+                    <VStack px={12}>
+                        <CardImageCarousel images={data.images} paddingHorizontal={12} />
+                    </VStack>
+                )
+            }
 
             {/* Stats */}
             <HStack
                 px={12}
-                py={10}
-                borderRightWidth={1}
-                borderLeftWidth={1}
+                py={8}
                 borderBottomWidth={1}
-                borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-                borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
                 borderColor="#E9E9E9"
                 justifyContent="space-between"
             >
@@ -230,6 +173,7 @@ export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) =>
                     />
                 </Box>
             </HStack>
+
         </VStack>
     );
 };

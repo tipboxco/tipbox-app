@@ -1,22 +1,24 @@
 import React from 'react';
-import { VStack, Text, Image, HStack, Pressable, Box } from '@gluestack-ui/themed';
+import { VStack, Text, HStack, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
-import CardImageCarousel from '../CardImageCarousel';
-
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Post } from '@/src/mock/profile/posts/types';
+import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
+import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import CardImageCarousel from '@/src/components/CardImageCarousel';
 
-interface PostDetailCardProps {
-    data: Post;
+interface TipsAndTricksPostCardDetailProps {
+    data: TipsAndTricksPost;
 }
 
-export const PostDetailCard = ({ data }: PostDetailCardProps) => {
+export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetailProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
     return (
-        <VStack bg={isDark ? '$backgroundDark900' : '$white'}>
+        <VStack
+            bg={isDark ? '$backgroundDark900' : '$white'}
+            mb={16}
+        >
             {/* Header */}
             <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
@@ -78,14 +80,12 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
                                 {data.category.product.subName}
                             </Text>
                         </VStack>
-                        {data.category.product.hasDiscount && (
-                            <Image
-                                source={require('@/assets/common/percentage_01.png')}
-                                alt={'percentage'}
-                                width={30}
-                                height={30}
-                            />
-                        )}
+                        <Image
+                            source={require('@/assets/common/percentage_01.png')}
+                            alt={'percentage'}
+                            width={30}
+                            height={30}
+                        />
                     </HStack>
                 ) : (
                     <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
@@ -102,6 +102,7 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
                                 <Text
                                     color={isDark ? '#A3A3A3' : '#A3A3A3'}
                                     fontSize="$xs"
+                                    numberOfLines={1}
                                     fontWeight="$bold"
                                 >
                                     {data.category.name}
@@ -109,6 +110,7 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
                                 <Text
                                     color={isDark ? '#A3A3A3' : '#A3A3A3'}
                                     fontSize="$xs"
+                                    numberOfLines={1}
                                 >
                                     {data.category.subCategory}
                                 </Text>
@@ -119,8 +121,54 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
                 )
             }
 
+            {/* Badges */}
+            <HStack px={12} pb={8} justifyContent="space-between" alignItems="center">
+                <Box
+                    bg={isDark ? '$backgroundDark900' : '$white'}
+                    borderWidth={2}
+                    borderColor="#56CFE5"
+                    bgColor='#059982'
+                    borderRadius={20}
+                    width={100}
+                    px={10}
+                    py={6}
+                    flexDirection="row"
+                    alignItems="center"
+                    justifyContent="space-evenly"
+                >
+                    <Feather name="info" size={12} color={'#fff'} />
+                    <Text
+                        fontSize={config.tokens.fontSizes['4xs'] as number}
+                        fontWeight="$semibold"
+                        ml={5}
+                        color={'#fff'}
+                    >
+                        Tips & Tricks
+                    </Text>
+                </Box>
+
+                <HStack
+                    alignItems="center"
+                    space="xs"
+                    px={8}
+                >
+                    <Text
+                        mr={4}
+                        color={isDark ? '$textDark400' : '#666'}
+                        fontSize={config.tokens.fontSizes['2xs'] as number}
+                    >
+                        {data.tag}
+                    </Text>
+                    <Feather
+                        name="layers"
+                        size={16}
+                        color={isDark ? '#fff' : '#666'}
+                    />
+                </HStack>
+            </HStack>
+
             {/* Content */}
-            <VStack px={12} pb={8} borderColor="#E9E9E9">
+            <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
                     fontSize={config.tokens.fontSizes['2xs'] as number}
@@ -130,13 +178,11 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
             </VStack>
 
             {/* Images */}
-            {
-                data.images && data.images?.length > 0 && (
-                    <VStack px={12}>
-                        <CardImageCarousel images={data.images} paddingHorizontal={12} />
-                    </VStack>
-                )
-            }
+            {data.images && data.images?.length > 0 && (
+                <VStack px={12}>
+                    <CardImageCarousel images={data.images} paddingHorizontal={12} />
+                </VStack>
+            )}
 
             {/* Stats */}
             <HStack
@@ -173,7 +219,6 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
                     />
                 </Box>
             </HStack>
-
         </VStack>
     );
 };
