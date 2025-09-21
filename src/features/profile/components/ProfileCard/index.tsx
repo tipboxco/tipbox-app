@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { useNavigation, type NativeStackNavigationProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Box, VStack, Text, HStack, Image, Pressable } from '@gluestack-ui/themed';
@@ -118,38 +119,46 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
               >
                 {" "}•{" "}
               </Text>
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={10}
-                fontWeight="$bold"
-              >
-                {userData.stats.trust}
-              </Text>
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={10}
-              >
-                Trust
-              </Text>
+              <Pressable onPress={() => navigation.navigate('TrustList', { initialTab: 'trust' })}>
+                <HStack alignItems="center" space="xs">
+                  <Text
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    fontSize={10}
+                    fontWeight="$bold"
+                  >
+                    {userData.stats.trust}
+                  </Text>
+                  <Text
+                    color={isDark ? '$textDark400' : '$textLight600'}
+                    fontSize={10}
+                  >
+                    Trust
+                  </Text>
+                </HStack>
+              </Pressable>
               <Text
                 color={isDark ? '$textDark400' : '$textLight600'}
                 fontSize={10}
               >
                 {" "}•{" "}
               </Text>
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={10}
-                fontWeight="$bold"
-              >
-                {userData.stats.truster > 999 ? `${Math.floor(userData.stats.truster / 1000)}K` : userData.stats.truster}
-              </Text>
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={10}
-              >
-                Truster
-              </Text>
+              <Pressable onPress={() => navigation.navigate('TrustList', { initialTab: 'truster' })}>
+                <HStack alignItems="center" space="xs">
+                  <Text
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    fontSize={10}
+                    fontWeight="$bold"
+                  >
+                    {userData.stats.truster > 999 ? `${Math.floor(userData.stats.truster / 1000)}K` : userData.stats.truster}
+                  </Text>
+                  <Text
+                    color={isDark ? '$textDark400' : '$textLight600'}
+                    fontSize={10}
+                  >
+                    Truster
+                  </Text>
+                </HStack>
+              </Pressable>
             </HStack>
 
             {/* Titles */}

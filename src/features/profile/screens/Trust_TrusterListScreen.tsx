@@ -1,0 +1,424 @@
+import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { 
+    VStack, 
+    HStack, 
+    Text, 
+    Pressable, 
+    Box, 
+    Image, 
+    Input, 
+    InputField,
+    ScrollView
+} from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/src/navigation/navigation.types';
+import { Header } from '@/src/components/Header';
+import { TrustUser, TrustListScreenRouteProp } from '@/src/mock/profile/trustTrusterList/types';
+import { mockTrustUsers, mockTrusterUsers } from '@/src/mock/profile/trustTrusterList';
+import { TrustUserCard } from '../components/TrustUserCard';
+import { SuggestionCard } from '../components/SuggestionCard';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { Portal } from '@gorhom/portal';
+
+type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+
+export const Trust_TrusterListScreen = () => {
+    const { colorMode } = useColorMode();
+    const isDark = colorMode === 'dark';
+    const route = useRoute<TrustListScreenRouteProp>();
+    const navigation = useNavigation<TrustListScreenNavigationProp>();
+    
+    const [activeTab, setActiveTab] = useState<'trust' | 'truster'>(
+        route.params?.initialTab || 'trust'
+    );
+    const [searchQuery, setSearchQuery] = useState('');
+    const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+    const [selectedSort, setSelectedSort] = useState<'default' | 'newest' | 'oldest'>('default');
+    const bottomSheetRef = useRef<BottomSheet>(null);
+
+    // Get current data based on active tab
+    const currentUsers = activeTab === 'trust' ? mockTrustUsers : mockTrusterUsers;
+    
+    const filteredUsers = currentUsers.filter((user: TrustUser) =>
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const handlePopoverOpen = (userId: string) => {
+        setOpenPopoverId(userId);
+    };
+
+    const handlePopoverClose = () => {
+        setOpenPopoverId(null);
+    };
+
+    // Bottom sheet variables
+    const snapPoints = useMemo(() => ['40%'], []);
+
+    // Bottom sheet callbacks
+    const handleSheetChanges = useCallback((index: number) => {
+        console.log('[FilterBottomSheet] sheet index ->', index);
+    }, []);
+
+    const handleSortSelect = (sort: 'default' | 'newest' | 'oldest') => {
+        setSelectedSort(sort);
+        bottomSheetRef.current?.close();
+    };
+
+    return (
+        <VStack flex={1} bg={isDark ? '#000' : '#FAFAFA'}>
+            {/* Header */}
+            <Header
+                title="Micheal Clark"
+                showBackButton
+                onBackPress={() => navigation.goBack()}
+            />
+
+            {/* Tab Bar */}
+            <VStack px={16} py={16} bg={isDark ? '#000' : '#FAFAFA'}>
+                <HStack space="lg" mb={16}>
+                    <Pressable
+                        onPress={() => setActiveTab('trust')}
+                        flex={1}
+                        alignItems="center"
+                        py={8}
+                    >
+                        <Text
+                            color={activeTab === 'trust' ? '#000' : '#8C8C8C'}
+                            fontSize={12}
+                            fontWeight="$bold"
+                        >
+                            Trust
+                        </Text>
+                        {activeTab === 'trust' && (
+                            <Box
+                                width={112}
+                                height={2}
+                                bg="#000"
+                                mt={3}
+                                borderRadius={1}
+                            />
+                        )}
+                    </Pressable>
+                    <Pressable
+                        onPress={() => setActiveTab('truster')}
+                        flex={1}
+                        alignItems="center"
+                        py={8}
+                    >
+                        <Text
+                            color={activeTab === 'truster' ? '#000' : '#8C8C8C'}
+                            fontSize={12}
+                            fontWeight="$bold"
+                        >
+                            Truster
+                        </Text>
+                        {activeTab === 'truster' && (
+                            <Box
+                                width={112}
+                                height={2}
+                                bg="#000"
+                                mt={3}
+                                borderRadius={1}
+                            />
+                        )}
+                    </Pressable>
+                </HStack>
+
+                {/* Search Bar */}
+                <HStack
+                    alignItems="center"
+                    bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                    borderWidth={1}
+                    borderColor="#E9E9E9"
+                    borderRadius={23}
+                    px={12}
+                    space="sm"
+                >
+                    <Feather 
+                        name="search" 
+                        size={24} 
+                        color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} 
+                    />
+                    <Input flex={1} borderWidth={0} bg="transparent">
+                        <InputField
+                            placeholder={activeTab === 'trust' ? "Search for a user in the Trust List." : "Search for a user in the Truster List."}
+                            placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                            color={isDark ? '#fff' : '#000'}
+                            fontSize={11}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                    </Input>
+                    {/* Filter Icon - Only for Truster tab */}
+                    {activeTab === 'truster' && (
+                        <Pressable p={8} onPress={() => bottomSheetRef.current?.expand()}>
+                            <Feather 
+                                name="filter" 
+                                size={18} 
+                                color={isDark ? '#89898D' : '#89898D'} 
+                            />
+                        </Pressable>
+                    )}
+                </HStack>
+            </VStack>
+
+            {/* Content */}
+            <VStack flex={1}>
+                {activeTab === 'trust' ? (
+                    <ScrollView flex={1} keyboardShouldPersistTaps="handled">
+                        {/* Suggested Users Section */}
+                        <SuggestionCard
+                            title="View Suggested Users"
+                            subtitle="Based on the categories you are interested in."
+                            avatars={[
+                                {
+                                    id: '1',
+                                    source: require('@/assets/avatar/ozan.png'),
+                                    alt: 'User 1'
+                                },
+                                {
+                                    id: '2',
+                                    source: require('@/assets/avatar/ozan.png'),
+                                    alt: 'User 2'
+                                },
+                                {
+                                    id: '3',
+                                    source: require('@/assets/avatar/ozan.png'),
+                                    alt: 'User 3'
+                                }
+                            ]}
+                            onPress={() => {
+                                navigation.navigate('SuggestedUsers' as any);
+                            }}
+                        />
+
+                        {/* Trust Users List */}
+                        {filteredUsers.map((user: TrustUser) => (
+                            <TrustUserCard 
+                                key={user.id} 
+                                user={user} 
+                                showBorder={false}
+                                isPopoverOpen={openPopoverId === user.id}
+                                onPopoverOpen={() => handlePopoverOpen(user.id)}
+                                onPopoverClose={handlePopoverClose}
+                            />
+                        ))}
+                    </ScrollView>
+                ) : (
+                    <ScrollView flex={1} keyboardShouldPersistTaps="handled">
+                        {/* Suggested Users Section */}
+                        <SuggestionCard
+                            title="View Suggested Users"
+                            subtitle="Based on the categories you are interested in."
+                            avatars={[
+                                {
+                                    id: '1',
+                                    source: require('@/assets/avatar/ozan.png'),
+                                    alt: 'User 1'
+                                },
+                                {
+                                    id: '2',
+                                    source: require('@/assets/avatar/ozan.png'),
+                                    alt: 'User 2'
+                                },
+                                {
+                                    id: '3',
+                                    source: require('@/assets/avatar/ozan.png'),
+                                    alt: 'User 3'
+                                }
+                            ]}
+                            onPress={() => {
+                                navigation.navigate('SuggestedUsers' as any);
+                            }}
+                        />
+
+                        {/* Truster Users List */}
+                        {filteredUsers.map((user: TrustUser) => (
+                            <TrustUserCard 
+                                key={user.id} 
+                                user={user} 
+                                showBorder={false}
+                                isPopoverOpen={openPopoverId === user.id}
+                                onPopoverOpen={() => handlePopoverOpen(user.id)}
+                                onPopoverClose={handlePopoverClose}
+                            />
+                        ))}
+                    </ScrollView>
+                )}
+            </VStack>
+
+            {/* Güvenli kapanış overlay'i - sadece popover açıkken aktif */}
+            {openPopoverId && (
+                <Pressable
+                    onPress={handlePopoverClose}
+                    style={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        right: 0, 
+                        bottom: 0, 
+                        left: 0,
+                        zIndex: 1
+                    }}
+                    pointerEvents="auto"
+                />
+            )}
+
+            {/* Filter Bottom Sheet */}
+            <Portal>
+                <BottomSheet
+                    ref={bottomSheetRef}
+                    index={-1}
+                    snapPoints={snapPoints}
+                    onChange={handleSheetChanges}
+                    enablePanDownToClose
+                    backdropComponent={BottomSheetBackdrop}
+                    backgroundStyle={{
+                        backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+                        borderTopLeftRadius: 20,
+                        borderTopRightRadius: 20,
+                    }}
+                    handleStyle={{
+                        backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+                        borderTopLeftRadius: 20,
+                        borderTopRightRadius: 20,
+                    }}
+                    handleIndicatorStyle={{
+                        backgroundColor: isDark ? '#333333' : '#B8B8B7',
+                        width: 40,
+                        height: 4,
+                    }}
+                >
+                    <BottomSheetView>
+                        <VStack flex={1} px={16} py={20}>
+                            {/* Sort Header */}
+                            <HStack justifyContent="center" mb={20}>
+                                <Text
+                                    color={isDark ? '#fff' : '#000'}
+                                    fontSize={16}
+                                    fontWeight="$bold"
+                                >
+                                    Sort
+                                </Text>
+                            </HStack>
+
+                            {/* Sort Options */}
+                            <VStack space="md">
+                                {/* Default Option */}
+                                <Pressable onPress={() => handleSortSelect('default')}>
+                                    <HStack 
+                                        alignItems="center" 
+                                        justifyContent="space-between" 
+                                        py={10}
+                                    >
+                                        <Text
+                                            color={isDark ? '#fff' : '#000'}
+                                            fontSize={14}
+                                            fontWeight="$normal"
+                                        >
+                                            Default
+                                        </Text>
+                                        <Box
+                                            width={20}
+                                            height={20}
+                                            borderRadius={10}
+                                            borderWidth={1}
+                                            borderColor="#B8B8B7"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            {selectedSort === 'default' && (
+                                                <Box
+                                                    width={14}
+                                                    height={14}
+                                                    borderRadius={7}
+                                                    bg="#B8B8B7"
+                                                />
+                                            )}
+                                        </Box>
+                                    </HStack>
+                                </Pressable>
+
+                                {/* Newest Option */}
+                                <Pressable onPress={() => handleSortSelect('newest')}>
+                                    <HStack 
+                                        alignItems="center" 
+                                        justifyContent="space-between" 
+                                        py={10}
+                                    >
+                                        <Text
+                                            color={isDark ? '#fff' : '#000'}
+                                            fontSize={14}
+                                            fontWeight="$normal"
+                                        >
+                                            Sort by: Newest
+                                        </Text>
+                                        <Box
+                                            width={20}
+                                            height={20}
+                                            borderRadius={10}
+                                            borderWidth={1}
+                                            borderColor="#B8B8B7"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            {selectedSort === 'newest' && (
+                                                <Box
+                                                    width={14}
+                                                    height={14}
+                                                    borderRadius={7}
+                                                    bg="#B8B8B7"
+                                                />
+                                            )}
+                                        </Box>
+                                    </HStack>
+                                </Pressable>
+
+                                {/* Oldest Option */}
+                                <Pressable onPress={() => handleSortSelect('oldest')}>
+                                    <HStack 
+                                        alignItems="center" 
+                                        justifyContent="space-between" 
+                                        py={10}
+                                    >
+                                        <Text
+                                            color={isDark ? '#fff' : '#000'}
+                                            fontSize={14}
+                                            fontWeight="$normal"
+                                        >
+                                            Sort by: Oldest
+                                        </Text>
+                                        <Box
+                                            width={20}
+                                            height={20}
+                                            borderRadius={10}
+                                            borderWidth={1}
+                                            borderColor="#B8B8B7"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            {selectedSort === 'oldest' && (
+                                                <Box
+                                                    width={14}
+                                                    height={14}
+                                                    borderRadius={7}
+                                                    bg="#B8B8B7"
+                                                />
+                                            )}
+                                        </Box>
+                                    </HStack>
+                                </Pressable>
+                            </VStack>
+                        </VStack>
+                    </BottomSheetView>
+                </BottomSheet>
+            </Portal>
+        </VStack>
+    );
+};
+
+export default Trust_TrusterListScreen;

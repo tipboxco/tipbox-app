@@ -3,7 +3,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { 
   ProfileScreen,
   InventoryScreen,
-  InventoryDetailScreen
+  InventoryDetailScreen,
+  Trust_TrusterListScreen,
+  SuggestedUsersScreen
 } from './screens';
 import { ChevronLeft } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -14,6 +16,8 @@ export type ProfileStackParamList = {
   InventoryList: undefined;
   InventoryDetail: { itemId: string };
   Collections: undefined;
+  TrustList: { initialTab?: 'trust' | 'truster' };
+  SuggestedUsers: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -42,6 +46,14 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="InventoryDetail"
         component={InventoryDetailScreen}
+      />
+      <Stack.Screen
+        name="TrustList"
+        component={Trust_TrusterListScreen}
+      />
+      <Stack.Screen
+        name="SuggestedUsers"
+        component={SuggestedUsersScreen}
       />
     </Stack.Navigator>
   );

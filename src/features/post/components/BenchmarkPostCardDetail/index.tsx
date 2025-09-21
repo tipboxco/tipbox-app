@@ -69,7 +69,7 @@ export const BenchmarkPostCardDetail = ({ data }: BenchmarkPostCardDetailProps) 
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+            <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={data.user.avatar}
@@ -103,7 +103,7 @@ export const BenchmarkPostCardDetail = ({ data }: BenchmarkPostCardDetailProps) 
             </VStack>
 
             {/* Content */}
-            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
+            <VStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
                     fontSize={config.tokens.fontSizes['2xs'] as number}
@@ -113,7 +113,7 @@ export const BenchmarkPostCardDetail = ({ data }: BenchmarkPostCardDetailProps) 
             </VStack>
 
             {/* Product Comparison */}
-            <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <VStack px={12} pb={8} >
                 <Box position="relative" width="100%">
                     <HStack justifyContent="space-between" width="100%">
                         {data.products.map((product, index) => (
@@ -144,11 +144,7 @@ export const BenchmarkPostCardDetail = ({ data }: BenchmarkPostCardDetailProps) 
             <HStack
                 px={12}
                 py={8}
-                borderRightWidth={1}
-                borderLeftWidth={1}
                 borderBottomWidth={1}
-                borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-                borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
                 borderColor="#E9E9E9"
                 justifyContent="space-between"
             >

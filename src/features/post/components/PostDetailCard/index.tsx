@@ -120,7 +120,7 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
             }
 
             {/* Content */}
-            <VStack px={12} pb={8} borderColor="#E9E9E9">
+            <VStack px={12} pb={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
                     fontSize={config.tokens.fontSizes['2xs'] as number}

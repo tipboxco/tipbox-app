@@ -195,11 +195,7 @@ export const QuestionPostCardDetail = ({ data }: QuestionPostCardDetailProps) =>
             <HStack
                 px={12}
                 py={10}
-                borderRightWidth={1}
-                borderLeftWidth={1}
                 borderBottomWidth={1}
-                borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-                borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
                 borderColor="#E9E9E9"
                 justifyContent="space-between"
             >
