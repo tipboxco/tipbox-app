@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { WelcomeScreen, LoginScreen, RegisterScreen, VerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen } from './screens';
+import { WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen } from './screens';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -48,7 +48,7 @@ export const AuthNavigator = () => {
       />
       <AuthStack.Screen
         name='VerifyCode'
-        component={VerifyCodeScreen}
+        component={AuthVerifyCodeScreen}
         options={{
           title: 'Doğrulama Kodu',
         }}

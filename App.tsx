@@ -19,9 +19,9 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <SafeAreaProvider>
-          <PortalProvider>
+      <SafeAreaProvider>
+        <PortalProvider>
+          <BottomSheetModalProvider>
             <GluestackProvider>
               <StatusBar
                 barStyle={isDark ? 'light-content' : 'dark-content'}
@@ -36,9 +36,9 @@ export default function App() {
                 <Navigation />
               </SafeAreaView>
             </GluestackProvider>
-          </PortalProvider>
-        </SafeAreaProvider>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+          </BottomSheetModalProvider>
+        </PortalProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView >
   );
 }
