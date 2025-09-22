@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TabNavigator } from './TabNavigator';
 import { SettingsNavigator } from '@/src/features/settings/navigation';
+import { MoreSchoiseNavigator } from '@/src/features/moreSchoise/navigation';
 import { AuthNavigator } from '@/src/features/auth/navigation';
 import { BridgeNavigator } from '@/src/features/bridge/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
@@ -27,6 +28,7 @@ export const MainNavigator = () => {
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen name="Profile" component={ProfileNavigator} />
           <Stack.Screen name="Settings" component={SettingsNavigator} />
+          <Stack.Screen name="MoreSchoise" component={MoreSchoiseNavigator} />
           <Stack.Screen name="Bridge" component={BridgeNavigator} />
           <Stack.Screen name="Post" component={PostNavigator} />
         </>

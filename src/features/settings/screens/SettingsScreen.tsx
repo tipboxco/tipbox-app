@@ -1,42 +1,115 @@
 import React, { useState } from 'react';
-import { Box, HStack, Pressable, Text } from '@gluestack-ui/themed';
+import { 
+  Box, 
+  VStack, 
+  HStack, 
+  Pressable, 
+  Text, 
+  ScrollView, 
+  Input, 
+  InputField
+} from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
-import { SettingsTab } from './tabs/SettingsTab';
-import { NotificationTab } from './tabs/NotificationTab';
-import { MediaTab } from './tabs/MediaTab';
-import { Keyboard } from './tabs/Keyboard';
+import { Feather } from '@expo/vector-icons';
 
-type TabType = 'theme' | 'notification' | 'media' | 'keyboard';
+interface SettingItem {
+  id: string;
+  icon: string;
+  title: string;
+  onPress: () => void;
+}
+
+interface SettingSection {
+  title: string;
+  items: SettingItem[];
+}
 
 export const SettingsScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState<TabType>('theme');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const tabs = [
-    { id: 'theme' as TabType, label: 'Settings' },
-    { id: 'notification' as TabType, label: 'Notification' },
-    { id: 'media' as TabType, label: 'Media' },
-    { id: 'keyboard' as TabType, label: 'Keyboard' },
+  const settingSections: SettingSection[] = [
+    {
+      title: 'Account Security',
+      items: [
+        {
+          id: 'change-password',
+          icon: 'user',
+          title: 'Change Password',
+          onPress: () => console.log('Change Password'),
+        },
+        {
+          id: 'two-factor',
+          icon: 'user',
+          title: 'Two-Factor Authentication',
+          onPress: () => console.log('Two-Factor Authentication'),
+        },
+      ],
+    },
+    {
+      title: 'Account Preferences',
+      items: [
+        {
+          id: 'notification-settings',
+          icon: 'user',
+          title: 'Notification Settings',
+          onPress: () => console.log('Notification Settings'),
+        },
+        {
+          id: 'privacy-settings',
+          icon: 'user',
+          title: 'Privacy Settings',
+          onPress: () => console.log('Privacy Settings'),
+        },
+        {
+          id: 'support-settings',
+          icon: 'user',
+          title: '1-on-1 Support Settings',
+          onPress: () => console.log('1-on-1 Support Settings'),
+        },
+        {
+          id: 'linked-devices',
+          icon: 'user',
+          title: 'Linked Devices',
+          onPress: () => console.log('Linked Devices'),
+        },
+      ],
+    },
+    {
+      title: 'Payment & Subscription Settings',
+      items: [
+        {
+          id: 'payment-methods',
+          icon: 'user',
+          title: 'Payment Methods',
+          onPress: () => console.log('Payment Methods'),
+        },
+        {
+          id: 'subscriptions',
+          icon: 'user',
+          title: 'Subscriptions',
+          onPress: () => console.log('Subscriptions'),
+        },
+        {
+          id: 'billing-history',
+          icon: 'user',
+          title: 'Billing History',
+          onPress: () => console.log('Billing History'),
+        },
+      ],
+    },
   ];
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'theme':
-        return <SettingsTab />;
-      case 'notification':
-        return <NotificationTab />;
-      case 'media':
-        return <MediaTab />;
-      case 'keyboard':
-        return <Keyboard />;
-      default:
-        return null;
-    }
-  };
+  const filteredSections = settingSections.map(section => ({
+    ...section,
+    items: section.items.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+  })).filter(section => section.items.length > 0);
 
   return (
     <Box
@@ -44,43 +117,113 @@ export const SettingsScreen = () => {
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
     >
       <Header
-        title="Ayarlar"
+        title="Settings"
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
 
-      <HStack
-        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-        p="$1"
-        m="$4"
-        rounded="$lg"
-      >
-        {tabs.map((tab) => (
-          <Pressable
-            key={tab.id}
-            flex={1}
-            bg={
-              activeTab === tab.id
-                ? isDark
-                  ? '$backgroundDark0' : '$backgroundLight0'
-                : 'transparent'
-            }
-            p="$3"
-            rounded="$md"
-            alignItems="center"
-            onPress={() => setActiveTab(tab.id)}
-          >
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontWeight={activeTab === tab.id ? '$bold' : '$normal'}
-            >
-              {tab.label}
-            </Text>
-          </Pressable>
-        ))}
-      </HStack>
+      {/* Search Bar */}
+      <Box px="$4" py="$2">
+        <HStack
+          alignItems="center"
+          bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          borderRadius={23}
+          px="$3"
+          space="sm"
+        >
+          <Feather 
+            name="search" 
+            size={24} 
+            color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} 
+          />
+          <Input flex={1} borderWidth={0} bg="transparent">
+            <InputField
+              placeholder="Ürün Grubu seçin veya ürün adı arayın"
+              placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+              color={isDark ? '#fff' : '#000'}
+              fontSize={11}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </Input>
+        </HStack>
+      </Box>
 
-      {renderContent()}
+      {/* Settings Content */}
+      <ScrollView flex={1} px="$4" pb="$6">
+        <VStack>
+          {filteredSections.map((section, sectionIndex) => (
+            <VStack key={section.title}>
+              {/* Section Title */}
+              <Text
+                fontSize="$xs"
+                fontWeight="$medium"
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                px="$2"
+                py="$3"
+              >
+                {section.title}
+              </Text>
+              
+              {/* Section Items */}
+              <VStack>
+                {section.items.map((item, itemIndex) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={item.onPress}
+                    py="$2"
+                    px="$2"
+                  >
+                    <HStack alignItems="center" justifyContent="space-between">
+                      <HStack alignItems="center" space="sm" flex={1}>
+                        <Box
+                          w={22}
+                          h={22}
+                          bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                          rounded="$sm"
+                          alignItems="center"
+                          justifyContent="center"
+                        >
+                          <Feather
+                            name={item.icon as any} 
+                            size={21} 
+                            color={isDark ? '#FFFFFF' : '#000000'} 
+                          />
+                        </Box>
+                        <Text
+                          fontSize={11}
+                          fontWeight="$bold"
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                          flex={1}
+                        >
+                          {item.title}
+                        </Text>
+                      </HStack>
+                      <Feather
+                        name="chevron-right" 
+                        size={18} 
+                        color={isDark ? '#000' : '#000'} 
+                      />
+                    </HStack>
+                  </Pressable>
+                ))}
+              </VStack>
+              
+              {/* Divider - Only show if not the last section */}
+              {sectionIndex < filteredSections.length - 1 && (
+                <Box
+                  height={1}
+                  bg={isDark ? '#333333' : '#E9E9E9'}
+                  mx="$2"
+                  my="$2"
+                />
+              )}
+            </VStack>
+          ))}
+        </VStack>
+      </ScrollView>
     </Box>
   );
 };

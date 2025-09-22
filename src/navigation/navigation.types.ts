@@ -5,6 +5,7 @@ import { ExploreStackParamList } from '@/src/features/explore/navigation';
 import { CatalogStackParamList } from '@/src/features/catalog/navigation';
 import { ProfileStackParamList } from '@/src/features/profile/navigation';
 import { SettingsStackParamList } from '@/src/features/settings/navigation';
+import { MoreSchoiseStackParamList } from '@/src/features/moreSchoise/navigation';
 import { BridgeStackParamList } from '@/src/features/bridge/types';
 import { PostStackParamList } from '@/src/features/post/navigation';
 
@@ -22,6 +23,7 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
   Settings: NavigatorScreenParams<SettingsStackParamList>;
+  MoreSchoise: NavigatorScreenParams<MoreSchoiseStackParamList>;
   Bridge: NavigatorScreenParams<BridgeStackParamList>;
   Post: NavigatorScreenParams<PostStackParamList>;
 };

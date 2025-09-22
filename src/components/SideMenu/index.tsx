@@ -104,6 +104,15 @@ export const SideMenu = ({
         navigation.navigate('Settings');
       },
     },
+    {
+      id: 'more-schoise',
+      icon: 'more-horizontal',
+      label: 'MoreSchoise',
+      onPress: () => {
+        onClose();
+        navigation.navigate('MoreSchoise');
+      },
+    },
   ];
 
   if (!visible) return null;
