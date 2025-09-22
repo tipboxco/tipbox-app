@@ -2,11 +2,15 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SettingsScreen } from './screens';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
+import PrivacySettingsScreen from './screens/PrivacySettingsScreen';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export type SettingsStackParamList = {
   SettingsScreen: undefined;
   ForgotPassword: undefined;
+  NotificationSettings: undefined;
+  PrivacySettings: undefined;
 };
 
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
@@ -44,6 +48,20 @@ export const SettingsNavigator = () => {
         component={ForgotPasswordScreen}
         options={{
           title: 'Forgot Password',
+        }}
+      />
+      <SettingsStack.Screen
+        name='NotificationSettings'
+        component={NotificationSettingsScreen}
+        options={{
+          title: 'Notification Settings',
+        }}
+      />
+      <SettingsStack.Screen
+        name='PrivacySettings'
+        component={PrivacySettingsScreen}
+        options={{
+          title: 'Privacy Settings',
         }}
       />
     </SettingsStack.Navigator>

@@ -84,15 +84,15 @@ export const SettingsScreen = () => {
       items: [
         {
           id: 'notification-settings',
-          icon: 'user',
+          icon: 'bell',
           title: 'Notification Settings',
-          onPress: () => console.log('Notification Settings'),
+          onPress: () => navigation.navigate('NotificationSettings' as never),
         },
         {
           id: 'privacy-settings',
-          icon: 'user',
+          icon: 'shield',
           title: 'Privacy Settings',
-          onPress: () => console.log('Privacy Settings'),
+          onPress: () => navigation.navigate('PrivacySettings' as never),
         },
         {
           id: 'support-settings',
