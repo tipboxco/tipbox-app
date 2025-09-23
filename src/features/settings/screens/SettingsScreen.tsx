@@ -8,15 +8,14 @@ import {
   ScrollView, 
   Input, 
   InputField,
-  Button,
-  ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import ChangePasswordBottomSheet from '../components/ChangePasswordBottomSheet';
+import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
 
 interface SettingItem {
   id: string;
@@ -35,15 +34,14 @@ export const SettingsScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   
   // Bottom sheet refs
   const changePasswordBottomSheetRef = useRef<BottomSheet>(null);
+  const yourDevicesBottomSheetRef = useRef<BottomSheet>(null);
   
   // Bottom sheet snap points
   const changePasswordSnapPoints = useMemo(() => ['55%'], []);
+  const yourDevicesSnapPoints = useMemo(() => ['70%'], []);
 
   const settingSections: SettingSection[] = [
     {
@@ -57,13 +55,13 @@ export const SettingsScreen = () => {
             console.log('[SettingsScreen] Change Password pressed');
             console.log('[SettingsScreen] BottomSheet ref:', changePasswordBottomSheetRef.current);
             if (changePasswordBottomSheetRef.current) {
-              changePasswordBottomSheetRef.current.snapToIndex(1);
+              changePasswordBottomSheetRef.current.snapToIndex(0);
             } else {
               console.log('[SettingsScreen] BottomSheet ref is null, trying again...');
               // Ref henüz hazır değilse, kısa bir gecikme ile tekrar dene
               setTimeout(() => {
                 if (changePasswordBottomSheetRef.current) {
-                  changePasswordBottomSheetRef.current.snapToIndex(1);
+                  changePasswordBottomSheetRef.current.snapToIndex(0);
                 } else {
                   console.log('[SettingsScreen] BottomSheet ref still null after timeout');
                 }
@@ -101,10 +99,25 @@ export const SettingsScreen = () => {
           onPress: () => navigation.navigate('SupportSettings' as never),
         },
         {
-          id: 'linked-devices',
-          icon: 'user',
-          title: 'Linked Devices',
-          onPress: () => console.log('Linked Devices'),
+          id: 'your-devices',
+          icon: 'smartphone',
+          title: 'Your Devices',
+          onPress: () => {
+            console.log('[SettingsScreen] Your Devices pressed');
+            console.log('[SettingsScreen] Your Devices BottomSheet ref:', yourDevicesBottomSheetRef.current);
+            if (yourDevicesBottomSheetRef.current) {
+              yourDevicesBottomSheetRef.current.snapToIndex(0);
+            } else {
+              console.log('[SettingsScreen] Your Devices BottomSheet ref is null, trying again...');
+              setTimeout(() => {
+                if (yourDevicesBottomSheetRef.current) {
+                  yourDevicesBottomSheetRef.current.snapToIndex(0);
+                } else {
+                  console.log('[SettingsScreen] Your Devices BottomSheet ref still null after timeout');
+                }
+              }, 100);
+            }
+          },
         },
       ],
     },
@@ -266,204 +279,66 @@ export const SettingsScreen = () => {
       </ScrollView>
 
       {/* Change Password Bottom Sheet */}
-        <BottomSheet
-          ref={changePasswordBottomSheetRef}
-          index={-1}
-          snapPoints={changePasswordSnapPoints}
-          enablePanDownToClose
-          enableOverDrag={false}
-          backdropComponent={renderBackdrop}
-          backgroundStyle={{
-            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-            borderTopLeftRadius: 30,
-            borderTopRightRadius: 30,
-          }}
-          handleStyle={{
-            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-            borderTopLeftRadius: 30,
-            borderTopRightRadius: 30,
-          }}
-          handleIndicatorStyle={{
-            backgroundColor: isDark ? '#333333' : '#CCCCCC',
-            width: 40,
-            height: 4,
-          }}
-        >
-          <BottomSheetView>
-            <VStack flex={1} px="$4" py="$4">
-              {/* Header */}
-              <HStack justifyContent="center" alignItems="center" mb="$4">
-                <Text
-                  fontSize={16}
-                  fontWeight="$bold"
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  textAlign="center"
-                >
-                  Change Password
-                </Text>
-                <Box w={24} h={24} />
-              </HStack>
+      <BottomSheet
+        ref={changePasswordBottomSheetRef}
+        index={-1}
+        snapPoints={changePasswordSnapPoints}
+        enablePanDownToClose
+        enableOverDrag={false}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: isDark ? '#333333' : '#CCCCCC',
+          width: 40,
+          height: 4,
+        }}
+      >
+        <BottomSheetView>
+          <ChangePasswordBottomSheet
+            onClose={() => changePasswordBottomSheetRef.current?.close()}
+          />
+        </BottomSheetView>
+      </BottomSheet>
 
-              <HStack mb="$4">
-                <Text
-                  fontSize={11}
-                  fontWeight="$semibold"
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                >
-                  Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-                </Text>
-              </HStack>
-
-              {/* Current Password Section */}
-              <VStack space="md" mb="$4">
-                <VStack space="xs">
-                  <Text
-                    fontSize={11}
-                    fontWeight="$bold"
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  >
-                    Current Password
-                  </Text>
-                  <Box
-                    borderWidth={1}
-                    borderColor="#B9B9B9"
-                    borderRadius={10}
-                    px="$4"
-                    py="$1"
-                    mt={'$1'}
-                  >
-                    <Input borderWidth={0} bg="transparent">
-                      <InputField
-                        placeholder="****************"
-                        placeholderTextColor="#B9B9B9"
-                        value={currentPassword}
-                        onChangeText={setCurrentPassword}
-                        secureTextEntry
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={11}
-                      />
-                    </Input>
-                  </Box>
-                </VStack>
-
-                <HStack justifyContent="space-between" alignItems="center">
-                  <Text
-                    fontSize={9}
-                    fontWeight="$semibold"
-                    color="#B9B9B9"
-                  >
-                    Son güncelleme: 26.03.2025
-                  </Text>
-                  <Pressable
-                    onPress={() => {
-                      changePasswordBottomSheetRef.current?.close();
-                      navigation.navigate('ForgotPassword' as never);
-                    }}
-                  >
-                    <Text
-                      fontSize={9}
-                      fontWeight="$bold"
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      underline
-                    >
-                      Forgot Password
-                    </Text>
-                  </Pressable>
-                </HStack>
-              </VStack>
-
-              {/* Divider */}
-              <Box
-                height={1}
-                bg="#D9D9D9"
-                mb="$4"
-              />
-
-              {/* New Password Section */}
-              <VStack space="lg" mb="$4">
-                <VStack space="xs">
-                  <Text
-                    fontSize={11}
-                    fontWeight="$bold"
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  >
-                    New Password
-                  </Text>
-                  <Box
-                    borderWidth={1}
-                    borderColor="#B9B9B9"
-                    borderRadius={10}
-                    px="$4"
-                    py="$1"
-                    mt={'$1'}
-                  >
-                    <Input borderWidth={0} bg="transparent">
-                      <InputField
-                        placeholder="****************"
-                        placeholderTextColor="#B9B9B9"
-                        value={newPassword}
-                        onChangeText={setNewPassword}
-                        secureTextEntry
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={11}
-                      />
-                    </Input>
-                  </Box>
-                </VStack>
-
-                <VStack space="xs">
-                  <Text
-                    fontSize={11}
-                    fontWeight="$bold"
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  >
-                    Confirm New Password
-                  </Text>
-                  <Box
-                    borderWidth={1}
-                    borderColor="#B9B9B9"
-                    borderRadius={10}
-                    px="$4"
-                    py="$1"
-                    mt={'$1'}
-                  >
-                    <Input borderWidth={0} bg="transparent">
-                      <InputField
-                        placeholder="****************"
-                        placeholderTextColor="#B9B9B9"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={11}
-                      />
-                    </Input>
-                  </Box>
-                </VStack>
-              </VStack>
-
-              {/* Change Password Button */}
-              <Button
-                bg="#E2FF46"
-                borderRadius={8}
-                onPress={() => {
-                  // Handle password change logic here
-                  console.log('Password change requested');
-                  changePasswordBottomSheetRef.current?.close();
-                }}
-              >
-                <ButtonText
-                  color="#000000"
-                  fontSize={14}
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  Change Password
-                </ButtonText>
-              </Button>
-            </VStack>
-          </BottomSheetView>
-        </BottomSheet>
+      {/* Your Devices Bottom Sheet */}
+      <BottomSheet
+        ref={yourDevicesBottomSheetRef}
+        index={-1}
+        snapPoints={yourDevicesSnapPoints}
+        enablePanDownToClose
+        enableOverDrag={false}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 40,
+          height: 4,
+        }}
+      >
+        <BottomSheetView>
+          <YourDevicesBottomSheet
+            onClose={() => yourDevicesBottomSheetRef.current?.close()}
+          />
+        </BottomSheetView>
+      </BottomSheet>
     </Box>
   );
 };
