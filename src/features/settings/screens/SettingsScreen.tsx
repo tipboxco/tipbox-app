@@ -96,9 +96,9 @@ export const SettingsScreen = () => {
         },
         {
           id: 'support-settings',
-          icon: 'user',
+          icon: 'headphones',
           title: '1-on-1 Support Settings',
-          onPress: () => console.log('1-on-1 Support Settings'),
+          onPress: () => navigation.navigate('SupportSettings' as never),
         },
         {
           id: 'linked-devices',
