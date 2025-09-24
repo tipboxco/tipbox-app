@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
-import { HStack, Pressable, Text, Box, VStack, Modal, Button, ButtonText } from '@gluestack-ui/themed';
+import { HStack, Pressable, Text, Box, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ChevronDown, Filter, Tag, Grid, ArrowUpDown } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
+import {
+  Popover,
+  PopoverBackdrop,
+  PopoverContent,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverHeader,
+  PopoverFooter,
+  PopoverArrow,
+} from '@gluestack-ui/themed';
 
 interface FilterOption {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: string;
   options: string[];
 }
 
@@ -14,25 +24,25 @@ const FILTER_OPTIONS: FilterOption[] = [
   {
     id: 'interest',
     label: 'İlgi Alanı',
-    icon: <Filter size={16} color="#000000" />,
+    icon: 'filter',
     options: ['Teknoloji', 'Spor', 'Müzik', 'Sanat', 'Bilim', 'Tarih'],
   },
   {
     id: 'tag',
     label: 'Etiket',
-    icon: <Tag size={16} color="#000000" />,
+    icon: 'tag',
     options: ['Popüler', 'Yeni', 'Trend', 'Öne Çıkan', 'Özel'],
   },
   {
     id: 'category',
     label: 'Kategori',
-    icon: <Grid size={16} color="#000000" />,
+    icon: 'grid',
     options: ['Ürün', 'Deneyim', 'Hizmet', 'Olay', 'Proje'],
   },
   {
     id: 'sort',
     label: 'Sırala',
-    icon: <ArrowUpDown size={16} color="#000000" />,
+    icon: 'arrow-up-down',
     options: ['En Yeni', 'En Popüler', 'En Çok Beğenilen', 'En Çok Yorumlanan'],
   },
 ];
@@ -40,144 +50,154 @@ const FILTER_OPTIONS: FilterOption[] = [
 export const FilterBar = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
-
-  const handleFilterPress = (filterId: string) => {
-    setSelectedFilter(filterId);
-  };
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   const handleOptionSelect = (filterId: string, option: string) => {
     setSelectedOptions(prev => ({
       ...prev,
       [filterId]: option
     }));
-    setSelectedFilter(null);
+    setOpenPopoverId(null); // Popover'ı kapat
   };
 
-  const handleCloseModal = () => {
-    setSelectedFilter(null);
+  const handlePopoverOpen = (filterId: string) => {
+    setOpenPopoverId(filterId);
+  };
+
+  const handlePopoverClose = () => {
+    setOpenPopoverId(null);
   };
 
   const getSelectedOption = (filterId: string) => {
     return selectedOptions[filterId] || '';
   };
 
-  return (
-    <>
-      <HStack justifyContent="space-between" px="$4" py="$3" mt="$2">
-        <HStack space="md" flex={1}>
-          {FILTER_OPTIONS.slice(0, 3).map((option) => (
-            <Pressable
-              key={option.id}
-              onPress={() => handleFilterPress(option.id)}
-            >
-              <Box
-                flexDirection="row"
-                alignItems="center"
-                gap="$2"
-                px="$3"
-                py="$2"
-                bg={isDark ? '$backgroundDark800' : '$backgroundLight200'}
-                borderWidth={1}
-                borderColor={isDark ? '$borderDark700' : '$borderLight300'}
-                borderRadius="$full"
-                minWidth={80}
-                justifyContent="space-between"
-              >
-                <HStack alignItems="center" space="sm">
-                  {option.icon}
-                  <Text
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize="$xs"
-                    fontWeight="$500"
-                  >
-                    {option.label}
-                  </Text>
-                </HStack>
-                <ChevronDown size={14} color={isDark ? '#ffffff' : '#000000'} />
-              </Box>
-            </Pressable>
-          ))}
-        </HStack>
-      </HStack>
-
-      {/* Selection Modal */}
-      <Modal
-        isOpen={selectedFilter !== null}
-        onClose={handleCloseModal}
-        size="md"
-      >
-        <Modal.Content
-          bg={isDark ? '$backgroundDark800' : '$backgroundLight100'}
-          borderWidth={1}
-          borderColor={isDark ? '$borderDark700' : '$borderLight300'}
-          borderRadius="$lg"
+  const renderFilterButton = (option: FilterOption) => (
+    <Popover
+      key={option.id}
+      placement="bottom"
+      offset={4}
+      isOpen={openPopoverId === option.id}
+      onClose={handlePopoverClose}
+      trigger={(triggerProps) => (
+        <Pressable
+          {...triggerProps}
+          onPress={() => handlePopoverOpen(option.id)}
         >
-          <Modal.Header
-            borderBottomWidth={1}
-            borderBottomColor={isDark ? '$borderDark700' : '$borderLight300'}
-            pb="$3"
+          <Box
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
+            gap={4}
+            px="$3"
+            bg="#FDFDFD"
+            borderWidth={1}
+            borderColor="#E9E9E9"
+            borderRadius={10}
+            height={23}
           >
             <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$lg"
-              fontWeight="$600"
+              color="#000000"
+              fontSize={9}
+              fontWeight="$bold"
             >
-              {selectedFilter ? FILTER_OPTIONS.find(f => f.id === selectedFilter)?.label : ''}
+              {option.label}
             </Text>
-          </Modal.Header>
-          
-          <Modal.Body py="$4">
-            <VStack space="md">
-              {selectedFilter && FILTER_OPTIONS.find(f => f.id === selectedFilter)?.options.map((option) => (
-                <Pressable
-                  key={option}
-                  onPress={() => handleOptionSelect(selectedFilter, option)}
-                >
-                  <Box
-                    p="$3"
-                    bg={isDark ? '$backgroundDark700' : '$backgroundLight50'}
-                    borderRadius="$md"
-                    borderWidth={1}
-                    borderColor={
-                      getSelectedOption(selectedFilter) === option
-                        ? '$lime500'
-                        : isDark ? '$borderDark600' : '$borderLight200'
-                    }
-                  >
-                    <Text
-                      color={isDark ? '$textDark50' : '$textLight900'}
-                      fontSize="$md"
-                      fontWeight="$500"
-                    >
-                      {option}
-                    </Text>
-                  </Box>
-                </Pressable>
-              ))}
-            </VStack>
-          </Modal.Body>
-          
-          <Modal.Footer
-            borderTopWidth={1}
-            borderTopColor={isDark ? '$borderDark700' : '$borderLight300'}
-            pt="$3"
-          >
-            <Button
-              variant="outline"
-              onPress={handleCloseModal}
-              borderColor={isDark ? '$borderDark600' : '$borderLight300'}
+            <Box
+              width={12}
+              height={12}
+              alignItems="center"
+              justifyContent="center"
             >
-              <ButtonText
-                color={isDark ? '$textDark50' : '$textLight900'}
+              <Feather
+                name="chevron-down"
+                size={8}
+                color="#000000"
+              />
+            </Box>
+          </Box>
+        </Pressable>
+      )}
+    >
+      <PopoverBackdrop onPress={handlePopoverClose} />
+      <PopoverContent
+        bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+        borderWidth={1}
+        borderColor={isDark ? '#333333' : '#E9E9E9'}
+        borderRadius={10}
+        minWidth={120}
+        maxWidth={200}
+        p="$2"
+      >
+        <PopoverArrow />
+        <PopoverBody>
+          <VStack space="xs">
+            {option.options.map((opt) => (
+              <Pressable
+                key={opt}
+                onPress={() => handleOptionSelect(option.id, opt)}
               >
-                Kapat
-              </ButtonText>
-            </Button>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal>
+                <Box
+                  px="$3"
+                  py="$2"
+                  bg={
+                    getSelectedOption(option.id) === opt
+                      ? '#E2FF46'
+                      : 'transparent'
+                  }
+                  borderRadius={8}
+                  minWidth={100}
+                >
+                  <Text
+                    color={
+                      getSelectedOption(option.id) === opt
+                        ? '#000000'
+                        : isDark ? '#FFFFFF' : '#000000'
+                    }
+                    fontSize={11}
+                    fontWeight="$medium"
+                    numberOfLines={1}
+                  >
+                    {opt}
+                  </Text>
+                </Box>
+              </Pressable>
+            ))}
+          </VStack>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  );
+
+  return (
+    <>
+      <Box px="$4" pb="$2" mt="$2">
+        <HStack justifyContent="space-between" alignItems="center">
+          <HStack space="sm" alignItems="center">
+            {FILTER_OPTIONS.slice(0, 3).map(renderFilterButton)}
+          </HStack>
+          <Box>
+            {renderFilterButton(FILTER_OPTIONS[3])}
+          </Box>
+        </HStack>
+      </Box>
+
+      {/* Güvenli kapanış overlay'i - sadece popover açıkken aktif */}
+      {openPopoverId && (
+        <Pressable
+          onPress={handlePopoverClose}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            zIndex: 1
+          }}
+          pointerEvents="auto"
+        />
+      )}
     </>
   );
 };
