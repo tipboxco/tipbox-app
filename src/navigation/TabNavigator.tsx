@@ -7,6 +7,8 @@ import { Feather } from '@expo/vector-icons';
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
 import { CatalogNavigator } from '@/src/features/catalog/navigation';
+import { EventsNavigator } from '@/src/features/events/navigation';
+import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 
 export type TabParamList = {
   Feed: undefined;
@@ -80,11 +82,11 @@ export const TabNavigator = () => {
       />
       <Tab.Screen
         name="Events"
-        component={FeedNavigator}
+        component={EventsNavigator}
       />
       <Tab.Screen
         name="Notification"
-        component={FeedNavigator}
+        component={NotificationsNavigator}
       />
       <Tab.Screen
         name="Messages"

@@ -34,7 +34,6 @@ export const SettingsNavigator = () => {
           fontWeight: 'bold',
         },
         headerShadowVisible: false,
-        headerBackTitleVisible: false,
       }}
       initialRouteName='SettingsScreen'
     >

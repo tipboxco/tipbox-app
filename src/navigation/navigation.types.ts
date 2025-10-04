@@ -5,9 +5,10 @@ import { ExploreStackParamList } from '@/src/features/explore/navigation';
 import { CatalogStackParamList } from '@/src/features/catalog/navigation';
 import { ProfileStackParamList } from '@/src/features/profile/navigation';
 import { SettingsStackParamList } from '@/src/features/settings/navigation';
+import { EventsStackParamList } from '@/src/features/events/navigation';
 import { MoreSchoiseStackParamList } from '@/src/features/moreSchoise/navigation';
-import { BridgeStackParamList } from '@/src/features/bridge/types';
 import { PostStackParamList } from '@/src/features/post/navigation';
+import { NotificationsStackParamList } from '@/src/features/notifications/navigation';
 
 // Main Tab Navigator için type tanımlaması
 export type MainTabParamList = {
@@ -15,6 +16,7 @@ export type MainTabParamList = {
   Explore: NavigatorScreenParams<ExploreStackParamList>;
   Catalog: NavigatorScreenParams<CatalogStackParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
+  Events: NavigatorScreenParams<EventsStackParamList>;
 };
 
 // Root Stack için type tanımlaması
@@ -24,6 +26,6 @@ export type RootStackParamList = {
   Profile: NavigatorScreenParams<ProfileStackParamList>;
   Settings: NavigatorScreenParams<SettingsStackParamList>;
   MoreSchoise: NavigatorScreenParams<MoreSchoiseStackParamList>;
-  Bridge: NavigatorScreenParams<BridgeStackParamList>;
   Post: NavigatorScreenParams<PostStackParamList>;
+  Notifications: NavigatorScreenParams<NotificationsStackParamList>;
 };

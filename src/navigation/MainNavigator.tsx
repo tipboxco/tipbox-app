@@ -4,9 +4,9 @@ import { TabNavigator } from './TabNavigator';
 import { SettingsNavigator } from '@/src/features/settings/navigation';
 import { MoreSchoiseNavigator } from '@/src/features/moreSchoise/navigation';
 import { AuthNavigator } from '@/src/features/auth/navigation';
-import { BridgeNavigator } from '@/src/features/bridge/navigation';
 import { ProfileNavigator } from '@/src/features/profile/navigation';
 import { PostNavigator } from '@/src/features/post/navigation';
+import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { RootStackParamList } from './navigation.types';
 import { useAuthStore } from '@/src/store/authStore';
 
@@ -29,8 +29,8 @@ export const MainNavigator = () => {
           <Stack.Screen name="Profile" component={ProfileNavigator} />
           <Stack.Screen name="Settings" component={SettingsNavigator} />
           <Stack.Screen name="MoreSchoise" component={MoreSchoiseNavigator} />
-          <Stack.Screen name="Bridge" component={BridgeNavigator} />
           <Stack.Screen name="Post" component={PostNavigator} />
+          <Stack.Screen name="Notifications" component={NotificationsNavigator} />
         </>
       )}
     </Stack.Navigator>
