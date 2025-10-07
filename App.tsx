@@ -1,3 +1,7 @@
+// Promise polyfill for Hermes
+if (typeof global.Promise === 'undefined') {
+  global.Promise = require('promise');
+}
 import React from 'react';
 import Navigation from '@/src/navigation';
 import { GluestackProvider } from '@/src/components/ui';

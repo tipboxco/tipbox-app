@@ -30,6 +30,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@gluestack-style/react": "^1.0.57",
     "@gluestack-ui/button": "^1.0.14",
     "@gluestack-ui/config": "^1.1.20",
@@ -61,6 +62,7 @@
     "expo-updates": "~0.28.17",
     "lucide-react-native": "^0.525.0",
     "nativewind": "^4.1.23",
+    "promise": "^8.3.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
@@ -71,6 +73,7 @@
     "react-native-exception-handler": "^2.10.10",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-pager-view": "^6.9.1",
+    "react-native-polyfill-globals": "^3.1.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-reanimated-carousel": "^4.0.3",
     "react-native-safe-area-context": "5.4.0",
