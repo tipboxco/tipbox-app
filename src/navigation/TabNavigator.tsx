@@ -9,6 +9,7 @@ import { ExploreNavigator } from '@/src/features/explore/navigation';
 import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
+import { InboxNavigator } from '@/src/features/inbox/navigation';
 
 export type TabParamList = {
   Feed: undefined;
@@ -16,7 +17,7 @@ export type TabParamList = {
   Catalog: undefined;
   Events: undefined;
   Notification: undefined;
-  Messages: undefined;
+  Inbox: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -49,8 +50,8 @@ export const TabNavigator = () => {
             case 'Notification':
               iconName = 'bell';
               break;
-            case 'Messages':
-              iconName = 'message-circle';
+            case 'Inbox':
+              iconName = 'inbox';
               break;
           }
 
@@ -89,8 +90,8 @@ export const TabNavigator = () => {
         component={NotificationsNavigator}
       />
       <Tab.Screen
-        name="Messages"
-        component={FeedNavigator}
+        name="Inbox"
+        component={InboxNavigator}
       />
     </Tab.Navigator>
   );

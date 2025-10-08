@@ -120,10 +120,10 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
             >
               <ButtonText
                 color="#000000"
-                fontSize={16}
+                fontSize={12}
                 fontWeight="$bold"
               >
-                Continue
+                {data.isUnlocked ? 'View Your Collections' : 'Follow Ladder'}
               </ButtonText>
             </Button>
           </VStack>
