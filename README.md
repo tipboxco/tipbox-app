@@ -32,7 +32,7 @@ src/
 ### Prerequisites
 
 - Node.js (v18 or higher)
-- npm or yarn
+- npm
 - Expo CLI
 - Android Studio (for Android development)
 - Xcode (for iOS development, macOS only)
