@@ -10,6 +10,7 @@ import {
 import { TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import CongratsModal from '../CongratsModal';
 
 interface ExpertBottomSheetProps {
     onClose: () => void;
@@ -25,6 +26,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
     const [selectedCategory, setSelectedCategory] = useState('Select the category of your question');
     const [questionDetails, setQuestionDetails] = useState('');
     const [expertPrize, setExpertPrize] = useState('50');
+    const [showCongratsModal, setShowCongratsModal] = useState(false);
 
     const categories = [
         'Technology',
@@ -544,6 +546,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                         <Pressable
                             onPress={() => {
                                 console.log('Accept Answer pressed');
+                                setShowCongratsModal(true);
                                 onClose();
                             }}
                             flex={1.7}
@@ -601,6 +604,12 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                     </>
                 )}
             </HStack>
+
+            {/* Congrats Modal */}
+            <CongratsModal
+                isVisible={showCongratsModal}
+                onClose={() => setShowCongratsModal(false)}
+            />
         </Box>
     );
 };

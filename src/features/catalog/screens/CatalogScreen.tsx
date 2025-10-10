@@ -1,154 +1,132 @@
 import React, { useState } from 'react';
-import { Box, Text, ScrollView, Pressable, HStack, VStack } from '@gluestack-ui/themed';
+import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
 import { mock_user_profile } from '@/src/mock/common';
-import { Search, ChevronRight } from 'lucide-react-native';
-
-// Kategori sekmeleri için tip
-type CategoryTab = 'main' | 'sub' | 'groups' | 'products';
+import { Category } from '@/src/mock/catalog/productCatalog/types';
+import { ProductCatalogScreen } from './ProductCatalogScreen';
+import { BrandScreen } from './BrandScreen';
+import { Search } from 'lucide-react-native';
 
 export const CatalogScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<CategoryTab>('main');
+  const [currentMode, setCurrentMode] = useState<'product' | 'brand-catalog' | 'brand-selection'>('product');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Kategori sekmeleri
-  const categoryTabs = [
-    { id: 'main', label: 'Ana Kategoriler', active: activeTab === 'main' },
-    { id: 'sub', label: 'Alt Kategoriler', active: activeTab === 'sub' },
-    { id: 'groups', label: 'Ürün Grupları', active: activeTab === 'groups' },
-    { id: 'products', label: 'Ürünler', active: activeTab === 'products' },
-  ];
+  const handleBrandCategorySelection = (category: Category) => {
+    setSelectedCategory(category);
+    // Brand catalog modunda kal, sadece seçilen kategoriyi güncelle
+    // Kullanıcı floating button ile brand-selection moduna geçebilir
+  };
 
-  const handleTabPress = (tabId: CategoryTab) => {
-    setActiveTab(tabId);
+  const handleFloatingButtonPress = () => {
+    if (currentMode === 'brand-selection') {
+      // Brand selection modundan brand catalog moduna geri dön
+      setCurrentMode('brand-catalog');
+    } else if (currentMode === 'brand-catalog') {
+      // Brand catalog modundan normal moda geri dön
+      setCurrentMode('product');
+      setSelectedCategory(null);
+    } else {
+      // Normal moddan brand catalog moduna geç
+      setCurrentMode('brand-catalog');
+    }
+  };
+
+  const getTitle = () => {
+    switch (currentMode) {
+      case 'brand-catalog':
+        return 'Brand Catalog';
+      case 'brand-selection':
+        return 'Brand Catalog';
+      default:
+        return 'Product Catalog';
+    }
+  };
+
+  const renderContent = () => {
+    switch (currentMode) {
+      case 'brand-catalog':
+        return (
+          <BrandScreen
+            selectedCategory={selectedCategory}
+            onCategorySelect={handleBrandCategorySelection}
+          />
+        );
+      case 'brand-selection':
+        return (
+          <BrandScreen
+            selectedCategory={selectedCategory}
+            onCategorySelect={handleBrandCategorySelection}
+          />
+        );
+      default:
+        return <ProductCatalogScreen />;
+    }
   };
 
   return (
     <Box
       flex={1}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      bg={isDark ? '#1A1A1A' : '#FAFAFA'}
     >
       <Header
-        title="Katalog"
+        title={getTitle()}
         onMenuPress={() => setIsMenuVisible(true)}
       />
-      
+
       {/* Arama Çubuğu */}
       <Box px="$4" py="$3">
         <Box
-          bg={isDark ? '$backgroundDark800' : '$backgroundLight100'}
-          borderRadius="$lg"
+          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+          borderRadius={20}
+          height={36}
           px="$4"
-          py="$2"
-          flexDirection="row"
-          alignItems="center"
+          justifyContent="center"
         >
-          <Search 
-            size={16} 
-            color={isDark ? '#FFFFFF' : '#000000'} 
-            style={{ marginRight: 8 }}
-          />
-          <Text
-            flex={1}
-            fontSize="$xs"
-            color={isDark ? '$textDark400' : '$textLight400'}
-          >
-            Ana Kategori seçin veya ürün adı arayın
-          </Text>
+          <HStack alignItems="center" space="sm">
+            <Search size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
+            <Input flex={1} borderWidth={0} bg="transparent">
+              <InputField
+                placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize={9}
+              />
+            </Input>
+          </HStack>
         </Box>
       </Box>
 
-      {/* Kategori Sekmeleri */}
-      <Box px="$4" mb="$4">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <HStack space="md" alignItems="center">
-            {categoryTabs.map((tab) => (
-              <Pressable
-                key={tab.id}
-                onPress={() => handleTabPress(tab.id as CategoryTab)}
-              >
-                <HStack space="sm" alignItems="center">
-                  <Text
-                    fontSize="$xs"
-                    fontWeight="$bold"
-                    color={
-                      tab.active
-                        ? (isDark ? '$textDark0' : '$textLight950')
-                        : (isDark ? '$textDark400' : '$textLight400')
-                    }
-                  >
-                    {tab.label}
-                  </Text>
-                  <ChevronRight 
-                    size={16} 
-                    color={tab.active 
-                      ? (isDark ? '#FFFFFF' : '#000000') 
-                      : '#8C8C8C'
-                    } 
-                  />
-                </HStack>
-              </Pressable>
-            ))}
-          </HStack>
-        </ScrollView>
-        
-        {/* Aktif sekme altındaki çizgi */}
-        <Box
-          mt="$2"
-          h="$0.5"
-          bg={isDark ? '$backgroundDark800' : '$backgroundLight200'}
-          borderRadius="$full"
-        />
-      </Box>
+      {/* Content Area */}
+      {renderContent()}
 
-      {/* Ürün Grid'i */}
-      <ScrollView flex={1} px="$4">
-        <VStack space="md">
-          {Array.from({ length: 3 }, (_, rowIndex) => (
-            <HStack key={rowIndex} space="md" justifyContent="space-between">
-              {Array.from({ length: 3 }, (_, colIndex) => {
-                const productIndex = rowIndex * 3 + colIndex;
-                
-                return (
-                  <Box
-                    key={colIndex}
-                    flex={1}
-                    bg={isDark ? '$backgroundDark800' : '$backgroundLight100'}
-                    borderRadius="$md"
-                    p="$3"
-                    alignItems="center"
-                  >
-                    <Box
-                      w="$20"
-                      h="$20"
-                      bg={isDark ? '$backgroundDark700' : '$backgroundLight200'}
-                      borderRadius="$md"
-                      mb="$2"
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <Text fontSize="$xs" color={isDark ? '$textDark400' : '$textLight400'}>
-                        Ürün {productIndex + 1}
-                      </Text>
-                    </Box>
-                    <Box
-                      w="$16"
-                      h="$2.5"
-                      bg={isDark ? '$backgroundDark700' : '$backgroundLight200'}
-                      borderRadius="$xs"
-                    />
-                  </Box>
-                );
-              })}
-            </HStack>
-          ))}
-        </VStack>
-      </ScrollView>
+      {/* Floating Action Button */}
+      <Pressable
+        position="absolute"
+        bottom="$6"
+        right="$6"
+        width={60}
+        height={60}
+        borderRadius={30}
+        bg="#4619B1"
+        justifyContent="center"
+        alignItems="center"
+        onPress={handleFloatingButtonPress}
+      >
+        <Image
+          source={require('@/assets/catalog_change.png')}
+          alt="Change catalog"
+          width={27}
+          height={27}
+        />
+      </Pressable>
 
       <SideMenu
         visible={isMenuVisible}

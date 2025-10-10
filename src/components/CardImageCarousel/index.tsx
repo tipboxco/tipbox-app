@@ -29,6 +29,31 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
 
   if (!images?.length) return null;
 
+  // Tek görsel varsa sadece Image göster, carousel kullanma
+  if (images.length === 1) {
+    return (
+      <Box
+        w={carouselWidth}
+        h={carouselHeight}
+        paddingHorizontal={carouselPadding}
+        overflow="hidden"
+        position="relative"
+        alignSelf="center"
+      >
+        <Image
+          source={images[0]}
+          alt="Post image"
+          resizeMode="cover"
+          style={{
+            width: carouselWidth - (carouselPadding * 2),
+            height: carouselHeight,
+            borderRadius: 8,
+          }}
+        />
+      </Box>
+    );
+  }
+
   return (
     <Box
       w={carouselWidth}

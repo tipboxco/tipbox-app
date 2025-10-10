@@ -2,11 +2,11 @@ import React from 'react';
 import { Box, Pressable, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
-interface FloatingActionButtonProps {
+interface ExpertButtonProps {
   onPress: () => void;
 }
 
-export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onPress }) => {
+export const ExpertButton: React.FC<ExpertButtonProps> = ({ onPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -61,4 +61,4 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onPr
   );
 };
 
-export default FloatingActionButton;
+export default ExpertButton;

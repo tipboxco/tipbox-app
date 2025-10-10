@@ -1,11 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { CatalogScreen } from './screens';
+import { CatalogScreen } from './screens/CatalogScreen';
+import BrandDetailScreen from './screens/BrandDetailScreen';
 
 export type CatalogStackParamList = {
   CatalogScreen: undefined;
   ProductDetail: { productId: string };
   CategoryProducts: { categoryId: string };
+  BrandDetailScreen: { brandId: string };
 };
 
 const CatalogStack = createNativeStackNavigator<CatalogStackParamList>();
@@ -21,6 +23,10 @@ export const CatalogNavigator = () => {
       <CatalogStack.Screen
         name="CatalogScreen"
         component={CatalogScreen}
+      />
+      <CatalogStack.Screen
+        name="BrandDetailScreen"
+        component={BrandDetailScreen}
       />
     </CatalogStack.Navigator>
   );

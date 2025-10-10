@@ -7,7 +7,7 @@ import { FilterBar } from '../components/FilterBar';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
-import { FloatingActionButton } from '@/src/components/FloatingActionButton';
+import { ExpertButton } from '@/src/components/FloatingActionButton';
 import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_feed_data } from '@/src/mock/feed';
@@ -141,8 +141,8 @@ export const FeedScreen = () => {
         userProfile={mock_user_profile}
       />
 
-      {/* Floating Action Button */}
-      <FloatingActionButton
+      {/* Expert Button */}
+      <ExpertButton
         onPress={handleExpertPress}
       />
 
