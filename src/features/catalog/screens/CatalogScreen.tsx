@@ -80,7 +80,7 @@ export const CatalogScreen = () => {
       />
 
       {/* Arama Çubuğu */}
-      <Box px="$4" py="$3">
+      <Box px="$4" pt="$3">
         <Box
           bg={isDark ? '#2A2A2A' : '#F2F2F2'}
           borderRadius={20}

@@ -235,73 +235,131 @@ const BrandDetailScreen: React.FC = () => {
 
                         {/* Brand Sections - Horizontal Layout */}
                         <HStack space="md" justifyContent="space-between">
-                            {brand.sections.map((section) => (
-                                <Box
-                                    key={section.id}
-                                    flex={1}
-                                    bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                                    borderWidth={1}
-                                    borderColor="#E9E9E9"
-                                    borderRadius={10}
-                                    p="$3"
-                                >
-                                    <VStack space="sm" justifyContent="center">
-                                        {/* Icon */}
-                                        <Image
-                                            source={section.id === '1'
-                                                ? require('@/assets/catalog/lego.png')
-                                                : require('@/assets/catalog/book.png')
-                                            }
-                                            alt={section.title}
-                                            width={24}
-                                            height={24}
-                                        />
+                            {/* Anketler & Oyunlaştırmalar Card */}
+                            <Box
+                                flex={1}
+                                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                                borderWidth={1}
+                                borderColor="#E9E9E9"
+                                borderRadius={10}
+                                p="$3"
+                            >
+                                <VStack space="sm" justifyContent="center">
+                                    {/* Icon */}
+                                    <Image
+                                        source={require('@/assets/catalog/lego.png')}
+                                        alt="Anketler & Oyunlaştırmalar"
+                                        width={24}
+                                        height={24}
+                                    />
 
-                                        {/* Title */}
-                                        <Text
-                                            color={isDark ? '#FFFFFF' : '#000000'}
-                                            fontSize={12}
-                                            fontWeight="$bold"
-                                            textAlign="left"
-                                        >
-                                            {section.title}
-                                        </Text>
+                                    {/* Title */}
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                        fontSize={12}
+                                        fontWeight="$bold"
+                                        textAlign="left"
+                                    >
+                                        Anketler & Oyunlaştırmalar
+                                    </Text>
 
-                                        {/* Description */}
-                                        <Text
-                                            color={isDark ? '#FFFFFF' : '#343434'}
-                                            fontSize={9}
-                                            lineHeight={12}
-                                            textAlign="left"
-                                        >
-                                            {section.description}
-                                        </Text>
+                                    {/* Description */}
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#343434'}
+                                        fontSize={9}
+                                        lineHeight={12}
+                                        textAlign="left"
+                                    >
+                                        Anketler ve Oyunlaştırmalar hakkında küçük bir yazı
+                                    </Text>
 
-                                        {/* Button */}
-                                        <Button
-                                            mt='$2'
-                                            bg={section.buttonColor}
-                                            borderWidth={1}
-                                            borderColor="#ADADAD"
-                                            borderRadius={10}
-                                            width={65}
-                                            height={24}
-                                            onPress={() => console.log(section.title)}
-                                        >
-                                            <HStack alignItems="center" space="xs">
-                                                <ButtonText
-                                                    color="#000000"
-                                                    fontSize={9}
-                                                    fontWeight="$bold"
-                                                >
-                                                    {section.buttonText}
-                                                </ButtonText>
-                                                <Feather name="chevron-right" size={12} color="#000000" />
-                                            </HStack>
-                                        </Button>
-                                    </VStack>
-                                </Box>
-                            ))}
+                                    {/* Button */}
+                                    <Button
+                                        mt='$2'
+                                        bg="rgba(215, 215, 215, 0.8)"
+                                        borderWidth={1}
+                                        borderColor="#ADADAD"
+                                        borderRadius={10}
+                                        width={65}
+                                        height={24}
+                                        onPress={() => navigation.navigate('SurveyScreen')}
+                                    >
+                                        <HStack alignItems="center" space="xs">
+                                            <ButtonText
+                                                color="#000000"
+                                                fontSize={9}
+                                                fontWeight="$bold"
+                                            >
+                                                Explore
+                                            </ButtonText>
+                                            <Feather name="chevron-right" size={12} color="#000000" />
+                                        </HStack>
+                                    </Button>
+                                </VStack>
+                            </Box>
+
+                            {/* Marka Ürünleri Defteri Card */}
+                            <Box
+                                flex={1}
+                                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                                borderWidth={1}
+                                borderColor="#E9E9E9"
+                                borderRadius={10}
+                                p="$3"
+                            >
+                                <VStack space="sm" justifyContent="center">
+                                    {/* Icon */}
+                                    <Image
+                                        source={require('@/assets/catalog/book.png')}
+                                        alt="Marka Ürünleri Defteri"
+                                        width={24}
+                                        height={24}
+                                    />
+
+                                    {/* Title */}
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                        fontSize={12}
+                                        fontWeight="$bold"
+                                        textAlign="left"
+                                    >
+                                        Marka Ürünleri Defteri
+                                    </Text>
+
+                                    {/* Description */}
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#343434'}
+                                        fontSize={9}
+                                        lineHeight={12}
+                                        textAlign="left"
+                                    >
+                                        Marka Ürünleri Defteri hakkında küçük bir yazı
+                                    </Text>
+
+                                    {/* Button */}
+                                    <Button
+                                        mt='$2'
+                                        bg="rgba(215, 215, 215, 0.8)"
+                                        borderWidth={1}
+                                        borderColor="#ADADAD"
+                                        borderRadius={10}
+                                        width={65}
+                                        height={24}
+                                        onPress={() => navigation.navigate('BrandProductBookScreen')}
+                                    >
+                                        <HStack alignItems="center" space="xs">
+                                            <ButtonText
+                                                color="#000000"
+                                                fontSize={9}
+                                                fontWeight="$bold"
+                                            >
+                                                View
+                                            </ButtonText>
+                                            <Feather name="chevron-right" size={12} color="#000000" />
+                                        </HStack>
+                                    </Button>
+                                </VStack>
+                            </Box>
                         </HStack>
                     </VStack>
 

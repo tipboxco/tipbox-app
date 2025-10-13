@@ -275,31 +275,6 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCa
         </VStack>
       </Box>
 
-      {/* Arama Çubuğu */}
-      <Box px="$4" py="$3">
-        <Box
-          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-          borderRadius={20}
-          height={36}
-          px="$4"
-          justifyContent="center"
-        >
-          <HStack alignItems="center" space="sm">
-            <Search size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
-            <Input flex={1} borderWidth={0} bg="transparent">
-              <InputField
-                placeholder={currentStep === 'categories' ? 'Category seçin veya arayın' : 'Brand seçin veya arayın'}
-                placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={9}
-              />
-            </Input>
-          </HStack>
-        </Box>
-      </Box>
-
 
       {/* Dynamic Grid */}
       <ScrollView flex={1} px="$4">

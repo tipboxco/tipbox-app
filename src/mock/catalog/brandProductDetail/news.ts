@@ -1,0 +1,58 @@
+import { NewsItem } from './newsTypes';
+
+export const mock_news_data: NewsItem[] = [
+  {
+    id: '1',
+    title: 'iPhone 16 Pro Max Yeni Özellikler ve Fiyat Bilgileri',
+    description: 'Apple\'ın yeni iPhone 16 Pro Max modeli ile ilgili tüm detaylar, özellikler ve fiyat bilgileri açıklandı. Yeni kamera sistemi ve performans iyileştirmeleri dikkat çekiyor.',
+    source: 'Apple News',
+    date: '08 July 2025',
+    image: require('@/assets/events/card-icon.png'),
+    url: 'https://apple.com/news/iphone-16-pro-max',
+  },
+  {
+    id: '2',
+    title: 'Samsung Galaxy S25 Ultra İnceleme ve Karşılaştırma',
+    description: 'Samsung\'un yeni amiral gemisi telefonu Galaxy S25 Ultra\'nın detaylı incelemesi ve iPhone 16 Pro Max ile karşılaştırması. Hangi telefon daha iyi?',
+    source: 'TechCrunch',
+    date: '07 July 2025',
+    image: require('@/assets/events/card-icon.png'),
+    url: 'https://techcrunch.com/samsung-galaxy-s25-ultra-review',
+  },
+  {
+    id: '3',
+    title: 'Google Pixel 9 Pro Yapay Zeka Özellikleri',
+    description: 'Google\'ın yeni Pixel 9 Pro modelinde bulunan yapay zeka destekli özellikler ve bunların günlük kullanımdaki etkileri hakkında detaylı analiz.',
+    source: 'Google News',
+    date: '06 July 2025',
+    image: require('@/assets/events/card-icon.png'),
+    url: 'https://google.com/news/pixel-9-pro-ai-features',
+  },
+  {
+    id: '4',
+    title: 'OnePlus 13 Pro Performans Testleri ve Benchmark Sonuçları',
+    description: 'OnePlus 13 Pro\'nun performans testleri ve benchmark sonuçları açıklandı. Snapdragon 8 Gen 4 işlemci ile gelen güçlü performans analizi.',
+    source: 'Android Authority',
+    date: '05 July 2025',
+    image: require('@/assets/events/card-icon.png'),
+    url: 'https://androidauthority.com/oneplus-13-pro-benchmarks',
+  },
+  {
+    id: '5',
+    title: 'Xiaomi 15 Ultra Kamera Sistemi İncelemesi',
+    description: 'Xiaomi 15 Ultra\'nın yeni kamera sistemi ve fotoğraf kalitesi hakkında detaylı inceleme. Leica işbirliği ile gelen profesyonel fotoğraf özellikleri.',
+    source: 'XDA Developers',
+    date: '04 July 2025',
+    image: require('@/assets/events/card-icon.png'),
+    url: 'https://xda-developers.com/xiaomi-15-ultra-camera-review',
+  },
+  {
+    id: '6',
+    title: 'Huawei Mate 70 Pro 5G ve Yapay Zeka Entegrasyonu',
+    description: 'Huawei\'nin yeni Mate 70 Pro modelinde bulunan 5G teknolojisi ve yapay zeka entegrasyonu hakkında kapsamlı analiz ve kullanıcı deneyimleri.',
+    source: 'Huawei News',
+    date: '03 July 2025',
+    image: require('@/assets/events/card-icon.png'),
+    url: 'https://huawei.com/news/mate-70-pro-5g-ai',
+  },
+];
