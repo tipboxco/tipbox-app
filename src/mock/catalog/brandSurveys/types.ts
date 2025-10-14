@@ -32,3 +32,33 @@ export interface SurveyTab {
   name: string;
   isActive: boolean;
 }
+
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  dateRange: string;
+  status: 'joined' | 'join' | 'completed';
+  image: ImageSourcePropType;
+}
+
+export interface EventDetail extends Event {
+  fullDescription: string;
+  statistics: {
+    title: string;
+    percentage: number;
+    description: string;
+  };
+  rewards: {
+    title: string;
+    badgeName: string;
+    badgeImage: ImageSourcePropType;
+  };
+  requirements: Array<{
+    id: string;
+    title: string;
+    progress: number;
+    total: number;
+    icon: string;
+  }>;
+}

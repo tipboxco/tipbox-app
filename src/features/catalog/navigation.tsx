@@ -6,6 +6,11 @@ import BrandProductBookScreen from './screens/BrandProductBookScreen';
 import BrandProductDetailScreen from './screens/BrandProductDetailScreen';
 import NewsDetailScreen from './screens/NewsDetailScreen';
 import SurveyScreen from './screens/SurveyScreen';
+import BrandEventsDetailScreen from './screens/BrandEventsDetailScreen';
+import BrandHistoryScreen from './screens/BrandHistoryScreen';
+import BrandSurveyListScreen from './screens/BrandSurveyListScreen';
+import BrandPostListScreen from './screens/BrandPostListScreen';
+import BrandEventsScreen from './screens/BrandEventsScreen';
 
 export type CatalogStackParamList = {
   CatalogScreen: undefined;
@@ -16,6 +21,11 @@ export type CatalogStackParamList = {
   BrandProductDetailScreen: { productId: string };
   NewsDetailScreen: { newsId: string };
   SurveyScreen: undefined;
+  BrandEventsDetailScreen: undefined;
+  BrandHistoryScreen: undefined;
+  BrandSurveyListScreen: undefined;
+  BrandPostListScreen: undefined;
+  BrandEventsScreen: undefined;
 };
 
 const CatalogStack = createNativeStackNavigator<CatalogStackParamList>();
@@ -51,6 +61,26 @@ export const CatalogNavigator = () => {
         <CatalogStack.Screen
           name="SurveyScreen"
           component={SurveyScreen}
+        />
+        <CatalogStack.Screen
+          name="BrandEventsDetailScreen"
+          component={BrandEventsDetailScreen}
+        />
+        <CatalogStack.Screen
+          name="BrandHistoryScreen"
+          component={BrandHistoryScreen}
+        />
+        <CatalogStack.Screen
+          name="BrandSurveyListScreen"
+          component={BrandSurveyListScreen}
+        />
+        <CatalogStack.Screen
+          name="BrandPostListScreen"
+          component={BrandPostListScreen}
+        />
+        <CatalogStack.Screen
+          name="BrandEventsScreen"
+          component={BrandEventsScreen}
         />
       </CatalogStack.Navigator>
     );

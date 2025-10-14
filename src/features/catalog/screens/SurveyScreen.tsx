@@ -6,8 +6,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
-import { mock_survey_tabs, mock_surveys } from '@/src/mock/catalog/brandSurveys';
+import { mock_survey_tabs, mock_surveys, mockBenchmarkData, mockTipsAndTricksData, mockPostData, mockEvents } from '@/src/mock/catalog/brandSurveys';
 import SurveyCard from '../components/SurveyCard';
+import BenchmarkPostCard from '@/src/components/BenchmarkPostCard';
+import TipsAndTricksPostCard from '@/src/components/TipsAndTricksPostCard';
+import PostCard from '@/src/components/PostCard';
+import EventCard from '../components/EventCard';
+import BrandInfoCard from '../components/BrandInfoCard';
 
 type SurveyScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'SurveyScreen'>;
 
@@ -16,6 +21,48 @@ const SurveyScreen: React.FC = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SurveyScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState('Anketler');
+
+  const renderContent = () => {
+    console.log('Active tab:', activeTab); // Debug için
+    
+    switch (activeTab) {
+      case 'Trendler':
+        return (
+          <VStack space="md">
+            <BenchmarkPostCard data={mockBenchmarkData} />
+            <TipsAndTricksPostCard data={mockTipsAndTricksData} />
+            <PostCard data={mockPostData} />
+          </VStack>
+        );
+      
+      case 'Etkinlikler':
+        return (
+          <VStack>
+            {mockEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onPress={() => navigation.navigate('BrandEventsDetailScreen')}
+              />
+            ))}
+          </VStack>
+        );
+      
+      case 'Anketler':
+      default:
+        return (
+          <VStack>
+            {mock_surveys.map((survey) => (
+              <SurveyCard
+                key={survey.id}
+                survey={survey}
+                onPress={() => console.log('Survey action:', survey.status)}
+              />
+            ))}
+          </VStack>
+        );
+    }
+  };
 
 
   return (
@@ -30,102 +77,10 @@ const SurveyScreen: React.FC = () => {
       <ScrollView flex={1}>
         <VStack space="md" p="$4">
           {/* Top Cards */}
-          <HStack space="md" mb="$2">
-            {/* Product Info Card */}
-            <Box
-              flex={1}
-              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              borderRadius={10}
-              p="$3"
-            >
-              <HStack alignItems="center">
-                <Box
-                  width={52}
-                  height={52}
-                  borderRadius={5}
-                  bg="rgba(0, 0, 0, 0.2)"
-                  alignItems="center"
-                  justifyContent="center"
-                  overflow="hidden"
-                >
-                  <Image
-                    source={require('@/assets/events/card-icon.png')}
-                    alt="Apple Logo"
-                    style={{ width: 52, height: 52 }}
-                    resizeMode="cover"
-                  />
-                </Box>
-
-                <VStack flex={1} ml="$3">
-                  <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize={12}
-                    fontWeight="$bold"
-                  >
-                    Apple
-                  </Text>
-                  <Text
-                    color="#9B9B9B"
-                    fontSize={12}
-                    fontWeight="$semibold"
-                  >
-                    Technology
-                  </Text>
-                </VStack>
-
-                <Pressable
-                  onPress={() => console.log('Notification pressed')}
-                  p="$2"
-                >
-                  <Feather name="bell" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-                </Pressable>
-              </HStack>
-            </Box>
-
-            {/* Brand History Card */}
-            <Box
-              width={78}
-              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              borderRadius={10}
-              p="$3"
-              alignItems="center"
-            >
-              <VStack alignItems="center" space="xs">
-                <Box
-                  width={26}
-                  height={26}
-                  borderRadius={13}
-                  bg="#DDDDDD"
-                  borderWidth={2}
-                  borderColor="#FFFFFF"
-                  alignItems="center"
-                  justifyContent="center"
-                  overflow="hidden"
-                >
-                  <Image
-                    source={require('@/assets/avatar/ozan.png')}
-                    alt="User Avatar"
-                    style={{ width: 26, height: 26 }}
-                    resizeMode="cover"
-                  />
-                </Box>
-
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={10}
-                  fontWeight="$bold"
-                  textAlign="center"
-                  numberOfLines={2}
-                >
-                  Marka{'\n'}Geçmişim
-                </Text>
-              </VStack>
-            </Box>
-          </HStack>
+          <BrandInfoCard
+            onNotificationPress={() => console.log('Notification pressed')}
+            onHistoryPress={() => navigation.navigate('BrandHistoryScreen')}
+          />
 
           {/* Tabs */}
           <HStack justifyContent="space-around">
@@ -157,16 +112,8 @@ const SurveyScreen: React.FC = () => {
           </HStack>
 
 
-          {/* Survey Cards */}
-          <VStack>
-            {mock_surveys.map((survey) => (
-              <SurveyCard
-                key={survey.id}
-                survey={survey}
-                onPress={() => console.log('Survey action:', survey.status)}
-              />
-            ))}
-          </VStack>
+          {/* Content */}
+          {renderContent()}
         </VStack>
       </ScrollView>
     </VStack>
