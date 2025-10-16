@@ -9,6 +9,8 @@ import { EventsStackParamList } from '@/src/features/events/navigation';
 import { MoreSchoiseStackParamList } from '@/src/features/moreSchoise/navigation';
 import { PostStackParamList } from '@/src/features/post/navigation';
 import { NotificationsStackParamList } from '@/src/features/notifications/navigation';
+import { BookmarksStackParamList } from '@/src/features/bookmarks/navigation';
+import { MarketplaceStackParamList } from '@/src/features/marketplace/navigation';
 
 // Main Tab Navigator için type tanımlaması
 export type MainTabParamList = {
@@ -28,4 +30,6 @@ export type RootStackParamList = {
   MoreSchoise: NavigatorScreenParams<MoreSchoiseStackParamList>;
   Post: NavigatorScreenParams<PostStackParamList>;
   Notifications: NavigatorScreenParams<NotificationsStackParamList>;
+  Bookmarks: NavigatorScreenParams<BookmarksStackParamList>;
+  Marketplace: NavigatorScreenParams<MarketplaceStackParamList>;
 };

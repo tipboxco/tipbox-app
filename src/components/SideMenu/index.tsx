@@ -81,13 +81,19 @@ export const SideMenu = ({
       id: 'bookmarks',
       icon: 'bookmark',
       label: 'Bookmarks',
-      onPress: () => {},
+      onPress: () => {
+        onClose();
+        navigation.navigate('Bookmarks');
+      },
     },
     {
       id: 'marketplace',
       icon: 'shopping-bag',
       label: 'Marketplace',
-      onPress: () => {},
+      onPress: () => {
+        onClose();
+        navigation.navigate('Marketplace');
+      },
     },
     {
       id: 'prime-pass',
