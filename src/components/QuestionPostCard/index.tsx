@@ -11,9 +11,10 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 
 interface QuestionPostCardProps {
   data: QuestionPost;
+  hideProduct?: boolean;
 }
 
-export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
+export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -59,7 +60,7 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
 
       {/* Product */}
       {
-        data.category && data.category.product ? (
+        !hideProduct && data.category && data.category.product ? (
           <Pressable onPress={() => {
             navigation.navigate('Post', {
               screen: 'PostDetailScreen',
@@ -98,7 +99,7 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
             />
           </HStack>
           </Pressable>
-        ) : (
+        ) : !hideProduct && data.category ? (
           <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
             <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
               <Image
@@ -129,8 +130,8 @@ export const QuestionPostCard = ({ data }: QuestionPostCardProps) => {
               <Feather name="chevron-right" size={24} color={isDark ? '#fff' : '#A3A3A3'} />
             </HStack>
           </Pressable>
-        )
-      };
+        ) : null
+      }
 
       {/* Badges */}
       <HStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
