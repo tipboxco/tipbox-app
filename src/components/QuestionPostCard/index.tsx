@@ -25,7 +25,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       mb={16}
     >
       {/* Header */}
-      <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           <Image
             source={data.user.avatar}
@@ -67,7 +67,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
               params: { postData: data, type: 'question' }
             });
           }}>
-            <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
             <Image
               width={42}
               height={42}
@@ -134,7 +134,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       }
 
       {/* Badges */}
-      <HStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         <Box
           bg={isDark ? '$backgroundDark900' : '$white'}
           borderWidth={2}

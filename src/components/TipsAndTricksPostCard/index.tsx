@@ -25,7 +25,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={data.user.avatar}
@@ -67,7 +67,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                             params: { postData: data, type: 'tipsAndTricks' }
                         });
                     }}>
-                        <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+                        <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
                             <Image
                                 width={42}
                                 height={42}
@@ -134,7 +134,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
             }
 
             {/* Badges */}
-            <HStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
+            <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
                 <Box
                     bg={isDark ? '$backgroundDark900' : '$white'}
                     borderWidth={2}

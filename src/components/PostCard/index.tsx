@@ -142,7 +142,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           params: { postData: data, type: 'post' }
         });
       }}>
-        <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Text
             color={isDark ? '$textDark50' : '#000'}
             fontSize={config.tokens.fontSizes['2xs'] as number}

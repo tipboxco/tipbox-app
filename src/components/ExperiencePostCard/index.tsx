@@ -13,9 +13,10 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 
 interface PostCardProps {
   data: PostCardType;
+  hideProduct?: boolean;
 }
 
-export const ExperiencePostCard = ({ data }: PostCardProps) => {
+export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -36,7 +37,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
       </Pressable>
 
       {/* Header */}
-      <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           <Image
             source={data.user.avatar}
@@ -74,44 +75,48 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
       </VStack>
 
       {/* Product */}
-      <Pressable onPress={() => {
-        navigation.navigate('Post', {
-          screen: 'PostDetailScreen',
-          params: { postData: data, type: 'experience' }
-        });
-      }}>
-        <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
-        <Image
-          width={42}
-          height={42}
-          mr={8}
-          source={data.product.image}
-          alt={data.product.name}
-          borderRadius={5}
-        />
-        <VStack flex={1}>
-          <Text
-            color={isDark ? '$textDark50' : '#000'}
-            fontSize={'$xs'}
-            numberOfLines={2}
-          >
-            {data.product.name}
-          </Text>
-          <Text
-            color={isDark ? '$textDark50' : '#000'}
-            fontSize={'$xs'}
-          >
-            {data.product.subName}
-          </Text>
-        </VStack>
-        <Image
-          source={require('@/assets/common/percentage_01.png')}
-          alt={'percantage'}
-          width={30}
-          height={30}
-        />
-        </HStack>
-      </Pressable>
+      {
+        !hideProduct && (
+          <Pressable onPress={() => {
+            navigation.navigate('Post', {
+              screen: 'PostDetailScreen',
+              params: { postData: data, type: 'experience' }
+            });
+          }}>
+            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+              <Image
+                width={42}
+                height={42}
+                mr={8}
+                source={data.product.image}
+                alt={data.product.name}
+                borderRadius={5}
+              />
+              <VStack flex={1}>
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={'$xs'}
+                  numberOfLines={2}
+                >
+                  {data.product.name}
+                </Text>
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize={'$xs'}
+                >
+                  {data.product.subName}
+                </Text>
+              </VStack>
+              <Image
+                source={require('@/assets/common/percentage_01.png')}
+                alt={'percantage'}
+                width={30}
+                height={30}
+              />
+            </HStack>
+          </Pressable>
+        )
+      }
 
       {/* Content */}
       <Pressable onPress={() => {
@@ -120,7 +125,7 @@ export const ExperiencePostCard = ({ data }: PostCardProps) => {
           params: { postData: data, type: 'experience' }
         });
       }}>
-        <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           {data.content.map((item, index) => (
             <VStack key={index} py={8}>
               <HStack space="sm" alignItems="center">
