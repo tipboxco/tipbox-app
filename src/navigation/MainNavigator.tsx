@@ -9,6 +9,7 @@ import { PostNavigator } from '@/src/features/post/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { BookmarksNavigator } from '@/src/features/bookmarks/navigation';
 import { MarketplaceNavigator } from '@/src/features/marketplace/navigation';
+import { WalletScreen } from '@/src/features/wallet';
 import { RootStackParamList } from './navigation.types';
 import { useAuthStore } from '@/src/store/authStore';
 
@@ -35,6 +36,7 @@ export const MainNavigator = () => {
           <Stack.Screen name="Notifications" component={NotificationsNavigator} />
           <Stack.Screen name="Bookmarks" component={BookmarksNavigator} />
           <Stack.Screen name="Marketplace" component={MarketplaceNavigator} />
+          <Stack.Screen name="Wallet" component={WalletScreen} />
         </>
       )}
     </Stack.Navigator>

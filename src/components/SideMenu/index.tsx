@@ -75,7 +75,10 @@ export const SideMenu = ({
       id: 'wallet',
       icon: 'credit-card',
       label: 'Wallet',
-      onPress: () => {},
+      onPress: () => {
+        onClose();
+        navigation.navigate('Wallet');
+      },
     },
     {
       id: 'bookmarks',

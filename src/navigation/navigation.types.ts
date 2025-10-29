@@ -32,4 +32,5 @@ export type RootStackParamList = {
   Notifications: NavigatorScreenParams<NotificationsStackParamList>;
   Bookmarks: NavigatorScreenParams<BookmarksStackParamList>;
   Marketplace: NavigatorScreenParams<MarketplaceStackParamList>;
+  Wallet: undefined;
 };
