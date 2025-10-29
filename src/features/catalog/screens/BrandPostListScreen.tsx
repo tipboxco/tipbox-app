@@ -26,9 +26,9 @@ const BrandPostListScreen: React.FC = () => {
 
       <ScrollView flex={1}>
         <VStack space="md" p="$4">
-          <PostCard data={mockPostData} />
-          <PostCard data={mockPostData} />
-          <PostCard data={mockPostData} />
+          <PostCard data={mockPostData} hideProduct={true} />
+          <PostCard data={mockPostData} hideProduct={true} />
+          <PostCard data={mockPostData} hideProduct={true} />
         </VStack>
       </ScrollView>
     </VStack>

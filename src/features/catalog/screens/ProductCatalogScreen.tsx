@@ -7,10 +7,16 @@ import { Category, BreadcrumbItem } from '@/src/mock/catalog/productCatalog/type
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '../components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { CatalogStackParamList } from '../navigation';
+
+type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList>;
 
 export const ProductCatalogScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation<ProductCatalogScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([
     { id: 'root', name: 'Categories', type: 'category' }
@@ -141,7 +147,7 @@ export const ProductCatalogScreen = () => {
   };
 
   const handleShowPosts = () => {
-    console.log('Show Posts pressed');
+    navigation.navigate('BrandPostListScreen');
   };
 
   const handleCreatePost = () => {

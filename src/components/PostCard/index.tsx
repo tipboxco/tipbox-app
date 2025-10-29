@@ -11,9 +11,10 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 
 interface PostCardProps {
   data: Post;
+  hideProduct?: boolean;
 }
 
-const PostCard = ({ data }: PostCardProps) => {
+const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -24,7 +25,7 @@ const PostCard = ({ data }: PostCardProps) => {
       mb={16}
     >
       {/* Header */}
-      <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           <Image
             source={data.user.avatar}
@@ -40,7 +41,7 @@ const PostCard = ({ data }: PostCardProps) => {
               fontSize="$xs"
               fontWeight="$bold"
             >
-              {data.user.name}
+              {data.user.name} Burası
             </Text>
             <Text
               color={isDark ? '$textDark400' : '#787878'}
@@ -59,14 +60,14 @@ const PostCard = ({ data }: PostCardProps) => {
 
       {/* Product */}
       {
-        data.category && data.category.product ? (
+        !hideProduct && data.category && data.category.product ? (
           <Pressable onPress={() => {
             navigation.navigate('Post', {
               screen: 'PostDetailScreen',
               params: { postData: data, type: 'post' }
             });
           }}>
-            <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
               <Image
                 width={42}
                 height={42}
@@ -100,9 +101,9 @@ const PostCard = ({ data }: PostCardProps) => {
               )}
             </HStack>
           </Pressable>
-        ) : (
+        ) : !hideProduct && data.category ? (
           <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
-            <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
               <Image
                 width={42}
                 height={42}
@@ -131,7 +132,7 @@ const PostCard = ({ data }: PostCardProps) => {
               <Feather name="chevron-right" size={24} color={isDark ? '#fff' : '#A3A3A3'} />
             </HStack>
           </Pressable>
-        )
+        ) : null
       }
 
       {/* Content */}

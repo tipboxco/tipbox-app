@@ -8,10 +8,10 @@ import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import BrandProductInfoCard from '../components/BrandProductInfoCard';
 import FilterTabs from '../components/FilterTabs';
-import PostCard from '@/src/components/PostCard';
+import { ExperiencePostCard } from '@/src/components/ExperiencePostCard';
 import NewsCard from '../components/NewsCard';
 import BenchmarkPostCard from '@/src/components/BenchmarkPostCard';
-import { mock_brand_product_posts } from '@/src/mock/catalog/brandProductDetail/posts';
+import { mock_brand_product_experience_posts } from '@/src/mock/catalog/brandProductDetail/experiencePosts';
 import { mock_news_data } from '@/src/mock/catalog/brandProductDetail/news';
 import { mock_benchmark_posts } from '@/src/mock/catalog/brandProductDetail/benchmark';
 
@@ -69,8 +69,8 @@ const BrandProductDetailScreen: React.FC = () => {
         // Default: Deneyim Paylaşımı posts
         return (
             <VStack space="md">
-                {mock_brand_product_posts.map((post) => (
-                    <PostCard
+                {mock_brand_product_experience_posts.map((post) => (
+                    <ExperiencePostCard
                         key={post.id}
                         data={post}
                     />
