@@ -5,7 +5,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { PostCard as PostCardType } from '@/src/mock/profile/feed/types';
 import { Dimensions } from 'react-native';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
-import CardImageCarousel from '../CardImageCarousel';
+import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -216,3 +216,4 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
 };
 
 export default ExperiencePostCard;
+

@@ -18,7 +18,7 @@ import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { mock_brand_detail } from '@/src/mock/catalog/brandCatalog';
 import { Feather } from '@expo/vector-icons';
-import PostCard from '@/src/components/PostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
 
 const { width } = Dimensions.get('window');
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { VStack } from '@gluestack-ui/themed';
-import TipsAndTricksPostCard from '@/src/components/TipsAndTricksPostCard';
+import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { mock_tips_and_tricks_posts } from '@/src/mock/profile/tipsAndTricks';
 
 export const TipsTab = () => {

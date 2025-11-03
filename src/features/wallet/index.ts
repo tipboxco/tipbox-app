@@ -1,1 +1,3 @@
-export { default as WalletScreen } from './screens/WalletScreen';
+export { WalletNavigator } from './navigation';
+
+

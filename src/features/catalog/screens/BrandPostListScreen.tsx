@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import PostCard from '@/src/components/PostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
 import { mockPostData } from '@/src/mock/catalog/brandSurveys';
 
 type BrandPostListScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandPostListScreen'>;

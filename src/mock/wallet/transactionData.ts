@@ -1,4 +1,4 @@
-import { TransactionData } from '../components/TransactionCard';
+import { TransactionData } from '@/src/features/wallet/components/TransactionCard';
 
 export const todayTransactions: TransactionData[] = [
     {
@@ -38,3 +38,4 @@ export const allTransactions = {
     today: todayTransactions,
     yesterday: yesterdayTransactions
 };
+

@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
-import CardImageCarousel from '../CardImageCarousel';
+import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -248,3 +248,4 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
 };
 
 export default memo(TipsAndTricksPostCard);
+

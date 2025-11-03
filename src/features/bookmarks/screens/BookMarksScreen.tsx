@@ -1,9 +1,9 @@
 import React from 'react';
 import { VStack, ScrollView, SafeAreaView } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import PostCard from '@/src/components/PostCard';
-import BenchmarkPostCard from '@/src/components/BenchmarkPostCard';
-import TipsAndTricksPostCard from '@/src/components/TipsAndTricksPostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
+import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
+import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { Header } from '@/src/components/Header';
 import { Post } from '@/src/mock/profile/posts/types';
 import { BenchmarkPost } from '@/src/mock/profile/benchmark/types';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { VStack } from '@gluestack-ui/themed';
-import PostCard from '@/src/components/PostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
 import { mock_posts } from '@/src/mock/profile/posts';
 
 export const FeedTab = () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { VStack } from '@gluestack-ui/themed';
-import { BenchmarkPostCard } from '@/src/components/BenchmarkPostCard';
+import { BenchmarkPostCard } from '@/src/components/PostCards/BenchmarkPostCard';
 import { mock_benchmark_posts } from '@/src/mock/profile/benchmark';
 
 export const BenchmarksTab = () => {

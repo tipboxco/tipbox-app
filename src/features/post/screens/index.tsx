@@ -1,1 +1,6 @@
 export { PostDetailScreen } from './PostDetailScreen';
+export { PostsScreen } from './PostsScreen';
+export { CreatePostScreen } from './CreatePostScreen';
+export { CreateTipsAndTrickPostScreen } from './CreateTipsAndTrickPostScreen';
+export { CreateQuestionPostScreen } from './CreateQuestionPostScreen';
+export { CreateExperiencePostScreen } from './CreateExperiencePostScreen';

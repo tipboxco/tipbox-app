@@ -12,11 +12,11 @@ import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_feed_data } from '@/src/mock/feed';
 import { FeedItem } from '@/src/mock/feed/types';
-import PostCard from '@/src/components/PostCard';
-import BenchmarkPostCard from '@/src/components/BenchmarkPostCard';
-import QuestionPostCard from '@/src/components/QuestionPostCard';
-import TipsAndTricksPostCard from '@/src/components/TipsAndTricksPostCard';
-import ExperiencePostCard from '@/src/components/ExperiencePostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
+import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
+import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
+import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
 

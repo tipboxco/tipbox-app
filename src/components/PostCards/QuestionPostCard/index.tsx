@@ -1,20 +1,20 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Post } from '@/src/mock/profile/posts/types';
+import { QuestionPost } from '@/src/mock/profile/questions/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
-import CardImageCarousel from '../CardImageCarousel';
+import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 
-interface PostCardProps {
-  data: Post;
+interface QuestionPostCardProps {
+  data: QuestionPost;
   hideProduct?: boolean;
 }
 
-const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
+export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -41,7 +41,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               fontSize="$xs"
               fontWeight="$bold"
             >
-              {data.user.name} Burası
+              {data.user.name}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '#787878'}
@@ -64,46 +64,44 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           <Pressable onPress={() => {
             navigation.navigate('Post', {
               screen: 'PostDetailScreen',
-              params: { postData: data, type: 'post' }
+              params: { postData: data, type: 'question' }
             });
           }}>
             <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
-              <Image
-                width={42}
-                height={42}
-                mr={8}
-                source={data.category.product.image}
-                alt={data.category.product.name}
-                borderRadius={5}
-              />
-              <VStack flex={1}>
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize="$xs"
-                  numberOfLines={2}
-                >
-                  {data.category.product.name}
-                </Text>
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize="$xs"
-                >
-                  {data.category.product.subName}
-                </Text>
-              </VStack>
-              {data.category.product.hasDiscount && (
-                <Image
-                  source={require('@/assets/common/percentage_01.png')}
-                  alt={'percentage'}
-                  width={30}
-                  height={30}
-                />
-              )}
-            </HStack>
+            <Image
+              width={42}
+              height={42}
+              mr={8}
+              source={data.category.product.image}
+              alt={data.category.product.name}
+              borderRadius={5}
+            />
+            <VStack flex={1}>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$xs"
+                numberOfLines={2}
+              >
+                {data.category.product.name}
+              </Text>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$xs"
+              >
+                {data.category.product.subName}
+              </Text>
+            </VStack>
+            <Image
+              source={require('@/assets/common/percentage_01.png')}
+              alt={'percantage'}
+              width={30}
+              height={30}
+            />
+          </HStack>
           </Pressable>
         ) : !hideProduct && data.category ? (
           <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
-            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
+            <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
               <Image
                 width={42}
                 height={42}
@@ -135,14 +133,67 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         ) : null
       }
 
+      {/* Badges */}
+      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Box
+          bg={isDark ? '$backgroundDark900' : '$white'}
+          borderWidth={2}
+          borderColor="#CFE556"
+          bgColor='#829905'
+          borderRadius={20}
+          width={90}
+          px={10}
+          py={6}
+          mr={16}
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="space-evenly"
+        >
+          <Feather name="help-circle" size={12} color={'#fff'} />
+          <Text
+            fontSize={config.tokens.fontSizes['4xs'] as number}
+            fontWeight="$semibold"
+            ml={5}
+            color={'#fff'}
+          >
+            Question
+          </Text>
+        </Box>
+
+        {data.isBoosted && (
+          <Box
+            bgColor="#99055E"
+            borderWidth={2}
+            borderColor="#E059AA"
+            borderRadius={20}
+            width={90}
+            px={10}
+            py={6}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-evenly"
+          >
+            <Feather name="send" size={12} color="#fff" />
+            <Text
+              fontSize={config.tokens.fontSizes['4xs'] as number}
+              fontWeight="$semibold"
+              ml={5}
+              color="#fff"
+            >
+              Boosted
+            </Text>
+          </Box>
+        )}
+      </HStack>
+
       {/* Content */}
       <Pressable onPress={() => {
         navigation.navigate('Post', {
           screen: 'PostDetailScreen',
-          params: { postData: data, type: 'post' }
+          params: { postData: data, type: 'question' }
         });
       }}>
-        <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Text
             color={isDark ? '$textDark50' : '#000'}
             fontSize={config.tokens.fontSizes['2xs'] as number}
@@ -154,18 +205,16 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
       </Pressable>
 
       {/* Images */}
-      {
-        data.images && data.images?.length > 0 && (
-          <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <CardImageCarousel images={data.images} />
-          </VStack>
-        )
-      }
+      {data.images && data.images?.length > 0 && (
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} />
+        </VStack>
+      )}
 
       {/* Stats */}
       <HStack
         px={12}
-        py={8}
+        py={10}
         borderRightWidth={1}
         borderLeftWidth={1}
         borderBottomWidth={1}
@@ -201,8 +250,9 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           />
         </Box>
       </HStack>
-    </VStack >
+    </VStack>
   );
 };
 
-export default memo(PostCard);
+export default QuestionPostCard;
+

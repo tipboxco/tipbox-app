@@ -1,6 +1,6 @@
 import React from 'react';
 import { VStack } from '@gluestack-ui/themed';
-import QuestionPostCard from '@/src/components/QuestionPostCard';
+import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import { mock_questions } from '@/src/mock/profile/questions';
 
 export const RepliesTab = () => {

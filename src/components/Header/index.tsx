@@ -13,6 +13,7 @@ interface HeaderProps {
   onBackPress?: () => void;
   showTabs?: boolean;
   onTabChange?: (tab: 'wallet' | 'inventory') => void;
+  rightAction?: React.ReactNode;
 }
 
 export const Header = ({
@@ -23,7 +24,8 @@ export const Header = ({
   showBackButton = false,
   onBackPress,
   showTabs = false,
-  onTabChange
+  onTabChange,
+  rightAction
 }: HeaderProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -53,9 +55,17 @@ export const Header = ({
               color={isDark ? '$textDark50' : '$textLight900'}
               fontSize="$lg"
               fontWeight="$bold"
+              textAlign="center"
             >
               {title}
             </Text>
+            {rightAction ? (
+              <Box width={24} height={24} alignItems="center" justifyContent="center">
+                {rightAction}
+              </Box>
+            ) : (
+              <Box width={24} />
+            )}
           </HStack>
         </Box>
       </Box>

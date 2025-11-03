@@ -19,7 +19,7 @@ import { Header } from '@/src/components/Header';
 import { mock_community_events, rewards_badges_mock} from '@/src/mock/events/communityEvents';
 import { mock_posts } from '@/src/mock/profile/posts';
 import { Feather } from '@expo/vector-icons';
-import PostCard from '@/src/components/PostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
 
 const { width } = Dimensions.get('window');
 

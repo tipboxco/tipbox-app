@@ -8,9 +8,9 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import { mock_survey_tabs, mock_surveys, mockBenchmarkData, mockTipsAndTricksData, mockPostData, mockEvents } from '@/src/mock/catalog/brandSurveys';
 import SurveyCard from '../components/SurveyCard';
-import BenchmarkPostCard from '@/src/components/BenchmarkPostCard';
-import TipsAndTricksPostCard from '@/src/components/TipsAndTricksPostCard';
-import PostCard from '@/src/components/PostCard';
+import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
+import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
 import EventCard from '../components/EventCard';
 import BrandInfoCard from '../components/BrandInfoCard';
 

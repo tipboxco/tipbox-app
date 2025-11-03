@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Search } from 'lucide-react-native';
@@ -7,11 +7,14 @@ import { Category, BreadcrumbItem } from '@/src/mock/catalog/productCatalog/type
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '../components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
+import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatalogStackParamList } from '../navigation';
+import { RootStackParamList } from '@/src/navigation/navigation.types';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
-type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList>;
+type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList>;
 
 export const ProductCatalogScreen = () => {
   const { colorMode } = useColorMode();
@@ -26,6 +29,24 @@ export const ProductCatalogScreen = () => {
   const [currentProductGroups, setCurrentProductGroups] = useState<any[]>([]);
   const [currentProducts, setCurrentProducts] = useState<any[]>([]);
   const [currentView, setCurrentView] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>('categories');
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+
+  // Bottom sheet refs
+  const createPostBottomSheetRef = useRef<BottomSheet>(null);
+
+  // Bottom sheet snap points
+  const createPostSnapPoints = useMemo(() => ['85%'], []);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+      />
+    ),
+    []
+  );
 
   const handleCategoryPress = (category: Category) => {
     const newBreadcrumbItem: BreadcrumbItem = {
@@ -88,6 +109,36 @@ export const ProductCatalogScreen = () => {
     setCurrentView('products');
   };
 
+  const handleProductPress = (product: any) => {
+    // Get the current breadcrumb items (category, subcategory, productGroup, products)
+    const currentCategory = breadcrumbItems.find(item => item.type === 'category');
+    const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
+    const currentProductGroup = breadcrumbItems.find(item => item.type === 'productGroup' && item.id !== 'products');
+    
+    // Create product breadcrumb item
+    const productBreadcrumbItem: BreadcrumbItem = {
+      id: product.id,
+      name: product.name,
+      type: 'product'
+    };
+    
+    // Update breadcrumb items - remove 'Products' placeholder and add actual product name
+    const updatedBreadcrumbs: BreadcrumbItem[] = [];
+    if (currentCategory) updatedBreadcrumbs.push(currentCategory);
+    if (currentSubCategory) updatedBreadcrumbs.push(currentSubCategory);
+    if (currentProductGroup) updatedBreadcrumbs.push(currentProductGroup);
+    updatedBreadcrumbs.push(productBreadcrumbItem);
+    
+    setBreadcrumbItems(updatedBreadcrumbs);
+    
+    // Store selected product for CreatePostBottomSheet
+    setSelectedProduct(product);
+    
+    // Log to console
+    console.log('Selected Product:', product.name);
+    console.log('Updated Breadcrumb Items:', updatedBreadcrumbs);
+  };
+
   const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     // Navigate back based on breadcrumb item
     if (item.type === 'category' && item.id === 'root') {
@@ -143,15 +194,104 @@ export const ProductCatalogScreen = () => {
     } else if (item.type === 'product' && item.id === 'products') {
       // Stay in products view
       setCurrentView('products');
+    } else if (item.type === 'product') {
+      // Product selected - stay in products view but show selected product in breadcrumb
+      // This case is already handled by handleProductPress, but we keep this for breadcrumb navigation
+      setCurrentView('products');
+      console.log('Product breadcrumb clicked:', item.name);
     }
   };
 
   const handleShowPosts = () => {
-    navigation.navigate('BrandPostListScreen');
+    // Determine current stage and name from breadcrumbItems and currentView
+    let stage: 'SubCategories' | 'ProductGroup' | 'Product' = 'SubCategories';
+    let name = 'Subcategory Feed';
+
+    if (currentView === 'subcategories') {
+      // Get the subcategory name from breadcrumb
+      const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory' && item.id !== 'subcategories');
+      if (subCategoryItem) {
+        stage = 'SubCategories';
+        name = subCategoryItem.name;
+      } else {
+        // Fallback: use category name
+        const categoryItem = breadcrumbItems.find(item => item.type === 'category' && item.id !== 'root');
+        if (categoryItem) {
+          name = categoryItem.name;
+        }
+      }
+    } else if (currentView === 'productgroups') {
+      // Get the product group name from breadcrumb
+      const productGroupItem = breadcrumbItems.find(item => item.type === 'productGroup' && item.id !== 'productgroups');
+      if (productGroupItem) {
+        stage = 'ProductGroup';
+        name = productGroupItem.name;
+      }
+    } else if (currentView === 'products') {
+      // Get the product name from breadcrumb or selected product
+      const productItem = breadcrumbItems.find(item => item.type === 'product' && item.id !== 'products');
+      if (productItem) {
+        stage = 'Product';
+        name = productItem.name;
+      } else if (selectedProduct) {
+        stage = 'Product';
+        name = selectedProduct.name;
+      }
+    }
+
+    // Navigate to PostsScreen with parameters
+    navigation.navigate('Post', {
+      screen: 'PostsScreen',
+      params: {
+        stage,
+        name,
+      },
+    });
   };
 
   const handleCreatePost = () => {
     console.log('Create a Post pressed');
+    if (createPostBottomSheetRef.current) {
+      createPostBottomSheetRef.current.snapToIndex(0);
+    } else {
+      setTimeout(() => {
+        if (createPostBottomSheetRef.current) {
+          createPostBottomSheetRef.current.snapToIndex(0);
+        }
+      }, 100);
+    }
+  };
+
+  const handlePostTypeSelect = (type: string) => {
+    console.log('Post type selected:', type);
+    
+    // Close bottom sheet first
+    createPostBottomSheetRef.current?.close();
+    
+    // Navigate to appropriate screen based on post type
+    if (type === 'free') {
+      navigation.navigate('Post', {
+        screen: 'CreatePostScreen',
+      });
+    } else if (type === 'tips') {
+      navigation.navigate('Post', {
+        screen: 'CreateTipsAndTrickPostScreen',
+      });
+    } else if (type === 'question') {
+      navigation.navigate('Post', {
+        screen: 'CreateQuestionPostScreen',
+      });
+    } else if (type === 'experience') {
+      navigation.navigate('Post', {
+        screen: 'CreateExperiencePostScreen',
+      });
+    }
+    // Handle other post types here if needed
+  };
+
+  const handleViewChange = (view: 'options' | 'experience' | 'product-selection') => {
+    console.log('BottomSheet view changed:', view);
+    // View change is handled internally by CreatePostBottomSheet
   };
 
   const getCurrentData = () => {
@@ -257,7 +397,7 @@ export const ProductCatalogScreen = () => {
                         image: currentItem.image,
                         subCategories: []
                       }}
-                      onPress={() => console.log('Product selected:', currentItem)}
+                      onPress={() => handleProductPress(currentItem)}
                     />
                   );
                 }
@@ -268,6 +408,52 @@ export const ProductCatalogScreen = () => {
           ))}
         </VStack>
       </ScrollView>
+
+      {/* Create Post Bottom Sheet */}
+      <BottomSheet
+        ref={createPostBottomSheetRef}
+        index={-1}
+        snapPoints={createPostSnapPoints}
+        enablePanDownToClose
+        enableOverDrag={false}
+        enableHandlePanningGesture={true}
+        enableContentPanningGesture={true}
+        animateOnMount={true}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        }}
+      >
+        <BottomSheetView>
+          <CreatePostBottomSheet
+            onClose={() => {
+              createPostBottomSheetRef.current?.close();
+            }}
+            onPostTypeSelect={handlePostTypeSelect}
+            onViewChange={handleViewChange}
+            stage={currentView === 'categories' ? undefined : currentView as 'subcategories' | 'productgroups' | 'products'}
+            selectedProduct={selectedProduct ? {
+              id: selectedProduct.id,
+              name: selectedProduct.name,
+              subName: selectedProduct.description || undefined,
+              image: selectedProduct.image,
+              hasDiscount: false, // Product data doesn't have hasDiscount, can be extended later
+            } : undefined}
+          />
+        </BottomSheetView>
+      </BottomSheet>
     </Box>
   );
 };

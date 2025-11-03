@@ -202,3 +202,4 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
     );
 };
 export default BenchmarkPostCard;
+

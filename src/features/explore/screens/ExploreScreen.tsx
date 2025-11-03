@@ -16,7 +16,7 @@ import { SideMenu } from '@/src/components/SideMenu';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_post_cards } from '@/src/mock/profile/feed';
 import { Feather } from '@expo/vector-icons';
-import ExperiencePostCard from '@/src/components/ExperiencePostCard';
+import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 
 
 

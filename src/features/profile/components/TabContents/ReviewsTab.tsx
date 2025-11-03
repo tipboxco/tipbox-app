@@ -1,6 +1,6 @@
 import React from 'react';
 import { VStack } from '@gluestack-ui/themed';
-import { ExperiencePostCard } from '@/src/components/ExperiencePostCard';
+import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
 import { mock_post_cards } from '@/src/mock/profile/feed';
 
 export const ReviewsTab = () => {
