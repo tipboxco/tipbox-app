@@ -17,8 +17,9 @@ import { Feather } from '@expo/vector-icons';
 import { Message, MessageCategory } from '@/src/mock/inbox/messages/types';
 import MessageCard from '../components/MessageCard/index';
 import MessagesFilterGroup from '../components/MessagesFilterGroup/index';
+import type { InboxStackParamList } from '../navigation';
 
-type MessagesScreenNavigationProp = NativeStackNavigationProp<any, 'MessagesScreen'>;
+type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
 const MessagesScreen: React.FC = () => {
     const { colorMode } = useColorMode();
@@ -28,8 +29,15 @@ const MessagesScreen: React.FC = () => {
     const navigation = useNavigation<MessagesScreenNavigationProp>();
 
     const handleMessagePress = (messageId: string) => {
-        // Navigate to message detail
-        console.log('Message pressed:', messageId);
+        const message = inboxData.messages.find(m => m.id === messageId);
+        if (message) {
+            navigation.navigate('MessageDetailScreen', {
+                messageId: message.id,
+                senderName: message.senderName,
+                senderTitle: message.senderTitle,
+                senderAvatar: message.senderAvatar,
+            });
+        }
     };
 
     const handleCategoryPress = (categoryId: string) => {
