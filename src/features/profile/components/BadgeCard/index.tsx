@@ -110,7 +110,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
             borderRadius="$full"
            
           >
-            <Box flexDirection="row" alignItems="center" justifyContent="center" space="xs">
+            <Box flexDirection="row" alignItems="center" justifyContent="center">
               <Feather
                 name="award"
                 size={12}

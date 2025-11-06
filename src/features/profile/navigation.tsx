@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { 
   ProfileScreen,
+  ProfileEditScreen,
   InventoryScreen,
   InventoryDetailScreen,
   Trust_TrusterListScreen,
@@ -14,6 +15,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 // Profile Stack için type tanımlaması
 export type ProfileStackParamList = {
   ProfileMain: undefined;
+  ProfileEdit: undefined;
   InventoryList: undefined;
   InventoryDetail: { itemId: string };
   Collections: undefined;
@@ -39,6 +41,10 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="ProfileMain"
         component={ProfileScreen}
+      />
+      <Stack.Screen
+        name="ProfileEdit"
+        component={ProfileEditScreen}
       />
       <Stack.Screen
         name="InventoryList"

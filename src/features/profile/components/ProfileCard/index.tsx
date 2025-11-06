@@ -1,10 +1,17 @@
-import React from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Box, VStack, Text, HStack, Image, Pressable } from '@gluestack-ui/themed';
+import { 
+  Box, 
+  VStack, 
+  Text, 
+  HStack, 
+  Image, 
+  Pressable
+} from '@gluestack-ui/themed';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProfileStackParamList } from '../../navigation';
@@ -28,6 +35,12 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+
+  const handleEditProfile = () => {
+    setIsMenuVisible(false);
+    navigation.navigate('ProfileEdit');
+  };
 
   return (
     <Box>
@@ -53,9 +66,15 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
       </Pressable>
 
       {/* Menu Button */}
-      <Box position="absolute" top={20} right={16}>
+      <Pressable 
+        position="absolute" 
+        top={20} 
+        right={16}
+        onPress={() => setIsMenuVisible(true)}
+        zIndex={10}
+      >
         <Feather name="more-vertical" size={24} color="#fff" />
-      </Box>
+      </Pressable>
 
       {/* Profile Image */}
       <Box 
@@ -348,6 +367,61 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
           </Pressable>
         </Box>
       </Box>
+
+      {/* Menu Modal */}
+      <Modal
+        visible={isMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsMenuVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setIsMenuVisible(false)}>
+          <Box
+            flex={1}
+            bg="rgba(0, 0, 0, 0.5)"
+            justifyContent="flex-start"
+            alignItems="flex-end"
+          >
+            <TouchableWithoutFeedback>
+              <Box
+                mt={60}
+                mr={16}
+                bg={isDark ? '#1F1F1F' : '#FFFFFF'}
+                borderRadius={8}
+                minWidth={180}
+                overflow="hidden"
+                shadowColor="#000"
+                shadowOffset={{ width: 0, height: 2 }}
+                shadowOpacity={0.25}
+                shadowRadius={3.84}
+                elevation={5}
+              >
+                {/* Edit Profile Option */}
+                <Pressable
+                  onPress={handleEditProfile}
+                  px={16}
+                  py={14}
+                >
+                  <HStack space="md" alignItems="center">
+                    <Feather 
+                      name="edit-2" 
+                      size={18} 
+                      color={isDark ? '#FFFFFF' : '#000000'} 
+                    />
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize={14}
+                      fontWeight="$medium"
+                    >
+                      Edit Profile
+                    </Text>
+                  </HStack>
+                </Pressable>
+              </Box>
+            </TouchableWithoutFeedback>
+          </Box>
+        </TouchableWithoutFeedback>
+      </Modal>
     </Box>
   );
 };
