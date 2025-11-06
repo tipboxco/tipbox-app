@@ -5,7 +5,8 @@ import {
   InventoryScreen,
   InventoryDetailScreen,
   Trust_TrusterListScreen,
-  SuggestedUsersScreen
+  SuggestedUsersScreen,
+  CollectionsScreen
 } from './screens';
 import { ChevronLeft } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -54,6 +55,10 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="SuggestedUsers"
         component={SuggestedUsersScreen}
+      />
+      <Stack.Screen
+        name="Collections"
+        component={CollectionsScreen}
       />
     </Stack.Navigator>
   );

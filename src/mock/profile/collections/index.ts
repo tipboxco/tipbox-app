@@ -1,52 +1,114 @@
-import { Collection } from '@/src/mock/profile/collections/types';
+import { CollectionsData } from './types';
 
-export const mock_collections: Collection[] = [
-  {
-    id: '1',
-    title: 'Everyday Consumer',
-    description: 'En az 10 gönderi ile etkileşime geç ve 3 gönderi paylaş.',
-    image: require('@/assets/badges/badge_01.png'),
-    type: 'usual',
-    isCompleted: false,
-  },
-  {
-    id: '2',
-    title: 'Premium Shopper',
-    description: 'Premium ürünlerle 5 farklı etkileşimde bulun.',
-    image: require('@/assets/badges/badge_02.png'),
-    type: 'rare',
-    isCompleted: true,
-  },
-  {
-    id: '3',
-    title: 'Collector',
-    description: 'Koleksiyonuna 10 farklı ürün ekle.',
-    image: require('@/assets/badges/badge_03.png'),
-    type: 'usual',
-    isCompleted: false,
-  },
-  {
-    id: '4',
-    title: 'Wishmaker',
-    description: 'İstek listene 5 ürün ekle ve 3 tanesini satın al.',
-    image: require('@/assets/badges/badge_04.png'),
-    type: 'usual',
-    isCompleted: true,
-  },
-  {
-    id: '5',
-    title: 'Hardware Expert',
-    description: 'Teknoloji kategorisinde 5 farklı ürün değerlendir.',
-    image: require('@/assets/badges/badge_01.png'),
-    type: 'usual',
-    isCompleted: false,
-  },
-  {
-    id: '6',
-    title: 'Early Tech Adopter',
-    description: 'Yeni çıkan 3 teknoloji ürününü ilk değerlendirenlerden ol.',
-    image: require('@/assets/badges/badge_02.png'),
-    type: 'rare',
-    isCompleted: true,
-  }
-];
+export const mockCollectionsData: CollectionsData = {
+  all: [
+    {
+      id: '1',
+      title: 'Vintage Watches',
+      description: 'A curated collection of vintage timepieces',
+      itemCount: 24,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: false,
+      createdAt: '2024-01-15',
+      author: {
+        name: 'John Doe',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+    {
+      id: '2',
+      title: 'Rare Sneakers',
+      description: 'Limited edition sneakers from around the world',
+      itemCount: 18,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: false,
+      createdAt: '2024-02-20',
+      author: {
+        name: 'Jane Smith',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+    {
+      id: '3',
+      title: 'Trading Cards',
+      description: 'Pokemon and Yu-Gi-Oh collectibles',
+      itemCount: 156,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: true,
+      createdAt: '2024-03-10',
+      author: {
+        name: 'Mike Johnson',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+    {
+      id: '4',
+      title: 'Vintage Cameras',
+      description: 'Classic film cameras and photography equipment',
+      itemCount: 12,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: false,
+      createdAt: '2024-01-25',
+      author: {
+        name: 'Sarah Williams',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+  ],
+  created: [
+    {
+      id: '1',
+      title: 'Vintage Watches',
+      description: 'A curated collection of vintage timepieces',
+      itemCount: 24,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: false,
+      createdAt: '2024-01-15',
+      author: {
+        name: 'John Doe',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+    {
+      id: '3',
+      title: 'Trading Cards',
+      description: 'Pokemon and Yu-Gi-Oh collectibles',
+      itemCount: 156,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: true,
+      createdAt: '2024-03-10',
+      author: {
+        name: 'Mike Johnson',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+  ],
+  saved: [
+    {
+      id: '2',
+      title: 'Rare Sneakers',
+      description: 'Limited edition sneakers from around the world',
+      itemCount: 18,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: false,
+      createdAt: '2024-02-20',
+      author: {
+        name: 'Jane Smith',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+    {
+      id: '4',
+      title: 'Vintage Cameras',
+      description: 'Classic film cameras and photography equipment',
+      itemCount: 12,
+      coverImage: require('@/assets/avatar/ozan.png'),
+      isPrivate: false,
+      createdAt: '2024-01-25',
+      author: {
+        name: 'Sarah Williams',
+        avatar: require('@/assets/avatar/ozan.png'),
+      },
+    },
+  ],
+};

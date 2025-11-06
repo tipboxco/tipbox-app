@@ -335,15 +335,17 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
               </VStack>
             ))}
           </HStack>
-          <Text
-            color={isDark ? '$textDark400' : '$textLight600'}
-            fontSize={11}
-            textAlign="center"
-            mt={12}
-            fontWeight="$bold"
-          >
-            See More Collections
-          </Text>
+          <Pressable onPress={() => navigation.navigate('Collections')}>
+            <Text
+              color={isDark ? '$textDark400' : '$textLight600'}
+              fontSize={11}
+              textAlign="center"
+              mt={12}
+              fontWeight="$bold"
+            >
+              See More Collections
+            </Text>
+          </Pressable>
         </Box>
       </Box>
     </Box>
