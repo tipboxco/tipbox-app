@@ -10,38 +10,56 @@ import {
     Image,
     Textarea,
     TextareaInput,
+    Select,
+    SelectTrigger,
+    SelectInput,
+    SelectIcon,
+    SelectPortal,
+    SelectBackdrop,
+    SelectContent,
+    SelectItem,
+    ChevronDownIcon,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
-import TipsSuccessModal from '../TipsSuccessModal';
+import OneOnOneSupportRequestModal from '../OneOnOneSupportRequestModal';
 
-interface SendTipsBottomSheetProps {
-    senderName: string;
-    senderTitle: string;
-    senderAvatar: any;
+interface OneOnOneSupportBottomSheetProps {
+    expertName: string;
+    expertTitle: string;
+    expertAvatar: any;
     onClose: () => void;
-    onSend?: (amount: number) => void;
+    onSend?: (supportType: string, message: string, amount: number) => void;
 }
 
-export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
-    senderName,
-    senderTitle,
-    senderAvatar,
+export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProps> = ({
+    expertName,
+    expertTitle,
+    expertAvatar,
     onClose,
     onSend,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const [supportType, setSupportType] = useState('');
+    const [message, setMessage] = useState('');
     const [amount, setAmount] = useState('');
-    const [description, setDescription] = useState('');
-    const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
 
     // Kullanıcının mevcut bakiyesi (normalde prop veya store'dan gelecek)
     const currentBalance = 500;
 
     // Conversion rate: 1 TIPS = $0.01
     const TIPS_TO_USD_RATE = 0.01;
+
+    const supportTypes = [
+        'Collection Management',
+        'Product Authentication',
+        'Marketplace Help',
+        'Trading Advice',
+        'Other',
+    ];
 
     const handleMaxAmount = () => {
         setAmount(currentBalance.toString());
@@ -53,39 +71,42 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         setAmount(numericValue);
     };
 
-    const handleSend = () => {
-        const numericAmount = parseFloat(amount) || 0;
-        if (numericAmount > 0) {
-            // Onay modalını aç
-            setIsSuccessModalVisible(true);
-        }
-    };
-
-    const handleConfirm = () => {
-        const numericAmount = parseFloat(amount) || 0;
-        console.log('Send TIPS:', { amount: numericAmount, description });
-        onSend?.(numericAmount);
-        // Modal'ı kapat
-        setIsSuccessModalVisible(false);
-        // BottomSheet'i kapat
-        onClose();
-        // Formu temizle
-        setAmount('');
-        setDescription('');
-    };
-
-    const handleSuccessModalClose = () => {
-        setIsSuccessModalVisible(false);
-    };
-
     const getUSDAmount = () => {
         const numericAmount = parseFloat(amount) || 0;
         return (numericAmount * TIPS_TO_USD_RATE).toFixed(2);
     };
 
-    const isValidAmount = () => {
+    const handleCreateRequest = () => {
+        // Modal'ı aç
+        if (isValidRequest()) {
+            setIsModalVisible(true);
+        }
+    };
+
+    const handleModalClose = () => {
+        setIsModalVisible(false);
+    };
+
+    const handleConfirm = () => {
         const numericAmount = parseFloat(amount) || 0;
-        return numericAmount > 0;
+        console.log('Send Support Request:', { supportType, message, amount: numericAmount });
+        onSend?.(supportType, message, numericAmount);
+        
+        // Modal'ı kapat
+        setIsModalVisible(false);
+        
+        // BottomSheet'i kapat
+        onClose();
+        
+        // Formu temizle
+        setSupportType('');
+        setMessage('');
+        setAmount('');
+    };
+
+    const isValidRequest = () => {
+        const numericAmount = parseFloat(amount) || 0;
+        return supportType.length > 0 && message.trim().length > 0 && numericAmount > 0;
     };
 
     return (
@@ -103,16 +124,17 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                         fontWeight="$bold"
                         textAlign="center"
                     >
-                        Bahşiş Gönder
+                        1 on 1 Support Request
                     </Text>
                 </HStack>
+
                 {/* Banner ve Profil Bölümü */}
                 <Box position="relative">
                     {/* Banner */}
                     <Box height={160} overflow="hidden" position="relative" px="$4">
                         <Image
                             source={require('@/assets/tips_banner.png')}
-                            alt="Tips Banner"
+                            alt="Support Banner"
                             style={{ width: '100%', height: '100%', borderRadius: 10 }}
                             resizeMode="cover"
                         />
@@ -149,8 +171,8 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     justifyContent="center"
                                 >
                                     <Image
-                                        source={senderAvatar}
-                                        alt={senderName}
+                                        source={expertAvatar}
+                                        alt={expertName}
                                         style={{ width: '100%', height: '100%' }}
                                         resizeMode="cover"
                                     />
@@ -161,7 +183,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     fontWeight="$bold"
                                     textAlign="center"
                                 >
-                                    {senderName}
+                                    {expertName}
                                 </Text>
                                 <Text
                                     color="rgba(255, 255, 255, 0.8)"
@@ -171,7 +193,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     textAlign="center"
                                     maxWidth={280}
                                 >
-                                    {senderTitle}
+                                    {expertTitle}
                                 </Text>
                             </VStack>
                         </Box>
@@ -180,14 +202,61 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
 
                 {/* İçerik */}
                 <VStack space="lg" px="$4" pb="$4">
-                    {/* Miktar Girişi */}
-                    <VStack space="md" mt="$4">
+                    {/* Support Type Seçimi */}
+                    <VStack space="sm" mt="$4">
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             fontSize={11}
-                            fontWeight="$medium"
+                            fontWeight="$semibold"
                         >
-                            Bahşiş Açıklaması (Opsiyonel)
+                            Which area do you need support in?
+                        </Text>
+
+                        <Select
+                            selectedValue={supportType}
+                            onValueChange={(value) => setSupportType(value)}
+                        >
+                            <SelectTrigger
+                                variant="outline"
+                                size="md"
+                                borderRadius={12}
+                                borderWidth={1}
+                                borderColor={isDark ? '#333' : '#E9E9E9'}
+                                bg="transparent"
+                                height={48}
+                            >
+                                <SelectInput
+                                    placeholder="Select Support Type"
+                                    placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                    fontSize={13}
+                                    fontWeight="$normal"
+                                />
+                                <SelectIcon mr="$3" as={ChevronDownIcon} />
+                            </SelectTrigger>
+                            <SelectPortal>
+                                <SelectBackdrop />
+                                <SelectContent>
+                                    {supportTypes.map((type) => (
+                                        <SelectItem
+                                            key={type}
+                                            label={type}
+                                            value={type}
+                                        />
+                                    ))}
+                                </SelectContent>
+                            </SelectPortal>
+                        </Select>
+                    </VStack>
+
+                    {/* Mesaj Girişi */}
+                    <VStack space="sm">
+                        <Text
+                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            fontSize={11}
+                            fontWeight="$semibold"
+                        >
+                            What do you need help?
                         </Text>
 
                         <Box
@@ -200,18 +269,18 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                             <Textarea
                                 borderWidth={0}
                                 bg="transparent"
-                                minHeight={100}
+                                minHeight={150}
                             >
                                 <TextareaInput
-                                    placeholder="Örn: Harika bir içerik için teşekkürler!"
+                                    placeholder="Detaylı olarak sorunuzu veya talebinizi açıklayın..."
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize={13}
                                     fontWeight="$normal"
-                                    value={description}
-                                    onChangeText={setDescription}
-                                    numberOfLines={4}
-                                    maxLength={200}
+                                    value={message}
+                                    onChangeText={setMessage}
+                                    numberOfLines={8}
+                                    maxLength={500}
                                     style={{ paddingBottom: 28 }}
                                 />
                             </Textarea>
@@ -227,20 +296,20 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     fontSize={10}
                                     fontWeight="$normal"
                                 >
-                                    {description.length}/200
+                                    {message.length}/500
                                 </Text>
                             </Box>
                         </Box>
                     </VStack>
 
                     {/* TIPS Miktarı Girişi */}
-                    <VStack space="sm" mt="$4">
+                    <VStack space="sm">
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             fontSize={11}
                             fontWeight="$medium"
                         >
-                            TIPS Miktarı
+                            TIPS Amount
                         </Text>
 
                         {/* TIPS Miktarı ve Alt Bilgiler - Tek Bileşen */}
@@ -330,66 +399,63 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                         </Box>
                     </VStack>
 
-                    {/* Butonlar: Vazgeç ve Gönder */}
-                    <HStack space="md" mt="$2">
-                        {/* Vazgeç Butonu */}
-                        <Pressable
-                            onPress={onClose}
-                            flex={1}
-                            borderRadius={12}
-                            borderWidth={1}
-                            borderColor={isDark ? '#333' : '#E9E9E9'}
-                            bg="transparent"
-                            py="$3"
-                        >
+                    {/* Bilgilendirme Notu */}
+                    <Box borderRadius={12} px="$4">
+                        <HStack space="sm" alignItems="center">
+                            <Feather 
+                                name="info" 
+                                size={16} 
+                                color={isDark ? '#E2FF46' : '#7A8C00'} 
+                            />
                             <Text
-                                color={isDark ? '#FFFFFF' : '#000000'}
-                                fontSize={14}
-                                fontWeight="$bold"
-                                textAlign="center"
+                                color={isDark ? '#C4D63E' : '#6B7800'}
+                                fontSize={10}
+                                fontWeight="$normal"
+                                flex={1}
                             >
-                                Vazgeç
+                                "{expertName}" offers support for at least 50 TIPS
                             </Text>
-                        </Pressable>
+                        </HStack>
+                    </Box>
 
-                        {/* Gönder Butonu */}
-                        <Pressable
-                            onPress={handleSend}
-                            flex={1}
-                            bg={'#E2FF46'}
-                            borderRadius={12}
-                            py="$3"
-                            disabled={!isValidAmount()}
-                            opacity={isValidAmount() ? 1 : 0.5}
+                    {/* Create 1-On-1 Request Butonu */}
+                    <Pressable
+                        onPress={handleCreateRequest}
+                        bg={'#E2FF46'}
+                        borderRadius={12}
+                        py="$3"
+                        disabled={!isValidRequest()}
+                        opacity={isValidRequest() ? 1 : 0.5}
+                    >
+                        <Text
+                            color={"#000000"}
+                            fontSize={14}
+                            fontWeight="$bold"
+                            textAlign="center"
                         >
-                            <Text
-                                color={"#000000"}
-                                fontSize={14}
-                                fontWeight="$bold"
-                                textAlign="center"
-                            >
-                                Gönder
-                            </Text>
-                        </Pressable>
-                    </HStack>
+                            Create 1-On-1 Request
+                        </Text>
+                    </Pressable>
                 </VStack>
             </VStack>
 
             {/* Onay Modalı */}
-            <TipsSuccessModal
-                isVisible={isSuccessModalVisible}
-                onClose={handleSuccessModalClose}
+            <OneOnOneSupportRequestModal
+                isVisible={isModalVisible}
+                onClose={handleModalClose}
                 onConfirm={handleConfirm}
+                expertName={expertName}
+                expertTitle={expertTitle}
+                expertAvatar={expertAvatar}
+                supportType={supportType}
+                message={message}
                 amount={parseFloat(amount) || 0}
-                description={description}
-                recipientName={senderName}
-                recipientTitle={senderTitle}
-                recipientAvatar={senderAvatar}
                 currentBalance={currentBalance}
             />
         </ScrollView>
     );
 };
 
-export default SendTipsBottomSheet;
+export default OneOnOneSupportBottomSheet;
+
 

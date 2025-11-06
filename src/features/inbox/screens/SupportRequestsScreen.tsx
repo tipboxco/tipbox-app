@@ -27,8 +27,18 @@ const SupportRequestsScreen: React.FC = () => {
   const navigation = useNavigation<SupportRequestsScreenNavigationProp>();
 
   const handleRequestPress = (requestId: string) => {
-    // Navigate to support request detail
-    console.log('Support request pressed:', requestId);
+    // Find the request data
+    const request = supportRequestData.requests.find(r => r.id === requestId);
+    
+    if (request) {
+      // Navigate to SupportMessageDetail
+      navigation.navigate('SupportMessageDetail', {
+        expertName: request.userName,
+        expertTitle: request.userTitle,
+        expertAvatar: request.userAvatar,
+        requestId: requestId,
+      });
+    }
   };
 
   const handleFilterPress = (filterId: string) => {

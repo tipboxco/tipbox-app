@@ -8,15 +8,16 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
+import { Platform } from 'react-native';
 
-interface MessageDetailActionButtonsProps {
-    onSendTipsPress?: () => void;
-    onRequestSupportPress?: () => void;
+interface SupportMessageDetailActionButtonsProps {
+    onCloseRequestPress?: () => void;
+    onReportPress?: () => void;
 }
 
-export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProps> = ({
-    onSendTipsPress,
-    onRequestSupportPress,
+export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailActionButtonsProps> = ({
+    onCloseRequestPress,
+    onReportPress,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -30,9 +31,9 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
             zIndex={100}
             alignItems="flex-end"
         >
-            {/* Send TIPS Button */}
+            {/* Close Support Request Button */}
             <Pressable
-                onPress={onRequestSupportPress}
+                onPress={onCloseRequestPress}
                 bg="#E8FF6B"
                 borderWidth={1}
                 borderColor="#D8FF08"
@@ -56,18 +57,19 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
                         fontSize={11}
                         fontWeight="$semibold"
                     >
-                        Request 1-on-1
+                        Close Support Request
                     </Text>
                 </HStack>
             </Pressable>
 
-            {/* Request 1-on-1 Button */}
+            {/* Report Button */}
             <Pressable
-                onPress={onSendTipsPress}
+                onPress={onReportPress}
                 bg="#BC6BFF"
                 borderWidth={1}
                 borderColor="#AD08FF"
                 borderRadius={12}
+                maxWidth={100}
                 px="$3"
                 py="$2"
                 shadowColor="#000"
@@ -87,7 +89,7 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
                         fontSize={11}
                         fontWeight="$medium"
                     >
-                        Send TIPS
+                        Report
                     </Text>
                 </HStack>
             </Pressable>
@@ -95,5 +97,5 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
     );
 };
 
-export default MessageDetailActionButtons;
+export default SupportMessageDetailActionButtons;
 

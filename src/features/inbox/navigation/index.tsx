@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import InboxScreen from '../screens/InboxScreen';
 import MessageDetailScreen from '../screens/MessageDetail';
+import SupportMessageDetailScreen from '../screens/SupportMessageDetail';
 
 export type InboxStackParamList = {
   InboxScreen: undefined;
@@ -10,6 +11,15 @@ export type InboxStackParamList = {
     senderName: string;
     senderTitle: string;
     senderAvatar: any;
+  };
+  SupportMessageDetail: {
+    expertName: string;
+    expertTitle: string;
+    expertAvatar: any;
+    userName?: string;
+    userTitle?: string;
+    userAvatar?: any;
+    requestId?: string;
   };
 };
 
@@ -24,6 +34,7 @@ export const InboxNavigator = () => {
     >
       <Stack.Screen name="InboxScreen" component={InboxScreen} />
       <Stack.Screen name="MessageDetailScreen" component={MessageDetailScreen} />
+      <Stack.Screen name="SupportMessageDetail" component={SupportMessageDetailScreen} />
     </Stack.Navigator>
   );
 };

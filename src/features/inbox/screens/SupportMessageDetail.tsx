@@ -11,12 +11,11 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
-import MessageDetailActionButtons from '../components/MessageDetailActionButtons';
-import SendTipsBottomSheet from '../components/SendTipsBottomSheet';
-import OneOnOneSupportBottomSheet from '../components/OneOnOneSupportBottomSheet';
+import SupportMessageDetailActionButtons from '../components/SupportMessageDetailActionButtons';
+import SupportChatParticipants from '../components/SupportChatParticipants';
+import CloseSupportRequestModal from '../components/CloseSupportRequestModal';
 
 interface MessageDetailItem {
   id: string;
@@ -34,13 +33,16 @@ interface MessageDetailItem {
   };
 }
 
-type MessageDetailScreenNavigationProp = NativeStackNavigationProp<any, 'MessageDetailScreen'>;
+type SupportMessageDetailScreenNavigationProp = NativeStackNavigationProp<any, 'SupportMessageDetail'>;
 
-interface MessageDetailScreenParams {
-  messageId: string;
-  senderName: string;
-  senderTitle: string;
-  senderAvatar: any;
+interface SupportMessageDetailParams {
+  expertName: string;
+  expertTitle: string;
+  expertAvatar: any;
+  userName?: string;
+  userTitle?: string;
+  userAvatar?: any;
+  requestId?: string;
 }
 
 // Mock mesaj geçmişi verisi
@@ -102,89 +104,24 @@ const mockMessageHistory: MessageDetailItem[] = [
   },
 ];
 
-const MessageDetailScreen: React.FC = () => {
+const SupportMessageDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<MessageDetailScreenNavigationProp>();
+  const navigation = useNavigation<SupportMessageDetailScreenNavigationProp>();
   const route = useRoute();
   const flatListRef = useRef<FlatList>(null);
-  const sendTipsBottomSheetRef = useRef<BottomSheet>(null);
-  const oneOnOneSupportBottomSheetRef = useRef<BottomSheet>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>(mockMessageHistory);
-  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
-
-  // Bottom sheet snap points
-  const sendTipsSnapPoints = useMemo(() => ['70%'], []);
-  const oneOnOneSupportSnapPoints = useMemo(() => ['75%'], []);
-
-  // Handle Send TIPS button press
-  const handleSendTipsPress = useCallback(() => {
-    sendTipsBottomSheetRef.current?.expand();
-  }, []);
-
-  // Handle Send TIPS
-  const handleSendTips = useCallback((amount: number) => {
-    console.log('Send TIPS:', amount);
-    // TODO: Implement send tips logic
-    sendTipsBottomSheetRef.current?.close();
-  }, []);
-
-  // Handle Request 1-on-1 Support button press
-  const handleRequestSupportPress = useCallback(() => {
-    oneOnOneSupportBottomSheetRef.current?.expand();
-  }, []);
-
-  // Handle Send Support Request
-  const handleSendSupport = useCallback((supportType: string, message: string, amount: number) => {
-    console.log('Send Support Request:', { supportType, message, amount });
-
-    const newSupportRequest: MessageDetailItem = {
-      id: Date.now().toString(),
-      text: '',
-      timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-      isSent: true, // Kullanıcı kendisi oluşturuyor, sağa yaslanmalı
-      type: 'support_request',
-      supportRequest: {
-        supportType: supportType,
-        message: message,
-        amount: amount,
-        status: 'pending',
-      },
-    };
-
-    setMessages((prev) => [...prev, newSupportRequest]);
-
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-
-    oneOnOneSupportBottomSheetRef.current?.close();
-  }, []);
-
-  // Handle bottom sheet changes
-  const handleSheetChanges = useCallback((index: number) => {
-    setIsBottomSheetOpen(index >= 0);
-  }, []);
-
-  // Backdrop component
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-      />
-    ),
-    []
-  );
+  const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
 
   // Route params'dan gelen verileri al
-  const params = (route.params as MessageDetailScreenParams) || {
-    messageId: '1',
-    senderName: 'Mehmet Koç',
-    senderTitle: 'Technology Enthusiast',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+  const params = (route.params as SupportMessageDetailParams) || {
+    expertName: 'Mehmet Koç',
+    expertTitle: 'Technology Enthusiast',
+    expertAvatar: require('@/assets/avatar/ozan.png'),
+    userName: 'Trevor Nace',
+    userTitle: 'Technology Enthusiast',
+    userAvatar: require('@/assets/avatar/ozan.png'),
   };
 
   // Yeni mesaj gönderme
@@ -221,6 +158,30 @@ const MessageDetailScreen: React.FC = () => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
+  };
+
+  // Handle close support request button press
+  const handleCloseRequest = () => {
+    setIsCloseModalVisible(true);
+  };
+
+  // Handle confirm close request
+  const handleConfirmClose = (rating: number) => {
+    console.log('Support Request Closed with rating:', rating);
+    setIsCloseModalVisible(false);
+    // TODO: Implement close request logic with rating and navigate back
+    navigation.goBack();
+  };
+
+  // Handle cancel close request
+  const handleCancelClose = () => {
+    setIsCloseModalVisible(false);
+  };
+
+  // Handle report
+  const handleReport = () => {
+    console.log('Report');
+    // TODO: Implement report logic
   };
 
   // Mesaj öğesi render fonksiyonu
@@ -394,7 +355,7 @@ const MessageDetailScreen: React.FC = () => {
               fontSize={9}
               fontWeight="$medium"
             >
-              {item.senderName || params.senderName}
+              {item.senderName || params.expertName}
             </Text>
           </HStack>
         )}
@@ -439,9 +400,9 @@ const MessageDetailScreen: React.FC = () => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <MessageDetailHeader
-        senderName={params.senderName}
-        senderTitle={params.senderTitle}
-        senderAvatar={params.senderAvatar}
+        senderName={params.expertName}
+        senderTitle={params.expertTitle}
+        senderAvatar={params.expertAvatar}
         onBackPress={() => navigation.goBack()}
         onMenuPress={() => console.log('Menü tıklandı')}
       />
@@ -457,11 +418,20 @@ const MessageDetailScreen: React.FC = () => {
           data={messages}
           renderItem={renderMessageItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingTop: 16, paddingBottom: 100 }}
+          ListHeaderComponent={
+            <SupportChatParticipants
+              user1Name={params.expertName}
+              user1Title={params.expertTitle}
+              user1Avatar={params.expertAvatar}
+              user2Name={params.userName || 'Trevor Nace'}
+              user2Title={params.userTitle || 'Technology Enthusiast'}
+              user2Avatar={params.userAvatar || require('@/assets/avatar/ozan.png')}
+              supportTitle="Smartwatches"
+              tipsAmount={50}
+            />
+          }
+          contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }}
         />
       </KeyboardAvoidingView>
 
@@ -472,70 +442,25 @@ const MessageDetailScreen: React.FC = () => {
         placeholder="Mesajınızı yazın..."
       />
 
-      {/* Action Buttons - BottomSheet açıkken gizle */}
-      {!isBottomSheetOpen && (
-        <MessageDetailActionButtons
-          onSendTipsPress={handleSendTipsPress}
-          onRequestSupportPress={handleRequestSupportPress}
-        />
-      )}
+      {/* Action Buttons - Close Support Request & Report */}
+      <SupportMessageDetailActionButtons
+        onCloseRequestPress={handleCloseRequest}
+        onReportPress={handleReport}
+      />
 
-      {/* Send TIPS BottomSheet */}
-      <BottomSheet
-        ref={sendTipsBottomSheetRef}
-        snapPoints={sendTipsSnapPoints}
-        index={-1}
-        enablePanDownToClose
-        onChange={handleSheetChanges}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#8C8C8C' : '#E9E9E9',
-        }}
-      >
-        <BottomSheetView style={{ flex: 1 }}>
-          <SendTipsBottomSheet
-            senderName={params.senderName}
-            senderTitle={params.senderTitle}
-            senderAvatar={params.senderAvatar}
-            onClose={() => sendTipsBottomSheetRef.current?.close()}
-            onSend={handleSendTips}
-          />
-        </BottomSheetView>
-      </BottomSheet>
-
-      {/* One-on-One Support BottomSheet */}
-      <BottomSheet
-        ref={oneOnOneSupportBottomSheetRef}
-        snapPoints={oneOnOneSupportSnapPoints}
-        index={-1}
-        enablePanDownToClose
-        onChange={handleSheetChanges}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#8C8C8C' : '#E9E9E9',
-        }}
-      >
-        <BottomSheetView style={{ flex: 1 }}>
-          <OneOnOneSupportBottomSheet
-            expertName={params.senderName}
-            expertTitle={params.senderTitle}
-            expertAvatar={params.senderAvatar}
-            onClose={() => oneOnOneSupportBottomSheetRef.current?.close()}
-            onSend={handleSendSupport}
-          />
-        </BottomSheetView>
-      </BottomSheet>
+      {/* Close Support Request Modal */}
+      <CloseSupportRequestModal
+        isVisible={isCloseModalVisible}
+        onClose={handleCancelClose}
+        onConfirm={handleConfirmClose}
+        userName={params.expertName}
+        userTitle={params.expertTitle}
+        userAvatar={params.expertAvatar}
+      />
     </Box>
   );
 };
 
-MessageDetailScreen.displayName = 'MessageDetailScreen';
+SupportMessageDetailScreen.displayName = 'SupportMessageDetailScreen';
 
-export default MessageDetailScreen;
-
+export default SupportMessageDetailScreen;
