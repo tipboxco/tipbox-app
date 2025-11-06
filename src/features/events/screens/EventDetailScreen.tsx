@@ -30,6 +30,7 @@ const EventDetailScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [isMenuVisible, setIsMenuVisible] = useState(false);
+    const [isJoined, setIsJoined] = useState(false);
     const navigation = useNavigation<EventDetailScreenNavigationProp>();
     const route = useRoute<EventDetailScreenRouteProp>();
 
@@ -132,11 +133,10 @@ const EventDetailScreen: React.FC = () => {
                             {event.title}
                         </Text>
                         <Button
-                            bg="#C2E607"
+                            bg={isJoined ? '#D9D9D9' : '#C2E607'}
                             borderRadius={5}
-                            width={74}
-                            height={20}
-                            onPress={() => console.log('Join')}
+                            h={20}
+                            onPress={() => setIsJoined(!isJoined)}
                         >
                             <ButtonText
                                 color="#000000"
@@ -144,7 +144,7 @@ const EventDetailScreen: React.FC = () => {
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                Join
+                                {isJoined ? 'Joined' : 'Join'}
                             </ButtonText>
                         </Button>
                     </HStack>
@@ -342,6 +342,33 @@ const EventDetailScreen: React.FC = () => {
                     </VStack>
                 </VStack>
             </ScrollView>
+
+            {/* Floating Action Button */}
+            {isJoined && (
+                <Box
+                    position="absolute"
+                    bottom={24}
+                    right={16}
+                    zIndex={1000}
+                >
+                    <Pressable
+                        bg="#E8FF6B"
+                        borderRadius={30}
+                        width={56}
+                        height={56}
+                        alignItems="center"
+                        justifyContent="center"
+                        shadowColor="#000"
+                        shadowOffset={{ width: 0, height: 4 }}
+                        shadowOpacity={0.3}
+                        shadowRadius={4.65}
+                        elevation={8}
+                        onPress={() => navigation.navigate('EventCreatePost')}
+                    >
+                        <Feather name="edit-3" size={24} color="#000000" />
+                    </Pressable>
+                </Box>
+            )}
         </Box>
     );
 };
