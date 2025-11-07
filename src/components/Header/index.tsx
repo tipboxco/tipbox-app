@@ -9,6 +9,7 @@ interface HeaderProps {
   onMenuPress?: () => void;
   onNotificationPress?: () => void;
   onMessagePress?: () => void;
+  onSearchPress?: () => void;
   showBackButton?: boolean;
   onBackPress?: () => void;
   showTabs?: boolean;
@@ -21,6 +22,7 @@ export const Header = ({
   onMenuPress,
   onNotificationPress,
   onMessagePress,
+  onSearchPress,
   showBackButton = false,
   onBackPress,
   showTabs = false,
@@ -63,6 +65,14 @@ export const Header = ({
               <Box width={24} height={24} alignItems="center" justifyContent="center">
                 {rightAction}
               </Box>
+            ) : onSearchPress ? (
+              <Pressable onPress={onSearchPress}>
+                <Feather
+                  name="search"
+                  size={22}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
+              </Pressable>
             ) : (
               <Box width={24} />
             )}

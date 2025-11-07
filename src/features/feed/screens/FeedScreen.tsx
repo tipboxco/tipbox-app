@@ -9,6 +9,7 @@ import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
 import { ExpertButton } from '@/src/components/FloatingActionButton';
 import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
+import { SearchModal } from '@/src/components/SearchModal';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_feed_data } from '@/src/mock/feed';
 import { FeedItem } from '@/src/mock/feed/types';
@@ -27,6 +28,7 @@ export const FeedScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'inventory'>('wallet');
 
   // Bottom sheet refs
@@ -39,6 +41,14 @@ export const FeedScreen = () => {
   const handleTabChange = (tab: 'wallet' | 'inventory') => {
     setActiveTab(tab);
     console.log('Selected tab:', tab);
+  };
+
+  const handleSearchPress = () => {
+    setIsSearchVisible(true);
+  };
+
+  const handleSearchClose = () => {
+    setIsSearchVisible(false);
   };
 
   const handleExpertPress = () => {
@@ -118,6 +128,7 @@ export const FeedScreen = () => {
       <Header
         title="Akış"
         onMenuPress={() => setIsMenuVisible(true)}
+        onSearchPress={handleSearchPress}
         showTabs={true}
         onTabChange={handleTabChange}
       />
@@ -139,6 +150,12 @@ export const FeedScreen = () => {
         visible={isMenuVisible}
         onClose={() => setIsMenuVisible(false)}
         userProfile={mock_user_profile}
+      />
+
+      {/* Search Modal */}
+      <SearchModal
+        visible={isSearchVisible}
+        onClose={handleSearchClose}
       />
 
       {/* Expert Button */}

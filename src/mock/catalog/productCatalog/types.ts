@@ -31,7 +31,11 @@ export interface Product {
   productGroupId: string;
 }
 
-export interface BreadcrumbItem {
+// Re-export BreadcrumbItem from global types for backward compatibility
+export type { BreadcrumbItem } from '@/src/types/breadcrumb';
+
+// Catalog-specific breadcrumb item type with strict type values
+export interface CatalogBreadcrumbItem {
   id: string;
   name: string;
   type: 'category' | 'subCategory' | 'productGroup' | 'product';

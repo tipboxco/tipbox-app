@@ -13,6 +13,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
+import { SearchModal } from '@/src/components/SearchModal';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_post_cards } from '@/src/mock/profile/feed';
 import { Feather } from '@expo/vector-icons';
@@ -24,13 +25,23 @@ const ExploreScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'hottest' | 'news'>('hottest');
+
+  const handleSearchPress = () => {
+    setIsSearchVisible(true);
+  };
+
+  const handleSearchClose = () => {
+    setIsSearchVisible(false);
+  };
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Explore"
         onMenuPress={() => setIsMenuVisible(true)}
+        onSearchPress={handleSearchPress}
       />
 
       {/* Search Bar - Trust_TrusterListScreen style */}
@@ -205,6 +216,12 @@ const ExploreScreen: React.FC = () => {
         visible={isMenuVisible}
         onClose={() => setIsMenuVisible(false)}
         userProfile={mock_user_profile}
+      />
+
+      {/* Search Modal */}
+      <SearchModal
+        visible={isSearchVisible}
+        onClose={handleSearchClose}
       />
     </Box>
   );

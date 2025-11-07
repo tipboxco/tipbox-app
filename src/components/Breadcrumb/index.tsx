@@ -8,7 +8,7 @@ import {
 } from '@gluestack-ui/themed';
 import { ChevronRight } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { BreadcrumbItem } from '@/src/mock/catalog/productCatalog/types';
+import { BreadcrumbItem } from '@/src/types/breadcrumb';
 
 interface BreadcrumbProps {
     items: BreadcrumbItem[];
@@ -78,3 +78,4 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress }) => {
 };
 
 export default Breadcrumb;
+

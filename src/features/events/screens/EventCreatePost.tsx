@@ -57,18 +57,6 @@ const EventCreatePost: React.FC = () => {
         bottomSheetRef.current?.close();
     };
 
-    const handleSelectCatalog = () => {
-        console.log('Select from catalog');
-        handleCloseBottomSheet();
-        // TODO: Navigate to catalog selection
-    };
-
-    const handleSelectInventory = () => {
-        console.log('Select from inventory');
-        handleCloseBottomSheet();
-        // TODO: Navigate to inventory selection
-    };
-
     const handleProductSelect = (product: Category) => {
         setSelectedProduct(product);
         handleCloseBottomSheet();
@@ -272,8 +260,6 @@ const EventCreatePost: React.FC = () => {
                 <BottomSheetView>
                     <CreateEventPostBottomSheet
                         onClose={handleCloseBottomSheet}
-                        onSelectCatalog={handleSelectCatalog}
-                        onSelectInventory={handleSelectInventory}
                         onProductSelect={handleProductSelect}
                     />
                 </BottomSheetView>

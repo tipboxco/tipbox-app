@@ -5,7 +5,7 @@ import { Search } from 'lucide-react-native';
 import { catalogData } from '@/src/mock/catalog/productCatalog';
 import { Category, BreadcrumbItem } from '@/src/mock/catalog/productCatalog/types';
 import CategoryCard from '../components/CategoryCard';
-import Breadcrumb from '../components/Breadcrumb';
+import Breadcrumb from '@/src/components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { useNavigation } from '@react-navigation/native';
