@@ -15,6 +15,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { Feather } from '@expo/vector-icons';
 import { CreateEventPostBottomSheet } from '../components/CreateEventPostBottomSheet';
+import { SelectedProductCard } from '../components/SelectedProductCard';
+import { Category } from '../components/CategoryCard';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventsStackParamList>;
@@ -25,7 +27,7 @@ const EventCreatePost: React.FC = () => {
     const navigation = useNavigation<EventCreatePostNavigationProp>();
 
     const [content, setContent] = useState('');
-    const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<Category | null>(null);
 
     // Bottom sheet refs
     const bottomSheetRef = useRef<BottomSheet>(null);
@@ -65,6 +67,11 @@ const EventCreatePost: React.FC = () => {
         console.log('Select from inventory');
         handleCloseBottomSheet();
         // TODO: Navigate to inventory selection
+    };
+
+    const handleProductSelect = (product: Category) => {
+        setSelectedProduct(product);
+        handleCloseBottomSheet();
     };
 
     const handleAddPhoto = () => {
@@ -130,31 +137,40 @@ const EventCreatePost: React.FC = () => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <VStack space="lg" p="$4">
-                    {/* Select Product Button */}
-                    <Pressable
-                        onPress={handleSelectProduct}
-                        borderWidth={1}
-                        borderColor={isDark ? '#333' : '#D9D9D9'}
-                        borderRadius={8}
-                        minHeight={42}
-                        justifyContent="center"
-                        alignItems="center"
-                        bg={isDark ? '#1A1A1A' : '$backgroundLight0'}
-                    >
-                        <HStack space="sm" alignItems="center">
-                            <Feather
-                                name="plus"
-                                size={20}
-                                color={isDark ? '#999' : '#CCCCCC'}
-                            />
-                            <Text
-                                color={isDark ? '#999' : '#CCCCCC'}
-                                fontSize={15}
-                            >
-                                Select Product
-                            </Text>
-                        </HStack>
-                    </Pressable>
+                    {/* Select Product Button or Selected Product Card */}
+                    {selectedProduct ? (
+                        <SelectedProductCard
+                            productName={selectedProduct.name}
+                            productImage={selectedProduct.image}
+                            productCategory={selectedProduct.category}
+                            onPress={handleSelectProduct}
+                        />
+                    ) : (
+                        <Pressable
+                            onPress={handleSelectProduct}
+                            borderWidth={1}
+                            borderColor={isDark ? '#333' : '#D9D9D9'}
+                            borderRadius={8}
+                            minHeight={42}
+                            justifyContent="center"
+                            alignItems="center"
+                            bg={isDark ? '#1A1A1A' : '$backgroundLight0'}
+                        >
+                            <HStack space="sm" alignItems="center">
+                                <Feather
+                                    name="plus"
+                                    size={20}
+                                    color={isDark ? '#999' : '#CCCCCC'}
+                                />
+                                <Text
+                                    color={isDark ? '#999' : '#CCCCCC'}
+                                    fontSize={15}
+                                >
+                                    Select Product
+                                </Text>
+                            </HStack>
+                        </Pressable>
+                    )}
 
                     {/* Post Description */}
                     <VStack space="xs">
@@ -258,6 +274,7 @@ const EventCreatePost: React.FC = () => {
                         onClose={handleCloseBottomSheet}
                         onSelectCatalog={handleSelectCatalog}
                         onSelectInventory={handleSelectInventory}
+                        onProductSelect={handleProductSelect}
                     />
                 </BottomSheetView>
             </BottomSheet>
