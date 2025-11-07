@@ -363,7 +363,10 @@ const EventDetailScreen: React.FC = () => {
                         shadowOpacity={0.3}
                         shadowRadius={4.65}
                         elevation={8}
-                        onPress={() => navigation.navigate('EventCreatePost')}
+                        onPress={() => navigation.navigate('EventCreatePost', {
+                          eventType: event.eventType,
+                          product: event.product,
+                        })}
                     >
                         <Feather name="edit-3" size={24} color="#000000" />
                     </Pressable>

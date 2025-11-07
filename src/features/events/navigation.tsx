@@ -4,11 +4,13 @@ import EventsScreen from './screens/EventsScreen';
 import { EventDetailScreen, RewardsBadgesScreen, EventCreatePost } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
+import { EventType, EventProduct } from '@/src/mock/events/communityEvents/types';
+
 export type EventsStackParamList = {
   EventsScreen: undefined;
   EventDetail: { eventId: string };
   RewardsBadges: undefined;
-  EventCreatePost: undefined;
+  EventCreatePost: { eventType?: EventType; product?: EventProduct } | undefined;
 };
 
 const EventsStack = createNativeStackNavigator<EventsStackParamList>();

@@ -1,3 +1,15 @@
+export enum EventType {
+  EVENT = 'event',
+  PRODUCT = 'product',
+}
+
+export interface EventProduct {
+  id: string;
+  name: string;
+  image: any;
+  category?: string;
+}
+
 export interface EventCard {
   id: string;
   title: string;
@@ -5,9 +17,11 @@ export interface EventCard {
   image: any;
   dateRange: string;
   participants: number;
-  avatars: string[];
+  avatars: any[];
   status: 'active' | 'upcoming' | 'completed';
   category: 'community' | 'achievement';
+  eventType: EventType;
+  product?: EventProduct;
 }
 
 export interface Badge {

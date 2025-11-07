@@ -1,4 +1,4 @@
-import { CommunityEventsData, Badge, EventFeedCard, SeeAllReward } from './types';
+import { CommunityEventsData, Badge, EventFeedCard, SeeAllReward, EventType } from './types';
 
 export const rewards_badges_mock: Badge[] = [
   {
@@ -91,7 +91,7 @@ export const mock_community_events: CommunityEventsData = {
     {
       id: '1',
       title: 'Wishbox Etkinlik Adı Etkin...',
-      description: 'You’re heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.',
+      description: "You're heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.",
       image: require('@/assets/events/card-icon.png'),
       dateRange: '08 May 2025 - 15 May 2025',
       participants: 120,
@@ -102,12 +102,13 @@ export const mock_community_events: CommunityEventsData = {
         require('@/assets/avatar/ozan.png'),
       ],
       status: 'active',
-      category: 'community'
+      category: 'community',
+      eventType: EventType.EVENT,
     },
     {
       id: '2',
       title: 'Wishbox Etkinlik Adı Etkin...',
-      description: 'You’re heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.',
+      description: "You're heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.",
       image: require('@/assets/events/card-icon.png'),
       dateRange: '10 May 2025 - 17 May 2025',
       participants: 85,
@@ -118,12 +119,19 @@ export const mock_community_events: CommunityEventsData = {
         require('@/assets/avatar/ozan.png'),
       ],
       status: 'active',
-      category: 'community'
+      category: 'community',
+      eventType: EventType.PRODUCT,
+      product: {
+        id: 'product-1',
+        name: 'iPhone 15 Pro Max',
+        image: require('@/assets/inventory/product_02.png'),
+        category: 'Technology',
+      },
     },
     {
       id: '3',
       title: 'Wishbox Etkinlik Adı Etkin...',
-      description: 'You’re heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.',
+      description: "You're heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.",
       image: require('@/assets/events/card-icon.png'),
       dateRange: '12 May 2025 - 19 May 2025',
       participants: 95,
@@ -134,49 +142,53 @@ export const mock_community_events: CommunityEventsData = {
         require('@/assets/avatar/ozan.png'),
       ],
       status: 'active',
-      category: 'community'
+      category: 'community',
+      eventType: EventType.EVENT,
     }
   ],
   upcomingEvents: [
     {
       id: '4',
       title: 'Wishbox Etkinlik Adı Etkin...',
-      description: 'You’re heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.',
+      description: "You're heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.",
       image: require('@/assets/events/card-icon.png'),
       dateRange: '20 May 2025 - 27 May 2025',
       participants: 0,
       avatars: [],
       status: 'upcoming',
-      category: 'community'
+      category: 'community',
+      eventType: EventType.EVENT,
     },
     {
       id: '5',
       title: 'Wishbox Etkinlik Adı Etkin...',
-      description: 'You’re heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.',
+      description: "You're heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.",
       image: require('@/assets/events/card-icon.png'),
       dateRange: '25 May 2025 - 01 Jun 2025',
       participants: 0,
       avatars: [],
       status: 'upcoming',
-      category: 'community'
+      category: 'community',
+      eventType: EventType.EVENT,
     },
     {
       id: '6',
       title: 'Wishbox Etkinlik Adı Etkin...',
-      description: 'You’re heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.',
+      description: "You're heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.",
       image: require('@/assets/events/card-icon.png'),
       dateRange: '30 May 2025 - 06 Jun 2025',
       participants: 0,
       avatars: [],
       status: 'upcoming',
-      category: 'community'
+      category: 'community',
+      eventType: EventType.EVENT,
     }
   ],
   completedEvents: [
     {
       id: '7',
       title: 'Wishbox Etkinlik Adı Etkin...',
-      description: 'You’re heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.',
+      description: "You're heading out for a weekend walk in Belgrade. What will you bring a camera to capture stories, music to set the mood, or tech to guide your steps? Your choice defines your journey.",
       image: require('@/assets/events/card-icon.png'),
       dateRange: '01 May 2025 - 08 May 2025',
       participants: 150,
@@ -187,7 +199,8 @@ export const mock_community_events: CommunityEventsData = {
         require('@/assets/avatar/ozan.png'),
       ],
       status: 'completed',
-      category: 'community'
+      category: 'community',
+      eventType: EventType.EVENT,
     }
   ]
 };
