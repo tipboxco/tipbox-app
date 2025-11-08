@@ -11,11 +11,15 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { SettingsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import ChangePasswordBottomSheet from '../components/ChangePasswordBottomSheet';
 import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
+
+type SettingsScreenNavigationProp = NativeStackNavigationProp<SettingsStackParamList, 'SettingsScreen'>;
 
 interface SettingItem {
   id: string;
@@ -32,7 +36,7 @@ interface SettingSection {
 export const SettingsScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation();
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   
   // Bottom sheet refs
@@ -125,20 +129,14 @@ export const SettingsScreen = () => {
       title: 'Payment & Subscription Settings',
       items: [
         {
-          id: 'payment-methods',
-          icon: 'user',
-          title: 'Payment Methods',
-          onPress: () => console.log('Payment Methods'),
-        },
-        {
-          id: 'subscriptions',
-          icon: 'user',
-          title: 'Subscriptions',
-          onPress: () => console.log('Subscriptions'),
+          id: 'payment-subscription',
+          icon: 'credit-card',
+          title: 'Payment & Subscription',
+          onPress: () => navigation.navigate('PaymentAndSubscription'),
         },
         {
           id: 'billing-history',
-          icon: 'user',
+          icon: 'file-text',
           title: 'Billing History',
           onPress: () => console.log('Billing History'),
         },

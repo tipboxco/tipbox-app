@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SettingsScreen } from './screens';
+import { SettingsScreen, PaymentAndSubscriptionScreen } from './screens';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
 import PrivacySettingsScreen from './screens/PrivacySettingsScreen';
@@ -13,6 +13,7 @@ export type SettingsStackParamList = {
   NotificationSettings: undefined;
   PrivacySettings: undefined;
   SupportSettings: undefined;
+  PaymentAndSubscription: undefined;
 };
 
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
@@ -70,6 +71,13 @@ export const SettingsNavigator = () => {
         component={SupportSettingsScreen}
         options={{
           title: '1-on-1 Support Settings',
+        }}
+      />
+      <SettingsStack.Screen
+        name='PaymentAndSubscription'
+        component={PaymentAndSubscriptionScreen}
+        options={{
+          title: 'Payment & Subscription',
         }}
       />
     </SettingsStack.Navigator>

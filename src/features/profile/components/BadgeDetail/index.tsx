@@ -48,24 +48,24 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
     <VStack space="lg" p={15}>
       {/* Header - Conditionally Rendered */}
       {!hideHeader && (
-        <HStack alignItems="center" mb={10}>
-          <Pressable
-            onPress={onClose}
-            hitSlop={20}
-          >
-            <ChevronLeft size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-          </Pressable>
-          <Text
-            flex={1}
-            textAlign="center"
-            fontSize={16}
-            fontWeight="$bold"
-            color={isDark ? '$textDark50' : '#000'}
-            mr={24}
-          >
-            {badge.title}
-          </Text>
-        </HStack>
+      <HStack alignItems="center" mb={10}>
+        <Pressable
+          onPress={onClose}
+          hitSlop={20}
+        >
+          <ChevronLeft size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+        </Pressable>
+        <Text
+          flex={1}
+          textAlign="center"
+          fontSize={16}
+          fontWeight="$bold"
+          color={isDark ? '$textDark50' : '#000'}
+          mr={24}
+        >
+          {badge.title}
+        </Text>
+      </HStack>
       )}
 
       {/* Large Badge Icon */}

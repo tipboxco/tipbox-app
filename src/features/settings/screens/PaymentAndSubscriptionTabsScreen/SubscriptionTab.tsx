@@ -1,0 +1,26 @@
+import React from 'react';
+import { Box, VStack, Text, ScrollView } from '@gluestack-ui/themed';
+import { useColorMode } from '@/src/hooks/useColorMode';
+
+export const SubscriptionTab: React.FC = () => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
+  return (
+    <ScrollView flex={1} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0 }}>
+      <VStack space="md">
+        <Text
+          color={isDark ? '#FFFFFF' : '#000000'}
+          fontSize={16}
+          fontWeight="$semibold"
+        >
+          Subscription Plans
+        </Text>
+        {/* Subscription content will be added here */}
+      </VStack>
+    </ScrollView>
+  );
+};
+
+export default SubscriptionTab;
+
