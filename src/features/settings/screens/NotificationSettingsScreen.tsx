@@ -5,7 +5,6 @@ import {
     HStack,
     Text,
     ScrollView,
-    Pressable,
     Switch,
     Input,
     InputField,
@@ -90,7 +89,7 @@ export const NotificationSettingsScreen = () => {
                 onBackPress={() => navigation.goBack()}
             />
 
-            <ScrollView flex={1} px="$4" py="$6">
+            <ScrollView flex={1} px="$4" py="$2">
                 <VStack space="lg">
                     {/* Search Bar */}
                     <Box
@@ -158,11 +157,10 @@ export const NotificationSettingsScreen = () => {
                                 <Switch
                                     value={allNotifications}
                                     onValueChange={handleAllNotificationsToggle}
-                                    trackColor={{
-                                        false: isDark ? '#333333' : '#E5E5E5',
-                                        true: '#34C759',
-                                    }}
-                                    thumbColor={allNotifications ? '#FFFFFF' : '#FFFFFF'}
+                                    size="sm"
+                                    trackColor={{ false: '#d4d4d4', true: '#525252' }}
+                                    thumbColor="#fafafa"
+                                    ios_backgroundColor="#d4d4d4"
                                 />
                             </HStack>
                         </Box>
@@ -201,6 +199,9 @@ export const NotificationSettingsScreen = () => {
                                             true: '#34C759',
                                         }}
                                         thumbColor={setting.enabled ? '#FFFFFF' : '#FFFFFF'}
+                                        style={{
+                                            transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }],
+                                        }}
                                     />
                                 </HStack>
                             </Box>

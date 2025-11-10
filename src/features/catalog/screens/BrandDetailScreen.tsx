@@ -37,13 +37,20 @@ const BrandDetailScreen: React.FC = () => {
     // Find the brand from mock data
     const brand = mock_brand_detail;
 
+    // Banner yüksekliği ve içerik başlangıç noktası
+    const BANNER_HEIGHT = 250;
+    const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
+    const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
+
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
         { useNativeDriver: false }
     );
 
+    // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır
+    // 180px'de başlar, 230px'de (içerik başlangıcı) tamamen görünür olur
     const headerOpacity = scrollY.interpolate({
-        inputRange: [125, 200],
+        inputRange: [180, CONTENT_START],
         outputRange: [0, 1],
         extrapolate: 'clamp',
     });
@@ -77,6 +84,8 @@ const BrandDetailScreen: React.FC = () => {
                     title={brand.name}
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
+                    showShare={true}
+                    onSharePress={() => console.log('Share pressed')}
                 />
             </Animated.View>
 

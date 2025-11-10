@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScrollView, Dimensions, FlatList } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { ScrollView, Dimensions, FlatList, Animated } from 'react-native';
 import {
     Box,
     VStack,
@@ -33,12 +33,31 @@ const EventDetailScreen: React.FC = () => {
     const [isJoined, setIsJoined] = useState(false);
     const navigation = useNavigation<EventDetailScreenNavigationProp>();
     const route = useRoute<EventDetailScreenRouteProp>();
+    const scrollY = useRef(new Animated.Value(0)).current;
 
     const { eventId } = route.params;
 
     // Find the event from mock data
     const event = [...mock_community_events.activeEvents, ...mock_community_events.upcomingEvents, ...mock_community_events.completedEvents]
         .find(e => e.id === eventId);
+
+    // Banner yüksekliği ve içerik başlangıç noktası
+    const BANNER_HEIGHT = 250;
+    const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
+    const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
+
+    const handleScroll = Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: false }
+    );
+
+    // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır
+    // 180px'de başlar, 230px'de (içerik başlangıcı) tamamen görünür olur
+    const headerOpacity = scrollY.interpolate({
+        inputRange: [180, CONTENT_START],
+        outputRange: [0, 1],
+        extrapolate: 'clamp',
+    });
 
     if (!event) {
         return (
@@ -54,7 +73,30 @@ const EventDetailScreen: React.FC = () => {
 
     return (
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            <ScrollView>
+            {/* Sticky Animated Header */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    opacity: headerOpacity,
+                }}
+            >
+                <Header
+                    title={event.title}
+                    showBackButton={true}
+                    onBackPress={() => navigation.goBack()}
+                    showShare={true}
+                    onSharePress={() => console.log('Share pressed')}
+                />
+            </Animated.View>
+
+            <ScrollView
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+            >
                 {/* Banner Image */}
                 <Box
                     width={width}

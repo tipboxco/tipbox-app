@@ -1,5 +1,4 @@
 import React from 'react';
-import { FlatList } from 'react-native';
 import {
   Box,
   HStack,
@@ -23,10 +22,15 @@ export const MessagesFilterGroup: React.FC<MessagesFilterGroupProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  const renderFilterButton = ({ item }: { item: MessageCategory }) => (
-    <Pressable onPress={() => onCategoryPress(item.id)}>
+  // Sol grup: All Messages ve Unread
+  const leftGroup = categories.filter(category => category.id === '1' || category.id === '2');
+  // Sağ grup: Message Requests
+  const rightGroup = categories.filter(category => category.id === '3');
+
+  const renderFilterButton = (category: MessageCategory) => (
+    <Pressable key={category.id} onPress={() => onCategoryPress(category.id)}>
       <Box
-        bg={activeCategory === item.id ? '#F1F1F1' : 'transparent'}
+        bg={activeCategory === category.id ? '#F1F1F1' : 'transparent'}
         borderWidth={1}
         borderColor="#EFEFEF"
         borderRadius={10}
@@ -41,37 +45,23 @@ export const MessagesFilterGroup: React.FC<MessagesFilterGroupProps> = ({
           fontWeight="$semibold"
           textAlign="center"
         >
-          {item.name}
+          {category.name}
         </Text>
       </Box>
     </Pressable>
   );
 
   return (
-    <HStack space="xs" justifyContent="flex-start">
-      {categories.map((category) => (
-        <Pressable key={category.id} onPress={() => onCategoryPress(category.id)}>
-          <Box
-            bg={activeCategory === category.id ? '#F1F1F1' : 'transparent'}
-            borderWidth={1}
-            borderColor="#EFEFEF"
-            borderRadius={10}
-            px="$3"
-            minHeight={28}
-            justifyContent="center"
-            alignItems="center"
-          >
-            <Text
-              color="#000000"
-              fontSize={9}
-              fontWeight="$semibold"
-              textAlign="center"
-            >
-              {category.name}
-            </Text>
-          </Box>
-        </Pressable>
-      ))}
+    <HStack space="xs" justifyContent="space-between" alignItems="center">
+      {/* Sol grup: All Messages ve Unread */}
+      <HStack space="xs">
+        {leftGroup.map((category) => renderFilterButton(category))}
+      </HStack>
+
+      {/* Sağ grup: Message Requests */}
+      <HStack space="xs">
+        {rightGroup.map((category) => renderFilterButton(category))}
+      </HStack>
     </HStack>
   );
 };

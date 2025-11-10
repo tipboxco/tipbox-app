@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
 import { mock_user_profile } from '@/src/mock/common';
@@ -12,6 +13,7 @@ import { Search } from 'lucide-react-native';
 export const CatalogScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [currentMode, setCurrentMode] = useState<'product' | 'brand-catalog' | 'brand-selection'>('product');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -76,7 +78,8 @@ export const CatalogScreen = () => {
     >
       <Header
         title={getTitle()}
-        onMenuPress={() => setIsMenuVisible(true)}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
 
       {/* Arama Çubuğu */}

@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { FilterBar } from '../components/FilterBar';
+import { AssetAccessCard } from '../components/AssetAccessCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SideMenu } from '@/src/components/SideMenu';
@@ -129,9 +130,8 @@ export const FeedScreen = () => {
         title="Akış"
         onMenuPress={() => setIsMenuVisible(true)}
         onSearchPress={handleSearchPress}
-        showTabs={true}
-        onTabChange={handleTabChange}
       />
+      <AssetAccessCard onTabChange={handleTabChange} />
       <FilterBar />
       <ScrollView flex={1} px="$4" py="$2">
         {activeTab === 'wallet' ? (

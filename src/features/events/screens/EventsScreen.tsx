@@ -77,7 +77,8 @@ const EventsScreen: React.FC = () => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Events"
-        onMenuPress={() => setIsMenuVisible(true)}
+        showBackButton
+        onBackPress={() => navigation.goBack()}
       />
 
       <VStack flex={1} px="$4" py="$2" space="md">
