@@ -51,10 +51,15 @@
           "color": "#ffffff"
         }
       ],
-      ["expo-camera", {
-        "cameraPermission": "Fotoğraf çekmek için kameraya ihtiyaç var.",
-        "microphonePermission": "Video için mikrofona ihtiyaç var."
-      }]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Fotoğraf çekmek için kameraya ihtiyaç var.",
+          "microphonePermission": "Video için mikrofona ihtiyaç var."
+        }
+      ],
+      "expo-font",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

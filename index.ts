@@ -1,3 +1,7 @@
+import 'react-native-get-random-values';
+// @ts-ignore - react-native-polyfill-globals doesn't have type definitions
+import polyfillGlobals from 'react-native-polyfill-globals';
+polyfillGlobals();
 import 'react-native-gesture-handler';
 import { registerRootComponent } from 'expo';
 
