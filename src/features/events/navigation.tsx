@@ -10,7 +10,7 @@ export type EventsStackParamList = {
   EventsScreen: undefined;
   EventDetail: { eventId: string };
   RewardsBadges: undefined;
-  EventCreatePost: { eventType?: EventType; product?: EventProduct } | undefined;
+  EventCreatePost: { eventType?: EventType; product?: EventProduct; productSource?: 'Catalog' | 'Inventory' } | undefined;
 };
 
 const EventsStack = createNativeStackNavigator<EventsStackParamList>();

@@ -6,6 +6,13 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 interface RightButtonProps {
   text: string;
   backgroundColor?: string;
+  borderWidth?: number;
+  borderColor?: string;
+  textColor?: string;
+  fontSize?: number;
+  borderRadius?: number;
+  paddingX?: number;
+  paddingY?: number;
   onPress: () => void;
 }
 
@@ -175,13 +182,15 @@ export const Header = ({
         <Pressable key="right-button" onPress={rightButton.onPress}>
           <Box
             bg={rightButton.backgroundColor || (isDark ? '#8B5CF6' : '#8B5CF6')}
-            px="$3"
-            py="$1.5"
-            borderRadius="$md"
+            borderWidth={rightButton.borderWidth !== undefined ? rightButton.borderWidth : 0}
+            borderColor={rightButton.borderColor || 'transparent'}
+            px={'$4'}
+            py={'$2'}
+            borderRadius={rightButton.borderRadius !== undefined ? rightButton.borderRadius : 8}
           >
             <Text
-              color="#FFFFFF"
-              fontSize="$sm"
+              color={rightButton.textColor || '#FFFFFF'}
+              fontSize={rightButton.fontSize || 14}
               fontWeight="$medium"
             >
               {rightButton.text}
@@ -235,7 +244,7 @@ export const Header = ({
             </Box>
 
             {/* Orta kısım - Flex3, center */}
-            <Box flex={4} alignItems="center" justifyContent="center">
+            <Box flex={3} alignItems="center" justifyContent="center">
               <Text
                 color={isDark ? '$textDark50' : '$textLight900'}
                 fontSize="$md"

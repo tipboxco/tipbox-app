@@ -12,11 +12,16 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { EventsStackParamList } from '../../navigation';
 import CategoryCard, { Category } from '../CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { catalogData } from '@/src/mock/catalog/productCatalog';
 import { Category as CatalogCategory } from '@/src/mock/catalog/productCatalog/types';
+
+type CreateEventPostBottomSheetNavigationProp = NativeStackNavigationProp<EventsStackParamList>;
 
 interface CreateEventPostBottomSheetProps {
     onClose: () => void;
@@ -45,6 +50,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const navigation = useNavigation<CreateEventPostBottomSheetNavigationProp>();
     const [currentView, setCurrentView] = useState<'options' | 'inventory' | 'catalog'>('options');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -59,16 +65,13 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
     const [catalogView, setCatalogView] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>('categories');
 
     const handleInventoryPress = () => {
-        setCurrentView('inventory');
+        onClose();
+        navigation.navigate('EventCreatePost', { productSource: 'Inventory' });
     };
 
     const handleCatalogPress = () => {
-        setCurrentView('catalog');
-        // Reset catalog navigation
-        setBreadcrumbItems([{ id: 'root', name: 'Categories', type: 'category' }]);
-        setCurrentCategories(catalogData);
-        setCatalogView('categories');
-        setSearchQuery('');
+        onClose();
+        navigation.navigate('EventCreatePost', { productSource: 'Catalog' });
     };
 
     const handleBackPress = () => {

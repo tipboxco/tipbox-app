@@ -20,6 +20,11 @@ import { SelectedProductCard } from '../components/SelectedProductCard';
 import { Category } from '../components/CategoryCard';
 import { EventType, EventProduct } from '@/src/mock/events/communityEvents/types';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
+import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
+import { Product } from '@/src/mock/catalog/productCatalog/types';
+import { InventoryItem } from '@/src/mock/inventory/types';
+import { Header } from '@/src/components/Header';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventsStackParamList, 'EventCreatePost'>;
@@ -32,10 +37,13 @@ const EventCreatePost: React.FC = () => {
 
     const [content, setContent] = useState('');
     const [selectedProduct, setSelectedProduct] = useState<Category | null>(null);
+    const [showProductSelector, setShowProductSelector] = useState(false);
+    const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
     
-    // Get eventType and product from route params
+    // Get eventType, product, and productSource from route params
     const eventType = route.params?.eventType;
     const eventProduct = route.params?.product;
+    const routeProductSource = route.params?.productSource;
     
     // Auto-select product if eventType is PRODUCT
     useEffect(() => {
@@ -49,6 +57,14 @@ const EventCreatePost: React.FC = () => {
             setSelectedProduct(productCategory);
         }
     }, [eventType, eventProduct]);
+
+    // Show product selector if productSource is provided (only once)
+    useEffect(() => {
+        if (routeProductSource) {
+            setProductSource(routeProductSource);
+            setShowProductSelector(true);
+        }
+    }, [routeProductSource]);
 
     // Bottom sheet refs
     const bottomSheetRef = useRef<BottomSheet>(null);
@@ -83,66 +99,92 @@ const EventCreatePost: React.FC = () => {
         handleCloseBottomSheet();
     };
 
+    const handleCatalogProductSelect = (product: Product) => {
+        const productCategory: Category = {
+            id: product.id,
+            name: product.name,
+            image: product.image,
+            category: undefined,
+        };
+        setSelectedProduct(productCategory);
+        setShowProductSelector(false);
+        setProductSource(null);
+        // Clear route params to prevent re-triggering
+        navigation.setParams({ productSource: undefined });
+    };
+
+    const handleInventoryProductSelect = (product: InventoryItem) => {
+        const productCategory: Category = {
+            id: product.id,
+            name: `${product.brand} ${product.model}`,
+            image: product.image,
+            category: product.brand,
+        };
+        setSelectedProduct(productCategory);
+        setShowProductSelector(false);
+        setProductSource(null);
+        // Clear route params to prevent re-triggering
+        navigation.setParams({ productSource: undefined });
+    };
+
+    const handleCloseProductSelector = () => {
+        setShowProductSelector(false);
+        setProductSource(null);
+        // Clear route params to prevent re-triggering
+        navigation.setParams({ productSource: undefined });
+    };
+
     const handleAddPhoto = () => {
         // TODO: Implement image picker
         console.log('Add photo');
     };
 
     const handleShare = () => {
-        if (!content.trim()) {
-            Alert.alert('Error', 'Please write something');
-            return;
-        }
-        // TODO: Implement post creation
-        Alert.alert('Success', 'Post created successfully!', [
-            { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
+        console.log('Share button pressed');
     };
+
+    // Check if share button should be enabled (product selected and content entered)
+    const isShareEnabled = selectedProduct !== null && content.trim().length > 0;
+
+    // Show product selector if productSource is set
+    if (showProductSelector && productSource) {
+        if (productSource === 'Catalog') {
+            return (
+                <AddProductFromCatalog
+                    onProductSelect={handleCatalogProductSelect}
+                    onClose={handleCloseProductSelector}
+                />
+            );
+        } else if (productSource === 'Inventory') {
+            return (
+                <AddProductFromInventory
+                    onProductSelect={handleInventoryProductSelect}
+                    onClose={handleCloseProductSelector}
+                />
+            );
+        }
+    }
 
     return (
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
             {/* Header */}
-            <Box
-                bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-                borderBottomWidth={1}
-                borderBottomColor={isDark ? '#333' : '#E5E5E5'}
-            >
-                <HStack
-                    px="$4"
-                    py="$3"
-                    alignItems="center"
-                    justifyContent="space-between"
-                >
-                    <Pressable onPress={() => navigation.goBack()}>
-                        <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-                    </Pressable>
-                    <Text
-                        color={isDark ? '$textDark50' : '$textLight900'}
-                        fontSize={18}
-                        fontWeight="$bold"
-                        flex={1}
-                        textAlign="center"
-                    >
-                        Write a Post
-                    </Text>
-                    <Pressable
-                        onPress={handleShare}
-                        bg={content.trim() ? '#E8FF6B' : '#D9D9D9'}
-                        borderRadius={25}
-                        px={24}
-                        py={8}
-                        disabled={!content.trim()}
-                    >
-                        <Text
-                            color={content.trim() ? '#000000' : '#8C8C8C'}
-                            fontSize={15}
-                            fontWeight="$semibold"
-                        >
-                            Share
-                        </Text>
-                    </Pressable>
-                </HStack>
-            </Box>
+            <Header
+                title="Write a Post"
+                leftAction="back"
+                onLeftActionPress={() => navigation.goBack()}
+                rightButton={{
+                    text: 'Share',
+                    backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+                    borderWidth: 1,
+                    borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
+                    textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+                    fontSize: 12,
+                    borderRadius: 25,
+                    paddingX: 24,
+                    paddingY: 8,
+                    onPress: handleShare,
+                }}
+            />
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <VStack space="lg" p="$4">

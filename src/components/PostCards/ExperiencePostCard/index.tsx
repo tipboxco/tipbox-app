@@ -43,8 +43,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
             source={data.user.avatar}
             alt={data.user.name}
             mr={8}
-            width={42}
-            height={42}
+            width={48}
+            height={48}
             borderRadius={100}
           />
           <VStack flex={1}>
