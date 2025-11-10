@@ -53,16 +53,35 @@ export const CreateTipsAndTrickPostScreen = () => {
     console.log('Open image picker');
   };
 
+  const handleShare = () => {
+    console.log('Share button pressed');
+  };
+
   const characterCount = tipsText.length;
   const maxCharacters = 500;
+
+  // Check if share button should be enabled (content and category entered)
+  const isShareEnabled = tipsText.trim().length > 0 && selectedCategory.length > 0;
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
       {/* Header */}
       <Header
         title="Tips & Tricks Post"
-        showBackButton={true}
-        onBackPress={handleBackPress}
+        leftAction="back"
+        onLeftActionPress={handleBackPress}
+        rightButton={{
+          text: 'Share',
+          backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+          borderWidth: 1,
+          borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
+          textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+          fontSize: 12,
+          borderRadius: 25,
+          paddingX: 24,
+          paddingY: 8,
+          onPress: handleShare,
+        }}
       />
 
       {/* Content */}

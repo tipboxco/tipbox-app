@@ -27,16 +27,35 @@ export const CreatePostScreen = () => {
     console.log('Open image picker');
   };
 
+  const handleShare = () => {
+    console.log('Share button pressed');
+  };
+
   const characterCount = postText.length;
   const maxCharacters = 500;
+
+  // Check if share button should be enabled (content entered)
+  const isShareEnabled = postText.trim().length > 0;
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
       {/* Header */}
       <Header
         title="Write a Post"
-        showBackButton={true}
-        onBackPress={handleBackPress}
+        leftAction="back"
+        onLeftActionPress={handleBackPress}
+        rightButton={{
+          text: 'Share',
+          backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+          borderWidth: 1,
+          borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
+          textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+          fontSize: 12,
+          borderRadius: 25,
+          paddingX: 24,
+          paddingY: 8,
+          onPress: handleShare,
+        }}
       />
 
       {/* Content */}
