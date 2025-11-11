@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { 
     Box, 
     ScrollView, 
     VStack, 
+    HStack, 
     Text, 
+    Pressable,
     Select,
     SelectTrigger,
     SelectInput,
@@ -16,47 +18,68 @@ import {
     SelectItem,
     ChevronDownIcon
 } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
+import { Product } from '@/src/mock/catalog/productCatalog/types';
 
-// Mock data for product info
-const productInfo = {
-    image: require('@/assets/product/product_01.png'),
-    title: 'Dyson V15s\nDetect Submarine™ Wet & Dry Cordl...',
-};
-
-interface StepOneScreenProps {
-    selectedDuration: string;
-    selectedCondition: string;
-    selectedFrequency: string;
-    onDurationChange: (value: string) => void;
-    onConditionChange: (value: string) => void;
-    onFrequencyChange: (value: string) => void;
+interface SelectProductProps {
+    onProductSelect: (product: { id: string; name: string; brand?: string; description?: string; image: any }) => void;
     selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
 }
 
-// Experience options
-const durationOptions = ['2 Weeks', '1 Month', '3 Months', '6 Months', '1 Year', 'More than 1 Year'];
-const conditionOptions = ['Could Be Better', 'Good', 'Excellent', 'Perfect'];
-const frequencyOptions = ['Daily Use', 'Weekly Use', 'Monthly Use', 'Rarely Use'];
+// Usage options for inventory
+const usageDurationOptions = ['2 Weeks', '1 Month', '3 Months', '6 Months', '1 Year', 'More than 1 Year'];
+const usageLocationOptions = ['Home', 'Office', 'Car', 'Travel', 'Gym', 'Other'];
+const usagePurposeOptions = ['Personal Use', 'Work', 'Gift', 'Testing', 'Review', 'Other'];
 
-export const StepOneScreen: React.FC<StepOneScreenProps> = ({
-    selectedDuration,
-    selectedCondition,
-    selectedFrequency,
-    onDurationChange,
-    onConditionChange,
-    onFrequencyChange,
+export const SelectProduct: React.FC<SelectProductProps> = ({
+    onProductSelect,
     selectedProduct,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const [showProductSelector, setShowProductSelector] = useState(false);
+    const [selectedDuration, setSelectedDuration] = useState<string>('');
+    const [selectedLocation, setSelectedLocation] = useState<string>('');
+    const [selectedPurpose, setSelectedPurpose] = useState<string>('');
 
-    // Use selectedProduct if available, otherwise use mock data
-    const productToDisplay = selectedProduct || {
-        image: productInfo.image,
-        name: productInfo.title,
+    const handleProductSelectPress = () => {
+        // Open AddProductFromCatalog
+        setShowProductSelector(true);
     };
+
+    const handleCatalogProductSelect = (product: Product) => {
+        // Parse product name to extract brand if possible
+        const nameParts = product.name.split(' ');
+        const brand = nameParts.length > 1 ? nameParts[0] : undefined;
+        const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
+        
+        const selectedProductData = {
+            id: product.id,
+            name: productName,
+            brand: brand,
+            description: product.description,
+            image: product.image,
+        };
+        onProductSelect(selectedProductData);
+        setShowProductSelector(false);
+    };
+
+    const handleCloseProductSelector = () => {
+        setShowProductSelector(false);
+    };
+
+    // Show AddProductFromCatalog if product selector is open
+    if (showProductSelector) {
+        return (
+            <AddProductFromCatalog
+                onProductSelect={handleCatalogProductSelect}
+                onClose={handleCloseProductSelector}
+            />
+        );
+    }
 
     return (
         <ScrollView 
@@ -64,35 +87,63 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
             showsVerticalScrollIndicator={false}
         >
             <VStack space="md" pb={100}>
-                {/* Product Info Card */}
-                {selectedProduct && (
-                    <Box px="$4" py="$2">
-                        <ProductInfoCard
-                            image={selectedProduct.image}
-                            name={selectedProduct.name}
-                            brand={selectedProduct.brand}
-                            subName={selectedProduct.description}
-                            type="big"
-                        />
-                    </Box>
-                )}
-                {!selectedProduct && (
-                    <Box px="$4" py="$2">
-                        <ProductInfoCard
-                            image={productInfo.image}
-                            title={productInfo.title}
-                            type="big"
-                        />
-                    </Box>
-                )}
-
-                {/* Experience Section */}
+                {/* Select Product Section */}
                 <VStack px={16} space="xs">
-                    {/* Duration Selectbox */}
+                    {/* Section Title */}
+                    <Text
+                        color={isDark ? '$textDark400' : '#B9B9B9'}
+                        fontSize={10}
+                        fontWeight="$bold"
+                    >
+                        Select Product
+                    </Text>
+
+                    {/* Select Product Button or ProductInfoCard */}
+                    {!selectedProduct ? (
+                        <Pressable onPress={handleProductSelectPress}>
+                            <Box
+                                bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+                                borderWidth={1}
+                                borderColor="#E9E9E9"
+                                $dark-borderColor="$borderDark600"
+                                borderRadius={10}
+                                height={44}
+                                justifyContent="center"
+                                alignItems="center"
+                            >
+                                <HStack alignItems="center" space="sm">
+                                    <Feather
+                                        name="plus"
+                                        size={16}
+                                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                    />
+                                    <Text
+                                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                        fontSize={10}
+                                        fontWeight="$medium"
+                                    >
+                                        Select Product
+                                    </Text>
+                                </HStack>
+                            </Box>
+                        </Pressable>
+                    ) : (
+                        <Box px="$4" py="$2">
+                            <ProductInfoCard
+                                image={selectedProduct.image}
+                                name={selectedProduct.name}
+                                brand={selectedProduct.brand}
+                                subName={selectedProduct.description}
+                                type="big"
+                            />
+                        </Box>
+                    )}
+
+                    {/* Usage Duration Selectbox */}
                     <VStack space="xs">
                         <Select
                             selectedValue={selectedDuration}
-                            onValueChange={onDurationChange}
+                            onValueChange={setSelectedDuration}
                         >
                             <SelectTrigger
                                 variant="outline"
@@ -105,7 +156,7 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder="Select duration"
+                                    placeholder="Usage Duration"
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={selectedDuration ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}
@@ -119,7 +170,7 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                                     <SelectDragIndicatorWrapper>
                                         <SelectDragIndicator />
                                     </SelectDragIndicatorWrapper>
-                                    {durationOptions.map((option) => (
+                                    {usageDurationOptions.map((option) => (
                                         <SelectItem
                                             key={option}
                                             label={option}
@@ -131,11 +182,11 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                         </Select>
                     </VStack>
 
-                    {/* Condition Selectbox */}
+                    {/* Usage Location Selectbox */}
                     <VStack space="xs">
                         <Select
-                            selectedValue={selectedCondition}
-                            onValueChange={onConditionChange}
+                            selectedValue={selectedLocation}
+                            onValueChange={setSelectedLocation}
                         >
                             <SelectTrigger
                                 variant="outline"
@@ -148,9 +199,9 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder="Select condition"
+                                    placeholder="Usage Location"
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                    color={selectedCondition ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
+                                    color={selectedLocation ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}
                                     fontWeight="$medium"
                                 />
@@ -162,7 +213,7 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                                     <SelectDragIndicatorWrapper>
                                         <SelectDragIndicator />
                                     </SelectDragIndicatorWrapper>
-                                    {conditionOptions.map((option) => (
+                                    {usageLocationOptions.map((option) => (
                                         <SelectItem
                                             key={option}
                                             label={option}
@@ -174,11 +225,11 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                         </Select>
                     </VStack>
 
-                    {/* Frequency Selectbox */}
+                    {/* Usage Purpose Selectbox */}
                     <VStack space="xs">
                         <Select
-                            selectedValue={selectedFrequency}
-                            onValueChange={onFrequencyChange}
+                            selectedValue={selectedPurpose}
+                            onValueChange={setSelectedPurpose}
                         >
                             <SelectTrigger
                                 variant="outline"
@@ -191,9 +242,9 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                                 height={44}
                             >
                                 <SelectInput
-                                    placeholder="Select frequency"
+                                    placeholder="Usage Purpose"
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                    color={selectedFrequency ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
+                                    color={selectedPurpose ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
                                     fontSize={10}
                                     fontWeight="$medium"
                                 />
@@ -205,7 +256,7 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                                     <SelectDragIndicatorWrapper>
                                         <SelectDragIndicator />
                                     </SelectDragIndicatorWrapper>
-                                    {frequencyOptions.map((option) => (
+                                    {usagePurposeOptions.map((option) => (
                                         <SelectItem
                                             key={option}
                                             label={option}
@@ -221,4 +272,3 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
         </ScrollView>
     );
 };
-

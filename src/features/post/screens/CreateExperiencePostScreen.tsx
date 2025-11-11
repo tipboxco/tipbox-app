@@ -1,21 +1,29 @@
 import React, { useState } from 'react';
 import { Box } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { StepOneScreen } from '../components/CreateExperienceSteps/StepOneScreen';
 import { StepTwoScreen } from '../components/CreateExperienceSteps/StepTwoScreen';
 import { StepThreeScreen } from '../components/CreateExperienceSteps/StepThreeScreen';
+import { SelectProduct } from '../components/CreateExperienceSteps/SelectProduct';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { PostStackParamList } from '../navigation';
 
 type CreateExperiencePostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type CreateExperiencePostScreenRouteProp = RouteProp<PostStackParamList, 'CreateExperiencePostScreen'>;
 
 export const CreateExperiencePostScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<CreateExperiencePostScreenNavigationProp>();
-    const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+    const route = useRoute<CreateExperiencePostScreenRouteProp>();
+    const { product, fromInventory, experienceOption } = route.params || {};
+    
+    // If product is undefined, start with SelectProduct (step 0), otherwise start with StepOneScreen (step 1)
+    const [currentStep, setCurrentStep] = useState<0 | 1 | 2 | 3>(product ? 1 : 0);
+    const [selectedProduct, setSelectedProduct] = useState<{ id: string; name: string; brand?: string; description?: string; image: any } | null>(product || null);
     
     // Step 1 states
     const [selectedDuration, setSelectedDuration] = useState<string>('');
@@ -38,7 +46,20 @@ export const CreateExperiencePostScreen = () => {
             setCurrentStep(2);
         } else if (currentStep === 2) {
             setCurrentStep(1);
-        } else {
+        } else if (currentStep === 1) {
+            // If we came from SelectProduct, go back to it, otherwise go to Feed
+            if (!product) {
+                setCurrentStep(0);
+            } else {
+                // Navigate to Feed screen
+                navigation.navigate('Main', {
+                    screen: 'Feed',
+                    params: {
+                        screen: 'FeedScreen',
+                    },
+                });
+            }
+        } else if (currentStep === 0) {
             // Navigate to Feed screen
             navigation.navigate('Main', {
                 screen: 'Feed',
@@ -50,7 +71,10 @@ export const CreateExperiencePostScreen = () => {
     };
 
     const handleNextPress = () => {
-        if (currentStep === 1 && isStep1NextEnabled) {
+        if (currentStep === 0 && selectedProduct) {
+            // Move from SelectProduct to StepOneScreen
+            setCurrentStep(1);
+        } else if (currentStep === 1 && isStep1NextEnabled) {
             setCurrentStep(2);
         } else if (currentStep === 2 && isStep2NextEnabled) {
             // TODO: Backend'den AI ile ayrılmış metinleri al
@@ -59,6 +83,11 @@ export const CreateExperiencePostScreen = () => {
             setProductExperienceText('Product and usage experience summary...');
             setCurrentStep(3);
         }
+    };
+
+    const handleProductSelect = (product: { id: string; name: string; brand?: string; description?: string; image: any }) => {
+        setSelectedProduct(product);
+        setCurrentStep(1);
     };
 
     const handleSharePress = () => {
@@ -96,8 +125,56 @@ export const CreateExperiencePostScreen = () => {
     // Check if Share button should be enabled (Both ratings selected and not editing)
     const isShareEnabled = priceRating > 0 && productRating > 0 && editingField === null;
 
+    // Check if Next button should be enabled for SelectProduct (product selected)
+    const isSelectProductNextEnabled = selectedProduct !== null;
+
+    // Render Step 0 (SelectProduct)
+    if (currentStep === 0) {
+        return (
+            <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+                {/* Header */}
+                <Header
+                    title={fromInventory ? "Add to Inventory" : "Experience Post"}
+                    leftAction="cancel"
+                    onLeftActionPress={handleBackPress}
+                    rightButton={{
+                        text: 'Next',
+                        backgroundColor: isSelectProductNextEnabled ? '#D0F205' : '#EDEDED',
+                        borderWidth: 1,
+                        borderColor: isSelectProductNextEnabled ? '#B8CC04' : '#B1B1B1',
+                        textColor: isSelectProductNextEnabled ? '#111111' : '#B1B1B1',
+                        fontSize: 12,
+                        borderRadius: 25,
+                        paddingX: 24,
+                        paddingY: 8,
+                        onPress: handleNextPress,
+                    }}
+                />
+
+                {/* SelectProduct Content */}
+                <SelectProduct
+                    onProductSelect={handleProductSelect}
+                    selectedProduct={selectedProduct}
+                />
+            </Box>
+        );
+    }
+
     // Render Step 3
     if (currentStep === 3) {
+        // Determine button text based on fromInventory and experienceOption
+        const getButtonText = () => {
+            if (editingField) {
+                return 'Save';
+            }
+            if (fromInventory && experienceOption === 'own') {
+                return 'Done';
+            }
+            return 'Share';
+        };
+
+        const buttonText = getButtonText();
+
         return (
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                 {/* Header */}
@@ -118,7 +195,7 @@ export const CreateExperiencePostScreen = () => {
                             paddingY: 4,
                             onPress: handleSavePress,
                         } : {
-                            text: 'Share',
+                            text: buttonText,
                             backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
                             borderWidth: 1,
                             borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
@@ -150,6 +227,9 @@ export const CreateExperiencePostScreen = () => {
                     onRemoveImage={handleRemoveImage}
                     onEditPress={handleEditPress}
                     editingField={editingField}
+                    selectedProduct={selectedProduct}
+                    fromInventory={fromInventory}
+                    experienceOption={experienceOption}
                 />
             </Box>
         );
@@ -188,6 +268,7 @@ export const CreateExperiencePostScreen = () => {
                     selectedImages={selectedImages}
                     onImagePicker={handleImagePicker}
                     onRemoveImage={handleRemoveImage}
+                    selectedProduct={selectedProduct}
                 />
             </Box>
         );
@@ -223,6 +304,7 @@ export const CreateExperiencePostScreen = () => {
                 onDurationChange={setSelectedDuration}
                 onConditionChange={setSelectedCondition}
                 onFrequencyChange={setSelectedFrequency}
+                selectedProduct={selectedProduct}
             />
         </Box>
     );

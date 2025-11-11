@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { FlatList, Dimensions, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
 import { VStack, Box, Input, InputField } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -11,6 +13,8 @@ import { mock_inventory } from '@/src/mock/inventory';
 import { ProfileStackParamList } from '../navigation';
 import { InventoryItem } from '../types';
 import InventoryCard from '../components/InventoryCard';
+import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
@@ -18,11 +22,18 @@ const CARDS_PER_ROW = 3;
 const HORIZONTAL_PADDING = 15;
 const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - (CARD_GAP * (CARDS_PER_ROW - 1))) / CARDS_PER_ROW;
 
+type InventoryScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList>;
+
 const InventoryScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
-  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const navigation = useNavigation<InventoryScreenNavigationProp>();
+  
+  // Bottom sheet refs
+  const createPostBottomSheetRef = useRef<BottomSheet>(null);
+  const createPostSnapPoints = useMemo(() => ['50%'], []);
 
   const filteredInventory = mock_inventory.flatMap(group => 
     group.items.filter(item => 
@@ -30,6 +41,63 @@ const InventoryScreen = () => {
       item.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.specs.toLowerCase().includes(searchQuery.toLowerCase())
     )
+  );
+
+  const handleCreatePress = () => {
+    console.log('Create button pressed');
+    if (createPostBottomSheetRef.current) {
+      createPostBottomSheetRef.current.snapToIndex(0);
+      setIsBottomSheetOpen(true);
+    } else {
+      setTimeout(() => {
+        if (createPostBottomSheetRef.current) {
+          createPostBottomSheetRef.current.snapToIndex(0);
+          setIsBottomSheetOpen(true);
+        }
+      }, 100);
+    }
+  };
+
+  const handleSheetChanges = useCallback((index: number) => {
+    if (index === -1) {
+      setIsBottomSheetOpen(false);
+    } else {
+      setIsBottomSheetOpen(true);
+    }
+  }, []);
+
+  const handlePostTypeSelect = (type: string, experienceOption?: 'own' | 'tried') => {
+    console.log('Post type selected:', type, 'experienceOption:', experienceOption);
+    
+    // Close bottom sheet first
+    createPostBottomSheetRef.current?.close();
+    
+    // Navigate to CreateExperiencePostScreen
+    if (type === 'experience') {
+      navigation.navigate('Post', {
+        screen: 'CreateExperiencePostScreen',
+        params: {
+          product: undefined,
+          fromInventory: true,
+          experienceOption: experienceOption,
+        },
+      });
+    }
+  };
+
+  const handleViewChange = (view: 'options' | 'experience') => {
+    console.log('BottomSheet view changed:', view);
+  };
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+      />
+    ),
+    []
   );
 
   return (
@@ -86,6 +154,76 @@ const InventoryScreen = () => {
         columnWrapperStyle={{ gap: CARD_GAP }}
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Create Button - Hide when bottom sheet is open */}
+      {!isBottomSheetOpen && (
+        <Pressable
+          onPress={handleCreatePress}
+          position="absolute"
+          bottom={24}
+          right={16}
+          zIndex={999}
+        >
+        <Box
+          bg="#E8FF6B"
+          borderRadius={30}
+          width={56}
+          height={56}
+          alignItems="center"
+          justifyContent="center"
+          shadowColor="#000"
+          shadowOffset={{ width: 0, height: 4 }}
+          shadowOpacity={0.3}
+          shadowRadius={4.65}
+          elevation={8}
+        >
+          <Feather name="edit-3" size={24} color="#000000" />
+        </Box>
+      </Pressable>
+      )}
+
+      {/* Create Post Bottom Sheet */}
+      <BottomSheet
+        ref={createPostBottomSheetRef}
+        index={-1}
+        snapPoints={createPostSnapPoints}
+        enablePanDownToClose
+        enableOverDrag={false}
+        enableHandlePanningGesture={true}
+        enableContentPanningGesture={true}
+        animateOnMount={true}
+        backdropComponent={renderBackdrop}
+        onChange={handleSheetChanges}
+        style={{
+          zIndex: 1001,
+        }}
+        backgroundStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: isDark ? '#333333' : '#CCCCCC',
+          width: 40,
+          height: 4,
+        }}
+      >
+        <BottomSheetView>
+          <CreatePostBottomSheet
+            onClose={() => {
+              createPostBottomSheetRef.current?.close();
+            }}
+            onPostTypeSelect={handlePostTypeSelect}
+            onViewChange={handleViewChange}
+            showExperienceOptionsDirectly={true}
+          />
+        </BottomSheetView>
+      </BottomSheet>
     </VStack>
   );
 };

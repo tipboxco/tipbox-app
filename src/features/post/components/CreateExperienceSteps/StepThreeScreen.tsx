@@ -37,6 +37,9 @@ interface StepThreeScreenProps {
     onRemoveImage?: (index: number) => void;
     onEditPress: (field: 'price' | 'product') => void;
     editingField: 'price' | 'product' | null;
+    selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
+    fromInventory?: boolean;
+    experienceOption?: 'own' | 'tried';
 }
 
 export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
@@ -56,6 +59,9 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
     onRemoveImage,
     onEditPress,
     editingField,
+    selectedProduct,
+    fromInventory,
+    experienceOption,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -113,11 +119,21 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                 {/* Product Info Card */}
                 <Box px="$4" py="$2">
                     <Box opacity={isEditing ? 0.3 : 1} pointerEvents={isEditing ? 'none' : 'auto'}>
-                        <ProductInfoCard
-                            image={productInfo.image}
-                            title={productInfo.title}
-                            type="big"
-                        />
+                        {selectedProduct ? (
+                            <ProductInfoCard
+                                image={selectedProduct.image}
+                                name={selectedProduct.name}
+                                brand={selectedProduct.brand}
+                                subName={selectedProduct.description}
+                                type="big"
+                            />
+                        ) : (
+                            <ProductInfoCard
+                                image={productInfo.image}
+                                title={productInfo.title}
+                                type="big"
+                            />
+                        )}
                     </Box>
                 </Box>
 

@@ -22,10 +22,11 @@ type CatalogStage = 'subcategories' | 'productgroups' | 'products';
 
 interface CreatePostBottomSheetProps {
     onClose: () => void;
-    onPostTypeSelect?: (type: PostType) => void;
+    onPostTypeSelect?: (type: PostType, experienceOption?: 'own' | 'tried') => void;
     onViewChange?: (view: 'options' | 'experience') => void;
     selectedProduct?: SelectedProduct;
     stage?: CatalogStage;
+    showExperienceOptionsDirectly?: boolean; // If true, show experience options directly without showing post options
 }
 
 type ViewType = 'options' | 'experience';
@@ -102,10 +103,11 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
     onViewChange,
     selectedProduct,
     stage,
+    showExperienceOptionsDirectly = false,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const [currentView, setCurrentView] = useState<ViewType>('options');
+    const [currentView, setCurrentView] = useState<ViewType>(showExperienceOptionsDirectly ? 'experience' : 'options');
 
     // Filter post options based on stage
     const getFilteredPostOptions = (): PostOption[] => {
@@ -153,10 +155,12 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
 
     const handleExperienceOptionPress = (optionId: 'own' | 'tried') => {
         console.log('Selected experience option:', optionId);
-        // Reset view to options before closing
-        setCurrentView('options');
-        onViewChange?.('options');
-        onPostTypeSelect?.('experience');
+        // Reset view to options before closing (only if not showing directly)
+        if (!showExperienceOptionsDirectly) {
+            setCurrentView('options');
+            onViewChange?.('options');
+        }
+        onPostTypeSelect?.('experience', optionId);
         onClose();
     };
 
@@ -173,29 +177,48 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
     if (currentView === 'experience') {
         return (
             <Box flex={1} bg="#FDFDFB" $dark-bg="$backgroundDark950">
-                {/* Header with back button */}
-                <VStack space="sm" mb="$4" px="$4" pt="$4">
-                    <HStack justifyContent="space-between" alignItems="center" w="100%">
-                        <Pressable onPress={handleBackPress}>
-                            <Feather
-                                name="arrow-left"
-                                size={24}
-                                color={isDark ? '#FFFFFF' : '#000000'}
-                            />
-                        </Pressable>
-                        <Text
-                            fontSize={16}
-                            fontWeight="$bold"
-                            color="#000000"
-                            $dark-color="$textDark50"
-                            textAlign="center"
-                            flex={1}
-                        >
-                            Deneyim Gönderisi
-                        </Text>
-                        <Box w={24} />
-                    </HStack>
-                </VStack>
+                {/* Header with back button - only show if not showing directly */}
+                {!showExperienceOptionsDirectly && (
+                    <VStack space="sm" mb="$4" px="$4" pt="$4">
+                        <HStack justifyContent="space-between" alignItems="center" w="100%">
+                            <Pressable onPress={handleBackPress}>
+                                <Feather
+                                    name="arrow-left"
+                                    size={24}
+                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                />
+                            </Pressable>
+                            <Text
+                                fontSize={16}
+                                fontWeight="$bold"
+                                color="#000000"
+                                $dark-color="$textDark50"
+                                textAlign="center"
+                                flex={1}
+                            >
+                                Deneyim Gönderisi
+                            </Text>
+                            <Box w={24} />
+                        </HStack>
+                    </VStack>
+                )}
+                
+                {/* Header without back button when showing directly */}
+                {showExperienceOptionsDirectly && (
+                    <VStack space="sm" mb="$4" px="$4" pt="$4">
+                        <HStack justifyContent="center" alignItems="center" w="100%">
+                            <Text
+                                fontSize={16}
+                                fontWeight="$bold"
+                                color="#000000"
+                                $dark-color="$textDark50"
+                                textAlign="center"
+                            >
+                                Deneyim Gönderisi
+                            </Text>
+                        </HStack>
+                    </VStack>
+                )}
 
                 {/* Experience Options */}
                 <VStack space="md" px="$4" pb="$8">

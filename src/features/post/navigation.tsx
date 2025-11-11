@@ -10,7 +10,7 @@ export type PostStackParamList = {
   CreatePostScreen: undefined;
   CreateTipsAndTrickPostScreen: undefined;
   CreateQuestionPostScreen: undefined;
-  CreateExperiencePostScreen: undefined;
+  CreateExperiencePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string }; fromInventory?: boolean; experienceOption?: 'own' | 'tried' };
   CreateBenchmarkPostScreen: { product?: { id: string; name: string; description?: string; image: any } };
 };
 

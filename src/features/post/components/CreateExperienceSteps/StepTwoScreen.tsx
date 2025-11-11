@@ -29,6 +29,7 @@ interface StepTwoScreenProps {
     selectedImages: string[];
     onImagePicker: () => void;
     onRemoveImage?: (index: number) => void;
+    selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
 }
 
 export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
@@ -40,6 +41,7 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
     selectedImages,
     onImagePicker,
     onRemoveImage,
+    selectedProduct,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -61,13 +63,25 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
         >
             <VStack space="md" pb={100}>
                 {/* Product Info Card */}
-                <Box px="$4" py="$2">
-                    <ProductInfoCard
-                        image={productInfo.image}
-                        title={productInfo.title}
-                        type="big"
-                    />
-                </Box>
+                {selectedProduct ? (
+                    <Box px="$4" py="$2">
+                        <ProductInfoCard
+                            image={selectedProduct.image}
+                            name={selectedProduct.name}
+                            brand={selectedProduct.brand}
+                            subName={selectedProduct.description}
+                            type="big"
+                        />
+                    </Box>
+                ) : (
+                    <Box px="$4" py="$2">
+                        <ProductInfoCard
+                            image={productInfo.image}
+                            title={productInfo.title}
+                            type="big"
+                        />
+                    </Box>
+                )}
 
                 {/* Experience Section */}
                 <VStack px={16} space="xs">

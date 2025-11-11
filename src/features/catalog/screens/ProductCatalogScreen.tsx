@@ -294,6 +294,15 @@ export const ProductCatalogScreen = () => {
     } else if (type === 'experience') {
       navigation.navigate('Post', {
         screen: 'CreateExperiencePostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+            brand: selectedProduct.brand,
+          } : undefined,
+        },
       });
     } else if (type === 'comparison') {
       navigation.navigate('Post', {
