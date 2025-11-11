@@ -4,7 +4,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { ProductInfoCard } from '../components/ProductInfoCard';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { CreateButton } from '../components/CreateButton';
 import PostCard from '@/src/components/PostCards/PostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
@@ -138,10 +138,13 @@ export const PostsScreen = () => {
       <ScrollView flex={1} showsVerticalScrollIndicator={false}>
         <VStack space="md">
           {/* Product Info Card */}
-          <ProductInfoCard
-            image={productInfo.image}
-            title={productInfo.title}
-          />
+          <Box px="$4" py="$2">
+            <ProductInfoCard
+              image={productInfo.image}
+              title={productInfo.title}
+              type="big"
+            />
+          </Box>
 
           {/* Posts */}
           <VStack px={16} space="md">

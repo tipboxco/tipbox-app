@@ -12,7 +12,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ProductInfoCard } from '../../components/ProductInfoCard';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 
 // Mock data for product info
 const productInfo = {
@@ -61,10 +61,13 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
         >
             <VStack space="md" pb={100}>
                 {/* Product Info Card */}
-                <ProductInfoCard
-                    image={productInfo.image}
-                    title={productInfo.title}
-                />
+                <Box px="$4" py="$2">
+                    <ProductInfoCard
+                        image={productInfo.image}
+                        title={productInfo.title}
+                        type="big"
+                    />
+                </Box>
 
                 {/* Experience Section */}
                 <VStack px={16} space="xs">

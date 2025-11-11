@@ -88,6 +88,7 @@ export const PostDetailScreen = () => {
                     type === 'question' ? "Question Details" : 
                     type === 'benchmark' ? "Benchmark Details" :
                     type === 'experience' ? "Experience Details" :
+                    type === 'update' ? "Update Details" :
                     "Product Details"
                 }
                 showBackButton
@@ -107,6 +108,8 @@ export const PostDetailScreen = () => {
                     <BenchmarkPostCardDetail data={postData} />
                 ) : type === 'experience' ? (
                     <ExperiencePostCardDetail data={postData} />
+                ) : type === 'update' ? (
+                    <PostDetailCard data={postData} />
                 ) : (
                     <PostDetailCard data={postData} />
                 )}

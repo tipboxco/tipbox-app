@@ -17,7 +17,7 @@ import {
     ChevronDownIcon
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ProductInfoCard } from '../../components/ProductInfoCard';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 
 // Mock data for product info
 const productInfo = {
@@ -57,10 +57,13 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
         >
             <VStack space="md" pb={100}>
                 {/* Product Info Card */}
-                <ProductInfoCard
-                    image={productInfo.image}
-                    title={productInfo.title}
-                />
+                <Box px="$4" py="$2">
+                    <ProductInfoCard
+                        image={productInfo.image}
+                        title={productInfo.title}
+                        type="big"
+                    />
+                </Box>
 
                 {/* Experience Section */}
                 <VStack px={16} space="xs">

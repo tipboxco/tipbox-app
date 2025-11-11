@@ -1,4 +1,4 @@
-export type FeedItemType = 'feed' | 'benchmark' | 'post' | 'question' | 'tipsAndTricks';
+export type FeedItemType = 'feed' | 'benchmark' | 'post' | 'question' | 'tipsAndTricks' | 'update';
 
 export interface BaseFeedItem {
   id: string;
@@ -112,4 +112,21 @@ export interface TipsAndTricksPost extends BaseFeedItem {
   tag: string;
 }
 
-export type FeedItem = FeedPost | BenchmarkPost | Post | QuestionPost | TipsAndTricksPost;
+export interface UpdatePost extends BaseFeedItem {
+  type: 'update';
+  product?: {
+    id: string;
+    name: string;
+    subName: string;
+    image: any;
+    hasDiscount?: boolean;
+  };
+  content: string;
+  images?: any[];
+  updateInfo?: {
+    title?: string;
+    description?: string;
+  };
+}
+
+export type FeedItem = FeedPost | BenchmarkPost | Post | QuestionPost | TipsAndTricksPost | UpdatePost;

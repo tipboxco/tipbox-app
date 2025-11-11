@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { ProductInfoCard } from '../components/ProductInfoCard';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -72,10 +72,13 @@ export const CreatePostScreen = () => {
       <ScrollView flex={1} showsVerticalScrollIndicator={false}>
         <VStack space="md" pb={100}>
           {/* Product Info Card */}
-          <ProductInfoCard
-            image={productInfo.image}
-            title={productInfo.title}
-          />
+          <Box px="$4" py="$2">
+            <ProductInfoCard
+              image={productInfo.image}
+              title={productInfo.title}
+              type="big"
+            />
+          </Box>
 
           {/* Post Description Section */}
           <VStack px={16} space="xs">

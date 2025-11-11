@@ -238,4 +238,39 @@ export const mock_feed_data: FeedItem[] = [
     tag: 'Battery',
     createdAt: '2024-03-17T10:30:00Z',
   },
+
+  // Update Posts
+  {
+    id: 'update-1',
+    type: 'update',
+    user: {
+      id: '1',
+      name: 'Sarah Johnson',
+      title: 'Product Reviewer - Tech Enthusiast - Early Adopter',
+      avatar: require('@/assets/avatar/ozan.png'),
+      action: 'Updated their post',
+    },
+    product: {
+      id: '1',
+      name: 'Dyson V15s',
+      subName: 'Detect Submarine™ Wet & Dry Cordless Vacuum',
+      image: require('@/assets/product/product_01.png'),
+      hasDiscount: false,
+    },
+    content: 'I\'ve been using this vacuum for over a month now and wanted to share an update. The battery life has been consistently good, lasting about 45 minutes on full power. The wet cleaning feature works great for kitchen spills. I\'ve been using this vacuum for over a month now and wanted to share an update. The battery life has been consistently good, lasting about 45 minutes on full power.',
+    images: [
+      require('@/assets/product/Cat.png'),
+    ],
+    stats: {
+      likes: 89,
+      comments: 15,
+      shares: 8,
+      bookmarks: 22,
+    },
+    updateInfo: {
+      title: 'Post Updated',
+      description: 'Added new information about battery life and usage experience',
+    },
+    createdAt: '2024-03-18T14:20:00Z',
+  },
 ];

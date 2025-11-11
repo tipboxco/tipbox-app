@@ -19,6 +19,7 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
+import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
 
@@ -112,6 +113,13 @@ export const FeedScreen = () => {
       case 'tipsAndTricks':
         return (
           <TipsAndTricksPostCard
+            key={item.id}
+            data={item}
+          />
+        );
+      case 'update':
+        return (
+          <UpdatePostCard
             key={item.id}
             data={item}
           />
