@@ -33,6 +33,7 @@ export const ProductCatalogScreen = () => {
 
   // Bottom sheet refs
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
+  const [bottomSheetKey, setBottomSheetKey] = useState(0);
 
   // Bottom sheet snap points
   const createPostSnapPoints = useMemo(() => ['85%'], []);
@@ -251,6 +252,8 @@ export const ProductCatalogScreen = () => {
 
   const handleCreatePost = () => {
     console.log('Create a Post pressed');
+    // Reset bottom sheet key to remount component and reset view
+    setBottomSheetKey(prev => prev + 1);
     if (createPostBottomSheetRef.current) {
       createPostBottomSheetRef.current.snapToIndex(0);
     } else {
@@ -261,6 +264,13 @@ export const ProductCatalogScreen = () => {
       }, 100);
     }
   };
+
+  const handleSheetChanges = useCallback((index: number) => {
+    // Reset bottom sheet key when sheet closes to reset view state
+    if (index === -1) {
+      setBottomSheetKey(prev => prev + 1);
+    }
+  }, []);
 
   const handlePostTypeSelect = (type: string) => {
     console.log('Post type selected:', type);
@@ -284,6 +294,18 @@ export const ProductCatalogScreen = () => {
     } else if (type === 'experience') {
       navigation.navigate('Post', {
         screen: 'CreateExperiencePostScreen',
+      });
+    } else if (type === 'comparison') {
+      navigation.navigate('Post', {
+        screen: 'CreateBenchmarkPostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+          } : undefined,
+        },
       });
     }
     // Handle other post types here if needed
@@ -420,6 +442,7 @@ export const ProductCatalogScreen = () => {
         enableContentPanningGesture={true}
         animateOnMount={true}
         backdropComponent={renderBackdrop}
+        onChange={handleSheetChanges}
         backgroundStyle={{
           backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
           borderTopLeftRadius: 30,
@@ -438,6 +461,7 @@ export const ProductCatalogScreen = () => {
       >
         <BottomSheetView>
           <CreatePostBottomSheet
+            key={bottomSheetKey}
             onClose={() => {
               createPostBottomSheetRef.current?.close();
             }}

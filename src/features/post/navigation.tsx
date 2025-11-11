@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen } from './screens';
+import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 // Post Stack için type tanımlaması
@@ -11,6 +11,7 @@ export type PostStackParamList = {
   CreateTipsAndTrickPostScreen: undefined;
   CreateQuestionPostScreen: undefined;
   CreateExperiencePostScreen: undefined;
+  CreateBenchmarkPostScreen: { product?: { id: string; name: string; description?: string; image: any } };
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();
@@ -51,6 +52,10 @@ export const PostNavigator = () => {
       <Stack.Screen
         name="CreateExperiencePostScreen"
         component={CreateExperiencePostScreen}
+      />
+      <Stack.Screen
+        name="CreateBenchmarkPostScreen"
+        component={CreateBenchmarkPostScreen}
       />
     </Stack.Navigator>
   );

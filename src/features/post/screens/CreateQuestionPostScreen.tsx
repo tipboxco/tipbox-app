@@ -5,6 +5,8 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '../components/ProductInfoCard';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // Mock data for product info
 const productInfo = {
@@ -52,16 +54,24 @@ const boostOptions = [
   },
 ];
 
+type CreateQuestionPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export const CreateQuestionPostScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation();
+  const navigation = useNavigation<CreateQuestionPostScreenNavigationProp>();
   const [questionText, setQuestionText] = useState('');
   const [selectedBoost, setSelectedBoost] = useState<string>('no-boost');
   const availableTips = 250;
 
   const handleBackPress = () => {
-    navigation.goBack();
+    // Navigate to Feed screen
+    navigation.navigate('Main', {
+      screen: 'Feed',
+      params: {
+        screen: 'FeedScreen',
+      },
+    });
   };
 
   const handleImagePicker = () => {
@@ -84,7 +94,7 @@ export const CreateQuestionPostScreen = () => {
       {/* Header */}
       <Header
         title="Question Post"
-        leftAction="back"
+        leftAction="cancel"
         onLeftActionPress={handleBackPress}
         rightButton={{
           text: 'Share',

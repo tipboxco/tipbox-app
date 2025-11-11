@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useCallback } from 'react';
+import React, { useRef, useMemo, useCallback, useState } from 'react';
 import { Box, ScrollView, VStack, Pressable } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -34,6 +34,7 @@ export const PostsScreen = () => {
 
   // Bottom sheet refs
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
+  const [bottomSheetKey, setBottomSheetKey] = useState(0);
 
   // Bottom sheet snap points
   const createPostSnapPoints = useMemo(() => ['85%'], []);
@@ -69,6 +70,8 @@ export const PostsScreen = () => {
   };
 
   const handleCreatePress = () => {
+    // Reset bottom sheet key to remount component and reset view
+    setBottomSheetKey(prev => prev + 1);
     // Open bottom sheet
     if (createPostBottomSheetRef.current) {
       createPostBottomSheetRef.current.snapToIndex(0);
@@ -80,6 +83,13 @@ export const PostsScreen = () => {
       }, 100);
     }
   };
+
+  const handleSheetChanges = useCallback((index: number) => {
+    // Reset bottom sheet key when sheet closes to reset view state
+    if (index === -1) {
+      setBottomSheetKey(prev => prev + 1);
+    }
+  }, []);
 
   const handlePostTypeSelect = (type: string) => {
     console.log('Post type selected:', type);
@@ -94,6 +104,10 @@ export const PostsScreen = () => {
       navigation.navigate('CreateTipsAndTrickPostScreen');
     } else if (type === 'question') {
       navigation.navigate('CreateQuestionPostScreen');
+    } else if (type === 'comparison') {
+      navigation.navigate('CreateBenchmarkPostScreen', {
+        product: undefined, // PostsScreen'den gelenlerde product yok, kullanıcı manuel seçecek
+      });
     }
     // Handle other post types here if needed
   };
@@ -160,6 +174,7 @@ export const PostsScreen = () => {
         enableContentPanningGesture={true}
         animateOnMount={true}
         backdropComponent={renderBackdrop}
+        onChange={handleSheetChanges}
         backgroundStyle={{
           backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
           borderTopLeftRadius: 30,
@@ -178,6 +193,7 @@ export const PostsScreen = () => {
       >
         <BottomSheetView>
           <CreatePostBottomSheet
+            key={bottomSheetKey}
             onClose={() => {
               createPostBottomSheetRef.current?.close();
             }}

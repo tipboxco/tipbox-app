@@ -6,11 +6,15 @@ import { Header } from '@/src/components/Header';
 import { StepOneScreen } from '../components/CreateExperienceSteps/StepOneScreen';
 import { StepTwoScreen } from '../components/CreateExperienceSteps/StepTwoScreen';
 import { StepThreeScreen } from '../components/CreateExperienceSteps/StepThreeScreen';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type CreateExperiencePostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const CreateExperiencePostScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const navigation = useNavigation();
+    const navigation = useNavigation<CreateExperiencePostScreenNavigationProp>();
     const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
     
     // Step 1 states
@@ -35,7 +39,13 @@ export const CreateExperiencePostScreen = () => {
         } else if (currentStep === 2) {
             setCurrentStep(1);
         } else {
-            navigation.goBack();
+            // Navigate to Feed screen
+            navigation.navigate('Main', {
+                screen: 'Feed',
+                params: {
+                    screen: 'FeedScreen',
+                },
+            });
         }
     };
 
@@ -189,7 +199,7 @@ export const CreateExperiencePostScreen = () => {
             {/* Header */}
             <Header
                 title="Experience Post"
-                leftAction="back"
+                leftAction="cancel"
                 onLeftActionPress={handleBackPress}
                 rightButton={{
                     text: 'Next',

@@ -5,6 +5,8 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '../components/ProductInfoCard';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // Mock data for product info
 const productInfo = {
@@ -12,14 +14,22 @@ const productInfo = {
   title: 'Computers & Tablet\nTechnology Subcategories',
 };
 
+type CreatePostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export const CreatePostScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation();
+  const navigation = useNavigation<CreatePostScreenNavigationProp>();
   const [postText, setPostText] = useState('');
 
   const handleBackPress = () => {
-    navigation.goBack();
+    // Navigate to Feed screen
+    navigation.navigate('Main', {
+      screen: 'Feed',
+      params: {
+        screen: 'FeedScreen',
+      },
+    });
   };
 
   const handleImagePicker = () => {
@@ -42,7 +52,7 @@ export const CreatePostScreen = () => {
       {/* Header */}
       <Header
         title="Write a Post"
-        leftAction="back"
+        leftAction="cancel"
         onLeftActionPress={handleBackPress}
         rightButton={{
           text: 'Share',

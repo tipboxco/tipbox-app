@@ -5,6 +5,8 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '../components/ProductInfoCard';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // Mock data for product info
 const productInfo = {
@@ -36,16 +38,24 @@ const categories = [
   },
 ];
 
+type CreateTipsAndTrickPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export const CreateTipsAndTrickPostScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation();
+  const navigation = useNavigation<CreateTipsAndTrickPostScreenNavigationProp>();
   const [tipsText, setTipsText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const handleBackPress = () => {
-    navigation.goBack();
+    // Navigate to Feed screen
+    navigation.navigate('Main', {
+      screen: 'Feed',
+      params: {
+        screen: 'FeedScreen',
+      },
+    });
   };
 
   const handleImagePicker = () => {
@@ -68,7 +78,7 @@ export const CreateTipsAndTrickPostScreen = () => {
       {/* Header */}
       <Header
         title="Tips & Tricks Post"
-        leftAction="back"
+        leftAction="cancel"
         onLeftActionPress={handleBackPress}
         rightButton={{
           text: 'Share',

@@ -153,6 +153,9 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
 
     const handleExperienceOptionPress = (optionId: 'own' | 'tried') => {
         console.log('Selected experience option:', optionId);
+        // Reset view to options before closing
+        setCurrentView('options');
+        onViewChange?.('options');
         onPostTypeSelect?.('experience');
         onClose();
     };
@@ -164,6 +167,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
             onViewChange?.('options');
         }
     };
+
 
     // Render experience options view
     if (currentView === 'experience') {
