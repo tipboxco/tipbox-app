@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { BoostOptionCard } from '../components/BoostOptionCard';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -233,94 +234,18 @@ export const CreateQuestionPostScreen = () => {
             {/* Boost Options */}
             <VStack space="xs">
               {boostOptions.map((option) => (
-                <Pressable
+                <BoostOptionCard
                   key={option.id}
+                  id={option.id}
+                  title={option.title}
+                  price={option.price}
+                  description={option.description}
+                  borderColor={option.borderColor}
+                  iconBg={option.iconBg}
+                  isPopular={option.isPopular}
+                  isSelected={selectedBoost === option.id}
                   onPress={() => setSelectedBoost(option.id)}
-                >
-                  <Box
-                    bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
-                    borderWidth={1}
-                    borderColor={selectedBoost === option.id ? option.borderColor : '#E9E9E9'}
-                    borderRadius={5}
-                    position="relative"
-                  >
-                    <HStack px={12} py={18} alignItems="center" space="sm">
-                      {/* Icon */}
-                      <Box
-                        width={36}
-                        height={36}
-                        bg={selectedBoost === option.id ? option.iconBg : (isDark ? '$backgroundDark700' : '#F5F5F5')}
-                        borderRadius={5}
-                        justifyContent="center"
-                        alignItems="center"
-                      >
-                        {selectedBoost === option.id ? (
-                          <Feather
-                            name="zap"
-                            size={18}
-                            color="#FFFFFF"
-                          />
-                        ) : (
-                          <Feather
-                            name="zap"
-                            size={18}
-                            color={isDark ? '#FFFFFF' : '#646464'}
-                          />
-                        )}
-                      </Box>
-
-                      {/* Content */}
-                      <VStack flex={1} space="xs">
-                        <HStack justifyContent="space-between" alignItems="center">
-                          <Text
-                            color={isDark ? '$textDark50' : '#000000'}
-                            fontSize={12}
-                            fontWeight="$semibold"
-                          >
-                            {option.title}
-                          </Text>
-                          <Text
-                            color={selectedBoost === option.id ? '#829905' : (isDark ? '$textDark50' : '#000000')}
-                            fontSize={12}
-                            fontWeight="$semibold"
-                          >
-                            {option.price}
-                          </Text>
-                        </HStack>
-                        <Text
-                          color={isDark ? '$textDark400' : '#000000'}
-                          fontSize={10}
-                          fontWeight="$normal"
-                        >
-                          {option.description}
-                        </Text>
-                      </VStack>
-                    </HStack>
-
-                    {/* Popular Badge */}
-                    {option.isPopular && (
-                      <Box
-                        position="absolute"
-                        top={2}
-                        right={15}
-                        bg="#829905"
-                        borderWidth={1}
-                        borderColor="#829905"
-                        borderRadius={10}
-                        px="$2"
-                        py="$0.5"
-                      >
-                        <Text
-                          color="#FFFFFF"
-                          fontSize={9}
-                          fontWeight="$medium"
-                        >
-                          Popular
-                        </Text>
-                      </Box>
-                    )}
-                  </Box>
-                </Pressable>
+                />
               ))}
             </VStack>
 
