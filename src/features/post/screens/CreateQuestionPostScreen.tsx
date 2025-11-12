@@ -31,8 +31,8 @@ const boostOptions = [
     title: 'Standart Boost',
     price: '50 TIPS',
     description: '2x Visibility for 24 Hours',
-    borderColor: '#E9E9E9',
-    iconBg: '#F5F5F5',
+    borderColor: '#829905',
+    iconBg: '#829905',
     isPopular: false,
   },
   {
@@ -40,8 +40,8 @@ const boostOptions = [
     title: 'Premium Boost',
     price: '100 TIPS',
     description: '5x Visibility for 48 Hours',
-    borderColor: '#E9E9E9',
-    iconBg: '#F5F5F5',
+    borderColor: '#829905',
+    iconBg: '#829905',
     isPopular: false,
   },
   {
@@ -49,8 +49,8 @@ const boostOptions = [
     title: 'Ultimate Boost',
     price: '200 TIPS',
     description: '10x Visibility for 7 Days',
-    borderColor: '#E9E9E9',
-    iconBg: '#F5F5F5',
+    borderColor: '#829905',
+    iconBg: '#829905',
     isPopular: false,
   },
 ];
