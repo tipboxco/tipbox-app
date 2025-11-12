@@ -11,6 +11,7 @@ import { TipsAndTricksPostCardDetail } from '../components/TipsAndTricksPostCard
 import { QuestionPostCardDetail } from '../components/QuestionPostCardDetail';
 import { BenchmarkPostCardDetail } from '../components/BenchmarkPostCardDetail';
 import { ExperiencePostCardDetail } from '../components/ExperiencePostCardDetail';
+import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 
@@ -75,7 +76,7 @@ export const PostDetailScreen = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<NativeStackNavigationProp<PostStackParamList>>();
     const route = useRoute<PostDetailScreenRouteProp>();
-    const { postData, type } = route.params;
+    const { postData, type, showRelatedPost, relatedPostData } = route.params;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
 
@@ -84,6 +85,7 @@ export const PostDetailScreen = () => {
             {/* Status Bar & Header */}
             <Header
                 title={
+                    showRelatedPost ? "Related Post" :
                     type === 'tipsAndTricks' ? "Tips & Tricks Details" : 
                     type === 'question' ? "Question Details" : 
                     type === 'benchmark' ? "Benchmark Details" :
@@ -109,113 +111,14 @@ export const PostDetailScreen = () => {
                 ) : type === 'experience' ? (
                     <ExperiencePostCardDetail data={postData} />
                 ) : type === 'update' ? (
-                    <PostDetailCard data={postData} />
+                    <UpdatePostCardDetail 
+                        data={postData} 
+                        showRelatedPost={showRelatedPost}
+                        relatedPostData={relatedPostData}
+                    />
                 ) : (
                     <PostDetailCard data={postData} />
                 )}
-
-                {/* Comments Section */}
-                <VStack py={8}>
-                    <HStack justifyContent="space-between" alignItems="center" mb={16} px={12}>
-                        <Text
-                            color={isDark ? '#7D7D7D' : '#7D7D7D'}
-                            fontSize={14}
-                            fontWeight="$bold"
-                        >
-                            Comments
-                        </Text>
-                        <Popover
-                            isOpen={isOpen}
-                            onClose={() => setIsOpen(false)}
-                            placement="left"
-                            trigger={(triggerProps) => {
-                                return (
-                                    <Pressable {...triggerProps} onPress={() => setIsOpen(true)}>
-                                        <HStack alignItems="center" bg={isDark ? 'rgba(229, 229, 229, 0.8)' : 'rgba(229, 229, 229, 0.8)'} px={12} py={3} borderRadius={10} borderWidth={1} borderColor="#EFEFEF">
-                                            <Text
-                                                color={isDark ? '#7D7D7D' : '#7D7D7D'}
-                                                fontSize={8}
-                                                fontWeight="$semibold"
-                                            >
-                                                {selectedOption}
-                                            </Text>
-                                            <Feather name="chevron-down" size={10} color={isDark ? '#7D7D7D' : '#7D7D7D'} />
-                                        </HStack>
-                                    </Pressable>
-                                );
-                            }}
-                        >
-                            <PopoverBackdrop />
-                            <PopoverContent>
-                                <PopoverArrow />
-                                <PopoverBody p={0}>
-                                    <VStack>
-                                        <Pressable
-                                            onPress={() => {
-                                                setSelectedOption('Newest');
-                                                setIsOpen(false);
-                                            }}
-                                            disabled={selectedOption === 'Newest'}
-                                            opacity={selectedOption === 'Newest' ? 0.5 : 1}
-                                            px={16} py={12}
-                                            borderBottomWidth={1} borderBottomColor="#E9E9E9"
-                                        >
-                                            <Text
-                                                color={isDark ? '#7D7D7D' : '#7D7D7D'}
-                                                fontSize={10}
-                                                fontWeight="$semibold"
-                                            >
-                                                Newest
-                                            </Text>
-                                        </Pressable>
-                                        <Pressable
-                                            onPress={() => {
-                                                setSelectedOption('Oldest');
-                                                setIsOpen(false);
-                                            }}
-                                            disabled={selectedOption === 'Oldest'}
-                                            opacity={selectedOption === 'Oldest' ? 0.5 : 1}
-                                            px={16} py={12}
-                                            borderBottomWidth={1} borderBottomColor="#E9E9E9"
-                                        >
-                                            <Text
-                                                color={isDark ? '#7D7D7D' : '#7D7D7D'}
-                                                fontSize={10}
-                                                fontWeight="$semibold"
-                                            >
-                                                Oldest
-                                            </Text>
-                                        </Pressable>
-                                        <Pressable
-                                            onPress={() => {
-                                                setSelectedOption('Most Liked');
-                                                setIsOpen(false);
-                                            }}
-                                            disabled={selectedOption === 'Most Liked'}
-                                            opacity={selectedOption === 'Most Liked' ? 0.5 : 1}
-                                            px={16} py={12}
-                                        >
-                                            <Text
-                                                color={isDark ? '#7D7D7D' : '#7D7D7D'}
-                                                fontSize={10}
-                                                fontWeight="$semibold"
-                                            >
-                                                Most Liked
-                                            </Text>
-                                        </Pressable>
-                                    </VStack>
-                                </PopoverBody>
-                            </PopoverContent>
-                        </Popover>
-                    </HStack>
-
-                    {/* Sample Comments */}
-                    {[1, 2, 3].map((item) => (
-                        <React.Fragment key={item}>
-                            {renderComments(item, postData, isDark)}
-                        </React.Fragment>
-                    ))}
-                </VStack>
             </ScrollView>
         </VStack>
     );

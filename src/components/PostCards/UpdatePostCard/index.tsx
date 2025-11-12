@@ -153,18 +153,49 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
 
         {/* See Related Post / Hide Related Post Button */}
         {data.relatedPost && (
-          <Pressable onPress={() => setShowRelatedPost(!showRelatedPost)} mt={10}>
+          <Pressable 
+            onPress={() => {
+              // Navigate to PostDetailScreen with showRelatedPost flag
+              if (data.relatedPost) {
+                // Create a post data object compatible with ExperiencePostCardDetail
+                const relatedPostData = {
+                  ...data,
+                  content: data.relatedPost.content,
+                  tags: data.relatedPost.tags || [],
+                  images: data.relatedPost.images || [],
+                };
+                
+                navigation.navigate('Post', {
+                  screen: 'PostDetailScreen',
+                  params: { 
+                    postData: data, // Original update post data
+                    relatedPostData: relatedPostData, // Related post data
+                    type: 'update',
+                    showRelatedPost: true
+                  }
+                });
+              }
+            }} 
+            mt={10}
+          >
             <Text
               color={isDark ? '$textDark50' : '#A3A3A3'}
               fontSize={config.tokens.fontSizes['2xs'] as number}
               textDecorationLine="underline"
               fontWeight="$bold"
             >
-              {showRelatedPost ? 'Hide Related Post' : 'See Related Post'} {'>'}
+              See Related Post {'>'}
             </Text>
           </Pressable>
         )}
       </VStack>
+
+      {/* Images */}
+      {data.images && data.images.length > 0 && (
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images} />
+        </VStack>
+      )}
 
       {/* Related Post Details - Shown when See Related Post is clicked */}
       {showRelatedPost && data.relatedPost && (

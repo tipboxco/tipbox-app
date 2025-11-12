@@ -5,7 +5,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 
 // Post Stack için type tanımlaması
 export type PostStackParamList = {
-  PostDetailScreen: { postData: any; type: 'post' | 'tipsAndTricks' | 'question' | 'benchmark' | 'experience' | 'update' };
+  PostDetailScreen: { postData: any; type: 'post' | 'tipsAndTricks' | 'question' | 'benchmark' | 'experience' | 'update'; showRelatedPost?: boolean; relatedPostData?: any };
   PostsScreen: { stage: 'SubCategories' | 'ProductGroup' | 'Product'; name: string };
   CreatePostScreen: undefined;
   CreateTipsAndTrickPostScreen: undefined;
