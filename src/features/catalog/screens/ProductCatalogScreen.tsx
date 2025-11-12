@@ -135,6 +135,15 @@ export const ProductCatalogScreen = () => {
     // Store selected product for CreatePostBottomSheet
     setSelectedProduct(product);
     
+    // Navigate to PostsScreen with product information
+    navigation.navigate('Post', {
+      screen: 'PostsScreen',
+      params: {
+        stage: 'Product',
+        name: product.name,
+      },
+    });
+    
     // Log to console
     console.log('Selected Product:', product.name);
     console.log('Updated Breadcrumb Items:', updatedBreadcrumbs);
@@ -372,8 +381,8 @@ export const ProductCatalogScreen = () => {
         onItemPress={handleBreadcrumbPress}
       />
 
-      {/* Action Buttons - Show for subcategories, productgroups, and products */}
-      {(currentView === 'subcategories' || currentView === 'productgroups' || currentView === 'products') && (
+      {/* Action Buttons - Show for productgroups and products (after subcategory is selected) */}
+      {(currentView === 'productgroups' || currentView === 'products') && (
         <ActionButtons
           onShowPosts={handleShowPosts}
           onCreatePost={handleCreatePost}
