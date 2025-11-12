@@ -127,6 +127,18 @@ export interface UpdatePost extends BaseFeedItem {
     title?: string;
     description?: string;
   };
+  relatedPost?: {
+    content: Array<{
+      tag: {
+        icon: string;
+        title: string;
+      };
+      text: string;
+      rating: number[];
+    }>;
+    tags: string[];
+    images?: any[];
+  };
 }
 
 export type FeedItem = FeedPost | BenchmarkPost | Post | QuestionPost | TipsAndTricksPost | UpdatePost;

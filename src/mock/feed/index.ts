@@ -271,6 +271,31 @@ export const mock_feed_data: FeedItem[] = [
       title: 'Post Updated',
       description: 'Added new information about battery life and usage experience',
     },
+    relatedPost: {
+      content: [
+        {
+          tag: {
+            icon: 'tag',
+            title: 'Price and Shopping Experience'
+          },
+          text: 'Purchased at $599 during a Black Friday sale. Delivered within 48 hours, packaging was excellent. E-invoice and warranty were auto-saved to my inventory. The unboxing experience was premium with all accessories well-organized.',
+          rating: [1, 1, 1, 1, 0]
+        },
+        {
+          tag: {
+            icon: 'package',
+            title: 'Product and Usage Experience'
+          },
+          text: 'Been using it for over a month now, around 30 min/day. The battery life is impressive, lasting about 45 minutes on full power. The wet cleaning feature works great for kitchen spills. The suction power is strong and the filtration system is excellent.',
+          rating: [1, 1, 1, 1, 1]
+        }
+      ],
+      tags: ['1 Month', 'Excellent', 'Daily Use'],
+      images: [
+        require('@/assets/product/Cat.png'),
+        require('@/assets/product/Cat.png'),
+      ]
+    },
     createdAt: '2024-03-18T14:20:00Z',
   },
 ];

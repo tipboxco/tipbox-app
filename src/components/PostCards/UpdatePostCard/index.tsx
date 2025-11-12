@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -18,6 +18,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [showRelatedPost, setShowRelatedPost] = useState(false);
 
   return (
     <VStack
@@ -110,24 +111,21 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       )}
 
       {/* Badges */}
-      <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
+      <HStack px={12} pb={8} pt={hideProduct ? 10 : 2} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" justifyContent="space-between" alignItems="center">
         <Box
-          bg={isDark ? '$backgroundDark900' : '$white'}
-          borderWidth={2}
+          borderWidth={1}
           borderColor="#9672FA"
           bgColor="#571FDD"
           borderRadius={20}
-          width={100}
-          px={10}
-          py={6}
           flexDirection="row"
-          alignItems="center"
-          justifyContent="space-evenly"
+          justifyContent="center"
+          px='$3'
+          py='$2'
         >
           <Feather name="info" size={12} color={'#fff'} />
           <Text
-            fontSize={config.tokens.fontSizes['4xs'] as number}
-            fontWeight="$semibold"
+            fontSize={config.tokens.fontSizes['3xs'] as number}
+            fontWeight="$bold"
             ml={5}
             color={'#fff'}
           >
@@ -137,13 +135,13 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       </HStack>
 
       {/* Content */}
-      <Pressable onPress={() => {
-        navigation.navigate('Post', {
-          screen: 'PostDetailScreen',
-          params: { postData: data, type: 'update' }
-        });
-      }}>
-        <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+      <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Pressable onPress={() => {
+          navigation.navigate('Post', {
+            screen: 'PostDetailScreen',
+            params: { postData: data, type: 'update' }
+          });
+        }}>
           <Text
             color={isDark ? '$textDark50' : '#000'}
             fontSize={config.tokens.fontSizes['2xs'] as number}
@@ -151,14 +149,96 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
           >
             {data.content}
           </Text>
-        </VStack>
-      </Pressable>
+        </Pressable>
 
-      {/* Images */}
-      {data.images && data.images?.length > 0 && (
-        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} />
-        </VStack>
+        {/* See Related Post / Hide Related Post Button */}
+        {data.relatedPost && (
+          <Pressable onPress={() => setShowRelatedPost(!showRelatedPost)} mt={10}>
+            <Text
+              color={isDark ? '$textDark50' : '#A3A3A3'}
+              fontSize={config.tokens.fontSizes['2xs'] as number}
+              textDecorationLine="underline"
+              fontWeight="$bold"
+            >
+              {showRelatedPost ? 'Hide Related Post' : 'See Related Post'} {'>'}
+            </Text>
+          </Pressable>
+        )}
+      </VStack>
+
+      {/* Related Post Details - Shown when See Related Post is clicked */}
+      {showRelatedPost && data.relatedPost && (
+        <>
+          {/* Related Post Content */}
+          <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            {data.relatedPost.content.map((item, index) => (
+              <VStack key={index} py={8}>
+                <HStack space="sm" alignItems="center">
+                  <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
+                  <Text
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={'$xs'}
+                    fontWeight="$bold"
+                  >
+                    {item.tag.title}
+                  </Text>
+                </HStack>
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  numberOfLines={data.relatedPost?.images && data.relatedPost.images.length > 0 ? 3 : 6}
+                  fontSize={'$2xs'}
+                  ml={26}
+                >
+                  {item.text}
+                </Text>
+                <HStack ml={26} mt={8}>
+                  {item.rating.map((star, idx) => (
+                    <Feather
+                      key={idx}
+                      name="star"
+                      size={12}
+                      color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
+                      fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
+                    />
+                  ))}
+                </HStack>
+              </VStack>
+            ))}
+          </VStack>
+
+          {/* Related Post Tags */}
+          {data.relatedPost.tags && data.relatedPost.tags.length > 0 && (
+            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" flexWrap="wrap">
+              {data.relatedPost.tags.map((tag, index) => (
+                <HStack
+                  key={index}
+                  bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
+                  borderWidth={1}
+                  borderColor={'#E9E9E9'}
+                  rounded={'$full'}
+                  px={16}
+                  py={6}
+                  mr={4}
+                >
+                  <Text
+                    color={isDark ? '$textDark50' : '#000'}
+                    fontSize={config.tokens.fontSizes['4xs'] as number}
+                    fontWeight="$semibold"
+                  >
+                    {tag}
+                  </Text>
+                </HStack>
+              ))}
+            </HStack>
+          )}
+
+          {/* Related Post Images */}
+          {data.relatedPost.images && data.relatedPost.images.length > 0 && (
+            <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <CardImageCarousel images={data.relatedPost.images} />
+            </VStack>
+          )}
+        </>
       )}
 
       {/* Stats */}
