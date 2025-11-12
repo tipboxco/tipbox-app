@@ -8,9 +8,18 @@ import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { CreateButton } from '../components/CreateButton';
 import PostCard from '@/src/components/PostCards/PostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
+import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
+import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
+import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { mock_posts } from '@/src/mock/profile/posts';
 import { mock_tips_and_tricks_posts } from '@/src/mock/profile/tipsAndTricks';
+import { mock_questions } from '@/src/mock/profile/questions';
+import { mock_benchmark_posts } from '@/src/mock/profile/benchmark';
+import { mock_post_cards } from '@/src/mock/profile/feed';
+import { mock_feed_data } from '@/src/mock/feed';
+import { UpdatePost } from '@/src/mock/feed/types';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
@@ -148,17 +157,55 @@ export const PostsScreen = () => {
 
           {/* Posts */}
           <VStack px={16} space="md">
-            {/* First Post - Regular Post */}
-            <PostCard
-              data={mock_posts[0]}
-            />
+            {/* PostCard */}
+            {mock_posts.length > 0 && (
+              <PostCard
+                data={mock_posts[0]}
+                hideProduct={true}
+              />
+            )}
 
-            {/* Second Post - Tips & Tricks */}
+            {/* TipsAndTricksPostCard */}
             {mock_tips_and_tricks_posts.length > 0 && (
               <TipsAndTricksPostCard
                 data={mock_tips_and_tricks_posts[0]}
+                hideProduct={true}
               />
             )}
+
+            {/* QuestionPostCard */}
+            {mock_questions.length > 0 && (
+              <QuestionPostCard
+                data={mock_questions[0]}
+                hideProduct={true}
+              />
+            )}
+
+            {/* BenchmarkPostCard */}
+            {mock_benchmark_posts.length > 0 && (
+              <BenchmarkPostCard
+                data={mock_benchmark_posts[0]}
+              />
+            )}
+
+            {/* ExperiencePostCard */}
+            {mock_post_cards.length > 0 && (
+              <ExperiencePostCard
+                data={mock_post_cards[0]}
+                hideProduct={true}
+              />
+            )}
+
+            {/* UpdatePostCard */}
+            {(() => {
+              const updatePost = mock_feed_data.find(item => item.type === 'update') as UpdatePost | undefined;
+              return updatePost ? (
+                <UpdatePostCard
+                  data={updatePost}
+                  hideProduct={true}
+                />
+              ) : null;
+            })()}
           </VStack>
         </VStack>
       </ScrollView>
