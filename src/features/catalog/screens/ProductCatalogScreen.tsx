@@ -316,6 +316,19 @@ export const ProductCatalogScreen = () => {
           } : undefined,
         },
       });
+    } else if (type === 'update') {
+      navigation.navigate('Post', {
+        screen: 'CreateUpdatePostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+            brand: selectedProduct.brand,
+          } : undefined,
+        },
+      });
     }
     // Handle other post types here if needed
   };

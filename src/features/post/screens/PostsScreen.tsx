@@ -117,6 +117,10 @@ export const PostsScreen = () => {
       navigation.navigate('CreateBenchmarkPostScreen', {
         product: undefined, // PostsScreen'den gelenlerde product yok, kullanıcı manuel seçecek
       });
+    } else if (type === 'update') {
+      navigation.navigate('CreateUpdatePostScreen', {
+        product: undefined, // PostsScreen'den gelenlerde product yok
+      });
     }
     // Handle other post types here if needed
   };
