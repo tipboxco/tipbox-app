@@ -137,9 +137,21 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       {/* Content */}
       <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         <Pressable onPress={() => {
+          // Create relatedPostData if relatedPost exists
+          const relatedPostData = data.relatedPost ? {
+            ...data,
+            content: data.relatedPost.content,
+            tags: data.relatedPost.tags || [],
+            images: data.relatedPost.images || [],
+          } : undefined;
+
           navigation.navigate('Post', {
             screen: 'PostDetailScreen',
-            params: { postData: data, type: 'update' }
+            params: { 
+              postData: data, 
+              type: 'update',
+              relatedPostData: relatedPostData,
+            }
           });
         }}>
           <Text

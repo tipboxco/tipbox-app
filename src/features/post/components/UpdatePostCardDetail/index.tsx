@@ -106,7 +106,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
       )}
 
       {/* Related Post Section */}
-      {showRelatedPost && relatedPostData && (
+      {(data.relatedPost || relatedPostData) && (
         <>
           {/* Related Post Title */}
           <VStack px={12} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
@@ -121,13 +121,13 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
           </VStack>
 
           {/* Product Info Card */}
-          {relatedPostData.product && (
+          {(relatedPostData?.product || data.product) && (
             <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                 <ProductInfoCard
-                  image={relatedPostData.product.image}
-                  name={relatedPostData.product.name}
-                  brand={relatedPostData.product.brand}
-                  subName={relatedPostData.product.subName}
+                  image={(relatedPostData?.product || data.product)?.image}
+                  name={(relatedPostData?.product || data.product)?.name}
+                  brand={(relatedPostData?.product || data.product)?.brand}
+                  subName={(relatedPostData?.product || data.product)?.subName}
                   type="big"
                   isOwned={true}
                 />
@@ -135,7 +135,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
           )}
 
           {/* Price and Shopping Experience Card */}
-          {relatedPostData.content && relatedPostData.content.length > 0 && (
+          {((relatedPostData?.content && relatedPostData.content.length > 0) || (data.relatedPost?.content && data.relatedPost.content.length > 0)) && (
               <Box
                 bg="##FAFAFA"
                 borderRadius={10}
@@ -158,7 +158,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                     fontSize={10}
                     lineHeight={14}
                   >
-                    {relatedPostData.content.find((item: any) => item.tag.icon === 'tag')?.text || ''}
+                    {(relatedPostData?.content || data.relatedPost?.content || []).find((item: any) => item.tag.icon === 'tag')?.text || ''}
                   </Text>
                 </VStack>
 
@@ -174,7 +174,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                     </Text>
                     <HStack space="xs">
                       {[1, 2, 3, 4, 5].map((star) => {
-                        const priceItem = relatedPostData.content.find((item: any) => item.tag.icon === 'tag');
+                        const content = relatedPostData?.content || data.relatedPost?.content || [];
+                        const priceItem = content.find((item: any) => item.tag.icon === 'tag');
                         const rating = priceItem?.rating || [];
                         const isFilled = star <= rating.filter((r: number) => r === 1).length;
                         return (
@@ -194,7 +195,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
           )}
 
           {/* Product and Usage Experience Card */}
-          {relatedPostData.content && relatedPostData.content.length > 0 && (
+          {((relatedPostData?.content && relatedPostData.content.length > 0) || (data.relatedPost?.content && data.relatedPost.content.length > 0)) && (
               <Box
                 bg="##FAFAFA"
                 borderRadius={10}
@@ -217,7 +218,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                     fontSize={10}
                     lineHeight={14}
                   >
-                    {relatedPostData.content.find((item: any) => item.tag.icon === 'package')?.text || ''}
+                    {(relatedPostData?.content || data.relatedPost?.content || []).find((item: any) => item.tag.icon === 'package')?.text || ''}
                   </Text>
                 </VStack>
 
@@ -233,7 +234,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                     </Text>
                     <HStack space="xs">
                       {[1, 2, 3, 4, 5].map((star) => {
-                        const productItem = relatedPostData.content.find((item: any) => item.tag.icon === 'package');
+                        const content = relatedPostData?.content || data.relatedPost?.content || [];
+                        const productItem = content.find((item: any) => item.tag.icon === 'package');
                         const rating = productItem?.rating || [];
                         const isFilled = star <= rating.filter((r: number) => r === 1).length;
                         return (
@@ -253,9 +255,9 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
           )}
 
           {/* Tags Section */}
-          {relatedPostData.tags && relatedPostData.tags.length > 0 && (
+          {((relatedPostData?.tags && relatedPostData.tags.length > 0) || (data.relatedPost?.tags && data.relatedPost.tags.length > 0)) && (
               <HStack px={16} py={10} flexWrap="wrap" gap={4}>
-                {relatedPostData.tags.map((tag: string, index: number) => (
+                {(relatedPostData?.tags || data.relatedPost?.tags || []).map((tag: string, index: number) => (
                   <Box
                     key={index}
                     bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
@@ -293,19 +295,19 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
             <HStack>
               <HStack mr={10} alignItems="center">
                 <Feather name="heart" size={24} color={isDark ? '#fff' : '#000'} />
-                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{relatedPostData.stats?.likes || 0}</Text>
+                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{(relatedPostData?.stats || data.stats)?.likes || 0}</Text>
               </HStack>
               <HStack mr={10} alignItems="center">
                 <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
-                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{relatedPostData.stats?.comments || 0}</Text>
+                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{(relatedPostData?.stats || data.stats)?.comments || 0}</Text>
               </HStack>
               <HStack mr={10} alignItems="center">
                 <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
-                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{relatedPostData.stats?.shares || 0}</Text>
+                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{(relatedPostData?.stats || data.stats)?.shares || 0}</Text>
               </HStack>
               <HStack mr={10} alignItems="center">
                 <Feather name="bookmark" size={24} color={isDark ? '#fff' : '#000'} />
-                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{relatedPostData.stats?.bookmarks || 0}</Text>
+                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{(relatedPostData?.stats || data.stats)?.bookmarks || 0}</Text>
               </HStack>
             </HStack>
             <Box>
