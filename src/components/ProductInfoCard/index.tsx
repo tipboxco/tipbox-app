@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Image } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface ProductInfoCardProps {
@@ -14,6 +15,8 @@ interface ProductInfoCardProps {
   // Optional styling props
   mx?: number | string;
   mt?: number | string;
+  // Owned status
+  isOwned?: boolean;
 }
 
 export const ProductInfoCard = ({
@@ -23,6 +26,7 @@ export const ProductInfoCard = ({
   subName,
   title,
   type = 'small',
+  isOwned = false,
 }: ProductInfoCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -88,6 +92,35 @@ export const ProductInfoCard = ({
               >
                 {displaySubName}
               </Text>
+            )}
+            {/* Owned Status */}
+            {isOwned && (
+              <HStack alignItems="center" space="xs" mt={2}>
+                <Box
+                  width={16}
+                  height={16}
+                  borderWidth={1}
+                  borderColor="#E8E8E8"
+                  borderStyle="dashed"
+                  borderRadius={2}
+                  justifyContent="center"
+                  alignItems="center"
+                  bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+                >
+                  <Feather
+                    name="check"
+                    size={10}
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  />
+                </Box>
+                <Text
+                  color={isDark ? '$textDark400' : '#A3A3A3'}
+                  fontSize={10}
+                  fontWeight="$normal"
+                >
+                  Owned
+                </Text>
+              </HStack>
             )}
           </VStack>
         </HStack>

@@ -129,6 +129,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                   brand={relatedPostData.product.brand}
                   subName={relatedPostData.product.subName}
                   type="big"
+                  isOwned={true}
                 />
             </VStack>
           )}
