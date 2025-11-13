@@ -6,6 +6,8 @@ import { PostCard as PostCardType } from '@/src/mock/profile/feed/types';
 import { Dimensions } from 'react-native';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '@/src/components/CardImageCarousel';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 interface ExperiencePostCardDetailProps {
     data: PostCardType;
@@ -69,37 +71,15 @@ export const ExperiencePostCardDetail = ({ data }: ExperiencePostCardDetailProps
             </VStack>
 
             {/* Product */}
-            <HStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9" alignItems="center">
-                <Image
-                    width={42}
-                    height={42}
-                    mr={8}
-                    source={data.product.image}
-                    alt={data.product.name}
-                    borderRadius={5}
+            <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                <ProductInfoCard
+                    size="small"
+                    type={ProductInfoType.PRODUCT}
+                    image={data.product.image}
+                    title={data.product.name}
+                    subName={data.product.subName}
                 />
-                <VStack flex={1}>
-                    <Text
-                        color={isDark ? '$textDark50' : '#000'}
-                        fontSize={'$xs'}
-                        numberOfLines={2}
-                    >
-                        {data.product.name}
-                    </Text>
-                    <Text
-                        color={isDark ? '$textDark50' : '#000'}
-                        fontSize={'$xs'}
-                    >
-                        {data.product.subName}
-                    </Text>
-                </VStack>
-                <Image
-                    source={require('@/assets/common/percentage_01.png')}
-                    alt={'percentage'}
-                    width={30}
-                    height={30}
-                />
-            </HStack>
+            </Box>
 
             {/* Content */}
             <VStack px={12} pb={8}>

@@ -5,6 +5,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '@/src/components/CardImageCarousel';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 import { UpdatePost } from '@/src/mock/feed/types';
 
 interface UpdatePostCardDetailProps {
@@ -128,6 +129,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                   title={(relatedPostData?.product || data.product)?.name || ''}
                   subName={(relatedPostData?.product || data.product)?.subName}
                   size="big"
+                  type={ProductInfoType.PRODUCT}
                   isOwned={true}
                 />
             </VStack>

@@ -5,6 +5,8 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '@/src/components/CardImageCarousel';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 interface TipsAndTricksPostCardDetailProps {
     data: TipsAndTricksPost;
@@ -56,69 +58,27 @@ export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetai
             {/* Product */}
             {
                 data.category && data.category.product ? (
-                    <HStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9" alignItems="center">
-                        <Image
-                            width={42}
-                            height={42}
-                            mr={8}
-                            source={data.category.product.image}
-                            alt={data.category.product.name}
-                            borderRadius={5}
+                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                        <ProductInfoCard
+                            size="small"
+                            type={ProductInfoType.PRODUCT}
+                            image={data.category.product.image}
+                            title={data.category.product.name}
+                            subName={data.category.product.subName}
                         />
-                        <VStack flex={1}>
-                            <Text
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$xs"
-                                numberOfLines={2}
-                            >
-                                {data.category.product.name}
-                            </Text>
-                            <Text
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$xs"
-                            >
-                                {data.category.product.subName}
-                            </Text>
-                        </VStack>
-                        <Image
-                            source={require('@/assets/common/percentage_01.png')}
-                            alt={'percentage'}
-                            width={30}
-                            height={30}
+                    </Box>
+                ) : data.category ? (
+                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                        <ProductInfoCard
+                            size="small"
+                            type={ProductInfoType.SUB_CATEGORY}
+                            image={data.category.image}
+                            title={data.category.name}
+                            subName={data.category.subCategory}
+                            onPress={() => { console.log('Category sayfasına yönlendir'); }}
                         />
-                    </HStack>
-                ) : (
-                    <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
-                        <HStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9" alignItems="center">
-                            <Image
-                                width={42}
-                                height={42}
-                                mr={8}
-                                source={data.category.image}
-                                alt={data.category.name}
-                                borderRadius={5}
-                            />
-                            <VStack flex={1}>
-                                <Text
-                                    color={isDark ? '#A3A3A3' : '#A3A3A3'}
-                                    fontSize="$xs"
-                                    numberOfLines={1}
-                                    fontWeight="$bold"
-                                >
-                                    {data.category.name}
-                                </Text>
-                                <Text
-                                    color={isDark ? '#A3A3A3' : '#A3A3A3'}
-                                    fontSize="$xs"
-                                    numberOfLines={1}
-                                >
-                                    {data.category.subCategory}
-                                </Text>
-                            </VStack>
-                            <Feather name="chevron-right" size={24} color={isDark ? '#fff' : '#A3A3A3'} />
-                        </HStack>
-                    </Pressable>
-                )
+                    </Box>
+                ) : null
             }
 
             {/* Badges */}
