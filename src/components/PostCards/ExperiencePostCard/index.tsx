@@ -9,6 +9,8 @@ import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 
 interface PostCardProps {
@@ -77,44 +79,21 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       {/* Product */}
       {
         !hideProduct && (
-          <Pressable onPress={() => {
-            navigation.navigate('Post', {
-              screen: 'PostDetailScreen',
-              params: { postData: data, type: 'experience' }
-            });
-          }}>
-            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
-              <Image
-                width={42}
-                height={42}
-                mr={8}
-                source={data.product.image}
-                alt={data.product.name}
-                borderRadius={5}
-              />
-              <VStack flex={1}>
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize={'$xs'}
-                  numberOfLines={2}
-                >
-                  {data.product.name}
-                </Text>
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize={'$xs'}
-                >
-                  {data.product.subName}
-                </Text>
-              </VStack>
-              <Image
-                source={require('@/assets/common/percentage_01.png')}
-                alt={'percantage'}
-                width={30}
-                height={30}
-              />
-            </HStack>
-          </Pressable>
+          <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <ProductInfoCard
+              size="small"
+              type={ProductInfoType.PRODUCT}
+              image={data.product.image}
+              title={data.product.name}
+              subName={data.product.subName}
+              onPress={() => {
+                navigation.navigate('Post', {
+                  screen: 'PostDetailScreen',
+                  params: { postData: data, type: 'experience' }
+                });
+              }}
+            />
+          </Box>
         )
       }
 
