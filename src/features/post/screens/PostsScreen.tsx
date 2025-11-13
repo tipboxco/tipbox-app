@@ -24,8 +24,8 @@ import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
-// Mock data for product info
-const productInfo = {
+// Default mock data for product info (fallback)
+const defaultProductInfo = {
   image: require('@/assets/product/product_01.png'),
   title: 'Computers & Tablet\nTechnology Subcategories',
 };
@@ -39,7 +39,11 @@ export const PostsScreen = () => {
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
   
-  const { stage, name } = route.params || { stage: 'SubCategories', name: 'Subcategory Feed' };
+  const { stage, name, productInfo } = route.params || { 
+    stage: 'SubCategories' as const, 
+    name: 'Subcategory Feed',
+    productInfo: undefined
+  };
 
   // Bottom sheet refs
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
@@ -151,13 +155,26 @@ export const PostsScreen = () => {
       <ScrollView flex={1} showsVerticalScrollIndicator={false}>
         <VStack space="md">
           {/* Product Info Card */}
-          <Box px="$4" py="$2">
-            <ProductInfoCard
-              image={productInfo.image}
-              title={productInfo.title}
-              type="big"
-            />
-          </Box>
+          {productInfo && (
+            <Box px="$4" py="$2">
+              <ProductInfoCard
+                image={productInfo.image}
+                name={productInfo.name}
+                subName={productInfo.subName}
+                type="big"
+                showChevron={true}
+              />
+            </Box>
+          )}
+          {!productInfo && (
+            <Box px="$4" py="$2">
+              <ProductInfoCard
+                image={defaultProductInfo.image}
+                title={defaultProductInfo.title}
+                type="big"
+              />
+            </Box>
+          )}
 
           {/* Posts */}
           <VStack px={16} space="md">

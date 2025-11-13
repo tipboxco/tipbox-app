@@ -101,7 +101,7 @@ export const CreateTipsAndTrickPostScreen = () => {
           showsVerticalScrollIndicator={false}
           onScrollBeginDrag={() => setShowCategoryModal(false)}
         >
-          <VStack space="md" pb={100}>
+          <VStack space="md">
           {/* Product Info Card */}
           <Box px="$4" py="$2">
             <ProductInfoCard
