@@ -1,4 +1,5 @@
-import { CommunityEventsData, Badge, EventFeedCard, SeeAllReward, EventType } from './types';
+import { CommunityEventsData, Badge, EventFeedCard, SeeAllReward } from './types';
+import { EventType } from '@/src/utils';
 
 export const rewards_badges_mock: Badge[] = [
   {
@@ -103,7 +104,7 @@ export const mock_community_events: CommunityEventsData = {
       ],
       status: 'active',
       category: 'community',
-      eventType: EventType.EVENT,
+      eventType: EventType.TYPE1,
     },
     {
       id: '2',
@@ -120,7 +121,7 @@ export const mock_community_events: CommunityEventsData = {
       ],
       status: 'active',
       category: 'community',
-      eventType: EventType.PRODUCT,
+      eventType: EventType.TYPE2,
       product: {
         id: 'product-1',
         name: 'iPhone 15 Pro Max',
@@ -143,7 +144,7 @@ export const mock_community_events: CommunityEventsData = {
       ],
       status: 'active',
       category: 'community',
-      eventType: EventType.EVENT,
+      eventType: EventType.TYPE1,
     }
   ],
   upcomingEvents: [
@@ -157,7 +158,7 @@ export const mock_community_events: CommunityEventsData = {
       avatars: [],
       status: 'upcoming',
       category: 'community',
-      eventType: EventType.EVENT,
+      eventType: EventType.TYPE1,
     },
     {
       id: '5',
@@ -169,7 +170,7 @@ export const mock_community_events: CommunityEventsData = {
       avatars: [],
       status: 'upcoming',
       category: 'community',
-      eventType: EventType.EVENT,
+      eventType: EventType.TYPE1,
     },
     {
       id: '6',
@@ -181,7 +182,7 @@ export const mock_community_events: CommunityEventsData = {
       avatars: [],
       status: 'upcoming',
       category: 'community',
-      eventType: EventType.EVENT,
+      eventType: EventType.TYPE1,
     }
   ],
   completedEvents: [
@@ -200,7 +201,7 @@ export const mock_community_events: CommunityEventsData = {
       ],
       status: 'completed',
       category: 'community',
-      eventType: EventType.EVENT,
+      eventType: EventType.TYPE1,
     }
   ]
 };

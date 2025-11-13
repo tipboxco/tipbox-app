@@ -133,7 +133,6 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
                     />
                 </Box>
             </HStack>
-
         </VStack>
     );
 };

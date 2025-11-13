@@ -19,7 +19,8 @@ import { CreateEventPostBottomSheet } from '../components/CreateEventPostBottomS
 import { Category } from '../components/CategoryCard';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { EventType, EventProduct } from '@/src/mock/events/communityEvents/types';
+import { EventType } from '@/src/utils';
+import { EventProduct } from '@/src/mock/events/communityEvents/types';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
@@ -46,9 +47,9 @@ const EventCreatePost: React.FC = () => {
     const eventProduct = route.params?.product;
     const routeProductSource = route.params?.productSource;
     
-    // Auto-select product if eventType is PRODUCT
+    // Auto-select product if eventType is TYPE2
     useEffect(() => {
-        if (eventType === EventType.PRODUCT && eventProduct) {
+        if (eventType === EventType.TYPE2 && eventProduct) {
             const productCategory: Category = {
                 id: eventProduct.id,
                 name: eventProduct.name,
@@ -190,8 +191,8 @@ const EventCreatePost: React.FC = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 <VStack space="lg" p="$4">
                     {/* Select Product Button or Selected Product Card */}
-                    {/* Only show product selection if eventType is not PRODUCT */}
-                    {eventType !== EventType.PRODUCT && (
+                    {/* Only show product selection if eventType is TYPE1 */}
+                    {eventType === EventType.TYPE1 && (
                         <>
                             {selectedProduct ? (
                                 <ProductInfoCard
@@ -231,8 +232,8 @@ const EventCreatePost: React.FC = () => {
                         </>
                     )}
                     
-                    {/* Show selected product card if eventType is PRODUCT */}
-                    {eventType === EventType.PRODUCT && selectedProduct && (
+                    {/* Show selected product card if eventType is TYPE2 */}
+                    {eventType === EventType.TYPE2 && selectedProduct && (
                         <ProductInfoCard
                             size="big"
                             type={ProductInfoType.PRODUCT}

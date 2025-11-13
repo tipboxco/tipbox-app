@@ -11,6 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventCard as EventCardType } from '@/src/mock/events/communityEvents/types';
+import { EventType } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -34,7 +35,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         borderColor="#E9E9E9"
         borderRadius={10}
         width={isGrid ? GRID_CARD_WIDTH : CARD_WIDTH}
-        height={data.status === 'active' ? 228 : 196}
+        height={230}
         overflow="hidden"
       >
         {/* Image Section */}
@@ -53,28 +54,26 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             style={{ width: '100%', height: '100%' }}
             borderRadius={5}
           />
-          {/* Status Badge */}
-          {data.status === 'active' && (
-            <Box
-              position="absolute"
-              top={14}
-              left={14}
-              bg="rgba(144, 8, 255, 0.8)"
-              borderWidth={1}
-              borderColor="#CA88FF"
-              borderRadius={10}
-              px="$2"
-              py="$1"
+          {/* Event Type Badge */}
+          <Box
+            position="absolute"
+            top={14}
+            left={14}
+            bg="rgba(144, 8, 255, 0.8)"
+            borderWidth={1}
+            borderColor="#CA88FF"
+            borderRadius={10}
+            px="$2"
+            py="$1"
+          >
+            <Text
+              color="#FFFFFF"
+              fontSize={9}
+              fontWeight="$bold"
             >
-              <Text
-                color="#FFFFFF"
-                fontSize={9}
-                fontWeight="$bold"
-              >
-                Active
-              </Text>
-            </Box>
-          )}
+              {data.eventType}
+            </Text>
+          </Box>
         </Box>
 
         {/* Content Section */}
@@ -126,8 +125,8 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           </HStack>
         </VStack>
 
-        {/* Active Events - Participants Section */}
-        {data.status === 'active' && (
+        {/* Type1 Events - Participants Section */}
+        {data.eventType === EventType.TYPE1 && (
           <>
             {/* Divider Line */}
             <Box

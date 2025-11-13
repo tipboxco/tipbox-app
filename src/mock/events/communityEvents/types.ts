@@ -1,8 +1,3 @@
-export enum EventType {
-  EVENT = 'event',
-  PRODUCT = 'product',
-}
-
 export interface EventProduct {
   id: string;
   name: string;
@@ -20,7 +15,7 @@ export interface EventCard {
   avatars: any[];
   status: 'active' | 'upcoming' | 'completed';
   category: 'community' | 'achievement';
-  eventType: EventType;
+  eventType: import('@/src/utils').EventType;
   product?: EventProduct;
 }
 

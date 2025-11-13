@@ -4,7 +4,8 @@ import EventsScreen from './screens/EventsScreen';
 import { EventDetailScreen, RewardsBadgesScreen, EventCreatePost } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
-import { EventType, EventProduct } from '@/src/mock/events/communityEvents/types';
+import { EventType } from '@/src/utils';
+import { EventProduct } from '@/src/mock/events/communityEvents/types';
 
 export type EventsStackParamList = {
   EventsScreen: undefined;
