@@ -14,6 +14,8 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 50; // Minimum distance to trigger close
@@ -360,10 +362,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                         <VStack space="xl" pb="$6">
                             {/* Category Results */}
                             {searchQuery.length === 0 && selectedFilter === 'users' && (
-                                <VStack space="md" mt="$2">
+                                <VStack space="xs" mt="$2">
                                     <HStack justifyContent="space-between" alignItems="center">
                                         <Text
-                                            fontSize={18}
+                                            fontSize={12}
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark50' : '#B9B9B9'}
                                         >
@@ -442,7 +444,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                 <VStack space="md" mt="$2">
                                     <HStack justifyContent="space-between" alignItems="center">
                                         <Text
-                                            fontSize={18}
+                                            fontSize={12}
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark50' : '#B9B9B9'}
                                         >
@@ -510,7 +512,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                 <VStack space="md" mt="$2">
                                     <HStack justifyContent="space-between" alignItems="center">
                                         <Text
-                                            fontSize={18}
+                                            fontSize={12}
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark50' : '#B9B9B9'}
                                         >
@@ -521,53 +523,21 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                     {/* Products Cards */}
                                     <VStack space="xs">
                                         {mockProducts.map((product) => (
-                                            <Pressable
+                                            <Box
                                                 key={product.id}
-                                                onPress={() => console.log('Product pressed:', product.name)}
+                                                py="$3"
+                                                borderBottomWidth={1}
+                                                borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
                                             >
-                                                <HStack
-                                                    alignItems="center"
-                                                    space="md"
-                                                    py="$3"
-                                                    borderBottomWidth={1}
-                                                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
-                                                >
-                                                    {/* Product Image */}
-                                                    <Box
-                                                        width={54}
-                                                        height={54}
-                                                        borderRadius={8}
-                                                        overflow="hidden"
-                                                    >
-                                                        <Image
-                                                            source={product.image}
-                                                            alt={product.name}
-                                                            width={54}
-                                                            height={54}
-                                                            resizeMode="contain"
-                                                        />
-                                                    </Box>
-
-                                                    {/* Product Info */}
-                                                    <VStack flex={1} space="xs">
-                                                        <Text
-                                                            color={isDark ? '#FFFFFF' : '#000000'}
-                                                            fontSize={14}
-                                                            fontWeight="$bold"
-                                                            numberOfLines={1}
-                                                        >
-                                                            {product.name}
-                                                        </Text>
-                                                        <Text
-                                                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                                            fontSize={13}
-                                                            numberOfLines={2}
-                                                        >
-                                                            {product.description}
-                                                        </Text>
-                                                    </VStack>
-                                                </HStack>
-                                            </Pressable>
+                                                <ProductInfoCard
+                                                    size="big"
+                                                    type={ProductInfoType.PRODUCT}
+                                                    image={product.image}
+                                                    title={product.name}
+                                                    subName={product.description}
+                                                    onPress={() => console.log('Product pressed:', product.name)}
+                                                />
+                                            </Box>
                                         ))}
                                     </VStack>
                                 </VStack>
