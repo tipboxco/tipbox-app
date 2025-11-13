@@ -58,11 +58,9 @@ export const ProductInfoCard = ({
           width={imageSize}
           height={imageSize}
           borderRadius={5}
-          borderWidth={0.5}
           borderColor="#E9E9E9"
-          $dark-borderColor="$borderDark600"
           overflow="hidden"
-          bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
+          bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
         >
           <Image
             source={image}

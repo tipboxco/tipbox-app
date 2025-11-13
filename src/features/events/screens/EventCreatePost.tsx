@@ -16,8 +16,9 @@ import type { RouteProp } from '@react-navigation/native';
 import type { EventsStackParamList } from '../navigation';
 import { Feather } from '@expo/vector-icons';
 import { CreateEventPostBottomSheet } from '../components/CreateEventPostBottomSheet';
-import { SelectedProductCard } from '../components/SelectedProductCard';
 import { Category } from '../components/CategoryCard';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 import { EventType, EventProduct } from '@/src/mock/events/communityEvents/types';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
@@ -193,10 +194,12 @@ const EventCreatePost: React.FC = () => {
                     {eventType !== EventType.PRODUCT && (
                         <>
                             {selectedProduct ? (
-                                <SelectedProductCard
-                                    productName={selectedProduct.name}
-                                    productImage={selectedProduct.image}
-                                    productCategory={selectedProduct.category}
+                                <ProductInfoCard
+                                    size="big"
+                                    type={ProductInfoType.PRODUCT}
+                                    image={selectedProduct.image}
+                                    title={selectedProduct.name}
+                                    subName={selectedProduct.category}
                                     onPress={handleSelectProduct}
                                 />
                             ) : (
@@ -230,10 +233,12 @@ const EventCreatePost: React.FC = () => {
                     
                     {/* Show selected product card if eventType is PRODUCT */}
                     {eventType === EventType.PRODUCT && selectedProduct && (
-                        <SelectedProductCard
-                            productName={selectedProduct.name}
-                            productImage={selectedProduct.image}
-                            productCategory={selectedProduct.category}
+                        <ProductInfoCard
+                            size="big"
+                            type={ProductInfoType.PRODUCT}
+                            image={selectedProduct.image}
+                            title={selectedProduct.name}
+                            subName={selectedProduct.category}
                         />
                     )}
 
