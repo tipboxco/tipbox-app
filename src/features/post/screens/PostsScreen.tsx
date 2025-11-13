@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 import { CreateButton } from '../components/CreateButton';
 import PostCard from '@/src/components/PostCards/PostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
@@ -24,12 +25,6 @@ import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
-// Default mock data for product info (fallback)
-const defaultProductInfo = {
-  image: require('@/assets/product/product_01.png'),
-  title: 'Computers & Tablet\nTechnology Subcategories',
-};
-
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
 
@@ -39,11 +34,7 @@ export const PostsScreen = () => {
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
   
-  const { stage, name, productInfo } = route.params || { 
-    stage: 'SubCategories' as const, 
-    name: 'Subcategory Feed',
-    productInfo: undefined
-  };
+  const { stage, name, productInfo } = route.params;
 
   // Bottom sheet refs
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
@@ -155,26 +146,15 @@ export const PostsScreen = () => {
       <ScrollView flex={1} showsVerticalScrollIndicator={false}>
         <VStack space="md">
           {/* Product Info Card */}
-          {productInfo && (
-            <Box px="$4" py="$2">
-              <ProductInfoCard
-                image={productInfo.image}
-                name={productInfo.name}
-                subName={productInfo.subName}
-                type="big"
-                showChevron={true}
-              />
-            </Box>
-          )}
-          {!productInfo && (
-            <Box px="$4" py="$2">
-              <ProductInfoCard
-                image={defaultProductInfo.image}
-                title={defaultProductInfo.title}
-                type="big"
-              />
-            </Box>
-          )}
+          <Box px="$4" py="$2">
+            <ProductInfoCard
+              image={productInfo.image}
+              title={productInfo.title}
+              subName={productInfo.subName}
+              size="big"
+              type={ProductInfoType.SUB_CATEGORY}
+            />
+          </Box>
 
           {/* Posts */}
           <VStack px={16} space="md">

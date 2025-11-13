@@ -125,10 +125,9 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
             <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                 <ProductInfoCard
                   image={(relatedPostData?.product || data.product)?.image}
-                  name={(relatedPostData?.product || data.product)?.name}
-                  brand={(relatedPostData?.product || data.product)?.brand}
+                  title={(relatedPostData?.product || data.product)?.name || ''}
                   subName={(relatedPostData?.product || data.product)?.subName}
-                  type="big"
+                  size="big"
                   isOwned={true}
                 />
             </VStack>

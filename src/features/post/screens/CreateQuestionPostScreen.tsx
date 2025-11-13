@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 import { BoostOptionCard } from '../components/BoostOptionCard';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -119,7 +120,8 @@ export const CreateQuestionPostScreen = () => {
             <ProductInfoCard
               image={productInfo.image}
               title={productInfo.title}
-              type="big"
+              size="big"
+              type={ProductInfoType.SUB_CATEGORY}
             />
           </Box>
 

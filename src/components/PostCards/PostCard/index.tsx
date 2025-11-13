@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 interface PostCardProps {
   data: Post;
@@ -64,11 +65,11 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         !hideProduct && data.category && data.category.product ? (
           <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
             <ProductInfoCard
-              type="small"
+              size="small"
+              type={ProductInfoType.PRODUCT}
               image={data.category.product.image}
-              name={data.category.product.name}
+              title={data.category.product.name}
               subName={data.category.product.subName}
-              showChevron={true}
               onPress={() => {
                 navigation.navigate('Post', {
                   screen: 'PostDetailScreen',
@@ -80,11 +81,11 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         ) : !hideProduct && data.category ? (
           <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
             <ProductInfoCard
-              type="small"
+              size="small"
+              type={ProductInfoType.SUB_CATEGORY}
               image={data.category.image}
-              name={data.category.name}
+              title={data.category.name}
               subName={data.category.subCategory}
-              showChevron={true}
               onPress={() => {
                 navigation.navigate('Post', {
                   screen: 'PostsScreen',
@@ -93,7 +94,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                     name: data.category.name,
                     productInfo: {
                       image: data.category.image,
-                      name: data.category.name,
+                      title: data.category.name,
                       subName: data.category.subCategory,
                     }
                   }

@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -104,10 +105,10 @@ export const CreateUpdatePostScreen = () => {
             <Box px="$4" py="$2">
               <ProductInfoCard
                 image={product.image}
-                name={product.name}
-                brand={product.brand}
+                title={product.name}
                 subName={product.description}
-                type="big"
+                size="big"
+                type={ProductInfoType.SUB_CATEGORY}
               />
             </Box>
           )}

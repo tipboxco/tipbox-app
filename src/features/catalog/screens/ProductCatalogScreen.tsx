@@ -136,11 +136,29 @@ export const ProductCatalogScreen = () => {
     setSelectedProduct(product);
     
     // Navigate to PostsScreen with product information
+    // Find product group from breadcrumb
+    const productGroupItem = breadcrumbItems.find(item => item.type === 'productGroup' && item.id !== 'productgroups');
+    let productGroup = null;
+    if (productGroupItem) {
+      for (const category of catalogData) {
+        for (const subCategory of category.subCategories) {
+          productGroup = subCategory.productGroups.find(group => group.id === productGroupItem.id);
+          if (productGroup) break;
+        }
+        if (productGroup) break;
+      }
+    }
+    
     navigation.navigate('Post', {
       screen: 'PostsScreen',
       params: {
         stage: 'Product',
         name: product.name,
+        productInfo: {
+          image: product.image,
+          title: productGroup ? productGroup.name : product.name, // ProductGroup name (top) or Product name if no group
+          subName: productGroup ? product.name : product.description, // Product name (bottom) or description if no group
+        },
       },
     });
     
@@ -213,50 +231,107 @@ export const ProductCatalogScreen = () => {
   };
 
   const handleShowPosts = () => {
-    // Determine current stage and name from breadcrumbItems and currentView
+    // Determine current stage and name from breadcrumbItems (prioritize most specific item)
     let stage: 'SubCategories' | 'ProductGroup' | 'Product' = 'SubCategories';
     let name = 'Subcategory Feed';
+    let productInfo: { image: any; title: string; subName?: string } | null = null;
 
-    if (currentView === 'subcategories') {
-      // Get the subcategory name from breadcrumb
-      const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory' && item.id !== 'subcategories');
-      if (subCategoryItem) {
-        stage = 'SubCategories';
-        name = subCategoryItem.name;
-      } else {
-        // Fallback: use category name
-        const categoryItem = breadcrumbItems.find(item => item.type === 'category' && item.id !== 'root');
-        if (categoryItem) {
-          name = categoryItem.name;
+    // Priority: Product > ProductGroup > SubCategory > Category
+    const productItem = breadcrumbItems.find(item => item.type === 'product' && item.id !== 'products');
+    const productGroupItem = breadcrumbItems.find(item => item.type === 'productGroup' && item.id !== 'productgroups');
+    const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory' && item.id !== 'subcategories');
+    const categoryItem = breadcrumbItems.find(item => item.type === 'category' && item.id !== 'root');
+
+    if (productItem && productGroupItem) {
+      // Product selected (with ProductGroup) - title=ProductGroup, subName=Product
+      stage = 'Product';
+      name = productItem.name;
+      const product = currentProducts.find(p => p.id === productItem.id);
+      let productGroup = null;
+      for (const category of catalogData) {
+        for (const subCategory of category.subCategories) {
+          productGroup = subCategory.productGroups.find(group => group.id === productGroupItem.id);
+          if (productGroup) break;
+        }
+        if (productGroup) break;
+      }
+      if (product && productGroup) {
+        productInfo = {
+          image: product.image,
+          title: productGroup.name, // ProductGroup name (top)
+          subName: product.name, // Product name (bottom)
+        };
+      } else if (selectedProduct && productGroup) {
+        productInfo = {
+          image: selectedProduct.image,
+          title: productGroup.name,
+          subName: selectedProduct.name,
+        };
+      }
+    } else if (productGroupItem && subCategoryItem) {
+      // ProductGroup selected (with SubCategory) - title=SubCategory, subName=ProductGroup
+      stage = 'ProductGroup';
+      name = productGroupItem.name;
+      let productGroup = null;
+      let subCategory = null;
+      for (const category of catalogData) {
+        subCategory = category.subCategories.find(sub => sub.id === subCategoryItem.id);
+        if (subCategory) {
+          productGroup = subCategory.productGroups.find(group => group.id === productGroupItem.id);
+          if (productGroup) break;
         }
       }
-    } else if (currentView === 'productgroups') {
-      // Get the product group name from breadcrumb
-      const productGroupItem = breadcrumbItems.find(item => item.type === 'productGroup' && item.id !== 'productgroups');
-      if (productGroupItem) {
-        stage = 'ProductGroup';
-        name = productGroupItem.name;
+      if (productGroup && subCategory) {
+        productInfo = {
+          image: productGroup.image,
+          title: subCategory.name, // SubCategory name (top)
+          subName: productGroup.name, // ProductGroup name (bottom)
+        };
       }
-    } else if (currentView === 'products') {
-      // Get the product name from breadcrumb or selected product
-      const productItem = breadcrumbItems.find(item => item.type === 'product' && item.id !== 'products');
-      if (productItem) {
-        stage = 'Product';
-        name = productItem.name;
-      } else if (selectedProduct) {
-        stage = 'Product';
-        name = selectedProduct.name;
+    } else if (subCategoryItem && categoryItem) {
+      // SubCategory selected (with Category) - title=Category, subName=SubCategory
+      stage = 'SubCategories';
+      name = subCategoryItem.name;
+      let subCategory = null;
+      let parentCategory = null;
+      for (const category of catalogData) {
+        subCategory = category.subCategories.find(sub => sub.id === subCategoryItem.id);
+        if (subCategory) {
+          parentCategory = category;
+          break;
+        }
+      }
+      if (subCategory && parentCategory) {
+        productInfo = {
+          image: subCategory.image,
+          title: parentCategory.name, // Category name (top)
+          subName: subCategory.name, // SubCategory name (bottom)
+        };
+      }
+    } else if (categoryItem) {
+      // Category selected (fallback)
+      stage = 'SubCategories';
+      name = categoryItem.name;
+      const category = currentCategories.find(cat => cat.id === categoryItem.id);
+      if (category) {
+        productInfo = {
+          image: category.image,
+          title: category.name,
+        };
       }
     }
 
-    // Navigate to PostsScreen with parameters
-    navigation.navigate('Post', {
-      screen: 'PostsScreen',
-      params: {
-        stage,
-        name,
-      },
-    });
+    // Navigate to PostsScreen with parameters (productInfo is required)
+    if (productInfo) {
+      navigation.navigate('Post', {
+        screen: 'PostsScreen',
+        params: {
+          stage,
+          name,
+          productInfo,
+        },
+      });
+    }
   };
 
   const handleCreatePost = () => {

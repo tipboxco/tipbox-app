@@ -21,6 +21,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
 
@@ -131,10 +132,10 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
                         <Box px="$4" py="$2">
                             <ProductInfoCard
                                 image={selectedProduct.image}
-                                name={selectedProduct.name}
-                                brand={selectedProduct.brand}
+                                title={selectedProduct.name}
                                 subName={selectedProduct.description}
-                                type="big"
+                                size="big"
+                                type={ProductInfoType.SUB_CATEGORY}
                             />
                         </Box>
                     )}

@@ -2,16 +2,17 @@ import React from 'react';
 import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { ProductInfoType } from '@/src/types/common';
 
 interface ProductInfoCardProps {
   // Product information
   image: any;
-  name?: string;
-  brand?: string;
+  title: string;
   subName?: string;
-  title?: string; // For backward compatibility
-  // Card type
-  type?: 'small' | 'big';
+  // Card size type
+  size?: 'small' | 'big';
+  // Product info type (determines what icon to show)
+  type?: ProductInfoType;
   // Optional styling props
   mx?: number | string;
   mt?: number | string;
@@ -19,19 +20,18 @@ interface ProductInfoCardProps {
   isOwned?: boolean;
   // Click handler
   onPress?: () => void;
-  // Show average rating badge
+  // Show average rating badge (deprecated - use type prop instead)
   showAverageRating?: boolean;
-  // Show chevron icon (for category navigation)
+  // Show chevron icon (deprecated - use type prop instead)
   showChevron?: boolean;
 }
 
 export const ProductInfoCard = ({
   image,
-  name,
-  brand,
-  subName,
   title,
-  type = 'small',
+  subName,
+  size = 'small',
+  type,
   isOwned = false,
   onPress,
   showAverageRating = false,
@@ -40,13 +40,15 @@ export const ProductInfoCard = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  // Determine image size based on type
-  const imageSize = type === 'big' ? 58 : 42;
+  // Determine image size based on size prop
+  const imageSize = size === 'big' ? 58 : 42;
 
-  // Use title for backward compatibility, otherwise use name
-  const displayTitle = title || name || '';
-  const displayBrand = brand;
-  const displaySubName = subName;
+  // Determine what to show based on type prop
+  const shouldShowAverageRating = type === ProductInfoType.PRODUCT || (type === undefined && showAverageRating);
+  const shouldShowChevron = 
+    type === ProductInfoType.PRODUCT_GROUP || 
+    type === ProductInfoType.SUB_CATEGORY || 
+    (type === undefined && showChevron);
 
   const content = (
     <HStack alignItems="center" justifyContent="space-between" space="md">
@@ -64,7 +66,7 @@ export const ProductInfoCard = ({
         >
           <Image
             source={image}
-            alt={displayTitle || "Product"}
+            alt={title || "Product"}
             width={imageSize}
             height={imageSize}
             resizeMode="cover"
@@ -73,32 +75,22 @@ export const ProductInfoCard = ({
 
         {/* Product Info */}
         <VStack flex={1} space="xs">
-          {displayBrand && (
-            <Text
-              color={isDark ? '$textDark400' : '#A3A3A3'}
-              fontSize={11}
-              fontWeight="$semibold"
-              numberOfLines={1}
-            >
-              {displayBrand}
-            </Text>
-          )}
           <Text
             color={isDark ? '$textDark50' : '#A3A3A3'}
             fontSize={11}
             fontWeight="$bold"
-            numberOfLines={type === 'big' ? 3 : 2}
+            numberOfLines={size === 'big' ? 3 : 2}
           >
-            {displayTitle}
+            {title}
           </Text>
-          {displaySubName && (
+          {subName && (
             <Text
               color={isDark ? '$textDark400' : '#A3A3A3'}
               fontSize={11}
               fontWeight="$normal"
               numberOfLines={1}
             >
-              {displaySubName}
+              {subName}
             </Text>
           )}
           {/* Owned Status */}
@@ -135,7 +127,7 @@ export const ProductInfoCard = ({
       
       {/* Average Rating Badge or Chevron */}
       <Box alignItems="center" justifyContent="center">
-        {showAverageRating && (
+        {shouldShowAverageRating && (
           <Image
             source={require('@/assets/common/percentage_01.png')}
             alt={'average-rating'}
@@ -143,7 +135,7 @@ export const ProductInfoCard = ({
             height={30}
           />
         )}
-        {showChevron && (
+        {shouldShowChevron && (
           <Feather name="chevron-right" size={24} color={isDark ? '#fff' : '#A3A3A3'} />
         )}
       </Box>

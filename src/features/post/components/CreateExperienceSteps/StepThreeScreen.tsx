@@ -13,6 +13,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 // Mock data for product info
 const productInfo = {
@@ -122,16 +123,17 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                         {selectedProduct ? (
                             <ProductInfoCard
                                 image={selectedProduct.image}
-                                name={selectedProduct.name}
-                                brand={selectedProduct.brand}
+                                title={selectedProduct.name}
                                 subName={selectedProduct.description}
-                                type="big"
+                                size="big"
+                                type={ProductInfoType.SUB_CATEGORY}
                             />
                         ) : (
                             <ProductInfoCard
                                 image={productInfo.image}
                                 title={productInfo.title}
-                                type="big"
+                                size="big"
+                                type={ProductInfoType.SUB_CATEGORY}
                             />
                         )}
                     </Box>

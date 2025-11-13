@@ -18,6 +18,7 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 // Mock data for product info
 const productInfo = {
@@ -69,10 +70,10 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                     <Box px="$4" py="$2">
                         <ProductInfoCard
                             image={selectedProduct.image}
-                            name={selectedProduct.name}
-                            brand={selectedProduct.brand}
+                            title={selectedProduct.name}
                             subName={selectedProduct.description}
-                            type="big"
+                            size="big"
+                            type={ProductInfoType.SUB_CATEGORY}
                         />
                     </Box>
                 )}
@@ -81,7 +82,8 @@ export const StepOneScreen: React.FC<StepOneScreenProps> = ({
                         <ProductInfoCard
                             image={productInfo.image}
                             title={productInfo.title}
-                            type="big"
+                            size="big"
+                            type={ProductInfoType.SUB_CATEGORY}
                         />
                     </Box>
                 )}

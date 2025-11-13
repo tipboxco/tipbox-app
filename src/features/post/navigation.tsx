@@ -9,9 +9,9 @@ export type PostStackParamList = {
   PostsScreen: { 
     stage: 'SubCategories' | 'ProductGroup' | 'Product'; 
     name: string;
-    productInfo?: {
+    productInfo: {
       image: any;
-      name: string;
+      title: string;
       subName?: string;
     };
   };

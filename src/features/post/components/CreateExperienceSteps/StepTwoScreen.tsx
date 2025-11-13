@@ -13,6 +13,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 // Mock data for product info
 const productInfo = {
@@ -67,10 +68,10 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                     <Box px="$4" py="$2">
                         <ProductInfoCard
                             image={selectedProduct.image}
-                            name={selectedProduct.name}
-                            brand={selectedProduct.brand}
+                            title={selectedProduct.name}
                             subName={selectedProduct.description}
-                            type="big"
+                            size="big"
+                            type={ProductInfoType.SUB_CATEGORY}
                         />
                     </Box>
                 ) : (
@@ -78,7 +79,8 @@ export const StepTwoScreen: React.FC<StepTwoScreenProps> = ({
                         <ProductInfoCard
                             image={productInfo.image}
                             title={productInfo.title}
-                            type="big"
+                            size="big"
+                            type={ProductInfoType.SUB_CATEGORY}
                         />
                     </Box>
                 )}
