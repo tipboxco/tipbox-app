@@ -8,6 +8,8 @@ import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
+import { ProductInfoCard } from '@/src/components/ProductInfoCard';
+import { ProductInfoType } from '@/src/types/common';
 
 interface QuestionPostCardProps {
   data: QuestionPost;
@@ -61,75 +63,32 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       {/* Product */}
       {
         !hideProduct && data.category && data.category.product ? (
-          <Pressable onPress={() => {
-            navigation.navigate('Post', {
-              screen: 'PostDetailScreen',
-              params: { postData: data, type: 'question' }
-            });
-          }}>
-            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
-            <Image
-              width={42}
-              height={42}
-              mr={8}
-              source={data.category.product.image}
-              alt={data.category.product.name}
-              borderRadius={5}
+          <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <ProductInfoCard
+              size="small"
+              type={ProductInfoType.PRODUCT}
+              image={data.category.product.image}
+              title={data.category.product.name}
+              subName={data.category.product.subName}
+              onPress={() => {
+                navigation.navigate('Post', {
+                  screen: 'PostDetailScreen',
+                  params: { postData: data, type: 'question' }
+                });
+              }}
             />
-            <VStack flex={1}>
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$xs"
-                numberOfLines={2}
-              >
-                {data.category.product.name}
-              </Text>
-              <Text
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$xs"
-              >
-                {data.category.product.subName}
-              </Text>
-            </VStack>
-            <Image
-              source={require('@/assets/common/percentage_01.png')}
-              alt={'percantage'}
-              width={30}
-              height={30}
-            />
-          </HStack>
-          </Pressable>
+          </Box>
         ) : !hideProduct && data.category ? (
-          <Pressable onPress={() => { console.log('Category sayfasına yönlendir'); }}>
-            <HStack px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" alignItems="center">
-              <Image
-                width={42}
-                height={42}
-                mr={8}
-                source={data.category.image}
-                alt={data.category.name}
-                borderRadius={5}
-              />
-              <VStack flex={1}>
-                <Text
-                  color={isDark ? '#A3A3A3' : '#A3A3A3'}
-                  fontSize="$xs"
-                  numberOfLines={1}
-                  fontWeight="$bold"
-                >
-                  {data.category.name}
-                </Text>
-                <Text
-                  color={isDark ? '#A3A3A3' : '#A3A3A3'}
-                  fontSize="$xs"
-                  numberOfLines={1}
-                >
-                  {data.category.subCategory}
-                </Text>
-              </VStack>
-              <Feather name="chevron-right" size={24} color={isDark ? '#fff' : '#A3A3A3'} />
-            </HStack>
-          </Pressable>
+          <Box px={12} py={8} borderTopWidth={1} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <ProductInfoCard
+              size="small"
+              type={ProductInfoType.SUB_CATEGORY}
+              image={data.category.image}
+              title={data.category.name}
+              subName={data.category.subCategory}
+              onPress={() => { console.log('Category sayfasına yönlendir'); }}
+            />
+          </Box>
         ) : null
       }
 
