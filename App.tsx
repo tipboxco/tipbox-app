@@ -28,8 +28,9 @@ export default function App() {
           <BottomSheetModalProvider>
             <GluestackProvider>
               <StatusBar
+                translucent
+                backgroundColor="transparent"
                 barStyle={isDark ? 'light-content' : 'dark-content'}
-                backgroundColor={backgroundColor}
               />
               <SafeAreaView
                 style={{
