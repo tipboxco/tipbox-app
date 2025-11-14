@@ -14,7 +14,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { SideMenu } from '@/src/components/SideMenu';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_community_events, see_all_reward_mock } from '@/src/mock/events/communityEvents';
 import { Feather } from '@expo/vector-icons';
@@ -33,7 +32,6 @@ const { width } = Dimensions.get('window');
 const EventsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'community' | 'achievement'>('community');
   const [selectedReward, setSelectedReward] = useState<SeeAllReward | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -301,11 +299,6 @@ const EventsScreen: React.FC = () => {
         )}
       </VStack>
 
-      <SideMenu
-        visible={isMenuVisible}
-        onClose={() => setIsMenuVisible(false)}
-        userProfile={mock_user_profile}
-      />
 
       {/* Badge Detail Modal */}
       <BadgeDetailModal

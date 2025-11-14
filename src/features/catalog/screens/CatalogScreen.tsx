@@ -3,7 +3,6 @@ import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
-import { SideMenu } from '@/src/components/SideMenu';
 import { mock_user_profile } from '@/src/mock/common';
 import { Category } from '@/src/mock/catalog/productCatalog/types';
 import { ProductCatalogScreen } from './ProductCatalogScreen';
@@ -14,7 +13,6 @@ export const CatalogScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [currentMode, setCurrentMode] = useState<'product' | 'brand-catalog' | 'brand-selection'>('product');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,12 +128,6 @@ export const CatalogScreen = () => {
           height={27}
         />
       </Pressable>
-
-      <SideMenu
-        visible={isMenuVisible}
-        onClose={() => setIsMenuVisible(false)}
-        userProfile={mock_user_profile}
-      />
     </Box>
   );
 };

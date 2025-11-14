@@ -10,7 +10,6 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '@/src/components/Header';
-import { SideMenu } from '@/src/components/SideMenu';
 import { mock_user_profile } from '@/src/mock/common';
 import MessagesScreen from './MessagesScreen';
 import SupportRequestsScreen from './SupportRequestsScreen';
@@ -20,7 +19,6 @@ type InboxScreenNavigationProp = NativeStackNavigationProp<any, 'InboxScreen'>;
 const InboxScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'messages' | 'support'>('messages');
   const navigation = useNavigation<InboxScreenNavigationProp>();
 
@@ -33,7 +31,7 @@ const InboxScreen: React.FC = () => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Inbox"
-        onMenuPress={() => setIsMenuVisible(true)}
+        leftAction="menu"
       />
 
       <VStack flex={1} py="$2" space="md">
@@ -93,12 +91,6 @@ const InboxScreen: React.FC = () => {
         {activeTab === 'messages' && <MessagesScreen />}
         {activeTab === 'support' && <SupportRequestsScreen />}
       </VStack>
-
-      <SideMenu
-        visible={isMenuVisible}
-        onClose={() => setIsMenuVisible(false)}
-        userProfile={mock_user_profile}
-      />
     </Box>
   );
 };

@@ -7,7 +7,6 @@ import { FilterBar } from '../components/FilterBar';
 import { AssetAccessCard } from '../components/AssetAccessCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { SideMenu } from '@/src/components/SideMenu';
 import { ExpertButton } from '@/src/components/FloatingActionButton';
 import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
 import { SearchModal } from '@/src/components/SearchModal';
@@ -29,7 +28,6 @@ type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & R
 export const FeedScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'inventory'>('wallet');
 
@@ -136,7 +134,7 @@ export const FeedScreen = () => {
     >
       <Header
         title="Akış"
-        onMenuPress={() => setIsMenuVisible(true)}
+        leftAction="menu"
         onSearchPress={handleSearchPress}
       />
       <AssetAccessCard onTabChange={handleTabChange} />
@@ -154,12 +152,6 @@ export const FeedScreen = () => {
           </Box>
         )}
       </ScrollView>
-      <SideMenu
-        visible={isMenuVisible}
-        onClose={() => setIsMenuVisible(false)}
-        userProfile={mock_user_profile}
-      />
-
       {/* Search Modal */}
       <SearchModal
         visible={isSearchVisible}

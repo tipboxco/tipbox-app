@@ -12,7 +12,6 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { SideMenu } from '@/src/components/SideMenu';
 import { SearchModal } from '@/src/components/SearchModal';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_post_cards } from '@/src/mock/profile/feed';
@@ -24,7 +23,6 @@ import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 const ExploreScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'hottest' | 'news'>('hottest');
 
@@ -40,7 +38,7 @@ const ExploreScreen: React.FC = () => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Explore"
-        onMenuPress={() => setIsMenuVisible(true)}
+        leftAction="menu"
         onSearchPress={handleSearchPress}
       />
 
@@ -211,12 +209,6 @@ const ExploreScreen: React.FC = () => {
           )}
         </VStack>
       </ScrollView>
-
-      <SideMenu
-        visible={isMenuVisible}
-        onClose={() => setIsMenuVisible(false)}
-        userProfile={mock_user_profile}
-      />
 
       {/* Search Modal */}
       <SearchModal

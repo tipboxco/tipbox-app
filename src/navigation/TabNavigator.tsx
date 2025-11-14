@@ -66,6 +66,11 @@ export const TabNavigator = () => {
           height: 45,
           paddingTop: 4,
           paddingBottom: 34,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
         },
       })}
     >

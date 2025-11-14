@@ -2,6 +2,8 @@ import React from 'react';
 import { Box, HStack, Text, Pressable, VStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useNavigation } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
 
 interface RightButtonProps {
   text: string;
@@ -57,6 +59,7 @@ export const Header = ({
 }: HeaderProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation<DrawerNavigationProp<any>>();
 
   // Sol kısım için render fonksiyonu
   const renderLeftAction = () => {
@@ -71,6 +74,18 @@ export const Header = ({
           break;
         case 'menu':
           iconName = 'menu';
+          // Menu için drawer aç
+          if (!onPress) {
+            return (
+              <Pressable onPress={() => navigation.openDrawer()}>
+                <Feather
+                  name={iconName as any}
+                  size={22}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
+              </Pressable>
+            );
+          }
           break;
         case 'cancel':
           iconName = 'x';
@@ -105,7 +120,10 @@ export const Header = ({
 
     if (onMenuPress) {
       return (
-        <Pressable onPress={onMenuPress}>
+        <Pressable onPress={() => {
+          navigation.openDrawer();
+          onMenuPress();
+        }}>
           <Feather
             name="menu"
             size={22}
