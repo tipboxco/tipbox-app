@@ -35,14 +35,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     const [isAnimating, setIsAnimating] = useState(false);
     
     // Animation
-    const slideAnim = useRef(new Animated.Value(-SCREEN_HEIGHT * 0.9)).current;
+    const modalHeight = SCREEN_HEIGHT * 0.9 + insets.top + 8;
+    const slideAnim = useRef(new Animated.Value(-modalHeight)).current;
     const panY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         if (visible) {
             // Reset panY when modal opens
             panY.setValue(0);
-            slideAnim.setValue(-SCREEN_HEIGHT * 0.9);
+            slideAnim.setValue(-modalHeight);
             setIsAnimating(false);
             
             // Slide down from top
@@ -53,26 +54,26 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 friction: 11,
             }).start();
         }
-    }, [visible, slideAnim, panY]);
+    }, [visible, slideAnim, panY, modalHeight]);
 
     // Handler for closing animation
     const handleCloseAnimation = useCallback((currentPanY: number, duration: number) => {
         setIsAnimating(true);
         Animated.timing(panY, {
-            toValue: -SCREEN_HEIGHT * 0.9,
+            toValue: -modalHeight,
             duration: duration,
             useNativeDriver: true,
         }).start(({ finished }) => {
             if (finished) {
                 // Reset animations first
                 panY.setValue(0);
-                slideAnim.setValue(-SCREEN_HEIGHT * 0.9);
+                slideAnim.setValue(-modalHeight);
                 setIsAnimating(false);
                 // Then call onClose
                 onClose();
             }
         });
-    }, [panY, slideAnim, onClose]);
+    }, [panY, slideAnim, onClose, modalHeight]);
 
     // Pan Responder for swipe up to close
     const panResponder = useMemo(() =>
@@ -109,7 +110,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 if (isUpwardSwipe && (hasEnoughDistance || hasEnoughVelocity)) {
                     // Close the modal - continue from current position without jumping
                     const currentPosition = (panY as any)._value;
-                    const remainingDistance = -SCREEN_HEIGHT * 0.9 - currentPosition;
+                    const remainingDistance = -modalHeight - currentPosition;
                     const duration = Math.max(200, Math.min(350, Math.abs(remainingDistance / 2.5)));
                     handleCloseAnimation(currentPosition, duration);
                 } else {
@@ -269,10 +270,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     style={[
                         {
                             position: 'absolute',
-                            top: insets.top + 8,
+                            top: 0,
                             left: 0,
                             right: 0,
-                            height: SCREEN_HEIGHT * 0.9,
+                            height: modalHeight,
                             backgroundColor: isDark ? '#000000' : '#FFFFFF',
                             borderBottomLeftRadius: 24,
                             borderBottomRightRadius: 24,
@@ -369,7 +370,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark50' : '#B9B9B9'}
                                         >
-                                            {getCategoryTitle()} {insets.top}
+                                            {getCategoryTitle()}
                                         </Text>
                                     </HStack>
                                     
