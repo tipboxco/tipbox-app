@@ -165,6 +165,27 @@ const EventDetailScreen: React.FC = () => {
                     px={15}
                     pt={15}
                 >
+                    {/* Event Type Badge */}
+                    <Box mb="$2">
+                        <Box
+                            bg="rgba(144, 8, 255, 0.8)"
+                            borderWidth={1}
+                            borderColor="#CA88FF"
+                            borderRadius={10}
+                            px="$2"
+                            py="$1"
+                            alignSelf="flex-start"
+                        >
+                            <Text
+                                color="#FFFFFF"
+                                fontSize={9}
+                                fontWeight="$bold"
+                            >
+                                {event.eventType}
+                            </Text>
+                        </Box>
+                    </Box>
+
                     <HStack justifyContent="space-between" alignItems="center" mb="$2">
                         {/* Event Title */}
                         <Text
