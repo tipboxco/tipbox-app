@@ -21,6 +21,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [showRelatedPost, setShowRelatedPost] = useState(false);
+  const [isTranslated, setIsTranslated] = useState(false);
 
   return (
     <VStack
@@ -139,6 +140,27 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
             {data.content}
           </Text>
         </Pressable>
+
+        {/* Translate Button */}
+        <Box mt={10}>
+          <Pressable onPress={() => setIsTranslated(!isTranslated)}>
+            <HStack alignItems="center" space="xs">
+              <Image
+                source={require('@/assets/translate.png')}
+                alt="translate"
+                width={16}
+                height={16}
+              />
+              <Text
+                color="#829905"
+                fontSize={config.tokens.fontSizes['2xs'] as number}
+                textDecorationLine="underline"
+              >
+                {isTranslated ? 'Automatically translated from English.' : 'Translate'}
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
 
         {/* See Related Post / Hide Related Post Button */}
         {data.relatedPost && (
