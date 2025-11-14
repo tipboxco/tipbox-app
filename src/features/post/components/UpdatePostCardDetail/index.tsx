@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -17,6 +17,7 @@ interface UpdatePostCardDetailProps {
 export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }: UpdatePostCardDetailProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const [isTranslated, setIsTranslated] = useState(false);
 
   return (
     <VStack
@@ -98,6 +99,27 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
           {data.content}
         </Text>
       </VStack>
+
+      {/* Translate Button */}
+      <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+        <Pressable onPress={() => setIsTranslated(!isTranslated)}>
+          <HStack alignItems="center" space="xs">
+            <Image
+              source={require('@/assets/translate.png')}
+              alt="translate"
+              width={16}
+              height={16}
+            />
+            <Text
+              color="#829905"
+              fontSize={config.tokens.fontSizes['2xs'] as number}
+              textDecorationLine="underline"
+            >
+              {isTranslated ? 'Automatically translated from English.' : 'Translate'}
+            </Text>
+          </HStack>
+        </Pressable>
+      </Box>
 
       {/* Images */}
       {data.images && data.images.length > 0 && (
