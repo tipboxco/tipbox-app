@@ -269,7 +269,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     style={[
                         {
                             position: 'absolute',
-                            top: 0,
+                            top: insets.top,
                             left: 0,
                             right: 0,
                             height: SCREEN_HEIGHT * 0.9,
@@ -283,9 +283,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                         },
                     ]}
                 >
-                    <Box flex={1}>
+                    <Box flex={1} >
                         {/* Header */}
-                        <VStack space="md" px="$4" pt={insets.top + 8} pb="$2">
+                        <VStack space="md" px="$4" pt='$4' pb="$2">
                         {/* Search Bar */}
                         <HStack
                             alignItems="center"
