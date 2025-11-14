@@ -11,7 +11,6 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventCard as EventCardType } from '@/src/mock/events/communityEvents/types';
-import { EventType } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -46,7 +45,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           borderRadius={5}
           mb="$2"
           overflow="hidden"
-          padding={'$2'}
+          padding='$2'
         >
           <Image
             source={data.image}
@@ -77,93 +76,92 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         </Box>
 
         {/* Content Section */}
-        <VStack px="$2" space="xs" >
-          {/* Title */}
-          <Text
-            color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize={11}
-            fontWeight="$bold"
-            numberOfLines={1}
-          >
-            {data.title}
-          </Text>
-
-          {/* Description */}
-          <Text
-            color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize={9}
-            fontWeight="$normal"
-            numberOfLines={3}
-            lineHeight={12}
-          >
-            {data.description}
-          </Text>
-
-          {/* Date Range */}
-          <HStack alignItems="center" space="xs" my="$1">
-            <Box
-              width={14}
-              height={14}
-              bg={isDark ? '#FFFFFF' : '#000000'}
-              borderRadius={7}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Feather
-                name="calendar"
-                size={8}
-                color={isDark ? '#000000' : '#FFFFFF'}
-              />
-            </Box>
+        <VStack space="xs">
+          <Box px="$2">
+            {/* Title */}
             <Text
-              color={isDark ? '#FFFFFF' : '#B9B9B9'}
-              fontSize={9}
-              fontWeight="$medium"
+              color={isDark ? '#FFFFFF' : '#000000'}
+              fontSize={11}
+              fontWeight="$bold"
+              numberOfLines={1}
             >
-              {data.dateRange}
+              {data.title}
             </Text>
-          </HStack>
-        </VStack>
 
-        {/* Type1 Events - Participants Section */}
-        {data.eventType === EventType.TYPE1 && (
-          <>
-            {/* Divider Line */}
-            <Box
-              height={1}
-              bg="#D9D9D9"
-              width="100%"
-              mt="$1"
-            />
+            {/* Description */}
+            <Text
+              color={isDark ? '#FFFFFF' : '#000000'}
+              fontSize={9}
+              fontWeight="$normal"
+              numberOfLines={3}
+              lineHeight={12}
+            >
+              {data.description}
+            </Text>
 
-            {/* Participants */}
-            <HStack px="$2" alignItems="center" justifyContent="space-between" mt="$2">
-              <HStack alignItems="center" space="xs">
-                {data.avatars.slice(0, 4).map((avatar, index) => (
-                  <Image
-                    key={index}
-                    source={avatar}
-                    alt={`Participant ${index + 1}`}
-                    width={18}
-                    height={18}
-                    borderRadius={9}
-                    style={{
-                      marginLeft: index > 0 ? -12 : 0,
-                      zIndex: 4 - index,
-                    }}
-                  />
-                ))}
-              </HStack>
+            {/* Date Range */}
+            <HStack alignItems="center" space="xs" my="$1">
+              <Box
+                width={14}
+                height={14}
+                bg={isDark ? '#FFFFFF' : '#000000'}
+                borderRadius={7}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Feather
+                  name="calendar"
+                  size={14}
+                  color={isDark ? '#000000' : '#FFFFFF'}
+                />
+              </Box>
               <Text
                 color={isDark ? '#FFFFFF' : '#B9B9B9'}
                 fontSize={9}
                 fontWeight="$medium"
               >
-                {data.participants}+ Etkileşim
+                {data.dateRange}
               </Text>
             </HStack>
-          </>
-        )}
+          </Box>
+
+          {/* Divider Line */}
+          <Box
+            height={1}
+            bg="#D9D9D9"
+            width="100%"
+            mt="$1"
+          />
+        </VStack>
+
+        {/* Participants Section - Type1 and Type2 */}
+        <HStack px="$2" alignItems="center" justifyContent="space-between" mt="$2">
+          <HStack alignItems="center" space="xs">
+            {data.avatars && data.avatars.length > 0 ? (
+              data.avatars.slice(0, 4).map((avatar, index) => (
+                <Image
+                  key={index}
+                  source={avatar}
+                  alt={`Participant ${index + 1}`}
+                  width={18}
+                  height={18}
+                  borderRadius={9}
+                  style={{
+                    marginLeft: index > 0 ? -12 : 0,
+                    zIndex: 4 - index,
+                  }}
+                />
+              ))
+            ) : null}
+          </HStack>
+          <Text
+            color={isDark ? '#FFFFFF' : '#B9B9B9'}
+            fontSize={9}
+            fontWeight="$medium"
+          >
+            {data.participants || 0}+ Etkileşim
+          </Text>
+        </HStack>
 
       </Box>
     </Pressable>
