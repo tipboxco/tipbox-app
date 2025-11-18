@@ -1,95 +1,410 @@
-import React, { useCallback, useState } from 'react';
-import { Box } from '@gluestack-ui/themed';
-import { Tabs, MaterialTabBar } from 'react-native-collapsible-tab-view';
+import React, { useState, useRef } from 'react';
+import { Animated, ScrollView, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { Box, Text, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import ProfileCard from '../components/ProfileCard';
 import { ReviewsTab, LadderTab, RepliesTab, TipsTab, FeedTab, BenchmarksTab } from '../components/TabContents';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 const TABS = [
-  { key: 'feed',        title: 'Feed' },
-  { key: 'reviews',     title: 'Reviews' },
-  { key: 'ladders',     title: 'Ladders' },
-  { key: 'benchmarks',  title: 'Benchmarks' },
-  { key: 'tips',        title: 'Tips & tricks' },
-  { key: 'replies',     title: 'Replies' }
+  { key: 'feed',        title: 'FEED' },
+  { key: 'reviews',     title: 'REVIEWS' },
+  { key: 'ladders',     title: 'LADDERS' },
+  { key: 'benchmarks',  title: 'BENCHMARKS' },
+  { key: 'tips',        title: 'TIPS & TRICKS' },
+  { key: 'replies',     title: 'REPLIES' }
 ];
+
+const STICKY_BANNER_HEIGHT = 90;
+const TAB_BAR_HEIGHT = 50;
+const BANNER_HEIGHT = 130; // ProfileCard içindeki banner yüksekliği
+const SCROLL_TO_TOP_THRESHOLD = 300; // Butonun görünmesi için minimum scroll mesafesi
 
 const ProfileScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const [activeTab, setActiveTab] = useState('feed');
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [profileCardHeight, setProfileCardHeight] = useState(530); // Varsayılan yükseklik
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const previousScrollY = useRef(0);
+  const scrollToTopButtonOpacity = useRef(new Animated.Value(0)).current;
 
-  const renderHeader = useCallback(() => (
-    <ProfileCard userData={mock_user_card} />
-  ), []);
+  // ProfileCard yüksekliğini ölç
+  const handleProfileCardLayout = (event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setProfileCardHeight(height);
+  };
 
-  const renderTabBar = useCallback((props: any) => (
-    <MaterialTabBar
-      {...props}
-      scrollEnabled
-      activeColor={isDark ? '#fff' : '#000'}
-      inactiveColor={isDark ? '#666' : '#999'}
-      labelStyle={{
-        fontSize: 13,
-        textTransform: 'capitalize',
-        fontWeight: '500',
-        paddingHorizontal: 20,
-      }}
-      contentContainerStyle={{
-        paddingHorizontal: 16,
-      }}
-      tabStyle={{
-        width: 'auto',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginHorizontal: 4,
-      }}
-      indicatorStyle={{
-        backgroundColor: isDark ? '#fff' : '#000',
-        height: 2,
-      }}
-      style={{
-        backgroundColor: isDark ? '#171717' : '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: isDark ? '#333' : '#eee',
-        elevation: 0,
-        shadowOpacity: 0,
-      }}
-    />
-  ), [isDark]);
+  // Banner hariç içerik yüksekliği
+  const PROFILE_CONTENT_HEIGHT = profileCardHeight - BANNER_HEIGHT;
+
+  // Banner animasyon başlangıcı - ProfileCard kaybolmaya başladığında
+  const bannerFadeStart = Math.max(PROFILE_CONTENT_HEIGHT - 40, 0);
+  
+  // TabBar'ın StickyBanner'ın arkasına geçmesi için scroll mesafesi
+  // TabBar'ın üst kısmı StickyBanner'ın altına geldiğinde sticky TabBar görünür
+  const tabBarExitPoint = profileCardHeight - STICKY_BANNER_HEIGHT;
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { 
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const currentScrollY = event.nativeEvent.contentOffset.y;
+        const scrollDifference = currentScrollY - previousScrollY.current;
+        
+        // Scroll yukarı gidiyorsa (negatif fark) ve threshold'dan sonra butonu göster
+        if (scrollDifference < 0 && currentScrollY > SCROLL_TO_TOP_THRESHOLD && !showScrollToTop) {
+          setShowScrollToTop(true);
+          Animated.timing(scrollToTopButtonOpacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+        
+        // Scroll aşağı gidiyorsa veya en üstteyse butonu gizle
+        if ((scrollDifference > 0 || currentScrollY <= SCROLL_TO_TOP_THRESHOLD) && showScrollToTop) {
+          setShowScrollToTop(false);
+          Animated.timing(scrollToTopButtonOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+        
+        previousScrollY.current = currentScrollY;
+      }
+    }
+  );
+
+  // Banner opacity animasyonu - Önce banner açılır
+  const bannerOpacity = scrollY.interpolate({
+    inputRange: [bannerFadeStart, bannerFadeStart + 80],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  // TabBar opacity animasyonu - TabBar StickyBanner'ın arkasına geçtiğinde görünür (biraz daha geç açılır)
+  const tabBarOpacity = scrollY.interpolate({
+    inputRange: [tabBarExitPoint, tabBarExitPoint],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'feed':
+        return <FeedTab />;
+      case 'reviews':
+        return <ReviewsTab />;
+      case 'ladders':
+        return <LadderTab />;
+      case 'benchmarks':
+        return <BenchmarksTab />;
+      case 'tips':
+        return <TipsTab />;
+      case 'replies':
+        return <RepliesTab />;
+      default:
+        return <FeedTab />;
+    }
+  };
+
+
+
+  // Scroll to top fonksiyonu
+  const handleScrollToTop = () => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Tabs.Container
-        renderHeader={renderHeader}
-        headerHeight={200}
-        renderTabBar={renderTabBar}
-        containerStyle={{
-          backgroundColor: isDark ? '#171717' : '#fff',
-        }}
+      {/* Sticky Banner */}
+      <Animated.View
+        style={[
+          styles.stickyBanner,
+          {
+            height: STICKY_BANNER_HEIGHT,
+            backgroundColor: isDark ? '#171717' : '#fff',
+            opacity: bannerOpacity,
+            zIndex: 1000,
+          },
+        ]}
+        pointerEvents="box-none"
       >
-        {TABS.map((tab) => {
-          const TabContent = () => {
-            if (tab.key === 'feed') return <FeedTab />;
-            if (tab.key === 'ladders') return <LadderTab />;
-            if (tab.key === 'replies') return <RepliesTab />;
-            if (tab.key === 'tips') return <TipsTab />;
-            if (tab.key === 'reviews') return <ReviewsTab />;
-            if (tab.key === 'benchmarks') return <BenchmarksTab />;
-            return <FeedTab />;
-          };
+        <Box position="absolute" top={0} left={0} right={0} bottom={0}>
+          <Image
+            source={require('@/assets/banner/banner_01.png')}
+            alt="Profile Banner"
+            w="100%"
+            h="100%"
+            resizeMode="cover"
+          />
+        </Box>
+        <HStack
+          alignItems="center"
+          px={16}
+          h="100%"
+          space="md"
+        >
+          <Box
+            w={48}
+            h={48}
+            borderRadius={48}
+            overflow="hidden"
+            borderWidth={2}
+            borderColor="#fff"
+          >
+            <Image
+              source={mock_user_card.avatar}
+              alt={mock_user_card.name}
+              w="100%"
+              h="100%"
+            />
+          </Box>
+          <VStack flex={1}>
+            <Text
+              color="#fff"
+              fontSize={16}
+              fontWeight="$semibold"
+            >
+              {mock_user_card.name}
+            </Text>
+            <Text
+              color="rgba(255,255,255,0.8)"
+              fontSize={12}
+              numberOfLines={1}
+            >
+              {mock_user_card.titles.join(' · ')}
+            </Text>
+          </VStack>
+          <Pressable>
+            <Feather name="more-vertical" size={22} color="#fff" />
+          </Pressable>
+        </HStack>
+      </Animated.View>
 
-          return (
-            <Tabs.Tab name={tab.key} key={tab.key}>
-              <Tabs.ScrollView>
-                <TabContent />
-              </Tabs.ScrollView>
-            </Tabs.Tab>
-          );
-        })}
-      </Tabs.Container>
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        {/* Profile Card Content */}
+        <Box onLayout={handleProfileCardLayout}>
+          <ProfileCard userData={mock_user_card} />
+        </Box>
+
+        {/* Tab Bar Placeholder - ProfileCard'ın altında sabit */}
+        <Box
+          height={TAB_BAR_HEIGHT}
+          bg={isDark ? '#171717' : '#fff'}
+          borderBottomWidth={1}
+          borderBottomColor={isDark ? '#333' : '#eee'}
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabBarScrollContent}
+          >
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <Pressable
+                  key={tab.key}
+                  onPress={() => setActiveTab(tab.key)}
+                  style={styles.tabButton}
+                >
+                  <Text
+                    fontSize={13}
+                    fontWeight={isActive ? '$semibold' : '$normal'}
+                    color={
+                      isActive
+                        ? isDark
+                          ? '#fff'
+                          : '#000'
+                        : isDark
+                        ? '#666'
+                        : '#999'
+                    }
+                    textTransform="uppercase"
+                  >
+                    {tab.title}
+                  </Text>
+                  {isActive && (
+                    <Box
+                      position="absolute"
+                      bottom={0}
+                      left={0}
+                      right={0}
+                      height={2}
+                      bg={isDark ? '#fff' : '#000'}
+                    />
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </Box>
+
+        {/* Tab Content */}
+        <Box>
+          {renderTabContent()}
+        </Box>
+      </Animated.ScrollView>
+
+      {/* Sticky Tab Bar - TabBar tamamen çıktıktan sonra banner'ın altında */}
+      <Animated.View
+        style={[
+          styles.tabBarSticky,
+          {
+            opacity: tabBarOpacity,
+            top: STICKY_BANNER_HEIGHT,
+            backgroundColor: isDark ? '#171717' : '#fff',
+            borderBottomColor: isDark ? '#333' : '#eee',
+          },
+        ]}
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabBarScrollContent}
+        >
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={styles.tabButton}
+              >
+                <Text
+                  fontSize={13}
+                  fontWeight={isActive ? '$semibold' : '$normal'}
+                  color={
+                    isActive
+                      ? isDark
+                        ? '#fff'
+                        : '#000'
+                      : isDark
+                      ? '#666'
+                      : '#999'
+                  }
+                  textTransform="uppercase"
+                >
+                  {tab.title}
+                </Text>
+                {isActive && (
+                  <Box
+                    position="absolute"
+                    bottom={0}
+                    left={0}
+                    right={0}
+                    height={2}
+                    bg={isDark ? '#fff' : '#000'}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </Animated.View>
+
+      {/* Scroll to Top Button */}
+      <Animated.View
+        style={[
+          styles.scrollToTopButton,
+          {
+            opacity: scrollToTopButtonOpacity,
+          },
+        ]}
+      >
+        <Pressable
+          onPress={handleScrollToTop}
+          style={({ pressed }) => [
+            styles.scrollToTopPressable,
+            {
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
+        >
+          {/* Outer Circle */}
+          <Box
+            width={68}
+            height={68}
+            borderRadius={34}
+            bg="rgba(232, 255, 107, 0.5)"
+            borderWidth={1}
+            borderColor="rgba(178, 199, 66, 0.5)"
+            justifyContent="center"
+            alignItems="center"
+          >
+            {/* Inner Circle */}
+            <Box
+              width={58}
+              height={58}
+              borderRadius={29}
+              bg="#E8FF6B"
+              borderWidth={1}
+              borderColor="#B2C742"
+              justifyContent="center"
+              alignItems="center"
+            >
+              {/* Arrow Up Icon */}
+              <Feather name="arrow-up" size={24} color="#000" />
+            </Box>
+          </Box>
+        </Pressable>
+      </Animated.View>
     </Box>
   );
 };
+
+const styles = StyleSheet.create({
+  stickyBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+  },
+  tabBarSticky: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: TAB_BAR_HEIGHT,
+    borderBottomWidth: 1,
+    zIndex: 999,
+  },
+  tabBarScrollContent: {
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  tabButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 4,
+    position: 'relative',
+    minWidth: 'auto',
+  },
+  scrollToTopButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 16,
+    zIndex: 800,
+  },
+  scrollToTopPressable: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+});
 
 export default ProfileScreen;
