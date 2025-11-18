@@ -8,12 +8,12 @@ import { mock_user_card } from '@/src/mock/profile/userCardData';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 const TABS = [
-  { key: 'feed',        title: 'FEED' },
-  { key: 'reviews',     title: 'REVIEWS' },
-  { key: 'ladders',     title: 'LADDERS' },
-  { key: 'benchmarks',  title: 'BENCHMARKS' },
-  { key: 'tips',        title: 'TIPS & TRICKS' },
-  { key: 'replies',     title: 'REPLIES' }
+  { key: 'feed',        title: 'Feed' },
+  { key: 'reviews',     title: 'Reviews' },
+  { key: 'ladders',     title: 'Ladders' },
+  { key: 'benchmarks',  title: 'Benchmarks' },
+  { key: 'tips',        title: 'Tips & Tricks' },
+  { key: 'replies',     title: 'Replies' }
 ];
 
 const STICKY_BANNER_HEIGHT = 90;
@@ -31,6 +31,7 @@ const ProfileScreen = () => {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const previousScrollY = useRef(0);
   const scrollToTopButtonOpacity = useRef(new Animated.Value(0)).current;
+  const [bannerVisible, setBannerVisible] = useState(false);
 
   // ProfileCard yüksekliğini ölç
   const handleProfileCardLayout = (event: LayoutChangeEvent) => {
@@ -55,6 +56,12 @@ const ProfileScreen = () => {
       listener: (event: any) => {
         const currentScrollY = event.nativeEvent.contentOffset.y;
         const scrollDifference = currentScrollY - previousScrollY.current;
+        
+        // Banner görünürlüğünü kontrol et
+        const isBannerVisible = currentScrollY > bannerFadeStart;
+        if (isBannerVisible !== bannerVisible) {
+          setBannerVisible(isBannerVisible);
+        }
         
         // Scroll yukarı gidiyorsa (negatif fark) ve threshold'dan sonra butonu göster
         if (scrollDifference < 0 && currentScrollY > SCROLL_TO_TOP_THRESHOLD && !showScrollToTop) {
@@ -134,7 +141,7 @@ const ProfileScreen = () => {
             zIndex: 1000,
           },
         ]}
-        pointerEvents="box-none"
+        pointerEvents={bannerVisible ? 'box-none' : 'none'}
       >
         <Box position="absolute" top={0} left={0} right={0} bottom={0}>
           <Image
@@ -221,18 +228,10 @@ const ProfileScreen = () => {
                   style={styles.tabButton}
                 >
                   <Text
-                    fontSize={13}
+                    fontSize={11}
                     fontWeight={isActive ? '$semibold' : '$normal'}
-                    color={
-                      isActive
-                        ? isDark
-                          ? '#fff'
-                          : '#000'
-                        : isDark
-                        ? '#666'
-                        : '#999'
-                    }
-                    textTransform="uppercase"
+                    color={isActive ? '#000000' : '#A3A3A3'}
+                    textTransform="capitalize"
                   >
                     {tab.title}
                   </Text>
@@ -284,18 +283,10 @@ const ProfileScreen = () => {
                 style={styles.tabButton}
               >
                 <Text
-                  fontSize={13}
+                  fontSize={11}
                   fontWeight={isActive ? '$semibold' : '$normal'}
-                  color={
-                    isActive
-                      ? isDark
-                        ? '#fff'
-                        : '#000'
-                      : isDark
-                      ? '#666'
-                      : '#999'
-                  }
-                  textTransform="uppercase"
+                  color={isActive ? '#000000' : '#A3A3A3'}
+                  textTransform="capitalize"
                 >
                   {tab.title}
                 </Text>
@@ -388,7 +379,6 @@ const styles = StyleSheet.create({
   tabButton: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginHorizontal: 4,
     position: 'relative',
     minWidth: 'auto',
   },

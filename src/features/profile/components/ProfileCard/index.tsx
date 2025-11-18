@@ -16,6 +16,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProfileStackParamList } from '../../navigation';
 import { UserCardData } from '@/src/mock/profile/userCardData/types';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
 
 interface ProfileCardProps {
   userData: UserCardData;
@@ -35,11 +36,23 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+  const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const handleEditProfile = () => {
     setIsMenuVisible(false);
     navigation.navigate('ProfileEdit');
+  };
+
+  const handleBackPress = () => {
+    if (navigation.canGoBack()) {
+      console.log('[ProfileCard] Going back...');
+      navigation.goBack();
+    } else {
+      console.log('[ProfileCard] Cannot go back, navigating to Main...');
+      // Eğer geri gidilemiyorsa, Main tab'a dön
+      rootNavigation.navigate('Main' as never);
+    }
   };
 
   return (
@@ -60,7 +73,9 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
         position="absolute" 
         top={20} 
         left={16}
-        onPress={() => navigation.goBack()}
+        onPress={handleBackPress}
+        zIndex={2000}
+        style={{ zIndex: 2000 }}
       >
         <Feather name="chevron-left" size={24} color="#fff" />
       </Pressable>
@@ -70,8 +85,12 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
         position="absolute" 
         top={20} 
         right={16}
-        onPress={() => setIsMenuVisible(true)}
-        zIndex={10}
+        onPress={() => {
+          console.log('[ProfileCard] Menu button pressed');
+          setIsMenuVisible(true);
+        }}
+        zIndex={2000}
+        style={{ zIndex: 2000 }}
       >
         <Feather name="more-vertical" size={24} color="#fff" />
       </Pressable>
