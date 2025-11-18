@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -79,9 +80,10 @@ export const NotificationSettingsScreen = () => {
     };
 
     return (
-        <Box
-            flex={1}
-            bg={isDark ? '$backgroundDark950' : '#FFF'}
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <Box
+                flex={1}
+                bg={isDark ? '$backgroundDark950' : '#FFF'}
         >
             <Header
                 title="Notification Settings"
@@ -209,7 +211,8 @@ export const NotificationSettingsScreen = () => {
                     </VStack>
                 </VStack>
             </ScrollView>
-        </Box>
+            </Box>
+        </SafeAreaView>
     );
 };
 

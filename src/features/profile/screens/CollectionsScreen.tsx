@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -82,7 +83,8 @@ const CollectionsScreen: React.FC = () => {
   };
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <Header
         title="Michael Clark's Collections"
@@ -159,7 +161,8 @@ const CollectionsScreen: React.FC = () => {
           </Box>
         )}
       </BottomSheet>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };
 

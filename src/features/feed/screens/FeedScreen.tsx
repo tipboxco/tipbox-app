@@ -20,6 +20,7 @@ import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostC
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
@@ -128,87 +129,89 @@ export const FeedScreen = () => {
   };
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-    >
-      <Header
-        title="Akış"
-        leftAction="menu"
-        onSearchPress={handleSearchPress}
-      />
-      <AssetAccessCard onTabChange={handleTabChange} />
-      <FilterBar />
-      <ScrollView flex={1} px="$4" py="$2">
-        {activeTab === 'wallet' ? (
-          // Wallet içeriği - Feed verilerini göster
-          <Box>
-            {mock_feed_data.map((item) => renderFeedItem(item))}
-          </Box>
-        ) : (
-          // Inventory içeriği
-          <Box>
-            {/* Inventory içeriği buraya gelecek */}
-          </Box>
-        )}
-      </ScrollView>
-      {/* Search Modal */}
-      <SearchModal
-        visible={isSearchVisible}
-        onClose={handleSearchClose}
-      />
-
-      {/* Expert Button */}
-      <ExpertButton
-        onPress={handleExpertPress}
-      />
-
-      {/* Expert Bottom Sheet */}
-      <BottomSheet
-        ref={expertBottomSheetRef}
-        index={-1}
-        snapPoints={expertSnapPoints}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#CCCCCC',
-          width: 40,
-          height: 4,
-        }}
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       >
-        <BottomSheetView>
-          {/* Header */}
-          <VStack space="md" pb={'$3'} mb={'$4'} borderBottomWidth={1} borderBottomColor="#D9D9D9">
-            <HStack justifyContent="center" alignItems="center">
-              <Text
-                fontSize={16}
-                fontWeight="$bold"
-                color={isDark ? '#FFFFFF' : '#000000'}
-                textAlign="center"
-              >
-                Expert Now
-              </Text>
-            </HStack>
-          </VStack>
-          <ExpertBottomSheet
-            onClose={() => expertBottomSheetRef.current?.close()}
-          />
-        </BottomSheetView>
-      </BottomSheet>
-    </Box>
+        <Header
+          title="Akış"
+          leftAction="menu"
+          onSearchPress={handleSearchPress}
+        />
+        <AssetAccessCard onTabChange={handleTabChange} />
+        <FilterBar />
+        <ScrollView flex={1} px="$4" py="$2">
+          {activeTab === 'wallet' ? (
+            // Wallet içeriği - Feed verilerini göster
+            <Box>
+              {mock_feed_data.map((item) => renderFeedItem(item))}
+            </Box>
+          ) : (
+            // Inventory içeriği
+            <Box>
+              {/* Inventory içeriği buraya gelecek */}
+            </Box>
+          )}
+        </ScrollView>
+        {/* Search Modal */}
+        <SearchModal
+          visible={isSearchVisible}
+          onClose={handleSearchClose}
+        />
+
+        {/* Expert Button */}
+        <ExpertButton
+          onPress={handleExpertPress}
+        />
+
+        {/* Expert Bottom Sheet */}
+        <BottomSheet
+          ref={expertBottomSheetRef}
+          index={-1}
+          snapPoints={expertSnapPoints}
+          enablePanDownToClose
+          enableOverDrag={false}
+          enableHandlePanningGesture={true}
+          enableContentPanningGesture={true}
+          animateOnMount={true}
+          backdropComponent={renderBackdrop}
+          backgroundStyle={{
+            backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+            borderTopLeftRadius: 30,
+            borderTopRightRadius: 30,
+          }}
+          handleStyle={{
+            backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+            borderTopLeftRadius: 30,
+            borderTopRightRadius: 30,
+          }}
+          handleIndicatorStyle={{
+            backgroundColor: isDark ? '#333333' : '#CCCCCC',
+            width: 40,
+            height: 4,
+          }}
+        >
+          <BottomSheetView>
+            {/* Header */}
+            <VStack space="md" pb={'$3'} mb={'$4'} borderBottomWidth={1} borderBottomColor="#D9D9D9">
+              <HStack justifyContent="center" alignItems="center">
+                <Text
+                  fontSize={16}
+                  fontWeight="$bold"
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  textAlign="center"
+                >
+                  Expert Now
+                </Text>
+              </HStack>
+            </VStack>
+            <ExpertBottomSheet
+              onClose={() => expertBottomSheetRef.current?.close()}
+            />
+          </BottomSheetView>
+        </BottomSheet>
+      </Box>
+    </SafeAreaView>
   );
 };

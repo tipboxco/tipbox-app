@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { FlatList, Dimensions, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
@@ -101,7 +102,8 @@ const InventoryScreen = () => {
   );
 
   return (
-    <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Inventory"
         showBackButton
@@ -224,7 +226,8 @@ const InventoryScreen = () => {
           />
         </BottomSheetView>
       </BottomSheet>
-    </VStack>
+      </VStack>
+    </SafeAreaView>
   );
 };
 

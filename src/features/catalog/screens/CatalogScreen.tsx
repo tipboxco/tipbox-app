@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -70,10 +71,11 @@ export const CatalogScreen = () => {
   };
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '#1A1A1A' : '#FAFAFA'}
-    >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '#1A1A1A' : '#FAFAFA'}
+      >
       <Header
         title={getTitle()}
         showBackButton
@@ -128,6 +130,7 @@ export const CatalogScreen = () => {
           height={27}
         />
       </Pressable>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };

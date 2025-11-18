@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/src/components/Header';
@@ -7,12 +7,12 @@ import { useWalletStore } from '@/src/store';
 import { useNavigation } from '@react-navigation/native';
 
 export const WalletConnection: React.FC = () => {
-    const insets = useSafeAreaInsets();
     const connect = useWalletStore(state => state.connect);
     const navigation = useNavigation<any>();
 
     return (
-        <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950" pt={insets.top}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
             <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
 
             {/* Body */}
@@ -78,10 +78,8 @@ export const WalletConnection: React.FC = () => {
                     </Pressable>
                 </HStack>
             </VStack>
-
-            {/* Custom bottom space to avoid overlap on devices with home indicator */}
-            <Box h={insets.bottom} />
-        </Box>
+            </Box>
+        </SafeAreaView>
     );
 };
 

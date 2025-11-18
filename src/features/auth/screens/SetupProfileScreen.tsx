@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle, Camera, User } from 'lucide-react-native';
@@ -49,11 +50,12 @@ export const SetupProfileScreen = () => {
   };
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-      p="$4"
-    >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+        p="$4"
+      >
       <VStack flex={1} space="xl" pt="$16">
         <Text
           fontSize="$xl"
@@ -166,6 +168,7 @@ export const SetupProfileScreen = () => {
           <ButtonText color="$textLight900">Devam Et</ButtonText>
         </Button>
       </VStack>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };

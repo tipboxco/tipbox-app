@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Text, Box, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -24,7 +25,8 @@ const NFTDetailScreen = () => {
     };
 
     return (
-        <Box flex={1} bg={isDark ? '$backgroundDark900' : '$backgroundLight50'}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <Box flex={1} bg={isDark ? '$backgroundDark900' : '$backgroundLight50'}>
             <Header 
                 title="Set Price" 
                 showBackButton={true} 
@@ -289,7 +291,8 @@ const NFTDetailScreen = () => {
                     </Text>
                 </Pressable>
             </Box>
-        </Box>
+            </Box>
+        </SafeAreaView>
     );
 };
 

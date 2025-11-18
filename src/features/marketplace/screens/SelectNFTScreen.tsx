@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { VStack, ScrollView, SafeAreaView, HStack, Pressable, Text } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { VStack, ScrollView, HStack, Pressable, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { UserNFTCard } from '../components/UserNFTCard';
@@ -32,7 +33,7 @@ const SelectNFTScreen = () => {
   };
 
   return (
-    <SafeAreaView flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
         {/* Header */}
         <Header

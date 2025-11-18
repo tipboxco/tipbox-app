@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Textarea, TextareaInput } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -75,7 +76,8 @@ export const CreateTipsAndTrickPostScreen = () => {
   const isShareEnabled = tipsText.trim().length > 0 && selectedCategory.length > 0;
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
       {/* Header */}
       <Header
         title="Tips & Tricks Post"
@@ -334,7 +336,8 @@ export const CreateTipsAndTrickPostScreen = () => {
           />
         )}
       </Box>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };
 

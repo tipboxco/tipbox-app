@@ -5,7 +5,7 @@ if (typeof global.Promise === 'undefined') {
 import React from 'react';
 import Navigation from '@/src/navigation';
 import { GluestackProvider } from '@/src/components/ui';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
 import { PortalProvider } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -32,14 +32,7 @@ export default function App() {
                 backgroundColor="transparent"
                 barStyle={isDark ? 'light-content' : 'dark-content'}
               />
-              <SafeAreaView
-                style={{
-                  flex: 1,
-                  backgroundColor
-                }}
-              >
                 <Navigation />
-              </SafeAreaView>
             </GluestackProvider>
           </BottomSheetModalProvider>
         </PortalProvider>

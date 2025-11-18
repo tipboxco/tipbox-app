@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, HStack, Text, Pressable, Input, InputField } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/src/components/Header';
@@ -9,7 +9,6 @@ import { ScrollView } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
 export const SwapScreen: React.FC = () => {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -134,7 +133,8 @@ export const SwapScreen: React.FC = () => {
   ];
 
   return (
-    <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950" pt={insets.top}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
       <Header title="Swap" showBackButton onBackPress={() => navigation.goBack()} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -611,7 +611,8 @@ export const SwapScreen: React.FC = () => {
           </VStack>
         </BottomSheetView>
       </BottomSheet>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };
 

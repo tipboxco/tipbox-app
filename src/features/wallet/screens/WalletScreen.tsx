@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useCallback } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
@@ -13,7 +13,6 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
 
 export const WalletScreen: React.FC = () => {
-      const insets = useSafeAreaInsets();
       const navigation = useNavigation<any>();
       const { colorMode } = useColorMode();
       const isDark = colorMode === 'dark';
@@ -187,7 +186,8 @@ export const WalletScreen: React.FC = () => {
   ];
 
   return (
-    <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950" pt={insets.top}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
       <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
       {/* Tabs under header - Figma 2447:28026 */}
       <VStack px="$4" py="$2" space="xs">
@@ -528,7 +528,8 @@ export const WalletScreen: React.FC = () => {
           </BottomSheetView>
         </BottomSheet>
       </Box>
-    );
-  };
+    </SafeAreaView>
+  );
+};
 
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Animated, ScrollView, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import ProfileCard from '../components/ProfileCard';
@@ -16,7 +17,9 @@ const TABS = [
   { key: 'replies',     title: 'Replies' }
 ];
 
-const STICKY_BANNER_HEIGHT = 90;
+// Top safe area boşluğu olmadığı için banner height'i arttırıyoruz (genellikle ~44-50px)
+const TOP_SAFE_AREA_OFFSET = 50; // Status bar + notch alanı için ekstra yükseklik
+const STICKY_BANNER_HEIGHT = 90 + TOP_SAFE_AREA_OFFSET; // 140px
 const TAB_BAR_HEIGHT = 50;
 const BANNER_HEIGHT = 130; // ProfileCard içindeki banner yüksekliği
 const SCROLL_TO_TOP_THRESHOLD = 300; // Butonun görünmesi için minimum scroll mesafesi
@@ -39,13 +42,11 @@ const ProfileScreen = () => {
     setProfileCardHeight(height);
   };
 
-  // Banner hariç içerik yüksekliği
-  const PROFILE_CONTENT_HEIGHT = profileCardHeight - BANNER_HEIGHT;
-
-  // Banner animasyon başlangıcı - ProfileCard kaybolmaya başladığında
-  const bannerFadeStart = Math.max(PROFILE_CONTENT_HEIGHT - 40, 0);
+  // Banner sticky olması için scroll mesafesi - Banner height kadar scroll olunca banner sticky olur
+  const bannerFadeStart = BANNER_HEIGHT;
   
-  // TabBar'ın StickyBanner'ın arkasına geçmesi için scroll mesafesi
+  // TabBar'ın sticky olması için scroll mesafesi
+  // TabBar scroll'dan çıktığında (ProfileCard'ın altına geldiğinde) sticky TabBar görünür
   // TabBar'ın üst kısmı StickyBanner'ın altına geldiğinde sticky TabBar görünür
   const tabBarExitPoint = profileCardHeight - STICKY_BANNER_HEIGHT;
 
@@ -88,16 +89,16 @@ const ProfileScreen = () => {
     }
   );
 
-  // Banner opacity animasyonu - Önce banner açılır
+  // Banner opacity animasyonu - Banner height kadar scroll olunca banner sticky olur
   const bannerOpacity = scrollY.interpolate({
-    inputRange: [bannerFadeStart, bannerFadeStart + 80],
+    inputRange: [bannerFadeStart - 20, bannerFadeStart + 20],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
-  // TabBar opacity animasyonu - TabBar StickyBanner'ın arkasına geçtiğinde görünür (biraz daha geç açılır)
+  // TabBar opacity animasyonu - TabBar scroll'dan çıktığında (banner'ın altına geldiğinde) sticky TabBar görünür
   const tabBarOpacity = scrollY.interpolate({
-    inputRange: [tabBarExitPoint, tabBarExitPoint],
+    inputRange: [tabBarExitPoint - 20, tabBarExitPoint + 20],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
@@ -129,7 +130,8 @@ const ProfileScreen = () => {
   };
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Sticky Banner */}
       <Animated.View
         style={[
@@ -138,7 +140,7 @@ const ProfileScreen = () => {
             height: STICKY_BANNER_HEIGHT,
             backgroundColor: isDark ? '#171717' : '#fff',
             opacity: bannerOpacity,
-            zIndex: 1000,
+            zIndex: bannerVisible ? 1000 : 1,
           },
         ]}
         pointerEvents={bannerVisible ? 'box-none' : 'none'}
@@ -155,6 +157,7 @@ const ProfileScreen = () => {
         <HStack
           alignItems="center"
           px={16}
+          pt={TOP_SAFE_AREA_OFFSET}
           h="100%"
           space="md"
         >
@@ -352,7 +355,8 @@ const ProfileScreen = () => {
           </Box>
         </Pressable>
       </Animated.View>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };
 
@@ -363,6 +367,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     overflow: 'hidden',
+    elevation: 0, // Android için
   },
   tabBarSticky: {
     position: 'absolute',
@@ -371,6 +376,7 @@ const styles = StyleSheet.create({
     height: TAB_BAR_HEIGHT,
     borderBottomWidth: 1,
     zIndex: 999,
+    elevation: 999, // Android için
   },
   tabBarScrollContent: {
     paddingHorizontal: 16,
@@ -384,7 +390,7 @@ const styles = StyleSheet.create({
   },
   scrollToTopButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 30, // Biraz daha aşağı taşıdık
     right: 16,
     zIndex: 800,
   },

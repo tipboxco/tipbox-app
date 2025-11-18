@@ -1,5 +1,6 @@
 import React from 'react';
-import { VStack, ScrollView, SafeAreaView, HStack, Box } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { VStack, ScrollView, HStack, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SearchFilter } from '../components/SearchFilter';
@@ -21,7 +22,7 @@ const MarketPlaceScreen = () => {
   const nftData: SellNFT[] = sellNFTList;
 
   return (
-    <SafeAreaView flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
         {/* Header */}
         <Header

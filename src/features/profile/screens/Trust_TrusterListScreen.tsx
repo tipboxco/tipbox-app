@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
     VStack, 
     HStack, 
@@ -70,7 +71,8 @@ export const Trust_TrusterListScreen = () => {
     };
 
     return (
-        <VStack flex={1} bg={isDark ? '#000' : '#FAFAFA'}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <VStack flex={1} bg={isDark ? '#000' : '#FAFAFA'}>
             {/* Header */}
             <Header
                 title="Micheal Clark"
@@ -417,7 +419,8 @@ export const Trust_TrusterListScreen = () => {
                     </BottomSheetView>
                 </BottomSheet>
             </Portal>
-        </VStack>
+            </VStack>
+        </SafeAreaView>
     );
 };
 

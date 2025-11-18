@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, HStack, Text, Pressable, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/src/components/Header';
@@ -19,7 +19,6 @@ interface NftItem {
 }
 
 export const NftAssetsScreen: React.FC = () => {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -78,7 +77,8 @@ export const NftAssetsScreen: React.FC = () => {
   ];
 
   return (
-    <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950" pt={insets.top}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
       <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
       
       {/* Tabs */}
@@ -240,9 +240,8 @@ export const NftAssetsScreen: React.FC = () => {
           </VStack>
         </VStack>
       </ScrollView>
-
-      <Box h={insets.bottom} />
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };
 

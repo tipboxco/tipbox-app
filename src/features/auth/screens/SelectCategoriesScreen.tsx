@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -94,9 +95,10 @@ export const SelectCategoriesScreen = () => {
   };
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
       p="$4"
     >
       <VStack flex={1} space="md">
@@ -144,6 +146,7 @@ export const SelectCategoriesScreen = () => {
           </ButtonText>
         </Button>
       </VStack>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };

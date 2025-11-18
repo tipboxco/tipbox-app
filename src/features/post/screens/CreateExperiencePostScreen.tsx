@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -131,7 +132,8 @@ export const CreateExperiencePostScreen = () => {
     // Render Step 0 (SelectProduct)
     if (currentStep === 0) {
         return (
-            <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                 {/* Header */}
                 <Header
                     title={fromInventory ? "Add to Inventory" : "Experience Post"}
@@ -156,7 +158,8 @@ export const CreateExperiencePostScreen = () => {
                     onProductSelect={handleProductSelect}
                     selectedProduct={selectedProduct}
                 />
-            </Box>
+                </Box>
+            </SafeAreaView>
         );
     }
 
@@ -176,7 +179,8 @@ export const CreateExperiencePostScreen = () => {
         const buttonText = getButtonText();
 
         return (
-            <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                 {/* Header */}
                 <Header
                     title="Experience Post"
@@ -231,14 +235,16 @@ export const CreateExperiencePostScreen = () => {
                     fromInventory={fromInventory}
                     experienceOption={experienceOption}
                 />
-            </Box>
+                </Box>
+            </SafeAreaView>
         );
     }
 
     // Render Step 2
     if (currentStep === 2) {
         return (
-            <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
                 {/* Header */}
                 <Header
                     title="Experience Post"
@@ -270,13 +276,15 @@ export const CreateExperiencePostScreen = () => {
                     onRemoveImage={handleRemoveImage}
                     selectedProduct={selectedProduct}
                 />
-            </Box>
+                </Box>
+            </SafeAreaView>
         );
     }
 
     // Render Step 1
     return (
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
             {/* Header */}
             <Header
                 title="Experience Post"
@@ -306,6 +314,7 @@ export const CreateExperiencePostScreen = () => {
                 onFrequencyChange={setSelectedFrequency}
                 selectedProduct={selectedProduct}
             />
-        </Box>
+            </Box>
+        </SafeAreaView>
     );
 };

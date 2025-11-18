@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Box, 
   VStack, 
@@ -73,12 +74,13 @@ export const VerifyCodeScreen = ({
   const isCodeComplete = code.every(digit => digit !== '');
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-      borderWidth={1}
-      borderColor="#E9E9E9"
-    >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+        borderWidth={1}
+        borderColor="#E9E9E9"
+      >
       <Header
         title={headerTitle}
         showBackButton={!!onBackPress}
@@ -189,7 +191,8 @@ export const VerifyCodeScreen = ({
           </ButtonText>
         </Button>
       </VStack>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };
 
