@@ -10,6 +10,7 @@ import {
   Button,
   ButtonText
 } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
@@ -23,10 +24,10 @@ export const ForgotPasswordScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
-  
+
   // Step management
   const [currentStep, setCurrentStep] = useState<ForgotPasswordStep>('email');
-  
+
   // Form data - preserved across steps
   const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -68,105 +69,111 @@ export const ForgotPasswordScreen = () => {
   // Render verify code step
   if (currentStep === 'verify') {
     const maskedEmail = email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length));
-    
+
     return (
-      <VerifyCodeScreen
-        headerTitle="Forgot Password"
-        title="Enter the confirmation code"
-        description="To reset your password, enter the 6-digit code we sent to"
-        maskedEmail={maskedEmail}
-        onVerify={handleVerifyCode}
-        onBackPress={handleBackPress}
-      />
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <VerifyCodeScreen
+          headerTitle="Forgot Password"
+          title="Enter the confirmation code"
+          description="To reset your password, enter the 6-digit code we sent to"
+          maskedEmail={maskedEmail}
+          onVerify={handleVerifyCode}
+          onBackPress={handleBackPress}
+        />
+      </SafeAreaView>
     );
   }
 
   // Render set password step
   if (currentStep === 'password') {
     return (
-      <SetPasswordScreen
-        headerTitle="Forgot Password"
-        onSetPassword={handleSetPassword}
-        onBackPress={handleBackPress}
-      />
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <SetPasswordScreen
+          headerTitle="Forgot Password"
+          onSetPassword={handleSetPassword}
+          onBackPress={handleBackPress}
+        />
+      </SafeAreaView>
     );
   }
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-    >
-      <Header
-        title="Forgot Password"
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+      >
+        <Header
+          title="Forgot Password"
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
 
-      <VStack flex={1} px="$4" py="$6">
+        <VStack flex={1} px="$4" py="$6">
 
-        <HStack mb="$4">
-          <Text
-            fontSize={11}
-            fontWeight="$semibold"
-            color={isDark ? '#FFFFFF' : '#000000'}
-          >
-            Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-          </Text>
-        </HStack>
-
-        {/* E-Mail Input Section */}
-        <VStack space="md" mb="$8">
-          <VStack space="xs">
+          <HStack mb="$4">
             <Text
               fontSize={11}
-              fontWeight="$bold"
+              fontWeight="$semibold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              E-Mail
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
             </Text>
-            <Box
-              borderWidth={1}
-              borderColor="#B9B9B9"
-              borderRadius={10}
-              px="$4"
-              py="$1"
-              mt={'$1'}
-            >
-              <Input borderWidth={0} bg="transparent">
-                <InputField
-                  placeholder="example@gmail.com"
-                  placeholderTextColor="#B9B9B9"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={11}
-                />
-              </Input>
-            </Box>
-          </VStack>
-        </VStack>
+          </HStack>
 
-        {/* Send E-Mail Button */}
-        <Button
-          bg="#E2FF46"
-          borderRadius={8}
-          py="$3"
-          onPress={handleSendEmail}
-        >
-          <ButtonText
-            color="#000000"
-            fontSize={14}
-            fontWeight="$bold"
-            textAlign="center"
+          {/* E-Mail Input Section */}
+          <VStack space="md" mb="$8">
+            <VStack space="xs">
+              <Text
+                fontSize={11}
+                fontWeight="$bold"
+                color={isDark ? '#FFFFFF' : '#000000'}
+              >
+                E-Mail
+              </Text>
+              <Box
+                borderWidth={1}
+                borderColor="#B9B9B9"
+                borderRadius={10}
+                px="$4"
+                py="$1"
+                mt={'$1'}
+              >
+                <Input borderWidth={0} bg="transparent">
+                  <InputField
+                    placeholder="example@gmail.com"
+                    placeholderTextColor="#B9B9B9"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize={11}
+                  />
+                </Input>
+              </Box>
+            </VStack>
+          </VStack>
+
+          {/* Send E-Mail Button */}
+          <Button
+            bg="#E2FF46"
+            borderRadius={8}
+            py="$3"
+            onPress={handleSendEmail}
           >
-            Send E-Mail
-          </ButtonText>
-        </Button>
-      </VStack>
-    </Box>
+            <ButtonText
+              color="#000000"
+              fontSize={14}
+              fontWeight="$bold"
+              textAlign="center"
+            >
+              Send E-Mail
+            </ButtonText>
+          </Button>
+        </VStack>
+      </Box>
+    </SafeAreaView>
   );
 };
 

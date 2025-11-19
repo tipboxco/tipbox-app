@@ -12,6 +12,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const SupportSettingsScreen = () => {
   const { colorMode } = useColorMode();
@@ -43,20 +44,21 @@ export const SupportSettingsScreen = () => {
   };
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark950' : '#FFF'}
-    >
-      <Header
-        title="1-on-1 Support Settings"
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark950' : '#FFF'}
+      >
+        <Header
+          title="1-on-1 Support Settings"
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
 
-      <ScrollView flex={1} px="$4">
-        <VStack space="lg">
-          {/* Set TIPS Amount Section */}
-          <VStack space="sm">
+        <ScrollView flex={1} px="$4">
+          <VStack space="lg">
+            {/* Set TIPS Amount Section */}
+            <VStack space="sm">
             {/* Main Setting Card */}
             <Box
               bg={isDark ? '#1A1A1A' : '#FFFFFF'}
@@ -182,9 +184,10 @@ export const SupportSettingsScreen = () => {
               * The amount can be changed once every 10 days.
             </Text>
           </VStack>
-        </VStack>
-      </ScrollView>
-    </Box>
+          </VStack>
+        </ScrollView>
+      </Box>
+    </SafeAreaView>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, VStack, Text, ScrollView, HStack, Pressable } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { SavedCard, SavedCardData } from '../../components/SavedCard';
@@ -89,6 +90,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <ScrollView 
       flex={1} 
       showsVerticalScrollIndicator={false} 
@@ -255,6 +257,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
         </VStack>
       </VStack>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 

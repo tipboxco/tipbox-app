@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Button, ButtonText, VStack } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import * as Notifications from 'expo-notifications';
 
@@ -40,6 +41,7 @@ export const NotificationTab = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box
       flex={1}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
@@ -63,5 +65,6 @@ export const NotificationTab = () => {
         </Button>
       </VStack>
     </Box>
+    </SafeAreaView>
   );
 };

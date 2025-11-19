@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -28,6 +29,7 @@ const InboxScreen: React.FC = () => {
 
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Inbox"
@@ -92,6 +94,7 @@ const InboxScreen: React.FC = () => {
         {activeTab === 'support' && <SupportRequestsScreen />}
       </VStack>
     </Box>
+    </SafeAreaView>
   );
 };
 

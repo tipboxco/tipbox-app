@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
     VStack, 
     HStack, 
@@ -227,6 +228,7 @@ export const SuggestedUsersScreen = () => {
     };
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VStack flex={1} bg={isDark ? '#000' : '#FFFFFF'}>
             {/* Header */}
             <Header
@@ -250,6 +252,7 @@ export const SuggestedUsersScreen = () => {
                 ))}
             </ScrollView>
         </VStack>
+        </SafeAreaView>
     );
 };
 

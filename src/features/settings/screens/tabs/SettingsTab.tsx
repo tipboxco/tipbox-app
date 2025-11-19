@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, HStack, Switch, Text, VStack } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Moon } from 'lucide-react-native';
 import { OTAUpdateCard } from '../../components/OTAUpdateCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -9,6 +10,7 @@ export const SettingsTab = () => {
   const isDark = colorMode === 'dark';
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box
       flex={1}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
@@ -41,5 +43,6 @@ export const SettingsTab = () => {
         <OTAUpdateCard />
       </VStack>
     </Box>
+    </SafeAreaView>
   );
 }; 

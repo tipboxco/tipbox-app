@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -59,7 +60,7 @@ const MessagesScreen: React.FC = () => {
     };
 
     return (
-        <>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
             <VStack space="md" px="$4">
                 {/* Search Bar */}
                 <HStack
@@ -109,7 +110,7 @@ const MessagesScreen: React.FC = () => {
                 keyExtractor={(item) => item.id}
                 style={{ flex: 1 }}
             />
-        </>
+        </SafeAreaView>
     );
 };
 

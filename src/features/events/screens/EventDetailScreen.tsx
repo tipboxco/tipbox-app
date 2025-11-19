@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ScrollView, Dimensions, FlatList, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -72,6 +73,7 @@ const EventDetailScreen: React.FC = () => {
     }
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
             {/* Sticky Animated Header */}
             <Animated.View
@@ -436,6 +438,7 @@ const EventDetailScreen: React.FC = () => {
                 </Box>
             )}
         </Box>
+        </SafeAreaView>
     );
 };
 

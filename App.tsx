@@ -29,7 +29,7 @@ export default function App() {
             <GluestackProvider>
               <StatusBar
                 translucent
-                backgroundColor="transparent"
+                backgroundColor={isDark ? '#000000' : '#FAFAFA'}
                 barStyle={isDark ? 'light-content' : 'dark-content'}
               />
                 <Navigation />

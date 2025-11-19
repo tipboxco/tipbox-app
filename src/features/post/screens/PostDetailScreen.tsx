@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, Text, HStack, Image, Pressable, Box, Popover, PopoverBackdrop, PopoverContent, PopoverBody, PopoverArrow } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -81,6 +82,7 @@ export const PostDetailScreen = () => {
     const [selectedOption, setSelectedOption] = useState('Newest');
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VStack flex={1} bg={isDark ? '#000000' : '#fff'}>
             {/* Status Bar & Header */}
             <Header
@@ -121,5 +123,6 @@ export const PostDetailScreen = () => {
                 )}
             </ScrollView>
         </VStack>
+        </SafeAreaView>
     );
 };

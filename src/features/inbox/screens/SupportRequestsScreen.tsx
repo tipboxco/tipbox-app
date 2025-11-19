@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -78,6 +79,7 @@ const SupportRequestsScreen: React.FC = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <VStack flex={1} space="md" px="$4">
       {/* Search Bar */}
       <HStack
@@ -128,6 +130,7 @@ const SupportRequestsScreen: React.FC = () => {
         style={{ flex: 1 }}
       />
     </VStack>
+    </SafeAreaView>
   );
 };
 

@@ -11,6 +11,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface PrivacyOption {
   id: string;
@@ -182,22 +183,24 @@ export const PrivacySettingsScreen = () => {
   };
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-    >
-      <Header
-        title="Privacy Settings"
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+      >
+        <Header
+          title="Privacy Settings"
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
 
-      <ScrollView flex={1} px="$4" py="$6">
-        <VStack space="lg">
-          {privacySettings.map((setting) => renderPrivacySetting(setting))}
-        </VStack>
-      </ScrollView>
-    </Box>
+        <ScrollView flex={1} px="$4" py="$6">
+          <VStack space="lg">
+            {privacySettings.map((setting) => renderPrivacySetting(setting))}
+          </VStack>
+        </ScrollView>
+      </Box>
+    </SafeAreaView>
   );
 };
 

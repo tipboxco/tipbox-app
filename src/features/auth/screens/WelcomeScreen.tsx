@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Icon } from '@gluestack-ui/themed';
 import { LogIn, Mail, Facebook } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -14,10 +15,11 @@ export const WelcomeScreen = () => {
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-    >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      >
       {/* Hero Image */}
       <Box h={350} bg="$gray100" alignItems="center" justifyContent="center">
         <Text color="$gray400" fontSize="$xl">Image Placeholder</Text>
@@ -121,6 +123,7 @@ export const WelcomeScreen = () => {
           </Text>
         </HStack>
       </VStack>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };

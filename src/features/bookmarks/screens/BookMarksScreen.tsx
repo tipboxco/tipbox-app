@@ -1,5 +1,6 @@
 import React from 'react';
-import { VStack, ScrollView, SafeAreaView } from '@gluestack-ui/themed';
+import { VStack, ScrollView } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
@@ -125,7 +126,7 @@ const BookMarksScreen = () => {
   };
 
   return (
-    <SafeAreaView flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
         {/* Header */}
         <Header

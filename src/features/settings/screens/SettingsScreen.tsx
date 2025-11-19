@@ -18,6 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import ChangePasswordBottomSheet from '../components/ChangePasswordBottomSheet';
 import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<SettingsStackParamList, 'SettingsScreen'>;
 
@@ -163,10 +164,11 @@ export const SettingsScreen = () => {
   );
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-    >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      >
       <Header
         title="Settings"
         showBackButton
@@ -338,5 +340,6 @@ export const SettingsScreen = () => {
         </BottomSheetView>
       </BottomSheet>
     </Box>
+    </SafeAreaView>
   );
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Tag, Package, Star, Layers } from 'lucide-react-native';
@@ -38,6 +39,7 @@ const InventoryDetailScreen = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
       <Header
         title="Product Details"
@@ -204,6 +206,7 @@ const InventoryDetailScreen = () => {
       </VStack>
     </ScrollView>
     </VStack>
+    </SafeAreaView>
   );
 };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { Box, Pressable, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
@@ -13,7 +14,7 @@ export const ExpertButton: React.FC<ExpertButtonProps> = ({ onPress }) => {
   return (
     <Pressable
       position="absolute"
-      bottom={20} // Tab bar'ın üstünde
+      bottom={Platform.OS === 'ios' ? 40 : 60} // Tab bar'ın üstünde
       right={16}
       width={68}
       height={68}

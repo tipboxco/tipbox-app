@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -436,6 +437,7 @@ const MessageDetailScreen: React.FC = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <MessageDetailHeader
@@ -532,6 +534,7 @@ const MessageDetailScreen: React.FC = () => {
         </BottomSheetView>
       </BottomSheet>
     </Box>
+    </SafeAreaView>
   );
 };
 

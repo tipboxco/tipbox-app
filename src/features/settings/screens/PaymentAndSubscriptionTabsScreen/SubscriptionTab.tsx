@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, VStack, Text, ScrollView } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export const SubscriptionTab: React.FC = () => {
@@ -7,6 +8,7 @@ export const SubscriptionTab: React.FC = () => {
   const isDark = colorMode === 'dark';
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <ScrollView flex={1} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0 }}>
       <VStack space="md">
         <Text
@@ -19,6 +21,7 @@ export const SubscriptionTab: React.FC = () => {
         {/* Subscription content will be added here */}
       </VStack>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 

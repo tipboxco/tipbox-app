@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, ButtonText, VStack, ScrollView, HStack, Image } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'expo-camera';
@@ -48,6 +49,7 @@ export const MediaTab = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box
       flex={1}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
@@ -99,5 +101,6 @@ export const MediaTab = () => {
         </ScrollView>
       </VStack>
     </Box>
+    </SafeAreaView>
   );
 }; 

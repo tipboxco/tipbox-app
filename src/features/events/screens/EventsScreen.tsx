@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FlatList, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -72,6 +73,7 @@ const EventsScreen: React.FC = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Events"
@@ -307,6 +309,7 @@ const EventsScreen: React.FC = () => {
         data={selectedReward}
       />
     </Box>
+    </SafeAreaView>
   );
 };
 

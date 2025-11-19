@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -57,15 +58,15 @@ export const TabNavigator = () => {
 
           return <Feather name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#829905',
+        tabBarActiveTintColor: '#758600',
         tabBarInactiveTintColor: '#000000',
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#E5E5E5',
+          backgroundColor: '#FAFAFA',
+          borderTopColor: '#E9E9E9',
           height: 45,
           paddingTop: 4,
-          paddingBottom: 34,
+          paddingBottom: Platform.OS === 'ios' ? 60 : 34,
           position: 'absolute',
           bottom: 0,
           left: 0,

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, Dimensions, Animated, Pressable, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Box, HStack, VStack, Text as GluestackText } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -74,6 +75,7 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={{ 
         flex: 1, 
@@ -240,6 +242,7 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
         </Modal>
       </View>
     </GestureHandlerRootView>
+    </SafeAreaView>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { ScrollView, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -168,6 +169,7 @@ const EventCreatePost: React.FC = () => {
     }
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
             {/* Header */}
             <Header
@@ -348,6 +350,7 @@ const EventCreatePost: React.FC = () => {
                 </BottomSheetView>
             </BottomSheet>
         </Box>
+        </SafeAreaView>
     );
 };
 

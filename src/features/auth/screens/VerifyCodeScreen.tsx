@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -45,13 +46,15 @@ export const AuthVerifyCodeScreen = () => {
   const maskedEmail = email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length));
 
   return (
-    <VerifyCodeScreen
-      headerTitle="Forgot Password"
-      title="Enter the confirmation code"
-      description="To confirm your account, enter the 6-digit code we sent to"
-      maskedEmail={maskedEmail}
-      onVerify={handleVerify}
-      onBackPress={() => navigation.goBack()}
-    />
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <VerifyCodeScreen
+        headerTitle="Forgot Password"
+        title="Enter the confirmation code"
+        description="To confirm your account, enter the 6-digit code we sent to"
+        maskedEmail={maskedEmail}
+        onVerify={handleVerify}
+        onBackPress={() => navigation.goBack()}
+      />
+    </SafeAreaView>
   );
 };

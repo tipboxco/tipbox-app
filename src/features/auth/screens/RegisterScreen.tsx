@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
@@ -43,11 +44,12 @@ export const RegisterScreen = () => {
   };
 
   return (
-    <Box
-      flex={1}
-      bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-      p="$4"
-    >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+        p="$4"
+      >
       <VStack flex={1} space="xl" pt="$16">
         <Text
           fontSize="$2xl"
@@ -149,6 +151,7 @@ export const RegisterScreen = () => {
           Zaten bir hesabınız var mı? Sign In
         </Text>
       </VStack>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };

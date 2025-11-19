@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dimensions, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -270,6 +271,7 @@ export const NotificationsScreen: React.FC = () => {
     };
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '#000000' : '#FAFAFA'}>
             {/* Header */}
             <Header 
@@ -335,6 +337,7 @@ export const NotificationsScreen: React.FC = () => {
                 </VStack>
             </ScrollView>
         </Box>
+        </SafeAreaView>
     );
 };
 

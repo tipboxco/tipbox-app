@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Box, VStack, HStack, Pressable, Text } from '@gluestack-ui/themed';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
@@ -56,6 +57,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
   };
 
   return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Payment & Subscription"
@@ -139,6 +141,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
         </BottomSheetView>
       </BottomSheet>
     </Box>
+    </SafeAreaView>
   );
 };
 
