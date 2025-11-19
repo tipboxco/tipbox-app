@@ -443,7 +443,6 @@ export const WalletScreen: React.FC = () => {
           </ScrollView>
         )}
       </VStack>
-      <Box h={insets.bottom} />
 
       {/* Send Bottom Sheet */}
       <BottomSheet

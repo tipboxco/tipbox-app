@@ -16,14 +16,15 @@ export const DrawerNavigator = () => {
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: false,
-          drawerType: 'front',
-          overlayColor: 'rgba(0, 0, 0, 0.5)',
+          drawerType: 'slide',
           drawerStyle: {
             width: 301,
             backgroundColor: isDark ? '#000000' : '#FFFFFF',
             padding: 0,
             margin: 0,
             borderRightWidth: 0,
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
             elevation: 0,
             shadowColor: 'transparent',
             overflow: 'hidden',
