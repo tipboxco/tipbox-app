@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { Platform } from 'react-native';
 import { Box, HStack, ScrollView, Text, VStack } from '@gluestack-ui/themed';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
@@ -10,7 +11,6 @@ import { Header } from '@/src/components/Header';
 import { ExpertButton } from '@/src/components/FloatingActionButton';
 import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
 import { SearchModal } from '@/src/components/SearchModal';
-import { mock_user_profile } from '@/src/mock/common';
 import { mock_feed_data } from '@/src/mock/feed';
 import { FeedItem } from '@/src/mock/feed/types';
 import PostCard from '@/src/components/PostCards/PostCard';
@@ -20,7 +20,8 @@ import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostC
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 
 
@@ -32,11 +33,15 @@ export const FeedScreen = () => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'wallet' | 'inventory'>('wallet');
 
+  // Safe area and tab bar insets
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+
   // Bottom sheet refs
   const expertBottomSheetRef = useRef<BottomSheet>(null);
 
   // Bottom sheet snap points
-  const expertSnapPoints = useMemo(() => ['83%'], []);
+
 
 
   const handleTabChange = (tab: 'wallet' | 'inventory') => {
@@ -169,7 +174,6 @@ export const FeedScreen = () => {
         <BottomSheet
           ref={expertBottomSheetRef}
           index={-1}
-          snapPoints={expertSnapPoints}
           enablePanDownToClose
           enableOverDrag={false}
           enableHandlePanningGesture={true}
@@ -192,7 +196,7 @@ export const FeedScreen = () => {
             height: 4,
           }}
         >
-          <BottomSheetView>
+          <BottomSheetView style={{ paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight }}>
             {/* Header */}
             <VStack space="md" pb={'$3'} mb={'$4'} borderBottomWidth={1} borderBottomColor="#D9D9D9">
               <HStack justifyContent="center" alignItems="center">

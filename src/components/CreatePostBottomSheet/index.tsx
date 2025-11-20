@@ -221,7 +221,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                 )}
 
                 {/* Experience Options */}
-                <VStack space="md" px="$4" pb="$8">
+                <VStack space="md" px="$4">
                     {experienceOptions.map((option) => (
                         <Pressable
                             key={option.id}
@@ -244,7 +244,6 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                                     h={24}
                                     justifyContent="center"
                                     alignItems="center"
-                                    mt="$0.5"
                                 >
                                     {/* Dashed Rectangle Icon Container */}
                                     <Box
@@ -334,7 +333,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                         h={60}
                         alignSelf="center"
                     >
-                        <HStack alignItems="center" h="100%" pl="$3" pr="$3" py="$3.5">
+                        <HStack alignItems="center" h="100%" pl="$3" pr="$3">
                             {/* Icon Box - Left side with dashed border */}
                             <Box
                                 w={24}

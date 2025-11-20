@@ -41,9 +41,6 @@ export const PostsScreen = () => {
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
 
-  // Bottom sheet snap points
-  const createPostSnapPoints = useMemo(() => ['85%'], []);
-
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
@@ -219,8 +216,12 @@ export const PostsScreen = () => {
       {/* Create Post Bottom Sheet */}
       <BottomSheet
         ref={createPostBottomSheetRef}
+        style={{ zIndex: 20 }}
+        containerStyle={{
+          zIndex: 20,
+          elevation: 20,
+        }}
         index={-1}
-        snapPoints={createPostSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         enableHandlePanningGesture={true}
