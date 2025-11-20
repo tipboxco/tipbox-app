@@ -8,6 +8,7 @@ import { WalletCardInfo } from '../components/WalletCardInfo';
 import { HistoryCard } from '../components/HistoryCard';
 import { SendBottomSheet } from '../components/SendBottomSheet';
 import { ClaimBottomSheet } from '../components/ClaimBottomSheet';
+import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
@@ -21,22 +22,51 @@ export const WalletScreen: React.FC = () => {
 
   // Bottom sheet refs
       const sendBottomSheetRef = useRef<BottomSheet>(null);
-      const sendSnapPoints = useMemo(() => ['55%', '90%'], []);
       const [sendSheetView, setSendSheetView] = React.useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>('options');
   
   const claimBottomSheetRef = useRef<BottomSheet>(null);
-  const claimSnapPoints = useMemo(() => ['70%'], []);
+  const successBottomSheetRef = useRef<BottomSheet>(null);
+  const [successTransactionDetails, setSuccessTransactionDetails] = React.useState<{
+    sentAmount?: string;
+    receivedAmount?: string;
+    transactionFee?: string;
+    remainingBalance?: string;
+    transactionId?: string;
+  } | null>(null);
+
+  const handleSendSuccess = useCallback((transactionDetails: {
+    sentAmount: string;
+    transactionFee: string;
+    remainingBalance: string;
+    transactionId?: string;
+  }) => {
+    setSuccessTransactionDetails(transactionDetails);
+    // Close send bottom sheet
+    sendBottomSheetRef.current?.close();
+    // Open success bottom sheet
+    setTimeout(() => {
+      if (successBottomSheetRef.current) {
+        successBottomSheetRef.current.expand();
+      } else {
+        setTimeout(() => {
+          if (successBottomSheetRef.current) {
+            successBottomSheetRef.current.expand();
+          }
+        }, 100);
+      }
+    }, 300);
+  }, []);
 
   const handleSendPress = useCallback(() => {
     console.log('[WalletScreen] Send button pressed');
     setSendSheetView('options');
     if (sendBottomSheetRef.current) {
-      sendBottomSheetRef.current.snapToIndex(0);
+      sendBottomSheetRef.current.expand();
     } else {
       console.log('[WalletScreen] Send BottomSheet ref is null, trying again...');
       setTimeout(() => {
         if (sendBottomSheetRef.current) {
-          sendBottomSheetRef.current.snapToIndex(0);
+          sendBottomSheetRef.current.expand();
         } else {
           console.log('[WalletScreen] Send BottomSheet ref still null after timeout');
         }
@@ -63,25 +93,8 @@ export const WalletScreen: React.FC = () => {
   const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => {
     console.log('[WalletScreen] View changing to:', view);
     setSendSheetView(view);
-    if (sendBottomSheetRef.current) {
-      if (view === 'wallet-address') {
-        console.log('[WalletScreen] Snapping to index 0 (55%)');
-        sendBottomSheetRef.current.snapToIndex(0);
-      } else if (view === 'amount' || view === 'confirmation' || view === 'friend-selection') {
-        console.log('[WalletScreen] Snapping to index 1 (90%)');
-        // Use requestAnimationFrame to ensure bottom sheet is ready
-        requestAnimationFrame(() => {
-          if (sendBottomSheetRef.current) {
-            sendBottomSheetRef.current.snapToIndex(1);
-          }
-        });
-      } else {
-        console.log('[WalletScreen] Snapping to index 0 (options)');
-        sendBottomSheetRef.current.snapToIndex(0);
-      }
-    } else {
-      console.log('[WalletScreen] Bottom sheet ref is null');
-    }
+    // enableDynamicSizing kullanıldığında içerik otomatik olarak boyutlanır,
+    // bu yüzden snapToIndex çağrılarına gerek yok
   }, []);
 
   const renderBackdrop = useCallback(
@@ -90,6 +103,8 @@ export const WalletScreen: React.FC = () => {
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
+        pressBehavior="close"
+        opacity={0.5}
       />
     ),
     []
@@ -448,11 +463,11 @@ export const WalletScreen: React.FC = () => {
       <BottomSheet
         ref={sendBottomSheetRef}
         index={-1}
-        snapPoints={sendSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         enableHandlePanningGesture={true}
         enableContentPanningGesture={true}
+        enableDynamicSizing
         animateOnMount={true}
         backdropComponent={renderBackdrop}
         backgroundStyle={{
@@ -487,6 +502,7 @@ export const WalletScreen: React.FC = () => {
               // Navigate to friend selection screen
             }}
             onViewChange={handleSendViewChange}
+            onSuccess={handleSendSuccess}
           />
           </BottomSheetView>
         </BottomSheet>
@@ -495,11 +511,11 @@ export const WalletScreen: React.FC = () => {
         <BottomSheet
           ref={claimBottomSheetRef}
           index={-1}
-          snapPoints={claimSnapPoints}
           enablePanDownToClose
           enableOverDrag={false}
           enableHandlePanningGesture={true}
           enableContentPanningGesture={true}
+          enableDynamicSizing
           animateOnMount={true}
           backdropComponent={renderBackdrop}
           backgroundStyle={{
@@ -523,6 +539,46 @@ export const WalletScreen: React.FC = () => {
               onClose={() => {
                 claimBottomSheetRef.current?.close();
               }}
+            />
+          </BottomSheetView>
+        </BottomSheet>
+
+        {/* Success Bottom Sheet */}
+        <BottomSheet
+          ref={successBottomSheetRef}
+          index={-1}
+          enablePanDownToClose
+          enableOverDrag={false}
+          enableHandlePanningGesture={true}
+          enableContentPanningGesture={true}
+          enableDynamicSizing
+          animateOnMount={true}
+          backdropComponent={renderBackdrop}
+          backgroundStyle={{
+            backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+            borderTopLeftRadius: 30,
+            borderTopRightRadius: 30,
+          }}
+          handleStyle={{
+            backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+            borderTopLeftRadius: 30,
+            borderTopRightRadius: 30,
+          }}
+          handleIndicatorStyle={{
+            backgroundColor: isDark ? '#333333' : '#B8B8B7',
+            width: 70,
+            height: 5,
+          }}
+        >
+          <BottomSheetView>
+            <SuccessBottomSheet
+              onClose={() => {
+                successBottomSheetRef.current?.close();
+                setSuccessTransactionDetails(null);
+              }}
+              title="Transaction Successful"
+              message="Your transaction has been completed successfully."
+              transactionDetails={successTransactionDetails || undefined}
             />
           </BottomSheetView>
         </BottomSheet>

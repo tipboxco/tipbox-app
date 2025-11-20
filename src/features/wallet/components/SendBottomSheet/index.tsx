@@ -9,6 +9,12 @@ interface SendBottomSheetProps {
   onWalletAddressPress?: () => void;
   onFriendPress?: () => void;
   onViewChange?: (view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => void;
+  onSuccess?: (transactionDetails: {
+    sentAmount: string;
+    transactionFee: string;
+    remainingBalance: string;
+    transactionId?: string;
+  }) => void;
 }
 
 export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
@@ -16,6 +22,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   onWalletAddressPress,
   onFriendPress,
   onViewChange,
+  onSuccess,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -774,6 +781,16 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <Pressable
         onPress={() => {
           console.log('Sending transaction:', { walletAddress, amount: transactionDetails.tipsAmount });
+          // Generate transaction ID (mock - in real app this would come from backend)
+          const transactionId = `0x${Math.random().toString(16).substr(2, 64)}`;
+          
+          // Call onSuccess callback with transaction details
+          onSuccess?.({
+            sentAmount: `${transactionDetails.tipsAmount.toLocaleString()} TIPS`,
+            transactionFee: `$${transactionDetails.transactionFee}`,
+            remainingBalance: `${transactionDetails.remainingBalance.toLocaleString()} TIPS`,
+            transactionId: transactionId,
+          });
           onClose();
         }}
         bg="#D8FF08"

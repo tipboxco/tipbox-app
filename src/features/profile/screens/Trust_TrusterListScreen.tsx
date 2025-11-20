@@ -21,8 +21,7 @@ import { TrustUser, TrustListScreenRouteProp } from '@/src/mock/profile/trustTru
 import { mockTrustUsers, mockTrusterUsers } from '@/src/mock/profile/trustTrusterList';
 import { TrustUserCard } from '../components/TrustUserCard';
 import { SuggestionCard } from '../components/SuggestionCard';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { Portal } from '@gorhom/portal';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
 type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -41,6 +40,7 @@ export const Trust_TrusterListScreen = () => {
     const [selectedSort, setSelectedSort] = useState<'default' | 'newest' | 'oldest'>('default');
     const bottomSheetRef = useRef<BottomSheet>(null);
 
+
     // Get current data based on active tab
     const currentUsers = activeTab === 'trust' ? mockTrustUsers : mockTrusterUsers;
     
@@ -57,13 +57,23 @@ export const Trust_TrusterListScreen = () => {
         setOpenPopoverId(null);
     };
 
-    // Bottom sheet variables
-    const snapPoints = useMemo(() => ['40%'], []);
-
     // Bottom sheet callbacks
     const handleSheetChanges = useCallback((index: number) => {
         console.log('[FilterBottomSheet] sheet index ->', index);
     }, []);
+
+    const renderFilterBackdrop = useCallback(
+        (props: BottomSheetBackdropProps) => (
+            <BottomSheetBackdrop
+                {...props}
+                appearsOnIndex={0}
+                disappearsOnIndex={-1}
+                pressBehavior="close"
+                opacity={0.5}
+            />
+        ),
+        []
+    );
 
     const handleSortSelect = (sort: 'default' | 'newest' | 'oldest') => {
         setSelectedSort(sort);
@@ -158,7 +168,18 @@ export const Trust_TrusterListScreen = () => {
                     </Input>
                     {/* Filter Icon - Only for Truster tab */}
                     {activeTab === 'truster' && (
-                        <Pressable p={8} onPress={() => bottomSheetRef.current?.expand()}>
+                        <Pressable p={8} onPress={() => {
+                            console.log('Filter pressed, bottomSheetRef:', bottomSheetRef.current);
+                            if (bottomSheetRef.current) {
+                                bottomSheetRef.current.expand();
+                            } else {
+                                setTimeout(() => {
+                                    if (bottomSheetRef.current) {
+                                        bottomSheetRef.current.expand();
+                                    }
+                                }, 100);
+                            }
+                        }}>
                             <Feather 
                                 name="filter" 
                                 size={18} 
@@ -271,14 +292,13 @@ export const Trust_TrusterListScreen = () => {
             )}
 
             {/* Filter Bottom Sheet */}
-            <Portal>
                 <BottomSheet
                     ref={bottomSheetRef}
                     index={-1}
-                    snapPoints={snapPoints}
                     onChange={handleSheetChanges}
                     enablePanDownToClose
-                    backdropComponent={BottomSheetBackdrop}
+                    enableDynamicSizing
+                    backdropComponent={renderFilterBackdrop}
                     backgroundStyle={{
                         backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
                         borderTopLeftRadius: 20,
@@ -418,7 +438,6 @@ export const Trust_TrusterListScreen = () => {
                         </VStack>
                     </BottomSheetView>
                 </BottomSheet>
-            </Portal>
             </VStack>
         </SafeAreaView>
     );

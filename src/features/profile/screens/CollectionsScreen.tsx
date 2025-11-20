@@ -28,16 +28,24 @@ const CollectionsScreen: React.FC = () => {
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
 
-  // Tek sabit snap point
+  // Bottom sheet snap points - %90 sabit
   const snapPoints = useMemo(() => ['90%'], []);
 
-  // Rozete tıklanınca sabit indexe getir
+  // Rozete tıklanınca bottom sheet'i %90'da aç
   const handleBadgePress = useCallback((badge: Badge) => {
     setSelectedBadge(badge);
     // State update'inin tamamlanmasını bekle
     requestAnimationFrame(() => {
       setTimeout(() => {
-        bottomSheetRef.current?.snapToIndex(0);
+        if (bottomSheetRef.current) {
+          bottomSheetRef.current.snapToIndex(0);
+        } else {
+          setTimeout(() => {
+            if (bottomSheetRef.current) {
+              bottomSheetRef.current.snapToIndex(0);
+            }
+          }, 100);
+        }
       }, 50);
     });
   }, []);
@@ -46,6 +54,15 @@ const CollectionsScreen: React.FC = () => {
   const handleCloseBottomSheet = useCallback(() => {
     bottomSheetRef.current?.close();
     setTimeout(() => setSelectedBadge(null), 300);
+  }, []);
+
+  // Bottom sheet değişikliklerini kontrol et
+  const handleSheetChanges = useCallback((index: number) => {
+    // Eğer yukarı çekilirse (index > 0) veya index -1 değilse, tekrar 0'a snap et
+    // Tek snapPoint olduğu için index her zaman 0 veya -1 olmalı
+    if (index !== -1 && index !== 0 && bottomSheetRef.current) {
+      bottomSheetRef.current.snapToIndex(0);
+    }
   }, []);
 
   // Backdrop
@@ -102,13 +119,12 @@ const CollectionsScreen: React.FC = () => {
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
-        snapPoints={snapPoints}                      // ['80%'] sabit
+        snapPoints={snapPoints}
+        onChange={handleSheetChanges}
         enablePanDownToClose={true}                  // aşağı çekerek kapatma açık
-        enableOverDrag={false}                       // sınır ötesi esneme kapalı
-        overDragResistanceFactor={0}
-        enableHandlePanningGesture={true}            // handle sürükleme açık
-        enableContentPanningGesture={false}          // içerikten sheet sürükleme kapalı (scroll yine çalışır)
-        enableDynamicSizing={false}                  // dinamik boyutlandırmayı kapat
+        enableOverDrag={false}                       // sınır ötesi esneme kapalı (yukarı uzamasın)
+        enableHandlePanningGesture={true}            // handle sürükleme açık (sadece aşağı kapatma için)
+        enableContentPanningGesture={false}         // içerikten sheet sürükleme kapalı (scroll etkilenmesin)
         animateOnMount={false}                       // mount animasyonunu devre dışı bırak
         backdropComponent={renderBackdrop}
         backgroundStyle={{

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 
@@ -11,7 +12,7 @@ export const CreateButton = ({ onPress }: CreateButtonProps) => {
     <Pressable
       onPress={onPress}
       position="absolute"
-      bottom={40}
+      bottom={Platform.OS === 'ios' ? 8 : 8}
       right={16}
       zIndex={10}
     >

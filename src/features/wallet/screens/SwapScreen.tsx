@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 
 export const SwapScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -19,7 +20,14 @@ export const SwapScreen: React.FC = () => {
 
   // Bottom sheet refs
   const insufficientBalanceSheetRef = useRef<BottomSheet>(null);
-  const insufficientBalanceSnapPoints = useMemo(() => ['70%'], []);
+  const successBottomSheetRef = useRef<BottomSheet>(null);
+  const [successTransactionDetails, setSuccessTransactionDetails] = useState<{
+    sentAmount?: string;
+    receivedAmount?: string;
+    transactionFee?: string;
+    remainingBalance?: string;
+    transactionId?: string;
+  } | null>(null);
 
   // Conversion rate: 1 TIP = 0.0001 SOL (example rate)
   const TIP_TO_SOL_RATE = 0.0001;
@@ -67,20 +75,56 @@ export const SwapScreen: React.FC = () => {
     
     // Check if amount exceeds balance
     if (activeToken === 'TIP' && numericValue > MAX_TIPS) {
-      // Open bottom sheet
+      // Open insufficient balance bottom sheet
       if (insufficientBalanceSheetRef.current) {
-        insufficientBalanceSheetRef.current.snapToIndex(0);
+        insufficientBalanceSheetRef.current.expand();
       } else {
         setTimeout(() => {
           if (insufficientBalanceSheetRef.current) {
-            insufficientBalanceSheetRef.current.snapToIndex(0);
+            insufficientBalanceSheetRef.current.expand();
           }
         }, 100);
       }
     } else {
-      // Proceed with swap
+      // Proceed with swap - show success
       console.log('Swap Now pressed - proceeding with swap');
-      // TODO: Implement actual swap logic here
+      
+      // Set success transaction details
+      const sentAmount = `${parseFloat(payAmount).toLocaleString()} ${activeToken}`;
+      const receivedAmount = `${parseFloat(receiveAmount).toLocaleString()} ${activeToken === 'TIP' ? 'SOL' : 'TIP'}`;
+      const remainingBalance = activeToken === 'TIP' 
+        ? `${(MAX_TIPS - parseFloat(payAmount)).toLocaleString()} TIP`
+        : `${MAX_TIPS.toLocaleString()} TIP`;
+      
+      // Generate transaction ID (mock - in real app this would come from backend)
+      const transactionId = `0x${Math.random().toString(16).substr(2, 64)}`;
+      
+      setSuccessTransactionDetails({
+        sentAmount,
+        receivedAmount,
+        transactionFee: '$0.495',
+        remainingBalance,
+        transactionId,
+      });
+      
+      // Open success bottom sheet
+      setTimeout(() => {
+        if (successBottomSheetRef.current) {
+          successBottomSheetRef.current.expand();
+        } else {
+          setTimeout(() => {
+            if (successBottomSheetRef.current) {
+              successBottomSheetRef.current.expand();
+            }
+          }, 100);
+        }
+      }, 300);
+      
+      // Reset amounts after showing success
+      setTimeout(() => {
+        setPayAmount('');
+        setReceiveAmount('');
+      }, 500);
     }
   };
 
@@ -464,17 +508,15 @@ export const SwapScreen: React.FC = () => {
         </VStack>
       </ScrollView>
 
-      <Box h={insets.bottom} />
-
       {/* Insufficient Balance Bottom Sheet */}
       <BottomSheet
         ref={insufficientBalanceSheetRef}
         index={-1}
-        snapPoints={insufficientBalanceSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         enableHandlePanningGesture={true}
         enableContentPanningGesture={true}
+        enableDynamicSizing
         animateOnMount={true}
         backdropComponent={renderBackdrop}
         backgroundStyle={{
@@ -609,6 +651,46 @@ export const SwapScreen: React.FC = () => {
               </Pressable>
             </HStack>
           </VStack>
+        </BottomSheetView>
+      </BottomSheet>
+
+      {/* Success Bottom Sheet */}
+      <BottomSheet
+        ref={successBottomSheetRef}
+        index={-1}
+        enablePanDownToClose
+        enableOverDrag={false}
+        enableHandlePanningGesture={true}
+        enableContentPanningGesture={true}
+        enableDynamicSizing
+        animateOnMount={true}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleStyle={{
+          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        }}
+      >
+        <BottomSheetView>
+          <SuccessBottomSheet
+            onClose={() => {
+              successBottomSheetRef.current?.close();
+              setSuccessTransactionDetails(null);
+            }}
+            title="Swap Successful"
+            message="Your swap transaction has been completed successfully."
+            transactionDetails={successTransactionDetails || undefined}
+          />
         </BottomSheetView>
       </BottomSheet>
       </Box>

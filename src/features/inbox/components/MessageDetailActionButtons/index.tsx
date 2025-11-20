@@ -27,7 +27,7 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
             bottom={80}
             right={16}
             space="sm"
-            zIndex={100}
+            zIndex={10}
             alignItems="flex-end"
         >
             {/* Send TIPS Button */}

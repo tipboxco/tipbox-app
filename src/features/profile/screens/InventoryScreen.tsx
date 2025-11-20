@@ -1,10 +1,11 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { FlatList, Dimensions, Pressable } from 'react-native';
+import { Platform } from 'react-native';
+import { FlatList, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
-import { VStack, Box, Input, InputField } from '@gluestack-ui/themed';
+import { VStack, Box, Input, InputField, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
@@ -34,7 +35,6 @@ const InventoryScreen = () => {
   
   // Bottom sheet refs
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
-  const createPostSnapPoints = useMemo(() => ['50%'], []);
 
   const filteredInventory = mock_inventory.flatMap(group => 
     group.items.filter(item => 
@@ -157,15 +157,13 @@ const InventoryScreen = () => {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Create Button - Hide when bottom sheet is open */}
-      {!isBottomSheetOpen && (
-        <Pressable
-          onPress={handleCreatePress}
-          position="absolute"
-          bottom={24}
-          right={16}
-          zIndex={999}
-        >
+      {/* Create Button */}
+      <Pressable
+        onPress={handleCreatePress}
+        position="absolute"
+        bottom={Platform.OS === 'ios' ? 8 : 8}
+        right={16}
+      >
         <Box
           bg="#E8FF6B"
           borderRadius={30}
@@ -182,13 +180,11 @@ const InventoryScreen = () => {
           <Feather name="edit-3" size={24} color="#000000" />
         </Box>
       </Pressable>
-      )}
 
       {/* Create Post Bottom Sheet */}
       <BottomSheet
         ref={createPostBottomSheetRef}
         index={-1}
-        snapPoints={createPostSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         enableHandlePanningGesture={true}
@@ -196,9 +192,6 @@ const InventoryScreen = () => {
         animateOnMount={true}
         backdropComponent={renderBackdrop}
         onChange={handleSheetChanges}
-        style={{
-          zIndex: 1001,
-        }}
         backgroundStyle={{
           backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
           borderTopLeftRadius: 30,

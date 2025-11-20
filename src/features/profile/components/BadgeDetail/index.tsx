@@ -69,7 +69,7 @@ const BadgeDetail: React.FC<BadgeDetailProps> = ({ badge, onClose, hideHeader = 
       )}
 
       {/* Large Badge Icon */}
-      <VStack space="md" alignItems="center" mb={10}>
+      <VStack space="xs" alignItems="center" mb={10}>
         <Box
           width={250}
           height={250}

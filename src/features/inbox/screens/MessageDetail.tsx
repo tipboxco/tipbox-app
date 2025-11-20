@@ -1,6 +1,7 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
   Box,
   VStack,
@@ -112,12 +113,11 @@ const MessageDetailScreen: React.FC = () => {
   const sendTipsBottomSheetRef = useRef<BottomSheet>(null);
   const oneOnOneSupportBottomSheetRef = useRef<BottomSheet>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>(mockMessageHistory);
-  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
 
-  // Bottom sheet snap points
-  const sendTipsSnapPoints = useMemo(() => ['70%'], []);
-  const oneOnOneSupportSnapPoints = useMemo(() => ['75%'], []);
+  // Safe area and tab bar insets
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   // Handle Send TIPS button press
   const handleSendTipsPress = useCallback(() => {
@@ -163,10 +163,6 @@ const MessageDetailScreen: React.FC = () => {
     oneOnOneSupportBottomSheetRef.current?.close();
   }, []);
 
-  // Handle bottom sheet changes
-  const handleSheetChanges = useCallback((index: number) => {
-    setIsBottomSheetOpen(index >= 0);
-  }, []);
 
   // Backdrop component
   const renderBackdrop = useCallback(
@@ -468,28 +464,37 @@ const MessageDetailScreen: React.FC = () => {
       </KeyboardAvoidingView>
 
       {/* Mesaj Gönderme Alanı */}
-      <MessageInput
-        onSendMessage={handleSendMessage}
-        onAddImage={() => console.log('Görsel eklenecek')}
-        placeholder="Mesajınızı yazın..."
-      />
-
-      {/* Action Buttons - BottomSheet açıkken gizle */}
-      {!isBottomSheetOpen && (
-        <MessageDetailActionButtons
-          onSendTipsPress={handleSendTipsPress}
-          onRequestSupportPress={handleRequestSupportPress}
+      <Box
+        style={{
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
+        }}
+      >
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          onAddImage={() => console.log('Görsel eklenecek')}
+          placeholder="Mesajınızı yazın..."
         />
-      )}
+      </Box>
+
+      {/* Action Buttons */}
+      <MessageDetailActionButtons
+        onSendTipsPress={handleSendTipsPress}
+        onRequestSupportPress={handleRequestSupportPress}
+      />
 
       {/* Send TIPS BottomSheet */}
       <BottomSheet
         ref={sendTipsBottomSheetRef}
-        snapPoints={sendTipsSnapPoints}
         index={-1}
         enablePanDownToClose
-        onChange={handleSheetChanges}
+        enableOverDrag={false}
+        enableHandlePanningGesture={true}
+        enableContentPanningGesture={true}
+        enableDynamicSizing
+        animateOnMount={true}
         backdropComponent={renderBackdrop}
+        style={{ zIndex: 20 }}
+        containerStyle={{ zIndex: 20, elevation: 20 }}
         backgroundStyle={{
           backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
         }}
@@ -511,11 +516,16 @@ const MessageDetailScreen: React.FC = () => {
       {/* One-on-One Support BottomSheet */}
       <BottomSheet
         ref={oneOnOneSupportBottomSheetRef}
-        snapPoints={oneOnOneSupportSnapPoints}
         index={-1}
         enablePanDownToClose
-        onChange={handleSheetChanges}
+        enableOverDrag={false}
+        enableHandlePanningGesture={true}
+        enableContentPanningGesture={true}
+        enableDynamicSizing
+        animateOnMount={true}
         backdropComponent={renderBackdrop}
+        style={{ zIndex: 20 }}
+        containerStyle={{ zIndex: 20, elevation: 20 }}
         backgroundStyle={{
           backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
         }}
