@@ -43,10 +43,6 @@ export const SettingsScreen = () => {
   // Bottom sheet refs
   const changePasswordBottomSheetRef = useRef<BottomSheet>(null);
   const yourDevicesBottomSheetRef = useRef<BottomSheet>(null);
-  
-  // Bottom sheet snap points
-  const changePasswordSnapPoints = useMemo(() => ['55%'], []);
-  const yourDevicesSnapPoints = useMemo(() => ['70%'], []);
 
   const settingSections: SettingSection[] = [
     {
@@ -282,7 +278,6 @@ export const SettingsScreen = () => {
       <BottomSheet
         ref={changePasswordBottomSheetRef}
         index={-1}
-        snapPoints={changePasswordSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         backdropComponent={renderBackdrop}
@@ -313,7 +308,6 @@ export const SettingsScreen = () => {
       <BottomSheet
         ref={yourDevicesBottomSheetRef}
         index={-1}
-        snapPoints={yourDevicesSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         backdropComponent={renderBackdrop}

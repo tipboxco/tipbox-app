@@ -18,9 +18,6 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
   
   // Bottom sheet refs
   const addPaymentMethodBottomSheetRef = useRef<BottomSheet>(null);
-  
-  // Bottom sheet snap points
-  const addPaymentMethodSnapPoints = useMemo(() => ['70%'], []);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -114,7 +111,6 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
       <BottomSheet
         ref={addPaymentMethodBottomSheetRef}
         index={-1}
-        snapPoints={addPaymentMethodSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         backdropComponent={renderBackdrop}

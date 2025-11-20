@@ -32,12 +32,14 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
     const [cardName, setCardName] = useState('');
 
     const handlePaymentMethodSelect = (method: PaymentMethodType) => {
-        setSelectedPaymentMethod(method);
         if (method === 'apple-pay') {
-            // Apple Pay seçildiğinde direkt işlemi tamamla
+            // Apple Pay seçildiğinde direkt işlemi tamamla ve modal'ı kapat
             console.log('Apple Pay selected');
             onClose();
+            return;
         }
+        // Credit card seçildiğinde state'i güncelle
+        setSelectedPaymentMethod(method);
     };
 
     // Format card number with spaces (e.g., 1234 5678 9012 3456)
