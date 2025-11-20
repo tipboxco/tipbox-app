@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { ScrollView, Alert } from 'react-native';
+import { ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -71,9 +71,6 @@ const EventCreatePost: React.FC = () => {
 
     // Bottom sheet refs
     const bottomSheetRef = useRef<BottomSheet>(null);
-
-    // Bottom sheet snap points
-    const snapPoints = useMemo(() => ['40%'], []);
 
     const renderBackdrop = useCallback(
         (props: BottomSheetBackdropProps) => (
@@ -319,7 +316,6 @@ const EventCreatePost: React.FC = () => {
             <BottomSheet
                 ref={bottomSheetRef}
                 index={-1}
-                snapPoints={snapPoints}
                 enablePanDownToClose
                 enableOverDrag={false}
                 enableHandlePanningGesture={true}
@@ -342,7 +338,7 @@ const EventCreatePost: React.FC = () => {
                     height: 4,
                 }}
             >
-                <BottomSheetView>
+                <BottomSheetView style={{ paddingBottom: Platform.OS === 'ios' ? 34 + 8 : 45 + 8 }}>
                     <CreateEventPostBottomSheet
                         onClose={handleCloseBottomSheet}
                         onProductSelect={handleProductSelect}

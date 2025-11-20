@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Platform } from 'react-native';
 import { ScrollView, Dimensions, FlatList, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -412,7 +413,7 @@ const EventDetailScreen: React.FC = () => {
             {isJoined && (
                 <Box
                     position="absolute"
-                    bottom={24}
+                    bottom={Platform.OS === 'ios' ? 34 + 8 : 45 + 8}
                     right={16}
                     zIndex={1000}
                 >

@@ -264,7 +264,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                             textAlign="center"
                             flex={1}
                         >
-                            Select Inventory
+                            Select Inventory aaa
                         </Text>
                         <Box w={24} />
                     </HStack>
@@ -443,7 +443,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
     return (
         <Box flex={1} bg={isDark ? '#1A1A1A' : '#FDFDFB'}>
             {/* Header with back button */}
-            <VStack space="sm" mb="$4" px="$4" pt="$4">
+            <VStack space="sm" px="$4">
                 <HStack justifyContent="space-between" alignItems="center" w="100%">
                     <Pressable onPress={handleBackPress}>
                         <Feather
