@@ -159,6 +159,12 @@ export const ProductCatalogScreen = () => {
           title: productGroup ? productGroup.name : product.name, // ProductGroup name (top) or Product name if no group
           subName: productGroup ? product.name : product.description, // Product name (bottom) or description if no group
         },
+        selectedProduct: {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          image: product.image,
+        },
       },
     });
     
@@ -466,7 +472,7 @@ export const ProductCatalogScreen = () => {
 
       {/* Dynamic Grid */}
       <ScrollView flex={1} px="$4">
-        <VStack space="md" pb="$20">
+        <VStack space="md">
           {currentData.map((item, index) => (
             <HStack key={item.id} space="md" justifyContent="space-between">
               {[0, 1, 2].map((colIndex) => {

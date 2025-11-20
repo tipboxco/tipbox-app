@@ -46,7 +46,6 @@ export const CreateBenchmarkPostScreen = () => {
 
   // Bottom sheet refs
   const productSelectBottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['30%'], []);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -354,7 +353,6 @@ export const CreateBenchmarkPostScreen = () => {
       <BottomSheet
         ref={productSelectBottomSheetRef}
         index={-1}
-        snapPoints={snapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         backdropComponent={renderBackdrop}

@@ -14,6 +14,12 @@ export type PostStackParamList = {
       title: string;
       subName?: string;
     };
+    selectedProduct?: {
+      id: string;
+      name: string;
+      description?: string;
+      image: any;
+    };
   };
   CreatePostScreen: undefined;
   CreateTipsAndTrickPostScreen: undefined;

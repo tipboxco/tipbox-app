@@ -16,6 +16,7 @@ import { Category, BreadcrumbItem, Product } from '@/src/mock/catalog/productCat
 import CategoryCard from '@/src/features/catalog/components/CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { Header } from '@/src/components/Header';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface AddProductFromCatalogProps {
     onProductSelect: (product: Product) => void;
@@ -179,6 +180,7 @@ export const AddProductFromCatalog: React.FC<AddProductFromCatalogProps> = ({
     const currentData = getCurrentData();
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
             {/* Header */}
             <Header
@@ -296,6 +298,7 @@ export const AddProductFromCatalog: React.FC<AddProductFromCatalogProps> = ({
                 </VStack>
             </ScrollView>
         </VStack>
+        </SafeAreaView>
     );
 };
 

@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { mock_inventory } from '@/src/mock/inventory';
 import { InventoryItem } from '@/src/mock/inventory/types';
 import { Header } from '@/src/components/Header';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
@@ -99,6 +100,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
     );
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
             {/* Header */}
             <Header
@@ -159,6 +161,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
                 }
             />
         </VStack>
+        </SafeAreaView>
     );
 };
 

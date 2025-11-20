@@ -35,7 +35,15 @@ export const PostsScreen = () => {
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
   
-  const { stage, name, productInfo } = route.params;
+  const { stage, name, productInfo, selectedProduct } = route.params;
+  const selectedProductPayload = selectedProduct
+    ? {
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        description: selectedProduct.description,
+        image: selectedProduct.image,
+      }
+    : undefined;
 
   // Bottom sheet refs
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
@@ -108,11 +116,11 @@ export const PostsScreen = () => {
       navigation.navigate('CreateQuestionPostScreen');
     } else if (type === 'comparison') {
       navigation.navigate('CreateBenchmarkPostScreen', {
-        product: undefined, // PostsScreen'den gelenlerde product yok, kullanıcı manuel seçecek
+        product: selectedProductPayload,
       });
     } else if (type === 'update') {
       navigation.navigate('CreateUpdatePostScreen', {
-        product: undefined, // PostsScreen'den gelenlerde product yok
+        product: selectedProductPayload,
       });
     }
     // Handle other post types here if needed

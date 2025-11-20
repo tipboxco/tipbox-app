@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -113,8 +114,8 @@ export const CatalogScreen = () => {
       {/* Floating Action Button */}
       <Pressable
         position="absolute"
-        bottom="$6"
-        right="$6"
+        bottom={Platform.OS === 'ios' ? 34 + 8 : 45 + 8}
+        right={16}
         width={60}
         height={60}
         borderRadius={30}
