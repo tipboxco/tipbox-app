@@ -35,15 +35,14 @@ export const ProductCatalogScreen = () => {
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
 
-  // Bottom sheet snap points
-  const createPostSnapPoints = useMemo(() => ['85%'], []);
-
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
+        pressBehavior="close"
+        opacity={0.5}
       />
     ),
     []
@@ -345,11 +344,11 @@ export const ProductCatalogScreen = () => {
     // Reset bottom sheet key to remount component and reset view
     setBottomSheetKey(prev => prev + 1);
     if (createPostBottomSheetRef.current) {
-      createPostBottomSheetRef.current.snapToIndex(0);
+      createPostBottomSheetRef.current.expand();
     } else {
       setTimeout(() => {
         if (createPostBottomSheetRef.current) {
-          createPostBottomSheetRef.current.snapToIndex(0);
+          createPostBottomSheetRef.current.expand();
         }
       }, 100);
     }
@@ -547,11 +546,11 @@ export const ProductCatalogScreen = () => {
       <BottomSheet
         ref={createPostBottomSheetRef}
         index={-1}
-        snapPoints={createPostSnapPoints}
         enablePanDownToClose
         enableOverDrag={false}
         enableHandlePanningGesture={true}
         enableContentPanningGesture={true}
+        enableDynamicSizing
         animateOnMount={true}
         backdropComponent={renderBackdrop}
         onChange={handleSheetChanges}
