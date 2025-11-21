@@ -316,7 +316,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
             </VStack>
 
             {/* Post Options */}
-            <VStack space="sm" px="$4" pb="$8">
+            <VStack space="sm" px="$4">
                 {filteredPostOptions.map((option) => (
                     <Pressable
                         key={option.id}
@@ -333,7 +333,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                         h={60}
                         alignSelf="center"
                     >
-                        <HStack alignItems="center" h="100%" pl="$3" pr="$3">
+                        <HStack alignItems="center" h="100%" px='$3'>
                             {/* Icon Box - Left side with dashed border */}
                             <Box
                                 w={24}

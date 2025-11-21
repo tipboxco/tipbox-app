@@ -1,4 +1,5 @@
 import React, { useRef, useMemo, useCallback, useState } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, Pressable } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -253,7 +254,7 @@ export const PostsScreen = () => {
           height: 4,
         }}
       >
-        <BottomSheetView>
+        <BottomSheetView style={{ paddingBottom: 8 }}>
           <CreatePostBottomSheet
             key={bottomSheetKey}
             onClose={() => {

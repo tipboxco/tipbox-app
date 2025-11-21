@@ -1,12 +1,14 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { mock_ladders } from '@/src/mock/profile/ladders';
 import { Ladder } from '@/src/mock/profile/ladders/types';
-import LadderDetail from '../../components/LadderDetail';
+
+interface LadderTabProps {
+  onLadderSelect?: (ladder: Ladder) => void;
+}
 
 const { width } = Dimensions.get('window');
 const COLUMN_GAP = 10;
@@ -19,12 +21,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export const LadderTab = () => {
+export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [selectedLadder, setSelectedLadder] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
-  const bottomSheetRef = useRef<BottomSheet>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Filtreleme değiştiğinde animasyon için
@@ -53,52 +53,13 @@ export const LadderTab = () => {
   };
 
   // callbacks
-  const handlePresentModalPress = useCallback((id: string) => {
-    console.log('[LadderTab] item press -> id:', id);
-    setSelectedLadder(id);
-  }, []);
-
-  // selectedLadder değiştiğinde BottomSheet'i aç
-  useEffect(() => {
-    if (selectedLadder) {
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (bottomSheetRef.current) {
-            bottomSheetRef.current.expand();
-          } else {
-            setTimeout(() => {
-              if (bottomSheetRef.current) {
-                bottomSheetRef.current.expand();
-              }
-            }, 100);
-          }
-        }, 50);
-      });
-    }
-  }, [selectedLadder]);
-
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log('[LadderTab] sheet index ->', index);
-    if (index === -1) {
-      setSelectedLadder(null);
-    }
-  }, []);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-        opacity={0.5}
-      />
-    ),
-    []
-  );
+  const handlePresentModalPress = useCallback((ladder: Ladder) => {
+    console.log('[LadderTab] item press ->', ladder);
+    onLadderSelect?.(ladder);
+  }, [onLadderSelect]);
 
   const renderItem = ({ item: ladder }: { item: Ladder }) => (
-    <TouchableOpacity onPress={() => handlePresentModalPress(ladder.id)} activeOpacity={0.7}>
+    <TouchableOpacity onPress={() => handlePresentModalPress(ladder)} activeOpacity={0.7}>
       <Box
         bg={isDark ? '$backgroundDark800' : '$white'}
         borderWidth={1}
@@ -292,55 +253,6 @@ export const LadderTab = () => {
           />
         </Animated.View>
       </VStack>
-
-      <Box
-        position="absolute"
-        left={-CARD_MARGIN}
-        right={-CARD_MARGIN}
-        bottom={0}
-        top={0}
-        pointerEvents="box-none"
-      >
-        <BottomSheet
-          ref={bottomSheetRef}
-          index={-1}
-          onChange={handleSheetChanges}
-          enablePanDownToClose
-          enableOverDrag={false}
-          enableHandlePanningGesture={true}
-          enableContentPanningGesture={true}
-          enableDynamicSizing
-          animateOnMount={true}
-          backdropComponent={renderBackdrop}
-          backgroundStyle={{
-            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-            borderTopLeftRadius: 30,
-            borderTopRightRadius: 30,
-          }}
-          handleStyle={{
-            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-            borderTopLeftRadius: 30,
-            borderTopRightRadius: 30,
-          }}
-          handleIndicatorStyle={{
-            backgroundColor: isDark ? '#333333' : '#CCCCCC',
-            width: 40,
-            height: 4,
-          }}
-        >
-          <BottomSheetView>
-            {selectedLadder && (
-              <LadderDetail
-                ladderId={selectedLadder}
-                onClose={() => {
-                  bottomSheetRef.current?.close();
-                  setSelectedLadder(null);
-                }}
-              />
-            )}
-          </BottomSheetView>
-        </BottomSheet>
-      </Box>
     </Box>
   );
 };
