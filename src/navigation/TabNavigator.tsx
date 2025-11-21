@@ -1,7 +1,6 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 
@@ -11,22 +10,30 @@ import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { InboxNavigator } from '@/src/features/inbox/navigation';
+import { buildFeatureStack } from './build-stack';
 
 export type TabParamList = {
-  Feed: undefined;
-  Explore: undefined;
-  Catalog: undefined;
-  Events: undefined;
-  Notification: undefined;
-  Inbox: undefined;
+  FeedStack: undefined;
+  ExploreStack: undefined;
+  CatalogStack: undefined;
+  EventsStack: undefined;
+  NotificationStack: undefined;
+  InboxStack: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
+// Her feature stack'i tek satırda oluşturuyoruz
+const FeedStackNavigator = buildFeatureStack('Feed', FeedNavigator);
+const ExploreStackNavigator = buildFeatureStack('Explore', ExploreNavigator);
+const CatalogStackNavigator = buildFeatureStack('Catalog', CatalogNavigator);
+const EventsStackNavigator = buildFeatureStack('Events', EventsNavigator);
+const NotificationStackNavigator = buildFeatureStack('Notification', NotificationsNavigator);
+const InboxStackNavigator = buildFeatureStack('Inbox', InboxNavigator);
+
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation();
 
   return (
     <Tab.Navigator
@@ -36,22 +43,22 @@ export const TabNavigator = () => {
           let iconName: keyof typeof Feather.glyphMap = 'home';
 
           switch (route.name) {
-            case 'Feed':
+            case 'FeedStack':
               iconName = 'home';
               break;
-            case 'Explore':
+            case 'ExploreStack':
               iconName = 'search';
               break;
-            case 'Catalog':
+            case 'CatalogStack':
               iconName = 'grid';
               break;
-            case 'Events':
+            case 'EventsStack':
               iconName = 'calendar';
               break;
-            case 'Notification':
+            case 'NotificationStack':
               iconName = 'bell';
               break;
-            case 'Inbox':
+            case 'InboxStack':
               iconName = 'inbox';
               break;
           }
@@ -76,28 +83,28 @@ export const TabNavigator = () => {
       })}
     >
       <Tab.Screen
-        name="Feed"
-        component={FeedNavigator}
+        name="FeedStack"
+        component={FeedStackNavigator}
       />
       <Tab.Screen
-        name="Explore"
-        component={ExploreNavigator}
+        name="ExploreStack"
+        component={ExploreStackNavigator}
       />
       <Tab.Screen
-        name="Catalog"
-        component={CatalogNavigator}
+        name="CatalogStack"
+        component={CatalogStackNavigator}
       />
       <Tab.Screen
-        name="Events"
-        component={EventsNavigator}
+        name="EventsStack"
+        component={EventsStackNavigator}
       />
       <Tab.Screen
-        name="Notification"
-        component={NotificationsNavigator}
+        name="NotificationStack"
+        component={NotificationStackNavigator}
       />
       <Tab.Screen
-        name="Inbox"
-        component={InboxNavigator}
+        name="InboxStack"
+        component={InboxStackNavigator}
       />
     </Tab.Navigator>
   );
