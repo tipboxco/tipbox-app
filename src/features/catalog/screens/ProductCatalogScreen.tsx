@@ -12,7 +12,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 
-type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList>;
+type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
+  navigate: (name: any, params?: any) => void;
+};
 
 interface ProductCatalogScreenProps {
   onCreatePost?: () => void;

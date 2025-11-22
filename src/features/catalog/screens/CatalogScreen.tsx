@@ -16,7 +16,9 @@ import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 
-type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList>;
+type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
+  navigate: (name: any, params?: any) => void;
+};
 
 export const CatalogScreen = () => {
   const { colorMode } = useColorMode();

@@ -24,7 +24,9 @@ const CARDS_PER_ROW = 3;
 const HORIZONTAL_PADDING = 15;
 const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - (CARD_GAP * (CARDS_PER_ROW - 1))) / CARDS_PER_ROW;
 
-type InventoryScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList>;
+type InventoryScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList> & {
+  navigate: (name: any, params?: any) => void;
+};
 
 const InventoryScreen = () => {
   const { colorMode } = useColorMode();
@@ -47,12 +49,12 @@ const InventoryScreen = () => {
   const handleCreatePress = () => {
     console.log('Create button pressed');
     if (createPostBottomSheetRef.current) {
-      createPostBottomSheetRef.current.snapToIndex(0);
+      createPostBottomSheetRef.current.expand();
       setIsBottomSheetOpen(true);
     } else {
       setTimeout(() => {
         if (createPostBottomSheetRef.current) {
-          createPostBottomSheetRef.current.snapToIndex(0);
+          createPostBottomSheetRef.current.expand();
           setIsBottomSheetOpen(true);
         }
       }, 100);
@@ -96,6 +98,8 @@ const InventoryScreen = () => {
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
+        pressBehavior="close"
+        opacity={0.5}
       />
     ),
     []
@@ -189,6 +193,7 @@ const InventoryScreen = () => {
         enableOverDrag={false}
         enableHandlePanningGesture={true}
         enableContentPanningGesture={true}
+        enableDynamicSizing
         animateOnMount={true}
         backdropComponent={renderBackdrop}
         onChange={handleSheetChanges}
