@@ -7,14 +7,33 @@ alwaysApply: true
 3. This project uses Gluestack for all styling and UI components
 6. Each feature owns its own `navigation.tsx` and `index.ts`, and state is managed globally with Zustand (persist + devtools).
 7. All HTTP requests in the project are managed using **Axios**:
-    - A single Axios client, its configuration, and interceptors reside in `/src/api`
-    (`axios.ts`, `config.ts`, `interceptors.ts`).
-    - Cross-feature (shared) endpoint helpers are located under `/src/api/shared`.
-    - Each feature defines its own endpoint functions in`/src/features/<feature>/api/*.ts` but must reuse the shared Axios instance;
+    - A single Axios client, its configuration, and interceptors reside in `/src/services/ApiService`
+    (`index.ts`, `types.ts`, `interceptors.ts`).
+    - The ApiService uses a singleton pattern and provides a single Axios instance via `apiService.getClient()`.
+    - Cross-feature (shared) endpoint helpers are located under `/src/services/ApiService/shared`.
+    - Each feature defines its own endpoint functions in `/src/features/<feature>/api/*.ts` but must reuse the shared Axios instance via `apiService.getClient()`;
     no feature may create a new Axios client or redefine interceptors.
-8. Authentication is JWT-based and token-driven:
+    - API configuration (BASE_URL, TIMEOUT, ENDPOINTS) is centralized in `/src/config/api.config.ts`.
+8. **React Query** is used for all data fetching and caching:
+    - All API data fetching must use React Query hooks (`useQuery`, `useMutation`, `useInfiniteQuery`).
+    - Each feature defines its own React Query hooks in `/src/features/<feature>/api/hooks.ts`.
+    - Endpoint functions (pure API calls) are defined in `/src/features/<feature>/api/<feature>Api.ts`.
+    - React Query hooks wrap endpoint functions and manage caching, refetching, and state.
+    - Query keys should follow a consistent pattern per feature (e.g., `['events', params]`, `['profile', id]`).
+    - Mutations should invalidate related queries using `queryClient.invalidateQueries()`.
+9. Authentication is JWT-based and token-driven:
     - The backend issues **Access Token** (short-lived) and **Refresh Token** (long-lived).
-    - An Axios interceptor attaches the Access Token to every request’s `Authorization` header and automatically calls the refresh endpoint when the token expires.
-    - The Refresh Token and encrypted user profile are securely persisted with **Expo SecureStore**; the Access Token is kept in memory and rehydrated on app launch if still valid.
-    - If the refresh flow fails, both tokens are purged from SecureStore and the user is logged out.
-9. All SDK usage and device capabilities must be abstracted under `src/services`; services should expose only a clear public interface and must not be accessed directly from screens or feature modules.
+    - **JWT Interceptor** (Request Interceptor):
+      - Automatically attaches the Access Token to every request's `Authorization` header as `Bearer <token>`.
+      - Token is retrieved from SecureStore before each request.
+    - **Refresh Token Interceptor** (Response Interceptor):
+      - On 401 (Unauthorized) responses, automatically attempts to refresh the Access Token using the Refresh Token.
+      - If refresh succeeds, retries the original failed request with the new token.
+      - If refresh fails, purges all tokens and logs out the user.
+      - Implements request queuing to handle concurrent requests during token refresh.
+    - **Token Storage**:
+      - The Refresh Token and encrypted user profile are securely persisted with **Expo SecureStore** (never use AsyncStorage for tokens).
+      - The Access Token is kept in memory and rehydrated on app launch if still valid.
+      - TokenService (located in `/src/services/TokenService`) handles all token storage operations.
+      - If the refresh flow fails, both tokens are purged from SecureStore and the user is logged out.
+10. All SDK usage and device capabilities must be abstracted under `src/services`; services should expose only a clear public interface and must not be accessed directly from screens or feature modules.
