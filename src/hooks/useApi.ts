@@ -1,15 +1,14 @@
-import { useEffect } from 'react';
-import { apiService, useApiInterceptors } from '../services/ApiService';
-
 /**
  * Global API hook'u
- * Bu hook sadece API istemcisinin yapılandırması ve interceptor'ların yönetimi için kullanılır.
- * Spesifik API çağrıları için ilgili feature'ın api.ts dosyasını veya shared API'lerini kullanın.
+ * 
+ * NOT: Bu hook artık gerekli değil. 
+ * JWT ve Refresh Token interceptor'ları ApiService constructor'ında otomatik olarak kuruluyor.
+ * 
+ * Spesifik API çağrıları için ilgili feature'ın api klasöründeki fonksiyonları kullanın.
+ * 
+ * @deprecated Interceptor'lar otomatik olarak kurulduğu için bu hook kullanılmıyor.
  */
 export const useApi = () => {
-  const interceptors = useApiInterceptors();
-
-  useEffect(() => {
-    apiService.setupInterceptors(interceptors);
-  }, []);
+  // Interceptor'lar ApiService constructor'ında otomatik olarak kuruluyor
+  // Bu hook sadece geriye dönük uyumluluk için bırakıldı
 }; 

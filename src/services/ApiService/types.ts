@@ -1,9 +1,8 @@
 import { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { ApiConfig, ApiEndpoints } from '../../config/api.config';
+import { ApiConfig } from '../../config/api.config';
 
 export interface ApiServiceConfig {
   config: ApiConfig;
-  endpoints: ApiEndpoints;
 }
 
 export interface ApiInterceptors {

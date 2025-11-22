@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
+import { useRegister } from '../api/hooks';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -13,6 +14,8 @@ export const RegisterScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<RegisterScreenNavigationProp>();
+  const toast = useToast();
+  const registerMutation = useRegister();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,12 +36,65 @@ export const RegisterScreen = () => {
   const handleConfirm = async () => {
     if (isEmailValid && isPasswordValid) {
       try {
-        //await register({ email, password });
-        console.log("Register API call:", { email, password });
+        // React Query mutation kullanarak register işlemi
+        const result = await registerMutation.mutateAsync({
+          email,
+          password,
+          name: email.split('@')[0], // Geçici olarak email'den name oluştur
+        });
+
+        // Console'da tam response'u göster
+        console.log('=== REGISTER API RESPONSE ===');
+        console.log('Full Response:', JSON.stringify(result, null, 2));
+        console.log('Response Type:', typeof result);
+        console.log('Response Keys:', Object.keys(result));
+        console.log('============================');
+
+        // Başarılı toast göster
+        toast.show({
+          placement: 'top',
+          render: ({ id }) => {
+            return (
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Kayıt Başarılı</ToastTitle>
+                <ToastDescription>
+                  {result.message || 'Kayıt işlemi başarıyla tamamlandı!'}
+                </ToastDescription>
+              </Toast>
+            );
+          },
+        });
+
+        // Başarılı kayıt sonrası verify code ekranına yönlendir
         navigation.navigate('VerifyCode', { email });
-      } catch (error) {
-        console.error('Registration error:', error);
-        // TODO: Hata mesajını kullanıcıya göster
+      } catch (error: any) {
+        // Console'da tam error'u göster
+        console.error('=== REGISTER API ERROR ===');
+        console.error('Error Object:', error);
+        console.error('Error Message:', error?.message);
+        console.error('Error Response:', error?.response);
+        console.error('Error Response Data:', error?.response?.data);
+        console.error('Error Response Status:', error?.response?.status);
+        console.error('Full Error JSON:', JSON.stringify(error, null, 2));
+        console.error('========================');
+
+        // Hata toast göster
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          'Kayıt işlemi sırasında bir hata oluştu';
+
+        toast.show({
+          placement: 'top',
+          render: ({ id }) => {
+            return (
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Kayıt Hatası</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            );
+          },
+        });
       }
     }
   };
@@ -134,10 +190,12 @@ export const RegisterScreen = () => {
           rounded="$lg"
           mt="$4"
           onPress={handleConfirm}
-          opacity={isEmailValid && isPasswordValid ? 1 : 0.5}
-          disabled={!isEmailValid || !isPasswordValid}
+          opacity={isEmailValid && isPasswordValid && !registerMutation.isPending ? 1 : 0.5}
+          disabled={!isEmailValid || !isPasswordValid || registerMutation.isPending}
         >
-          <ButtonText color="$textLight900">Confirm</ButtonText>
+          <ButtonText color="$textLight900">
+            {registerMutation.isPending ? 'Kaydediliyor...' : 'Confirm'}
+          </ButtonText>
         </Button>
 
         <Text

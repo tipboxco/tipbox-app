@@ -12,6 +12,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { QueryProvider } from '@/src/providers/QueryProvider';
 
 export default function App() {
   const { colorMode } = useColorMode();
@@ -22,21 +23,23 @@ export default function App() {
     : config.tokens.colors.backgroundLight0;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <PortalProvider>
-          <BottomSheetModalProvider>
-            <GluestackProvider>
-              <StatusBar
-                translucent
-                backgroundColor={isDark ? '#000000' : '#FAFAFA'}
-                barStyle={isDark ? 'light-content' : 'dark-content'}
-              />
+    <QueryProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <PortalProvider>
+            <BottomSheetModalProvider>
+              <GluestackProvider>
+                <StatusBar
+                  translucent
+                  backgroundColor={isDark ? '#000000' : '#FAFAFA'}
+                  barStyle={isDark ? 'light-content' : 'dark-content'}
+                />
                 <Navigation />
-            </GluestackProvider>
-          </BottomSheetModalProvider>
-        </PortalProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView >
+              </GluestackProvider>
+            </BottomSheetModalProvider>
+          </PortalProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </QueryProvider>
   );
 }

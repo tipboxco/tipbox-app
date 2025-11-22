@@ -1,6 +1,15 @@
 import axios, { AxiosInstance } from 'axios';
-import { API_CONFIG, ENDPOINTS } from '../../config/api.config';
+import { API_CONFIG } from '../../config/api.config';
 import { ApiInterceptors, ApiServiceConfig, IApiService } from './types';
+import { setupApiInterceptors } from './interceptors';
+
+// React Native için fetch adapter kullan
+// Bu, React Native'de network isteklerinin düzgün çalışmasını sağlar
+if (typeof XMLHttpRequest === 'undefined') {
+  // React Native ortamında XMLHttpRequest yok, fetch kullan
+  const { default: fetchAdapter } = require('axios/lib/adapters/xhr');
+  // Not: React Native'de axios otomatik olarak doğru adapter'ı seçer
+}
 
 class ApiService implements IApiService {
   private static instance: ApiService;
@@ -10,7 +19,6 @@ class ApiService implements IApiService {
   private constructor() {
     this.config = {
       config: API_CONFIG,
-      endpoints: ENDPOINTS,
     };
 
     this.client = axios.create({
@@ -18,8 +26,15 @@ class ApiService implements IApiService {
       timeout: this.config.config.TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
+      // React Native için adapter ayarı
+      adapter: undefined, // Axios otomatik olarak doğru adapter'ı seçer
     });
+
+    // JWT ve Refresh Token interceptor'larını otomatik olarak kur
+    // Client'ı parametre olarak geçiyoruz (circular dependency'yi önlemek için)
+    setupApiInterceptors(this.client);
   }
 
   public static getInstance(): ApiService {
@@ -48,4 +63,4 @@ class ApiService implements IApiService {
 
 export const apiService = ApiService.getInstance();
 export * from './types';
-export * from './hooks/useApiInterceptors'; 
+export * from './interceptors'; 

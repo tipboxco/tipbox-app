@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useAuthStore } from '@/src/store';
+import { useLogin } from '../api/hooks';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -15,6 +16,8 @@ export const LoginScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { loginAsGuest } = useAuthStore();
+  const toast = useToast();
+  const loginMutation = useLogin();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,17 +37,80 @@ export const LoginScreen = () => {
 
   const handleSignIn = async () => {
     if (isEmailValid && isPasswordValid) {
-      console.log('Login attempt:', { email, password });
-      // TODO: API entegrasyonu yapılacak
-      // Şimdilik mock bir login işlemi yapıyoruz
-      const mockUser = {
-        id: '1',
-        email,
-        username: email.split('@')[0],
-      };
-      const mockAccessToken = 'mock-access-token';
-      
-      useAuthStore.getState().login(mockUser, mockAccessToken);
+      try {
+        // React Query mutation kullanarak login işlemi
+        const result = await loginMutation.mutateAsync({
+          email,
+          password,
+        });
+
+        // Console'da tam response'u göster
+        console.log('=== LOGIN API RESPONSE ===');
+        console.log('Full Response:', JSON.stringify(result, null, 2));
+        console.log('Response Type:', typeof result);
+        console.log('Response Keys:', Object.keys(result));
+        console.log('User:', result.user);
+        console.log('Access Token:', result.accessToken ? '***' : 'undefined');
+        console.log('Refresh Token:', result.refreshToken ? '***' : 'undefined');
+        console.log('==========================');
+
+        // Başarılı toast göster
+        toast.show({
+          placement: 'top',
+          render: ({ id }) => {
+            return (
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Giriş Başarılı</ToastTitle>
+                <ToastDescription>
+                  Hoş geldiniz, {result.user.name || result.user.email}!
+                </ToastDescription>
+              </Toast>
+            );
+          },
+        });
+
+        // Başarılı login sonrası ana sayfaya yönlendir
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main' as never,
+              params: {
+                screen: 'Feed',
+                params: {},
+              },
+            },
+          ],
+        });
+      } catch (error: any) {
+        // Console'da tam error'u göster
+        console.error('=== LOGIN API ERROR ===');
+        console.error('Error Object:', error);
+        console.error('Error Message:', error?.message);
+        console.error('Error Response:', error?.response);
+        console.error('Error Response Data:', error?.response?.data);
+        console.error('Error Response Status:', error?.response?.status);
+        console.error('Full Error JSON:', JSON.stringify(error, null, 2));
+        console.error('========================');
+
+        // Hata toast göster
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          'Giriş işlemi sırasında bir hata oluştu';
+
+        toast.show({
+          placement: 'top',
+          render: ({ id }) => {
+            return (
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Giriş Hatası</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            );
+          },
+        });
+      }
     }
   };
 
@@ -161,10 +227,12 @@ export const LoginScreen = () => {
           rounded="$lg"
           mt="$4"
           onPress={handleSignIn}
-          opacity={isEmailValid && isPasswordValid ? 1 : 0.5}
-          disabled={!isEmailValid || !isPasswordValid}
+          opacity={isEmailValid && isPasswordValid && !loginMutation.isPending ? 1 : 0.5}
+          disabled={!isEmailValid || !isPasswordValid || loginMutation.isPending}
         >
-          <ButtonText color="$textLight900">Confirm</ButtonText>
+          <ButtonText color="$textLight900">
+            {loginMutation.isPending ? 'Giriş yapılıyor...' : 'Confirm'}
+          </ButtonText>
         </Button>
 
         <Button
