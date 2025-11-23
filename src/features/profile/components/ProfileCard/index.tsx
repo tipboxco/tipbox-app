@@ -17,6 +17,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProfileStackParamList } from '../../navigation';
 import { UserCardData } from '@/src/mock/profile/userCardData/types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import { useAuthStore } from '@/src/store/authStore';
 
 interface ProfileCardProps {
   userData: UserCardData;
@@ -38,6 +39,7 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const { user } = useAuthStore();
 
   const handleEditProfile = () => {
     setIsMenuVisible(false);
@@ -157,7 +159,14 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
               >
                 {" "}•{" "}
               </Text>
-              <Pressable onPress={() => navigation.navigate('TrustList', { initialTab: 'trust' })}>
+              <Pressable onPress={() => {
+                if (user?.id) {
+                  navigation.navigate('TrustList', { 
+                    userId: user.id,
+                    initialTab: 'trust' 
+                  });
+                }
+              }}>
                 <HStack alignItems="center" space="xs">
                   <Text
                     color={isDark ? '$textDark50' : '$textLight900'}

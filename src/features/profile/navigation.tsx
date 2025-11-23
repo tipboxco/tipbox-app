@@ -19,7 +19,7 @@ export type ProfileStackParamList = {
   InventoryList: undefined;
   InventoryDetail: { itemId: string };
   Collections: undefined;
-  TrustList: { initialTab?: 'trust' | 'truster' };
+  TrustList: { userId: string; initialTab?: 'trust' | 'truster' };
   SuggestedUsers: undefined;
 };
 

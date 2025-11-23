@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
     VStack, 
@@ -17,13 +17,24 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { Header } from '@/src/components/Header';
-import { TrustUser, TrustListScreenRouteProp } from '@/src/mock/profile/trustTrusterList/types';
-import { mockTrustUsers, mockTrusterUsers } from '@/src/mock/profile/trustTrusterList';
+import { TrustUser as ApiTrustUser } from '@/src/features/profile/types';
+import { mockTrusterUsers } from '@/src/mock/profile/trustTrusterList';
 import { TrustUserCard } from '../components/TrustUserCard';
 import { SuggestionCard } from '../components/SuggestionCard';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useTrustList } from '../api/hooks';
+import { ProfileStackParamList } from '../navigation';
+import { TrustUser as MockTrustUser } from '@/src/mock/profile/trustTrusterList/types';
 
 type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type TrustListScreenRouteProp = {
+    key: string;
+    name: string;
+    params: {
+        userId: string;
+        initialTab?: 'trust' | 'truster';
+    };
+};
 
 
 export const Trust_TrusterListScreen = () => {
@@ -32,22 +43,73 @@ export const Trust_TrusterListScreen = () => {
     const route = useRoute<TrustListScreenRouteProp>();
     const navigation = useNavigation<TrustListScreenNavigationProp>();
     
+    const userId = route.params?.userId;
     const [activeTab, setActiveTab] = useState<'trust' | 'truster'>(
         route.params?.initialTab || 'trust'
     );
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
     const [selectedSort, setSelectedSort] = useState<'default' | 'newest' | 'oldest'>('default');
     const bottomSheetRef = useRef<BottomSheet>(null);
 
+    // Debounce search query - Trust sekmesi için API'ye istek atmadan önce 500ms bekle
+    useEffect(() => {
+        if (activeTab === 'trust') {
+            const timer = setTimeout(() => {
+                setDebouncedSearchQuery(searchQuery);
+            }, 500);
+
+            return () => clearTimeout(timer);
+        } else {
+            // Truster sekmesinde debounce yok, direkt kullan
+            setDebouncedSearchQuery(searchQuery);
+        }
+    }, [searchQuery, activeTab]);
+
+    // React Query hook - sadece trust sekmesinde aktif, search query ile
+    const { data: trustListData, isLoading: isTrustListLoading, error: trustListError } = useTrustList(
+        activeTab === 'trust' ? userId : undefined,
+        activeTab === 'trust' ? (debouncedSearchQuery.trim() || undefined) : undefined
+    );
+
+    // API'den gelen data'yı mock formatına transform et (sadece TrustUserCard için gerekli)
+    const transformApiUserToMockUser = (apiUser: ApiTrustUser): MockTrustUser => {
+        return {
+            id: apiUser.id,
+            name: apiUser.name,
+            title: apiUser.titles?.[0] || '', // İlk title'ı kullan
+            avatar: { uri: apiUser.avatar }, // String URL'yi Image source formatına çevir
+            trustLevel: 3, // Varsayılan trust level (API'de yok)
+            isOnline: false, // Varsayılan
+        };
+    };
+
+    // Trust sekmesi için sadece API'den gelen verileri kullan (backend'de filtrelenmiş)
+    const trustUsers = activeTab === 'trust' 
+        ? (trustListData?.map(transformApiUserToMockUser) || [])
+        : [];
+
+    // Truster sekmesi için mock data (henüz API yok)
+    const trusterUsers = activeTab === 'truster' ? mockTrusterUsers : [];
 
     // Get current data based on active tab
-    const currentUsers = activeTab === 'trust' ? mockTrustUsers : mockTrusterUsers;
+    const currentUsers = activeTab === 'trust' ? trustUsers : trusterUsers;
     
-    const filteredUsers = currentUsers.filter((user: TrustUser) =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Filter users based on search query - sadece Truster sekmesi için frontend filtreleme
+    // Trust sekmesinde backend'den filtrelenmiş veri geliyor, bu yüzden direkt kullan
+    const filteredUsers = activeTab === 'trust' 
+        ? currentUsers // Trust sekmesinde backend'den filtrelenmiş veri geliyor
+        : currentUsers.filter((user: MockTrustUser) => {
+            // Truster sekmesinde mock data'yı frontend'de filtrele
+            return user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                   user.title.toLowerCase().includes(searchQuery.toLowerCase());
+        });
+    
+    // Trust sekmesinde search query varsa ve data boşsa, "Kullanıcı bulunamadı" göster
+    const showEmptyState = activeTab === 'trust' 
+        ? (!isTrustListLoading && !trustListError && debouncedSearchQuery.trim().length > 0 && filteredUsers.length === 0)
+        : (filteredUsers.length === 0 && searchQuery.trim().length > 0);
 
     const handlePopoverOpen = (userId: string) => {
         setOpenPopoverId(userId);
@@ -221,16 +283,34 @@ export const Trust_TrusterListScreen = () => {
                         />
 
                         {/* Trust Users List */}
-                        {filteredUsers.map((user: TrustUser) => (
-                            <TrustUserCard 
-                                key={user.id} 
-                                user={user} 
-                                showBorder={false}
-                                isPopoverOpen={openPopoverId === user.id}
-                                onPopoverOpen={() => handlePopoverOpen(user.id)}
-                                onPopoverClose={handlePopoverClose}
-                            />
-                        ))}
+                        {isTrustListLoading ? (
+                            <Box py={20} alignItems="center">
+                                <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+                            </Box>
+                        ) : trustListError ? (
+                            <Box py={20} alignItems="center">
+                                <Text color="#CE4A4A">Hata: {trustListError.message}</Text>
+                            </Box>
+                        ) : showEmptyState ? (
+                            <Box py={20} alignItems="center">
+                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı bulunamadı</Text>
+                            </Box>
+                        ) : filteredUsers.length === 0 && !debouncedSearchQuery.trim() ? (
+                            <Box py={20} alignItems="center">
+                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz trust listeniz boş</Text>
+                            </Box>
+                        ) : (
+                            filteredUsers.map((user: MockTrustUser) => (
+                                <TrustUserCard 
+                                    key={user.id} 
+                                    user={user} 
+                                    showBorder={false}
+                                    isPopoverOpen={openPopoverId === user.id}
+                                    onPopoverOpen={() => handlePopoverOpen(user.id)}
+                                    onPopoverClose={handlePopoverClose}
+                                />
+                            ))
+                        )}
                     </ScrollView>
                 ) : (
                     <ScrollView flex={1} keyboardShouldPersistTaps="handled">
@@ -261,7 +341,7 @@ export const Trust_TrusterListScreen = () => {
                         />
 
                         {/* Truster Users List */}
-                        {filteredUsers.map((user: TrustUser) => (
+                        {filteredUsers.map((user: MockTrustUser) => (
                             <TrustUserCard 
                                 key={user.id} 
                                 user={user} 

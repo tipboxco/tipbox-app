@@ -26,3 +26,14 @@ export interface InventoryItem {
     quality: string;
   };
 }
+
+/**
+ * Trust User - API'den gelen trust listesi kullanıcı tipi
+ */
+export interface TrustUser {
+  id: string;
+  userName: string;
+  name: string;
+  titles: string[];
+  avatar: string;
+}
