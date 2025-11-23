@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TokenService } from '../services/TokenService';
 
 interface User {
   id?: string;
@@ -78,6 +79,10 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           set({ isLoading: true, error: null });
+          
+          // Token'ları SecureStore'dan temizle
+          await TokenService.clearTokens();
+          
           await new Promise(resolve => setTimeout(resolve, 500));
           set({
             isAuthenticated: false,
@@ -87,6 +92,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error) {
+          console.error('Error during logout:', error);
           set({ error: error as Error, isLoading: false });
         }
       },

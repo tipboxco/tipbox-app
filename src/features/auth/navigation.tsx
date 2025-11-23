@@ -1,12 +1,17 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen } from './screens';
+import { WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen, ForgotPasswordScreen, ResetPasswordScreen } from './screens';
 
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
   VerifyCode: {
+    email: string;
+    context?: 'signUp' | 'forgotPassword';
+  };
+  ResetPassword: {
     email: string;
   };
   SetupProfile: undefined;
@@ -47,10 +52,24 @@ export const AuthNavigator = () => {
         }}
       />
       <AuthStack.Screen
+        name='ForgotPassword'
+        component={ForgotPasswordScreen}
+        options={{
+          title: 'Şifremi Unuttum',
+        }}
+      />
+      <AuthStack.Screen
         name='VerifyCode'
         component={AuthVerifyCodeScreen}
         options={{
           title: 'Doğrulama Kodu',
+        }}
+      />
+      <AuthStack.Screen
+        name='ResetPassword'
+        component={ResetPasswordScreen}
+        options={{
+          title: 'Şifre Sıfırla',
         }}
       />
       <AuthStack.Screen

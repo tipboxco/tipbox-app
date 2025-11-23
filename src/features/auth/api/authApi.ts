@@ -1,6 +1,11 @@
 import { apiService } from '../../../services/ApiService';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
-import type { RegisterResponse, LoginResponse } from '../types';
+import type { 
+  RegisterResponse, 
+  LoginResponse,
+  ApiLoginResponse,
+  ApiRegisterResponse 
+} from '../types';
 
 /**
  * Register endpoint function
@@ -12,11 +17,23 @@ import type { RegisterResponse, LoginResponse } from '../types';
 export const register = async (
   credentials: RegisterCredentials
 ): Promise<RegisterResponse> => {
-  const response = await apiService.getClient().post<RegisterResponse>(
+  const response = await apiService.getClient().post<ApiRegisterResponse>(
     '/auth/register',
     credentials
   );
-  return response.data;
+
+  // API response'unu beklenen formata transform et
+  const transformedResponse: RegisterResponse = {
+    user: {
+      id: response.data.id,
+      name: response.data.fullName,
+      email: response.data.email,
+      isGuest: false,
+    },
+    message: response.data.message || 'Kayıt işlemi başarıyla tamamlandı',
+  };
+
+  return transformedResponse;
 };
 
 /**
@@ -29,10 +46,23 @@ export const register = async (
 export const login = async (
   credentials: LoginCredentials
 ): Promise<LoginResponse> => {
-  const response = await apiService.getClient().post<LoginResponse>(
+  const response = await apiService.getClient().post<ApiLoginResponse>(
     '/auth/login',
     credentials
   );
-  return response.data;
+
+  // API response'unu beklenen formata transform et
+  const transformedResponse: LoginResponse = {
+    user: {
+      id: response.data.id,
+      name: response.data.fullName,
+      email: response.data.email,
+      isGuest: false,
+    },
+    accessToken: response.data.token, // "token" -> "accessToken"
+    refreshToken: response.data.refreshToken,
+  };
+
+  return transformedResponse;
 };
 

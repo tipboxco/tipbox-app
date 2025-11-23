@@ -27,7 +27,25 @@ export interface RegisterFormData extends RegisterCredentials {
   acceptTerms: boolean;
 }
 
-// Auth API Types
+// Auth API Types - Backend'den gelen ham response formatları
+export interface ApiLoginResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  avatar?: string;
+  token: string; // API'de "token" olarak geliyor, "accessToken" değil
+  refreshToken: string;
+}
+
+export interface ApiRegisterResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  avatar?: string;
+  message?: string;
+}
+
+// Auth API Types - Transform edilmiş response formatları (uygulama içinde kullanılan)
 export interface LoginResponse {
   user: User;
   accessToken: string;

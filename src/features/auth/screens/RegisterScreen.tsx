@@ -55,18 +55,20 @@ export const RegisterScreen = () => {
           placement: 'top',
           render: ({ id }) => {
             return (
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Kayıt Başarılı</ToastTitle>
-                <ToastDescription>
-                  {result.message || 'Kayıt işlemi başarıyla tamamlandı!'}
-                </ToastDescription>
-              </Toast>
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                  <ToastTitle>Kayıt Başarılı</ToastTitle>
+                  <ToastDescription>
+                    {result.message || 'Kayıt işlemi başarıyla tamamlandı!'}
+                  </ToastDescription>
+                </Toast>
+              </Box>
             );
           },
         });
 
         // Başarılı kayıt sonrası verify code ekranına yönlendir
-        navigation.navigate('VerifyCode', { email });
+        navigation.navigate('VerifyCode', { email, context: 'signUp' });
       } catch (error: any) {
         // Console'da tam error'u göster
         console.error('=== REGISTER API ERROR ===');
@@ -88,10 +90,12 @@ export const RegisterScreen = () => {
           placement: 'top',
           render: ({ id }) => {
             return (
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Kayıt Hatası</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Kayıt Hatası</ToastTitle>
+                  <ToastDescription>{errorMessage}</ToastDescription>
+                </Toast>
+              </Box>
             );
           },
         });

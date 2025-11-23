@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Box, 
@@ -32,90 +32,127 @@ export const VerifyCodeScreen = ({
   onBackPress,
   isLoading = false
 }: VerifyCodeScreenProps) => {
+
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [focusedIndex, setFocusedIndex] = useState(0);
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const nextFocusIndexRef = useRef<number | null>(null);
 
-  const handleCodeChange = (text: string, index: number) => {
-    if (text.length > 1) return; // Sadece tek karakter
-    
-    const newCode = [...code];
-    newCode[index] = text;
-    setCode(newCode);
+  const inputRefs = useRef<Array<TextInput | null>>([]);
 
-    // Otomatik olarak bir sonraki input'a geç
-    if (text && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-      setFocusedIndex(index + 1);
+  // İlk ekran açıldığında 0. input focus
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRefs.current[0]?.focus();
+      setFocusedIndex(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Code değiştiğinde otomatik focus yap
+  useEffect(() => {
+    if (nextFocusIndexRef.current !== null) {
+      const nextIndex = nextFocusIndexRef.current;
+      nextFocusIndexRef.current = null;
+      
+      const attemptFocus = (retryCount = 0) => {
+        const nextRef = inputRefs.current[nextIndex];
+        if (nextRef) {
+          nextRef.focus();
+          setFocusedIndex(nextIndex);
+        } else if (retryCount < 10) {
+          setTimeout(() => attemptFocus(retryCount + 1), 30);
+        }
+      };
+      
+      requestAnimationFrame(() => {
+        attemptFocus();
+      });
     }
-  };
+  }, [code]);
 
-  const handleKeyPress = (key: string, index: number) => {
-    if (key === 'Backspace' && !code[index] && index > 0) {
-      // Eğer mevcut input boşsa ve backspace'e basıldıysa, önceki input'a geç
-      inputRefs.current[index - 1]?.focus();
-      setFocusedIndex(index - 1);
-    }
-  };
-
+  // Focus handler - focusedIndex'i güncelle
   const handleFocus = (index: number) => {
     setFocusedIndex(index);
   };
 
-  const handleVerify = () => {
-    const verificationCode = code.join('');
-    if (verificationCode.length === 6) {
-      onVerify(verificationCode);
+  // Digit değişimi → sonraki input focus
+  const handleCodeChange = (value: string, index: number) => {
+    // Sadece rakamları kabul et
+    const digit = value.replace(/[^0-9]/g, '');
+    if (digit.length > 1) return;
+
+    // Functional update kullanarak güncel state'i garanti et
+    setCode((prevCode) => {
+      const newCode = [...prevCode];
+      newCode[index] = digit;
+      
+      // Rakam girildiyse sonraki input'a geçmek için işaretle
+      if (digit && index < 5) {
+        nextFocusIndexRef.current = index + 1;
+      }
+      
+      return newCode;
+    });
+  };
+
+  // Backspace → önceki input'a dön
+  const handleKeyPress = (e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace') {
+      setCode((prevCode) => {
+        const newCode = [...prevCode];
+        
+        if (newCode[index]) {
+          // Eğer mevcut input'ta karakter varsa, onu sil
+          newCode[index] = '';
+        } else if (index > 0) {
+          // Eğer mevcut input boşsa, önceki input'a geç ve onu sil
+          newCode[index - 1] = '';
+          setTimeout(() => {
+            inputRefs.current[index - 1]?.focus();
+            setFocusedIndex(index - 1);
+          }, 50);
+        }
+        
+        return newCode;
+      });
     }
   };
 
-  const isCodeComplete = code.every(digit => digit !== '');
+  const isCodeComplete = code.every(d => d !== '');
+
+  const handleVerify = () => {
+    const verificationCode = code.join('');
+    if (verificationCode.length === 6) onVerify(verificationCode);
+  };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-        borderWidth={1}
-        borderColor="#E9E9E9"
-      >
-      <Header
-        title={headerTitle}
-        showBackButton={!!onBackPress}
-        onBackPress={onBackPress}
-      />
-      
-      <VStack flex={1} space="xl" p="$4" pt="$16">
-        {/* Title */}
-        <Text
-          fontSize={22}
-          fontWeight="$bold"
-          color={isDark ? '#FFFFFF' : '#000000'}
-          textAlign="left"
-        >
-          {title}
-        </Text>
-        
-        {/* Description */}
-        <Text
-          fontSize={10}
-          color={isDark ? '#FFFFFF' : '#000000'}
-          textAlign="left"
-          lineHeight={12}
-        >
-          {description}
-          {'\n'}
-          {maskedEmail}
-        </Text>
+    <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
 
-        {/* Pin Input */}
-        <VStack space="md" alignItems="center">
-          <HStack space="md" justifyContent="center">
-            {code.map((digit, index) => (
-              <VStack key={index} alignItems="center" space="xs">
+        <Header
+          title={headerTitle}
+          showBackButton={!!onBackPress}
+          onBackPress={onBackPress}
+        />
+
+        <VStack flex={1} space="xl" p="$4" pt="$16">
+          <Text fontSize={22} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
+            {title}
+          </Text>
+
+          <Text fontSize={10} color={isDark ? '#FFFFFF' : '#000000'} lineHeight={12}>
+            {description}{'\n'}{maskedEmail}
+          </Text>
+
+          {/* PIN Input */}
+          <VStack space="md" alignItems="center">
+            <HStack space="md" justifyContent="center">
+              {code.map((digit, index) => (
                 <Pressable
+                  key={index}
                   onPress={() => {
                     inputRefs.current[index]?.focus();
                     setFocusedIndex(index);
@@ -124,73 +161,65 @@ export const VerifyCodeScreen = ({
                   <Box
                     w={43}
                     h={59}
-                    bg="transparent"
                     alignItems="center"
                     justifyContent="center"
-                    borderWidth={focusedIndex === index ? 1 : 0}
-                    borderColor={isDark ? '#FFFFFF' : '#000000'}
+                    borderWidth={1}
+                    borderColor={
+                      focusedIndex === index
+                        ? (isDark ? '#FFFFFF' : '#000000')
+                        : '#E9E9E9'
+                    }
                     borderRadius={8}
+                    bg="transparent"
                   >
                     <Text
                       fontSize={32}
                       fontWeight="$medium"
-                      color={isDark ? '#FFFFFF' : '#C1BEBF'}
-                      textAlign="center"
+                      color={digit ? (isDark ? '#FFFFFF' : '#000000') : '#C1BEBF'}
                     >
-                      {digit || '0'}
+                      {digit || ''}
                     </Text>
+
+                    {/* ⛔ Artık invisible değil → tamamen görünmez ama input eventlerini alıyor */}
                     <TextInput
-                      ref={(ref) => {
+                      ref={ref => {
                         inputRefs.current[index] = ref;
                       }}
                       value={digit}
-                      onChangeText={(text) => handleCodeChange(text, index)}
-                      onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+                      onChangeText={text => handleCodeChange(text, index)}
+                      onKeyPress={e => handleKeyPress(e, index)}
                       onFocus={() => handleFocus(index)}
-                      keyboardType="numeric"
+                      keyboardType="number-pad"
                       maxLength={1}
                       style={{
                         position: 'absolute',
                         width: 43,
                         height: 59,
-                        opacity: 0,
-                        fontSize: 32,
-                        textAlign: 'center',
+                        opacity: 0.02,
                         color: 'transparent',
                       }}
                       autoFocus={index === 0}
                     />
                   </Box>
                 </Pressable>
-                <Box
-                  w={23}
-                  h={1}
-                  bg={isDark ? '#333333' : '#C8C8C8'}
-                />
-              </VStack>
-            ))}
-          </HStack>
-        </VStack>
+              ))}
+            </HStack>
+          </VStack>
 
-        {/* Verify Button */}
-        <Button
-          bg={isDark ? '#D8FF08' : '#D8FF08'}
-          borderRadius={8}
-          py="$3"
-          onPress={handleVerify}
-          opacity={isCodeComplete ? 1 : 0.5}
-          disabled={!isCodeComplete || isLoading}
-        >
-          <ButtonText
-            color={isDark ? '#111111' : '#111111'}
-            fontSize={14}
-            fontWeight="$bold"
-            textAlign="center"
+          {/* Button */}
+          <Button
+            bg="#D8FF08"
+            borderRadius={8}
+            py="$3"
+            onPress={handleVerify}
+            opacity={isCodeComplete ? 1 : 0.5}
+            disabled={!isCodeComplete || isLoading}
           >
-            {isLoading ? 'Verifying...' : 'Next'}
-          </ButtonText>
-        </Button>
-      </VStack>
+            <ButtonText color="#111111" fontSize={14} fontWeight="$bold">
+              {isLoading ? 'Verifying...' : 'Next'}
+            </ButtonText>
+          </Button>
+        </VStack>
       </Box>
     </SafeAreaView>
   );

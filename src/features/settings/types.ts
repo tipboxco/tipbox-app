@@ -96,3 +96,14 @@ export interface SettingsUpdatePayload {
   section: keyof AppSettings;
   data: Partial<AppSettings[keyof AppSettings]>;
 }
+
+// Change Password Types
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}

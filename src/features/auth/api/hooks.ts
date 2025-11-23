@@ -26,7 +26,6 @@ export const useRegister = () => {
     mutationFn: register,
     onSuccess: (data) => {
       // Başarılı kayıt sonrası işlemler burada yapılabilir
-      console.log('Registration successful:', data);
     },
     onError: (error) => {
       // Hata durumunda işlemler burada yapılabilir
@@ -59,10 +58,9 @@ export const useLogin = () => {
 
       // Current user query'sini set et
       queryClient.setQueryData(authKeys.currentUser(), data.user);
-
-      console.log('Login successful:', data);
     },
     onError: (error) => {
+      // Hata durumunda işlemler burada yapılabilir
       console.error('Login error:', error);
     },
   });

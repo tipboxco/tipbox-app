@@ -59,12 +59,14 @@ export const LoginScreen = () => {
           placement: 'top',
           render: ({ id }) => {
             return (
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Giriş Başarılı</ToastTitle>
-                <ToastDescription>
-                  Hoş geldiniz, {result.user.name || result.user.email}!
-                </ToastDescription>
-              </Toast>
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                  <ToastTitle>Giriş Başarılı</ToastTitle>
+                  <ToastDescription>
+                    Hoş geldiniz, {result.user.name || result.user.email}!
+                  </ToastDescription>
+                </Toast>
+              </Box>
             );
           },
         });
@@ -103,10 +105,12 @@ export const LoginScreen = () => {
           placement: 'top',
           render: ({ id }) => {
             return (
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Giriş Hatası</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Giriş Hatası</ToastTitle>
+                  <ToastDescription>{errorMessage}</ToastDescription>
+                </Toast>
+              </Box>
             );
           },
         });
@@ -134,6 +138,10 @@ export const LoginScreen = () => {
     } catch (error) {
       console.error('Misafir girişi hatası:', error);
     }
+  };
+
+  const handleForgotPassword = () => {
+    navigation.navigate('ForgotPassword' as never);
   };
 
   return (
@@ -209,6 +217,16 @@ export const LoginScreen = () => {
                 mr="$2" 
               />
             </Input>
+            <Box flexDirection="row" justifyContent="flex-end" mt="$1">
+              <Text
+                fontSize="$xs"
+                color={isDark ? '$primary400' : '$primary600'}
+                onPress={handleForgotPassword}
+                style={{ textDecorationLine: 'underline' }}
+              >
+                Forgot Password?
+              </Text>
+            </Box>
           </FormControl>
         </VStack>
 

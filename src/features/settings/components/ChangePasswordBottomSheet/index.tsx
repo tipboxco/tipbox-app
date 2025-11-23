@@ -9,9 +9,14 @@ import {
   Button,
   ButtonText,
   Pressable,
+  useToast,
+  Toast,
+  ToastTitle,
+  ToastDescription,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
+import { useChangePassword } from '../../api/hooks';
 
 interface ChangePasswordBottomSheetProps {
   onClose: () => void;
@@ -21,6 +26,9 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
+  const toast = useToast();
+  const changePasswordMutation = useChangePassword();
+
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -183,10 +191,111 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
       <Button
         bg="#E2FF46"
         borderRadius={8}
-        onPress={() => {
-          console.log('Password change requested');
-          onClose();
+        onPress={async () => {
+          // Validasyon
+          if (!currentPassword || !newPassword || !confirmPassword) {
+            toast.show({
+              placement: 'top',
+              render: ({ id }) => {
+                return (
+                  <Box maxWidth="90%" alignSelf="center" px="$4">
+                    <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                      <ToastTitle>Eksik Bilgi</ToastTitle>
+                      <ToastDescription>Lütfen tüm alanları doldurun.</ToastDescription>
+                    </Toast>
+                  </Box>
+                );
+              },
+            });
+            return;
+          }
+
+          if (newPassword !== confirmPassword) {
+            toast.show({
+              placement: 'top',
+              render: ({ id }) => {
+                return (
+                  <Box maxWidth="90%" alignSelf="center" px="$4">
+                    <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                      <ToastTitle>Şifreler Eşleşmiyor</ToastTitle>
+                      <ToastDescription>Yeni şifre ve onay şifresi aynı olmalıdır.</ToastDescription>
+                    </Toast>
+                  </Box>
+                );
+              },
+            });
+            return;
+          }
+
+          if (newPassword.length < 8) {
+            toast.show({
+              placement: 'top',
+              render: ({ id }) => {
+                return (
+                  <Box maxWidth="90%" alignSelf="center" px="$4">
+                    <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                      <ToastTitle>Geçersiz Şifre</ToastTitle>
+                      <ToastDescription>Şifre en az 8 karakter olmalıdır.</ToastDescription>
+                    </Toast>
+                  </Box>
+                );
+              },
+            });
+            return;
+          }
+
+          try {
+            const result = await changePasswordMutation.mutateAsync({
+              currentPassword,
+              newPassword,
+            });
+
+            // Başarılı toast göster
+            toast.show({
+              placement: 'top',
+              render: ({ id }) => {
+                return (
+                  <Box maxWidth="90%" alignSelf="center" px="$4">
+                    <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                      <ToastTitle>Şifre Değiştirildi</ToastTitle>
+                      <ToastDescription>
+                        {result.message || 'Şifreniz başarıyla güncellendi.'}
+                      </ToastDescription>
+                    </Toast>
+                  </Box>
+                );
+              },
+            });
+
+            // Form'u sıfırla ve bottom sheet'i kapat
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            onClose();
+          } catch (error: any) {
+            // Hata toast göster
+            const errorMessage =
+              error?.response?.data?.message ||
+              error?.message ||
+              'Şifre değiştirme işlemi sırasında bir hata oluştu';
+
+            toast.show({
+              placement: 'top',
+              render: ({ id }) => {
+                return (
+                  <Box maxWidth="90%" alignSelf="center" px="$4">
+                    <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                      <ToastTitle>Hata</ToastTitle>
+                      <ToastDescription>{errorMessage}</ToastDescription>
+                    </Toast>
+                  </Box>
+                );
+              },
+            });
+          }
         }}
+        disabled={changePasswordMutation.isPending}
+        opacity={changePasswordMutation.isPending ? 0.5 : 1}
       >
         <ButtonText
           color="#000000"
@@ -194,7 +303,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           fontWeight="$bold"
           textAlign="center"
         >
-          Change Password
+          {changePasswordMutation.isPending ? 'Değiştiriliyor...' : 'Change Password'}
         </ButtonText>
       </Button>
     </VStack>

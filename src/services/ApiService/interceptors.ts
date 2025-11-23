@@ -37,16 +37,6 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
   // Request Interceptor - JWT Token ekleme
   client.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
-      // Debug: Origin header'ını logla (CORS için)
-      if (__DEV__) {
-        console.log('🌐 Request Origin:', config.headers?.Origin || 'undefined (React Native)');
-        console.log('🌐 Request Headers:', {
-          Origin: config.headers?.Origin,
-          'Content-Type': config.headers?.['Content-Type'],
-          Authorization: config.headers?.Authorization ? 'Bearer ***' : 'undefined',
-        });
-      }
-
       // Token gerektirmeyen endpoint'ler (login, register gibi)
       const publicEndpoints = ['/auth/login', '/auth/register', '/auth/refresh'];
       const isPublicEndpoint = publicEndpoints.some((endpoint) =>
@@ -84,6 +74,18 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
         );
 
         if (isPublicEndpoint) {
+          return Promise.reject(error);
+        }
+
+        // Change password endpoint'i için 401 hatası, token geçersizliği değil
+        // muhtemelen yanlış current password anlamına geliyor
+        // Bu durumda refresh token yapmadan direkt hatayı döndür
+        const skipRefreshEndpoints = ['/users/settings/change-password'];
+        const shouldSkipRefresh = skipRefreshEndpoints.some((endpoint) =>
+          originalRequest.url?.includes(endpoint)
+        );
+
+        if (shouldSkipRefresh) {
           return Promise.reject(error);
         }
 
