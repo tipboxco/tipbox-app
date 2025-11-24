@@ -48,8 +48,12 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const updateUser = useAppStore(state => state.updateUser);
   const insets = useSafeAreaInsets();
   
+  // Store'daki user değişikliğini takip et (sonsuz döngüyü önlemek için)
+  const previousUserRef = useRef<{ id?: string; fullName?: string; avatar?: string } | null>(null);
+  const isUpdatingFromProfileRef = useRef(false);
+  
   // Profile bilgilerini getir (cache olmadan)
-  const { data: userProfile } = useQuery({
+  const { data: userProfile, refetch } = useQuery({
     queryKey: user?.id ? profileKeys.profile(user.id) : ['profile', 'profile', 'disabled'],
     queryFn: () => {
       if (!user?.id) {
@@ -64,6 +68,35 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
     refetchOnWindowFocus: false,
     retry: 1,
   });
+  
+  // Store'daki user değişikliğini dinle ve profile query'sini yeniden fetch et
+  useEffect(() => {
+    console.log('userChanged Değişti');
+    if (user?.id) {
+      const currentUser = {
+        id: user.id,
+        fullName: user.fullName,
+        avatar: user.avatar,
+      };
+      
+      const previousUser = previousUserRef.current;
+      
+      // User değiştiğinde (id, fullName veya avatar) ve bu değişiklik userProfile'dan kaynaklanmadıysa
+      // Profile query'sini yeniden fetch et
+      const userChanged = 
+        previousUser &&
+        previousUser.id === currentUser.id &&
+        (previousUser.fullName !== currentUser.fullName || previousUser.avatar !== currentUser.avatar);
+      
+      // Eğer user değişti ve bu değişiklik profile'dan kaynaklanmadıysa (profil sayfasından gelen güncelleme)
+      if (userChanged && !isUpdatingFromProfileRef.current) {
+        // Store'dan gelen değişiklik - profile query'sini yeniden fetch et
+        refetch();
+      }
+      
+      previousUserRef.current = currentUser;
+    }
+  }, [user?.id, user?.fullName, user?.avatar, refetch]);
   
   // Profile bilgisi geldiğinde store'daki user'ı güncelle (sadece değişiklik varsa)
   const previousProfileRef = useRef<{ name?: string; avatarUrl?: string } | null>(null);
@@ -90,10 +123,18 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           user.avatar !== currentProfile.avatarUrl;
         
         if (needsUpdate) {
+          // Profile'dan gelen güncelleme olduğunu işaretle (sonsuz döngüyü önlemek için)
+          isUpdatingFromProfileRef.current = true;
+          
           updateUser({
             fullName: currentProfile.name,
             avatar: currentProfile.avatarUrl,
           });
+          
+          // Flag'i resetle
+          setTimeout(() => {
+            isUpdatingFromProfileRef.current = false;
+          }, 100);
         }
         
         previousProfileRef.current = currentProfile;
