@@ -1,7 +1,7 @@
 import React from 'react';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { config } from './config';
-import { useThemeStore } from '@/src/store/themeStore';
+import { useAppStore } from '@/src/store/appStore';
 
 interface GluestackProviderProps {
   children: React.ReactNode;
@@ -10,7 +10,7 @@ interface GluestackProviderProps {
 export const GluestackProvider: React.FC<GluestackProviderProps> = ({ 
   children
 }) => {
-  const colorMode = useThemeStore((state) => state.colorMode);
+  const colorMode = useAppStore((state) => state.colorMode);
 
   return (
     <GluestackUIProvider config={config} colorMode={colorMode}>

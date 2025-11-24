@@ -3,6 +3,7 @@ import { StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   Box, 
@@ -15,12 +16,13 @@ import {
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProfileStackParamList } from '../../navigation';
-import { UserCardData } from '@/src/mock/profile/userCardData/types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
-import { useAuthStore } from '@/src/store/authStore';
+import { useAppStore } from '@/src/store/appStore';
+import type { UserProfile } from '../../types';
 
 interface ProfileCardProps {
-  userData: UserCardData;
+  userData: UserProfile;
+  userId?: string; // Profil sahibinin ID'si (kendi profili kontrolü için)
 }
 
 const styles = StyleSheet.create({
@@ -33,13 +35,17 @@ const styles = StyleSheet.create({
   },
 });
 
-export const ProfileCard = ({ userData }: ProfileCardProps) => {
+export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const { user } = useAuthStore();
+  const { user } = useAppStore();
+  const insets = useSafeAreaInsets();
+  
+  // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
+  const isOwnProfile = user?.id === userId;
 
   const handleEditProfile = () => {
     setIsMenuVisible(false);
@@ -62,18 +68,27 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
       {/* Banner */}
       <Box h={130} overflow="hidden" position="relative">
         <Image
-          source={require('@/assets/banner/banner_01.png')}
+          source={userData.bannerUrl ? { uri: userData.bannerUrl } : require('@/assets/banner/banner_01.png')}
           alt="Profile Banner"
           w="100%"
           h="100%"
           resizeMode="cover"
+        />
+        {/* Overlay */}
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          bg="rgba(0, 0, 0, 0.5)"
         />
       </Box>
 
       {/* Back Button */}
       <Pressable 
         position="absolute" 
-        top={20} 
+        top={insets.top} 
         left={16}
         onPress={handleBackPress}
         zIndex={2000}
@@ -85,7 +100,7 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
       {/* Menu Button */}
       <Pressable 
         position="absolute" 
-        top={20} 
+        top={insets.top} 
         right={16}
         onPress={() => {
           console.log('[ProfileCard] Menu button pressed');
@@ -110,7 +125,7 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
         borderColor="$white"
       >
         <Image
-          source={userData.avatar}
+          source={userData.avatarUrl ? { uri: userData.avatarUrl } : require('@/assets/avatar/ozan.png')}
           alt={userData.name}
           w="100%"
           h="100%"
@@ -129,14 +144,16 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
               {userData.name}
             </Text>
 
-            <Text
-              color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize={10}
-              lineHeight={15}
-              mt={2}
-            >
-              {userData.description}
-            </Text>
+            {userData.biography && (
+              <Text
+                color={isDark ? '$textDark400' : '$textLight600'}
+                fontSize={10}
+                lineHeight={15}
+                mt={2}
+              >
+                {userData.biography}
+              </Text>
+            )}
 
             {/* Stats */}
             <HStack space="xs" mt={10}>
@@ -189,7 +206,14 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
               >
                 {" "}•{" "}
               </Text>
-              <Pressable onPress={() => navigation.navigate('TrustList', { initialTab: 'truster' })}>
+              <Pressable onPress={() => {
+                if (user?.id) {
+                  navigation.navigate('TrustList', { 
+                    userId: user.id,
+                    initialTab: 'truster' 
+                  });
+                }
+              }}>
                 <HStack alignItems="center" space="xs">
                   <Text
                     color={isDark ? '$textDark50' : '$textLight900'}
@@ -209,74 +233,21 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
             </HStack>
 
             {/* Titles */}
-            <Text
-              color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize={10}
-              mt={2}
-            >
-              {userData.titles.join(" - ")}
-            </Text>
+            {userData.titles && userData.titles.length > 0 && (
+              <Text
+                color={isDark ? '$textDark400' : '$textLight600'}
+                fontSize={10}
+                mt={2}
+              >
+                {userData.titles.join(" - ")}
+              </Text>
+            )}
           </Box>
 
           {/* Action Buttons */}
           <HStack space="sm" alignItems="center" position="absolute" right={0} top={-40}>
-            {userData.actions.gift && (
-              <Box 
-                w={30} 
-                h={30} 
-                bg="#F7F7F7" 
-                borderRadius={200} 
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                justifyContent="center" 
-                alignItems="center"
-              >
-                <Feather name="gift" size={14} color="#000" />
-              </Box>
-            )}
-            {userData.actions.headphone && (
-              <Box 
-                w={30} 
-                h={30} 
-                bg="#F7F7F7" 
-                borderRadius={200} 
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                justifyContent="center" 
-                alignItems="center"
-              >
-                <Feather name="headphones" size={14} color="#000" />
-              </Box>
-            )}
-            {userData.actions.chat && (
-              <Box 
-                w={30} 
-                h={30} 
-                bg="#F7F7F7" 
-                borderRadius={200} 
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                justifyContent="center" 
-                alignItems="center"
-              >
-                <Feather name="message-circle" size={14} color="#000" />
-              </Box>
-            )}
-            {userData.actions.notification && (
-              <Box 
-                w={30} 
-                h={30} 
-                bg="#F7F7F7" 
-                borderRadius={200} 
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                justifyContent="center" 
-                alignItems="center"
-              >
-                <Feather name="bell" size={14} color="#000" />
-              </Box>
-            )}
-            {!userData.actions.trust && (
+            {isOwnProfile ? (
+              // Kendi profili - Edit Profile butonu
               <Pressable
                 bg="#F7F7F7"
                 borderRadius={200}
@@ -286,17 +257,92 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
                 py={8}
                 flexDirection="row"
                 alignItems="center"
-                gap={2}
+                gap={6}
+                onPress={handleEditProfile}
               >
-                <Feather name="user-plus" size={14} color="#000" />
+                <Feather name="edit-2" size={14} color="#000" />
                 <Text
                   color="#000"
                   fontSize={10}
                   fontWeight="$semibold"
                 >
-                  Trust
+                  Edit Profile
                 </Text>
               </Pressable>
+            ) : (
+              // Başka kullanıcının profili - Action butonları
+              <>
+                <Box 
+                  w={30} 
+                  h={30} 
+                  bg="#F7F7F7" 
+                  borderRadius={200} 
+                  borderWidth={1}
+                  borderColor="#E9E9E9"
+                  justifyContent="center" 
+                  alignItems="center"
+                >
+                  <Feather name="gift" size={14} color="#000" />
+                </Box>
+                <Box 
+                  w={30} 
+                  h={30} 
+                  bg="#F7F7F7" 
+                  borderRadius={200} 
+                  borderWidth={1}
+                  borderColor="#E9E9E9"
+                  justifyContent="center" 
+                  alignItems="center"
+                >
+                  <Feather name="headphones" size={14} color="#000" />
+                </Box>
+                <Box 
+                  w={30} 
+                  h={30} 
+                  bg="#F7F7F7" 
+                  borderRadius={200} 
+                  borderWidth={1}
+                  borderColor="#E9E9E9"
+                  justifyContent="center" 
+                  alignItems="center"
+                >
+                  <Feather name="message-circle" size={14} color="#000" />
+                </Box>
+                <Box 
+                  w={30} 
+                  h={30} 
+                  bg="#F7F7F7" 
+                  borderRadius={200} 
+                  borderWidth={1}
+                  borderColor="#E9E9E9"
+                  justifyContent="center" 
+                  alignItems="center"
+                >
+                  <Feather name="bell" size={14} color="#000" />
+                </Box>
+                {userData.isTrusted === false && (
+                  <Pressable
+                    bg="#F7F7F7"
+                    borderRadius={200}
+                    borderWidth={1}
+                    borderColor="#E9E9E9"
+                    px={12}
+                    py={8}
+                    flexDirection="row"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    <Feather name="user-plus" size={14} color="#000" />
+                    <Text
+                      color="#000"
+                      fontSize={10}
+                      fontWeight="$semibold"
+                    >
+                      Trust
+                    </Text>
+                  </Pressable>
+                )}
+              </>
             )}
           </HStack>
         </Box>
@@ -343,58 +389,60 @@ export const ProfileCard = ({ userData }: ProfileCardProps) => {
       </Box>
 
       {/* Badge Items */}
-      <Box mt={6} px={15}>
-        <Box
-          bg="$backgroundLight50"
-          borderRadius={5}
-          p={8}
-          h={130}
-        >
-          <HStack space="md" justifyContent="space-between">
-            {userData.badges.map((badge) => (
-              <VStack key={badge.title} space="xs" alignItems="center">
-                <Box
-                  w={70}
-                  h={70}
-                  bg="$backgroundLight100"
-                  borderRadius={5}
-                  borderWidth={1}
-                  borderColor="$backgroundLight200"
-                  overflow="hidden"
-                  justifyContent="center"
-                  alignItems="center"
-                >
-                  <Image
-                    source={badge.image}
-                    alt={badge.title}
-                    w={60}
-                    h={60}
-                    resizeMode="contain"
-                  />
-                </Box>
-                <Text
-                  color={isDark ? '$textDark400' : '$textLight600'}
-                  fontSize={8}
-                  textAlign="center"
-                >
-                  {badge.title}
-                </Text>
-              </VStack>
-            ))}
-          </HStack>
-          <Pressable onPress={() => navigation.navigate('Collections')}>
-            <Text
-              color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize={11}
-              textAlign="center"
-              mt={12}
-              fontWeight="$bold"
-            >
-              See More Collections
-            </Text>
-          </Pressable>
+      {userData.badges && userData.badges.length > 0 && (
+        <Box mt={6} px={15}>
+          <Box
+            bg="$backgroundLight50"
+            borderRadius={5}
+            p={8}
+            h={130}
+          >
+            <HStack space="md" justifyContent="space-between">
+              {userData.badges.map((badge) => (
+                <VStack key={badge.id} space="xs" alignItems="center">
+                  <Box
+                    w={70}
+                    h={70}
+                    bg="$backgroundLight100"
+                    borderRadius={5}
+                    borderWidth={1}
+                    borderColor="$backgroundLight200"
+                    overflow="hidden"
+                    justifyContent="center"
+                    alignItems="center"
+                  >
+                    <Image
+                      source={badge.image ? { uri: badge.image } : require('@/assets/badges/badge_01.png')}
+                      alt={badge.title}
+                      w={60}
+                      h={60}
+                      resizeMode="contain"
+                    />
+                  </Box>
+                  <Text
+                    color={isDark ? '$textDark400' : '$textLight600'}
+                    fontSize={8}
+                    textAlign="center"
+                  >
+                    {badge.title}
+                  </Text>
+                </VStack>
+              ))}
+            </HStack>
+            <Pressable onPress={() => navigation.navigate('Collections')}>
+              <Text
+                color={isDark ? '$textDark400' : '$textLight600'}
+                fontSize={11}
+                textAlign="center"
+                mt={12}
+                fontWeight="$bold"
+              >
+                See More Collections
+              </Text>
+            </Pressable>
+          </Box>
         </Box>
-      </Box>
+      )}
 
       {/* Menu Modal */}
       <Modal

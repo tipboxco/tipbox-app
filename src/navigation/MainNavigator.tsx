@@ -5,12 +5,12 @@ import { SettingsNavigator } from '@/src/features/settings/navigation';
 import { MoreSchoiseNavigator } from '@/src/features/moreSchoise/navigation';
 import { AuthNavigator } from '@/src/features/auth/navigation';
 import { RootStackParamList } from './navigation.types';
-import { useAuthStore } from '@/src/store/authStore';
+import { useAppStore } from '@/src/store/appStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const MainNavigator = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
 
   return (
     <Stack.Navigator

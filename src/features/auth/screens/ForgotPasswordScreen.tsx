@@ -32,10 +32,10 @@ export const ForgotPasswordScreen = () => {
         render: ({ id }) => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Geçersiz E-posta</ToastTitle>
-                <ToastDescription>Lütfen geçerli bir e-posta adresi girin.</ToastDescription>
-              </Toast>
+            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+              <ToastTitle>Geçersiz E-posta</ToastTitle>
+              <ToastDescription>Lütfen geçerli bir e-posta adresi girin.</ToastDescription>
+            </Toast>
             </Box>
           );
         },
@@ -57,10 +57,10 @@ export const ForgotPasswordScreen = () => {
         render: ({ id }) => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>E-posta Gönderildi</ToastTitle>
-                <ToastDescription>Doğrulama kodu e-posta adresinize gönderildi.</ToastDescription>
-              </Toast>
+            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+              <ToastTitle>E-posta Gönderildi</ToastTitle>
+              <ToastDescription>Doğrulama kodu e-posta adresinize gönderildi.</ToastDescription>
+            </Toast>
             </Box>
           );
         },
@@ -79,12 +79,12 @@ export const ForgotPasswordScreen = () => {
         render: ({ id }) => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>
-                  {error?.response?.data?.message || error?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'}
-                </ToastDescription>
-              </Toast>
+            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+              <ToastTitle>Hata</ToastTitle>
+              <ToastDescription>
+                {error?.response?.data?.message || error?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'}
+              </ToastDescription>
+            </Toast>
             </Box>
           );
         },

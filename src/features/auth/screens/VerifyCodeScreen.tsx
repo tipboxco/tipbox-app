@@ -4,14 +4,14 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
-import { useAuthStore } from '@/src/store/authStore';
+import { useAppStore } from '@/src/store/appStore';
 import VerifyCodeScreen from '@/src/components/VerifyCodeScreen';
 
 type VerifyCodeScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'VerifyCode'>;
 type VerifyCodeScreenRouteProp = RouteProp<AuthStackParamList, 'VerifyCode'>;
 
 export const AuthVerifyCodeScreen = () => {
-  const { setTempUser } = useAuthStore();
+  const { setTempUser } = useAppStore();
   const navigation = useNavigation<VerifyCodeScreenNavigationProp>();
   const route = useRoute<VerifyCodeScreenRouteProp>();
   const { email, context = 'signUp' } = route.params;
@@ -32,8 +32,8 @@ export const AuthVerifyCodeScreen = () => {
           // Sign Up akışı: SetupProfile ekranına yönlendir
           const mockUser = {
             id: '1',
+            fullName: email.split('@')[0],
             email,
-            username: email.split('@')[0],
           };
           const mockAccessToken = 'mock-access-token';
           

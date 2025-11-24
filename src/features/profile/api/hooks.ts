@@ -1,13 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { getTrustList } from './trustApi';
-import type { TrustUser } from '../types';
+import { getUserProfile } from './profileApi';
+import type { TrustUser, UserProfile } from '../types';
 
 /**
  * Query Keys - Profile feature için cache key pattern'leri
  */
 export const profileKeys = {
   all: ['profile'] as const,
+  profile: (userId: string) => [...profileKeys.all, 'profile', userId] as const,
   trusts: () => [...profileKeys.all, 'trusts'] as const,
   trustList: (userId: string, searchQuery?: string) => 
     [...profileKeys.trusts(), userId, ...(searchQuery ? ['search', searchQuery] : [])] as const,
@@ -111,5 +113,33 @@ export const useTrustList = (
   }, [queryResult.isSuccess, queryResult.isError, queryResult.data, queryResult.isFetching, queryResult.dataUpdatedAt, queryResult.error, userId, searchQuery, hasSearchQuery, queryClient]);
 
   return queryResult;
+};
+
+/**
+ * Get User Profile query hook
+ * Kullanıcı profil bilgilerini getirir ve cache'ler
+ * 
+ * @param userId - Kullanıcı ID'si
+ * @returns React Query hook result
+ * 
+ * @example
+ * const { data, isLoading, error } = useUserProfile('user-123');
+ */
+export const useUserProfile = (userId: string | undefined) => {
+  return useQuery<UserProfile, Error>({
+    queryKey: userId ? profileKeys.profile(userId) : ['profile', 'profile', 'disabled'],
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return getUserProfile(userId);
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 };
 

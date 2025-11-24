@@ -1,4 +1,4 @@
-import { useThemeStore } from '@/src/store/themeStore';
+import { useAppStore } from '@/src/store/appStore';
 
 type ColorMode = 'light' | 'dark';
 
@@ -8,7 +8,7 @@ interface ColorModeContextType {
 }
 
 export const useColorMode = (): ColorModeContextType => {
-  const { colorMode, toggleColorMode } = useThemeStore();
+  const { colorMode, toggleColorMode } = useAppStore();
 
   return {
     colorMode,

@@ -271,7 +271,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-            onClose();
+          onClose();
           } catch (error: any) {
             // Hata toast göster
             const errorMessage =

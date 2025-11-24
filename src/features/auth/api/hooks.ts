@@ -1,9 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { register, login } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
-import type { RegisterResponse, LoginResponse } from '../types';
-import { TokenService } from '../../../services/TokenService';
-import { useAuthStore } from '../../../store/authStore';
+import type { RegisterResponse, ApiLoginResponse } from '../types';
+import { useAppStore } from '../../../store/appStore';
 
 /**
  * Query Keys - Auth feature için cache key pattern'leri
@@ -45,19 +44,26 @@ export const useRegister = () => {
 export const useLogin = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<LoginResponse, Error, LoginCredentials>({
+  return useMutation<ApiLoginResponse, Error, LoginCredentials>({
     mutationFn: login,
     onSuccess: async (data) => {
-      // Token'ları SecureStore'a kaydet
-      if (data.accessToken && data.refreshToken) {
-        await TokenService.setTokens(data.accessToken, data.refreshToken);
-      }
-
-      // Auth store'u güncelle
-      useAuthStore.getState().login(data.user, data.accessToken);
+      // App store'u güncelle - login fonksiyonu token'ları SecureStore'a kaydeder
+      await useAppStore.getState().login({
+        id: data.id,
+        fullName: data.fullName,
+        email: data.email,
+        avatar: data.avatar,
+        token: data.token,
+        refreshToken: data.refreshToken,
+      });
 
       // Current user query'sini set et
-      queryClient.setQueryData(authKeys.currentUser(), data.user);
+      queryClient.setQueryData(authKeys.currentUser(), {
+        id: data.id,
+        name: data.fullName,
+        email: data.email,
+        isGuest: false,
+      });
     },
     onError: (error) => {
       // Hata durumunda işlemler burada yapılabilir

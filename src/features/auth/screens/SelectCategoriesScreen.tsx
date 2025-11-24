@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
-import { useAuthStore } from '@/src/store/authStore';
+import { useAppStore } from '@/src/store/appStore';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import categories from '@/src/mock/auth/categorys';
@@ -61,7 +61,7 @@ export const SelectCategoriesScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
-  const { completeRegistration } = useAuthStore();
+  const { completeRegistration } = useAppStore();
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
 
   const handleSelectSubCategory = (subCategoryId: string) => {

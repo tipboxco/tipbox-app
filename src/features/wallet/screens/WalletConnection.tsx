@@ -3,12 +3,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/src/components/Header';
-import { useWalletStore } from '@/src/store';
+import { WalletService } from '@/src/services/WalletService';
 import { useNavigation } from '@react-navigation/native';
+import { useState, useEffect } from 'react';
 
 export const WalletConnection: React.FC = () => {
-    const connect = useWalletStore(state => state.connect);
+    const [isConnected, setIsConnected] = useState(false);
     const navigation = useNavigation<any>();
+
+    // Wallet connection durumunu yükle
+    useEffect(() => {
+        const loadWalletStatus = async () => {
+            const status = await WalletService.getWalletConnectionStatus();
+            setIsConnected(status);
+        };
+        loadWalletStatus();
+    }, []);
+
+    const handleConnect = async () => {
+        await WalletService.setWalletConnectionStatus(true);
+        setIsConnected(true);
+        // WalletScreen'e yönlendir
+        navigation.replace('WalletScreen' as never);
+    };
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -33,9 +50,7 @@ export const WalletConnection: React.FC = () => {
                 {/* Action buttons block (Create / Connect) */}
                 <HStack mt="$6" space="md" flexWrap="wrap" justifyContent="center">
                     <Pressable
-                        onPress={() => {
-                            connect();
-                        }}
+                        onPress={handleConnect}
                         bg="$backgroundLight100"
                         $dark-bg="$backgroundDark800"
                         borderWidth={1}

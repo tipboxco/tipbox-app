@@ -5,7 +5,8 @@ import { WalletConnection } from './screens/WalletConnection';
 import { SwapScreen } from './screens/SwapScreen';
 import { NftAssetsScreen } from './screens/NftAssetsScreen';
 import { NftAssetDetailScreen } from './screens/NftAssetDetailScreen';
-import { useWalletStore } from '@/src/store';
+import { WalletService } from '@/src/services/WalletService';
+import { useState, useEffect } from 'react';
 
 export interface NftItem {
   id: string;
@@ -28,7 +29,17 @@ export type WalletStackParamList = {
 const Stack = createNativeStackNavigator<WalletStackParamList>();
 
 export const WalletNavigator: React.FC = () => {
-  const isConnected = useWalletStore(state => state.isConnected);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Wallet connection durumunu yükle
+  useEffect(() => {
+    const loadWalletStatus = async () => {
+      const status = await WalletService.getWalletConnectionStatus();
+      setIsConnected(status);
+    };
+    loadWalletStatus();
+  }, []);
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isConnected ? (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Box,
   VStack,
@@ -13,10 +13,12 @@ import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
-import { useAuthStore } from '@/src/store';
+import { useAppStore } from '@/src/store/appStore';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
-import { mock_user_profile } from '@/src/mock/common';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { getUserProfile } from '@/src/features/profile/api/profileApi';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 
 interface MenuItem {
   id: string;
@@ -41,9 +43,80 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { colorMode } = useColorMode();
   const navigation = useNavigation<any>();
   const isDark = colorMode === 'dark';
-  const logout = useAuthStore(state => state.logout);
-  const userProfile = mock_user_profile;
+  const logout = useAppStore(state => state.logout);
+  const user = useAppStore(state => state.user);
+  const updateUser = useAppStore(state => state.updateUser);
   const insets = useSafeAreaInsets();
+  
+  // Profile bilgilerini getir (cache olmadan)
+  const { data: userProfile } = useQuery({
+    queryKey: user?.id ? profileKeys.profile(user.id) : ['profile', 'profile', 'disabled'],
+    queryFn: () => {
+      if (!user?.id) {
+        throw new Error('User ID is required');
+      }
+      return getUserProfile(user.id);
+    },
+    enabled: !!user?.id,
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+  
+  // Profile bilgisi geldiğinde store'daki user'ı güncelle (sadece değişiklik varsa)
+  const previousProfileRef = useRef<{ name?: string; avatarUrl?: string } | null>(null);
+  
+  useEffect(() => {
+    if (userProfile && user?.id) {
+      const currentProfile = {
+        name: userProfile.name,
+        avatarUrl: userProfile.avatarUrl,
+      };
+      
+      const previousProfile = previousProfileRef.current;
+      
+      // Sadece değerler gerçekten değiştiyse güncelle
+      const hasChanged = 
+        !previousProfile ||
+        previousProfile.name !== currentProfile.name ||
+        previousProfile.avatarUrl !== currentProfile.avatarUrl;
+      
+      if (hasChanged) {
+        // Store'daki mevcut değerlerle karşılaştır - sadece farklıysa güncelle
+        const needsUpdate = 
+          user.fullName !== currentProfile.name ||
+          user.avatar !== currentProfile.avatarUrl;
+        
+        if (needsUpdate) {
+          updateUser({
+            fullName: currentProfile.name,
+            avatar: currentProfile.avatarUrl,
+          });
+        }
+        
+        previousProfileRef.current = currentProfile;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile?.name, userProfile?.avatarUrl, user?.id, user?.fullName, user?.avatar]);
+  
+  // Avatar source - profile'dan gelen avatar URL'i veya store'dan veya default avatar
+  const avatarSource = userProfile?.avatarUrl 
+    ? { uri: userProfile.avatarUrl }
+    : user?.avatar 
+    ? { uri: user.avatar } 
+    : require('@/assets/avatar/ozan.png');
+  
+  // Kullanıcı adı - profile'dan gelen name veya store'dan gelen fullName veya email
+  const displayName = userProfile?.name || user?.fullName || user?.email || 'Kullanıcı';
+  
+  // Tagler (titles) - profile'dan gelen titles
+  const tags = userProfile?.titles || [];
+  
+  // Stats - profile'dan gelen stats
+  const stats = userProfile?.stats || { posts: 0, trust: 0, truster: 0 };
 
   const MENU_ITEMS: MenuItem[] = [
     {
@@ -124,6 +197,8 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
         }}
         contentInsetAdjustmentBehavior="never"
         scrollEnabled
+        bounces={false}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         style={{
           backgroundColor: isDark ? '#000000' : '#FFFFFF',
@@ -159,8 +234,8 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
                 bg="$white"
               >
                 <Image
-                  source={userProfile.avatar}
-                  alt={userProfile.name}
+                  source={avatarSource}
+                  alt={displayName}
                   w="100%"
                   h="100%"
                   rounded="$full"
@@ -172,63 +247,59 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
                 fontWeight="$bold"
                 mt="$2"
               >
-                {userProfile.name}
+                {displayName}
               </Text>
-              {userProfile.badge && (
-                <Box
+              {tags.length > 0 && (
+                <Text
                   mt="$1"
-                  px="$3"
-                  py="$1"
-                  rounded="$full"
-                  borderWidth={1}
-                  borderColor="#FF0842"
-                  bg="rgba(255, 8, 152, 0.4)"
+                  fontSize={9}
+                  fontWeight="$medium"
+                  color="#A3A3A3"
+                  numberOfLines={1}
                 >
-                  <Text fontSize={12} color="#FFFFFF">
-                    {userProfile.badge.text}
-                  </Text>
-                </Box>
+                  {tags.join(', ')}
+                </Text>
               )}
             </Box>
           </Box>
         </Box>
 
           {/* Stats Section – FULL BLEED, içte hizalama */}
-          <Box mt={-20} mb="$4">
-            <HStack justifyContent="space-between" px="$6">
-            <VStack alignItems="center" space="xs">
+          <Box mt={-40} mb="$4">
+            <HStack justifyContent="center" alignItems="center" px="$6">
+            <VStack alignItems="center" space="xs" flex={1}>
               <Text
                 color={isDark ? '$textDark50' : '$textLight900'}
                 fontSize={14}
                 fontWeight="$bold"
               >
-                {userProfile.posts}
+                {stats.posts}
               </Text>
               <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
                 Posts
               </Text>
             </VStack>
-            <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
-            <VStack alignItems="center" space="xs">
+            <Box w={1} h={30} bg={isDark ? '#DFDFDF' : '#DFDFDF'} />
+            <VStack alignItems="center" space="xs" flex={1}>
               <Text
                 color={isDark ? '$textDark50' : '$textLight900'}
                 fontSize={14}
                 fontWeight="$bold"
               >
-                {userProfile.trust}
+                {stats.trust}
               </Text>
               <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
                 Trust
               </Text>
             </VStack>
             <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
-            <VStack alignItems="center" space="xs">
+            <VStack alignItems="center" space="xs" flex={1}>
               <Text
                 color={isDark ? '$textDark50' : '$textLight900'}
                 fontSize={14}
                 fontWeight="$bold"
               >
-                {userProfile.truster}
+                {stats.truster}
               </Text>
               <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
                 Truster

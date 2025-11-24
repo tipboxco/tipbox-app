@@ -83,7 +83,7 @@ export const VerifyCodeScreen = ({
     // Sadece rakamları kabul et
     const digit = value.replace(/[^0-9]/g, '');
     if (digit.length > 1) return;
-
+    
     // Functional update kullanarak güncel state'i garanti et
     setCode((prevCode) => {
       const newCode = [...prevCode];
@@ -132,25 +132,25 @@ export const VerifyCodeScreen = ({
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
 
-        <Header
-          title={headerTitle}
-          showBackButton={!!onBackPress}
-          onBackPress={onBackPress}
-        />
-
-        <VStack flex={1} space="xl" p="$4" pt="$16">
+      <Header
+        title={headerTitle}
+        showBackButton={!!onBackPress}
+        onBackPress={onBackPress}
+      />
+      
+      <VStack flex={1} space="xl" p="$4" pt="$16">
           <Text fontSize={22} fontWeight="$bold" color={isDark ? '#FFFFFF' : '#000000'}>
-            {title}
-          </Text>
-
+          {title}
+        </Text>
+        
           <Text fontSize={10} color={isDark ? '#FFFFFF' : '#000000'} lineHeight={12}>
             {description}{'\n'}{maskedEmail}
-          </Text>
+        </Text>
 
           {/* PIN Input */}
-          <VStack space="md" alignItems="center">
-            <HStack space="md" justifyContent="center">
-              {code.map((digit, index) => (
+        <VStack space="md" alignItems="center">
+          <HStack space="md" justifyContent="center">
+            {code.map((digit, index) => (
                 <Pressable
                   key={index}
                   onPress={() => {
@@ -202,24 +202,24 @@ export const VerifyCodeScreen = ({
                     />
                   </Box>
                 </Pressable>
-              ))}
-            </HStack>
-          </VStack>
+            ))}
+          </HStack>
+        </VStack>
 
           {/* Button */}
-          <Button
+        <Button
             bg="#D8FF08"
-            borderRadius={8}
-            py="$3"
-            onPress={handleVerify}
-            opacity={isCodeComplete ? 1 : 0.5}
-            disabled={!isCodeComplete || isLoading}
-          >
+          borderRadius={8}
+          py="$3"
+          onPress={handleVerify}
+          opacity={isCodeComplete ? 1 : 0.5}
+          disabled={!isCodeComplete || isLoading}
+        >
             <ButtonText color="#111111" fontSize={14} fontWeight="$bold">
-              {isLoading ? 'Verifying...' : 'Next'}
-            </ButtonText>
-          </Button>
-        </VStack>
+            {isLoading ? 'Verifying...' : 'Next'}
+          </ButtonText>
+        </Button>
+      </VStack>
       </Box>
     </SafeAreaView>
   );

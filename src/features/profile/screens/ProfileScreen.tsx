@@ -6,10 +6,11 @@ import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import ProfileCard from '../components/ProfileCard';
 import { ReviewsTab, LadderTab, RepliesTab, TipsTab, FeedTab, BenchmarksTab } from '../components/TabContents';
-import { mock_user_card } from '@/src/mock/profile/userCardData';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import LadderDetail from '../components/LadderDetail';
 import { Ladder } from '@/src/mock/profile/ladders/types';
+import { useUserProfile } from '../api/hooks';
+import { useAppStore } from '@/src/store/appStore';
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -30,6 +31,12 @@ const SCROLL_TO_TOP_THRESHOLD = 300; // Butonun görünmesi için minimum scroll
 const ProfileScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const { user } = useAppStore();
+  const userId = user?.id;
+  
+  // Profile API hook
+  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(userId);
+  
   const [activeTab, setActiveTab] = useState('feed');
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -222,8 +229,8 @@ const ProfileScreen = () => {
             borderColor="#fff"
           >
             <Image
-              source={mock_user_card.avatar}
-              alt={mock_user_card.name}
+              source={userProfile?.avatarUrl ? { uri: userProfile.avatarUrl } : require('@/assets/avatar/ozan.png')}
+              alt={userProfile?.name || 'User'}
               w="100%"
               h="100%"
             />
@@ -234,14 +241,14 @@ const ProfileScreen = () => {
               fontSize={16}
               fontWeight="$semibold"
             >
-              {mock_user_card.name}
+              {userProfile?.name || 'Kullanıcı'}
             </Text>
             <Text
               color="rgba(255,255,255,0.8)"
               fontSize={12}
               numberOfLines={1}
             >
-              {mock_user_card.titles.join(' · ')}
+              {userProfile?.titles?.join(' · ') || ''}
             </Text>
           </VStack>
           <Pressable>
@@ -258,9 +265,19 @@ const ProfileScreen = () => {
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         {/* Profile Card Content */}
-        <Box onLayout={handleProfileCardLayout}>
-          <ProfileCard userData={mock_user_card} />
-        </Box>
+        {isProfileLoading ? (
+          <Box py={20} alignItems="center">
+            <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+          </Box>
+        ) : profileError ? (
+          <Box py={20} alignItems="center">
+            <Text color="#CE4A4A">Hata: {profileError.message}</Text>
+          </Box>
+        ) : userProfile ? (
+          <Box onLayout={handleProfileCardLayout}>
+            <ProfileCard userData={userProfile} userId={userProfile.id} />
+          </Box>
+        ) : null}
 
         {/* Tab Bar Placeholder - ProfileCard'ın altında sabit */}
         <Box

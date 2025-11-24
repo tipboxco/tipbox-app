@@ -6,7 +6,7 @@ import { CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
-import { useAuthStore } from '@/src/store';
+import { useAppStore } from '@/src/store/appStore';
 import { useLogin } from '../api/hooks';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -15,7 +15,7 @@ export const LoginScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { loginAsGuest } = useAuthStore();
+  const { loginAsGuest } = useAppStore();
   const toast = useToast();
   const loginMutation = useLogin();
 
@@ -49,8 +49,8 @@ export const LoginScreen = () => {
         console.log('Full Response:', JSON.stringify(result, null, 2));
         console.log('Response Type:', typeof result);
         console.log('Response Keys:', Object.keys(result));
-        console.log('User:', result.user);
-        console.log('Access Token:', result.accessToken ? '***' : 'undefined');
+        console.log('User:', { id: result.id, fullName: result.fullName, email: result.email });
+        console.log('Token:', result.token ? '***' : 'undefined');
         console.log('Refresh Token:', result.refreshToken ? '***' : 'undefined');
         console.log('==========================');
 
@@ -60,12 +60,12 @@ export const LoginScreen = () => {
           render: ({ id }) => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                  <ToastTitle>Giriş Başarılı</ToastTitle>
-                  <ToastDescription>
-                    Hoş geldiniz, {result.user.name || result.user.email}!
-                  </ToastDescription>
-                </Toast>
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Giriş Başarılı</ToastTitle>
+                <ToastDescription>
+                    Hoş geldiniz, {result.fullName || result.email}!
+                </ToastDescription>
+              </Toast>
               </Box>
             );
           },
@@ -106,10 +106,10 @@ export const LoginScreen = () => {
           render: ({ id }) => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Giriş Hatası</ToastTitle>
-                  <ToastDescription>{errorMessage}</ToastDescription>
-                </Toast>
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Giriş Hatası</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
               </Box>
             );
           },

@@ -1,6 +1,6 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { TokenService } from '../TokenService';
-import { useAuthStore } from '../../store/authStore';
+import { useAppStore } from '../../store/appStore';
 
 /**
  * Token refresh sırasında bekleyen request'leri tutar
@@ -137,9 +137,10 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           }
 
           // Store'u güncelle (eğer user varsa)
-          const authState = useAuthStore.getState();
-          if (authState.user) {
-            useAuthStore.getState().login(authState.user, accessToken);
+          const appState = useAppStore.getState();
+          if (appState.user && appState.accessToken) {
+            // Access token'ı güncelle (user bilgileri aynı kalır)
+            useAppStore.setState({ accessToken });
           }
 
           // Bekleyen request'leri başarıyla işle
@@ -154,7 +155,7 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           // Refresh başarısız, tüm token'ları temizle ve logout yap
           processQueue(refreshError as AxiosError, null);
           await TokenService.clearTokens();
-          useAuthStore.getState().logout();
+          useAppStore.getState().logout();
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;

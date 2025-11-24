@@ -41,28 +41,17 @@ export const register = async (
  * Kullanıcı giriş işlemi için API çağrısı
  * 
  * @param credentials - Giriş bilgileri (email, password)
- * @returns LoginResponse - Giriş sonucu (user, accessToken, refreshToken)
+ * @returns ApiLoginResponse - Backend'den gelen ham response (store'da kullanılacak)
  */
 export const login = async (
   credentials: LoginCredentials
-): Promise<LoginResponse> => {
+): Promise<ApiLoginResponse> => {
   const response = await apiService.getClient().post<ApiLoginResponse>(
     '/auth/login',
     credentials
   );
 
-  // API response'unu beklenen formata transform et
-  const transformedResponse: LoginResponse = {
-    user: {
-      id: response.data.id,
-      name: response.data.fullName,
-      email: response.data.email,
-      isGuest: false,
-    },
-    accessToken: response.data.token, // "token" -> "accessToken"
-    refreshToken: response.data.refreshToken,
-  };
-
-  return transformedResponse;
+  // Backend'den gelen ham response'u direkt döndür (store'da transform edilecek)
+  return response.data;
 };
 

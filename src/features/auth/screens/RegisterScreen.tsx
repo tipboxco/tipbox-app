@@ -56,12 +56,12 @@ export const RegisterScreen = () => {
           render: ({ id }) => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                  <ToastTitle>Kayıt Başarılı</ToastTitle>
-                  <ToastDescription>
-                    {result.message || 'Kayıt işlemi başarıyla tamamlandı!'}
-                  </ToastDescription>
-                </Toast>
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Kayıt Başarılı</ToastTitle>
+                <ToastDescription>
+                  {result.message || 'Kayıt işlemi başarıyla tamamlandı!'}
+                </ToastDescription>
+              </Toast>
               </Box>
             );
           },
@@ -91,10 +91,10 @@ export const RegisterScreen = () => {
           render: ({ id }) => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Kayıt Hatası</ToastTitle>
-                  <ToastDescription>{errorMessage}</ToastDescription>
-                </Toast>
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Kayıt Hatası</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
               </Box>
             );
           },
