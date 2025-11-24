@@ -279,7 +279,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCa
 
       {/* Dynamic Grid */}
       <ScrollView flex={1} px="$4" pb={scrollViewPaddingBottom}>
-        <VStack space="md" pb="$20">
+        <VStack space="md">
           {currentData.map((item, index) => (
             <HStack key={`row-${index}`} space="md" justifyContent="space-between">
               {[0, 1, 2].map((colIndex) => {
