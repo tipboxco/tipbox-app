@@ -27,6 +27,7 @@ export const CatalogScreen = () => {
   const [currentMode, setCurrentMode] = useState<'product' | 'brand-catalog' | 'brand-selection'>('product');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [headerHeight, setHeaderHeight] = useState(40); // Default header height
   
   // BottomSheet state ve ref'leri
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
@@ -174,12 +175,14 @@ export const CatalogScreen = () => {
   }, []);
 
   const renderContent = () => {
+    const paddingBottom = headerHeight + 12;
     switch (currentMode) {
       case 'brand-catalog':
         return (
           <BrandScreen
             selectedCategory={selectedCategory}
             onCategorySelect={handleBrandCategorySelection}
+            scrollViewPaddingBottom={paddingBottom}
           />
         );
       case 'brand-selection':
@@ -187,6 +190,7 @@ export const CatalogScreen = () => {
           <BrandScreen
             selectedCategory={selectedCategory}
             onCategorySelect={handleBrandCategorySelection}
+            scrollViewPaddingBottom={paddingBottom}
           />
         );
       default:
@@ -194,6 +198,7 @@ export const CatalogScreen = () => {
           <ProductCatalogScreen
             onCreatePost={handleCreatePost}
             onStateChange={handleProductCatalogStateChange}
+            scrollViewPaddingBottom={paddingBottom}
           />
         );
     }
@@ -205,11 +210,18 @@ export const CatalogScreen = () => {
         flex={1}
         bg={isDark ? '#1A1A1A' : '#FAFAFA'}
       >
-      <Header
-        title={getTitle()}
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+      <Box
+        onLayout={(event) => {
+          const { height } = event.nativeEvent.layout;
+          setHeaderHeight(height);
+        }}
+      >
+        <Header
+          title={getTitle()}
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
+      </Box>
 
       {/* Arama Çubuğu */}
       <Box px="$4" pt="$3">

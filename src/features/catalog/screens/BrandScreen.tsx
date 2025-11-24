@@ -14,9 +14,10 @@ type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList
 interface BrandScreenProps {
   selectedCategory: any;
   onCategorySelect: (category: any) => void;
+  scrollViewPaddingBottom?: number;
 }
 
-export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCategorySelect }) => {
+export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCategorySelect, scrollViewPaddingBottom = 52 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandScreenNavigationProp>();
@@ -277,7 +278,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCa
 
 
       {/* Dynamic Grid */}
-      <ScrollView flex={1} px="$4">
+      <ScrollView flex={1} px="$4" pb={scrollViewPaddingBottom}>
         <VStack space="md" pb="$20">
           {currentData.map((item, index) => (
             <HStack key={`row-${index}`} space="md" justifyContent="space-between">
