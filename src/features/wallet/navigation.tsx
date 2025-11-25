@@ -30,28 +30,31 @@ const Stack = createNativeStackNavigator<WalletStackParamList>();
 
 export const WalletNavigator: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   // Wallet connection durumunu yükle
   useEffect(() => {
     const loadWalletStatus = async () => {
       const status = await WalletService.getWalletConnectionStatus();
       setIsConnected(status);
+      setIsReady(true);
     };
     loadWalletStatus();
   }, []);
 
+  if (!isReady) {
+    return null;
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isConnected ? (
-        <>
-          <Stack.Screen name="WalletScreen" component={WalletScreen} />
-          <Stack.Screen name="SwapScreen" component={SwapScreen} />
-          <Stack.Screen name="NftAssetsScreen" component={NftAssetsScreen} />
-          <Stack.Screen name="NftAssetDetailScreen" component={NftAssetDetailScreen} />
-        </>
-      ) : (
+      {!isConnected && (
         <Stack.Screen name="WalletConnection" component={WalletConnection} />
       )}
+      <Stack.Screen name="WalletScreen" component={WalletScreen} />
+      <Stack.Screen name="SwapScreen" component={SwapScreen} />
+      <Stack.Screen name="NftAssetsScreen" component={NftAssetsScreen} />
+      <Stack.Screen name="NftAssetDetailScreen" component={NftAssetDetailScreen} />
     </Stack.Navigator>
   );
 };
