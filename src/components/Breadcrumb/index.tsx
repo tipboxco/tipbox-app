@@ -13,9 +13,10 @@ import { BreadcrumbItem } from '@/src/types/breadcrumb';
 interface BreadcrumbProps {
     items: BreadcrumbItem[];
     onItemPress: (item: BreadcrumbItem, index: number) => void;
+    rootLabel?: string;
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress }) => {
+const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
@@ -33,6 +34,39 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress }) => {
             }}
         >
             <HStack alignItems="center" space="xs">
+                {rootLabel && (
+                    <>
+                        <Pressable
+                            onPress={() => onItemPress({ id: 'root', name: rootLabel, type: 'root' }, -1)}
+                            style={({ pressed }) => ({
+                                opacity: pressed ? 0.7 : 1,
+                                minWidth: 60,
+                                flexShrink: 0,
+                            })}
+                        >
+                            <Text
+                                color={items.length === 0 ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
+                                fontSize={12}
+                                fontWeight="$bold"
+                                numberOfLines={1}
+                            >
+                                {rootLabel}
+                            </Text>
+                        </Pressable>
+                        <Box
+                            width={16}
+                            height={16}
+                            justifyContent="center"
+                            alignItems="center"
+                        >
+                            <ChevronRight
+                                size={12}
+                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            />
+                        </Box>
+                    </>
+                )}
+
                 {items.map((item, index) => (
                     <React.Fragment key={item.id}>
                         <Pressable
