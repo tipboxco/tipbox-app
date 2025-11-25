@@ -1,5 +1,5 @@
 import { apiService } from '../../../services/ApiService';
-import type { UserProfile } from '../types';
+import type { UserProfile, InventoryItem } from '../types';
 
 /**
  * Get User Profile endpoint function
@@ -13,6 +13,20 @@ export const getUserProfile = async (
 ): Promise<UserProfile> => {
   const response = await apiService.getClient().get<UserProfile>(
     `/users/${userId}/profile`
+  );
+  return response.data;
+};
+
+/**
+ * Get Inventory endpoint function
+ * Kullanıcının envanter ürünlerini getirir
+ * Token'dan user_id otomatik olarak alınır
+ * 
+ * @returns InventoryItem[] - Envanter ürün listesi
+ */
+export const getInventory = async (): Promise<InventoryItem[]> => {
+  const response = await apiService.getClient().get<InventoryItem[]>(
+    '/inventory'
   );
   return response.data;
 };

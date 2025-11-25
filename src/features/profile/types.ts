@@ -1,30 +1,30 @@
-export interface InventoryItem {
-  id: string;
-  brand: string;
+/**
+ * Inventory Review - API'den gelen review bilgisi
+ */
+export interface InventoryReview {
+  title: string;
+  description: string;
+  rating: number;
+}
+
+/**
+ * Inventory Brand - API'den gelen brand bilgisi
+ */
+export interface InventoryBrand {
+  name: string;
   model: string;
   specs: string;
-  image: any;
-  isNew?: boolean;
-  price?: string;
-  rating?: {
-    price: number;
-    product: number;
-  };
-  reviews?: {
-    price: {
-      text: string;
-      rating: number;
-    };
-    product: {
-      text: string;
-      rating: number;
-    };
-  };
-  features?: {
-    warranty: string;
-    delivery: string;
-    quality: string;
-  };
+}
+
+/**
+ * Inventory Item - API'den gelen envanter ürün bilgisi
+ */
+export interface InventoryItem {
+  id: string;
+  brand: InventoryBrand;
+  image: string;
+  reviews: InventoryReview[];
+  tags: string[];
 }
 
 /**

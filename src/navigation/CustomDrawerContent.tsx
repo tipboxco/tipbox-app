@@ -299,7 +299,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
                   numberOfLines={1}
                 >
                   {tags.join(', ')}
-                </Text>
+                  </Text>
               )}
             </Box>
           </Box>

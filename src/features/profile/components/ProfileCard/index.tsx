@@ -374,7 +374,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             h="100%"
             justifyContent="center"
             alignItems="center"
-            onPress={() => navigation.navigate('InventoryList')}
+            onPress={() => navigation.navigate('InventoryList', { userId: userData.id })}
           >
             <Text
               color="$white"

@@ -33,8 +33,8 @@ export const InventoryCard = ({ item, width, onPress }: InventoryCardProps) => {
           justifyContent="center"
         >
           <Image
-            source={item.image}
-            alt={`${item.brand} ${item.model}`}
+            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+            alt={`${item.brand.name} ${item.brand.model}`}
             width={100}
             height={100}
             resizeMode="contain"
@@ -47,7 +47,7 @@ export const InventoryCard = ({ item, width, onPress }: InventoryCardProps) => {
             fontWeight="$bold"
             numberOfLines={3}
           >
-            {item.brand}\n{item.model}\n{item.specs}
+            {item.brand.name}\n{item.brand.model}\n{item.brand.specs}
           </Text>
         </VStack>
       </Box>

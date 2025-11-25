@@ -1,32 +1,36 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { FlatList, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
-import { VStack, Box, Input, InputField, Pressable } from '@gluestack-ui/themed';
+import { VStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { mock_inventory } from '@/src/mock/inventory';
 import { ProfileStackParamList } from '../navigation';
-import { InventoryItem } from '../types';
+import type { InventoryItem } from '../types';
 import InventoryCard from '../components/InventoryCard';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import { useInventory } from '../api/hooks';
+import { useAppStore } from '@/src/store/appStore';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
 const CARDS_PER_ROW = 3;
 const HORIZONTAL_PADDING = 15;
 const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - (CARD_GAP * (CARDS_PER_ROW - 1))) / CARDS_PER_ROW;
+const TAB_BAR_HEIGHT = 50; // ProfileScreen'deki TabBar height
 
 type InventoryScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
 };
+
+type InventoryScreenRouteProp = RouteProp<ProfileStackParamList, 'InventoryList'>;
 
 const InventoryScreen = () => {
   const { colorMode } = useColorMode();
@@ -34,17 +38,39 @@ const InventoryScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const navigation = useNavigation<InventoryScreenNavigationProp>();
+  const route = useRoute<InventoryScreenRouteProp>();
+  const insets = useSafeAreaInsets();
+  const { user } = useAppStore();
+  
+  // Route params'tan userId al
+  const { userId } = route.params;
+  
+  // SecureStore'daki user_id (appStore'dan)
+  const currentUserId = user?.id;
+  
+  // Create Button'u sadece kendi envanteri ise göster
+  const showCreateButton = currentUserId === userId;
   
   // Bottom sheet refs
   const createPostBottomSheetRef = useRef<BottomSheet>(null);
 
-  const filteredInventory = mock_inventory.flatMap(group => 
-    group.items.filter(item => 
-      item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.specs.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  // API'den envanter ürünlerini getir
+  const { data: inventoryItems, isLoading, isError } = useInventory();
+
+  // API'den gelen verileri filtrele
+  const filteredInventory = useMemo(() => {
+    if (!inventoryItems) return [];
+
+    return inventoryItems.filter((item) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        item.brand.name.toLowerCase().includes(query) ||
+        item.brand.model.toLowerCase().includes(query) ||
+        item.brand.specs.toLowerCase().includes(query)
+      );
+    });
+  }, [inventoryItems, searchQuery]);
 
   const handleCreatePress = () => {
     console.log('Create button pressed');
@@ -145,29 +171,50 @@ const InventoryScreen = () => {
         </Input>
       </Box>
 
-      <FlatList
-        data={filteredInventory}
-        renderItem={({ item }) => (
-          <InventoryCard
-            item={item}
-            width={CARD_WIDTH}
-            onPress={() => navigation.navigate('InventoryDetail', { itemId: item.id })}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        numColumns={CARDS_PER_ROW}
-        contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING }}
-        columnWrapperStyle={{ gap: CARD_GAP }}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <Box flex={1} justifyContent="center" alignItems="center">
+          <Text color={isDark ? '$textDark50' : '$textLight900'}>Yükleniyor...</Text>
+        </Box>
+      ) : isError ? (
+        <Box flex={1} justifyContent="center" alignItems="center">
+          <Text color="#CE4A4A">Hata: Envanter yüklenirken bir sorun oluştu</Text>
+        </Box>
+      ) : (
+        <FlatList
+          data={filteredInventory}
+          renderItem={({ item }) => (
+            <InventoryCard
+              item={item}
+              width={CARD_WIDTH}
+              onPress={() => navigation.navigate('InventoryDetail', { itemId: item.id })}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          numColumns={CARDS_PER_ROW}
+          contentContainerStyle={{ 
+            paddingHorizontal: HORIZONTAL_PADDING,
+            paddingBottom: TAB_BAR_HEIGHT + 12 // TabBar height + 12px
+          }}
+          columnWrapperStyle={{ gap: CARD_GAP }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Box flex={1} justifyContent="center" alignItems="center" py={40}>
+              <Text color={isDark ? '$textDark400' : '$textLight600'}>
+                {searchQuery ? 'Arama sonucu bulunamadı' : 'Envanter boş'}
+              </Text>
+            </Box>
+          }
+        />
+      )}
 
-      {/* Create Button */}
-      <Pressable
-        onPress={handleCreatePress}
-        position="absolute"
-        bottom={Platform.OS === 'ios' ? 8 : 8}
-        right={16}
-      >
+      {/* Create Button - Sadece kendi envanteri ise göster */}
+      {showCreateButton && (
+        <Pressable
+          onPress={handleCreatePress}
+          position="absolute"
+          bottom={insets.bottom + 8} // bottom.inset + tabbar height + 8px
+          right={16}
+        >
         <Box
           bg="#E8FF6B"
           borderRadius={30}
@@ -184,6 +231,7 @@ const InventoryScreen = () => {
           <Feather name="edit-3" size={24} color="#000000" />
         </Box>
       </Pressable>
+      )}
 
       {/* Create Post Bottom Sheet */}
       <BottomSheet

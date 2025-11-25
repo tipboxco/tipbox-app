@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { getTrustList } from './trustApi';
-import { getUserProfile } from './profileApi';
-import type { TrustUser, UserProfile } from '../types';
+import { getUserProfile, getInventory } from './profileApi';
+import type { TrustUser, UserProfile, InventoryItem } from '../types';
 
 /**
  * Query Keys - Profile feature için cache key pattern'leri
@@ -13,6 +13,7 @@ export const profileKeys = {
   trusts: () => [...profileKeys.all, 'trusts'] as const,
   trustList: (userId: string, searchQuery?: string) => 
     [...profileKeys.trusts(), userId, ...(searchQuery ? ['search', searchQuery] : [])] as const,
+  inventory: () => [...profileKeys.all, 'inventory'] as const,
 };
 
 /**
@@ -138,6 +139,28 @@ export const useUserProfile = (userId: string | undefined) => {
     staleTime: 5 * 60 * 1000, // 5 dakika
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Inventory query hook
+ * Kullanıcının envanter ürünlerini getirir (cache olmadan)
+ * Token'dan user_id otomatik olarak alınır
+ * 
+ * @returns React Query hook result
+ * 
+ * @example
+ * const { data, isLoading, error } = useInventory();
+ */
+export const useInventory = () => {
+  return useQuery<InventoryItem[], Error>({
+    queryKey: profileKeys.inventory(),
+    queryFn: () => getInventory(),
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
     refetchOnWindowFocus: false,
     retry: 1,
   });
