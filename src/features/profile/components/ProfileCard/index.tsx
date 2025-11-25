@@ -3,8 +3,6 @@ import { StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { 
   Box, 
   VStack, 
@@ -19,6 +17,7 @@ import { ProfileStackParamList } from '../../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
 import type { UserProfile } from '../../types';
+import { useSafeAreaValues, useBottomTabBarHeightValue } from '@/src/utils';
 
 interface ProfileCardProps {
   userData: UserProfile;
@@ -42,7 +41,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const { user } = useAppStore();
-  const insets = useSafeAreaInsets();
+  const safeAreaTop = useSafeAreaValues('top');
   
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === userId;
@@ -85,32 +84,34 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
         />
       </Box>
 
-      {/* Back Button */}
-      <Pressable 
-        position="absolute" 
-        top={insets.top} 
-        left={16}
-        onPress={handleBackPress}
+      {/* Banner Controls */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        flexDirection="row"
+        justifyContent="space-between"
+        alignItems="flex-start"
+        px={16}
+        paddingTop={32}
+        pointerEvents="box-none"
         zIndex={2000}
-        style={{ zIndex: 2000 }}
       >
-        <Feather name="chevron-left" size={24} color="#fff" />
-      </Pressable>
+        <Pressable onPress={handleBackPress} style={{ zIndex: 2000 }}>
+          <Feather name="chevron-left" size={24} color="#fff" />
+        </Pressable>
 
-      {/* Menu Button */}
-      <Pressable 
-        position="absolute" 
-        top={insets.top} 
-        right={16}
-        onPress={() => {
-          console.log('[ProfileCard] Menu button pressed');
-          setIsMenuVisible(true);
-        }}
-        zIndex={2000}
-        style={{ zIndex: 2000 }}
-      >
-        <Feather name="more-vertical" size={24} color="#fff" />
-      </Pressable>
+        <Pressable
+          onPress={() => {
+            console.log('[ProfileCard] Menu button pressed');
+            setIsMenuVisible(true);
+          }}
+          style={{ zIndex: 2000 }}
+        >
+          <Feather name="more-vertical" size={24} color="#fff" />
+        </Pressable>
+      </Box>
 
       {/* Profile Image */}
       <Box 
