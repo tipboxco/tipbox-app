@@ -169,3 +169,4 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
 };
 
 export default EventCard;
+

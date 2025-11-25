@@ -18,7 +18,7 @@ import { Header } from '@/src/components/Header';
 import { mock_user_profile } from '@/src/mock/common';
 import { mock_community_events, see_all_reward_mock } from '@/src/mock/events/communityEvents';
 import { Feather } from '@expo/vector-icons';
-import EventCard from '../components/EventCard';
+import EventCard from '@/src/components/EventCard';
 import BadgeCard from '../components/BadgeCard';
 import BadgeDetailModal from '../components/BadgeDetailModal';
 import LimitedTimeEventCard from '../components/LimitedTimeEventCard';
