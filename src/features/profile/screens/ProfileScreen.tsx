@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Animated, ScrollView, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { Animated, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
@@ -23,9 +23,7 @@ const TABS = [
 
 // Top safe area boşluğu olmadığı için banner height'i arttırıyoruz (genellikle ~44-50px)
 const TOP_SAFE_AREA_OFFSET = 50; // Status bar + notch alanı için ekstra yükseklik
-const STICKY_BANNER_HEIGHT = 90 + TOP_SAFE_AREA_OFFSET; // 140px
 const TAB_BAR_HEIGHT = 50;
-const BANNER_HEIGHT = 130; // ProfileCard içindeki banner yüksekliği
 const SCROLL_TO_TOP_THRESHOLD = 300; // Butonun görünmesi için minimum scroll mesafesi
 
 const ProfileScreen = () => {
@@ -40,29 +38,13 @@ const ProfileScreen = () => {
   const [activeTab, setActiveTab] = useState('feed');
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
-  const [profileCardHeight, setProfileCardHeight] = useState(530); // Varsayılan yükseklik
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const previousScrollY = useRef(0);
   const scrollToTopButtonOpacity = useRef(new Animated.Value(0)).current;
-  const [bannerVisible, setBannerVisible] = useState(false);
   
   // BottomSheet state ve ref'leri
   const [selectedLadder, setSelectedLadder] = useState<Ladder | null>(null);
   const ladderBottomSheetRef = useRef<BottomSheet>(null);
-
-  // ProfileCard yüksekliğini ölç
-  const handleProfileCardLayout = (event: LayoutChangeEvent) => {
-    const { height } = event.nativeEvent.layout;
-    setProfileCardHeight(height);
-  };
-
-  // Banner sticky olması için scroll mesafesi - Banner height kadar scroll olunca banner sticky olur
-  const bannerFadeStart = BANNER_HEIGHT;
-  
-  // TabBar'ın sticky olması için scroll mesafesi
-  // TabBar scroll'dan çıktığında (ProfileCard'ın altına geldiğinde) sticky TabBar görünür
-  // TabBar'ın üst kısmı StickyBanner'ın altına geldiğinde sticky TabBar görünür
-  const tabBarExitPoint = profileCardHeight - STICKY_BANNER_HEIGHT;
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -71,12 +53,6 @@ const ProfileScreen = () => {
       listener: (event: any) => {
         const currentScrollY = event.nativeEvent.contentOffset.y;
         const scrollDifference = currentScrollY - previousScrollY.current;
-        
-        // Banner görünürlüğünü kontrol et
-        const isBannerVisible = currentScrollY > bannerFadeStart;
-        if (isBannerVisible !== bannerVisible) {
-          setBannerVisible(isBannerVisible);
-        }
         
         // Scroll yukarı gidiyorsa (negatif fark) ve threshold'dan sonra butonu göster
         if (scrollDifference < 0 && currentScrollY > SCROLL_TO_TOP_THRESHOLD && !showScrollToTop) {
@@ -102,20 +78,6 @@ const ProfileScreen = () => {
       }
     }
   );
-
-  // Banner opacity animasyonu - Banner height kadar scroll olunca banner sticky olur
-  const bannerOpacity = scrollY.interpolate({
-    inputRange: [bannerFadeStart - 20, bannerFadeStart + 20],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
-
-  // TabBar opacity animasyonu - TabBar scroll'dan çıktığında (banner'ın altına geldiğinde) sticky TabBar görünür
-  const tabBarOpacity = scrollY.interpolate({
-    inputRange: [tabBarExitPoint - 20, tabBarExitPoint + 20],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
 
   // Ladder seçildiğinde BottomSheet'i aç
   const handleLadderSelect = useCallback((ladder: Ladder) => {
@@ -189,74 +151,8 @@ const ProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      {/* Sticky Banner */}
-      <Animated.View
-        style={[
-          styles.stickyBanner,
-          {
-            height: STICKY_BANNER_HEIGHT,
-            backgroundColor: isDark ? '#171717' : '#fff',
-            opacity: bannerOpacity,
-            zIndex: bannerVisible ? 1000 : 1,
-          },
-        ]}
-        pointerEvents={bannerVisible ? 'box-none' : 'none'}
-      >
-        <Box position="absolute" top={0} left={0} right={0} bottom={0}>
-          <Image
-            source={require('@/assets/banner/banner_01.png')}
-            alt="Profile Banner"
-            w="100%"
-            h="100%"
-            resizeMode="cover"
-          />
-        </Box>
-        <HStack
-          alignItems="center"
-          px={16}
-          pt={TOP_SAFE_AREA_OFFSET}
-          h="100%"
-          space="md"
-        >
-          <Box
-            w={48}
-            h={48}
-            borderRadius={48}
-            overflow="hidden"
-            borderWidth={2}
-            borderColor="#fff"
-          >
-            <Image
-              source={userProfile?.avatarUrl ? { uri: userProfile.avatarUrl } : require('@/assets/avatar/ozan.png')}
-              alt={userProfile?.name || 'User'}
-              w="100%"
-              h="100%"
-            />
-          </Box>
-          <VStack flex={1}>
-            <Text
-              color="#fff"
-              fontSize={16}
-              fontWeight="$semibold"
-            >
-              {userProfile?.name || 'Kullanıcı'}
-            </Text>
-            <Text
-              color="rgba(255,255,255,0.8)"
-              fontSize={12}
-              numberOfLines={1}
-            >
-              {userProfile?.titles?.join(' · ') || ''}
-            </Text>
-          </VStack>
-          <Pressable>
-            <Feather name="more-vertical" size={22} color="#fff" />
-          </Pressable>
-        </HStack>
-      </Animated.View>
-
       <Animated.ScrollView
         ref={scrollViewRef}
         onScroll={handleScroll}
@@ -264,6 +160,62 @@ const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
+        {/* Banner */}
+        <Box position="relative" h={TOP_SAFE_AREA_OFFSET + 90} mb="$4">
+          <Box position="absolute" top={0} left={0} right={0} bottom={0}>
+            <Image
+              source={require('@/assets/banner/banner_01.png')}
+              alt="Profile Banner"
+              w="100%"
+              h="100%"
+              resizeMode="cover"
+            />
+          </Box>
+          <HStack
+            alignItems="center"
+            px={16}
+            pt={TOP_SAFE_AREA_OFFSET}
+            h="100%"
+            space="md"
+            bg="rgba(0,0,0,0.3)"
+          >
+            <Box
+              w={48}
+              h={48}
+              borderRadius={48}
+              overflow="hidden"
+              borderWidth={2}
+              borderColor="#fff"
+            >
+              <Image
+                source={userProfile?.avatarUrl ? { uri: userProfile.avatarUrl } : require('@/assets/avatar/ozan.png')}
+                alt={userProfile?.name || 'User'}
+                w="100%"
+                h="100%"
+              />
+            </Box>
+            <VStack flex={1}>
+              <Text
+                color="#fff"
+                fontSize={16}
+                fontWeight="$semibold"
+              >
+                {userProfile?.name || 'Kullanıcı'}
+              </Text>
+              <Text
+                color="rgba(255,255,255,0.8)"
+                fontSize={12}
+                numberOfLines={1}
+              >
+                {userProfile?.titles?.join(' · ') || ''}
+              </Text>
+            </VStack>
+            <Pressable>
+              <Feather name="more-vertical" size={22} color="#fff" />
+            </Pressable>
+          </HStack>
+        </Box>
+
         {/* Profile Card Content */}
         {isProfileLoading ? (
           <Box py={20} alignItems="center">
@@ -274,7 +226,7 @@ const ProfileScreen = () => {
             <Text color="#CE4A4A">Hata: {profileError.message}</Text>
           </Box>
         ) : userProfile ? (
-          <Box onLayout={handleProfileCardLayout}>
+          <Box>
             <ProfileCard userData={userProfile} userId={userProfile.id} />
           </Box>
         ) : null}
@@ -328,55 +280,6 @@ const ProfileScreen = () => {
           {renderTabContent()}
         </Box>
       </Animated.ScrollView>
-
-      {/* Sticky Tab Bar - TabBar tamamen çıktıktan sonra banner'ın altında */}
-      <Animated.View
-        style={[
-          styles.tabBarSticky,
-          {
-            opacity: tabBarOpacity,
-            top: STICKY_BANNER_HEIGHT,
-            backgroundColor: isDark ? '#171717' : '#fff',
-            borderBottomColor: isDark ? '#333' : '#eee',
-          },
-        ]}
-      >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabBarScrollContent}
-        >
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => setActiveTab(tab.key)}
-                style={styles.tabButton}
-              >
-                <Text
-                  fontSize={11}
-                  fontWeight={isActive ? '$semibold' : '$normal'}
-                  color={isActive ? '#000000' : '#A3A3A3'}
-                  textTransform="capitalize"
-                >
-                  {tab.title}
-                </Text>
-                {isActive && (
-                  <Box
-                    position="absolute"
-                    bottom={0}
-                    left={0}
-                    right={0}
-                    height={2}
-                    bg={isDark ? '#fff' : '#000'}
-                  />
-                )}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </Animated.View>
 
       {/* Scroll to Top Button */}
       <Animated.View
@@ -471,23 +374,6 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  stickyBanner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    overflow: 'hidden',
-    elevation: 0, // Android için
-  },
-  tabBarSticky: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: TAB_BAR_HEIGHT,
-    borderBottomWidth: 1,
-    zIndex: 999,
-    elevation: 999, // Android için
-  },
   tabBarScrollContent: {
     paddingHorizontal: 16,
     alignItems: 'center',
