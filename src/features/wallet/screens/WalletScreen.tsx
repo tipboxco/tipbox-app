@@ -12,12 +12,14 @@ import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
+import { useSafeAreaValues } from '@/src/utils';
 
 export const WalletScreen: React.FC = () => {
       const navigation = useNavigation<any>();
       const { colorMode } = useColorMode();
       const isDark = colorMode === 'dark';
       const [activeTab, setActiveTab] = React.useState<'tips' | 'nft'>('tips');
+      const bottomInset = useSafeAreaValues('bottom');
 
 
   // Bottom sheet refs
@@ -204,127 +206,170 @@ export const WalletScreen: React.FC = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
       <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
-      {/* Tabs under header - Figma 2447:28026 */}
-      <VStack px="$4" py="$2" space="xs">
-        <HStack justifyContent="center" alignItems="center" space="lg">
-              <Pressable onPress={() => setActiveTab('tips')}>
-                <VStack alignItems="center" space="xs">
-                  <Text fontSize={12} fontWeight="$bold" color={activeTab === 'tips' ? '$textLight900' : '$textLight500'} $dark-color={activeTab === 'tips' ? '$textDark50' : '$textDark400'}>
-                    TIPS
-                  </Text>
-                  {activeTab === 'tips' ? (
-                    <Box w={72} h={2} bg="$backgroundLight300" $dark-bg="$backgroundDark600" rounded={2} />
-                  ) : (
-                    <Box w={72} h={2} bg="transparent" />
-                  )}
-                </VStack>
-              </Pressable>
-
-              <Pressable onPress={() => setActiveTab('nft')}>
-                <VStack alignItems="center" space="xs">
-                  <Text fontSize={12} fontWeight="$bold" color={activeTab === 'nft' ? '$textLight900' : '$textLight500'} $dark-color={activeTab === 'nft' ? '$textDark50' : '$textDark400'}>
-                    NFT Varlıklar
-                  </Text>
-                  {activeTab === 'nft' ? (
-                    <Box w={86} h={2} bg="$backgroundLight300" $dark-bg="$backgroundDark600" rounded={2} />
-                  ) : (
-                    <Box w={86} h={2} bg="transparent" />
-                  )}
-                </VStack>
-              </Pressable>
+      {/* Tabs */}
+      <VStack bg={isDark ? '#000' : '#FFF'}>
+        <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
+          <Pressable
+            onPress={() => setActiveTab('tips')}
+            flex={1}
+            alignItems="center"
+            pb="$1"
+            position="relative"
+          >
+            <VStack alignItems="center" space="xs">
+              <Text
+                fontSize={12}
+                fontWeight="$bold"
+                color={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+              >
+                TIPS
+              </Text>
+            </VStack>
+            <Box
+              position="absolute"
+              bottom={-1}
+              left="25%"
+              height={2}
+              width="50%"
+              borderRadius={999}
+              bg={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab('nft')}
+            flex={1}
+            alignItems="center"
+            pb="$1"
+            position="relative"
+          >
+            <VStack alignItems="center" space="xs">
+              <Text
+                fontSize={12}
+                fontWeight="$bold"
+                color={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+              >
+                NFT Varlıklar
+              </Text>
+            </VStack>
+            <Box
+              position="absolute"
+              bottom={-1}
+              left="20%"
+              height={2}
+              width="60%"
+              borderRadius={999}
+              bg={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+            />
+          </Pressable>
         </HStack>
-        {/* Divider under tabs (body-skeleton style) */}
-        <Box h={2} bg="#ECECEC" />
       </VStack>
       <VStack flex={1} px="$4" py="$4" space="lg">
         {activeTab === 'tips' && (
-          <>
-        {/* Wallet Card */}
-        <WalletCardInfo />
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomInset, flexGrow: 1 }}>
+            <VStack space="lg">
+              {/* Wallet Card */}
+              <WalletCardInfo />
 
-        {/* Balance Card */}
-        <Box bg="$backgroundLight0" $dark-bg="$backgroundDark900" borderWidth={1} borderColor="$borderLight200" $dark-borderColor="$borderDark600" rounded={5} p="$4">
-          <VStack space="sm" alignItems="center">
-            <Text fontSize={14} color="#B9B9B9" fontWeight={'$bold'}>Current Balance</Text>
-            <Text fontSize={38} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">20.000</Text>
-            <HStack space="sm" alignItems="center">
-              <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">-$0.24</Text>
-              <Box bg="$backgroundLight200" rounded={3} px="$1" h={16} justifyContent="center">
-                <Text fontSize={11} color="$textLight900" $dark-color="$textDark50">-1.05%</Text>
-              </Box>
-            </HStack>
-          </VStack>
-
-          {/* Quick Actions */}
-          <HStack mt="$4" space="md" justifyContent="space-between">
-                    {[
-                      { icon: 'qr-code', label: 'Receive' as const, onPress: () => {} },
-                      { icon: 'send', label: 'Send' as const, onPress: handleSendPress },
-                      { icon: 'shuffle', label: 'Swap' as const, onPress: () => navigation.navigate('SwapScreen') },
-                      { icon: 'gift', label: 'Claim' as const, onPress: handleClaimPress },
-                    ].map(action => (
-              <Pressable key={action.label} onPress={action.onPress} bg="$backgroundLight0" $dark-bg="$backgroundDark800" borderWidth={1} borderColor="$borderLight200" $dark-borderColor="$borderDark600" rounded={10} w={80} h={70} alignItems="center" justifyContent="center">
-                <VStack alignItems="center" space="xs">
-                  <Feather name={action.icon as any} size={20} color="#000000" />
-                  <Text fontSize={11} fontWeight="$medium" color="$textLight900" $dark-color="$textDark50">{action.label}</Text>
+              {/* Balance Card */}
+              <Box bg="$backgroundLight0" $dark-bg="$backgroundDark900" borderWidth={1} borderColor="$borderLight200" $dark-borderColor="$borderDark600" rounded={5} p="$4">
+                <VStack space="sm" alignItems="center">
+                  <Text fontSize={14} color="#B9B9B9" fontWeight={'$bold'}>Current Balance</Text>
+                  <Text fontSize={38} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">20.000</Text>
+                  <HStack space="sm" alignItems="center">
+                    <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">-$0.24</Text>
+                    <Box bg="$backgroundLight200" rounded={3} px="$1" h={16} justifyContent="center">
+                      <Text fontSize={11} color="$textLight900" $dark-color="$textDark50">-1.05%</Text>
+                    </Box>
+                  </HStack>
                 </VStack>
-              </Pressable>
-            ))}
-          </HStack>
-        </Box>
 
-        {/* Transaction History Header */}
-        <HStack mt="$4" alignItems="center" justifyContent="space-between">
-          <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            Transaction History
-          </Text>
-          <HStack space="sm" alignItems="center">
-            <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
-              <Feather name="filter" size={16} color="#000000" />
-            </Pressable>
-            <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
-              <Feather name="bar-chart-2" size={16} color="#000000" />
-            </Pressable>
-          </HStack>
-        </HStack>
+                {/* Quick Actions */}
+                <HStack mt="$4" space="md">
+                  {[
+                    { icon: 'qr-code', label: 'Receive' as const, onPress: () => {} },
+                    { icon: 'send', label: 'Send' as const, onPress: handleSendPress },
+                    { icon: 'shuffle', label: 'Swap' as const, onPress: () => navigation.navigate('SwapScreen') },
+                    { icon: 'gift', label: 'Claim' as const, onPress: handleClaimPress },
+                  ].map((action) => (
+                    <Pressable
+                      key={action.label}
+                      onPress={action.onPress}
+                      flex={1}
+                      bg="$backgroundLight0"
+                      $dark-bg="$backgroundDark800"
+                      borderWidth={1}
+                      borderColor="$borderLight200"
+                      $dark-borderColor="$borderDark600"
+                      rounded={10}
+                      py="$3"
+                      px="$3"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <VStack alignItems="center" space="xs">
+                        <Feather name={action.icon as any} size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <Text fontSize={11} fontWeight="$medium" color="$textLight900" $dark-color="$textDark50">
+                          {action.label}
+                        </Text>
+                      </VStack>
+                    </Pressable>
+                  ))}
+                </HStack>
+              </Box>
 
-        {/* Today Section */}
-        <VStack space="md">
-          <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-            Today
-          </Text>
-          {transactions.today.map((transaction, index) => (
-            <HistoryCard
-              key={`today-${index}`}
-              type={transaction.type}
-              description={transaction.description}
-              amount={transaction.amount}
-              amountColor={transaction.amountColor}
-            />
-          ))}
-        </VStack>
+              {/* Transaction History Header */}
+              <HStack mt="$4" alignItems="center" justifyContent="space-between">
+                <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+                  Transaction History
+                </Text>
+                <HStack space="sm" alignItems="center">
+                  <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
+                    <Feather name="filter" size={16} color="#000000" />
+                  </Pressable>
+                  <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
+                    <Feather name="bar-chart-2" size={16} color="#000000" />
+                  </Pressable>
+                </HStack>
+              </HStack>
 
-        {/* Yesterday Section */}
-        <VStack space="md">
-          <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-            Yesterday
-          </Text>
-          {transactions.yesterday.map((transaction, index) => (
-            <HistoryCard
-              key={`yesterday-${index}`}
-              type={transaction.type}
-              description={transaction.description}
-              amount={transaction.amount}
-              amountColor={transaction.amountColor}
-              date={transaction.date}
-              onCopyPress={() => {}}
-            />
-          ))}
-        </VStack>
-          </>
+              {/* Today Section */}
+              <VStack space="md">
+                <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
+                  Today
+                </Text>
+                {transactions.today.map((transaction, index) => (
+                  <HistoryCard
+                    key={`today-${index}`}
+                    type={transaction.type}
+                    description={transaction.description}
+                    amount={transaction.amount}
+                    amountColor={transaction.amountColor}
+                  />
+                ))}
+              </VStack>
+
+              {/* Yesterday Section */}
+              <VStack space="md">
+                <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
+                  Yesterday
+                </Text>
+                {transactions.yesterday.map((transaction, index) => (
+                  <HistoryCard
+                    key={`yesterday-${index}`}
+                    type={transaction.type}
+                    description={transaction.description}
+                    amount={transaction.amount}
+                    amountColor={transaction.amountColor}
+                    date={transaction.date}
+                    onCopyPress={() => {}}
+                  />
+                ))}
+              </VStack>
+            </VStack>
+          </ScrollView>
         )}
         {activeTab === 'nft' && (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomInset }}>
             <VStack space="lg">
               {/* Wallet Card */}
               <WalletCardInfo />
@@ -486,7 +531,7 @@ export const WalletScreen: React.FC = () => {
           height: 5,
         }}
       >
-        <BottomSheetView>
+        <BottomSheetView style={{ paddingBottom: bottomInset }}>
           <SendBottomSheet
             onClose={() => {
               sendBottomSheetRef.current?.close();
@@ -534,7 +579,7 @@ export const WalletScreen: React.FC = () => {
             height: 5,
           }}
         >
-          <BottomSheetView>
+          <BottomSheetView style={{ paddingBottom: bottomInset }}>
             <ClaimBottomSheet
               onClose={() => {
                 claimBottomSheetRef.current?.close();
@@ -570,7 +615,7 @@ export const WalletScreen: React.FC = () => {
             height: 5,
           }}
         >
-          <BottomSheetView>
+          <BottomSheetView style={{ paddingBottom: bottomInset }}>
             <SuccessBottomSheet
               onClose={() => {
                 successBottomSheetRef.current?.close();

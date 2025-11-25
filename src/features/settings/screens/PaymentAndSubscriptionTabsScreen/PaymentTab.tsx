@@ -90,7 +90,6 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <ScrollView 
       flex={1} 
       showsVerticalScrollIndicator={false} 
@@ -257,7 +256,6 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
         </VStack>
       </VStack>
     </ScrollView>
-    </SafeAreaView>
   );
 };
 

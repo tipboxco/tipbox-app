@@ -3,6 +3,7 @@ import { FlatList } from 'react-native';
 import { Box } from '@gluestack-ui/themed';
 import { Badge } from '@/src/mock/profile/badges/types';
 import BadgeCard from '../BadgeCard';
+import { useSafeAreaValues } from '@/src/utils';
 
 interface AchievementBadgesTabProps {
   badges: Badge[];
@@ -13,6 +14,8 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   badges,
   onBadgePress,
 }) => {
+  const bottomInset = useSafeAreaValues('bottom');
+
   return (
     <FlatList
       data={badges}
@@ -26,7 +29,11 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
       )}
       keyExtractor={(item) => item.id}
       numColumns={2}
-      contentContainerStyle={{ padding: 8 }}
+      contentContainerStyle={{
+        paddingHorizontal: 8,
+        paddingTop: 8,
+        paddingBottom: bottomInset,
+      }}
       showsVerticalScrollIndicator={false}
       columnWrapperStyle={{ justifyContent: 'space-between' }}
     />

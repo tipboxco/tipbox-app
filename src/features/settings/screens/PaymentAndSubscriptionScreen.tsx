@@ -70,33 +70,53 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
               onPress={() => setActiveTab('payment')}
               flex={1}
               alignItems="center"
-              pb="$2"
-              borderBottomWidth={activeTab === 'payment' ? 2 : 0}
-              borderBottomColor={activeTab === 'payment' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+              pb="$1"
+              position="relative"
             >
-              <Text
-                color={activeTab === 'payment' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                fontSize={12}
-                fontWeight="$bold"
-              >
-                Payment
-              </Text>
+              <VStack alignItems="center" space="xs">
+                <Text
+                  color={activeTab === 'payment' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+                  fontSize={12}
+                  fontWeight="$bold"
+                >
+                  Payment Methods
+                </Text>
+              </VStack>
+              <Box
+                position="absolute"
+                bottom={-1}
+                left="25%"
+                height={2}
+                width="50%"
+                borderRadius={999}
+                bg={activeTab === 'payment' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+              />
             </Pressable>
             <Pressable
               onPress={() => setActiveTab('subscription')}
               flex={1}
               alignItems="center"
-              pb="$2"
-              borderBottomWidth={activeTab === 'subscription' ? 2 : 0}
-              borderBottomColor={activeTab === 'subscription' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+              pb="$1"
+              position="relative"
             >
-              <Text
-                color={activeTab === 'subscription' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                fontSize={12}
-                fontWeight="$bold"
-              >
-                Subscription
-              </Text>
+              <VStack alignItems="center" space="xs">
+                <Text
+                  color={activeTab === 'subscription' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+                  fontSize={12}
+                  fontWeight="$bold"
+                >
+                  Premium Plans
+                </Text>
+              </VStack>
+              <Box
+                position="absolute"
+                bottom={-1}
+                left="20%"
+                height={2}
+                width="60%"
+                borderRadius={999}
+                bg={activeTab === 'subscription' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+              />
             </Pressable>
           </HStack>
         </VStack>

@@ -17,6 +17,7 @@ import CollectionTabs from '../components/CollectionTabs';
 import AchievementBadgesTab from '../components/TabsPage/AchievementBadgesTab';
 import BridgeBadgesTab from '../components/TabsPage/BridgeBadgesTab';
 import BadgeDetail from '../components/BadgeDetail';
+import { useSafeAreaValues } from '@/src/utils';
 
 type CollectionsScreenNavigationProp = NativeStackNavigationProp<any, 'CollectionsScreen'>;
 
@@ -27,6 +28,7 @@ const CollectionsScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'achievements' | 'bridges'>('achievements');
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const safeAreaBottom = useSafeAreaValues('bottom');
 
   // Rozete tıklanınca bottom sheet'i aç
   const handleBadgePress = useCallback((badge: Badge) => {
@@ -161,7 +163,7 @@ const CollectionsScreen: React.FC = () => {
 
             {/* Scrollable Content */}
             <BottomSheetScrollView
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerStyle={{ paddingBottom: safeAreaBottom }}
               showsVerticalScrollIndicator={false}
             >
               <BadgeDetail

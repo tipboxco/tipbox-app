@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, HStack, Text, Pressable } from '@gluestack-ui/themed';
+import React from 'react';
+import { Box, HStack, Text, Pressable, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface CollectionTabsProps {
@@ -33,16 +33,13 @@ export const CollectionTabs: React.FC<CollectionTabsProps> = ({
               key={tab.id}
               onPress={() => onTabChange(tab.id)}
               flex={1}
+              py="$2"
+              position="relative"
             >
-              <Box
-                py="$3"
-                alignItems="center"
-                borderBottomWidth={2}
-                borderBottomColor={isActive ? '#D4FF00' : 'transparent'}
-              >
+              <VStack alignItems="center" space="xs">
                 <Text
                   fontSize={14}
-                  fontWeight={isActive ? '$semibold' : '$normal'}
+                  fontWeight="$bold"
                   color={
                     isActive
                       ? isDark
@@ -55,7 +52,16 @@ export const CollectionTabs: React.FC<CollectionTabsProps> = ({
                 >
                   {tab.label}
                 </Text>
-              </Box>
+              </VStack>
+              <Box
+                position="absolute"
+                bottom={-1}
+                left="25%"
+                height={2}
+                width="50%"
+                borderRadius={999}
+                bg={isActive ? (isDark ? '#FFFFFF' : '#000000') : 'transparent'}
+              />
             </Pressable>
           );
         })}
