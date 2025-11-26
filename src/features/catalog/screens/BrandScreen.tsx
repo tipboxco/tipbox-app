@@ -8,6 +8,7 @@ import { Search } from 'lucide-react-native';
 import { mock_brand_detail } from '@/src/mock/catalog/brandCatalog';
 import { BrandCard } from '../components/BrandCard';
 import CategoryCard from '../components/CategoryCard';
+import { Header } from '@/src/components/Header';
 
 type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'CatalogScreen'>;
 
@@ -16,9 +17,16 @@ interface BrandScreenProps {
   onCategorySelect: (category: any) => void;
   scrollViewPaddingBottom?: number;
   onScroll?: (event: any) => void;
+  showHeader?: boolean;
 }
 
-export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCategorySelect, scrollViewPaddingBottom = 52, onScroll }) => {
+export const BrandScreen: React.FC<BrandScreenProps> = ({
+  selectedCategory,
+  onCategorySelect,
+  scrollViewPaddingBottom = 52,
+  onScroll,
+  showHeader = true,
+}) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandScreenNavigationProp>();
@@ -253,8 +261,17 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCa
   const currentData = getCurrentData();
 
   return (
-    <Box flex={1}>
-      {/* Header Info */}
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      {/* Optional Header (for standalone BrandScreen usage) */}
+      {showHeader && (
+        <Header
+          title={currentStep === 'categories' ? 'Select Category' : 'Select Brand'}
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
+      )}
+
+      {/* Header Info (subtitle under header) */}
       <Box px="$4" py="$3">
         <VStack space="xs">
           <Text
@@ -276,7 +293,6 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({ selectedCategory, onCa
           </Text>
         </VStack>
       </Box>
-
 
       {/* Dynamic Grid */}
       <ScrollView 

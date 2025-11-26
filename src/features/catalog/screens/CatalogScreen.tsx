@@ -207,6 +207,7 @@ export const CatalogScreen = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             onScroll={handleBrandScroll}
+            showHeader={false}
           />
         );
       case 'brand-selection':
@@ -216,6 +217,7 @@ export const CatalogScreen = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             onScroll={handleBrandScroll}
+            showHeader={false}
           />
         );
       default:
@@ -268,7 +270,8 @@ export const CatalogScreen = () => {
       >
         <Animated.View
           style={{
-            opacity: currentMode === 'brand-catalog' || currentMode === 'brand-selection' ? headerOpacity : 1,
+            // Brand ve product katalog görünümlerinde header her zaman görünür olsun
+            opacity: 1,
             position: 'absolute',
             top: 0,
             left: 0,
