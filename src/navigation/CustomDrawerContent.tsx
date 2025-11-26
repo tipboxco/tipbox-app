@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/src/features/profile/api/profileApi';
 import { profileKeys } from '@/src/features/profile/api/hooks';
+import { toImageSource } from '@/src/utils';
 
 interface MenuItem {
   id: string;
@@ -144,11 +145,10 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   }, [userProfile?.name, userProfile?.avatarUrl, user?.id, user?.fullName, user?.avatar]);
   
   // Avatar source - profile'dan gelen avatar URL'i veya store'dan veya default avatar
-  const avatarSource = userProfile?.avatarUrl 
-    ? { uri: userProfile.avatarUrl }
-    : user?.avatar 
-    ? { uri: user.avatar } 
-    : require('@/assets/avatar/ozan.png');
+  const avatarSource =
+    toImageSource(userProfile?.avatarUrl) ||
+    toImageSource(user?.avatar || null) ||
+    require('@/assets/avatar/ozan.png');
   
   // Kullanıcı adı - profile'dan gelen name veya store'dan gelen fullName veya email
   const displayName = userProfile?.name || user?.fullName || user?.email || 'Kullanıcı';

@@ -14,15 +14,16 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import type { NotificationsStackParamList } from '@/src/features/notifications/navigation';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { notification_filters, notification_mock } from '@/src/mock/notifications';
 import { NotificationItem, NotificationFilter } from '@/src/mock/notifications/types';
 import { Header } from '@/src/components/Header';
+import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
-type NotificationsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Notifications'>;
+type NotificationsScreenNavigationProp = NativeStackNavigationProp<NotificationsStackParamList, 'NotificationsScreen'>;
 
 const NotificationCard: React.FC<{ notification: NotificationItem }> = ({ notification }) => {
     const { colorMode } = useColorMode();
@@ -56,7 +57,7 @@ const NotificationCard: React.FC<{ notification: NotificationItem }> = ({ notifi
                     alignItems="center"
                 >
                     <Image
-                        source={notification.user.avatar}
+                        source={toImageSource(notification.user.avatar)!}
                         alt="User avatar"
                         width={42}
                         height={42}

@@ -17,7 +17,7 @@ import { ProfileStackParamList } from '../../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
 import type { UserProfile } from '../../types';
-import { useSafeAreaValues, useBottomTabBarHeightValue } from '@/src/utils';
+import { useSafeAreaValues, useBottomTabBarHeightValue, toImageSource } from '@/src/utils';
 
 interface ProfileCardProps {
   userData: UserProfile;
@@ -67,7 +67,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
       {/* Banner */}
       <Box h={130} overflow="hidden" position="relative">
         <Image
-          source={userData.bannerUrl ? { uri: userData.bannerUrl } : require('@/assets/banner/banner_01.png')}
+          source={toImageSource(userData.bannerUrl) || require('@/assets/banner/banner_01.png')}
           alt="Profile Banner"
           w="100%"
           h="100%"
@@ -126,7 +126,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
         borderColor="$white"
       >
         <Image
-          source={userData.avatarUrl ? { uri: userData.avatarUrl } : require('@/assets/avatar/ozan.png')}
+          source={toImageSource(userData.avatarUrl) || require('@/assets/avatar/ozan.png')}
           alt={userData.name}
           w="100%"
           h="100%"
@@ -412,8 +412,8 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     justifyContent="center"
                     alignItems="center"
                   >
-                    <Image
-                      source={badge.image ? { uri: badge.image } : require('@/assets/badges/badge_01.png')}
+                  <Image
+                    source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
                       alt={badge.title}
                       w={60}
                       h={60}

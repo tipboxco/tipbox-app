@@ -8,6 +8,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Post } from '@/src/mock/profile/posts/types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
 
 interface PostDetailCardProps {
     data: Post;
@@ -24,7 +25,7 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
             <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
                     <Image
-                        source={data.user.avatar}
+                        source={toImageSource(data.user.avatar)!}
                         alt={data.user.name}
                         mr={8}
                         width={42}

@@ -1,12 +1,12 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import NotificationsScreen from './screens/NotificationsScreen';
 
 export type NotificationsStackParamList = {
   NotificationsScreen: undefined;
 };
 
-const NotificationsStack = createStackNavigator<NotificationsStackParamList>();
+const NotificationsStack = createNativeStackNavigator<NotificationsStackParamList>();
 
 export const NotificationsNavigator: React.FC = () => {
   return (
@@ -15,9 +15,9 @@ export const NotificationsNavigator: React.FC = () => {
         headerShown: false,
       }}
     >
-      <NotificationsStack.Screen 
-        name="NotificationsScreen" 
-        component={NotificationsScreen} 
+      <NotificationsStack.Screen
+        name="NotificationsScreen"
+        component={NotificationsScreen}
       />
     </NotificationsStack.Navigator>
   );

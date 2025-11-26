@@ -11,6 +11,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventCard as EventCardType } from '@/src/mock/events/communityEvents/types';
+import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -48,7 +49,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           padding='$2'
         >
           <Image
-            source={data.image}
+            source={toImageSource(data.image)!}
             alt={data.title}
             style={{ width: '100%', height: '100%' }}
             borderRadius={5}
@@ -141,7 +142,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               data.avatars.slice(0, 4).map((avatar, index) => (
                 <Image
                   key={index}
-                  source={avatar}
+                  source={toImageSource(avatar)!}
                   alt={`Participant ${index + 1}`}
                   width={18}
                   height={18}

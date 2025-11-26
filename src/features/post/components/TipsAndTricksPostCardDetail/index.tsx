@@ -7,6 +7,7 @@ import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '@/src/components/CardImageCarousel';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
 
 interface TipsAndTricksPostCardDetailProps {
     data: TipsAndTricksPost;
@@ -26,7 +27,7 @@ export const TipsAndTricksPostCardDetail = ({ data }: TipsAndTricksPostCardDetai
             <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
                     <Image
-                        source={data.user.avatar}
+                        source={toImageSource(data.user.avatar)!}
                         alt={data.user.name}
                         mr={8}
                         width={42}

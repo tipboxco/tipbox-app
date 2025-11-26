@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BenchmarkPost, BenchmarkProduct } from '@/src/mock/profile/benchmark/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import { toImageSource } from '@/src/utils';
 
 interface BenchmarkPostCardDetailProps {
     data: BenchmarkPost;
@@ -73,7 +74,7 @@ export const BenchmarkPostCardDetail = ({ data }: BenchmarkPostCardDetailProps) 
             <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
                     <Image
-                        source={data.user.avatar}
+                        source={toImageSource(data.user.avatar)!}
                         alt={data.user.name}
                         mr={8}
                         width={42}

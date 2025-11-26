@@ -12,6 +12,7 @@ import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts } from '../api/hooks';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
+import { toImageSource } from '@/src/utils';
 
 type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -54,42 +55,50 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den seçili ürün grubuna ait products'ı getir
   const { data: catalogProducts } = useCatalogProducts(selectedProductGroupId);
   
+  // Görsel verisini normalize eden yardımcı fonksiyon
+  const normalizeImage = (image: any) => toImageSource(image) as any;
+
   // API'den gelen kategorileri Category formatına dönüştür
-  const currentCategories = catalogCategories?.map(cat => ({
-    id: cat.categoryId,
-    name: cat.name,
-    icon: 'folder',
-    image: { uri: cat.image }, // API'den string olarak geliyor, URI formatına çevir
-    subCategories: [] // API'den subCategories gelmiyor, boş array
-  })) || [];
-  
+  const currentCategories =
+    catalogCategories?.map(cat => ({
+      id: cat.categoryId,
+      name: cat.name,
+      icon: 'folder',
+      // API'den gelen görsel string, require ya da { uri } olabilir – hepsini normalize et
+      image: normalizeImage(cat.image),
+      subCategories: [], // API'den subCategories gelmiyor, boş array
+    })) || [];
+
   // API'den gelen subcategories'i formatla
-  const currentSubCategories = catalogSubCategories?.map(subCat => ({
-    id: subCat.subCategoryId,
-    name: subCat.name,
-    image: { uri: subCat.image },
-    categoryId: subCat.categoryId,
-    productGroups: [] // API'den productGroups gelmiyor, boş array
-  })) || [];
-  
+  const currentSubCategories =
+    catalogSubCategories?.map(subCat => ({
+      id: subCat.subCategoryId,
+      name: subCat.name,
+      image: normalizeImage(subCat.image),
+      categoryId: subCat.categoryId,
+      productGroups: [], // API'den productGroups gelmiyor, boş array
+    })) || [];
+
   // API'den gelen product groups'u formatla
-  const currentProductGroups = catalogProductGroups?.map(productGroup => ({
-    id: productGroup.productGroupId,
-    name: productGroup.name,
-    image: { uri: productGroup.image },
-    subCategoryId: productGroup.subCategoryId,
-    products: [] // API'den products gelmiyor, boş array
-  })) || [];
-  
+  const currentProductGroups =
+    catalogProductGroups?.map(productGroup => ({
+      id: productGroup.productGroupId,
+      name: productGroup.name,
+      image: normalizeImage(productGroup.image),
+      subCategoryId: productGroup.subCategoryId,
+      products: [], // API'den products gelmiyor, boş array
+    })) || [];
+
   // API'den gelen products'ı formatla
-  const currentProducts = catalogProducts?.map(product => ({
-    id: product.productId,
-    name: product.name,
-    image: { uri: product.image },
-    productGroupId: product.productGroupId,
-    subCategoryId: product.subCategoryId,
-    description: '', // API'den description gelmiyor
-  })) || [];
+  const currentProducts =
+    catalogProducts?.map(product => ({
+      id: product.productId,
+      name: product.name,
+      image: normalizeImage(product.image),
+      productGroupId: product.productGroupId,
+      subCategoryId: product.subCategoryId,
+      description: '', // API'den description gelmiyor
+    })) || [];
   const [currentView, setCurrentView] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>('categories');
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 

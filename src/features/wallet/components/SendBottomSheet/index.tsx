@@ -3,6 +3,7 @@ import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
+import { toImageSource } from '@/src/utils';
 
 interface SendBottomSheetProps {
   onClose: () => void;
@@ -403,7 +404,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   overflow="hidden"
                 >
                   <Image
-                    source={selectedFriend.avatar}
+                    source={toImageSource(selectedFriend.avatar)!}
                     alt={selectedFriend.name}
                     width={46}
                     height={46}
@@ -702,7 +703,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                     bg="#CE4A4A"
                     alignItems="center"
                     justifyContent="center"
-                  >
+                    >
                     <Box
                       width={25}
                       height={25}
@@ -710,7 +711,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                       overflow="hidden"
                     >
                       <Image
-                        source={selectedFriend.avatar}
+                        source={toImageSource(selectedFriend.avatar)!}
                         alt={selectedFriend.name}
                         width={25}
                         height={25}

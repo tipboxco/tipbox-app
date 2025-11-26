@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { toImageSource } from '@/src/utils';
 
 type SetupProfileScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SetupProfile'>;
 
@@ -79,7 +80,7 @@ export const SetupProfileScreen = () => {
             >
               {profileImage ? (
                 <Image
-                  source={{ uri: profileImage }}
+                  source={toImageSource(profileImage)}
                   alt="Profile Photo"
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"

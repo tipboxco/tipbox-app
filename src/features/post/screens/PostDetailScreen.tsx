@@ -16,7 +16,7 @@ import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CommentsCard from '@/src/components/CommentsCard';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 
 type PostDetailScreenRouteProp = RouteProp<PostStackParamList, 'PostDetailScreen'>;
 
@@ -26,7 +26,7 @@ const renderComments = (item: any, postData: any, isDark: boolean) => {
         <VStack key={item} position="relative" borderWidth={1} borderColor="red" px={12}>
             <HStack alignItems="flex-start" py={8}>
                 <Image
-                    source={postData.user.avatar}
+                    source={toImageSource(postData.user.avatar)!}
                     alt="User Avatar"
                     width={48}
                     height={48}

@@ -1,13 +1,8 @@
 import React from 'react';
-import {
-    Box,
-    VStack,
-    Text,
-    Image,
-    Pressable,
-} from '@gluestack-ui/themed';
+import { Box, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Category } from '@/src/mock/catalog/productCatalog/types';
+import { toImageSource } from '@/src/utils';
 
 interface CategoryCardProps {
     category: Category;
@@ -17,6 +12,7 @@ interface CategoryCardProps {
 const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const imageSource = toImageSource(category.image);
 
     return (
         <Pressable
@@ -45,16 +41,18 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress }) => {
                     alignItems="center"
                     py={'$1'}
                 >
-                    <Image
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                        }}
-                        source={category.image}
-                        alt={category.name}
-                        borderRadius={5}
-                        resizeMode="contain"
-                    />
+                    {imageSource && (
+                        <Image
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                            }}
+                            source={imageSource}
+                            alt={category.name}
+                            borderRadius={5}
+                            resizeMode="contain"
+                        />
+                    )}
                 </Box>
 
                 {/* Category Name */}

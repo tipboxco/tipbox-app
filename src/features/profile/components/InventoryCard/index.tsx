@@ -3,6 +3,7 @@ import { TouchableOpacity } from 'react-native';
 import { Box, VStack, Text, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { InventoryItem } from '../../types';
+import { toImageSource } from '@/src/utils';
 
 interface InventoryCardProps {
   item: InventoryItem;
@@ -25,15 +26,15 @@ export const InventoryCard = ({ item, width, onPress }: InventoryCardProps) => {
         h={175}
         mb={10}
         overflow="hidden"
-      >
-        <Box
+        >
+      <Box
           flex={1}
           p={15}
           alignItems="center"
           justifyContent="center"
         >
           <Image
-            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+            source={toImageSource(item.image)!}
             alt={`${item.brand.name} ${item.brand.model}`}
             width={100}
             height={100}

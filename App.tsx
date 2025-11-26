@@ -9,7 +9,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
 import { PortalProvider } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryProvider } from '@/src/providers/QueryProvider';
@@ -17,10 +16,6 @@ import { QueryProvider } from '@/src/providers/QueryProvider';
 export default function App() {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-
-  const backgroundColor = isDark
-    ? config.tokens.colors.backgroundDark950
-    : config.tokens.colors.backgroundLight0;
 
   return (
     <QueryProvider>

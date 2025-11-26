@@ -1,6 +1,7 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import type { ImageSourcePropType } from 'react-native';
 
 // Event Type Enum
 export enum EventType {
@@ -29,5 +30,17 @@ export function useSafeAreaValues(side?: InsetsKey) {
  */
 export const useBottomTabBarHeightValue = () => {
   return useBottomTabBarHeight();
+};
+
+export const toImageSource = (
+  value: string | ImageSourcePropType | null | undefined,
+): ImageSourcePropType | undefined => {
+  if (!value) return undefined;
+
+  if (typeof value === 'string') {
+    return { uri: value };
+  }
+
+  return value;
 };
 

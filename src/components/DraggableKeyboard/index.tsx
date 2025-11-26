@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Dimensions, Animated, Keyboard as RNKeyboard, Platform } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { Box, HStack, VStack, Icon, Pressable } from '@gluestack-ui/themed';
+import { View, TextInput, Dimensions, Animated, Keyboard as RNKeyboard, Platform } from 'react-native';
+import { HStack, Icon, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ImageIcon, SendIcon, SmileIcon } from 'lucide-react-native';
 
@@ -12,8 +11,6 @@ interface DraggableKeyboardProps {
   placeholder?: string;
   initialMessage?: string;
   minHeight?: number;
-  upThreshold?: number;
-  downThreshold?: number;
 }
 
 export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
@@ -23,31 +20,19 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
   placeholder = "Mesajınızı yazın...",
   initialMessage = '',
   minHeight = 140,
-  upThreshold = 50,
-  downThreshold = 30,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
   const [message, setMessage] = useState(initialMessage);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const [containerHeight, setContainerHeight] = useState(0);
   
   // Smooth animasyon için Animated.Value
   const animatedHeight = useRef(new Animated.Value(minHeight)).current;
   
-  // Drag durumu için ref'ler
-  const dragStartHeight = useRef(minHeight);
-  const isDraggingRef = useRef(false);
-  const currentAnimatedHeight = useRef(minHeight);
-  
-  // Fullscreen için ekran yüksekliğini kullan, container yüksekliğini değil
-  // Klavye açıkken klavye yüksekliğini çıkararak taşmayı önle
-  const maxHeight = isKeyboardVisible 
-    ? Dimensions.get('window').height - keyboardHeight 
-    : Dimensions.get('window').height;
+  // Ekran yüksekliği (ileride ihtiyaç olursa kullanılır)
+  const screenHeight = Dimensions.get('window').height;
 
   // Smooth animasyon fonksiyonu
   const animateToHeight = (targetHeight: number, duration: number = 300) => {
@@ -63,37 +48,26 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
   // Başlangıç animasyonu
   useEffect(() => {
     animatedHeight.setValue(minHeight);
-    dragStartHeight.current = minHeight;
   }, [minHeight]);
-
-  // Container yüksekliğini takip et
-  const handleContainerLayout = (event: any) => {
-    const { height } = event.nativeEvent.layout;
-    setContainerHeight(height);
-  };
 
   // Klavye event listener'ları
   useEffect(() => {
     const keyboardDidShowListener = RNKeyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (event) => {
-        const keyboardHeight = event.endCoordinates.height;
-        setKeyboardHeight(keyboardHeight);
         setIsKeyboardVisible(true);
-        console.log('Klavye açıldı, yükseklik:', keyboardHeight);
+        console.log('Klavye açıldı');
       }
     );
 
     const keyboardDidHideListener = RNKeyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
-        setKeyboardHeight(0);
         setIsKeyboardVisible(false);
         // Klavye kapandığında component'i ilk haline döndür
         console.log('Klavye kapandı, component ilk haline döndürülüyor');
         animateToHeight(minHeight, 300);
         setIsExpanded(false);
-        dragStartHeight.current = minHeight;
       }
     );
 
@@ -102,59 +76,6 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
       keyboardDidHideListener?.remove();
     };
   }, []);
-
-  const handleGestureEvent = (event: any) => {
-    // Klavye kapalıyken sürüklemeyi engelle
-    if (!isKeyboardVisible) return;
-    
-    const { translationY } = event.nativeEvent;
-    
-    if (isDraggingRef.current) {
-      const newHeight = Math.max(minHeight, Math.min(maxHeight, dragStartHeight.current - translationY));
-      animatedHeight.setValue(newHeight);
-      currentAnimatedHeight.current = newHeight;
-    }
-  };
-
-  const handleStateChange = (event: any) => {
-    // Klavye kapalıyken sürüklemeyi engelle
-    if (!isKeyboardVisible) return;
-    
-    const { translationY, state } = event.nativeEvent;
-    
-    if (state === State.BEGAN) {
-      isDraggingRef.current = true;
-      dragStartHeight.current = currentAnimatedHeight.current;
-      console.log('Drag başladı, başlangıç height:', dragStartHeight.current);
-    } else if (state === State.END || state === State.CANCELLED || state === State.FAILED) {
-      isDraggingRef.current = false;
-      
-      const currentHeight = currentAnimatedHeight.current;
-      const totalDragDistance = dragStartHeight.current - currentHeight;
-      
-      console.log('=== SNAP POINT DEBUG ===');
-      console.log('Drag Start Height:', dragStartHeight.current);
-      console.log('Current Height:', currentHeight);
-      console.log('Total Drag Distance:', totalDragDistance);
-      console.log('Up Threshold (-50):', -upThreshold);
-      console.log('Down Threshold (30):', downThreshold);
-      
-      if (totalDragDistance < -upThreshold) {
-        console.log('Yukarı sürükleme 50px geçildi, fullscreen açılıyor');
-        animateToHeight(maxHeight, 400);
-        setIsExpanded(true);
-        dragStartHeight.current = maxHeight;
-      } else if (totalDragDistance > downThreshold) {
-        console.log('Aşağı sürükleme 30px geçildi, minHeight\'e snap ediliyor');
-        animateToHeight(minHeight, 300);
-        setIsExpanded(false);
-        dragStartHeight.current = minHeight;
-      } else {
-        console.log('Threshold\'lar geçilmedi, mevcut pozisyonda kalınıyor');
-        dragStartHeight.current = currentHeight;
-      }
-    }
-  };
 
   const handleSendMessage = () => {
     if (message.trim()) {
@@ -165,7 +86,6 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
       setMessage('');
       animateToHeight(minHeight, 300);
       setIsExpanded(false);
-      dragStartHeight.current = minHeight;
     }
   };
 
@@ -197,34 +117,26 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
         flex: 1, 
         backgroundColor: 'transparent'
       }}
-      onLayout={handleContainerLayout}
     >
-      {/* Bottom Sheet benzeri mesaj giriş alanı */}
-      <PanGestureHandler 
-        onGestureEvent={handleGestureEvent}
-        onHandlerStateChange={handleStateChange}
-        enabled={isKeyboardVisible} // Klavye kapalıyken sürüklemeyi devre dışı bırak
-        activeOffsetY={[-10, 10]} // Daha hassas gesture detection
-        failOffsetX={[-20, 20]} // Yatay sürüklemeyi engelle
+      {/* Mesaj giriş alanı (artık drag gesture kullanılmıyor) */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: animatedHeight,
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          borderTopLeftRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
+          borderTopRightRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 8,
+          zIndex: 1000,
+        }}
       >
-        <Animated.View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: animatedHeight,
-            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
-            borderTopLeftRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
-            borderTopRightRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 8,
-            zIndex: 1000,
-          }}
-        >
           {/* Sürükleme göstergesi - sadece klavye açıkken göster */}
           {isKeyboardVisible && (
             <View
@@ -327,7 +239,6 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
             </Pressable>
           </HStack>
         </Animated.View>
-      </PanGestureHandler>
     </View>
   );
 };
