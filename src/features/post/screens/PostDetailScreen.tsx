@@ -15,13 +15,15 @@ import { ExperiencePostCardDetail } from '../components/ExperiencePostCardDetail
 import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+import CommentsCard from '@/src/components/CommentsCard';
+import { useSafeAreaValues } from '@/src/utils';
 
 type PostDetailScreenRouteProp = RouteProp<PostStackParamList, 'PostDetailScreen'>;
 
 
 const renderComments = (item: any, postData: any, isDark: boolean) => {
     return (
-        <VStack key={item} position="relative" borderBottomWidth={1} borderBottomColor="#E9E9E9" px={12}>
+        <VStack key={item} position="relative" borderWidth={1} borderColor="red" px={12}>
             <HStack alignItems="flex-start" py={8}>
                 <Image
                     source={postData.user.avatar}
@@ -72,6 +74,36 @@ const renderComments = (item: any, postData: any, isDark: boolean) => {
     );
 };
 
+const MOCK_COMMENTS = [
+    {
+        id: '1',
+        userName: 'Michael Clark',
+        userTitle: 'Tech Enthusiast',
+        avatar: require('@/assets/avatar/ozan.png'),
+        timeAgo: '12m',
+        content:
+            'Really helpful review, especially the part about battery performance in daily usage. Curious to see how it behaves after a few months. I have been considering this product for quite some time and your detailed explanation about day-to-day usage, charging cycles, and overall reliability over longer periods was exactly what I was looking for. It would be great to hear an update again after a few more weeks of use to understand if there is any noticeable degradation or changes in performance compared to the first days.',
+    },
+    {
+        id: '2',
+        userName: 'Sarah Johnson',
+        userTitle: 'Early Tech Adopter',
+        avatar: require('@/assets/avatar/ozan.png'),
+        timeAgo: '1h',
+        content:
+            'I was between this model and the previous generation. Your detailed comparison really cleared things up for me, thanks!',
+    },
+    {
+        id: '3',
+        userName: 'David Miller',
+        userTitle: 'Smart Home Explorer',
+        avatar: require('@/assets/avatar/ozan.png'),
+        timeAgo: '3h',
+        content:
+            'Would love to hear more about long‑term durability. Have you noticed any issues with build quality or overheating?',
+    },
+];
+
 export const PostDetailScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -80,6 +112,7 @@ export const PostDetailScreen = () => {
     const { postData, type, showRelatedPost, relatedPostData } = route.params;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
+    const bottomInset = useSafeAreaValues('bottom');
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -101,7 +134,7 @@ export const PostDetailScreen = () => {
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 100 }}
+                contentContainerStyle={{ paddingBottom: bottomInset }}
             >
                 {/* Detail Card */}
                 {type === 'tipsAndTricks' ? (
@@ -121,6 +154,61 @@ export const PostDetailScreen = () => {
                 ) : (
                     <PostDetailCard data={postData} />
                 )}
+
+                {/* Comments Header + Filter */}
+                <HStack
+                    px="$4"
+                    mt="$4"
+                    mb="$2"
+                    alignItems="center"
+                    justifyContent="space-between"
+                >
+                    <Text
+                        color="#A3A3A3"
+                        fontSize={14}
+                        fontWeight="$bold"
+                    >
+                        Comments
+                    </Text>
+                    <Pressable
+                        px={12}
+                        py={6}
+                        borderRadius={999}
+                        borderWidth={1}
+                        borderColor={isDark ? '#333333' : '#E0E0E0'}
+                        bg={isDark ? '#111111' : '#F5F5F5'}
+                        flexDirection="row"
+                        alignItems="center"
+                    >
+                        <Text
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize={11}
+                            fontWeight="$medium"
+                            mr={6}
+                        >
+                            Newest
+                        </Text>
+                        <Feather
+                            name="chevron-down"
+                            size={14}
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                        />
+                    </Pressable>
+                </HStack>
+
+                {/* Comments List */}
+                <VStack space="xs">
+                    {MOCK_COMMENTS.map((comment) => (
+                        <CommentsCard
+                            key={comment.id}
+                            userName={comment.userName}
+                            userTitle={comment.userTitle}
+                            avatar={comment.avatar}
+                            timeAgo={comment.timeAgo}
+                            content={comment.content}
+                        />
+                    ))}
+                </VStack>
             </ScrollView>
         </VStack>
         </SafeAreaView>
