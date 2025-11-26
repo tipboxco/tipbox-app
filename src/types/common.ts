@@ -4,9 +4,9 @@ export type Theme = 'light' | 'dark';
 export type Language = 'tr' | 'en';
 
 export enum ProductInfoType {
-  PRODUCT = 'PRODUCT',
-  PRODUCT_GROUP = 'PRODUCT_GROUP',
-  SUB_CATEGORY = 'SUB_CATEGORY',
+  PRODUCT = 'product',
+  PRODUCT_GROUP = 'product_group',
+  SUB_CATEGORY = 'sub_category',
 }
 
 export interface BaseEntity {

@@ -35,7 +35,25 @@ export interface TrustUser {
   userName: string;
   name: string;
   titles: string[];
-  avatar: string;
+  avatar: string | null;
+  /**
+   * İlgili kullanıcıyı, oturum açmış kullanıcının trust edip etmediğini belirtir
+   * Trust listesi endpoint'inde opsiyonel, truster listesinde zorunlu olabilir.
+   */
+  isTrusted?: boolean;
+}
+
+/**
+ * Truster User - API'den gelen truster listesi kullanıcı tipi
+ * /users/{id}/trusters endpoint response'u
+ */
+export interface TrusterUser {
+  id: string;
+  userName: string;
+  titles: string[];
+  avatar: string | null;
+  name: string;
+  isTrusted: boolean;
 }
 
 /**
