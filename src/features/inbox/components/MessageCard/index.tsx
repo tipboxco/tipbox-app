@@ -8,10 +8,11 @@ import {
   Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Message } from '@/src/mock/inbox/messages/types';
+import { formatRelativeTime } from '@/src/utils';
+import type { InboxMessage } from '../../types';
 
 interface MessageCardProps {
-  data: Message;
+  data: InboxMessage;
   onPress?: (messageId: string) => void;
 }
 
@@ -37,7 +38,11 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress }) => {
       <HStack space="md" alignItems="center">
         {/* Avatar */}
         <Image
-          source={data.senderAvatar}
+          source={
+            data.senderAvatar
+              ? { uri: data.senderAvatar }
+              : require('@/assets/avatar/ozan.png')
+          }
           alt={data.senderName}
           width={48}
           height={48}
@@ -57,16 +62,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress }) => {
           <Text
             color={isDark ? '#8C8C8C' : '#8C8C8C'}
             fontSize={9}
-            fontWeight="$medium"
-            numberOfLines={1}
-          >
-            {data.senderTitle}
-          </Text>
-          
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize={9}
-            fontWeight="$normal"
+            fontWeight={data.isUnread ? '$semibold' : '$normal'}
             numberOfLines={2}
           >
             {data.lastMessage}
@@ -74,7 +70,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress }) => {
         </VStack>
       </HStack>
 
-      {/* Timestamp and Status Indicator - Position Absolute */}
+      {/* Timestamp and Unread Badge - Position Absolute */}
       <HStack
         position="absolute"
         top="$3"
@@ -87,14 +83,18 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress }) => {
           fontSize={9}
           fontWeight="$medium"
         >
-          {data.timestamp}
+          {formatRelativeTime(data.timestamp)}
         </Text>
-        <Box
-          width={8}
-          height={8}
-          borderRadius={4}
-          bg="#C2E607"
-        />
+        {data.isUnread && (
+          <Box
+            width={8}
+            height={8}
+            borderRadius={4}
+            bg="#E8FF6B"
+            alignItems="center"
+            justifyContent="center"
+          />
+        )}
       </HStack>
     </Pressable>
   );
