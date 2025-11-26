@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -17,6 +16,7 @@ import { supportRequestData } from '@/src/mock/inbox/SupportRequests';
 import { Feather } from '@expo/vector-icons';
 import SupportRequestCard from '../components/SupportRequestCard/index';
 import SupportRequestFilterGroup from '../components/SupportRequestFilterGroup/index';
+import { useSafeAreaValues } from '@/src/utils';
 
 type SupportRequestsScreenNavigationProp = NativeStackNavigationProp<any, 'SupportRequestsScreen'>;
 
@@ -26,6 +26,7 @@ const SupportRequestsScreen: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string>('1');
   const [searchQuery, setSearchQuery] = useState('');
   const navigation = useNavigation<SupportRequestsScreenNavigationProp>();
+  const bottomInset = useSafeAreaValues('bottom');
 
   const handleRequestPress = (requestId: string) => {
     // Find the request data
@@ -79,7 +80,6 @@ const SupportRequestsScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <VStack flex={1} space="md" px="$4">
       {/* Search Bar */}
       <HStack
@@ -126,11 +126,10 @@ const SupportRequestsScreen: React.FC = () => {
           />
         )}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: bottomInset }}
         style={{ flex: 1 }}
       />
     </VStack>
-    </SafeAreaView>
   );
 };
 

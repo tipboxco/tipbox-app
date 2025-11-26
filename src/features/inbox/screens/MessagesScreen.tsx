@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -19,6 +18,7 @@ import { Message, MessageCategory } from '@/src/mock/inbox/messages/types';
 import MessageCard from '../components/MessageCard/index';
 import MessagesFilterGroup from '../components/MessagesFilterGroup/index';
 import type { InboxStackParamList } from '../navigation';
+import { useSafeAreaValues } from '@/src/utils';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -28,6 +28,7 @@ const MessagesScreen: React.FC = () => {
     const [activeCategory, setActiveCategory] = useState<string>('1');
     const [searchQuery, setSearchQuery] = useState('');
     const navigation = useNavigation<MessagesScreenNavigationProp>();
+    const bottomInset = useSafeAreaValues('bottom');
 
     const handleMessagePress = (messageId: string) => {
         const message = inboxData.messages.find(m => m.id === messageId);
@@ -60,8 +61,9 @@ const MessagesScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-            <VStack space="md" px="$4">
+        <VStack flex={1} space="md">
+            {/* Search + Filters */}
+            <VStack px="$4" space="md">
                 {/* Search Bar */}
                 <HStack
                     alignItems="center"
@@ -97,7 +99,7 @@ const MessagesScreen: React.FC = () => {
                 />
             </VStack>
 
-            {/* Messages List - Full Width */}
+            {/* Messages List - Full Height */}
             <FlatList
                 data={getFilteredMessages()}
                 showsVerticalScrollIndicator={false}
@@ -108,9 +110,9 @@ const MessagesScreen: React.FC = () => {
                     />
                 )}
                 keyExtractor={(item) => item.id}
-                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomInset }}
             />
-        </SafeAreaView>
+        </VStack>
     );
 };
 

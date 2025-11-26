@@ -37,54 +37,61 @@ const InboxScreen: React.FC = () => {
       />
 
       <VStack flex={1} py="$2" space="md">
-        {/* Tabs */}
-        <VStack px="$4" bg={isDark ? '#000' : '#FFF'}>
-          <HStack space="lg">
+        {/* Tabs - Collections / Trust_Truster tarzı */}
+        <VStack pt='$4' bg={isDark ? '#000' : '#FAFAFA'}>
+          <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
             <Pressable
               onPress={() => handleTabPress('messages')}
               flex={1}
               alignItems="center"
-              py="$2"
+              pb="$1"
+              position="relative"
             >
-              <Text
-                color={activeTab === 'messages' ? '#000' : '#8C8C8C'}
-                fontSize={12}
-                fontWeight="$bold"
-              >
-                Messages
-              </Text>
-              {activeTab === 'messages' && (
-                <Box
-                  width={112}
-                  height={2}
-                  bg="#000"
-                  mt="$1"
-                  borderRadius={1}
-                />
-              )}
+              <VStack alignItems="center" space="xs">
+                <Text
+                  color={activeTab === 'messages' ? '#000' : '#8C8C8C'}
+                  fontSize={12}
+                  fontWeight="$bold"
+                >
+                  Messages
+                </Text>
+              </VStack>
+              <Box
+                position="absolute"
+                bottom={-1}
+                left="25%"
+                height={2}
+                width="50%"
+                borderRadius={999}
+                bg={activeTab === 'messages' ? '#000' : 'transparent'}
+              />
             </Pressable>
+
             <Pressable
               onPress={() => handleTabPress('support')}
               flex={1}
               alignItems="center"
-              py="$2"
+              pb="$1"
+              position="relative"
             >
-              <Text
-                color={activeTab === 'support' ? '#000' : '#8C8C8C'}
-                fontSize={12}
-                fontWeight="$bold"
-              >
-                1-on-1 Support Requests
-              </Text>
-              {activeTab === 'support' && (
-                <Box
-                  width={112}
-                  height={2}
-                  bg="#000"
-                  mt="$1"
-                  borderRadius={1}
-                />
-              )}
+              <VStack alignItems="center" space="xs">
+                <Text
+                  color={activeTab === 'support' ? '#000' : '#8C8C8C'}
+                  fontSize={12}
+                  fontWeight="$bold"
+                >
+                  1-on-1 Support Requests
+                </Text>
+              </VStack>
+              <Box
+                position="absolute"
+                bottom={-1}
+                left="25%"
+                height={2}
+                width="50%"
+                borderRadius={999}
+                bg={activeTab === 'support' ? '#000' : 'transparent'}
+              />
             </Pressable>
           </HStack>
         </VStack>
