@@ -12,13 +12,13 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { inboxData } from '@/src/mock/inbox/messages';
 import { Feather } from '@expo/vector-icons';
-import { Message, MessageCategory } from '@/src/mock/inbox/messages/types';
 import MessageCard from '../components/MessageCard/index';
 import MessagesFilterGroup from '../components/MessagesFilterGroup/index';
 import type { InboxStackParamList } from '../navigation';
 import { useSafeAreaValues } from '@/src/utils';
+import { useMessages } from '../api/hooks';
+import type { InboxMessage } from '../types';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -30,8 +30,10 @@ const MessagesScreen: React.FC = () => {
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
 
+    const { data: messages, isLoading, error } = useMessages();
+
     const handleMessagePress = (messageId: string) => {
-        const message = inboxData.messages.find(m => m.id === messageId);
+        const message = (messages || []).find(m => m.id === messageId);
         if (message) {
             navigation.navigate('MessageDetailScreen', {
                 messageId: message.id,
@@ -47,12 +49,11 @@ const MessagesScreen: React.FC = () => {
     };
 
     const getFilteredMessages = () => {
-        let filtered = inboxData.messages;
+        let filtered: InboxMessage[] = messages || [];
 
         if (searchQuery) {
             filtered = filtered.filter(message =>
                 message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                message.senderTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 message.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
@@ -91,27 +92,37 @@ const MessagesScreen: React.FC = () => {
                     </Input>
                 </HStack>
 
-                {/* Filter Buttons */}
+                {/* Filter Buttons - TODO: API'ye taşındığında categories de buradan gelecek */}
                 <MessagesFilterGroup
-                    categories={inboxData.categories}
+                    categories={[]}
                     activeCategory={activeCategory}
                     onCategoryPress={handleCategoryPress}
                 />
             </VStack>
 
             {/* Messages List - Full Height */}
-            <FlatList
-                data={getFilteredMessages()}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => (
-                    <MessageCard
-                        data={item}
-                        onPress={handleMessagePress}
-                    />
-                )}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomInset }}
-            />
+            {isLoading ? (
+                <Box py={20} alignItems="center">
+                    <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+                </Box>
+            ) : error ? (
+                <Box py={20} alignItems="center">
+                    <Text color="#CE4A4A">Hata: {error.message}</Text>
+                </Box>
+            ) : (
+                <FlatList
+                    data={getFilteredMessages()}
+                    showsVerticalScrollIndicator={false}
+                    renderItem={({ item }) => (
+                        <MessageCard
+                            data={item}
+                            onPress={handleMessagePress}
+                        />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomInset }}
+                />
+            )}
         </VStack>
     );
 };

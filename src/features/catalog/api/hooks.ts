@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts } from './catalogApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
+import { getBrandCategories, getBrandsByCategory } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -8,6 +9,8 @@ import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogP
 export const catalogKeys = {
   all: ['catalog'] as const,
   categories: () => [...catalogKeys.all, 'categories'] as const,
+  brandCategories: () => [...catalogKeys.all, 'brandCategories'] as const,
+  brandList: (categoryId: string) => [...catalogKeys.all, 'brands', categoryId] as const,
   subCategories: (categoryId: string) => [...catalogKeys.all, 'subCategories', categoryId] as const,
   productGroups: (subCategoryId: string) => [...catalogKeys.all, 'productGroups', subCategoryId] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
@@ -28,6 +31,52 @@ export const useCatalogCategories = () => {
     queryFn: () => getCatalogCategories(),
     staleTime: 0, // Cache yok
     gcTime: 0, // Cache yok
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand Categories query hook
+ * /brands/categories endpoint'inden marka kategorilerini getirir ve cache'ler
+ *
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useBrandCategories();
+ */
+export const useBrandCategories = () => {
+  return useQuery<BrandCategory[], Error>({
+    queryKey: catalogKeys.brandCategories(),
+    queryFn: () => getBrandCategories(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brands by Category query hook
+ * Seçili brand kategorisine göre /brands/categories/{category_id}/brands endpoint'inden brand listesini getirir
+ *
+ * @param categoryId - Seçili brand kategorisinin ID'si
+ * @returns React Query hook result
+ */
+export const useBrandsByCategory = (categoryId: string | undefined) => {
+  return useQuery<BrandListItem[], Error>({
+    queryKey: categoryId ? catalogKeys.brandList(categoryId) : ['catalog', 'brands', 'disabled'],
+    queryFn: () => {
+      if (!categoryId) {
+        throw new Error('Category ID is required');
+      }
+      return getBrandsByCategory(categoryId);
+    },
+    enabled: !!categoryId,
+    staleTime: 0,
+    gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     retry: 1,

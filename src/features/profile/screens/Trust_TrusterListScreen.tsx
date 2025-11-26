@@ -17,14 +17,12 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { Header } from '@/src/components/Header';
-import { TrustUser as ApiTrustUser } from '@/src/features/profile/types';
-import { mockTrusterUsers } from '@/src/mock/profile/trustTrusterList';
-import { TrustUserCard } from '../components/TrustUserCard';
+import { TrustUser as ApiTrustUser, TrusterUser as ApiTrusterUser } from '@/src/features/profile/types';
+import { TrustUserCard, TrustUserCardUser } from '../components/TrustUserCard';
 import { SuggestionCard } from '../components/SuggestionCard';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { useTrustList } from '../api/hooks';
+import { useTrustList, useTrusterList } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
-import { TrustUser as MockTrustUser } from '@/src/mock/profile/trustTrusterList/types';
 import { useSafeAreaValues } from '@/src/utils';
 
 type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -75,25 +73,44 @@ export const Trust_TrusterListScreen = () => {
         activeTab === 'trust' ? (debouncedSearchQuery.trim() || undefined) : undefined
     );
 
+    // React Query hook - sadece truster sekmesinde aktif, search query ile
+    const { data: trusterListData, isLoading: isTrusterListLoading, error: trusterListError } = useTrusterList(
+        activeTab === 'truster' ? userId : undefined,
+        activeTab === 'truster' ? (debouncedSearchQuery.trim() || undefined) : undefined
+    );
+
     // API'den gelen data'yı mock formatına transform et (sadece TrustUserCard için gerekli)
-    const transformApiUserToMockUser = (apiUser: ApiTrustUser): MockTrustUser => {
+    const transformTrustApiUserToCardUser = (apiUser: ApiTrustUser): TrustUserCardUser => {
         return {
             id: apiUser.id,
             name: apiUser.name,
             title: apiUser.titles?.[0] || '', // İlk title'ı kullan
-            avatar: { uri: apiUser.avatar }, // String URL'yi Image source formatına çevir
+            avatar: apiUser.avatar ? { uri: apiUser.avatar } : undefined, // String URL'yi Image source formatına çevir
             trustLevel: 3, // Varsayılan trust level (API'de yok)
             isOnline: false, // Varsayılan
         };
     };
 
+    const transformTrusterApiUserToCardUser = (apiUser: ApiTrusterUser): TrustUserCardUser => {
+        return {
+            id: apiUser.id,
+            name: apiUser.name,
+            title: apiUser.titles?.[0] || '',
+            avatar: apiUser.avatar ? { uri: apiUser.avatar } : undefined,
+            trustLevel: 3,
+            isOnline: false,
+        };
+    };
+
     // Trust sekmesi için sadece API'den gelen verileri kullan (backend'de filtrelenmiş)
-    const trustUsers = activeTab === 'trust'
-        ? (trustListData?.map(transformApiUserToMockUser) || [])
+    const trustUsers: TrustUserCardUser[] = activeTab === 'trust'
+        ? (trustListData?.map(transformTrustApiUserToCardUser) || [])
         : [];
 
-    // Truster sekmesi için mock data (henüz API yok)
-    const trusterUsers = activeTab === 'truster' ? mockTrusterUsers : [];
+    // Truster sekmesi için API verisi
+    const trusterUsers: TrustUserCardUser[] = activeTab === 'truster'
+        ? (trusterListData?.map(transformTrusterApiUserToCardUser) || [])
+        : [];
 
     // Get current data based on active tab
     const currentUsers = activeTab === 'trust' ? trustUsers : trusterUsers;
@@ -102,7 +119,7 @@ export const Trust_TrusterListScreen = () => {
     // Trust sekmesinde backend'den filtrelenmiş veri geliyor, bu yüzden direkt kullan
     const filteredUsers = activeTab === 'trust'
         ? currentUsers // Trust sekmesinde backend'den filtrelenmiş veri geliyor
-        : currentUsers.filter((user: MockTrustUser) => {
+        : currentUsers.filter((user: TrustUserCardUser) => {
             // Truster sekmesinde mock data'yı frontend'de filtrele
             return user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 user.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -111,7 +128,7 @@ export const Trust_TrusterListScreen = () => {
     // Trust sekmesinde search query varsa ve data boşsa, "Kullanıcı bulunamadı" göster
     const showEmptyState = activeTab === 'trust'
         ? (!isTrustListLoading && !trustListError && debouncedSearchQuery.trim().length > 0 && filteredUsers.length === 0)
-        : (filteredUsers.length === 0 && searchQuery.trim().length > 0);
+        : (!isTrusterListLoading && !trusterListError && searchQuery.trim().length > 0 && filteredUsers.length === 0);
 
     const handlePopoverOpen = (userId: string) => {
         setOpenPopoverId(userId);
@@ -314,7 +331,7 @@ export const Trust_TrusterListScreen = () => {
                                     <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz trust listeniz boş</Text>
                                 </Box>
                             ) : (
-                                filteredUsers.map((user: MockTrustUser) => (
+                                filteredUsers.map((user: TrustUserCardUser) => (
                                     <TrustUserCard
                                         key={user.id}
                                         user={user}
@@ -359,7 +376,20 @@ export const Trust_TrusterListScreen = () => {
                             />
 
                             {/* Truster Users List */}
-                            {filteredUsers.map((user: MockTrustUser) => (
+                            {isTrusterListLoading ? (
+                                <Box py={20} alignItems="center">
+                                    <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+                                </Box>
+                            ) : trusterListError ? (
+                                <Box py={20} alignItems="center">
+                                    <Text color="#CE4A4A">Hata: {trusterListError.message}</Text>
+                                </Box>
+                            ) : filteredUsers.length === 0 && !searchQuery.trim() ? (
+                                <Box py={20} alignItems="center">
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz truster listeniz boş</Text>
+                                </Box>
+                            ) : (
+                            filteredUsers.map((user: TrustUserCardUser) => (
                                 <TrustUserCard
                                     key={user.id}
                                     user={user}
@@ -368,7 +398,7 @@ export const Trust_TrusterListScreen = () => {
                                     onPopoverOpen={() => handlePopoverOpen(user.id)}
                                     onPopoverClose={handlePopoverClose}
                                 />
-                            ))}
+                            )))}
                         </ScrollView>
                     )}
                 </VStack>

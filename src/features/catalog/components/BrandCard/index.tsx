@@ -1,10 +1,19 @@
 import React from 'react';
 import { Box, Text, Image, Pressable, VStack, HStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Brand } from '@/src/mock/catalog/brandCatalog/types';
+
+export interface BrandCardBrand {
+  id: string;
+  name: string;
+  followers: string;
+  logo: any;
+  bannerImage?: any;
+  isJoined: boolean;
+  description?: string;
+}
 
 interface BrandCardProps {
-  brand: Brand;
+  brand: BrandCardBrand;
   onPress: () => void;
 }
 
@@ -29,18 +38,18 @@ export const BrandCard: React.FC<BrandCardProps> = ({ brand, onPress }) => {
           <Image
             source={brand.logo}
             alt={brand.name}
-            width={40}
-            height={40}
-            borderRadius={20}
-            resizeMode="cover"
+            width={86}
+            height={86}
+            borderRadius={5}
+            resizeMode="contain"
           />
         </HStack>
 
         {/* Brand Name */}
         <Text
           color={isDark ? '#FFFFFF' : '#000000'}
-          fontSize={12}
-          fontWeight="$bold"
+          fontSize={9}
+          fontWeight="$semibold"
           textAlign="center"
           numberOfLines={2}
         >
@@ -57,24 +66,6 @@ export const BrandCard: React.FC<BrandCardProps> = ({ brand, onPress }) => {
             {brand.followers}
           </Text>
         </HStack>
-
-        {/* Join Status */}
-        <Box
-          bg={brand.isJoined ? "#C2E607" : "#F2F2F2"}
-          borderRadius={5}
-          px="$2"
-          py="$1"
-          alignSelf="center"
-        >
-          <Text
-            color={brand.isJoined ? "#000000" : "#9D9D9D"}
-            fontSize={8}
-            fontWeight="$bold"
-            textAlign="center"
-          >
-            {brand.isJoined ? "Joined" : "Join"}
-          </Text>
-        </Box>
       </VStack>
     </Pressable>
   );

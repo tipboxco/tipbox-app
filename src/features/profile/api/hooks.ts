@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { getTrustList } from './trustApi';
+import { getTrustList, getTrusterList } from './trustApi';
 import { getUserProfile, getInventory } from './profileApi';
-import type { TrustUser, UserProfile, InventoryItem } from '../types';
+import type { TrustUser, TrusterUser, UserProfile, InventoryItem } from '../types';
 
 /**
  * Query Keys - Profile feature için cache key pattern'leri
@@ -13,6 +13,9 @@ export const profileKeys = {
   trusts: () => [...profileKeys.all, 'trusts'] as const,
   trustList: (userId: string, searchQuery?: string) => 
     [...profileKeys.trusts(), userId, ...(searchQuery ? ['search', searchQuery] : [])] as const,
+  trusters: () => [...profileKeys.all, 'trusters'] as const,
+  trusterList: (userId: string, searchQuery?: string) =>
+    [...profileKeys.trusters(), userId, ...(searchQuery ? ['search', searchQuery] : [])] as const,
   inventory: () => [...profileKeys.all, 'inventory'] as const,
 };
 
@@ -112,6 +115,106 @@ export const useTrustList = (
       console.error('🚫 [React Query Cache] Cache disabled for search:', hasSearchQuery);
     }
   }, [queryResult.isSuccess, queryResult.isError, queryResult.data, queryResult.isFetching, queryResult.dataUpdatedAt, queryResult.error, userId, searchQuery, hasSearchQuery, queryClient]);
+
+  return queryResult;
+};
+
+/**
+ * Get Truster List query hook
+ * Kullanıcının truster listesini getirir ve cache'ler
+ *
+ * @param userId - Kullanıcı ID'si
+ * @param searchQuery - İsim veya kullanıcı adına göre arama (opsiyonel)
+ * @returns React Query hook result
+ */
+export const useTrusterList = (
+  userId: string | undefined,
+  searchQuery?: string
+) => {
+  const queryClient = useQueryClient();
+
+  const hasSearchQuery = !!searchQuery && searchQuery.trim().length > 0;
+
+  const previousSearchQueryRef = useRef<string | undefined>(searchQuery);
+
+  const queryResult = useQuery<TrusterUser[], Error>({
+    queryKey: userId
+      ? profileKeys.trusterList(userId, searchQuery)
+      : ['profile', 'trusters', 'disabled'],
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return getTrusterList(userId, searchQuery);
+    },
+    enabled: !!userId,
+    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000,
+    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000,
+    refetchOnMount: hasSearchQuery ? 'always' : false,
+    refetchOnWindowFocus: hasSearchQuery,
+    placeholderData: undefined,
+    retry: hasSearchQuery ? 0 : 1,
+  });
+
+  useEffect(() => {
+    if (previousSearchQueryRef.current !== searchQuery && userId) {
+      queryClient.removeQueries({
+        queryKey: profileKeys.trusters(),
+        exact: false,
+      });
+
+      if (hasSearchQuery) {
+        queryResult.refetch();
+      }
+
+      previousSearchQueryRef.current = searchQuery;
+    }
+  }, [searchQuery, userId, hasSearchQuery, queryClient, queryResult]);
+
+  useEffect(() => {
+    if (queryResult.isSuccess && queryResult.data && userId) {
+      const hasSearch = hasSearchQuery;
+
+      console.log('✅ [React Query Cache] Truster list fetched successfully');
+      console.log('📊 [React Query Cache] Data count:', queryResult.data.length);
+      console.log('🔍 [React Query Cache] Search query:', searchQuery || '(empty)');
+      console.log('🚫 [React Query Cache] Cache disabled for search:', hasSearch);
+      console.log('🔑 [React Query Cache] Query Key:', profileKeys.trusterList(userId, searchQuery));
+
+      if (!hasSearch) {
+        const cachedData = queryClient.getQueryData<TrusterUser[]>(
+          profileKeys.trusterList(userId, searchQuery)
+        );
+        console.log('💾 [React Query Cache] Cached data exists:', !!cachedData);
+        console.log('💾 [React Query Cache] Cached data count:', cachedData?.length || 0);
+      } else {
+        console.log('💾 [React Query Cache] Cache bypassed (search active)');
+      }
+
+      console.log('🔄 [React Query Cache] Is fetching:', queryResult.isFetching);
+      console.log(
+        '📦 [React Query Cache] Data from cache:',
+        queryResult.dataUpdatedAt > 0 && !hasSearch ? 'Yes' : 'No (fresh)'
+      );
+    }
+
+    if (queryResult.isError && queryResult.error) {
+      console.error('❌ [React Query Cache] Truster list fetch error:', queryResult.error);
+      console.error('🔍 [React Query Cache] Search query:', searchQuery || '(empty)');
+      console.error('🚫 [React Query Cache] Cache disabled for search:', hasSearchQuery);
+    }
+  }, [
+    queryResult.isSuccess,
+    queryResult.isError,
+    queryResult.data,
+    queryResult.isFetching,
+    queryResult.dataUpdatedAt,
+    queryResult.error,
+    userId,
+    searchQuery,
+    hasSearchQuery,
+    queryClient,
+  ]);
 
   return queryResult;
 };
