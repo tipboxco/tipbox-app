@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +8,7 @@ import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import { mockEventDetail } from '@/src/mock/catalog/brandSurveys';
+import { useSafeAreaValues } from '@/src/utils';
 
 type BrandEventsDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandEventsDetailScreen'>;
 
@@ -14,6 +16,7 @@ const BrandEventsDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandEventsDetailScreenNavigationProp>();
+  const bottomInset = useSafeAreaValues('bottom');
 
   const getButtonStyle = (status: string) => {
     if (status === 'joined') {
@@ -102,16 +105,20 @@ const BrandEventsDetailScreen: React.FC = () => {
   };
 
   return (
-    <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      {/* Header */}
-      <Header
-        title="Anketler & Oyunlaştırmalar"
-        showBackButton={true}
-        onBackPress={() => navigation.goBack()}
-      />
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        {/* Header */}
+        <Header
+          title="Anketler & Oyunlaştırmalar"
+          showBackButton={true}
+          onBackPress={() => navigation.goBack()}
+        />
 
-      <ScrollView flex={1}>
-        <VStack space="md" p="$4">
+        <ScrollView
+          flex={1}
+          contentContainerStyle={{ paddingBottom: bottomInset }}
+        >
+          <VStack space="md" p="$4">
           {/* Event Header Card */}
           <Box
             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -321,13 +328,14 @@ const BrandEventsDetailScreen: React.FC = () => {
             </Box>
           </HStack>
 
-          {/* Requirements Section */}
-          <VStack space="sm">
-            {mockEventDetail.requirements.map(renderRequirementItem)}
+            {/* Requirements Section */}
+            <VStack space="sm">
+              {mockEventDetail.requirements.map(renderRequirementItem)}
+            </VStack>
           </VStack>
-        </VStack>
-      </ScrollView>
-    </VStack>
+        </ScrollView>
+      </VStack>
+    </SafeAreaView>
   );
 };
 

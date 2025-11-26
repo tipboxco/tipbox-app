@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, FlatList, Dimensions } from 'react-native';
 import {
     Box,
@@ -17,6 +18,7 @@ import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { mock_brand_product_data } from '@/src/mock/catalog/brandProduct';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaValues } from '@/src/utils';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with padding
@@ -28,6 +30,7 @@ const BrandProductBookScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<BrandProductBookScreenNavigationProp>();
+    const bottomInset = useSafeAreaValues('bottom');
 
     const renderProductCard = ({ item }: { item: any }) => (
         <Pressable
@@ -145,9 +148,9 @@ const BrandProductBookScreen: React.FC = () => {
     );
 
     const renderProductGroup = (productGroup: any) => (
-        <VStack key={productGroup.id} space="xs" mb="$4">
+        <VStack key={productGroup.id} space="xs" mb='$2'>
             {/* Group Header */}
-            <HStack justifyContent="space-between" alignItems="center">
+            <HStack justifyContent="space-between" alignItems="center" pr='$4'>
                 <Text
                     color={isDark ? '#FFFFFF' : '#9D9D9D'}
                     fontSize={12}
@@ -171,43 +174,47 @@ const BrandProductBookScreen: React.FC = () => {
     );
 
     return (
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            <Header
-                title={mock_brand_product_data.title}
-                showBackButton={true}
-                onBackPress={() => navigation.goBack()}
-            />
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+                <Header
+                    title={mock_brand_product_data.title}
+                    showBackButton={true}
+                    onBackPress={() => navigation.goBack()}
+                />
 
-            {/* Search Bar */}
-            <Box px="$4" py="$3">
-                <Box
-                    bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-                    borderRadius={20}
-                    height={36}
-                    px="$4"
-                    justifyContent="center"
-                >
-                    <HStack alignItems="center" space="sm">
-                        <Feather name="search" size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
-                        <Input flex={1} borderWidth={0} bg="transparent">
-                            <InputField
-                                placeholder="Ürün Grubu seçin veya ürün adı arayın"
-                                placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
-                                color={isDark ? '#FFFFFF' : '#000000'}
-                                fontSize={9}
-                            />
-                        </Input>
-                    </HStack>
+                {/* Search Bar */}
+                <Box px="$4" py="$3">
+                    <Box
+                        bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                        borderRadius={20}
+                        height={36}
+                        px="$4"
+                        justifyContent="center"
+                    >
+                        <HStack alignItems="center" space="sm">
+                            <Feather name="search" size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
+                            <Input flex={1} borderWidth={0} bg="transparent">
+                                <InputField
+                                    placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                                    placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
+                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                    fontSize={9}
+                                />
+                            </Input>
+                        </HStack>
+                    </Box>
                 </Box>
-            </Box>
 
-            {/* Content */}
-            <ScrollView>
-                <VStack space="md" pb="$4" px="$4">
-                    {mock_brand_product_data.productGroups.map(renderProductGroup)}
-                </VStack>
-            </ScrollView>
-        </Box>
+                {/* Content */}
+                <ScrollView
+                    contentContainerStyle={{ paddingBottom: bottomInset }}
+                >
+                    <VStack space="md" pb="$4" pl="$4">
+                        {mock_brand_product_data.productGroups.map(renderProductGroup)}
+                    </VStack>
+                </ScrollView>
+            </Box>
+        </SafeAreaView>
     );
 };
 

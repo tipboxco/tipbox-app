@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { ScrollView, Dimensions, FlatList, Animated } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { Dimensions, FlatList, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -19,6 +20,7 @@ import { Header } from '@/src/components/Header';
 import { mock_brand_detail } from '@/src/mock/catalog/brandCatalog';
 import { Feather } from '@expo/vector-icons';
 import PostCard from '@/src/components/PostCards/PostCard';
+import { useSafeAreaValues } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -42,18 +44,51 @@ const BrandDetailScreen: React.FC = () => {
     const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
     const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
 
-    const handleScroll = Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: false }
-    );
+    const handleScroll = (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        scrollY.setValue(offsetY);
+        
+        // Debug: Scroll değerini logla
+        console.log('[BrandDetailScreen] Scroll Y:', offsetY);
+        
+        // Animasyon aralığı kontrolü ve opacity hesaplama
+        let calculatedOpacity = 0;
+        if (offsetY >= 100 && offsetY < 180) {
+            calculatedOpacity = (offsetY - 100) / (180 - 100);
+            console.log('[BrandDetailScreen] Header animasyon progress:', (calculatedOpacity * 100).toFixed(1) + '%', 'Opacity:', calculatedOpacity.toFixed(2));
+        } else if (offsetY >= 180) {
+            calculatedOpacity = 1;
+            console.log('[BrandDetailScreen] Header tamamen görünür (opacity: 1)');
+        } else {
+            calculatedOpacity = 0;
+            console.log('[BrandDetailScreen] Header gizli (opacity: 0)');
+        }
+    };
 
     // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır
-    // 180px'de başlar, 230px'de (içerik başlangıcı) tamamen görünür olur
+    // 100px'de başlar, 180px'de tamamen görünür olur
     const headerOpacity = scrollY.interpolate({
-        inputRange: [180, CONTENT_START],
-        outputRange: [0, 1],
+        inputRange: [0, 100, 180],
+        outputRange: [0, 0, 1],
         extrapolate: 'clamp',
     });
+    
+    // Debug: Opacity değerini takip et
+    useEffect(() => {
+        const listenerId = scrollY.addListener(({ value }) => {
+            let opacity = 0;
+            if (value >= 100 && value < 180) {
+                opacity = (value - 100) / (180 - 100);
+            } else if (value >= 180) {
+                opacity = 1;
+            }
+            console.log('[BrandDetailScreen] ScrollY:', value, 'Calculated Opacity:', opacity.toFixed(2));
+        });
+        
+        return () => {
+            scrollY.removeListener(listenerId);
+        };
+    }, []);
 
     if (!brand) {
         return (
@@ -68,6 +103,7 @@ const BrandDetailScreen: React.FC = () => {
     }
 
     return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
             {/* Sticky Animated Header */}
             <Animated.View
@@ -76,22 +112,42 @@ const BrandDetailScreen: React.FC = () => {
                     top: 0,
                     left: 0,
                     right: 0,
-                    zIndex: 1000,
-                    opacity: headerOpacity,
+                    zIndex: 9999,
+                    elevation: 10,
+                    pointerEvents: 'box-none',
                 }}
+                collapsable={false}
             >
-                <Header
-                    title={brand.name}
-                    showBackButton={true}
-                    onBackPress={() => navigation.goBack()}
-                    showShare={true}
-                    onSharePress={() => console.log('Share pressed')}
-                />
+                <Animated.View
+                    style={{
+                        opacity: headerOpacity,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        width: '100%',
+                        zIndex: 9999,
+                    }}
+                >
+                    <Box 
+                        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+                        width="100%"
+                    >
+                        <Header
+                            title={brand.name}
+                            showBackButton={true}
+                            onBackPress={() => navigation.goBack()}
+                            showShare={true}
+                            onSharePress={() => console.log('Share pressed')}
+                        />
+                    </Box>
+                </Animated.View>
             </Animated.View>
 
-            <ScrollView
+            <Animated.ScrollView
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
+                showsVerticalScrollIndicator={false}
             >
                 {/* Banner Image */}
                 <Box
@@ -395,8 +451,9 @@ const BrandDetailScreen: React.FC = () => {
                         </VStack>
                     </VStack>
                 </VStack>
-            </ScrollView>
+            </Animated.ScrollView>
         </Box>
+        </SafeAreaView>
     );
 };
 

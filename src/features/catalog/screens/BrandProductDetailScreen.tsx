@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -14,6 +15,7 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import { mock_brand_product_experience_posts } from '@/src/mock/catalog/brandProductDetail/experiencePosts';
 import { mock_news_data } from '@/src/mock/catalog/brandProductDetail/news';
 import { mock_benchmark_posts } from '@/src/mock/catalog/brandProductDetail/benchmark';
+import { useSafeAreaValues } from '@/src/utils';
 
 type BrandProductDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
 type BrandProductDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
@@ -24,6 +26,7 @@ const BrandProductDetailScreen: React.FC = () => {
     const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
     const route = useRoute<BrandProductDetailScreenRouteProp>();
     const [selectedTab, setSelectedTab] = useState('Deneyim Paylaşımı');
+    const bottomInset = useSafeAreaValues('bottom');
 
     const { productId } = route.params;
 
@@ -80,33 +83,38 @@ const BrandProductDetailScreen: React.FC = () => {
     };
 
     return (
-        <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            {/* Header */}
-            <Header
-                title="Marka Ürünleri Defteri"
-                showBackButton={true}
-                onBackPress={() => navigation.goBack()}
-            />
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+                {/* Header */}
+                <Header
+                    title="Marka Ürünleri Defteri"
+                    showBackButton={true}
+                    onBackPress={() => navigation.goBack()}
+                />
 
-            <ScrollView flex={1}>
-                <VStack space="md" p="$4">
-                    {/* Product Info Card */}
-                    <BrandProductInfoCard
-                        productName="iPhone 16 Pro Max"
-                        productImage={require('@/assets/events/card-icon.png')}
-                    />
+                <ScrollView
+                    flex={1}
+                    contentContainerStyle={{ paddingBottom: bottomInset }}
+                >
+                    <VStack space="md" p="$4">
+                        {/* Product Info Card */}
+                        <BrandProductInfoCard
+                            productName="iPhone 16 Pro Max"
+                            productImage={require('@/assets/events/card-icon.png')}
+                        />
 
-                    {/* Filter Tabs */}
-                    <FilterTabs
-                        tabs={filterTabs}
-                        onTabChange={handleTabChange}
-                    />
+                        {/* Filter Tabs */}
+                        <FilterTabs
+                            tabs={filterTabs}
+                            onTabChange={handleTabChange}
+                        />
 
-                    {/* Dynamic Content */}
-                    {renderContent()}
-                </VStack>
-            </ScrollView>
-        </VStack>
+                        {/* Dynamic Content */}
+                        {renderContent()}
+                    </VStack>
+                </ScrollView>
+            </VStack>
+        </SafeAreaView>
     );
 };
 

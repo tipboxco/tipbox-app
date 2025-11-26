@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -34,6 +34,12 @@ export const CatalogScreen = () => {
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [currentView, setCurrentView] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>('categories');
+  
+  // Scroll animasyonu için Animated.Value
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
+  // Brand isminin pozisyonu (Header Info Box yüksekliği yaklaşık 80-100px)
+  const BRAND_TITLE_THRESHOLD = 80;
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -149,9 +155,13 @@ export const CatalogScreen = () => {
       // Brand catalog modundan normal moda geri dön
       setCurrentMode('product');
       setSelectedCategory(null);
+      // Scroll pozisyonunu sıfırla
+      scrollY.setValue(0);
     } else {
       // Normal moddan brand catalog moduna geç
       setCurrentMode('brand-catalog');
+      // Scroll pozisyonunu sıfırla
+      scrollY.setValue(0);
     }
   };
 
@@ -174,6 +184,19 @@ export const CatalogScreen = () => {
     setCurrentView(data.currentView);
   }, []);
 
+  // Scroll handler - Brand ismini geçtikten sonra Header opacity'sini arttır
+  const handleBrandScroll = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    scrollY.setValue(offsetY);
+  }, [scrollY]);
+
+  // Header opacity animasyonu: Brand ismini geçtikten sonra (80px'de başlar, 120px'de tamamen görünür)
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, BRAND_TITLE_THRESHOLD, BRAND_TITLE_THRESHOLD + 40],
+    outputRange: [0, 0, 1],
+    extrapolate: 'clamp',
+  });
+
   const renderContent = () => {
     const paddingBottom = headerHeight + 12;
     switch (currentMode) {
@@ -183,6 +206,7 @@ export const CatalogScreen = () => {
             selectedCategory={selectedCategory}
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
+            onScroll={handleBrandScroll}
           />
         );
       case 'brand-selection':
@@ -191,6 +215,7 @@ export const CatalogScreen = () => {
             selectedCategory={selectedCategory}
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
+            onScroll={handleBrandScroll}
           />
         );
       default:
@@ -210,7 +235,11 @@ export const CatalogScreen = () => {
         flex={1}
         bg={isDark ? '#1A1A1A' : '#FAFAFA'}
       >
+      {/* Görünmez Header - Yükseklik ölçümü için */}
       <Box
+        position="absolute"
+        opacity={0}
+        pointerEvents="none"
         onLayout={(event) => {
           const { height } = event.nativeEvent.layout;
           setHeaderHeight(height);
@@ -223,8 +252,46 @@ export const CatalogScreen = () => {
         />
       </Box>
 
+      {/* Sticky Animated Header */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          elevation: 10,
+          width: '100%',
+          pointerEvents: 'box-none',
+        }}
+        collapsable={false}
+      >
+        <Animated.View
+          style={{
+            opacity: currentMode === 'brand-catalog' || currentMode === 'brand-selection' ? headerOpacity : 1,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            width: '100%',
+            zIndex: 9999,
+          }}
+        >
+          <Box 
+            bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+            width="100%"
+          >
+            <Header
+              title={getTitle()}
+              showBackButton
+              onBackPress={() => navigation.goBack()}
+            />
+          </Box>
+        </Animated.View>
+      </Animated.View>
+
       {/* Arama Çubuğu */}
-      <Box px="$4" pt="$3">
+      <Box px="$4" pt={headerHeight > 0 ? headerHeight + 12 : '$3'}>
         <Box
           bg={isDark ? '#2A2A2A' : '#F2F2F2'}
           borderRadius={20}

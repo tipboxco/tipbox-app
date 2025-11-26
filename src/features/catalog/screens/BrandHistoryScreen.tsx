@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +9,7 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import BrandInfoCard from '../components/BrandInfoCard';
 import PointsHistoryCard from '../components/PointsHistoryCard';
+import { useSafeAreaValues } from '@/src/utils';
 
 type BrandHistoryScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandHistoryScreen'>;
 
@@ -15,6 +17,7 @@ const BrandHistoryScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandHistoryScreenNavigationProp>();
+  const bottomInset = useSafeAreaValues('bottom');
 
   // Mock data for brand history
   const brandData = {
@@ -62,16 +65,20 @@ const BrandHistoryScreen: React.FC = () => {
 
 
   return (
-    <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      {/* Header */}
-      <Header
-        title="Marka Geçmişim"
-        showBackButton={true}
-        onBackPress={() => navigation.goBack()}
-      />
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        {/* Header */}
+        <Header
+          title="Marka Geçmişim"
+          showBackButton={true}
+          onBackPress={() => navigation.goBack()}
+        />
 
-      <ScrollView flex={1}>
-        <VStack space="md" p="$4">
+        <ScrollView
+          flex={1}
+          contentContainerStyle={{ paddingBottom: bottomInset }}
+        >
+          <VStack space="md" p="$4">
           {/* Brand Info Card */}
           <BrandInfoCard
             onNotificationPress={() => console.log('Notification pressed')}
@@ -214,22 +221,23 @@ const BrandHistoryScreen: React.FC = () => {
             </VStack>
           </Box>
 
-          {/* Points History Section */}
-          <VStack space="sm">
-            <Text
-              color="#9D9D9D"
-              fontSize={14}
-              fontWeight="$bold"
-            >
-              Puan Geçmişi
-            </Text>
-            {brandData.pointsHistory.map((item) => (
-              <PointsHistoryCard key={item.id} item={item} />
-            ))}
+            {/* Points History Section */}
+            <VStack space="sm">
+              <Text
+                color="#9D9D9D"
+                fontSize={14}
+                fontWeight="$bold"
+              >
+                Puan Geçmişi
+              </Text>
+              {brandData.pointsHistory.map((item) => (
+                <PointsHistoryCard key={item.id} item={item} />
+              ))}
+            </VStack>
           </VStack>
-        </VStack>
-      </ScrollView>
-    </VStack>
+        </ScrollView>
+      </VStack>
+    </SafeAreaView>
   );
 };
 
