@@ -8,6 +8,24 @@ export interface CatalogCategory {
 }
 
 /**
+ * Brand Category - /brands/categories endpoint'inden gelen kategori bilgisi
+ */
+export interface BrandCategory {
+  categoryId: string;
+  name: string;
+  image: string | null;
+}
+
+/**
+ * Brand List Item - /brands/categories/{category_id}/brands endpoint'inden gelen brand bilgisi
+ */
+export interface BrandListItem {
+  categoryId: string;
+  name: string;
+  image: string | null;
+}
+
+/**
  * Catalog SubCategory - API'den gelen alt kategori bilgisi
  */
 export interface CatalogSubCategory {
