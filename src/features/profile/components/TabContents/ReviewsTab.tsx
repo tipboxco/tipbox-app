@@ -88,7 +88,7 @@ export const ReviewsTab = () => {
       )}
 
       {reviews
-        ?.filter((review) => review.type === CardType.FEED)
+        ?.filter((review) => review.type === CardType.EXPERIENCE)
         .map((review) => (
           <ExperiencePostCard key={review.id} data={mapReviewToCardData(review)} />
         ))}

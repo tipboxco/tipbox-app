@@ -17,6 +17,7 @@ export enum CardType {
   QUESTION = 'question',
   TIPS_AND_TRICKS = 'tipsAndTricks',
   UPDATE = 'update',
+  EXPERIENCE = 'experience',
 }
 
 export interface BaseEntity {
