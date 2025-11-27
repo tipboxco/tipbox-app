@@ -1,0 +1,93 @@
+import type { ImageSourcePropType } from 'react-native';
+import type { ProductInfoType } from './common';
+
+/**
+ * API'den dönen replies/question item tipi
+ * /users/{id}/replies endpoint response'u
+ */
+export interface QuestionApiUser {
+  id: string;
+  name: string;
+  title: string;
+  avatarUrl: string;
+}
+
+export interface QuestionApiStats {
+  likes: number;
+  comments: number;
+  shares: number;
+  bookmarks: number;
+}
+
+export interface QuestionApiContextData {
+  id: string;
+  name: string;
+  subName: string;
+  image: string;
+  isOwned: boolean;
+}
+
+export interface QuestionApiItem {
+  id: string;
+  /**
+   * Kart tipi - backend bir sonraki güncellemede `question` olarak gönderecek.
+   * UI tarafında CardType.QUESTION ile kontrol edileceği için burada string bırakıyoruz.
+   */
+  type: string;
+  user: QuestionApiUser;
+  stats: QuestionApiStats;
+  createdAt: string;
+  contextType: ProductInfoType;
+  contextData: QuestionApiContextData;
+  content: string;
+  isBoosted: boolean;
+  images: string[];
+}
+
+/**
+ * Question kartı için UI'da kullanılan tipler
+ * (QuestionPostCard bileşeni tarafından tüketilir)
+ */
+
+export interface QuestionCardUser {
+  id: string;
+  name: string;
+  title: string;
+  avatar: ImageSourcePropType;
+}
+
+export interface QuestionCardProduct {
+  id: string;
+  name: string;
+  subName: string;
+  image: ImageSourcePropType;
+}
+
+export interface QuestionCardStats {
+  likes: number;
+  comments: number;
+  shares: number;
+  bookmarks: number;
+}
+
+export interface QuestionCardCategory {
+  id: string;
+  name: string;
+  subCategory: string;
+  image: ImageSourcePropType;
+  product?: QuestionCardProduct;
+}
+
+export interface QuestionCardData {
+  id: string;
+  user: QuestionCardUser;
+  category: QuestionCardCategory;
+  content: string;
+  isBoosted?: boolean;
+  images?: ImageSourcePropType[];
+  stats: QuestionCardStats;
+  createdAt: string;
+}
+
+
+

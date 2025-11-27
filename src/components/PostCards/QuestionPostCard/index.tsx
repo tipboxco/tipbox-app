@@ -6,8 +6,6 @@ import { QuestionPost } from '@/src/mock/profile/questions/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 
@@ -19,7 +17,7 @@ interface QuestionPostCardProps {
 export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const [isTranslated, setIsTranslated] = useState(false);
 
   return (
@@ -98,8 +96,8 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
         <Box
           bg={isDark ? '$backgroundDark900' : '$white'}
           borderWidth={2}
-          borderColor="#CFE556"
-          bgColor='#829905'
+          borderColor="#B8CC04"
+          bgColor="#758600"
           borderRadius={20}
           width={90}
           px={10}
@@ -122,9 +120,9 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
 
         {data.isBoosted && (
           <Box
-            bgColor="#99055E"
+            bgColor="#E0195B"
             borderWidth={2}
-            borderColor="#E059AA"
+            borderColor="#EF4D81"
             borderRadius={20}
             width={90}
             px={10}
