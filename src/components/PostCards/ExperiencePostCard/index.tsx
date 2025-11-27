@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { PostCard as PostCardType } from '@/src/mock/profile/feed/types';
 import { Dimensions } from 'react-native';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
@@ -11,10 +10,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import type { ReviewCardData } from '@/src/types/ReviesCard';
 
 
 interface PostCardProps {
-  data: PostCardType;
+  data: ReviewCardData;
   hideProduct?: boolean;
 }
 

@@ -1,13 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { getTrustList, getTrusterList } from './trustApi';
-import { getUserProfile, getInventory, getUserPosts } from './profileApi';
+import { getUserProfile, getInventory, getUserPosts, getUserReviews } from './profileApi';
 import type {
   TrustUser,
   TrusterUser,
   UserProfile,
   InventoryItem,
   ProfilePost,
+  ProfileReview,
 } from '../types';
 
 /**
@@ -26,6 +27,9 @@ export const profileKeys = {
   posts: () => [...profileKeys.all, 'posts'] as const,
   userPosts: (userId: string) =>
     [...profileKeys.posts(), userId] as const,
+  reviews: () => [...profileKeys.all, 'reviews'] as const,
+  userReviews: (userId: string) =>
+    [...profileKeys.reviews(), userId] as const,
 };
 
 /**
@@ -296,6 +300,34 @@ export const useUserPosts = (userId: string | undefined) => {
         throw new Error('User ID is required');
       }
       return getUserPosts(userId);
+    },
+    enabled: !!userId,
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Reviews query hook
+ * Kullanıcının profil review postlarını getirir (cache olmadan)
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useUserReviews('user-123');
+ */
+export const useUserReviews = (userId: string | undefined) => {
+  return useQuery<ProfileReview[], Error>({
+    queryKey: userId ? profileKeys.userReviews(userId) : ['profile', 'reviews', 'disabled'],
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return getUserReviews(userId);
     },
     enabled: !!userId,
     staleTime: 0, // Cache yok

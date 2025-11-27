@@ -2,12 +2,11 @@ import React from 'react';
 import { VStack, Text } from '@gluestack-ui/themed';
 import PostCard from '@/src/components/PostCards/PostCard';
 import { useUserPosts } from '../../api/hooks';
-import { useAppStore } from '@/src/store/appStore';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useCurrentUserIdOrLogout } from '@/src/utils';
 
 export const FeedTab = () => {
-  const { user } = useAppStore();
-  const userId = user?.id;
+  const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 

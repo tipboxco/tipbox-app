@@ -3,6 +3,7 @@ import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/theme
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
 
 interface ProductInfoCardProps {
   // Product information
@@ -43,6 +44,9 @@ export const ProductInfoCard = ({
   // Determine image size based on size prop
   const imageSize = size === 'big' ? 58 : 42;
 
+  const imageSource =
+    toImageSource(image) || require('@/assets/product/product_01.png');
+
   // Determine what to show based on type prop
   const shouldShowAverageRating = type === ProductInfoType.PRODUCT || (type === undefined && showAverageRating);
   const shouldShowChevron = 
@@ -63,7 +67,7 @@ export const ProductInfoCard = ({
           bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
         >
           <Image
-            source={image}
+            source={imageSource}
             alt={title || "Product"}
             width={imageSize}
             height={imageSize}

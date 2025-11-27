@@ -1,7 +1,12 @@
+import { useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import type { ImageSourcePropType } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import { useAppStore } from '@/src/store/appStore';
 
 // Event Type Enum
 export enum EventType {
@@ -85,5 +90,34 @@ export const formatRelativeTime = (timestamp: string): string => {
   const diffYears = diffWeeks / 52;
   const y = Math.floor(diffYears);
   return `${y}y`;
+};
+
+/**
+ * Store'dan current userId bilgisini döndürür.
+ * Eğer store içerisinde kullanıcı yoksa logout işlemi yapar
+ * ve Auth stack'ine yönlendirir.
+ */
+export const useCurrentUserIdOrLogout = (): string | undefined => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user, logout } = useAppStore();
+
+  useEffect(() => {
+    if (!user) {
+      (async () => {
+        try {
+          await logout();
+        } catch (e) {
+          console.error('Logout error:', e);
+        } finally {
+          (navigation as any).reset({
+            index: 0,
+            routes: [{ name: 'Auth' }],
+          });
+        }
+      })();
+    }
+  }, [user, logout, navigation]);
+
+  return user?.id;
 };
 

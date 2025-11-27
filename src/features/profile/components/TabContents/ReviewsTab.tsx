@@ -1,13 +1,93 @@
 import React from 'react';
-import { VStack } from '@gluestack-ui/themed';
+import { VStack, Text } from '@gluestack-ui/themed';
 import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
-import { mock_post_cards } from '@/src/mock/profile/feed';
+import { useUserReviews } from '../../api/hooks';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
+import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviesCard';
+import type { ProfileReview } from '../../types';
+
+const mapReviewToCardData = (review: ProfileReview): ReviewCardData => {
+  const avatarSource = toImageSource(review.user.avatarUrl)!;
+  const productImage = review.product.image
+    ? toImageSource(review.product.image)
+    : undefined;
+
+  const content: ReviewCardContentItem[] = review.content.map((item) => ({
+    tag: {
+      icon: 'tag',
+      title: item.title,
+    },
+    text: item.content,
+    rating: Array(5)
+      .fill(false)
+      .map((_, index) => index < (item.rating || 0)),
+  }));
+
+  return {
+    id: review.id,
+    user: {
+      id: review.user.id,
+      name: review.user.name,
+      title: review.user.title,
+      avatar: avatarSource,
+      action: 'wrote a review',
+    },
+    product: {
+      id: review.product.id,
+      name: review.product.name,
+      subName: review.product.subName,
+      image: productImage,
+    },
+    content,
+    // En fazla 3 tag göster
+    tags: review.tags.slice(0, 3),
+    images:
+      review.images
+        ?.map((img) => toImageSource(img))
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    stats: review.stats,
+    createdAt: review.createdAt,
+  };
+};
 
 export const ReviewsTab = () => {
+  const userId = useCurrentUserIdOrLogout();
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
+  const {
+    data: reviews,
+    isLoading,
+    error,
+  } = useUserReviews(userId);
+
+  if (!userId) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+          Kullanıcı bilgisi bulunamadı.
+        </Text>
+      </VStack>
+    );
+  }
+
   return (
     <VStack px={16} py={16} flex={1}>
-      {mock_post_cards.map((post) => (
-        <ExperiencePostCard key={post.id} data={post} />
+      {isLoading && (
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mb="$2">
+          Reviews yükleniyor...
+        </Text>
+      )}
+
+      {error && (
+        <Text color="#CE4A4A" fontSize="$sm" mb="$2">
+          Reviews yüklenirken bir hata oluştu: {error.message}
+        </Text>
+      )}
+
+      {reviews?.map((review) => (
+        <ExperiencePostCard key={review.id} data={mapReviewToCardData(review)} />
       ))}
     </VStack>
   );

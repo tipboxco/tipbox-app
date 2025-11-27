@@ -1,3 +1,6 @@
+import { ProductInfoType } from '@/src/types/common';
+import type { ReviewApiItem } from '@/src/types/ReviesCard';
+
 /**
  * Inventory Review - API'den gelen review bilgisi
  */
@@ -6,8 +9,6 @@ export interface InventoryReview {
   description: string;
   rating: number;
 }
-
-import { ProductInfoType } from '@/src/types/common';
 
 /**
  * Inventory Brand - API'den gelen brand bilgisi
@@ -137,3 +138,9 @@ export interface ProfilePost {
   content: string;
   images: string[];
 }
+
+/**
+ * Profile Reviews - Kullanıcının review postları
+ * /users/{id}/reviews endpoint'inden dönen tip
+ */
+export type ProfileReview = ReviewApiItem;
