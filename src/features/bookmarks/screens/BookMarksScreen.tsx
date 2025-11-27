@@ -1,128 +1,197 @@
 import React from 'react';
-import { VStack, ScrollView } from '@gluestack-ui/themed';
+import { VStack, ScrollView, Text, Box } from '@gluestack-ui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import { Header } from '@/src/components/Header';
-import { Post } from '@/src/mock/profile/posts/types';
-import { BenchmarkPost } from '@/src/mock/profile/benchmark/types';
-import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
 import { Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useUserBookmarks } from '../api/hooks';
+import { CardType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
+import type { BookmarkApiItem } from '../api/bookmarksApi';
+import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
+import type { ProfilePost } from '@/src/features/profile/types';
+import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
+import type { QuestionApiItem } from '@/src/types/QuestionCard';
+import type { PostCardData } from '@/src/types/PostCard';
+import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
+import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
+import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 
 const BookMarksScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const navigation = useNavigation();
+  const { data: bookmarks, isLoading, error } = useUserBookmarks();
 
-  // Mock data for bookmarked posts
-  const bookmarkedPosts: (Post | BenchmarkPost | TipsAndTricksPost)[] = [
-    {
-      id: '1',
+  // Map Post bookmark to PostCardData
+  const mapPostToCardData = (item: ProfilePost & { type: 'post' }): PostCardData => {
+    return {
+      id: item.id,
       user: {
-        id: '1',
-        name: 'Rachel Jamille',
-        title: 'Beauty Tech Enthusiast · Product Reviewer · Digital Shop...',
-        avatar: require('@/assets/avatar/ozan.png'),
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatarUrl: item.user.avatarUrl,
       },
-      category: {
-        id: '1',
-        name: 'Tips & Tricks',
-        subCategory: 'Kalıcılık / Dayanıklılık',
-        image: require('@/assets/common/inventory.png'),
-      },
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud t dolore magna aliqua. Ut enim ad minim veniam, quis nostrud...',
-      stats: {
-        likes: 110,
-        comments: 32,
-        shares: 11,
-        bookmarks: 32,
-      },
-      tag: 'Tips & Tricks',
-      createdAt: '2024-01-15',
-    } as Post,
-    {
-      id: '2',
-      user: {
-        id: '2',
-        name: 'Rachel Jamille',
-        title: 'Beauty Tech Enthusiast · Product Reviewer · Digital Shop...',
-        avatar: require('@/assets/avatar/ozan.png'),
-      },
-      products: [
-        {
-          id: '1',
-          name: 'Dyson V15s Detect Submarine™ Wet & Dry Cordl...',
-          subName: 'Premium Vacuum',
-          image: require('@/assets/inventory/product_01.png'),
-          isOwned: true,
-          choice: true,
-        },
-        {
-          id: '2',
-          name: 'PHILIPS Azur DST8050/20 Buharlı Ütü',
-          subName: 'Steam Iron',
-          image: require('@/assets/inventory/product_02.png'),
-          isOwned: false,
-          choice: false,
-        },
-      ],
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud t dolore magna aliqua. Ut enim ad minim veniam, quis nostrud...',
-      stats: {
-        likes: 110,
-        comments: 32,
-        shares: 11,
-        bookmarks: 32,
-      },
-      createdAt: '2024-01-14',
-    } as BenchmarkPost,
-    {
-      id: '3',
-      user: {
-        id: '3',
-        name: 'Rachel Jamille',
-        title: 'Beauty Tech Enthusiast · Product Reviewer · Digital Shop...',
-        avatar: require('@/assets/avatar/ozan.png'),
-      },
-      category: {
-        id: '3',
-        name: 'Tips & Tricks',
-        subCategory: 'Kalıcılık / Dayanıklılık',
-        image: require('@/assets/common/inventory.png'),
-        product: {
-          id: '3',
-          name: 'PHILIPS Azur DST8050/20 Buharlı Ütü',
-          subName: 'Steam Iron',
-          image: require('@/assets/inventory/product_03.png'),
-        },
-      },
-      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud t dolore magna aliqua. Ut enim ad minim veniam, quis nostrud...',
-      images: [
-        require('@/assets/inventory/product_01.png'),
-        require('@/assets/inventory/product_02.png'),
-      ],
-      stats: {
-        likes: 110,
-        comments: 32,
-        shares: 11,
-        bookmarks: 32,
-      },
-      tag: 'Tips & Tricks',
-      createdAt: '2024-01-13',
-    } as TipsAndTricksPost,
-  ];
+      content: item.content,
+      images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+      stats: item.stats,
+      createdAt: item.createdAt,
+      contextType: item.contextType,
+      contextData: item.contextData,
+    };
+  };
 
-  const renderPost = (post: Post | BenchmarkPost | TipsAndTricksPost, index: number) => {
-    if ('products' in post) {
-      return <BenchmarkPostCard key={(post as BenchmarkPost).id} data={post as BenchmarkPost} />;
-    } else if ('tag' in post && 'category' in post) {
-      return <TipsAndTricksPostCard key={(post as TipsAndTricksPost).id} data={post as TipsAndTricksPost} />;
-    } else {
-      return <PostCard key={(post as Post).id} data={post as Post} />;
+  // Map Benchmark bookmark to BenchmarkCardData
+  const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
+    const avatarSource = toImageSource(item.user.avatarUrl)!;
+
+    const products: BenchmarkProduct[] = item.products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      subName: p.subName,
+      image: toImageSource(p.image)!,
+      isOwned: p.isOwned,
+      choice: p.choice,
+    }));
+
+    return {
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
+      },
+      products,
+      content: item.content,
+      stats: item.stats,
+      createdAt: item.createdAt,
+    };
+  };
+
+  // Map Tips bookmark to TipsCardData
+  const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
+    const avatarSource = toImageSource(item.user.avatarUrl)!;
+
+    const product: TipsProduct = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subName: item.contextData.subName,
+      image: toImageSource(item.contextData.image)!,
+    };
+
+    const category: TipsCategory = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: toImageSource(item.contextData.image)!,
+      product,
+    };
+
+    return {
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
+      },
+      category,
+      content: item.content,
+      images: item.images
+        ?.map((img) => toImageSource(img))
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+      stats: item.stats,
+      tag: item.tag,
+      createdAt: item.createdAt,
+    };
+  };
+
+  // Map Question bookmark to QuestionCardData
+  const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
+    const avatarSource = toImageSource(item.user.avatarUrl)!;
+
+    const product: QuestionCardProduct = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subName: item.contextData.subName,
+      image: toImageSource(item.contextData.image)!,
+    };
+
+    const category: QuestionCardCategory = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: toImageSource(item.contextData.image)!,
+      product,
+    };
+
+    return {
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
+      },
+      category,
+      content: item.content,
+      isBoosted: item.isBoosted,
+      images: item.images
+        ?.map((img) => toImageSource(img))
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+      stats: item.stats,
+      createdAt: item.createdAt,
+    };
+  };
+
+  const renderBookmark = (bookmark: BookmarkApiItem) => {
+    // Type kontrolü - "feed" de question olarak kabul ediliyor (bir sonraki update'te "question" olacak)
+    if (bookmark.type === CardType.BENCHMARK || bookmark.type === 'benchmark') {
+      return (
+        <BenchmarkPostCard
+          key={bookmark.id}
+          data={mapBenchmarkToCardData(bookmark as BenchmarkApiItem & { type: 'benchmark' })}
+        />
+      );
     }
+    
+    if (bookmark.type === CardType.TIPS_AND_TRICKS || bookmark.type === 'tipsAndTricks') {
+      return (
+        <TipsAndTricksPostCard
+          key={bookmark.id}
+          data={mapTipsToCardData(bookmark as TipsApiItem & { type: 'tipsAndTricks' })}
+        />
+      );
+    }
+    
+    // Question type kontrolü - "feed" de question olarak kabul ediliyor
+    if (bookmark.type === CardType.QUESTION || bookmark.type === 'question' || bookmark.type === 'feed') {
+      // QuestionApiItem tipinde olduğunu kontrol et
+      if ('contextType' in bookmark && 'contextData' in bookmark && 'isBoosted' in bookmark) {
+        return (
+          <QuestionPostCard
+            key={bookmark.id}
+            data={mapQuestionToCardData(bookmark as QuestionApiItem & { type: 'question' })}
+          />
+        );
+      }
+    }
+    
+    // Default: Post
+    return (
+      <PostCard
+        key={bookmark.id}
+        data={mapPostToCardData(bookmark as ProfilePost & { type: 'post' })}
+      />
+    );
   };
 
   return (
@@ -142,9 +211,35 @@ const BookMarksScreen = () => {
           py={0}
           showsVerticalScrollIndicator={false}
         >
-          <VStack space="md" pb={20}>
-            {bookmarkedPosts.map((post, index) => renderPost(post, index))}
-          </VStack>
+          {isLoading && (
+            <Box py={20} alignItems="center">
+              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+                Bookmarks yükleniyor...
+              </Text>
+            </Box>
+          )}
+
+          {error && (
+            <Box py={20} alignItems="center">
+              <Text color="#CE4A4A" fontSize="$sm">
+                Bookmarks yüklenirken bir hata oluştu: {error.message}
+              </Text>
+            </Box>
+          )}
+
+          {!isLoading && !error && (!bookmarks || bookmarks.length === 0) && (
+            <Box py={20} alignItems="center">
+              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+                Henüz bookmark bulunmuyor.
+              </Text>
+            </Box>
+          )}
+
+          {!isLoading && !error && bookmarks && bookmarks.length > 0 && (
+            <VStack space="md" pb={20}>
+              {bookmarks.map((bookmark) => renderBookmark(bookmark))}
+            </VStack>
+          )}
         </ScrollView>
       </VStack>
     </SafeAreaView>
