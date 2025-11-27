@@ -1,12 +1,47 @@
 import React from 'react';
-import { VStack } from '@gluestack-ui/themed';
+import { VStack, Text } from '@gluestack-ui/themed';
 import PostCard from '@/src/components/PostCards/PostCard';
-import { mock_posts } from '@/src/mock/profile/posts';
+import { useUserPosts } from '../../api/hooks';
+import { useAppStore } from '@/src/store/appStore';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 export const FeedTab = () => {
+  const { user } = useAppStore();
+  const userId = user?.id;
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
+  const {
+    data: posts,
+    isLoading,
+    error,
+  } = useUserPosts(userId);
+
+  if (!userId) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+          Kullanıcı bilgisi bulunamadı.
+        </Text>
+      </VStack>
+    );
+  }
+
   return (
     <VStack px={16} py={16}>
-      {mock_posts.map((post) => (
+      {isLoading && (
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mb="$2">
+          Feed yükleniyor...
+        </Text>
+      )}
+
+      {error && (
+        <Text color="#CE4A4A" fontSize="$sm" mb="$2">
+          Feed yüklenirken bir hata oluştu: {error.message}
+        </Text>
+      )}
+
+      {posts?.map((post) => (
         <PostCard key={post.id} data={post} />
       ))}
     </VStack>

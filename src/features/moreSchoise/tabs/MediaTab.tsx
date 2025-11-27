@@ -82,6 +82,7 @@ export const MediaTab = () => {
                 h={200}
                 rounded="$lg"
                 source={{ uri: cameraPhoto }}
+                alt="Selected camera photo"
               />
             </Box>
           )}
@@ -93,6 +94,7 @@ export const MediaTab = () => {
                 h={200}
                 rounded="$lg"
                 source={{ uri }}
+                alt={`Selected gallery image ${index + 1}`}
               />
             </Box>
           ))}

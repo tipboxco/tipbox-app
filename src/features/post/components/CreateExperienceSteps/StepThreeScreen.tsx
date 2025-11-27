@@ -344,6 +344,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                                     width={64}
                                     height={64}
                                     resizeMode="cover"
+                                    alt={`Selected image ${index + 1}`}
                                 />
                                 {onRemoveImage && (
                                     <Pressable

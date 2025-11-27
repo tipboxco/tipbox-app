@@ -7,6 +7,8 @@ export interface InventoryReview {
   rating: number;
 }
 
+import { ProductInfoType } from '@/src/types/common';
+
 /**
  * Inventory Brand - API'den gelen brand bilgisi
  */
@@ -87,4 +89,51 @@ export interface UserProfile {
   stats: ProfileStats;
   badges: Badge[];
   isTrusted: boolean | null;
+}
+
+/**
+ * Profile Feed - Kullanıcının profil sayfasındaki post feed tipleri
+ */
+
+export interface ProfilePostUser {
+  id: string;
+  name: string;
+  title: string;
+  /**
+   * Profil resmi URL'i
+   */
+  avatarUrl: string;
+}
+
+export interface ProfilePostStats {
+  likes: number;
+  comments: number;
+  shares: number;
+  bookmarks: number;
+}
+
+export interface ProfilePostContextData {
+  id: string;
+  name: string;
+  subName: string;
+  image: string;
+  /**
+   * Kullanıcı ürüne sahip mi?
+   */
+  isOwned: boolean;
+}
+
+export interface ProfilePost {
+  id: string;
+  type: 'post';
+  user: ProfilePostUser;
+  stats: ProfilePostStats;
+  createdAt: string;
+  /**
+   * Ürüne / ürün grubuna / alt kategoriye göre context bilgisi
+   */
+  contextType: ProductInfoType;
+  contextData: ProfilePostContextData;
+  content: string;
+  images: string[];
 }

@@ -1,8 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { getTrustList, getTrusterList } from './trustApi';
-import { getUserProfile, getInventory } from './profileApi';
-import type { TrustUser, TrusterUser, UserProfile, InventoryItem } from '../types';
+import { getUserProfile, getInventory, getUserPosts } from './profileApi';
+import type {
+  TrustUser,
+  TrusterUser,
+  UserProfile,
+  InventoryItem,
+  ProfilePost,
+} from '../types';
 
 /**
  * Query Keys - Profile feature için cache key pattern'leri
@@ -17,6 +23,9 @@ export const profileKeys = {
   trusterList: (userId: string, searchQuery?: string) =>
     [...profileKeys.trusters(), userId, ...(searchQuery ? ['search', searchQuery] : [])] as const,
   inventory: () => [...profileKeys.all, 'inventory'] as const,
+  posts: () => [...profileKeys.all, 'posts'] as const,
+  userPosts: (userId: string) =>
+    [...profileKeys.posts(), userId] as const,
 };
 
 /**
@@ -261,6 +270,34 @@ export const useInventory = () => {
   return useQuery<InventoryItem[], Error>({
     queryKey: profileKeys.inventory(),
     queryFn: () => getInventory(),
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Posts query hook
+ * Kullanıcının profil feed postlarını getirir (cache olmadan)
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useUserPosts('user-123');
+ */
+export const useUserPosts = (userId: string | undefined) => {
+  return useQuery<ProfilePost[], Error>({
+    queryKey: userId ? profileKeys.userPosts(userId) : ['profile', 'posts', 'disabled'],
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return getUserPosts(userId);
+    },
+    enabled: !!userId,
     staleTime: 0, // Cache yok
     gcTime: 0, // Cache yok
     refetchOnMount: 'always', // Her mount'ta yeniden fetch et

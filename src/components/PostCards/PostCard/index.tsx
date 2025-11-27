@@ -2,25 +2,36 @@ import React, { memo, useState } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Post } from '@/src/mock/profile/posts/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
+import type { LegacyPostUser, PostCardData } from '@/src/types/PostCard';
 
 interface PostCardProps {
-  data: Post;
+  data: PostCardData;
   hideProduct?: boolean;
 }
 
 const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const [isTranslated, setIsTranslated] = useState(false);
+
+  const avatarSource =
+    'avatarUrl' in data.user
+      ? toImageSource(data.user.avatarUrl)
+      : toImageSource((data.user as LegacyPostUser).avatar);
+
+  const hasContextData = !!data.contextType && !!data.contextData;
+  const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
+  const isGroupOrSubCategoryContext =
+    hasContextData &&
+    (data.contextType === ProductInfoType.PRODUCT_GROUP ||
+      data.contextType === ProductInfoType.SUB_CATEGORY);
 
   return (
     <VStack
@@ -30,14 +41,16 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
-          <Image
-            source={data.user.avatar}
-            alt={data.user.name}
-            mr={8}
-            width={42}
-            height={42}
-            borderRadius={100}
-          />
+          {avatarSource && (
+            <Image
+              source={avatarSource}
+              alt={data.user.name}
+              mr={8}
+              width={42}
+              height={42}
+              borderRadius={100}
+            />
+          )}
           <VStack flex={1}>
             <Text
               color={isDark ? '$textDark50' : '#000'}
@@ -61,50 +74,125 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         </HStack>
       </VStack>
 
-      {/* Product */}
-      {
-        !hideProduct && data.category && data.category.product ? (
-          <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <ProductInfoCard
-              size="small"
-              type={ProductInfoType.PRODUCT}
-              image={data.category.product.image}
-              title={data.category.product.name}
-              subName={data.category.product.subName}
-              onPress={() => {
-                navigation.navigate('Post', {
-                  screen: 'PostDetailScreen',
-                  params: { postData: data, type: 'post' }
-                });
-              }}
-            />
-          </Box>
-        ) : !hideProduct && data.category ? (
-          <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <ProductInfoCard
-              size="small"
-              type={ProductInfoType.SUB_CATEGORY}
-              image={data.category.image}
-              title={data.category.name}
-              subName={data.category.subCategory}
-              onPress={() => {
-                navigation.navigate('Post', {
-                  screen: 'PostsScreen',
-                  params: {
-                    stage: 'SubCategories',
-                    name: data.category.name,
-                    productInfo: {
-                      image: data.category.image,
-                      title: data.category.name,
-                      subName: data.category.subCategory,
+      {/* Product / Context Info */}
+      {!hideProduct && isProductContext && data.contextData ? (
+        (() => {
+          const context = data.contextData;
+          const imageSource = toImageSource(context.image)!;
+          return (
+            <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <ProductInfoCard
+                size="small"
+                type={ProductInfoType.PRODUCT}
+                image={imageSource}
+                title={context.name}
+                subName={context.subName}
+                onPress={() => {
+                  navigation.navigate('Post', {
+                    screen: 'PostDetailScreen',
+                    params: {
+                      postData: data,
+                      type: 'post',
+                    },
+                  });
+                }}
+              />
+            </Box>
+          );
+        })()
+      ) : !hideProduct && isGroupOrSubCategoryContext && data.contextData ? (
+        (() => {
+          const context = data.contextData;
+          const imageSource = toImageSource(context.image)!;
+          return (
+            <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <ProductInfoCard
+                size="small"
+                type={data.contextType === ProductInfoType.PRODUCT_GROUP
+                  ? ProductInfoType.PRODUCT_GROUP
+                  : ProductInfoType.SUB_CATEGORY}
+                image={imageSource}
+                title={context.name}
+                subName={context.subName}
+                onPress={() => {
+                  navigation.navigate('Post', {
+                    screen: 'PostsScreen',
+                    params: {
+                      stage: data.contextType === ProductInfoType.PRODUCT_GROUP
+                        ? 'ProductGroup'
+                        : 'SubCategories',
+                      name: context.name,
+                      productInfo: {
+                        image: imageSource,
+                        title: context.name,
+                        subName: context.subName,
+                      },
+                      // Yönlendirme için contextData.id kullanımı
+                      selectedProduct: {
+                        id: context.id,
+                        name: context.name,
+                        description: '',
+                        image: imageSource,
+                      },
+                    },
+                  });
+                }}
+              />
+            </Box>
+          );
+        })()
+      ) : !hideProduct && data.category ? (
+        (() => {
+          const category = data.category;
+          if (!category) return null;
+
+          if (category.product) {
+            return (
+              <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                <ProductInfoCard
+                  size="small"
+                  type={ProductInfoType.PRODUCT}
+                  image={category.product.image}
+                  title={category.product.name}
+                  subName={category.product.subName}
+                  onPress={() => {
+                    navigation.navigate('Post', {
+                      screen: 'PostDetailScreen',
+                      params: { postData: data, type: 'post' }
+                    });
+                  }}
+                />
+              </Box>
+            );
+          }
+
+          return (
+            <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              <ProductInfoCard
+                size="small"
+                type={ProductInfoType.SUB_CATEGORY}
+                image={category.image}
+                title={category.name}
+                subName={category.subCategory}
+                onPress={() => {
+                  navigation.navigate('Post', {
+                    screen: 'PostsScreen',
+                    params: {
+                      stage: 'SubCategories',
+                      name: category.name,
+                      productInfo: {
+                        image: category.image,
+                        title: category.name,
+                        subName: category.subCategory,
+                      }
                     }
-                  }
-                });
-              }}
-            />
-          </Box>
-        ) : null
-      }
+                  });
+                }}
+              />
+            </Box>
+          );
+        })()
+      ) : null}
 
       {/* Content */}
       <Pressable onPress={() => {
