@@ -3,11 +3,14 @@ import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Plat
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { mock_ladders } from '@/src/mock/profile/ladders';
-import { Ladder } from '@/src/mock/profile/ladders/types';
+import { useUserLadderBadges } from '../../api/hooks';
+import { useCurrentUserIdOrLogout } from '@/src/utils';
+import { toImageSource } from '@/src/utils';
+import type { ProfileLadderBadge } from '../../types';
+import BadgeDetailModal from '../BadgeDetailModal';
 
 interface LadderTabProps {
-  onLadderSelect?: (ladder: Ladder) => void;
+  onLadderSelect?: (ladder: ProfileLadderBadge) => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -24,7 +27,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const userId = useCurrentUserIdOrLogout();
+  const { data: ladderBadges, isLoading, error } = useUserLadderBadges(userId);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
+  const [selectedBadge, setSelectedBadge] = useState<ProfileLadderBadge | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Filtreleme değiştiğinde animasyon için
@@ -52,126 +59,169 @@ export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
     });
   };
 
-  // callbacks
-  const handlePresentModalPress = useCallback((ladder: Ladder) => {
-    console.log('[LadderTab] item press ->', ladder);
-    onLadderSelect?.(ladder);
+  // Badge seçildiğinde modal'ı aç
+  const handleBadgePress = useCallback((badge: ProfileLadderBadge) => {
+    setSelectedBadge(badge);
+    setIsModalVisible(true);
+    onLadderSelect?.(badge);
   }, [onLadderSelect]);
 
-  const renderItem = ({ item: ladder }: { item: Ladder }) => (
-    <TouchableOpacity onPress={() => handlePresentModalPress(ladder)} activeOpacity={0.7}>
-      <Box
-        bg={isDark ? '$backgroundDark800' : '$white'}
-        borderWidth={1}
-        borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-        borderRadius={10}
-        h={250}
-        w={CARD_WIDTH}
-        overflow="hidden"
-        position="relative"
-        shadowColor={isDark ? '$backgroundDark950' : '#000'}
-        shadowOffset={{ width: 0, height: 0 }}
-        shadowOpacity={0.25}
-        shadowRadius={3}
-        mb={10}
-      >
-        <Image
-          source={ladder.image}
-          alt={ladder.title}
-          w={150}
-          h={150}
-          resizeMode="contain"
-          alignSelf="center"
-          mt={5}
-        />
+  const handleCloseModal = useCallback(() => {
+    setIsModalVisible(false);
+    setSelectedBadge(null);
+  }, []);
 
-        <VStack space="xs" position="absolute" bottom={15} left={15} right={15}>
-          <HStack space="sm" alignItems="center">
+  // isCompleted kontrolü: total >= current
+  const getIsCompleted = (badge: ProfileLadderBadge): boolean => {
+    return badge.total >= badge.current;
+  };
+
+  const renderItem = ({ item: badge }: { item: ProfileLadderBadge }) => {
+    const isCompleted = getIsCompleted(badge);
+    const imageSource = badge.image ? toImageSource(badge.image) : undefined;
+    const defaultImage = require('@/assets/badges/badge_01.png');
+
+    return (
+      <TouchableOpacity onPress={() => handleBadgePress(badge)} activeOpacity={0.7}>
+        <Box
+          bg={isDark ? '$backgroundDark800' : '$white'}
+          borderWidth={1}
+          borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
+          borderRadius={10}
+          h={250}
+          w={CARD_WIDTH}
+          overflow="hidden"
+          position="relative"
+          shadowColor={isDark ? '$backgroundDark950' : '#000'}
+          shadowOffset={{ width: 0, height: 0 }}
+          shadowOpacity={0.25}
+          shadowRadius={3}
+          mb={10}
+        >
+          <Image
+            source={imageSource || defaultImage}
+            alt={badge.title}
+            w={150}
+            h={150}
+            resizeMode="contain"
+            alignSelf="center"
+            mt={5}
+          />
+
+          <VStack space="xs" position="absolute" bottom={15} left={15} right={15}>
+            <HStack space="sm" alignItems="center">
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={12}
+                fontWeight="$semibold"
+                textAlign="center"
+                w="100%"
+              >
+                {badge.title}
+              </Text>
+            </HStack>
+
             <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={12}
-              fontWeight="$semibold"
-              textAlign="center"
-              w="100%"
-            >
-              {ladder.title}
-            </Text>
-          </HStack>
-
-          <Text
-            color={isDark ? '$textDark400' : '#575757'}
-            fontSize={9}
-            lineHeight={11}
-            textAlign="center"
-            w="100%"
-          >
-            {ladder.description}
-          </Text>
-
-          <VStack space="xs" mt={10}>
-            <Box
-              w="100%"
-              h={5}
-              bg={isDark ? '$backgroundDark700' : '#E0E0E0'}
-              borderRadius={10}
-              overflow="hidden"
-            >
-              <Box
-                w={`${(ladder.progress.current / ladder.progress.total) * 100}%`}
-                h="100%"
-                bg={ladder.isCompleted ? '#0C7A24' : '#686868'}
-              />
-            </Box>
-            <Text
-              color={isDark ? '$textDark400' : '#797979'}
+              color={isDark ? '$textDark400' : '#575757'}
               fontSize={9}
+              lineHeight={11}
               textAlign="center"
+              w="100%"
             >
-              {ladder.isCompleted ? 'Completed' : `${ladder.progress.current}/${ladder.progress.total}`}
+              {badge.description}
             </Text>
+
+            <VStack space="xs" mt={10}>
+              <Box
+                w="100%"
+                h={5}
+                bg={isDark ? '$backgroundDark700' : '#E0E0E0'}
+                borderRadius={10}
+                overflow="hidden"
+              >
+                <Box
+                  w={`${(badge.current / badge.total) * 100}%`}
+                  h="100%"
+                  bg={isCompleted ? '#0C7A24' : '#686868'}
+                />
+              </Box>
+              <Text
+                color={isDark ? '$textDark400' : '#797979'}
+                fontSize={9}
+                textAlign="center"
+              >
+                {isCompleted ? 'Completed' : `${badge.current}/${badge.total}`}
+              </Text>
+            </VStack>
           </VStack>
-        </VStack>
 
-        {ladder.isCompleted && (
-          <>
-            <Box
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              bg="rgba(47, 61, 36, 0.25)"
-            />
-            <Box
-              position="absolute"
-              top={12}
-              right={12}
-              bg="$success600"
-              borderRadius={100}
-              w={18}
-              h={18}
-              alignItems="center"
-              justifyContent="center"
-              zIndex={10}
-            >
-              <Feather name="check" size={16} color="#fff" />
-            </Box>
-          </>
-        )}
-      </Box>
-    </TouchableOpacity>
-  );
+          {isCompleted && (
+            <>
+              <Box
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                bottom={0}
+                bg="rgba(47, 61, 36, 0.25)"
+              />
+              <Box
+                position="absolute"
+                top={12}
+                right={12}
+                bg="$success600"
+                borderRadius={100}
+                w={18}
+                h={18}
+                alignItems="center"
+                justifyContent="center"
+                zIndex={10}
+              >
+                <Feather name="check" size={16} color="#fff" />
+              </Box>
+            </>
+          )}
+        </Box>
+      </TouchableOpacity>
+    );
+  };
 
-  const filteredLadders = useMemo(() => {
+  const filteredBadges = useMemo(() => {
+    if (!ladderBadges) return [];
+    
     switch (selectedFilter) {
       case 'in_progress':
-        return mock_ladders.filter(ladder => !ladder.isCompleted);
+        return ladderBadges.filter(badge => !getIsCompleted(badge));
       case 'completed':
-        return mock_ladders.filter(ladder => ladder.isCompleted);
+        return ladderBadges.filter(badge => getIsCompleted(badge));
       default:
-        return mock_ladders;
+        return ladderBadges;
     }
-  }, [selectedFilter]);
+  }, [selectedFilter, ladderBadges]);
+
+  if (isLoading) {
+    return (
+      <Box flex={1} justifyContent="center" alignItems="center" py={20}>
+        <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box flex={1} justifyContent="center" alignItems="center" py={20}>
+        <Text color="#CE4A4A">Hata: {error.message}</Text>
+      </Box>
+    );
+  }
+
+  if (!ladderBadges || ladderBadges.length === 0) {
+    return (
+      <Box flex={1} justifyContent="center" alignItems="center" py={20}>
+        <Text color={isDark ? '$textDark400' : '#797979'}>Henüz ladder badge bulunmuyor.</Text>
+      </Box>
+    );
+  }
 
   return (
     <Box flex={1} position="relative">
@@ -236,7 +286,7 @@ export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
         </HStack>
         <Animated.View style={{ opacity: fadeAnim }}>
           <FlatList
-            data={filteredLadders}
+            data={filteredBadges}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
             numColumns={NUM_COLUMNS}
@@ -253,6 +303,13 @@ export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
           />
         </Animated.View>
       </VStack>
+
+      {/* Badge Detail Modal */}
+      <BadgeDetailModal
+        isVisible={isModalVisible}
+        onClose={handleCloseModal}
+        data={selectedBadge}
+      />
     </Box>
   );
 };

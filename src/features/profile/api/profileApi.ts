@@ -7,6 +7,7 @@ import type {
   ProfileBenchmark,
   ProfileTipsAndTricks,
   ProfileReplies,
+  ProfileLadderBadge,
 } from '../types';
 
 /**
@@ -40,7 +41,7 @@ export const getInventory = async (): Promise<InventoryItem[]> => {
 };
 
 /**
- * Get User Posts endpoint function
+ * Get User Feed endpoint function
  * Kullanıcının profil feed postlarını getirir
  *
  * @param userId - Kullanıcı ID'si
@@ -50,7 +51,7 @@ export const getUserPosts = async (
   userId: string
 ): Promise<ProfilePost[]> => {
   const response = await apiService.getClient().get<ProfilePost[]>(
-    `/users/${userId}/posts`
+    `/users/${userId}/feed`
   );
   return response.data;
 };
@@ -104,17 +105,33 @@ export const getUserTipsAndTricks = async (
 };
 
 /**
- * Get User Replies endpoint function
- * Kullanıcının replies/question postlarını getirir
+ * Get User Ladder Badges endpoint function
+ * Kullanıcının ladder badge'lerini getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns ProfileReplies[] - Kullanıcının replies/question listesi
+ * @returns ProfileLadderBadge[] - Kullanıcının ladder badge listesi
+ */
+export const getUserLadderBadges = async (
+  userId: string
+): Promise<ProfileLadderBadge[]> => {
+  const response = await apiService.getClient().get<ProfileLadderBadge[]>(
+    `/users/${userId}/ladder/badges`
+  );
+  return response.data;
+};
+
+/**
+ * Get User Questions endpoint function
+ * Kullanıcının questions postlarını getirir
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns ProfileReplies[] - Kullanıcının question listesi
  */
 export const getUserReplies = async (
   userId: string
 ): Promise<ProfileReplies[]> => {
   const response = await apiService.getClient().get<ProfileReplies[]>(
-    `/users/${userId}/replies`
+    `/users/${userId}/questions`
   );
   return response.data;
 };

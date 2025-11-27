@@ -1,17 +1,14 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ScrollView, Platform } from 'react-native';
+import React, { useState, useRef, useCallback } from 'react';
+import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import ProfileCard from '../components/ProfileCard';
 import { ReviewsTab, LadderTab, RepliesTab, TipsTab, FeedTab, BenchmarksTab } from '../components/TabContents';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import LadderDetail from '../components/LadderDetail';
-import { Ladder } from '@/src/mock/profile/ladders/types';
 import { useUserProfile } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
-import { useSafeAreaValues, useBottomTabBarHeightValue } from '@/src/utils';
+import { useSafeAreaValues } from '@/src/utils';
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -28,7 +25,6 @@ const ProfileScreen = () => {
   const { user } = useAppStore();
   const userId = user?.id;
   const safeAreaBottom = useSafeAreaValues('bottom');
-  const tabBarHeight = useBottomTabBarHeightValue();
   
   // Profile API hook
   const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(userId);
@@ -36,55 +32,6 @@ const ProfileScreen = () => {
   const [activeTab, setActiveTab] = useState('feed');
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  
-  // BottomSheet state ve ref'leri
-  const [selectedLadder, setSelectedLadder] = useState<Ladder | null>(null);
-  const ladderBottomSheetRef = useRef<BottomSheet>(null);
-
-  // Ladder seçildiğinde BottomSheet'i aç
-  const handleLadderSelect = useCallback((ladder: Ladder) => {
-    console.log('[ProfileScreen] ladder selected ->', ladder);
-    setSelectedLadder(ladder);
-  }, []);
-
-  // selectedLadder değiştiğinde BottomSheet'i aç
-  useEffect(() => {
-    if (selectedLadder) {
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (ladderBottomSheetRef.current) {
-            ladderBottomSheetRef.current.expand();
-          } else {
-            setTimeout(() => {
-              if (ladderBottomSheetRef.current) {
-                ladderBottomSheetRef.current.expand();
-              }
-            }, 100);
-          }
-        }, 50);
-      });
-    }
-  }, [selectedLadder]);
-
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log('[ProfileScreen] sheet index ->', index);
-    if (index === -1) {
-      setSelectedLadder(null);
-    }
-  }, []);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-        opacity={0.5}
-      />
-    ),
-    []
-  );
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -93,7 +40,7 @@ const ProfileScreen = () => {
       case 'reviews':
         return <ReviewsTab />;
       case 'ladders':
-        return <LadderTab onLadderSelect={handleLadderSelect} />;
+        return <LadderTab />;
       case 'benchmarks':
         return <BenchmarksTab />;
       case 'tips':
@@ -226,51 +173,6 @@ const ProfileScreen = () => {
           </Box>
         </Pressable>
       )}
-
-      {/* Ladder BottomSheet */}
-      <BottomSheet
-        ref={ladderBottomSheetRef}
-        index={-1}
-        onChange={handleSheetChanges}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        enableDynamicSizing
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#CCCCCC',
-          width: 40,
-          height: 4,
-        }}
-      >
-        <BottomSheetView
-          style={{
-            paddingBottom: Platform.OS === 'ios' ? safeAreaBottom : tabBarHeight,
-          }}
-        >
-          {selectedLadder && (
-            <LadderDetail
-              ladderId={selectedLadder.id}
-              onClose={() => {
-                ladderBottomSheetRef.current?.close();
-                setSelectedLadder(null);
-              }}
-            />
-          )}
-        </BottomSheetView>
-      </BottomSheet>
       </Box>
     </SafeAreaView>
   );

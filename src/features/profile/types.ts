@@ -173,3 +173,33 @@ export type ProfileTipsAndTricks = TipsApiItem;
  * /users/{id}/replies endpoint'inden dönen tip
  */
 export type ProfileReplies = QuestionApiItem;
+
+/**
+ * Profile Ladder Badge Task - Ladder badge task bilgisi
+ */
+export interface ProfileLadderBadgeTask {
+  id: string;
+  title: string;
+  current: number;
+  total: number;
+  isCompleted: boolean;
+}
+
+/**
+ * Profile Ladder Badge - Kullanıcının ladder badge bilgisi
+ * /users/{id}/ladder/badges endpoint'inden dönen tip
+ */
+export interface ProfileLadderBadge {
+  id: string;
+  image: string | null;
+  title: string;
+  description: string;
+  rarity: 'Usual' | 'Rare' | 'Epic' | 'Legendary';
+  isClaimed: boolean;
+  nftAddress: string | null;
+  totalEarned: number;
+  totalPercentage: number;
+  current: number;
+  total: number;
+  tasks: ProfileLadderBadgeTask[];
+}

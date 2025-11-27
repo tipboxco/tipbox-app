@@ -9,6 +9,7 @@ import {
   getUserBenchmarks,
   getUserTipsAndTricks,
   getUserReplies,
+  getUserLadderBadges,
 } from './profileApi';
 import type {
   TrustUser,
@@ -20,6 +21,7 @@ import type {
   ProfileBenchmark,
   ProfileTipsAndTricks,
   ProfileReplies,
+  ProfileLadderBadge,
 } from '../types';
 
 /**
@@ -50,6 +52,9 @@ export const profileKeys = {
   replies: () => [...profileKeys.all, 'replies'] as const,
   userReplies: (userId: string) =>
     [...profileKeys.replies(), userId] as const,
+  ladders: () => [...profileKeys.all, 'ladders'] as const,
+  userLadderBadges: (userId: string) =>
+    [...profileKeys.ladders(), userId] as const,
 };
 
 /**
@@ -404,6 +409,34 @@ export const useUserTipsAndTricks = (userId: string | undefined) => {
         throw new Error('User ID is required');
       }
       return getUserTipsAndTricks(userId);
+    },
+    enabled: !!userId,
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Ladder Badges query hook
+ * Kullanıcının profil ladder badge'lerini getirir (cache olmadan)
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useUserLadderBadges('user-123');
+ */
+export const useUserLadderBadges = (userId: string | undefined) => {
+  return useQuery<ProfileLadderBadge[], Error>({
+    queryKey: userId ? profileKeys.userLadderBadges(userId) : ['profile', 'ladders', 'disabled'],
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return getUserLadderBadges(userId);
     },
     enabled: !!userId,
     staleTime: 0, // Cache yok
