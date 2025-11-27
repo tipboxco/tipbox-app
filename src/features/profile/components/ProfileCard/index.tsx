@@ -393,9 +393,8 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
       {userData.badges && userData.badges.length > 0 && (
         <Box mt={6} px={15}>
           <Box
-            bg="$backgroundLight50"
             borderRadius={5}
-            p={8}
+            p={14}
             h={130}
           >
             <HStack space="md" justifyContent="space-between">
@@ -404,28 +403,27 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   <Box
                     w={70}
                     h={70}
-                    bg="$backgroundLight100"
                     borderRadius={5}
-                    borderWidth={1}
-                    borderColor="$backgroundLight200"
+                    borderWidth={0}
                     overflow="hidden"
                     justifyContent="center"
                     alignItems="center"
                   >
-                  <Image
-                    source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
-                      alt={badge.title}
+                    <Image
+                      source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
+                      alt={badge.name}
                       w={60}
                       h={60}
                       resizeMode="contain"
                     />
                   </Box>
                   <Text
-                    color={isDark ? '$textDark400' : '$textLight600'}
+                    color={isDark ? '$textDark400' : '#000000'}
                     fontSize={8}
+                    fontWeight="$bold"
                     textAlign="center"
                   >
-                    {badge.title}
+                    {badge.name}
                   </Text>
                 </VStack>
               ))}
@@ -433,10 +431,10 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             <Pressable onPress={() => navigation.navigate('Collections')}>
               <Text
                 color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={11}
+                fontSize={8}
                 textAlign="center"
-                mt={12}
-                fontWeight="$bold"
+                mt="$4"
+                fontWeight="$regular"
               >
                 See More Collections
               </Text>

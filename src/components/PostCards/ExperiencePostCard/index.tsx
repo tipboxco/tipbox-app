@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Dimensions } from 'react-native';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import type { ReviewCardData } from '@/src/types/ReviesCard';
+import type { ReviewCardData } from '@/src/types/ReviewsCard';
 
 
 interface PostCardProps {
@@ -21,7 +18,7 @@ interface PostCardProps {
 export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const [isTranslated, setIsTranslated] = useState(false);
 
   return (
@@ -120,7 +117,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               </HStack>
               <Text
                 color={isDark ? '$textDark50' : '#000'}
-                numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
+                numberOfLines={data.images && data.images!.length > 0 ? 3 : 6}
                 fontSize={'$2xs'}
                 ml={26}
               >
@@ -187,9 +184,9 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         </Pressable>
       </Box>
 
-      {data.images?.length > 0 && (
+      {data.images && data.images.length > 0 && (
         <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} />
+          <CardImageCarousel images={data.images as any[]} />
         </VStack>
       )}
       {/* Stats */}

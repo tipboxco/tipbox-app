@@ -1,5 +1,5 @@
 import { ProductInfoType } from '@/src/types/common';
-import type { ReviewApiItem } from '@/src/types/ReviesCard';
+import type { ReviewApiItem } from '@/src/types/ReviewsCard';
 
 /**
  * Inventory Review - API'den gelen review bilgisi
@@ -61,11 +61,19 @@ export interface TrusterUser {
 
 /**
  * Badge - Kullanıcı rozet bilgisi
+ * API response:
+ * {
+ *   id: string;
+ *   name: string;
+ *   value: string; // rarity gibi
+ *   image?: string; // ileride eklenecek
+ * }
  */
 export interface Badge {
   id: string;
-  title: string;
-  image: string;
+  name: string;
+  value: string;
+  image?: string;
 }
 
 /**

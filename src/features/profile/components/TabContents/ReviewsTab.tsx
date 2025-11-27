@@ -4,7 +4,7 @@ import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCar
 import { useUserReviews } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
-import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviesCard';
+import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { ProfileReview } from '../../types';
 
 const mapReviewToCardData = (review: ProfileReview): ReviewCardData => {

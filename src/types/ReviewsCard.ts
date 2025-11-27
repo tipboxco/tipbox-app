@@ -59,7 +59,7 @@ export interface ReviewCardProduct {
   id: string;
   name: string;
   subName: string;
-  image: ImageSourcePropType | null;
+  image: ImageSourcePropType | null | undefined;
 }
 
 export interface ReviewCardTag {
