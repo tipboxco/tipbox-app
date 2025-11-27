@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable, Image } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import ProfileCard from '../components/ProfileCard';
@@ -16,10 +16,10 @@ import { useSafeAreaValues, useBottomTabBarHeightValue } from '@/src/utils';
 const TABS = [
   { key: 'feed',        title: 'Feed' },
   { key: 'reviews',     title: 'Reviews' },
-  { key: 'ladders',     title: 'Ladders' },
   { key: 'benchmarks',  title: 'Benchmarks' },
   { key: 'tips',        title: 'Tips & Tricks' },
-  { key: 'replies',     title: 'Replies' }
+  { key: 'replies',     title: 'Questions' },
+  { key: 'ladders',     title: 'Ladders' },
 ];
 
 const ProfileScreen = () => {
@@ -149,57 +149,51 @@ const ProfileScreen = () => {
           </Box>
         ) : null}
 
-        {/* Tab Bar */}
-        <Box
-          height={50}
-          bg={isDark ? '#171717' : '#fff'}
-          borderBottomWidth={1}
-          borderBottomColor={isDark ? '#333' : '#eee'}
-        >
+        {/* Tab Bar - Trust/Collections tasarımı + yatay scroll */}
+        <VStack py={16} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              alignItems: 'center',
-            }}
           >
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.key;
-              return (
-                <Pressable
-                  key={tab.key}
-                  onPress={() => setActiveTab(tab.key)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    position: 'relative',
-                    minWidth: 'auto',
-                  }}
-                >
-                  <Text
-                    fontSize={11}
-                    fontWeight={isActive ? '$semibold' : '$normal'}
-                    color={isActive ? '#000000' : '#A3A3A3'}
-                    textTransform="capitalize"
+            <HStack
+              px={16}
+              space="md"
+            >
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <Pressable
+                    key={tab.key}
+                    onPress={() => setActiveTab(tab.key)}
+                    alignItems="center"
+                    justifyContent="center"
+                    pb="$1"
+                    position="relative"
+                    width={75}
                   >
-                    {tab.title}
-                  </Text>
-                  {isActive && (
+                    <Text
+                      textAlign="center"
+                      fontSize={12}
+                      fontWeight="$bold"
+                      color={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
+                    >
+                      {tab.title}
+                    </Text>
                     <Box
                       position="absolute"
-                      bottom={0}
-                      left={0}
-                      right={0}
+                      bottom={-1}
+                      left="15%"
                       height={2}
-                      bg={isDark ? '#fff' : '#000'}
+                      width="70%"
+                      borderRadius={999}
+                      bg={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
                     />
-                  )}
-                </Pressable>
-              );
-            })}
+                  </Pressable>
+                );
+              })}
+            </HStack>
           </ScrollView>
-        </Box>
+        </VStack>
 
         {/* Tab Content */}
         <Box>
