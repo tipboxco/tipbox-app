@@ -5,6 +5,7 @@ import type {
   ProfilePost,
   ProfileReview,
   ProfileBenchmark,
+  ProfileTipsAndTricks,
 } from '../types';
 
 /**
@@ -81,6 +82,22 @@ export const getUserBenchmarks = async (
 ): Promise<ProfileBenchmark[]> => {
   const response = await apiService.getClient().get<ProfileBenchmark[]>(
     `/users/${userId}/benchmarks`
+  );
+  return response.data;
+};
+
+/**
+ * Get User Tips & Tricks endpoint function
+ * Kullanıcının tips & tricks postlarını getirir
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns ProfileTipsAndTricks[] - Kullanıcının tips & tricks listesi
+ */
+export const getUserTipsAndTricks = async (
+  userId: string
+): Promise<ProfileTipsAndTricks[]> => {
+  const response = await apiService.getClient().get<ProfileTipsAndTricks[]>(
+    `/users/${userId}/tips`
   );
   return response.data;
 };

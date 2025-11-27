@@ -2,24 +2,22 @@ import React, { memo, useState } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import type { TipsCardData } from '@/src/types/TipsAndTricksCard';
 
 interface TipsAndTricksPostCardProps {
-    data: TipsAndTricksPost;
+    data: TipsCardData;
     hideProduct?: boolean;
 }
 
 const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const navigation = useNavigation<any>();
     const [isTranslated, setIsTranslated] = useState(false);
 
     return (
@@ -98,8 +96,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                 <Box
                     bg={isDark ? '$backgroundDark900' : '$white'}
                     borderWidth={2}
-                    borderColor="#56CFE5"
-                    bgColor='#059982'
+                    borderColor="#BAC4FF"
+                    bgColor='#3E57FFCC'
                     borderRadius={20}
                     width={100}
                     px={10}

@@ -4,6 +4,7 @@ import { BenchmarkPostCard } from '@/src/components/PostCards/BenchmarkPostCard'
 import { useUserBenchmarks } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
+import { CardType } from '@/src/types/common';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { ProfileBenchmark } from '../../types';
 
@@ -69,9 +70,11 @@ export const BenchmarksTab = () => {
         </Text>
       )}
 
-      {benchmarks?.map((item) => (
-        <BenchmarkPostCard key={item.id} data={mapBenchmarkToCardData(item)} />
-      ))}
+      {benchmarks
+        ?.filter((item) => item.type === CardType.BENCHMARK)
+        .map((item) => (
+          <BenchmarkPostCard key={item.id} data={mapBenchmarkToCardData(item)} />
+        ))}
     </VStack>
   );
 };

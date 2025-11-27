@@ -4,6 +4,7 @@ import PostCard from '@/src/components/PostCards/PostCard';
 import { useUserPosts } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout } from '@/src/utils';
+import { CardType } from '@/src/types/common';
 
 export const FeedTab = () => {
   const userId = useCurrentUserIdOrLogout();
@@ -40,9 +41,11 @@ export const FeedTab = () => {
         </Text>
       )}
 
-      {posts?.map((post) => (
-        <PostCard key={post.id} data={post} />
-      ))}
+      {posts
+        ?.filter((post) => post.type === CardType.POST)
+        .map((post) => (
+          <PostCard key={post.id} data={post} />
+        ))}
     </VStack>
   );
 };

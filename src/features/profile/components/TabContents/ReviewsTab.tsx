@@ -4,6 +4,7 @@ import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCar
 import { useUserReviews } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
+import { CardType } from '@/src/types/common';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { ProfileReview } from '../../types';
 
@@ -86,9 +87,11 @@ export const ReviewsTab = () => {
         </Text>
       )}
 
-      {reviews?.map((review) => (
-        <ExperiencePostCard key={review.id} data={mapReviewToCardData(review)} />
-      ))}
+      {reviews
+        ?.filter((review) => review.type === CardType.FEED)
+        .map((review) => (
+          <ExperiencePostCard key={review.id} data={mapReviewToCardData(review)} />
+        ))}
     </VStack>
   );
 };

@@ -9,6 +9,16 @@ export enum ProductInfoType {
   SUB_CATEGORY = 'sub_category',
 }
 
+// Uygulama genelinde kullanılan kart tipleri
+export enum CardType {
+  FEED = 'feed',
+  BENCHMARK = 'benchmark',
+  POST = 'post',
+  QUESTION = 'question',
+  TIPS_AND_TRICKS = 'tipsAndTricks',
+  UPDATE = 'update',
+}
+
 export interface BaseEntity {
   id: string;
   createdAt: string;

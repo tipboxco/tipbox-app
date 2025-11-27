@@ -7,6 +7,7 @@ import {
   getUserPosts,
   getUserReviews,
   getUserBenchmarks,
+  getUserTipsAndTricks,
 } from './profileApi';
 import type {
   TrustUser,
@@ -16,6 +17,7 @@ import type {
   ProfilePost,
   ProfileReview,
   ProfileBenchmark,
+  ProfileTipsAndTricks,
 } from '../types';
 
 /**
@@ -40,6 +42,9 @@ export const profileKeys = {
   benchmarks: () => [...profileKeys.all, 'benchmarks'] as const,
   userBenchmarks: (userId: string) =>
     [...profileKeys.benchmarks(), userId] as const,
+  tips: () => [...profileKeys.all, 'tips'] as const,
+  userTipsAndTricks: (userId: string) =>
+    [...profileKeys.tips(), userId] as const,
 };
 
 /**
@@ -366,6 +371,34 @@ export const useUserBenchmarks = (userId: string | undefined) => {
         throw new Error('User ID is required');
       }
       return getUserBenchmarks(userId);
+    },
+    enabled: !!userId,
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Tips & Tricks query hook
+ * Kullanıcının profil tips & tricks postlarını getirir (cache olmadan)
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useUserTipsAndTricks('user-123');
+ */
+export const useUserTipsAndTricks = (userId: string | undefined) => {
+  return useQuery<ProfileTipsAndTricks[], Error>({
+    queryKey: userId ? profileKeys.userTipsAndTricks(userId) : ['profile', 'tips', 'disabled'],
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return getUserTipsAndTricks(userId);
     },
     enabled: !!userId,
     staleTime: 0, // Cache yok
