@@ -1,27 +1,11 @@
-import { ImageSourcePropType } from 'react-native';
+import type {
+  BenchmarkUser,
+  BenchmarkProduct,
+  BenchmarkStats,
+  BenchmarkCardData,
+} from '@/src/types/BenchmarkCard';
 
-export interface BenchmarkUser {
-  id: string;
-  name: string;
-  title: string;
-  avatar: ImageSourcePropType;
-}
-
-export interface BenchmarkProduct {
-  id: string;
-  name: string;
-  subName: string;
-  image: ImageSourcePropType;
-  isOwned: boolean;
-  choice: boolean;
-}
-
-export interface BenchmarkStats {
-  likes: number;
-  comments: number;
-  shares: number;
-  bookmarks: number;
-}
+export type { BenchmarkUser, BenchmarkProduct, BenchmarkStats };
 
 export interface BenchmarkScore {
   overall: number;
@@ -32,11 +16,4 @@ export interface BenchmarkScore {
   display: number;
 }
 
-export interface BenchmarkPost {
-  id: string;
-  user: BenchmarkUser;
-  products: BenchmarkProduct[];
-  content: string;
-  stats: BenchmarkStats;
-  createdAt: string;
-}
+export interface BenchmarkPost extends BenchmarkCardData {}

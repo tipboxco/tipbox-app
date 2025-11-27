@@ -1,5 +1,6 @@
 import { ProductInfoType } from '@/src/types/common';
 import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 
 /**
  * Inventory Review - API'den gelen review bilgisi
@@ -152,3 +153,9 @@ export interface ProfilePost {
  * /users/{id}/reviews endpoint'inden dönen tip
  */
 export type ProfileReview = ReviewApiItem;
+
+/**
+ * Profile Benchmarks - Kullanıcının benchmark postları
+ * /users/{id}/benchmarks endpoint'inden dönen tip
+ */
+export type ProfileBenchmark = BenchmarkApiItem;

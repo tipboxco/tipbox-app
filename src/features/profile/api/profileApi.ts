@@ -1,5 +1,11 @@
 import { apiService } from '../../../services/ApiService';
-import type { UserProfile, InventoryItem, ProfilePost, ProfileReview } from '../types';
+import type {
+  UserProfile,
+  InventoryItem,
+  ProfilePost,
+  ProfileReview,
+  ProfileBenchmark,
+} from '../types';
 
 /**
  * Get User Profile endpoint function
@@ -59,6 +65,22 @@ export const getUserReviews = async (
 ): Promise<ProfileReview[]> => {
   const response = await apiService.getClient().get<ProfileReview[]>(
     `/users/${userId}/reviews`
+  );
+  return response.data;
+};
+
+/**
+ * Get User Benchmarks endpoint function
+ * Kullanıcının benchmark postlarını getirir
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns ProfileBenchmark[] - Kullanıcının benchmark listesi
+ */
+export const getUserBenchmarks = async (
+  userId: string
+): Promise<ProfileBenchmark[]> => {
+  const response = await apiService.getClient().get<ProfileBenchmark[]>(
+    `/users/${userId}/benchmarks`
   );
   return response.data;
 };

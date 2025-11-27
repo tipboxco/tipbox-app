@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { BenchmarkPost, BenchmarkProduct } from '@/src/mock/profile/benchmark/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
+import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 
 interface BenchmarkPostCardProps {
-    data: BenchmarkPost;
+    data: BenchmarkCardData;
 }
 
 const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark: boolean; }) => (
@@ -65,7 +63,7 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
 export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const navigation = useNavigation<any>();
     const [isTranslated, setIsTranslated] = useState(false);
 
     return (

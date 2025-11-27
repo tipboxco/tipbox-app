@@ -1,7 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { getTrustList, getTrusterList } from './trustApi';
-import { getUserProfile, getInventory, getUserPosts, getUserReviews } from './profileApi';
+import {
+  getUserProfile,
+  getInventory,
+  getUserPosts,
+  getUserReviews,
+  getUserBenchmarks,
+} from './profileApi';
 import type {
   TrustUser,
   TrusterUser,
@@ -9,6 +15,7 @@ import type {
   InventoryItem,
   ProfilePost,
   ProfileReview,
+  ProfileBenchmark,
 } from '../types';
 
 /**
@@ -30,6 +37,9 @@ export const profileKeys = {
   reviews: () => [...profileKeys.all, 'reviews'] as const,
   userReviews: (userId: string) =>
     [...profileKeys.reviews(), userId] as const,
+  benchmarks: () => [...profileKeys.all, 'benchmarks'] as const,
+  userBenchmarks: (userId: string) =>
+    [...profileKeys.benchmarks(), userId] as const,
 };
 
 /**
@@ -328,6 +338,34 @@ export const useUserReviews = (userId: string | undefined) => {
         throw new Error('User ID is required');
       }
       return getUserReviews(userId);
+    },
+    enabled: !!userId,
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Benchmarks query hook
+ * Kullanıcının profil benchmark postlarını getirir (cache olmadan)
+ *
+ * @param userId - Kullanıcı ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useUserBenchmarks('user-123');
+ */
+export const useUserBenchmarks = (userId: string | undefined) => {
+  return useQuery<ProfileBenchmark[], Error>({
+    queryKey: userId ? profileKeys.userBenchmarks(userId) : ['profile', 'benchmarks', 'disabled'],
+    queryFn: () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      return getUserBenchmarks(userId);
     },
     enabled: !!userId,
     staleTime: 0, // Cache yok
