@@ -10,7 +10,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 16px padding on each side + 16px gap between cards
+const CARD_WIDTH = (width - 48) / 2.5; // 16px padding on each side + 16px gap between cards
 
 export interface ProductCardData {
     id: string;
@@ -42,7 +42,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ data, onPress }) => {
                     {/* Product Image */}
                     <Box
                         width="100%"
-                        height={140}
+                        height={100}
                         bg="transparent"
                         alignItems="center"
                         justifyContent="center"

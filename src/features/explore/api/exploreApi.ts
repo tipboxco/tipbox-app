@@ -1,6 +1,6 @@
 import { apiService } from '../../../services/ApiService';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
-import type { MarketplaceBanner } from '../types';
+import type { MarketplaceBanner, NewBrandsApiResponse } from '../types';
 import type { EventsApiResponse } from '@/src/types/EventCard';
 
 /**
@@ -53,6 +53,23 @@ export const getExploreEvents = async (limit: number = 10): Promise<EventsApiRes
 
   const response = await apiService.getClient().get<EventsApiResponse>(
     `/explore/events?${params.toString()}`
+  );
+  return response.data;
+};
+
+/**
+ * Get New Brands endpoint function
+ * Explore sayfasındaki "What's New" sekmesindeki yeni brand'leri getirir
+ *
+ * @param limit - Gösterilecek brand sayısı (default: 10)
+ * @returns NewBrandsApiResponse - Brand listesi ve pagination bilgisi
+ */
+export const getNewBrands = async (limit: number = 10): Promise<NewBrandsApiResponse> => {
+  const params = new URLSearchParams();
+  params.append('limit', limit.toString());
+
+  const response = await apiService.getClient().get<NewBrandsApiResponse>(
+    `/explore/brands/new?${params.toString()}`
   );
   return response.data;
 };

@@ -25,10 +25,9 @@ import { useSafeAreaValues } from '@/src/utils';
 import EventCard from '@/src/components/EventCard';
 import { useNavigation } from '@react-navigation/native';
 import { BrandCard, ProductCard } from '../components';
-import { Brand } from '@/src/mock/catalog/brandCatalog/types';
 import type { ProductCardData } from '../components/ProductCard';
-import { useHottest, useMarketplaceBanners, useExploreEvents } from '../api/hooks';
-import type { MarketplaceBanner } from '../types';
+import { useHottest, useMarketplaceBanners, useExploreEvents, useNewBrands } from '../api/hooks';
+import type { MarketplaceBanner, NewBrandApiItem } from '../types';
 import type { EventApiItem, EventCardData } from '@/src/types/EventCard';
 import { EventType } from '@/src/types/EventCard';
 import { CardType } from '@/src/types/common';
@@ -289,6 +288,12 @@ const ExploreScreen: React.FC = () => {
     isLoading: isLoadingEvents,
   } = useExploreEvents(10);
 
+  // New Brands API hook
+  const {
+    data: brandsData,
+    isLoading: isLoadingBrands,
+  } = useNewBrands(10);
+
   // Flatten all pages into a single array
   const hottestItems = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -343,6 +348,23 @@ const ExploreScreen: React.FC = () => {
 
   // Transform events data for display
   const events = eventsData?.items.map(mapEventToCardData) ?? [];
+
+  // Map API brand data to BrandCard format (Brand type compatible)
+  const mapBrandToCardData = (brand: NewBrandApiItem) => {
+    const imageSource = toImageSource(brand.images);
+    return {
+      id: brand.brandId,
+      name: brand.title,
+      description: brand.description,
+      logo: imageSource || require('@/assets/avatar/ozan.png'), // Fallback if image is null
+      followers: '', // Not provided by API
+      bannerImage: undefined, // Not provided by API
+      isJoined: false, // Not provided by API
+    };
+  };
+
+  // Transform brands data for display
+  const brands = brandsData?.items.map(mapBrandToCardData) ?? [];
 
 
   const handleSeeAllEvents = () => {
@@ -490,54 +512,6 @@ const ExploreScreen: React.FC = () => {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Mock brand data
-  const mockBrands: Brand[] = [
-    {
-      id: '1',
-      name: 'Apple',
-      description: 'Technology brand',
-      followers: '120K Followers',
-      logo: require('@/assets/avatar/ozan.png'),
-      bannerImage: require('@/assets/events/banner.png'),
-      isJoined: false,
-    },
-    {
-      id: '2',
-      name: 'Samsung',
-      description: 'Technology brand',
-      followers: '95K Followers',
-      logo: require('@/assets/avatar/ozan.png'),
-      bannerImage: require('@/assets/events/banner.png'),
-      isJoined: true,
-    },
-    {
-      id: '3',
-      name: 'Sony',
-      description: 'Technology brand',
-      followers: '80K Followers',
-      logo: require('@/assets/avatar/ozan.png'),
-      bannerImage: require('@/assets/events/banner.png'),
-      isJoined: false,
-    },
-    {
-      id: '4',
-      name: 'Nike',
-      description: 'Sports brand',
-      followers: '150K Followers',
-      logo: require('@/assets/avatar/ozan.png'),
-      bannerImage: require('@/assets/events/banner.png'),
-      isJoined: true,
-    },
-    {
-      id: '5',
-      name: 'Adidas',
-      description: 'Sports brand',
-      followers: '110K Followers',
-      logo: require('@/assets/avatar/ozan.png'),
-      bannerImage: require('@/assets/events/banner.png'),
-      isJoined: false,
-    },
-  ];
 
   // Mock product data
   const mockProducts: ProductCardData[] = [
@@ -824,21 +798,33 @@ const ExploreScreen: React.FC = () => {
                           </Text>
                         </Pressable>
                       </HStack>
-                      <FlatList
-                        data={mockBrands}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingRight: 16 }}
-                        ItemSeparatorComponent={() => <Box width={12} />}
-                        renderItem={({ item }) => (
-                          <BrandCard
-                            data={item}
-                            onPress={() => handleBrandPress(item.id)}
-                          />
-                        )}
-                        keyExtractor={(item) => item.id}
-                        nestedScrollEnabled={true}
-                      />
+                      {isLoadingBrands ? (
+                        <Box py="$4" alignItems="center">
+                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                        </Box>
+                      ) : brands.length === 0 ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
+                            Henüz brand bulunmuyor.
+                          </Text>
+                        </Box>
+                      ) : (
+                        <FlatList
+                          data={brands}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{ paddingRight: 16 }}
+                          ItemSeparatorComponent={() => <Box width={12} />}
+                          renderItem={({ item }) => (
+                            <BrandCard
+                              data={item}
+                              onPress={() => handleBrandPress(item.id)}
+                            />
+                          )}
+                          keyExtractor={(item) => item.id}
+                          nestedScrollEnabled={true}
+                        />
+                      )}
                     </VStack>
                   </Box>
 

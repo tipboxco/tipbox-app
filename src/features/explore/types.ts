@@ -90,3 +90,20 @@ export interface MarketplaceBanner {
   imageUrl: string;
   linkUrl: string;
 }
+
+// New Brands Types
+export interface NewBrandApiItem {
+  brandId: string;
+  images: string;
+  title: string;
+  description: string;
+}
+
+export interface NewBrandsApiResponse {
+  items: NewBrandApiItem[];
+  pagination: {
+    cursor: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}

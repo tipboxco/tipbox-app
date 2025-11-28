@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getHottest, getMarketplaceBanners, getExploreEvents } from './exploreApi';
+import { getHottest, getMarketplaceBanners, getExploreEvents, getNewBrands } from './exploreApi';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
-import type { MarketplaceBanner } from '../types';
+import type { MarketplaceBanner, NewBrandsApiResponse } from '../types';
 import type { EventsApiResponse } from '@/src/types/EventCard';
 
 /**
@@ -13,6 +13,7 @@ export const exploreKeys = {
     [...exploreKeys.all, 'hottest', cursor, limit] as const,
   marketplaceBanners: () => [...exploreKeys.all, 'marketplace-banners'] as const,
   events: (limit?: number) => [...exploreKeys.all, 'events', limit] as const,
+  newBrands: (limit?: number) => [...exploreKeys.all, 'brands', 'new', limit] as const,
 };
 
 /**
@@ -85,6 +86,29 @@ export const useExploreEvents = (limit: number = 10) => {
   return useQuery<EventsApiResponse, Error>({
     queryKey: exploreKeys.events(limit),
     queryFn: () => getExploreEvents(limit),
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get New Brands query hook
+ * Explore sayfasındaki "What's New" sekmesindeki yeni brand'leri getirir
+ * Scroll ile daha fazla veri getirilmez, sadece 10 tane gösterilir
+ *
+ * @param limit - Gösterilecek brand sayısı (default: 10)
+ * @returns React Query query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useNewBrands();
+ */
+export const useNewBrands = (limit: number = 10) => {
+  return useQuery<NewBrandsApiResponse, Error>({
+    queryKey: exploreKeys.newBrands(limit),
+    queryFn: () => getNewBrands(limit),
     staleTime: 5 * 60 * 1000, // 5 dakika
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,
