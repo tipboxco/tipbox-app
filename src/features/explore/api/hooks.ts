@@ -1,32 +1,32 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { getFeed } from './feedApi';
-import type { FeedApiResponse, FeedApiItem } from './feedApi';
+import { getHottest } from './exploreApi';
+import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
- * Query Keys - Feed feature için cache key pattern'leri
+ * Query Keys - Explore feature için cache key pattern'leri
  */
-export const feedKeys = {
-  all: ['feed'] as const,
-  feed: (cursor?: string, limit?: number) =>
-    [...feedKeys.all, cursor, limit] as const,
+export const exploreKeys = {
+  all: ['explore'] as const,
+  hottest: (cursor?: string, limit?: number) =>
+    [...exploreKeys.all, 'hottest', cursor, limit] as const,
 };
 
 /**
- * Get Feed infinite query hook
- * Kullanıcının feed akışını infinite scroll ile getirir
+ * Get Hottest infinite query hook
+ * Explore sayfasındaki hottest içeriğini infinite scroll ile getirir
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useFeed();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useHottest();
  */
-export const useFeed = (limit: number = 20) => {
+export const useHottest = (limit: number = 20) => {
   return useInfiniteQuery<FeedApiResponse, Error>({
-    queryKey: feedKeys.feed(undefined, limit),
+    queryKey: exploreKeys.hottest(undefined, limit),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getFeed(cursor, limit);
+      return getHottest(cursor, limit);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

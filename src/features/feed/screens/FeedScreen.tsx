@@ -350,12 +350,8 @@ export const FeedScreen = () => {
   };
 
   const handleLoadMore = useCallback(() => {
-    console.log('[FeedScreen] handleLoadMore called', { hasNextPage, isFetchingNextPage });
     if (hasNextPage && !isFetchingNextPage) {
-      console.log('[FeedScreen] Fetching next page...');
       fetchNextPage();
-    } else {
-      console.log('[FeedScreen] Not fetching - hasNextPage:', hasNextPage, 'isFetchingNextPage:', isFetchingNextPage);
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 

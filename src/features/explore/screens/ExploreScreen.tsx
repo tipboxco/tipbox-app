@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ScrollView, FlatList } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { ScrollView, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -14,10 +14,10 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SearchModal } from '@/src/components/SearchModal';
-import { mock_user_profile } from '@/src/mock/common';
-import { mock_post_cards } from '@/src/mock/profile/feed';
 import { Feather } from '@expo/vector-icons';
-import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
+import PostCard from '@/src/components/PostCards/PostCard';
+import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
+import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useSafeAreaValues } from '@/src/utils';
 import EventCard from '@/src/components/EventCard';
 import { mock_community_events } from '@/src/mock/events/communityEvents';
@@ -25,6 +25,16 @@ import { useNavigation } from '@react-navigation/native';
 import { BrandCard, ProductCard } from '../components';
 import { Brand } from '@/src/mock/catalog/brandCatalog/types';
 import type { ProductCardData } from '../components/ProductCard';
+import { useHottest } from '../api/hooks';
+import { CardType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
+import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
+import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
+import type { ProfilePost } from '@/src/features/profile/types';
+import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
+import type { PostCardData } from '@/src/types/PostCard';
+import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
+import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 
 
 
@@ -35,6 +45,19 @@ const ExploreScreen: React.FC = () => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'hottest' | 'news'>('hottest');
   const bottomInset = useSafeAreaValues('bottom');
+
+  // Hottest API hook with infinite scroll
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useHottest(3); // Test için limit 3 olarak ayarlandı
+
+  // Flatten all pages into a single array
+  const hottestItems = data?.pages.flatMap((page) => page.items) ?? [];
 
   const handleSearchPress = () => {
     setIsSearchVisible(true);
@@ -73,6 +96,126 @@ const ExploreScreen: React.FC = () => {
     // Navigate to product catalog
     console.log('See Product Catalog pressed');
   };
+
+  // Map Feed to PostCardData
+  const mapFeedToCardData = (item: ProfilePost): PostCardData => {
+    return {
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatarUrl: item.user.avatarUrl,
+      },
+      content: item.content,
+      images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+      stats: item.stats,
+      createdAt: item.createdAt,
+      contextType: item.contextType,
+      contextData: item.contextData,
+    };
+  };
+
+  // Map Benchmark to BenchmarkCardData
+  const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
+    const avatarSource = toImageSource(item.user.avatarUrl)!;
+
+    const products: BenchmarkProduct[] = item.products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      subName: p.subName,
+      image: toImageSource(p.image)!,
+      isOwned: p.isOwned,
+      choice: p.choice,
+    }));
+
+    return {
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
+      },
+      products,
+      content: item.content,
+      stats: item.stats,
+      createdAt: item.createdAt,
+    };
+  };
+
+  // Map Tips to TipsCardData
+  const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
+    const avatarSource = toImageSource(item.user.avatarUrl)!;
+
+    const product: TipsProduct = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subName: item.contextData.subName,
+      image: toImageSource(item.contextData.image)!,
+    };
+
+    const category: TipsCategory = {
+      id: item.contextData.id,
+      name: item.contextData.name,
+      subCategory: item.contextData.subName,
+      image: toImageSource(item.contextData.image)!,
+      product,
+    };
+
+    return {
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
+      },
+      category,
+      content: item.content,
+      images: item.images
+        ?.map((img) => toImageSource(img))
+        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+      stats: item.stats,
+      tag: item.tag,
+      createdAt: item.createdAt,
+    };
+  };
+
+  const renderHottestItem = (item: FeedApiItem) => {
+    switch (item.type) {
+      case CardType.FEED:
+        // Feed type için ProfilePost kullan ve PostCard render et
+        return (
+          <PostCard
+            key={item.data.id}
+            data={mapFeedToCardData(item.data as ProfilePost)}
+          />
+        );
+      case CardType.BENCHMARK:
+        return (
+          <BenchmarkPostCard
+            key={item.data.id}
+            data={mapBenchmarkToCardData(item.data as BenchmarkApiItem & { type: 'benchmark' })}
+          />
+        );
+      case CardType.TIPS_AND_TRICKS:
+        return (
+          <TipsAndTricksPostCard
+            key={item.data.id}
+            data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Mock brand data
   const mockBrands: Brand[] = [
@@ -319,14 +462,43 @@ const ExploreScreen: React.FC = () => {
 
               {/* Content based on active tab */}
               {activeCategory === 'hottest' && (
-                <VStack space="md" mb="$4" px="$4">
-                  {mock_post_cards.map((post) => (
-                    <ExperiencePostCard
-                      key={post.id}
-                      data={post}
+                <Box mb="$4" px="$4" flex={1}>
+                  {isLoading ? (
+                    <Box py="$8" alignItems="center">
+                      <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                    </Box>
+                  ) : error ? (
+                    <Box py="$8" alignItems="center">
+                      <Text color={isDark ? '#FFFFFF' : '#000000'}>
+                        Bir hata oluştu. Lütfen tekrar deneyin.
+                      </Text>
+                    </Box>
+                  ) : hottestItems.length === 0 ? (
+                    <Box py="$8" alignItems="center">
+                      <Text color={isDark ? '#FFFFFF' : '#000000'}>
+                        Henüz içerik bulunmuyor.
+                      </Text>
+                    </Box>
+                  ) : (
+                    <FlatList
+                      data={hottestItems}
+                      renderItem={({ item }) => renderHottestItem(item)}
+                      keyExtractor={(item) => item.data.id}
+                      onEndReached={handleLoadMore}
+                      onEndReachedThreshold={0.1}
+                      removeClippedSubviews={false}
+                      ListFooterComponent={
+                        isFetchingNextPage ? (
+                          <Box py="$4" alignItems="center">
+                            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                          </Box>
+                        ) : null
+                      }
+                      scrollEnabled={false}
+                      ItemSeparatorComponent={() => <Box height={16} />}
                     />
-                  ))}
-                </VStack>
+                  )}
+                </Box>
               )}
 
               {activeCategory === 'news' && (
@@ -334,7 +506,7 @@ const ExploreScreen: React.FC = () => {
                   {/* New Community Events Section */}
                   <Box pl="$4">
                     <VStack space="sm" mb="$4">
-                      <HStack justifyContent="space-between" alignItems="center" mb="$2" pr="$4">
+                      <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
                         <Text
                           color={isDark ? '#FFFFFF' : '#B9B9B9'}
                           fontSize={14}
@@ -373,7 +545,7 @@ const ExploreScreen: React.FC = () => {
                   {/* New Brands Section */}
                   <Box pl="$4">
                     <VStack space="sm" mb="$4">
-                      <HStack justifyContent="space-between" alignItems="center" mb="$2" pr="$4">
+                      <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
                         <Text
                           color={isDark ? '#FFFFFF' : '#B9B9B9'}
                           fontSize={14}
@@ -411,7 +583,7 @@ const ExploreScreen: React.FC = () => {
                   {/* New Products Section */}
                   <Box pl="$4">
                     <VStack space="sm">
-                      <HStack justifyContent="space-between" alignItems="center" mb="$2" pr="$4">
+                      <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
                         <Text
                           color={isDark ? '#FFFFFF' : '#B9B9B9'}
                           fontSize={14}
