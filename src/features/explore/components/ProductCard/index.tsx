@@ -72,15 +72,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ data, onPress }) => {
                         </Text>
 
                         {/* Product Description */}
-                        <Text
-                            color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                            fontSize={9}
-                            fontWeight="$normal"
-                            numberOfLines={2}
-                            lineHeight={12}
-                        >
-                            {data.description}
-                        </Text>
+                        {data.description && data.description.trim() !== '' && (
+                            <Text
+                                color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                                fontSize={9}
+                                fontWeight="$normal"
+                                numberOfLines={2}
+                                lineHeight={12}
+                            >
+                                {data.description}
+                            </Text>
+                        )}
                     </VStack>
                 </VStack>
             </Box>

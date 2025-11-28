@@ -107,3 +107,20 @@ export interface NewBrandsApiResponse {
     limit: number;
   };
 }
+
+// New Products Types
+export interface NewProductApiItem {
+  productId: string;
+  images: string | null;
+  title: string;
+  description?: string; // Optional, will be added in the future
+}
+
+export interface NewProductsApiResponse {
+  items: NewProductApiItem[];
+  pagination: {
+    cursor?: string; // Optional, may not be present in response
+    hasMore: boolean;
+    limit: number;
+  };
+}

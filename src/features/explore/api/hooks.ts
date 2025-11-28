@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getHottest, getMarketplaceBanners, getExploreEvents, getNewBrands } from './exploreApi';
+import { getHottest, getMarketplaceBanners, getExploreEvents, getNewBrands, getNewProducts } from './exploreApi';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
-import type { MarketplaceBanner, NewBrandsApiResponse } from '../types';
+import type { MarketplaceBanner, NewBrandsApiResponse, NewProductsApiResponse } from '../types';
 import type { EventsApiResponse } from '@/src/types/EventCard';
 
 /**
@@ -14,6 +14,7 @@ export const exploreKeys = {
   marketplaceBanners: () => [...exploreKeys.all, 'marketplace-banners'] as const,
   events: (limit?: number) => [...exploreKeys.all, 'events', limit] as const,
   newBrands: (limit?: number) => [...exploreKeys.all, 'brands', 'new', limit] as const,
+  newProducts: (limit?: number) => [...exploreKeys.all, 'products', 'new', limit] as const,
 };
 
 /**
@@ -109,6 +110,29 @@ export const useNewBrands = (limit: number = 10) => {
   return useQuery<NewBrandsApiResponse, Error>({
     queryKey: exploreKeys.newBrands(limit),
     queryFn: () => getNewBrands(limit),
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get New Products query hook
+ * Explore sayfasındaki "What's New" sekmesindeki yeni product'leri getirir
+ * Scroll ile daha fazla veri getirilmez, sadece 10 tane gösterilir
+ *
+ * @param limit - Gösterilecek product sayısı (default: 10)
+ * @returns React Query query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useNewProducts();
+ */
+export const useNewProducts = (limit: number = 10) => {
+  return useQuery<NewProductsApiResponse, Error>({
+    queryKey: exploreKeys.newProducts(limit),
+    queryFn: () => getNewProducts(limit),
     staleTime: 5 * 60 * 1000, // 5 dakika
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,

@@ -26,8 +26,8 @@ import EventCard from '@/src/components/EventCard';
 import { useNavigation } from '@react-navigation/native';
 import { BrandCard, ProductCard } from '../components';
 import type { ProductCardData } from '../components/ProductCard';
-import { useHottest, useMarketplaceBanners, useExploreEvents, useNewBrands } from '../api/hooks';
-import type { MarketplaceBanner, NewBrandApiItem } from '../types';
+import { useHottest, useMarketplaceBanners, useExploreEvents, useNewBrands, useNewProducts } from '../api/hooks';
+import type { MarketplaceBanner, NewBrandApiItem, NewProductApiItem } from '../types';
 import type { EventApiItem, EventCardData } from '@/src/types/EventCard';
 import { EventType } from '@/src/types/EventCard';
 import { CardType } from '@/src/types/common';
@@ -294,6 +294,12 @@ const ExploreScreen: React.FC = () => {
     isLoading: isLoadingBrands,
   } = useNewBrands(10);
 
+  // New Products API hook
+  const {
+    data: productsData,
+    isLoading: isLoadingProducts,
+  } = useNewProducts(10);
+
   // Flatten all pages into a single array
   const hottestItems = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -365,6 +371,20 @@ const ExploreScreen: React.FC = () => {
 
   // Transform brands data for display
   const brands = brandsData?.items.map(mapBrandToCardData) ?? [];
+
+  // Map API product data to ProductCardData format
+  const mapProductToCardData = (product: NewProductApiItem, index: number): ProductCardData => {
+    const imageSource = product.images ? toImageSource(product.images) : null;
+    return {
+      id: product.productId,
+      name: product.title,
+      description: product.description || '', // Empty string if description is not provided yet
+      image: imageSource || require('@/assets/inventory/product_01.png'), // Fallback if image is null
+    };
+  };
+
+  // Transform products data for display
+  const products = productsData?.items.map((item, index) => mapProductToCardData(item, index)) ?? [];
 
 
   const handleSeeAllEvents = () => {
@@ -513,39 +533,6 @@ const ExploreScreen: React.FC = () => {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 
-  // Mock product data
-  const mockProducts: ProductCardData[] = [
-    {
-      id: '1',
-      name: 'iPhone 15 Pro Max',
-      description: 'Latest iPhone with advanced features and premium design',
-      image: require('@/assets/inventory/product_01.png'),
-    },
-    {
-      id: '2',
-      name: 'Samsung Galaxy S24 Ultra',
-      description: 'Flagship Android phone with cutting-edge technology',
-      image: require('@/assets/inventory/product_02.png'),
-    },
-    {
-      id: '3',
-      name: 'MacBook Pro 16"',
-      description: 'Powerful laptop for professionals and creatives',
-      image: require('@/assets/inventory/product_03.png'),
-    },
-    {
-      id: '4',
-      name: 'AirPods Pro',
-      description: 'Premium wireless earbuds with noise cancellation',
-      image: require('@/assets/inventory/product_04.png'),
-    },
-    {
-      id: '5',
-      name: 'iPad Pro',
-      description: 'High-performance tablet for work and creativity',
-      image: require('@/assets/inventory/product_05.png'),
-    },
-  ];
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -850,21 +837,33 @@ const ExploreScreen: React.FC = () => {
                           </Text>
                         </Pressable>
                       </HStack>
-                      <FlatList
-                        data={mockProducts}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingRight: 16 }}
-                        ItemSeparatorComponent={() => <Box width={12} />}
-                        renderItem={({ item }) => (
-                          <ProductCard
-                            data={item}
-                            onPress={() => handleProductPress(item.id)}
-                          />
-                        )}
-                        keyExtractor={(item) => item.id}
-                        nestedScrollEnabled={true}
-                      />
+                      {isLoadingProducts ? (
+                        <Box py="$4" alignItems="center">
+                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                        </Box>
+                      ) : products.length === 0 ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
+                            Henüz product bulunmuyor.
+                          </Text>
+                        </Box>
+                      ) : (
+                        <FlatList
+                          data={products}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{ paddingRight: 16 }}
+                          ItemSeparatorComponent={() => <Box width={12} />}
+                          renderItem={({ item }) => (
+                            <ProductCard
+                              data={item}
+                              onPress={() => handleProductPress(item.id)}
+                            />
+                          )}
+                          keyExtractor={(item) => item.id}
+                          nestedScrollEnabled={true}
+                        />
+                      )}
                     </VStack>
                   </Box>
                 </VStack>
