@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { ScrollView, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { ScrollView, FlatList, ActivityIndicator, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -11,6 +11,9 @@ import {
   InputField,
   Image
 } from '@gluestack-ui/themed';
+import { LinearGradient } from 'expo-linear-gradient';
+import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated-carousel';
+import { useSharedValue } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { SearchModal } from '@/src/components/SearchModal';
@@ -25,7 +28,8 @@ import { useNavigation } from '@react-navigation/native';
 import { BrandCard, ProductCard } from '../components';
 import { Brand } from '@/src/mock/catalog/brandCatalog/types';
 import type { ProductCardData } from '../components/ProductCard';
-import { useHottest } from '../api/hooks';
+import { useHottest, useMarketplaceBanners } from '../api/hooks';
+import type { MarketplaceBanner } from '../types';
 import { CardType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
@@ -36,7 +40,220 @@ import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 
+// Banner Carousel Component (CardImageCarousel style)
+interface BannerCarouselProps {
+  banners: MarketplaceBanner[];
+  isDark: boolean;
+}
 
+const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners, isDark }) => {
+  const carouselRef = useRef<ICarouselInstance>(null);
+  const progress = useSharedValue<number>(0);
+  const carouselPadding = 16; // Sağdan soldan padding
+  const itemSpacing = 12; // Görseller arası boşluk
+  const carouselWidth = Dimensions.get('window').width;
+  const carouselHeight = 200; // Banner için sabit yükseklik
+  const itemWidth = carouselWidth - (carouselPadding * 2); // Her item'ın genişliği
+  const autoPlayInterval = 5000; // 5 saniye
+
+  if (!banners?.length) return null;
+
+  // Tek banner varsa sadece göster, carousel kullanma
+  if (banners.length === 1) {
+    const imageSource = toImageSource(banners[0].imageUrl);
+    return (
+      <Box
+        w={carouselWidth}
+        h={carouselHeight}
+        px={carouselPadding}
+        overflow="hidden"
+        position="relative"
+        alignSelf="center"
+      >
+        {imageSource && (
+          <Pressable
+            onPress={() => {
+              console.log('Banner pressed:', banners[0].linkUrl);
+            }}
+            style={{
+              position: 'relative',
+            }}
+          >
+            <Image
+              source={imageSource}
+              alt={banners[0].title}
+              resizeMode="cover"
+              style={{
+                width: itemWidth,
+                height: carouselHeight,
+                borderRadius: 12,
+              }}
+            />
+            {/* Gradient Overlay */}
+            <Box
+              position="absolute"
+              bottom={0}
+              left={0}
+              right={0}
+              height={80}
+              overflow="hidden"
+              style={{
+                width: itemWidth,
+                borderBottomLeftRadius: 12,
+                borderBottomRightRadius: 12,
+              }}
+            >
+              <LinearGradient
+                colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
+                start={{ x: 0, y: 1 }}
+                end={{ x: 0, y: 0 }}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 80,
+                  justifyContent: 'flex-end',
+                  paddingBottom: 12,
+                  paddingHorizontal: 16,
+                  borderBottomLeftRadius: 12,
+                  borderBottomRightRadius: 12,
+                }}
+              >
+                <VStack space="xs">
+                  <Text
+                    color="#FFFFFF"
+                    fontSize={14}
+                    fontWeight="$bold"
+                    numberOfLines={1}
+                  >
+                    {banners[0].title}
+                  </Text>
+                  <Text
+                    color="#FFFFFF"
+                    fontSize={12}
+                    numberOfLines={2}
+                    opacity={0.9}
+                  >
+                    {banners[0].description}
+                  </Text>
+                </VStack>
+              </LinearGradient>
+            </Box>
+          </Pressable>
+        )}
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      w={carouselWidth}
+      h={carouselHeight}
+      overflow="hidden"
+      position="relative"
+      alignSelf="center"
+    >
+      <Carousel
+        ref={carouselRef}
+        width={carouselWidth}
+        height={carouselHeight}
+        data={banners}
+        onProgressChange={progress}
+        autoPlay={banners.length > 1}
+        autoPlayInterval={autoPlayInterval}
+        loop={true}
+        renderItem={({ index }) => {
+          const item = banners[index];
+          const imageSource = toImageSource(item.imageUrl);
+          return (
+            <Box
+              width={carouselWidth}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Pressable
+                onPress={() => {
+                  console.log('Banner pressed:', item.linkUrl);
+                }}
+                style={{
+                  width: itemWidth - itemSpacing,
+                  marginHorizontal: itemSpacing / 2,
+                  position: 'relative',
+                }}
+              >
+                {imageSource && (
+                  <Image
+                    source={imageSource}
+                    alt={item.title}
+                    resizeMode="cover"
+                    style={{
+                      width: itemWidth - itemSpacing,
+                      height: carouselHeight,
+                      borderRadius: 12,
+                    }}
+                  />
+                )}
+                {/* Gradient Overlay */}
+                <Box
+                  position="absolute"
+                  bottom={0}
+                  left={0}
+                  right={0}
+                  height={80}
+                  overflow="hidden"
+                  style={{
+                    width: itemWidth - itemSpacing,
+                    borderBottomLeftRadius: 12,
+                    borderBottomRightRadius: 12,
+                  }}
+                >
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 0, y: 0 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 80,
+                    justifyContent: 'flex-end',
+                    paddingBottom: 12,
+                    paddingHorizontal: 16,
+                    borderBottomLeftRadius: 12,
+                    borderBottomRightRadius: 12,
+                  }}
+                >
+                  <VStack space="xs">
+                    <Text
+                      color="#FFFFFF"
+                      fontSize={14}
+                      fontWeight="$bold"
+                      numberOfLines={1}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text
+                      color="#FFFFFF"
+                      fontSize={12}
+                      numberOfLines={2}
+                      opacity={0.9}
+                    >
+                      {item.description}
+                    </Text>
+                  </VStack>
+                </LinearGradient>
+              </Box>
+              </Pressable>
+            </Box>
+          );
+        }}
+      />
+
+    </Box>
+  );
+};
 
 const ExploreScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -55,6 +272,12 @@ const ExploreScreen: React.FC = () => {
     isLoading,
     error,
   } = useHottest(3); // Test için limit 3 olarak ayarlandı
+
+  // Marketplace Banners API hook
+  const {
+    data: banners,
+    isLoading: isLoadingBanners,
+  } = useMarketplaceBanners();
 
   // Flatten all pages into a single array
   const hottestItems = data?.pages.flatMap((page) => page.items) ?? [];
@@ -336,72 +559,18 @@ const ExploreScreen: React.FC = () => {
           </HStack>
         </VStack>
 
+        {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
+        {!isLoadingBanners && banners && banners.length > 0 && (
+          <Box mb="$4">
+            <BannerCarousel banners={banners} isDark={isDark} />
+          </Box>
+        )}
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomInset }}
         >
           <VStack py={'$2'} space="md">
-            <VStack px='$4'>
-              {/* Marketplace Card */}
-              <Box
-                bg="#CCCCCC"
-                borderRadius={10}
-                height={186}
-                mb="$4"
-                overflow="hidden"
-              >
-                {/* Top Section - Image Area */}
-                <Box
-                  flex={1}
-                  bg="#CCCCCC"
-                  alignItems="center"
-                  justifyContent="center"
-                  minHeight={124}
-                >
-                  {/* Placeholder for image - dashed border style */}
-                  <Box
-                    width={60}
-                    height={60}
-                    borderWidth={2}
-                    borderColor="#FFFFFF"
-                    borderStyle="dashed"
-                    borderRadius={8}
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Feather name="image" size={24} color="#FFFFFF" />
-                  </Box>
-                </Box>
-
-                {/* Bottom Section - Text Area */}
-                <Box
-                  bg="#727272"
-                  height={62}
-                  px="$6"
-                  py="$4"
-                  justifyContent="center"
-                >
-                  <VStack space="xs">
-                    <Text
-                      color="#FFFFFF"
-                      fontSize={12}
-                      fontWeight="$bold"
-                    >
-                      Marketplace
-                    </Text>
-                    <Text
-                      color="#FFFFFF"
-                      fontSize={10}
-                      fontWeight="$normal"
-                      lineHeight={14}
-                    >
-                      Lorem ipsum dolor sit amet, consectetur adipiscin
-                    </Text>
-                  </VStack>
-                </Box>
-              </Box>
-
-            </VStack>
             {/* Category Tabs */}
             <VStack bg={isDark ? '#000' : '#FFF'}>
               <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>

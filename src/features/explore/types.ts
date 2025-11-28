@@ -81,3 +81,12 @@ export interface Comment extends BaseEntity {
   isLiked: boolean;
   replies?: Comment[];
 }
+
+// Marketplace Banner Types
+export interface MarketplaceBanner {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkUrl: string;
+}

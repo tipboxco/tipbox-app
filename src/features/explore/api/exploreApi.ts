@@ -1,5 +1,6 @@
 import { apiService } from '../../../services/ApiService';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
+import type { MarketplaceBanner } from '../types';
 
 /**
  * Get Hottest endpoint function
@@ -21,6 +22,19 @@ export const getHottest = async (
 
   const response = await apiService.getClient().get<FeedApiResponse>(
     `/explore/hottest?${params.toString()}`
+  );
+  return response.data;
+};
+
+/**
+ * Get Marketplace Banners endpoint function
+ * Explore sayfasındaki marketplace banner'larını getirir
+ *
+ * @returns MarketplaceBanner[] - Banner listesi
+ */
+export const getMarketplaceBanners = async (): Promise<MarketplaceBanner[]> => {
+  const response = await apiService.getClient().get<MarketplaceBanner[]>(
+    '/explore/marketplace-banners'
   );
   return response.data;
 };
