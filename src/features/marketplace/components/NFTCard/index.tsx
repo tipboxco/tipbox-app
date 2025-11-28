@@ -1,10 +1,10 @@
 import React from 'react';
 import { VStack, HStack, Text, Pressable, Box, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { SellNFT } from '@/src/mock/marketplace/SellList/types';
+import type { NFTCardData } from '../../types';
 
 interface NFTCardProps {
-    data: SellNFT;
+    data: NFTCardData;
 }
 
 export const NFTCard = ({ data }: NFTCardProps) => {
@@ -45,25 +45,20 @@ export const NFTCard = ({ data }: NFTCardProps) => {
                     left={15}
                     bg="rgba(0, 0, 0, 0.7)"
                     borderRadius={10}
-                    px={5}
-                    py={2}
+                    px={'$2'}
+                    py={'$1'}
                 >
                     <Text
                         color="#FFFFFF"
                         fontSize={10}
                         fontWeight="$bold"
                     >
-                        {data.price}
+                        {Math.floor(parseFloat(data.price) || 0)} TIPS
                     </Text>
                 </Box>
             </Box>
 
             {/* Divider */}
-            <Box
-                height={1}
-                bg={isDark ? '$backgroundDark200' : '#D9D9D9'}
-                mb={8}
-            />
 
             {/* Content Section */}
             <VStack space="xs" px='$2' mb={8}>
@@ -81,19 +76,25 @@ export const NFTCard = ({ data }: NFTCardProps) => {
                     fontWeight="$semibold"
                     numberOfLines={1}
                 >
-                    {data.username}
+                    @{data.username}
                 </Text>
             </VStack>
+
+            <Box
+                height={1}
+                bg={isDark ? '$backgroundDark200' : '#D9D9D9'}
+                mb={8}
+            />
 
             {/* Action Buttons */}
             <HStack space="sm" justifyContent="space-between" px='$2' pb={'$2'}>
                 <Pressable
                     bg={isDark ? '$backgroundDark700' : '#F7F7F7'}
                     borderRadius={10}
-                    px={'$5'}
-                    py={'$2'}
                     flex={1}
-                    mr={2}
+                    justifyContent="center"
+                    alignItems="center"
+                    py={'$2'}
                 >
                     <Text
                         color={isDark ? '$textDark400' : '#B9B9B9'}
@@ -107,10 +108,11 @@ export const NFTCard = ({ data }: NFTCardProps) => {
 
                 <Pressable
                     bg={isDark ? '$backgroundDark600' : '#E8FF6B'}
+                    justifyContent="center"
+                    alignItems="center"
                     borderRadius={10}
                     borderWidth={1}
                     borderColor={isDark ? '$backgroundDark500' : '#D8FF08'}
-                    px={'$5'}
                     py={'$2'}
                     flex={1}
                 >
