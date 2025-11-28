@@ -1,5 +1,5 @@
 import { apiService } from '../../../services/ApiService';
-import type { MarketplaceListingsApiResponse, MarketplaceListingsParams } from '../types';
+import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTsApiResponse } from '../types';
 
 /**
  * Get Marketplace Listings endpoint function
@@ -40,6 +40,19 @@ export const getMarketplaceListings = async (
 
   const response = await apiService.getClient().get<MarketplaceListingsApiResponse>(
     `/marketplace/listings?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
+/**
+ * Get My NFTs endpoint function
+ * Kullanıcıya ait NFT'leri getirir
+ *
+ * @returns UserNFTsApiResponse - Kullanıcıya ait NFT listesi (array)
+ */
+export const getMyNFTs = async (): Promise<UserNFTsApiResponse> => {
+  const response = await apiService.getClient().get<UserNFTsApiResponse>(
+    '/marketplace/my-nfts'
   );
   return response.data;
 };

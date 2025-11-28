@@ -47,3 +47,31 @@ export interface NFTCardData {
   userAvatar?: string; // Şu an kullanılmıyor ama ileride kullanılabilir
 }
 
+/**
+ * User NFT API Item
+ * /marketplace/my-nfts endpoint'inden gelen kullanıcıya ait NFT verisi
+ */
+export interface UserNFTApiItem {
+  id: string;
+  title: string;
+  username: string;
+  image: string;
+}
+
+/**
+ * User NFTs API Response
+ * Endpoint direkt array döndürüyor
+ */
+export type UserNFTsApiResponse = UserNFTApiItem[];
+
+/**
+ * UserNFTCard Component Data
+ * UserNFTCard component'inin beklediği veri formatı
+ */
+export interface UserNFTCardData {
+  id: string;
+  title: string;
+  username: string;
+  image: ImageSourcePropType;
+}
+

@@ -1,10 +1,10 @@
 import React from 'react';
 import { VStack, Text, Pressable, Box, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { UserNFT } from '@/src/mock/marketplace/NFTList/types';
+import type { UserNFTCardData } from '../../types';
 
 interface UserNFTCardProps {
-  data: UserNFT;
+  data: UserNFTCardData;
   isSelected: boolean;
   onPress: () => void;
 }
@@ -24,9 +24,8 @@ export const UserNFTCard = ({ data, isSelected, onPress }: UserNFTCardProps) => 
     >
       {/* Image Section */}
       <Box
-        bg={isDark ? '$backgroundDark700' : 'rgba(0, 0, 0, 0.2)'}
         borderRadius={5}
-        height={94}
+        height={100}
         width="100%"
         position="relative"
         overflow="hidden"
@@ -60,7 +59,7 @@ export const UserNFTCard = ({ data, isSelected, onPress }: UserNFTCardProps) => 
           fontWeight="$semibold"
           numberOfLines={1}
         >
-          {data.username}
+          @{data.username}
         </Text>
       </VStack>
     </Pressable>

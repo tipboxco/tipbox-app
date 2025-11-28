@@ -1,6 +1,6 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { getMarketplaceListings } from './marketplaceApi';
-import type { MarketplaceListingsApiResponse, MarketplaceListingsParams } from '../types';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { getMarketplaceListings, getMyNFTs } from './marketplaceApi';
+import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTsApiResponse } from '../types';
 
 /**
  * Query Keys - Marketplace feature için cache key pattern'leri
@@ -9,6 +9,7 @@ export const marketplaceKeys = {
   all: ['marketplace'] as const,
   listings: (params?: MarketplaceListingsParams) =>
     [...marketplaceKeys.all, 'listings', params] as const,
+  myNFTs: () => [...marketplaceKeys.all, 'my-nfts'] as const,
 };
 
 /**
@@ -47,6 +48,27 @@ export const useMarketplaceListings = (params: MarketplaceListingsParams = {}) =
       const currentOffset = allPages.reduce((sum, page) => sum + page.length, 0);
       return currentOffset;
     },
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+};
+
+/**
+ * Get My NFTs query hook
+ * Kullanıcıya ait NFT'leri getirir
+ *
+ * @returns React Query query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useMyNFTs();
+ */
+export const useMyNFTs = () => {
+  return useQuery<UserNFTsApiResponse, Error>({
+    queryKey: marketplaceKeys.myNFTs(),
+    queryFn: () => getMyNFTs(),
     staleTime: 0, // Cache yok
     gcTime: 0, // Cache yok
     refetchOnMount: true,
