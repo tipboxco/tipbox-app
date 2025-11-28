@@ -1,7 +1,8 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getHottest, getMarketplaceBanners } from './exploreApi';
+import { getHottest, getMarketplaceBanners, getExploreEvents } from './exploreApi';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import type { MarketplaceBanner } from '../types';
+import type { EventsApiResponse } from '@/src/types/EventCard';
 
 /**
  * Query Keys - Explore feature için cache key pattern'leri
@@ -11,6 +12,7 @@ export const exploreKeys = {
   hottest: (cursor?: string, limit?: number) =>
     [...exploreKeys.all, 'hottest', cursor, limit] as const,
   marketplaceBanners: () => [...exploreKeys.all, 'marketplace-banners'] as const,
+  events: (limit?: number) => [...exploreKeys.all, 'events', limit] as const,
 };
 
 /**
@@ -60,6 +62,29 @@ export const useMarketplaceBanners = () => {
   return useQuery<MarketplaceBanner[], Error>({
     queryKey: exploreKeys.marketplaceBanners(),
     queryFn: getMarketplaceBanners,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Explore Events query hook
+ * Explore sayfasındaki "What's New" sekmesindeki yeni event'leri getirir
+ * Scroll ile daha fazla veri getirilmez, sadece 10 tane gösterilir
+ *
+ * @param limit - Gösterilecek event sayısı (default: 10, max: 10)
+ * @returns React Query query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useExploreEvents();
+ */
+export const useExploreEvents = (limit: number = 10) => {
+  return useQuery<EventsApiResponse, Error>({
+    queryKey: exploreKeys.events(limit),
+    queryFn: () => getExploreEvents(limit),
     staleTime: 5 * 60 * 1000, // 5 dakika
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,

@@ -1,6 +1,7 @@
 import { apiService } from '../../../services/ApiService';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import type { MarketplaceBanner } from '../types';
+import type { EventsApiResponse } from '@/src/types/EventCard';
 
 /**
  * Get Hottest endpoint function
@@ -35,6 +36,23 @@ export const getHottest = async (
 export const getMarketplaceBanners = async (): Promise<MarketplaceBanner[]> => {
   const response = await apiService.getClient().get<MarketplaceBanner[]>(
     '/explore/marketplace-banners'
+  );
+  return response.data;
+};
+
+/**
+ * Get Explore Events endpoint function
+ * Explore sayfasındaki "What's New" sekmesindeki yeni event'leri getirir
+ *
+ * @param limit - Gösterilecek event sayısı (default: 10, max: 10)
+ * @returns EventsApiResponse - Event listesi ve pagination bilgisi
+ */
+export const getExploreEvents = async (limit: number = 10): Promise<EventsApiResponse> => {
+  const params = new URLSearchParams();
+  params.append('limit', Math.min(limit, 10).toString()); // Max 10
+
+  const response = await apiService.getClient().get<EventsApiResponse>(
+    `/explore/events?${params.toString()}`
   );
   return response.data;
 };

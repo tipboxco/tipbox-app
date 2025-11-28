@@ -25,3 +25,9 @@ export interface BaseEntity {
   createdAt: string;
   updatedAt: string;
 }
+
+// Event Type Enum - Component gösterimi için
+export enum EventDisplayType {
+  DEFAULT = 'default',
+  PRODUCT = 'product',
+}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { ScrollView, FlatList, ActivityIndicator, Dimensions } from 'react-native';
+import { ScrollView, FlatList, ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -23,13 +23,14 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useSafeAreaValues } from '@/src/utils';
 import EventCard from '@/src/components/EventCard';
-import { mock_community_events } from '@/src/mock/events/communityEvents';
 import { useNavigation } from '@react-navigation/native';
 import { BrandCard, ProductCard } from '../components';
 import { Brand } from '@/src/mock/catalog/brandCatalog/types';
 import type { ProductCardData } from '../components/ProductCard';
-import { useHottest, useMarketplaceBanners } from '../api/hooks';
+import { useHottest, useMarketplaceBanners, useExploreEvents } from '../api/hooks';
 import type { MarketplaceBanner } from '../types';
+import type { EventApiItem, EventCardData } from '@/src/types/EventCard';
+import { EventType } from '@/src/types/EventCard';
 import { CardType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
@@ -262,6 +263,9 @@ const ExploreScreen: React.FC = () => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'hottest' | 'news'>('hottest');
   const bottomInset = useSafeAreaValues('bottom');
+  const [searchBarHeight, setSearchBarHeight] = useState(0);
+  const [bannerHeight, setBannerHeight] = useState(0);
+  const [tabsHeight, setTabsHeight] = useState(0);
 
   // Hottest API hook with infinite scroll
   const {
@@ -279,6 +283,12 @@ const ExploreScreen: React.FC = () => {
     isLoading: isLoadingBanners,
   } = useMarketplaceBanners();
 
+  // Explore Events API hook
+  const {
+    data: eventsData,
+    isLoading: isLoadingEvents,
+  } = useExploreEvents(10);
+
   // Flatten all pages into a single array
   const hottestItems = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -294,6 +304,46 @@ const ExploreScreen: React.FC = () => {
     // Navigate to event detail if needed
     console.log('Event pressed:', eventId);
   };
+
+  // Format date range from startDate and endDate
+  const formatDateRange = (startDate: string, endDate: string): string => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+      
+      const formatDate = (date: Date): string => {
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+      };
+
+      return `${formatDate(start)} - ${formatDate(end)}`;
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return '';
+    }
+  };
+
+  // Map API event data to EventCardData format
+  const mapEventToCardData = (event: EventApiItem): EventCardData => {
+    return {
+      id: event.eventId,
+      title: event.title,
+      description: event.description,
+      image: event.image,
+      dateRange: formatDateRange(event.startDate, event.endDate),
+      participants: event.interaction,
+      avatars: event.participants.map(p => p.avatar),
+      eventType: event.type || EventType.DEFAULT,
+    };
+  };
+
+  // Transform events data for display
+  const events = eventsData?.items.map(mapEventToCardData) ?? [];
+
 
   const handleSeeAllEvents = () => {
     // Navigate to events screen or event catalog
@@ -532,47 +582,73 @@ const ExploreScreen: React.FC = () => {
           onSearchPress={handleSearchPress}
         />
 
-        {/* Search Bar - Trust_TrusterListScreen style */}
-        <VStack px="$4" py="$2">
-          <HStack
-            alignItems="center"
-            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-            borderWidth={1}
-            borderColor="#E9E9E9"
-            borderRadius={23}
-            px={12}
-            space="sm"
-          >
-            <Feather
-              name="search"
-              size={24}
-              color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-            />
-            <Input flex={1} borderWidth={0} bg="transparent">
-              <InputField
-                placeholder="Ürün Grubu seçin veya ürün adı arayın"
-                placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                color={isDark ? '#fff' : '#000'}
-                fontSize={11}
-              />
-            </Input>
-          </HStack>
-        </VStack>
-
-        {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
-        {!isLoadingBanners && banners && banners.length > 0 && (
-          <Box mb="$4">
-            <BannerCarousel banners={banners} isDark={isDark} />
-          </Box>
-        )}
-
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomInset }}
+          nestedScrollEnabled={true}
         >
-          <VStack py={'$2'} space="md">
+          <VStack space="md">
+            {/* Search Bar - Trust_TrusterListScreen style */}
+            <VStack 
+              px="$4" 
+              py="$2"
+              onLayout={(event) => {
+                const { height } = event.nativeEvent.layout;
+                if (searchBarHeight === 0) {
+                  setSearchBarHeight(height);
+                }
+              }}
+            >
+              <HStack
+                alignItems="center"
+                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                borderWidth={1}
+                borderColor="#E9E9E9"
+                borderRadius={23}
+                px={12}
+                space="sm"
+              >
+                <Feather
+                  name="search"
+                  size={24}
+                  color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+                />
+                <Input flex={1} borderWidth={0} bg="transparent">
+                  <InputField
+                    placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                    placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                    color={isDark ? '#fff' : '#000'}
+                    fontSize={11}
+                  />
+                </Input>
+              </HStack>
+            </VStack>
+
+            {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
+            {!isLoadingBanners && banners && banners.length > 0 && (
+              <Box 
+                mb="$4"
+                onLayout={(event) => {
+                  const { height } = event.nativeEvent.layout;
+                  if (bannerHeight === 0) {
+                    setBannerHeight(height);
+                  }
+                }}
+              >
+                <BannerCarousel banners={banners} isDark={isDark} />
+              </Box>
+            )}
+
             {/* Category Tabs */}
-            <VStack bg={isDark ? '#000' : '#FFF'}>
+            <VStack 
+              bg={isDark ? '#000' : '#FFF'}
+              onLayout={(event) => {
+                const { height } = event.nativeEvent.layout;
+                if (tabsHeight === 0) {
+                  setTabsHeight(height);
+                }
+              }}
+            >
               <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
                 <Pressable
                   onPress={() => setActiveCategory('hottest')}
@@ -664,6 +740,7 @@ const ExploreScreen: React.FC = () => {
                         ) : null
                       }
                       scrollEnabled={false}
+                      nestedScrollEnabled={true}
                       ItemSeparatorComponent={() => <Box height={16} />}
                     />
                   )}
@@ -694,20 +771,34 @@ const ExploreScreen: React.FC = () => {
                           </Text>
                         </Pressable>
                       </HStack>
-                      <FlatList
-                        data={mock_community_events.activeEvents}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        ItemSeparatorComponent={() => <Box width={12} />}
-                        renderItem={({ item }) => (
-                          <EventCard
-                            data={item}
-                            isGrid={false}
-                            onPress={() => handleEventPress(item.id)}
-                          />
-                        )}
-                        keyExtractor={(item) => item.id}
-                      />
+                      {isLoadingEvents ? (
+                        <Box py="$4" alignItems="center">
+                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                        </Box>
+                      ) : events.length === 0 ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
+                            Henüz etkinlik bulunmuyor.
+                          </Text>
+                        </Box>
+                      ) : (
+                        <FlatList
+                          data={events}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{ paddingRight: 16 }}
+                          ItemSeparatorComponent={() => <Box width={12} />}
+                          renderItem={({ item }) => (
+                            <EventCard
+                              data={item}
+                              isGrid={false}
+                              onPress={() => handleEventPress(item.id)}
+                            />
+                          )}
+                          keyExtractor={(item) => item.id}
+                          nestedScrollEnabled={true}
+                        />
+                      )}
                     </VStack>
                   </Box>
 
@@ -737,6 +828,7 @@ const ExploreScreen: React.FC = () => {
                         data={mockBrands}
                         horizontal
                         showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
                         ItemSeparatorComponent={() => <Box width={12} />}
                         renderItem={({ item }) => (
                           <BrandCard
@@ -745,6 +837,7 @@ const ExploreScreen: React.FC = () => {
                           />
                         )}
                         keyExtractor={(item) => item.id}
+                        nestedScrollEnabled={true}
                       />
                     </VStack>
                   </Box>
@@ -775,6 +868,7 @@ const ExploreScreen: React.FC = () => {
                         data={mockProducts}
                         horizontal
                         showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
                         ItemSeparatorComponent={() => <Box width={12} />}
                         renderItem={({ item }) => (
                           <ProductCard
@@ -783,6 +877,7 @@ const ExploreScreen: React.FC = () => {
                           />
                         )}
                         keyExtractor={(item) => item.id}
+                        nestedScrollEnabled={true}
                       />
                     </VStack>
                   </Box>

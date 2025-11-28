@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
@@ -30,8 +30,6 @@ const ProfileScreen = () => {
   const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(userId);
   
   const [activeTab, setActiveTab] = useState('feed');
-  const [showScrollToTop, setShowScrollToTop] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -54,30 +52,11 @@ const ProfileScreen = () => {
 
 
 
-  const handleScroll = useCallback((event: any) => {
-    const currentOffsetY = event.nativeEvent.contentOffset.y;
-    setShowScrollToTop((prev) => {
-      if (currentOffsetY > 250 && !prev) {
-        return true;
-      }
-      if (currentOffsetY <= 250 && prev) {
-        return false;
-      }
-      return prev;
-    });
-  }, []);
-
-  const handleScrollToTop = () => {
-    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-  };
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <ScrollView
-        ref={scrollViewRef}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
@@ -147,32 +126,6 @@ const ProfileScreen = () => {
           {renderTabContent()}
         </Box>
       </ScrollView>
-
-      {showScrollToTop && (
-        <Pressable
-          onPress={handleScrollToTop}
-          style={{
-            position: 'absolute',
-            right: 20,
-            bottom: safeAreaBottom + 8,
-            zIndex: 1000,
-            elevation: 5,
-          }}  
-        >
-          <Box
-            bg="#E8FF6B"
-            borderRadius={30}
-            w={56}
-            h={56}
-            justifyContent="center"
-            alignItems="center"
-            borderWidth={1}
-            borderColor="#B2C742"
-          >
-            <Feather name="arrow-up" size={22} color="#000" />
-          </Box>
-        </Pressable>
-      )}
       </Box>
     </SafeAreaView>
   );

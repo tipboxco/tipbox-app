@@ -10,7 +10,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { EventCard as EventCardType } from '@/src/mock/events/communityEvents/types';
+import { EventCardData } from '@/src/types/EventCard';
 import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
@@ -18,7 +18,7 @@ const CARD_WIDTH = (width - 48) / 2;
 const GRID_CARD_WIDTH = (width - 48) / 2; // 16px padding on each side + 16px gap between cards
 
 interface EventCardProps {
-  data: EventCardType;
+  data: EventCardData;
   onPress?: () => void;
   isGrid?: boolean;
 }
@@ -48,12 +48,47 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           overflow="hidden"
           padding='$2'
         >
-          <Image
-            source={toImageSource(data.image)!}
-            alt={data.title}
-            style={{ width: '100%', height: '100%' }}
-            borderRadius={5}
-          />
+          {data.image ? (
+            (() => {
+              const imageSource = toImageSource(data.image);
+              return imageSource ? (
+                <Image
+                  source={imageSource}
+                  alt={data.title}
+                  style={{ width: '100%', height: '100%' }}
+                  borderRadius={5}
+                />
+              ) : (
+                <Box
+                  width="100%"
+                  height="100%"
+                  bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Feather
+                    name="image"
+                    size={32}
+                    color={isDark ? '#666' : '#999'}
+                  />
+                </Box>
+              );
+            })()
+          ) : (
+            <Box
+              width="100%"
+              height="100%"
+              bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Feather
+                name="image"
+                size={32}
+                color={isDark ? '#666' : '#999'}
+              />
+            </Box>
+          )}
           {/* Event Type Badge */}
           <Box
             position="absolute"
@@ -138,22 +173,38 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         {/* Participants Section - Type1 and Type2 */}
         <HStack px="$2" alignItems="center" justifyContent="space-between" mt="$2">
           <HStack alignItems="center" space="xs">
-            {data.avatars && data.avatars.length > 0 ? (
-              data.avatars.slice(0, 4).map((avatar, index) => (
-                <Image
-                  key={index}
-                  source={toImageSource(avatar)!}
-                  alt={`Participant ${index + 1}`}
-                  width={18}
-                  height={18}
-                  borderRadius={9}
-                  style={{
-                    marginLeft: index > 0 ? -12 : 0,
-                    zIndex: 4 - index,
-                  }}
-                />
-              ))
-            ) : null}
+            {data.avatars && data.avatars.length > 0
+              ? (() => {
+                  const validAvatarSources: Array<NonNullable<ReturnType<typeof toImageSource>>> = [];
+                  
+                  for (const avatar of data.avatars) {
+                    if (avatar) {
+                      const avatarSource = toImageSource(avatar);
+                      if (avatarSource) {
+                        validAvatarSources.push(avatarSource);
+                        if (validAvatarSources.length >= 4) break;
+                      }
+                    }
+                  }
+
+                  return validAvatarSources.length > 0
+                    ? validAvatarSources.map((avatarSource, index) => (
+                        <Image
+                          key={index}
+                          source={avatarSource}
+                          alt={`Participant ${index + 1}`}
+                          width={18}
+                          height={18}
+                          borderRadius={9}
+                          style={{
+                            marginLeft: index > 0 ? -12 : 0,
+                            zIndex: 4 - index,
+                          }}
+                        />
+                      ))
+                    : null;
+                })()
+              : null}
           </HStack>
           <Text
             color={isDark ? '#FFFFFF' : '#B9B9B9'}

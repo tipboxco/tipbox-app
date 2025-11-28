@@ -72,7 +72,6 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   
   // Store'daki user değişikliğini dinle ve profile query'sini yeniden fetch et
   useEffect(() => {
-    console.log('userChanged Değişti');
     if (user?.id) {
       const currentUser = {
         id: user.id,
