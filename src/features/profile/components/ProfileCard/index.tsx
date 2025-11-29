@@ -398,7 +398,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             h={130}
           >
             <HStack space="md" justifyContent="space-between">
-              {userData.badges.map((badge) => (
+              {userData.badges.slice(0, 4).map((badge) => (
                 <VStack key={badge.id} space="xs" alignItems="center">
                   <Box
                     w={70}
@@ -411,7 +411,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   >
                     <Image
                       source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
-                      alt={badge.name}
+                      alt={badge.title}
                       w={60}
                       h={60}
                       resizeMode="contain"
@@ -423,7 +423,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     fontWeight="$bold"
                     textAlign="center"
                   >
-                    {badge.name}
+                    {badge.title}
                   </Text>
                 </VStack>
               ))}

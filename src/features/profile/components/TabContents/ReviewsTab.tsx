@@ -9,12 +9,15 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 import type { ProfileReview } from '../../types';
 
 const mapReviewToCardData = (review: ProfileReview): ReviewCardData => {
-  const avatarSource = toImageSource(review.user.avatarUrl)!;
-  const productImage = review.product.image
-    ? toImageSource(review.product.image)
+  const avatarSource = review.user?.avatarUrl
+    ? toImageSource(review.user.avatarUrl)!
+    : require('@/assets/avatar/ozan.png');
+  
+  const productImage = review.contextData?.image
+    ? toImageSource(review.contextData.image)
     : undefined;
 
-  const content: ReviewCardContentItem[] = review.content.map((item) => ({
+  const content: ReviewCardContentItem[] = review.content?.map((item) => ({
     tag: {
       icon: 'tag',
       title: item.title,
@@ -23,26 +26,27 @@ const mapReviewToCardData = (review: ProfileReview): ReviewCardData => {
     rating: Array(5)
       .fill(false)
       .map((_, index) => index < (item.rating || 0)),
-  }));
+  })) ?? [];
 
   return {
     id: review.id,
     user: {
-      id: review.user.id,
-      name: review.user.name,
-      title: review.user.title,
+      id: review.user?.id || '',
+      name: review.user?.name || 'Unknown',
+      title: review.user?.title || '',
       avatar: avatarSource,
       action: 'wrote a review',
     },
-    product: {
-      id: review.product.id,
-      name: review.product.name,
-      subName: review.product.subName,
+    contextData: {
+      id: review.contextData?.id || '',
+      name: review.contextData?.name || '',
+      subName: review.contextData?.subName || '',
       image: productImage,
+      isOwned: review.contextData?.isOwned,
     },
     content,
     // En fazla 3 tag göster
-    tags: review.tags.slice(0, 3),
+    tags: review.tags?.slice(0, 3) ?? [],
     images:
       review.images
         ?.map((img) => toImageSource(img))

@@ -8,6 +8,7 @@ import type {
   ProfileTipsAndTricks,
   ProfileReplies,
   ProfileLadderBadge,
+  ProfileFeedItem,
 } from '../types';
 
 /**
@@ -45,12 +46,12 @@ export const getInventory = async (): Promise<InventoryItem[]> => {
  * Kullanıcının profil feed postlarını getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns ProfilePost[] - Kullanıcının gönderi listesi
+ * @returns ProfileFeedItem[] - Kullanıcının gönderi listesi (tüm post tipleri)
  */
 export const getUserPosts = async (
   userId: string
-): Promise<ProfilePost[]> => {
-  const response = await apiService.getClient().get<ProfilePost[]>(
+): Promise<ProfileFeedItem[]> => {
+  const response = await apiService.getClient().get<ProfileFeedItem[]>(
     `/users/${userId}/feed`
   );
   return response.data;

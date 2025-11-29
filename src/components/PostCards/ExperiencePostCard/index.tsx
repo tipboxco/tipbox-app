@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { ImageSourcePropType } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -76,14 +77,14 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
 
       {/* Product */}
       {
-        !hideProduct && (
+        !hideProduct && data.contextData && (
           <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
             <ProductInfoCard
               size="small"
               type={ProductInfoType.PRODUCT}
-              image={data.product.image}
-              title={data.product.name}
-              subName={data.product.subName}
+              image={data.contextData.image as ImageSourcePropType | undefined}
+              title={data.contextData.name}
+              subName={data.contextData.subName}
               onPress={() => {
                 navigation.navigate('Post', {
                   screen: 'PostDetailScreen',

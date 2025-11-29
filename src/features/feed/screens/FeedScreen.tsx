@@ -123,6 +123,11 @@ export const FeedScreen = () => {
 
   // Map Feed to PostCardData
   const mapFeedToCardData = (item: ProfilePost): PostCardData => {
+    // content array ise string'e çevir, değilse direkt kullan
+    const contentString = Array.isArray(item.content)
+      ? item.content.map((contentItem) => contentItem.content || '').join(' ')
+      : (item.content || '');
+
     return {
       id: item.id,
       user: {
@@ -131,7 +136,7 @@ export const FeedScreen = () => {
         title: item.user.title,
         avatarUrl: item.user.avatarUrl,
       },
-      content: item.content,
+      content: contentString,
       images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
       stats: item.stats,
       createdAt: item.createdAt,
@@ -143,8 +148,8 @@ export const FeedScreen = () => {
   // Map Experience (ReviewApiItem) to ReviewCardData
   const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
     const avatarSource = toImageSource(item.user.avatarUrl)!;
-    const productImage = item.product.image
-      ? toImageSource(item.product.image)
+    const productImage = item.contextData?.image
+      ? toImageSource(item.contextData.image)
       : undefined;
 
     const content: ReviewCardContentItem[] = item.content.map((contentItem) => ({
@@ -167,11 +172,12 @@ export const FeedScreen = () => {
         avatar: avatarSource,
         action: 'wrote a review',
       },
-      product: {
-        id: item.product.id,
-        name: item.product.name,
-        subName: item.product.subName,
+      contextData: {
+        id: item.contextData?.id || '',
+        name: item.contextData?.name || '',
+        subName: item.contextData?.subName || '',
         image: productImage,
+        isOwned: item.contextData?.isOwned,
       },
       content,
       tags: item.tags,
@@ -291,7 +297,7 @@ export const FeedScreen = () => {
     switch (item.type) {
       case CardType.EXPERIENCE:
         // Experience type için ReviewApiItem kullan ve ExperiencePostCard render et
-        if ('product' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
+        if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
             <ExperiencePostCard
               key={item.data.id}

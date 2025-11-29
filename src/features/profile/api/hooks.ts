@@ -22,6 +22,7 @@ import type {
   ProfileTipsAndTricks,
   ProfileReplies,
   ProfileLadderBadge,
+  ProfileFeedItem,
 } from '../types';
 
 /**
@@ -318,7 +319,7 @@ export const useInventory = () => {
  * const { data, isLoading, error } = useUserPosts('user-123');
  */
 export const useUserPosts = (userId: string | undefined) => {
-  return useQuery<ProfilePost[], Error>({
+  return useQuery<ProfileFeedItem[], Error>({
     queryKey: userId ? profileKeys.userPosts(userId) : ['profile', 'posts', 'disabled'],
     queryFn: () => {
       if (!userId) {

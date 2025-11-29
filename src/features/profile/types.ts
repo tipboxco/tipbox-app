@@ -68,14 +68,12 @@ export interface TrusterUser {
  * {
  *   id: string;
  *   name: string;
- *   value: string; // rarity gibi
  *   image?: string; // ileride eklenecek
  * }
  */
 export interface Badge {
   id: string;
-  name: string;
-  value: string;
+  title: string;
   image?: string;
 }
 
@@ -135,20 +133,33 @@ export interface ProfilePostContextData {
   isOwned: boolean;
 }
 
+export interface ProfilePostContentBlock {
+  type: string;
+  title: string;
+  content: string;
+  rating: number;
+}
+
 export interface ProfilePost {
   id: string;
-  type: 'post';
+  type: string;
   user: ProfilePostUser;
   stats: ProfilePostStats;
   createdAt: string;
   /**
    * Ürüne / ürün grubuna / alt kategoriye göre context bilgisi
    */
-  contextType: ProductInfoType;
-  contextData: ProfilePostContextData;
-  content: string;
-  images: string[];
+  contextType?: ProductInfoType;
+  contextData?: ProfilePostContextData;
+  content: string | ProfilePostContentBlock[];
+  images?: string[];
 }
+
+/**
+ * Profile Feed Item - Tüm post tiplerini içeren union type
+ * /users/{id}/feed endpoint'inden dönen tip
+ */
+export type ProfileFeedItem = ProfilePost | ProfileReview | ProfileBenchmark | ProfileTipsAndTricks | ProfileReplies;
 
 /**
  * Profile Reviews - Kullanıcının review postları

@@ -17,11 +17,12 @@ export interface ReviewApiStats {
   bookmarks: number;
 }
 
-export interface ReviewApiProduct {
+export interface ReviewApiContextData {
   id: string;
   name: string;
   subName: string;
   image: string | null;
+  isOwned?: boolean;
 }
 
 export interface ReviewApiContentBlock {
@@ -36,7 +37,8 @@ export interface ReviewApiItem {
   user: ReviewApiUser;
   stats: ReviewApiStats;
   createdAt: string;
-  product: ReviewApiProduct;
+  contextData: ReviewApiContextData;
+  contextType: string;
   content: ReviewApiContentBlock[];
   tags: string[];
   images: string[];
@@ -60,6 +62,7 @@ export interface ReviewCardProduct {
   name: string;
   subName: string;
   image: ImageSourcePropType | null | undefined;
+  isOwned?: boolean;
 }
 
 export interface ReviewCardTag {
@@ -87,7 +90,7 @@ export interface ReviewCardStats {
 export interface ReviewCardData {
   id: string;
   user: ReviewCardUser;
-  product: ReviewCardProduct;
+  contextData: ReviewCardProduct;
   content: ReviewCardContentItem[];
   tags: string[];
   images?: ImageSourcePropType[];
