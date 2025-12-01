@@ -37,10 +37,10 @@ export const useFeed = (limit: number = 20) => {
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
       return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].data.id : undefined);
     },
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: true, // Her mount'ta yeniden fetch
+    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
     retry: 1,
   });
 };

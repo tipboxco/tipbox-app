@@ -83,11 +83,9 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners, isDark }) => {
               source={imageSource}
               alt={banners[0].title}
               resizeMode="cover"
-              style={{
-                width: itemWidth,
-                height: carouselHeight,
-                borderRadius: 12,
-              }}
+              width={itemWidth}
+              height={carouselHeight}
+              borderRadius={12}
             />
             {/* Gradient Overlay */}
             <Box
@@ -187,11 +185,9 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners, isDark }) => {
                     source={imageSource}
                     alt={item.title}
                     resizeMode="cover"
-                    style={{
-                      width: itemWidth - itemSpacing,
-                      height: carouselHeight,
-                      borderRadius: 12,
-                    }}
+                    width={itemWidth - itemSpacing}
+                    height={carouselHeight}
+                    borderRadius={12}
                   />
                 )}
                 {/* Gradient Overlay */}
@@ -414,6 +410,11 @@ const ExploreScreen: React.FC = () => {
 
   // Map Feed to PostCardData
   const mapFeedToCardData = (item: ProfilePost): PostCardData => {
+    // content array ise string'e çevir, değilse direkt kullan
+    const contentString = Array.isArray(item.content)
+      ? item.content.map((contentItem) => contentItem.content || '').join(' ')
+      : (item.content || '');
+
     return {
       id: item.id,
       user: {
@@ -422,7 +423,7 @@ const ExploreScreen: React.FC = () => {
         title: item.user.title,
         avatarUrl: item.user.avatarUrl,
       },
-      content: item.content,
+      content: contentString,
       images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
       stats: item.stats,
       createdAt: item.createdAt,

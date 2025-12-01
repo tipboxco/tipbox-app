@@ -4,25 +4,30 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import { useNavigation } from '@react-navigation/native';
+import { toImageSource } from '@/src/utils';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 
 interface BenchmarkPostCardProps {
     data: BenchmarkCardData;
 }
 
-const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark: boolean; }) => (
+const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark: boolean; }) => {
+    const productImageSource = toImageSource(product.image);
+    return (
     <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : '#E9E9E9'} borderRadius={10} position="relative">
         <VStack padding={6} flex={1} >
             <Box position="relative" w={'$full'} overflow='hidden'>
+                {productImageSource && (
                 <Image
                     w={'$full'}
                     h={'$full'}
                     aspectRatio={1}
                     borderRadius={10}
-                    source={product.image}
+                    source={productImageSource}
                     alt={product.name}
                     resizeMode='cover'
                 />
+                )}
                 {product.isOwned && (
                     <Box
                         position="absolute"
@@ -58,7 +63,8 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
             </VStack>
         </VStack>
     </HStack>
-);
+    );
+};
 
 export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
     const { colorMode } = useColorMode();

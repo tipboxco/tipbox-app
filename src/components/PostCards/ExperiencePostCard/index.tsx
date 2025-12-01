@@ -8,6 +8,7 @@ import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
 import type { ReviewCardData } from '@/src/types/ReviewsCard';
 
 
@@ -82,7 +83,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
             <ProductInfoCard
               size="small"
               type={ProductInfoType.PRODUCT}
-              image={data.contextData.image as ImageSourcePropType | undefined}
+              image={toImageSource(data.contextData.image)}
               title={data.contextData.name}
               subName={data.contextData.subName}
               onPress={() => {
@@ -187,7 +188,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
 
       {data.images && data.images.length > 0 && (
         <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images as any[]} />
+          <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
         </VStack>
       )}
       {/* Stats */}

@@ -9,7 +9,7 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import BrandInfoCard from '../components/BrandInfoCard';
 import PointsHistoryCard from '../components/PointsHistoryCard';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 
 type BrandHistoryScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandHistoryScreen'>;
 
@@ -29,6 +29,12 @@ const BrandHistoryScreen: React.FC = () => {
       shares: 127,
       events: 12,
     },
+    badges: [
+      { id: '1', title: 'Apple Expert', image: require('@/assets/badges/badge_01.png') },
+      { id: '2', title: 'Tech Enthusiast', image: require('@/assets/badges/badge_02.png') },
+      { id: '3', title: 'Product Reviewer', image: require('@/assets/badges/badge_03.png') },
+      { id: '4', title: 'Community Leader', image: require('@/assets/badges/badge_04.png') },
+    ],
     pointsHistory: [
       { id: '1', title: 'Puan Kazanılan Anket Adı', points: 250 },
       { id: '2', title: 'Puan Kazanılan Anket Adı', points: 250 },
@@ -39,29 +45,6 @@ const BrandHistoryScreen: React.FC = () => {
       { id: '7', title: 'Puan Kazanılan Anket Adı', points: 250 },
     ],
   };
-
-  const renderSkeletonCard = () => (
-    <Box
-      width={61}
-      alignItems="center"
-    >
-      <Box
-        width={48}
-        height={48}
-        bg="#ECECEC"
-        borderWidth={1}
-        borderColor="#BFBFBF"
-        borderRadius={6}
-      />
-      <Box
-        width="100%"
-        height={14}
-        bg="#DDDDDD"
-        borderRadius={2}
-        opacity={0.6}
-      />
-    </Box>
-  );
 
 
   return (
@@ -195,31 +178,65 @@ const BrandHistoryScreen: React.FC = () => {
             </Pressable>
           </HStack>
 
-          {/* Recent Activity Section */}
-          <Box
-            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-            borderWidth={1}
-            borderColor="#E9E9E9"
-            borderRadius={5}
-            p="$4"
-          >
-            <VStack space="md" alignItems="center">
-              <HStack space="md" alignItems="center">
-                {renderSkeletonCard()}
-                {renderSkeletonCard()}
-                {renderSkeletonCard()}
-                {renderSkeletonCard()}
-              </HStack>
-              <Text
-                color="#8C8C8C"
-                fontSize={8}
-                fontWeight="$normal"
-                textAlign="center"
+          {/* Badges Section */}
+          {brandData.badges && brandData.badges.length > 0 && (
+            <Box
+              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+              borderWidth={1}
+              borderColor="#E9E9E9"
+              borderRadius={5}
+              p="$4"
+            >
+              <Box
+                borderRadius={5}
+                p="$3.5"
+                h={130}
               >
-                See All
-              </Text>
-            </VStack>
-          </Box>
+                <HStack space="md" justifyContent="space-between">
+                  {brandData.badges.slice(0, 4).map((badge) => (
+                    <VStack key={badge.id} space="xs" alignItems="center" flex={1}>
+                      <Box
+                        w={70}
+                        h={70}
+                        borderRadius={5}
+                        borderWidth={0}
+                        overflow="hidden"
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        <Image
+                          source={typeof badge.image === 'string' ? toImageSource(badge.image) || require('@/assets/badges/badge_01.png') : badge.image}
+                          alt={badge.title}
+                          w={60}
+                          h={60}
+                          resizeMode="contain"
+                        />
+                      </Box>
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={8}
+                        fontWeight="$bold"
+                        textAlign="center"
+                      >
+                        {badge.title}
+                      </Text>
+                    </VStack>
+                  ))}
+                </HStack>
+                <Pressable onPress={() => console.log('See More Badges')}>
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize={8}
+                    textAlign="center"
+                    mt="$4"
+                    fontWeight="$regular"
+                  >
+                    See More Collections
+                  </Text>
+                </Pressable>
+              </Box>
+            </Box>
+          )}
 
             {/* Points History Section */}
             <VStack space="sm">

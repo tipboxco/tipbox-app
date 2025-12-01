@@ -55,4 +55,3 @@ export interface CatalogProduct {
   productGroupId: string;
   subCategoryId: string;
 }
-

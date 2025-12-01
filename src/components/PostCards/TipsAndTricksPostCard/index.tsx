@@ -7,6 +7,7 @@ import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
 import type { TipsCardData } from '@/src/types/TipsAndTricksCard';
 
 interface TipsAndTricksPostCardProps {
@@ -66,7 +67,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.PRODUCT}
-                            image={data.category.product.image}
+                            image={toImageSource(data.category.product.image)}
                             title={data.category.product.name}
                             subName={data.category.product.subName}
                             onPress={() => {
@@ -82,7 +83,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.SUB_CATEGORY}
-                            image={data.category.image}
+                            image={toImageSource(data.category.image)}
                             title={data.category.name}
                             subName={data.category.subCategory}
                             onPress={() => { console.log('Category sayfasına yönlendir'); }}
@@ -179,7 +180,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
             {/* Images */}
             {data.images && data.images?.length > 0 && (
                 <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                    <CardImageCarousel images={data.images} />
+                    <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
                 </VStack>
             )}
 

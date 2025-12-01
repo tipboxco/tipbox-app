@@ -21,10 +21,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const navigation = useNavigation<any>();
   const [isTranslated, setIsTranslated] = useState(false);
 
-  const avatarSource =
-    'avatarUrl' in data.user
-      ? toImageSource(data.user.avatarUrl)
-      : toImageSource((data.user as LegacyPostUser).avatar);
+  const avatarSource = toImageSource((data.user as LegacyPostUser).avatar);
 
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
@@ -147,12 +144,13 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           if (!category) return null;
 
           if (category.product) {
+            const productImageSource = toImageSource(category.product.image);
             return (
               <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                 <ProductInfoCard
                   size="small"
                   type={ProductInfoType.PRODUCT}
-                  image={category.product.image}
+                  image={productImageSource}
                   title={category.product.name}
                   subName={category.product.subName}
                   onPress={() => {
@@ -166,12 +164,13 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
             );
           }
 
+          const categoryImageSource = toImageSource(category.image);
           return (
             <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
               <ProductInfoCard
                 size="small"
                 type={ProductInfoType.SUB_CATEGORY}
-                image={category.image}
+                image={categoryImageSource}
                 title={category.name}
                 subName={category.subCategory}
                 onPress={() => {
@@ -181,7 +180,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                       stage: 'SubCategories',
                       name: category.name,
                       productInfo: {
-                        image: category.image,
+                        image: categoryImageSource,
                         title: category.name,
                         subName: category.subCategory,
                       }
@@ -237,7 +236,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
       {
         data.images && data.images?.length > 0 && (
           <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <CardImageCarousel images={data.images} />
+            <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
           </VStack>
         )
       }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 
@@ -34,6 +35,7 @@ const InboxStackNavigator = buildFeatureStack('Inbox', InboxNavigator);
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -73,9 +75,9 @@ export const TabNavigator = () => {
           borderTopColor: '#E9E9E9',
           height: 45,
           paddingTop: 4,
-          paddingBottom: Platform.OS === 'ios' ? 60 : 34,
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, 34),
           position: 'absolute',
-          bottom: 0,
+          bottom: Platform.OS === 'android' ? insets.bottom : 0,
           left: 0,
           right: 0,
           zIndex: 1000,

@@ -10,6 +10,7 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { UpdatePost } from '@/src/mock/feed/types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
 
 interface UpdatePostCardProps {
   data: UpdatePost;
@@ -75,7 +76,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
           <ProductInfoCard
             size="small"
             type={ProductInfoType.PRODUCT}
-            image={data.product.image}
+            image={toImageSource(data.product.image)}
             title={data.product.name}
             subName={data.product.subName}
             onPress={() => {
@@ -204,7 +205,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       {/* Images */}
       {data.images && data.images.length > 0 && (
         <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images} />
+          <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
         </VStack>
       )}
 
@@ -277,7 +278,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
           {/* Related Post Images */}
           {data.relatedPost.images && data.relatedPost.images.length > 0 && (
             <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              <CardImageCarousel images={data.relatedPost.images} />
+              <CardImageCarousel images={data.relatedPost.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
             </VStack>
           )}
         </>
