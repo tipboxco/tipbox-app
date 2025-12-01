@@ -340,11 +340,11 @@ const ExploreScreen: React.FC = () => {
       id: event.eventId,
       title: event.title,
       description: event.description,
-      image: event.image,
+      image: event.image || null,
       dateRange: formatDateRange(event.startDate, event.endDate),
       participants: event.interaction,
       avatars: event.participants.map(p => p.avatar),
-      eventType: event.type || EventType.DEFAULT,
+      eventType: event.eventType || 'default',
     };
   };
 

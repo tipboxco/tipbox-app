@@ -37,6 +37,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         width={isGrid ? GRID_CARD_WIDTH : CARD_WIDTH}
         height={230}
         overflow="hidden"
+        flexDirection="column"
       >
         {/* Image Section */}
         <Box
@@ -112,8 +113,8 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         </Box>
 
         {/* Content Section */}
-        <VStack space="xs">
-          <Box px="$2">
+        <Box flex={1} justifyContent="space-between">
+          <VStack space="xs" flex={1} px="$2">
             {/* Title */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
@@ -131,12 +132,13 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               fontWeight="$normal"
               numberOfLines={3}
               lineHeight={12}
+              flex={1}
             >
               {data.description}
             </Text>
 
             {/* Date Range */}
-            <HStack alignItems="center" space="xs" my="$1">
+            <HStack alignItems="center" space="xs">
               <Box
                 width={14}
                 height={14}
@@ -159,7 +161,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
                 {data.dateRange}
               </Text>
             </HStack>
-          </Box>
+          </VStack>
 
           {/* Divider Line */}
           <Box
@@ -168,10 +170,10 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             width="100%"
             mt="$1"
           />
-        </VStack>
+        </Box>
 
         {/* Participants Section - Type1 and Type2 */}
-        <HStack px="$2" alignItems="center" justifyContent="space-between" mt="$2">
+        <HStack px="$2" alignItems="center" justifyContent="space-between" my="$2">
           <HStack alignItems="center" space="xs">
             {data.avatars && data.avatars.length > 0
               ? (() => {

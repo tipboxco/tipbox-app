@@ -17,18 +17,19 @@ export interface EventParticipant {
 // API Response Event Item Tipi
 export interface EventApiItem {
   eventId: string;
-  image: string | null;
+  image?: string | null; // İleride gelecek, şimdilik optional
   title: string;
   description: string;
   startDate: string; // ISO string
   endDate: string; // ISO string
   interaction: number;
   participants: EventParticipant[];
-  type?: EventType; // İleride gelecek, şimdilik optional
+  eventType: string; // 'default' veya 'product'
 }
 
 // API Response Pagination Tipi
 export interface EventPagination {
+  cursor?: string; // Pagination cursor
   hasMore: boolean;
   limit: number;
 }

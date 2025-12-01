@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlatList, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { mock_user_profile } from '@/src/mock/common';
-import { mock_community_events, see_all_reward_mock } from '@/src/mock/events/communityEvents';
+import { see_all_reward_mock } from '@/src/mock/events/communityEvents';
 import { Feather } from '@expo/vector-icons';
 import EventCard from '@/src/components/EventCard';
 import BadgeCard from '../components/BadgeCard';
@@ -27,6 +27,9 @@ import AchievementFilter from '../components/AchievementFilter';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { FilterOption } from '../components/AchievementFilter';
 import { useSafeAreaValues } from '@/src/utils';
+import { useActiveEvents, useUpcomingEvents } from '../api/hooks';
+import type { EventApiItem } from '@/src/types/EventCard';
+import type { EventCardData } from '@/src/types/EventCard';
 
 type EventsScreenNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventsScreen'>;
 
@@ -41,6 +44,97 @@ const EventsScreen: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
   const navigation = useNavigation<EventsScreenNavigationProp>();
   const bottomInset = useSafeAreaValues('bottom');
+
+  // Active Events API hook
+  const {
+    data: activeEventsData,
+    fetchNextPage: fetchNextActivePage,
+    hasNextPage: hasNextActivePage,
+    isFetchingNextPage: isFetchingNextActivePage,
+    isLoading: isActiveEventsLoading,
+    error: activeEventsError,
+  } = useActiveEvents(20);
+
+  // Upcoming Events API hook
+  const {
+    data: upcomingEventsData,
+    fetchNextPage: fetchNextUpcomingPage,
+    hasNextPage: hasNextUpcomingPage,
+    isFetchingNextPage: isFetchingNextUpcomingPage,
+    isLoading: isUpcomingEventsLoading,
+    error: upcomingEventsError,
+  } = useUpcomingEvents(20);
+
+  // Format date range from startDate and endDate
+  const formatDateRange = (startDate: string, endDate: string): string => {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+      
+      const formatDate = (date: Date): string => {
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+      };
+
+      return `${formatDate(start)} - ${formatDate(end)}`;
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return '';
+    }
+  };
+
+  // Map API event data to EventCardData format
+  const mapEventToCardData = (event: EventApiItem): EventCardData => {
+    return {
+      id: event.eventId,
+      title: event.title,
+      description: event.description,
+      image: event.image || null,
+      dateRange: formatDateRange(event.startDate, event.endDate),
+      participants: event.interaction,
+      avatars: event.participants.map(p => p.avatar),
+      eventType: event.eventType || 'default',
+    };
+  };
+
+  // Transform events data for display (flatten all pages)
+  const activeEvents = activeEventsData?.pages.flatMap((page) => 
+    page.items.map(mapEventToCardData)
+  ) ?? [];
+
+  const upcomingEvents = upcomingEventsData?.pages.flatMap((page) => 
+    page.items.map(mapEventToCardData)
+  ) ?? [];
+
+  // Debug: API response'u kontrol et
+  useEffect(() => {
+    if (activeEventsData) {
+      console.log('Active Events Data:', JSON.stringify(activeEventsData, null, 2));
+      console.log('Active Events Count:', activeEvents.length);
+    }
+    if (activeEventsError) {
+      console.error('Active Events Error:', activeEventsError);
+      if ('response' in activeEventsError) {
+        console.error('Error Response:', (activeEventsError as any).response?.data);
+        console.error('Error Status:', (activeEventsError as any).response?.status);
+      }
+    }
+    if (upcomingEventsData) {
+      console.log('Upcoming Events Data:', JSON.stringify(upcomingEventsData, null, 2));
+      console.log('Upcoming Events Count:', upcomingEvents.length);
+    }
+    if (upcomingEventsError) {
+      console.error('Upcoming Events Error:', upcomingEventsError);
+      if ('response' in upcomingEventsError) {
+        console.error('Error Response:', (upcomingEventsError as any).response?.data);
+        console.error('Error Status:', (upcomingEventsError as any).response?.status);
+      }
+    }
+  }, [activeEventsData, activeEventsError, activeEvents.length, upcomingEventsData, upcomingEventsError, upcomingEvents.length]);
 
   const handleEventPress = (eventId: string) => {
     navigation.navigate('EventDetail', { eventId });
@@ -190,20 +284,45 @@ const EventsScreen: React.FC = () => {
                       >
                         Active Events
                       </Text>
-                      <FlatList
-                        data={mock_community_events.activeEvents}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        ItemSeparatorComponent={() => <Box width={12} />}
-                        renderItem={({ item }) => (
-                          <EventCard
-                            data={item}
-                            isGrid={false}
-                            onPress={() => handleEventPress(item.id)}
-                          />
-                        )}
-                        keyExtractor={(item) => item.id}
-                      />
+                      {isActiveEventsLoading ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+                        </Box>
+                      ) : activeEventsError ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color="#CE4A4A" fontSize={12}>
+                            Hata: {activeEventsError.message}
+                          </Text>
+                        </Box>
+                      ) : activeEvents.length === 0 ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
+                            Henüz aktif etkinlik bulunmuyor
+                          </Text>
+                        </Box>
+                      ) : (
+                        <FlatList
+                          data={activeEvents}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          ItemSeparatorComponent={() => <Box width={12} />}
+                          contentContainerStyle={{ paddingRight: 16 }}
+                          renderItem={({ item }) => (
+                            <EventCard
+                              data={item}
+                              isGrid={false}
+                              onPress={() => handleEventPress(item.id)}
+                            />
+                          )}
+                          keyExtractor={(item) => item.id}
+                          onEndReached={() => {
+                            if (hasNextActivePage && !isFetchingNextActivePage) {
+                              fetchNextActivePage();
+                            }
+                          }}
+                          onEndReachedThreshold={0.5}
+                        />
+                      )}
                     </VStack>
                   </Box>
 
@@ -217,20 +336,45 @@ const EventsScreen: React.FC = () => {
                       >
                         Upcoming Events
                       </Text>
-                      <FlatList
-                        data={mock_community_events.upcomingEvents}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        ItemSeparatorComponent={() => <Box width={12} />}
-                        renderItem={({ item }) => (
-                          <EventCard
-                            data={item}
-                            isGrid={false}
-                            onPress={() => handleEventPress(item.id)}
-                          />
-                        )}
-                        keyExtractor={(item) => item.id}
-                      />
+                      {isUpcomingEventsLoading ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+                        </Box>
+                      ) : upcomingEventsError ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color="#CE4A4A" fontSize={12}>
+                            Hata: {upcomingEventsError.message}
+                          </Text>
+                        </Box>
+                      ) : upcomingEvents.length === 0 ? (
+                        <Box py="$4" alignItems="center">
+                          <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
+                            Henüz yaklaşan etkinlik bulunmuyor
+                          </Text>
+                        </Box>
+                      ) : (
+                        <FlatList
+                          data={upcomingEvents}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          ItemSeparatorComponent={() => <Box width={12} />}
+                          contentContainerStyle={{ paddingRight: 16 }}
+                          renderItem={({ item }) => (
+                            <EventCard
+                              data={item}
+                              isGrid={false}
+                              onPress={() => handleEventPress(item.id)}
+                            />
+                          )}
+                          keyExtractor={(item) => item.id}
+                          onEndReached={() => {
+                            if (hasNextUpcomingPage && !isFetchingNextUpcomingPage) {
+                              fetchNextUpcomingPage();
+                            }
+                          }}
+                          onEndReachedThreshold={0.5}
+                        />
+                      )}
                     </VStack>
                   </Box>
                 </VStack>
