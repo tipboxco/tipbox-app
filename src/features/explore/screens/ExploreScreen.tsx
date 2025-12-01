@@ -342,7 +342,7 @@ const ExploreScreen: React.FC = () => {
       description: event.description,
       image: event.image || null,
       dateRange: formatDateRange(event.startDate, event.endDate),
-      participants: event.interaction,
+      interaction: event.interaction,
       avatars: event.participants.map(p => p.avatar),
       eventType: event.eventType || 'default',
     };

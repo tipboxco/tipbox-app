@@ -213,7 +213,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             fontSize={9}
             fontWeight="$medium"
           >
-            {data.participants || 0}+ Etkileşim
+            {data.interaction || 0}+ Etkileşim
           </Text>
         </HStack>
 

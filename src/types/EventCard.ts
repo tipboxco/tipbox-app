@@ -47,8 +47,8 @@ export interface EventCardData {
   description: string;
   image: string | null;
   dateRange: string; // Formatlanmış tarih string'i
-  participants: number; // interaction değeri
-  avatars: (string | null)[]; // participants array'den avatar'lar
+  interaction: number; // Etkileşim sayısı (sağdaki sayı için)
+  avatars: (string | null)[]; // participants array'den avatar'lar (soldaki resimler için)
   eventType: string; // 'default' veya 'product' (gösterim için)
 }
 
