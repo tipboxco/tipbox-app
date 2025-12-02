@@ -9,8 +9,8 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 import type { ProfileReview } from '../../types';
 
 const mapReviewToCardData = (review: ProfileReview): ReviewCardData => {
-  const avatarSource = review.user?.avatarUrl
-    ? toImageSource(review.user.avatarUrl)!
+  const avatarSource = review.user?.avatar
+    ? toImageSource(review.user.avatar)!
     : require('@/assets/avatar/ozan.png');
   
   const productImage = review.contextData?.image

@@ -31,15 +31,20 @@ const BookMarksScreen = () => {
 
   // Map Post bookmark to PostCardData
   const mapPostToCardData = (item: ProfilePost & { type: 'post' }): PostCardData => {
+    // content array ise string'e çevir, değilse direkt kullan
+    const contentString = Array.isArray(item.content)
+      ? item.content.map((contentItem) => contentItem.content || '').join(' ')
+      : (item.content || '');
+
     return {
       id: item.id,
       user: {
         id: item.user.id,
         name: item.user.name,
         title: item.user.title,
-        avatarUrl: item.user.avatarUrl,
+        avatar: toImageSource(item.user.avatar)!,
       },
-      content: item.content,
+      content: contentString,
       images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
       stats: item.stats,
       createdAt: item.createdAt,
@@ -50,7 +55,7 @@ const BookMarksScreen = () => {
 
   // Map Benchmark bookmark to BenchmarkCardData
   const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
-    const avatarSource = toImageSource(item.user.avatarUrl)!;
+    const avatarSource = toImageSource(item.user.avatar)!;
 
     const products: BenchmarkProduct[] = item.products.map((p) => ({
       id: p.id,
@@ -78,7 +83,7 @@ const BookMarksScreen = () => {
 
   // Map Tips bookmark to TipsCardData
   const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
-    const avatarSource = toImageSource(item.user.avatarUrl)!;
+    const avatarSource = toImageSource(item.user.avatar)!;
 
     const product: TipsProduct = {
       id: item.contextData.id,
@@ -116,7 +121,7 @@ const BookMarksScreen = () => {
 
   // Map Question bookmark to QuestionCardData
   const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-    const avatarSource = toImageSource(item.user.avatarUrl)!;
+    const avatarSource = toImageSource(item.user.avatar)!;
 
     const product: QuestionCardProduct = {
       id: item.contextData.id,
@@ -153,45 +158,46 @@ const BookMarksScreen = () => {
   };
 
   const renderBookmark = (bookmark: BookmarkApiItem) => {
-    // Type kontrolü - "feed" de question olarak kabul ediliyor (bir sonraki update'te "question" olacak)
-    if (bookmark.type === CardType.BENCHMARK || bookmark.type === 'benchmark') {
+    // Type guard'lar ile type narrowing yapıyoruz
+    if (bookmark.type === 'benchmark') {
       return (
         <BenchmarkPostCard
           key={bookmark.id}
-          data={mapBenchmarkToCardData(bookmark as BenchmarkApiItem & { type: 'benchmark' })}
+          data={mapBenchmarkToCardData(bookmark)}
         />
       );
     }
     
-    if (bookmark.type === CardType.TIPS_AND_TRICKS || bookmark.type === 'tipsAndTricks') {
+    if (bookmark.type === 'tipsAndTricks') {
       return (
         <TipsAndTricksPostCard
           key={bookmark.id}
-          data={mapTipsToCardData(bookmark as TipsApiItem & { type: 'tipsAndTricks' })}
+          data={mapTipsToCardData(bookmark)}
         />
       );
     }
     
-    // Question type kontrolü - "feed" de question olarak kabul ediliyor
-    if (bookmark.type === CardType.QUESTION || bookmark.type === 'question' || bookmark.type === 'feed') {
-      // QuestionApiItem tipinde olduğunu kontrol et
-      if ('contextType' in bookmark && 'contextData' in bookmark && 'isBoosted' in bookmark) {
-        return (
-          <QuestionPostCard
-            key={bookmark.id}
-            data={mapQuestionToCardData(bookmark as QuestionApiItem & { type: 'question' })}
-          />
-        );
-      }
+    if (bookmark.type === 'question') {
+      return (
+        <QuestionPostCard
+          key={bookmark.id}
+          data={mapQuestionToCardData(bookmark)}
+        />
+      );
     }
     
     // Default: Post
-    return (
-      <PostCard
-        key={bookmark.id}
-        data={mapPostToCardData(bookmark as ProfilePost & { type: 'post' })}
-      />
-    );
+    if (bookmark.type === 'post') {
+      return (
+        <PostCard
+          key={bookmark.id}
+          data={mapPostToCardData(bookmark)}
+        />
+      );
+    }
+    
+    // Fallback - eğer beklenmeyen bir tip gelirse
+    return null;
   };
 
   return (

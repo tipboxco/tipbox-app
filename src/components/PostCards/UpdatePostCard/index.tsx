@@ -39,14 +39,16 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
         borderColor="#E9E9E9"
       >
         <HStack alignItems="center" space="xs">
-          <Image
-            source={data.user.avatar}
-            alt={data.user.name}
-            mr={8}
-            width={42}
-            height={42}
-            borderRadius={100}
-          />
+          {toImageSource(data.user.avatar) && (
+            <Image
+              source={toImageSource(data.user.avatar)!}
+              alt={data.user.name}
+              mr={8}
+              width={42}
+              height={42}
+              borderRadius={100}
+            />
+          )}
           <VStack flex={1}>
             <Text
               color={isDark ? '$textDark50' : '#000'}

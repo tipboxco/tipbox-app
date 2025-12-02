@@ -111,7 +111,7 @@ const EventDetailScreen: React.FC = () => {
                 id: item.user.id,
                 name: item.user.name,
                 title: item.user.title,
-                avatarUrl: item.user.avatarUrl,
+                avatar: toImageSource(item.user.avatar)!,
             },
             content: contentString,
             images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
@@ -124,7 +124,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Benchmark to BenchmarkCardData (from FeedScreen)
     const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
-        const avatarSource = toImageSource(item.user.avatarUrl)!;
+        const avatarSource = toImageSource(item.user.avatar)!;
 
         const products: BenchmarkProduct[] = item.products.map((p) => ({
             id: p.id,
@@ -152,7 +152,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Tips to TipsCardData (from FeedScreen)
     const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
-        const avatarSource = toImageSource(item.user.avatarUrl)!;
+        const avatarSource = toImageSource(item.user.avatar)!;
 
         const product: TipsProduct = {
             id: item.contextData.id,
@@ -190,7 +190,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Question to QuestionCardData (from FeedScreen)
     const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-        const avatarSource = toImageSource(item.user.avatarUrl)!;
+        const avatarSource = toImageSource(item.user.avatar)!;
 
         const product: QuestionCardProduct = {
             id: item.contextData.id,

@@ -95,13 +95,16 @@ const ProfileScreen = () => {
                     justifyContent="center"
                     pb="$1"
                     position="relative"
-                    width={75}
+                    minWidth={75}
+                    flexShrink={0}
                   >
                     <Text
                       textAlign="center"
                       fontSize={12}
                       fontWeight="$bold"
                       color={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
+                      numberOfLines={1}
+                      flexShrink={0}
                     >
                       {tab.title}
                     </Text>

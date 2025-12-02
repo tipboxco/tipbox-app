@@ -126,7 +126,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
         borderColor="$white"
       >
         <Image
-          source={toImageSource(userData.avatarUrl) || require('@/assets/avatar/ozan.png')}
+          source={toImageSource(userData.avatar) || require('@/assets/avatar/ozan.png')}
           alt={userData.name}
           w="100%"
           h="100%"

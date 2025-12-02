@@ -41,14 +41,16 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
-          <Image
-            source={data.user.avatar}
-            alt={data.user.name}
-            mr={8}
-            width={48}
-            height={48}
-            borderRadius={100}
-          />
+          {toImageSource(data.user.avatar) && (
+            <Image
+              source={toImageSource(data.user.avatar)!}
+              alt={data.user.name}
+              mr={8}
+              width={48}
+              height={48}
+              borderRadius={100}
+            />
+          )}
           <VStack flex={1}>
             <Text
               color={isDark ? '$textDark400' : '#C7C7C7'}

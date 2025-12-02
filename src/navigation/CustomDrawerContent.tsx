@@ -99,13 +99,13 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   }, [user?.id, user?.fullName, user?.avatar, refetch]);
   
   // Profile bilgisi geldiğinde store'daki user'ı güncelle (sadece değişiklik varsa)
-  const previousProfileRef = useRef<{ name?: string; avatarUrl?: string } | null>(null);
+  const previousProfileRef = useRef<{ name?: string; avatar?: string } | null>(null);
   
   useEffect(() => {
     if (userProfile && user?.id) {
       const currentProfile = {
         name: userProfile.name,
-        avatarUrl: userProfile.avatarUrl,
+        avatar: userProfile.avatar,
       };
       
       const previousProfile = previousProfileRef.current;
@@ -114,13 +114,13 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       const hasChanged = 
         !previousProfile ||
         previousProfile.name !== currentProfile.name ||
-        previousProfile.avatarUrl !== currentProfile.avatarUrl;
+        previousProfile.avatar !== currentProfile.avatar;
       
       if (hasChanged) {
         // Store'daki mevcut değerlerle karşılaştır - sadece farklıysa güncelle
         const needsUpdate = 
           user.fullName !== currentProfile.name ||
-          user.avatar !== currentProfile.avatarUrl;
+          user.avatar !== currentProfile.avatar;
         
         if (needsUpdate) {
           // Profile'dan gelen güncelleme olduğunu işaretle (sonsuz döngüyü önlemek için)
@@ -128,7 +128,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           
           updateUser({
             fullName: currentProfile.name,
-            avatar: currentProfile.avatarUrl,
+            avatar: currentProfile.avatar,
           });
           
           // Flag'i resetle
@@ -141,11 +141,11 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile?.name, userProfile?.avatarUrl, user?.id, user?.fullName, user?.avatar]);
+  }, [userProfile?.name, userProfile?.avatar, user?.id, user?.fullName, user?.avatar]);
   
   // Avatar source - profile'dan gelen avatar URL'i veya store'dan veya default avatar
   const avatarSource =
-    toImageSource(userProfile?.avatarUrl) ||
+    toImageSource(userProfile?.avatar) ||
     toImageSource(user?.avatar || null) ||
     require('@/assets/avatar/ozan.png');
   

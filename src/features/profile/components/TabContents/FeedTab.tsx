@@ -37,7 +37,7 @@ const mapPostToCardData = (post: ProfilePost): PostCardData => {
       id: post.user.id,
       name: post.user.name,
       title: post.user.title,
-      avatarUrl: post.user.avatarUrl,
+      avatar: toImageSource(post.user.avatar)!,
     },
     content: contentString,
     images:
@@ -66,8 +66,8 @@ const mapPostToCardData = (post: ProfilePost): PostCardData => {
 
 // Map Experience (Review) to ReviewCardData
 const mapExperienceToCardData = (review: ProfileReview): ReviewCardData => {
-  const avatarSource = review.user?.avatarUrl
-    ? toImageSource(review.user.avatarUrl)!
+  const avatarSource = review.user?.avatar
+    ? toImageSource(review.user.avatar)!
     : require('@/assets/avatar/ozan.png');
   
   const productImage = review.contextData?.image
@@ -114,7 +114,7 @@ const mapExperienceToCardData = (review: ProfileReview): ReviewCardData => {
 
 // Map Benchmark to BenchmarkCardData
 const mapBenchmarkToCardData = (item: BenchmarkApiItem): BenchmarkCardData => {
-  const avatarSource = toImageSource(item.user.avatarUrl)!;
+  const avatarSource = toImageSource(item.user.avatar)!;
 
   const products: BenchmarkProduct[] = item.products.map((p) => ({
     id: p.id,
@@ -142,7 +142,7 @@ const mapBenchmarkToCardData = (item: BenchmarkApiItem): BenchmarkCardData => {
 
 // Map Tips to TipsCardData
 const mapTipsToCardData = (item: TipsApiItem): TipsCardData => {
-  const avatarSource = toImageSource(item.user.avatarUrl)!;
+  const avatarSource = toImageSource(item.user.avatar)!;
 
   const product: TipsProduct = {
     id: item.contextData.id,
@@ -180,7 +180,7 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData => {
 
 // Map Question to QuestionCardData
 const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData => {
-  const avatarSource = toImageSource(item.user.avatarUrl)!;
+  const avatarSource = toImageSource(item.user.avatar)!;
 
   const product: QuestionCardProduct = {
     id: item.contextData.id,

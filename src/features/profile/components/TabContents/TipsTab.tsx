@@ -9,7 +9,7 @@ import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAn
 import type { ProfileTipsAndTricks } from '../../types';
 
 const mapTipsToCardData = (item: ProfileTipsAndTricks): TipsCardData => {
-  const avatarSource = toImageSource(item.user.avatarUrl)!;
+  const avatarSource = toImageSource(item.user.avatar)!;
 
   const product: TipsProduct = {
     id: item.contextData.id,

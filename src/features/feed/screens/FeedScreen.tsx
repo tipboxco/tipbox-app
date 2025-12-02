@@ -134,7 +134,7 @@ export const FeedScreen = () => {
         id: item.user.id,
         name: item.user.name,
         title: item.user.title,
-        avatarUrl: item.user.avatarUrl,
+        avatar: toImageSource(item.user.avatar)!,
       },
       content: contentString,
       images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
@@ -147,7 +147,7 @@ export const FeedScreen = () => {
 
   // Map Experience (ReviewApiItem) to ReviewCardData
   const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
-    const avatarSource = toImageSource(item.user.avatarUrl)!;
+    const avatarSource = toImageSource(item.user.avatar)!;
     const productImage = item.contextData?.image
       ? toImageSource(item.contextData.image)
       : undefined;
@@ -191,7 +191,7 @@ export const FeedScreen = () => {
 
   // Map Benchmark to BenchmarkCardData
   const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
-    const avatarSource = toImageSource(item.user.avatarUrl)!;
+    const avatarSource = toImageSource(item.user.avatar)!;
 
     const products: BenchmarkProduct[] = item.products.map((p) => ({
       id: p.id,
@@ -219,7 +219,7 @@ export const FeedScreen = () => {
 
   // Map Tips to TipsCardData
   const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
-    const avatarSource = toImageSource(item.user.avatarUrl)!;
+    const avatarSource = toImageSource(item.user.avatar)!;
 
     const product: TipsProduct = {
       id: item.contextData.id,
@@ -257,7 +257,7 @@ export const FeedScreen = () => {
 
   // Map Question to QuestionCardData
   const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-    const avatarSource = toImageSource(item.user.avatarUrl)!;
+    const avatarSource = toImageSource(item.user.avatar)!;
 
     const product: QuestionCardProduct = {
       id: item.contextData.id,

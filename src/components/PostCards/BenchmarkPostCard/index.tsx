@@ -80,14 +80,16 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
             {/* Header */}
             <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
-                    <Image
-                        source={data.user.avatar}
-                        alt={data.user.name}
-                        mr={8}
-                        width={42}
-                        height={42}
-                        borderRadius={100}
-                    />
+                    {toImageSource(data.user.avatar) && (
+                        <Image
+                            source={toImageSource(data.user.avatar)!}
+                            alt={data.user.name}
+                            mr={8}
+                            width={42}
+                            height={42}
+                            borderRadius={100}
+                        />
+                    )}
                     <VStack flex={1}>
                         <Text
                             color={isDark ? '$textDark50' : '#000'}

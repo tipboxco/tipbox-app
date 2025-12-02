@@ -9,7 +9,7 @@ export interface QuestionApiUser {
   id: string;
   name: string;
   title: string;
-  avatarUrl: string;
+  avatar: string;
 }
 
 export interface QuestionApiStats {

@@ -9,7 +9,7 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { ProfileBenchmark } from '../../types';
 
 const mapBenchmarkToCardData = (item: ProfileBenchmark): BenchmarkCardData => {
-  const avatarSource = toImageSource(item.user.avatarUrl)!;
+  const avatarSource = toImageSource(item.user.avatar)!;
 
   const products: BenchmarkProduct[] = item.products.map((p) => ({
     id: p.id,

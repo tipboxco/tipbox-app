@@ -92,7 +92,7 @@ export interface ProfileStats {
 export interface UserProfile {
   id: string;
   name: string;
-  avatarUrl: string;
+  avatar: string;
   bannerUrl: string;
   biography: string;
   titles: string[];
@@ -112,7 +112,7 @@ export interface ProfilePostUser {
   /**
    * Profil resmi URL'i
    */
-  avatarUrl: string;
+  avatar: string;
 }
 
 export interface ProfilePostStats {

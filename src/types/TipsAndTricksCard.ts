@@ -8,7 +8,7 @@ export interface TipsApiUser {
   id: string;
   name: string;
   title: string;
-  avatarUrl: string;
+  avatar: string;
 }
 
 export interface TipsApiStats {

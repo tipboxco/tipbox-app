@@ -20,8 +20,9 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
   const [isTranslated, setIsTranslated] = useState(false);
+  console.log('data', data.user);
 
-  const avatarSource = toImageSource((data.user as LegacyPostUser).avatar);
+  const avatarSource = toImageSource(data.user.avatar);
 
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;

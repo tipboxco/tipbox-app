@@ -8,13 +8,6 @@ export type LegacyPostUser = {
   avatar: ImageSourcePropType;
 };
 
-export type ApiPostUser = {
-  id: string;
-  name: string;
-  title: string;
-  avatarUrl: string;
-};
-
 export type LegacyPostProduct = {
   id: string;
   name: string;
@@ -48,7 +41,7 @@ export type PostContextData = {
 
 export interface PostCardData {
   id: string;
-  user: LegacyPostUser | ApiPostUser;
+  user: LegacyPostUser;
   content: string;
   images?: (string | ImageSourcePropType)[];
   stats: PostStats;

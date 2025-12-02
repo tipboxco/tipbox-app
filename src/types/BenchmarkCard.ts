@@ -8,7 +8,7 @@ export interface BenchmarkApiUser {
   id: string;
   name: string;
   title: string;
-  avatarUrl: string;
+  avatar: string;
 }
 
 export interface BenchmarkApiStats {
