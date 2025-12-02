@@ -73,7 +73,7 @@ export const TabNavigator = () => {
         tabBarStyle: {
           backgroundColor: '#FAFAFA',
           borderTopColor: '#E9E9E9',
-          height: 45,
+          height: Platform.OS === 'ios' ? 45 + insets.bottom : 45 + Math.max(insets.bottom, 34),
           paddingTop: 4,
           paddingBottom: Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, 34),
           position: 'absolute',
