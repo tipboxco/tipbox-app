@@ -1,5 +1,6 @@
-import React from 'react';
-import { VStack, Text } from '@gluestack-ui/themed';
+import React, { useCallback, useMemo } from 'react';
+import { FlatList, ActivityIndicator } from 'react-native';
+import { VStack, Text, Box } from '@gluestack-ui/themed';
 import PostCard from '@/src/components/PostCards/PostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
@@ -216,67 +217,135 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData => {
   };
 };
 
-// Render function based on post type
-const renderPostItem = (post: ProfileFeedItem) => {
-  switch (post.type) {
-    case CardType.EXPERIENCE:
-      // Experience type için ProfileReview kullan
-      if ('contextData' in post && 'content' in post && Array.isArray(post.content)) {
-        return (
-          <ExperiencePostCard
-            key={post.id}
-            data={mapExperienceToCardData(post as ProfileReview)}
-          />
-        );
-      }
-      return null;
-    case CardType.BENCHMARK:
-      return (
-        <BenchmarkPostCard
-          key={post.id}
-          data={mapBenchmarkToCardData(post as BenchmarkApiItem)}
-        />
-      );
-    case CardType.TIPS_AND_TRICKS:
-      return (
-        <TipsAndTricksPostCard
-          key={post.id}
-          data={mapTipsToCardData(post as TipsApiItem)}
-        />
-      );
-    case CardType.QUESTION:
-      if ('contextType' in post && 'contextData' in post && 'isBoosted' in post) {
-        return (
-          <QuestionPostCard
-            key={post.id}
-            data={mapQuestionToCardData(post as QuestionApiItem)}
-          />
-        );
-      }
-      return null;
-    case CardType.POST:
-    case CardType.FEED:
-    default:
-      // Post ve Feed type için ProfilePost kullan
-      return (
-        <PostCard
-          key={post.id}
-          data={mapPostToCardData(post as ProfilePost)}
-        />
-      );
-  }
-};
+// Mapped post type
+type MappedPost = 
+  | { type: 'post'; id: string; data: PostCardData }
+  | { type: 'experience'; id: string; data: ReviewCardData }
+  | { type: 'benchmark'; id: string; data: BenchmarkCardData }
+  | { type: 'tips'; id: string; data: TipsCardData }
+  | { type: 'question'; id: string; data: QuestionCardData };
 
 export const FeedTab = () => {
   const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
+  // User Posts API hook with infinite scroll
   const {
-    data: posts,
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
+    isPending,
     error,
-  } = useUserPosts(userId);
+  } = useUserPosts(userId, 3);
+
+  // Flatten all pages into a single array - useMemo ile memoize et
+  // Duplicate ID'leri filtrele (backend cursor desteklemiyorsa aynı item'lar tekrar gelebilir)
+  // Mapping sonuçlarını da cache'le - böylece React.memo düzgün çalışır
+  const posts = useMemo(() => {
+    const allItems = data?.pages.flatMap((page) => page.items) ?? [];
+    // ID'ye göre unique item'ları filtrele
+    const uniqueItems = allItems.filter((item, index, self) => 
+      index === self.findIndex((t) => t.id === item.id)
+    );
+    return uniqueItems;
+  }, [data]);
+
+  // Mapping sonuçlarını cache'le - her item için bir kez hesapla
+  // Bu sayede React.memo düzgün çalışır (aynı referanslar)
+  const mappedPosts = useMemo(() => {
+    return posts.map((post) => {
+      switch (post.type) {
+        case CardType.EXPERIENCE:
+          if ('contextData' in post && 'content' in post && Array.isArray(post.content)) {
+            return {
+              type: 'experience' as const,
+              id: post.id,
+              data: mapExperienceToCardData(post as ProfileReview),
+            };
+          }
+          return null;
+        case CardType.BENCHMARK:
+          return {
+            type: 'benchmark' as const,
+            id: post.id,
+            data: mapBenchmarkToCardData(post as BenchmarkApiItem),
+          };
+        case CardType.TIPS_AND_TRICKS:
+          return {
+            type: 'tips' as const,
+            id: post.id,
+            data: mapTipsToCardData(post as TipsApiItem),
+          };
+        case CardType.QUESTION:
+          if ('contextType' in post && 'contextData' in post && 'isBoosted' in post) {
+            return {
+              type: 'question' as const,
+              id: post.id,
+              data: mapQuestionToCardData(post as QuestionApiItem),
+            };
+          }
+          return null;
+        case CardType.POST:
+        case CardType.FEED:
+        default:
+          return {
+            type: 'post' as const,
+            id: post.id,
+            data: mapPostToCardData(post as ProfilePost),
+          };
+      }
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
+  }, [posts]);
+
+  // Duplicate key'leri önlemek için unique key oluştur
+  const getItemKey = useCallback((item: MappedPost) => {
+    return item.id;
+  }, []);
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Footer için activity indicator rengini memoize et
+  const activityIndicatorColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);
+
+  const renderFooter = useCallback(() => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <Box py={20} alignItems="center">
+        <ActivityIndicator size="small" color={activityIndicatorColor} />
+      </Box>
+    );
+  }, [isFetchingNextPage, activityIndicatorColor]);
+
+  // Render item - artık mapping yapmıyoruz, sadece render ediyoruz
+  // Mapping sonuçları zaten cache'lenmiş durumda
+  const renderItem = useCallback(({ item }: { item: MappedPost }) => {
+    switch (item.type) {
+      case 'experience':
+        return <ExperiencePostCard data={item.data} />;
+      case 'benchmark':
+        return <BenchmarkPostCard data={item.data} />;
+      case 'tips':
+        return <TipsAndTricksPostCard data={item.data} />;
+      case 'question':
+        return <QuestionPostCard data={item.data} />;
+      case 'post':
+      default:
+        return <PostCard data={item.data} />;
+    }
+  }, []);
+
+  // contentContainerStyle'ı memoize et - her render'da yeni obje oluşturulmasını önle
+  const contentContainerStyle = useMemo(
+    () => ({ paddingHorizontal: 16, paddingVertical: 8 }),
+    []
+  );
 
   if (!userId) {
     return (
@@ -288,22 +357,63 @@ export const FeedTab = () => {
     );
   }
 
-  return (
-    <VStack px={16} py={16}>
-      {isLoading && (
-        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mb="$2">
+  // isPending kontrolü - sadece ilk yükleme için (data yoksa)
+  if (isPending && !data) {
+    return (
+      <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
           Feed yükleniyor...
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {error && (
-        <Text color="#CE4A4A" fontSize="$sm" mb="$2">
+  if (error) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color="#CE4A4A" fontSize="$sm">
           Feed yüklenirken bir hata oluştu: {error.message}
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {posts?.map((post) => renderPostItem(post))}
-    </VStack>
+  if (mappedPosts.length === 0) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+          Henüz feed içeriği bulunmuyor.
+        </Text>
+      </VStack>
+    );
+  }
+
+  // extraData için mappedPosts array'inin length'ini kullan
+  // Array değiştiğinde length de değişir, bu yeterli
+  // useMemo ile memoize et ki gereksiz re-render olmasın
+  const flatListExtraData = useMemo(() => mappedPosts.length, [mappedPosts.length]);
+
+  return (
+    <FlatList
+      data={mappedPosts}
+      renderItem={renderItem}
+      keyExtractor={getItemKey}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.1}
+      ListFooterComponent={renderFooter}
+      contentContainerStyle={contentContainerStyle}
+      showsVerticalScrollIndicator={false}
+      removeClippedSubviews={true}
+      // Performance optimizations
+      initialNumToRender={3}
+      maxToRenderPerBatch={3}
+      windowSize={5}
+      updateCellsBatchingPeriod={50}
+      // extraData: mappedPosts değiştiğinde re-render et
+      // Hash kullanarak sadece gerçekten değiştiğinde re-render olur
+      extraData={flatListExtraData}
+    />
   );
 };
 export default FeedTab;

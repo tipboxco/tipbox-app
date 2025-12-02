@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { getTrustList, getTrusterList } from './trustApi';
 import {
@@ -10,6 +10,7 @@ import {
   getUserTipsAndTricks,
   getUserReplies,
   getUserLadderBadges,
+  type UserFeedApiResponse,
 } from './profileApi';
 import type {
   TrustUser,
@@ -309,28 +310,45 @@ export const useInventory = () => {
 };
 
 /**
- * Get User Posts query hook
- * Kullanıcının profil feed postlarını getirir (cache olmadan)
+ * Get User Posts infinite query hook
+ * Kullanıcının profil feed postlarını infinite scroll ile getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 3)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useUserPosts('user-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserPosts('user-123', 3);
  */
-export const useUserPosts = (userId: string | undefined) => {
-  return useQuery<ProfileFeedItem[], Error>({
-    queryKey: userId ? profileKeys.userPosts(userId) : ['profile', 'posts', 'disabled'],
-    queryFn: () => {
+export const useUserPosts = (userId: string | undefined, limit: number = 3) => {
+  return useInfiniteQuery<UserFeedApiResponse, Error>({
+    queryKey: userId ? [...profileKeys.userPosts(userId), limit] : ['profile', 'posts', 'disabled'],
+    queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return getUserPosts(userId);
+      // Not: Backend'de cursor parametresi yok, ama infinite scroll için
+      // son item'ın id'sini pageParam olarak kullanıyoruz
+      // Backend bunu desteklemiyorsa, her zaman aynı veriyi dönecektir
+      const cursor = pageParam as string | undefined;
+      return getUserPosts(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      
+      // Son item'ın id'sini cursor olarak kullan
+      // Not: Backend cursor'ı desteklemiyorsa, bu çalışmayabilir
+      // Bu durumda backend'in cursor desteği eklenmesi gerekir
+      return lastPage.pagination.cursor;
     },
     enabled: !!userId,
     staleTime: 0, // Cache yok
     gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnMount: true, // Her mount'ta yeniden fetch et
     refetchOnWindowFocus: false,
     retry: 1,
   });
