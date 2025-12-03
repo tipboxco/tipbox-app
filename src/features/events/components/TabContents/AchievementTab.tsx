@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, Dimensions, ScrollView } from 'react-native';
+import { FlatList, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
 import {
   Box,
   VStack,
@@ -17,6 +17,7 @@ import { see_all_reward_mock } from '@/src/mock/events/communityEvents';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { FilterOption } from '../AchievementFilter';
 import { useSafeAreaValues } from '@/src/utils';
+import { useLimitedEvent } from '../../api/hooks';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +35,13 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
+  
+  // Limited Event API hook
+  const {
+    data: limitedEvent,
+    isLoading: isLimitedEventLoading,
+    error: limitedEventError,
+  } = useLimitedEvent();
 
   // Filter achievements based on active filter
   const getFilteredAchievements = () => {
@@ -59,35 +67,28 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
       >
         <VStack space="md" px="$4">
           {/* Limited Time Event Card */}
-          <LimitedTimeEventCard
-            title="Weekend Voyager"
-            description="Share at least 1 post on each weekend (Saturday or Sunday) for 4 weeks in a row."
-            timeRemaining="11:42:03"
-            userScore={34599}
-            userRank={12}
-            userAvatar={require('@/assets/avatar/ozan.png')}
-            otherUsers={[
-              {
-                id: '1',
-                avatar: require('@/assets/avatar/ozan.png'),
-                rank: 1,
-              },
-              {
-                id: '2',
-                avatar: require('@/assets/avatar/ozan.png'),
-                rank: 2,
-              },
-              {
-                id: '3',
-                avatar: require('@/assets/avatar/ozan.png'),
-                rank: 3,
-              },
-            ]}
-            onPress={() => {
-              // Handle limited time event press
-              console.log('Limited time event pressed');
-            }}
-          />
+          {isLimitedEventLoading ? (
+            <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
+              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+              <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$2" fontSize={12}>
+                Yükleniyor...
+              </Text>
+            </Box>
+          ) : limitedEventError ? (
+            <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
+              <Text color="#CE4A4A" fontSize={12} textAlign="center">
+                Hata: {limitedEventError.message}
+              </Text>
+            </Box>
+          ) : limitedEvent ? (
+            <LimitedTimeEventCard
+              data={limitedEvent}
+              onPress={() => {
+                // Handle limited time event press
+                console.log('Limited time event pressed:', limitedEvent.id);
+              }}
+            />
+          ) : null}
 
           {/* Search Bar */}
           <HStack

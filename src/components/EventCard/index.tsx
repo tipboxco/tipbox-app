@@ -133,7 +133,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={9}
               fontWeight="$normal"
-              numberOfLines={3}
+              numberOfLines={4}
             >
               {data.description}
             </Text>

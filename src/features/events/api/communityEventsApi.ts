@@ -1,6 +1,6 @@
 import { apiService } from '../../../services/ApiService';
 import type { EventApiItem, EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
@@ -128,6 +128,30 @@ export const getEventPosts = async (
   } catch (error: any) {
     console.error('Event Posts API Error:', {
       url: `/events/${eventId}/posts?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Limited Event endpoint function
+ * /events/limited endpoint'inden limited event bilgilerini getirir
+ *
+ * @returns LimitedEventApiResponse - Limited event bilgileri (leaderboard, userScore, vb.)
+ */
+export const getLimitedEvent = async (): Promise<LimitedEventApiResponse> => {
+  try {
+    const response = await apiService.getClient().get<LimitedEventApiResponse>(
+      '/events/limited'
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Limited Event API Error:', {
+      url: '/events/limited',
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

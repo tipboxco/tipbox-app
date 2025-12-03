@@ -34,3 +34,31 @@ export interface EventDetailApiResponse {
   product?: EventDetailProduct; // Sadece eventType === 'product' olan eventlerde
 }
 
+// Limited Event Leaderboard User
+export interface LimitedEventLeaderboardUser {
+  id: string;
+  avatar: string;
+  rank: number;
+}
+
+// Limited Event User Score
+export interface LimitedEventUserScore {
+  id: string;
+  avatar: string;
+  rank: number;
+  score: number;
+}
+
+// Limited Event API Response
+export interface LimitedEventApiResponse {
+  id: string;
+  title: string;
+  description: string;
+  leaderboardUsers: LimitedEventLeaderboardUser[];
+  userScore: LimitedEventUserScore;
+  backgroundImage: string;
+  eventImage: string;
+  startDate: string; // ISO string
+  endDate: string; // ISO string
+}
+

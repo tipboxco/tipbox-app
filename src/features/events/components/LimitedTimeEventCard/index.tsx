@@ -10,36 +10,36 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
+import type { LimitedEventApiResponse } from '../../types';
+import { useCountdown } from '@/src/utils';
+import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
 interface LimitedTimeEventCardProps {
-    title: string;
-    description: string;
-    timeRemaining: string;
-    userScore: number;
-    userRank: number;
-    userAvatar: any;
-    otherUsers: Array<{
-        id: string;
-        avatar: any;
-        rank: number;
-    }>;
+    data: LimitedEventApiResponse;
     onPress?: () => void;
 }
 
 export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
-    title,
-    description,
-    timeRemaining,
-    userScore,
-    userRank,
-    userAvatar,
-    otherUsers,
+    data,
     onPress,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    
+    // Countdown hook - performanslı geri sayım
+    const countdown = useCountdown(data.endDate);
+    
+    // Format countdown: "DDD:HH:MM:SS" -> "HH:MM:SS" (gün kısmını kaldır)
+    const formattedCountdown = countdown 
+        ? countdown.split(':').slice(1).join(':') // İlk kısmı (gün) kaldır
+        : '00:00:00';
+    
+    // Image sources
+    const backgroundImageSource = toImageSource(data.backgroundImage) || require('@/assets/events/banner_02.png');
+    const eventImageSource = toImageSource(data.eventImage) || require('@/assets/events/image_01.png');
+    const userAvatarSource = toImageSource(data.userScore.avatar) || require('@/assets/avatar/ozan.png');
 
     return (
         <Box
@@ -53,10 +53,11 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
             shadowRadius={3}
             elevation={3}
             position="relative"
+            mt="$4"
         >
             {/* Background Image */}
             <Image
-                source={require('@/assets/events/banner_02.png')}
+                source={backgroundImageSource}
                 alt="Event background"
                 width={width - 32}
                 height={230}
@@ -102,7 +103,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                 fontSize={9}
                                 fontWeight="$semibold"
                             >
-                                {timeRemaining}
+                                {formattedCountdown}
                             </Text>
                             <Feather name="clock" size={18} color="#FFFFFF" />
                         </HStack>
@@ -118,7 +119,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             overflow="hidden"
                         >
                             <Image
-                                source={require('@/assets/events/image_01.png')}
+                                source={eventImageSource}
                                 alt="Event image"
                                 width={60}
                                 height={60}
@@ -134,7 +135,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                 fontWeight="$bold"
                                 lineHeight={15}
                             >
-                                {title}
+                                {data.title}
                             </Text>
                             <Text
                                 color="#D1D1D1"
@@ -142,7 +143,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                 lineHeight={11}
                                 numberOfLines={2}
                             >
-                                {description}
+                                {data.description}
                             </Text>
                         </VStack>
                     </HStack>
@@ -156,7 +157,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         <HStack justifyContent="space-between" alignItems="center">
                             <HStack alignItems="center" space="sm">
                                 <Image
-                                    source={userAvatar}
+                                    source={userAvatarSource}
                                     alt="User avatar"
                                     width={34}
                                     height={34}
@@ -175,7 +176,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                         fontSize={10}
                                         fontWeight="$semibold"
                                     >
-                                        {userScore.toLocaleString()} Points
+                                        {data.userScore.score.toLocaleString()} Points
                                     </Text>
                                 </VStack>
                             </HStack>
@@ -185,7 +186,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                 fontSize={11}
                                 fontWeight="$semibold"
                             >
-                                #{userRank}
+                                #{data.userScore.rank}
                             </Text>
                         </HStack>
                     </Box>
@@ -194,37 +195,40 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                     <HStack justifyContent="space-between" alignItems="center">
                         {/* Other Users */}
                         <HStack space="xs" alignItems="flex-end">
-                            {otherUsers.slice(0, 3).map((user, index) => (
-                                <Box key={user.id} ml={index === 0 ? 0 : -12}>
-                                    <Image
-                                        source={user.avatar}
-                                        alt={`User ${user.rank}`}
-                                        width={26}
-                                        height={26}
-                                        borderRadius={13}
-                                        borderWidth={1}
-                                        borderColor={index === 0 ? '#D3BE00' : index === 1 ? '#BEBEBE' : '#AB7A49'}
-                                    />
-                                    <Box
-                                        bg={index === 0 ? '#D3BE00' : index === 1 ? '#BEBEBE' : '#AB7A49'}
-                                        borderRadius={10}
-                                        width={11}
-                                        height={11}
-                                        justifyContent="center"
-                                        alignItems="center"
-                                        mt={-8}
-                                        ml={15}
-                                    >
-                                        <Text
-                                            color="#FFFFFF"
-                                            fontSize={6}
-                                            fontWeight="$semibold"
+                            {data.leaderboardUsers.slice(0, 3).map((user, index) => {
+                                const avatarSource = toImageSource(user.avatar) || require('@/assets/avatar/ozan.png');
+                                return (
+                                    <Box key={user.id} ml={index === 0 ? 0 : -12}>
+                                        <Image
+                                            source={avatarSource}
+                                            alt={`User ${user.rank}`}
+                                            width={26}
+                                            height={26}
+                                            borderRadius={13}
+                                            borderWidth={1}
+                                            borderColor={index === 0 ? '#D3BE00' : index === 1 ? '#BEBEBE' : '#AB7A49'}
+                                        />
+                                        <Box
+                                            bg={index === 0 ? '#D3BE00' : index === 1 ? '#BEBEBE' : '#AB7A49'}
+                                            borderRadius={10}
+                                            width={11}
+                                            height={11}
+                                            justifyContent="center"
+                                            alignItems="center"
+                                            mt={-8}
+                                            ml={15}
                                         >
-                                            {user.rank}
-                                        </Text>
+                                            <Text
+                                                color="#FFFFFF"
+                                                fontSize={6}
+                                                fontWeight="$semibold"
+                                            >
+                                                {user.rank}
+                                            </Text>
+                                        </Box>
                                     </Box>
-                                </Box>
-                            ))}
+                                );
+                            })}
                         </HStack>
 
                         {/* View Detail Button */}

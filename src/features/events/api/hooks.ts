@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts } from './communityEventsApi';
+import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getLimitedEvent } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
@@ -16,6 +16,7 @@ export const eventsKeys = {
   detail: (eventId: string) => [...eventsKeys.all, 'detail', eventId] as const,
   posts: (eventId: string, cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'posts', eventId, cursor, limit] as const,
+  limited: () => [...eventsKeys.all, 'limited'] as const,
 };
 
 /**
@@ -136,6 +137,27 @@ export const useEventPosts = (eventId: string, limit: number = 20) => {
     gcTime: 0, // Cache yok - veri hemen temizlenir
     refetchOnMount: true, // Her mount'ta yeniden fetch
     refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    retry: 1,
+  });
+};
+
+/**
+ * Get Limited Event query hook
+ * /events/limited endpoint'inden limited event bilgilerini getirir
+ *
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useLimitedEvent();
+ */
+export const useLimitedEvent = () => {
+  return useQuery<LimitedEventApiResponse, Error>({
+    queryKey: eventsKeys.limited(),
+    queryFn: () => getLimitedEvent(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 };

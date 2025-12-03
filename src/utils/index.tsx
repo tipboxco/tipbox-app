@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -119,5 +119,131 @@ export const useCurrentUserIdOrLogout = (): string | undefined => {
   }, [user, logout, navigation]);
 
   return user?.id;
+};
+
+/**
+ * Countdown formatı: "DDD:HH:MM:SS" (Gün:Saat:Dakika:Saniye)
+ * Örnek: "165:08:34" -> 165 gün, 8 saat, 34 dakika
+ */
+export type CountdownFormat = string;
+
+/**
+ * End date'e göre kalan süreyi hesaplar ve formatlar
+ * Performans için: Her saniye güncellenir ama component re-render olmaz
+ * 
+ * @param endDate - ISO string formatında bitiş tarihi
+ * @returns Formatlanmış countdown string (DDD:HH:MM:SS) veya null (süre dolmuşsa)
+ */
+export const calculateCountdown = (endDate: string): CountdownFormat | null => {
+  const end = new Date(endDate);
+  const now = new Date();
+  
+  if (isNaN(end.getTime())) {
+    return null;
+  }
+  
+  const diffMs = end.getTime() - now.getTime();
+  
+  if (diffMs <= 0) {
+    return null; // Süre dolmuş
+  }
+  
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / (24 * 60 * 60));
+  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+  const seconds = totalSeconds % 60;
+  
+  return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Countdown hook - Performanslı geri sayım
+ * Component re-render olmadan sadece countdown değeri güncellenir
+ * 
+ * @param endDate - ISO string formatında bitiş tarihi
+ * @param updateInterval - Güncelleme aralığı (ms, default: 1000ms = 1 saniye)
+ * @returns Formatlanmış countdown string (DDD:HH:MM:SS) veya null (süre dolmuşsa)
+ * 
+ * @example
+ * const countdown = useCountdown('2025-12-10T09:06:56.160Z');
+ * // countdown: "165:08:34:12"
+ */
+export const useCountdown = (
+  endDate: string | null | undefined,
+  updateInterval: number = 1000
+): CountdownFormat | null => {
+  const [countdown, setCountdown] = useState<CountdownFormat | null>(() => {
+    if (!endDate) return null;
+    return calculateCountdown(endDate);
+  });
+  
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const endDateRef = useRef<string | null | undefined>(endDate);
+  
+  // endDate değiştiğinde ref'i güncelle
+  useEffect(() => {
+    endDateRef.current = endDate;
+    // İlk değeri hemen hesapla
+    if (endDate) {
+      setCountdown(calculateCountdown(endDate));
+    } else {
+      setCountdown(null);
+    }
+  }, [endDate]);
+  
+  // Interval'i yönet
+  useEffect(() => {
+    if (!endDate) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+    
+    // İlk değeri hemen hesapla
+    const initialCountdown = calculateCountdown(endDate);
+    setCountdown(initialCountdown);
+    
+    // Eğer süre dolmuşsa interval başlatma
+    if (!initialCountdown) {
+      return;
+    }
+    
+    // Interval başlat
+    intervalRef.current = setInterval(() => {
+      const currentEndDate = endDateRef.current;
+      if (!currentEndDate) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setCountdown(null);
+        return;
+      }
+      
+      const newCountdown = calculateCountdown(currentEndDate);
+      setCountdown(newCountdown);
+      
+      // Süre dolmuşsa interval'i temizle
+      if (!newCountdown) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }
+    }, updateInterval);
+    
+    // Cleanup
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [endDate, updateInterval]);
+  
+  return countdown;
 };
 
