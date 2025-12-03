@@ -62,7 +62,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     <VStack flex={1}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: bottomInset }}
+        contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
         showsVerticalScrollIndicator={false}
       >
         <VStack space="md" px="$4">
@@ -120,27 +120,27 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             activeFilter={activeFilter}
             onFilterChange={onFilterChange}
           />
-
-          {/* Achievement Badges Grid */}
-          <FlatList
-            data={getFilteredAchievements()}
-            numColumns={2}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
-            contentContainerStyle={{ paddingHorizontal: 0, paddingVertical: 0 }}
-            ItemSeparatorComponent={() => <Box height={6} />}
-            columnWrapperStyle={{ justifyContent: 'space-between', gap: 6 }}
-            renderItem={({ item }) => (
-              <Box width={(width - 38) / 2}>
-                <BadgeCard
-                  data={item}
-                  onPress={() => onRewardPress(item)}
-                />
-              </Box>
-            )}
-            keyExtractor={(item) => item.id}
-          />
         </VStack>
+
+        {/* Achievement Badges Grid */}
+        <FlatList
+          data={getFilteredAchievements()}
+          numColumns={2}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 0 }}
+          ItemSeparatorComponent={() => <Box height={12} />}
+          columnWrapperStyle={{ gap: 12 }}
+          renderItem={({ item }) => (
+            <Box flex={1}>
+              <BadgeCard
+                data={item}
+                onPress={() => onRewardPress(item)}
+              />
+            </Box>
+          )}
+          keyExtractor={(item) => item.id}
+        />
       </ScrollView>
     </VStack>
   );

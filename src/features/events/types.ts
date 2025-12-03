@@ -1,5 +1,7 @@
 // Event Detail API Response Types
 
+import type { EventStatus } from '@/src/types/common';
+
 // Reward/Badge Tipi
 export interface EventDetailReward {
   id: string;
@@ -23,6 +25,7 @@ export interface EventDetailApiResponse {
   endDate: string; // ISO string
   interaction: number; // Etkileşim sayısı
   eventType: string; // 'default' veya 'product'
+  status: EventStatus; // 'active' veya 'upcoming'
   isJoined: boolean;
   bannerImage?: string | null; // Banner image (ileride gelecek, şimdilik optional)
   rewards: EventDetailReward[];

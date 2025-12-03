@@ -24,7 +24,7 @@ export const AchievementFilter: React.FC<AchievementFilterProps> = ({
   const filters: FilterOption[] = ['All', 'Not Started', 'In Progress', 'Completed'];
 
   return (
-    <HStack space="xs" justifyContent="flex-start">
+    <HStack space="xs" justifyContent="flex-start" mb='$4'>
       {filters.map((filter) => (
         <Pressable
           key={filter}

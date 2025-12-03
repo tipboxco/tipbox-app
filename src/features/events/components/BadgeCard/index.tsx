@@ -32,14 +32,14 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
         <Image
           source={data.image}
           alt={data.title}
-          w={150}
           h={150}
+          w={150}
           resizeMode="contain"
           alignSelf="center"
-          mt={'$3'}
+          p='$4'
         />
 
-        <VStack space="xs" px={'$4'} mt={'$5'}>
+        <VStack space="xs" px={'$4'}>
           <HStack space="sm" alignItems="center">
             <Text
               color={isDark ? '$textDark50' : '#000'}

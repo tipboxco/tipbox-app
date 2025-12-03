@@ -31,3 +31,9 @@ export enum EventDisplayType {
   DEFAULT = 'default',
   PRODUCT = 'product',
 }
+
+// Event Status Enum - Event durumu için
+export enum EventStatus {
+  ACTIVE = 'active',
+  UPCOMING = 'upcoming',
+}

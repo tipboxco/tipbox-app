@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import {
   Box,
@@ -17,6 +17,8 @@ import type { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard
 import { useSafeAreaValues } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
+// EventCard genişliği: isGrid=false (horizontal) için CARD_WIDTH kullanılıyor
+const CARD_WIDTH = (width - 48) / 2;
 
 type CommunityTabProps = {
   onEventPress: (eventId: string) => void;
@@ -95,14 +97,53 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     error: upcomingEventsError,
   } = useUpcomingEvents(4);
 
-  // Transform events data for display (flatten all pages)
-  const activeEvents = activeEventsData?.pages.flatMap((page) => 
-    page.items.map(mapEventToCardData)
-  ) ?? [];
+  // Transform events data for display (flatten all pages and remove duplicates)
+  const activeEvents = useMemo(() => {
+    if (!activeEventsData?.pages) return [];
+    
+    const allEvents = activeEventsData.pages.flatMap((page) => 
+      page.items.map(mapEventToCardData)
+    );
+    
+    // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
+    const uniqueEventsMap = new Map<string, EventCardData>();
+    for (const event of allEvents) {
+      if (!uniqueEventsMap.has(event.id)) {
+        uniqueEventsMap.set(event.id, event);
+      }
+    }
+    
+    const uniqueEvents = Array.from(uniqueEventsMap.values());
+    
+    // Debug: Duplicate kontrolü
+    if (allEvents.length !== uniqueEvents.length) {
+      console.warn('[Active Events] Duplicate events detected:', {
+        total: allEvents.length,
+        unique: uniqueEvents.length,
+        duplicates: allEvents.length - uniqueEvents.length,
+      });
+    }
+    
+    return uniqueEvents;
+  }, [activeEventsData?.pages]);
 
-  const upcomingEvents = upcomingEventsData?.pages.flatMap((page) => 
-    page.items.map(mapUpcomingEventToCardData)
-  ) ?? [];
+  const upcomingEvents = useMemo(() => {
+    if (!upcomingEventsData?.pages) return [];
+    
+    const allEvents = upcomingEventsData.pages.flatMap((page) => 
+      page.items.map(mapUpcomingEventToCardData)
+    );
+    
+    // Remove duplicates by ID
+    const uniqueEventsMap = new Map<string, UpcomingEventCardData>();
+    for (const event of allEvents) {
+      if (!uniqueEventsMap.has(event.id)) {
+        uniqueEventsMap.set(event.id, event);
+      }
+    }
+    
+    return Array.from(uniqueEventsMap.values());
+  }, [upcomingEventsData?.pages]);
 
   // fetchNextUpcomingPage'i wrap edip log ekliyoruz
   const fetchNextUpcomingPage = useCallback(() => {
@@ -220,7 +261,9 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     ItemSeparatorComponent={() => <Box width={12} />}
-                    contentContainerStyle={{ paddingRight: 16 }}
+                    contentContainerStyle={{ 
+                      paddingRight: isFetchingNextActivePage ? 16 : 16,
+                    }}
                     renderItem={({ item }) => (
                       <EventCard
                         data={item}
@@ -229,6 +272,21 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                       />
                     )}
                     keyExtractor={(item) => item.id}
+                    ListFooterComponent={
+                      isFetchingNextActivePage ? (
+                        <Box 
+                          justifyContent="center" 
+                          alignItems="center" 
+                          pl={12}
+                          style={{ 
+                            width: 60, // Loading indicator için küçük genişlik
+                            height: 210, // EventCard'ın yüksekliği ile aynı
+                          }}
+                        >
+                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                        </Box>
+                      ) : null
+                    }
                     onEndReached={() => {
                       if (hasNextActivePage && !isFetchingNextActivePage) {
                         fetchNextActivePage();

@@ -21,7 +21,7 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import { useEventDetail, useEventPosts } from '../api/hooks';
 import { toImageSource } from '@/src/utils';
-import { CardType } from '@/src/types/common';
+import { CardType, EventStatus } from '@/src/types/common';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
@@ -472,6 +472,7 @@ const EventDetailScreen: React.FC = () => {
                             bg={isJoined ? '#D9D9D9' : '#C2E607'}
                             borderRadius={5}
                             h={20}
+                            isDisabled={event.status === EventStatus.UPCOMING}
                             onPress={() => setIsJoined(!isJoined)}
                         >
                             <ButtonText
