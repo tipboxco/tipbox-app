@@ -39,7 +39,6 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         borderColor="#E9E9E9"
         borderRadius={10}
         width={isGrid ? GRID_CARD_WIDTH : CARD_WIDTH}
-        height={230}
         overflow="hidden"
         flexDirection="column"
       >
@@ -117,8 +116,8 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         </Box>
 
         {/* Content Section */}
-        <Box flex={1} justifyContent="space-between">
-          <VStack space="xs" flex={1} px="$2">
+        <Box flex={1} justifyContent={isActiveEvent ? "space-between" : "flex-start"}>
+          <VStack space="xs" px="$2" flexShrink={1} flex={1}>
             {/* Title */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
@@ -129,20 +128,18 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               {data.title}
             </Text>
 
-            {/* Description */}
+            {/* Description - 3 satır gösterilecek */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
               fontSize={9}
               fontWeight="$normal"
               numberOfLines={3}
-              lineHeight={12}
-              flex={1}
             >
               {data.description}
             </Text>
 
             {/* Date Range */}
-            <HStack alignItems="center" space="xs">
+            <HStack alignItems="center" space="xs" pt='$2' pb={isActiveEvent ? '$1' : '$2'}>
               <Box
                 width={14}
                 height={14}
@@ -167,13 +164,15 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             </HStack>
           </VStack>
 
-          {/* Divider Line */}
-          <Box
-            height={1}
-            bg="#D9D9D9"
-            width="100%"
-            mt="$1"
-          />
+          {/* Divider Line - Sadece Active Events için gösterilir */}
+          {isActiveEvent && (
+            <Box
+              height={1}
+              bg="#D9D9D9"
+              width="100%"
+              mt="$1"
+            />
+          )}
         </Box>
 
         {/* Participants Section - Type1 and Type2 (Sadece Active Events için gösterilir) */}
