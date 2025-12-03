@@ -16,7 +16,6 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ProfilePost, ProfileReview, ProfileFeedItem } from '../../types';
-import type { ReviewApiItem } from '@/src/types/ReviewsCard';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';

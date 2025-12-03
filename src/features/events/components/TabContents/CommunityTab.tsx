@@ -1,0 +1,316 @@
+import React, { useCallback } from 'react';
+import { FlatList, Dimensions, ActivityIndicator } from 'react-native';
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Input,
+  InputField,
+} from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import EventCard from '@/src/components/EventCard';
+import { useActiveEvents, useUpcomingEvents } from '../../api/hooks';
+import type { EventApiItem, UpcomingEventApiItem } from '@/src/types/EventCard';
+import type { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard';
+import { useSafeAreaValues } from '@/src/utils';
+
+const { width } = Dimensions.get('window');
+
+type CommunityTabProps = {
+  onEventPress: (eventId: string) => void;
+};
+
+// Format date range from startDate and endDate
+const formatDateRange = (startDate: string, endDate: string): string => {
+  try {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    
+    const formatDate = (date: Date): string => {
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day} ${month} ${year}`;
+    }
+
+    return `${formatDate(start)} - ${formatDate(end)}`;
+  } catch (error) {
+    console.error('Date formatting error:', error);
+    return '';
+  }
+};
+
+// Map API event data to EventCardData format (Active Events için)
+const mapEventToCardData = (event: EventApiItem): EventCardData => {
+  return {
+    id: event.eventId,
+    title: event.title,
+    description: event.description,
+    image: event.image || null,
+    dateRange: formatDateRange(event.startDate, event.endDate),
+    interaction: event.interaction,
+    avatars: event.participants.map(p => p.avatar),
+    eventType: event.eventType || 'default',
+  };
+};
+
+// Map API upcoming event data to UpcomingEventCardData format (Upcoming Events için - interaction ve participants yok)
+const mapUpcomingEventToCardData = (event: UpcomingEventApiItem): UpcomingEventCardData => {
+  return {
+    id: event.eventId,
+    title: event.title,
+    description: event.description,
+    image: event.image || null,
+    dateRange: formatDateRange(event.startDate, event.endDate),
+    eventType: event.eventType || 'default',
+  };
+};
+
+export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const bottomInset = useSafeAreaValues('bottom');
+
+  // Active Events API hook
+  const {
+    data: activeEventsData,
+    fetchNextPage: fetchNextActivePage,
+    hasNextPage: hasNextActivePage,
+    isFetchingNextPage: isFetchingNextActivePage,
+    isLoading: isActiveEventsLoading,
+    error: activeEventsError,
+  } = useActiveEvents(20);
+
+  // Upcoming Events API hook - 4'erli veri gelecek
+  const {
+    data: upcomingEventsData,
+    fetchNextPage: fetchNextUpcomingPageOriginal,
+    hasNextPage: hasNextUpcomingPage,
+    isFetchingNextPage: isFetchingNextUpcomingPage,
+    isLoading: isUpcomingEventsLoading,
+    error: upcomingEventsError,
+  } = useUpcomingEvents(4);
+
+  // Transform events data for display (flatten all pages)
+  const activeEvents = activeEventsData?.pages.flatMap((page) => 
+    page.items.map(mapEventToCardData)
+  ) ?? [];
+
+  const upcomingEvents = upcomingEventsData?.pages.flatMap((page) => 
+    page.items.map(mapUpcomingEventToCardData)
+  ) ?? [];
+
+  // fetchNextUpcomingPage'i wrap edip log ekliyoruz
+  const fetchNextUpcomingPage = useCallback(() => {
+    console.log('[Upcoming Events] fetchNextUpcomingPage çağrıldı', {
+      hasNextPage: hasNextUpcomingPage,
+      isFetching: isFetchingNextUpcomingPage,
+      currentItemsCount: upcomingEvents.length,
+    });
+    fetchNextUpcomingPageOriginal();
+  }, [fetchNextUpcomingPageOriginal, hasNextUpcomingPage, isFetchingNextUpcomingPage, upcomingEvents.length]);
+
+  // Upcoming Events için scroll handler - nested scroll durumunda onEndReached düzgün çalışmayabilir
+  const handleUpcomingEventsScroll = useCallback(
+    (event: any) => {
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+      const paddingToBottom = 20;
+      const isCloseToBottom =
+        layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+      console.log('[Upcoming Events Scroll]', {
+        layoutHeight: layoutMeasurement.height,
+        contentOffsetY: contentOffset.y,
+        contentHeight: contentSize.height,
+        isCloseToBottom,
+        hasNextPage: hasNextUpcomingPage,
+        isFetching: isFetchingNextUpcomingPage,
+        distanceFromBottom: contentSize.height - (layoutMeasurement.height + contentOffset.y),
+      });
+
+      if (isCloseToBottom && hasNextUpcomingPage && !isFetchingNextUpcomingPage) {
+        console.log('[Upcoming Events] Yeni sayfa yükleniyor (onScroll handler)...');
+        fetchNextUpcomingPage();
+      }
+    },
+    [hasNextUpcomingPage, isFetchingNextUpcomingPage, fetchNextUpcomingPage]
+  );
+
+  return (
+    <VStack flex={1}>
+      <FlatList
+        data={upcomingEvents}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottomInset + 24, paddingHorizontal: 16 }}
+        ItemSeparatorComponent={() => <Box height={12} />}
+        columnWrapperStyle={{ gap: 12 }}
+        renderItem={({ item }) => (
+          <Box flex={1}>
+            <EventCard
+              data={item}
+              isGrid={true}
+              onPress={() => onEventPress(item.id)}
+            />
+          </Box>
+        )}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <VStack space="md" py="$4">
+            {/* Search Bar */}
+            <Box>
+              <HStack
+                alignItems="center"
+                bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+                borderWidth={1}
+                borderColor="#E9E9E9"
+                borderRadius={20}
+                px={14}
+                space="sm"
+              >
+                <Feather
+                  name="search"
+                  size={24}
+                  color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+                />
+                <Input flex={1} borderWidth={0} bg="transparent">
+                  <InputField
+                    placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                    placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                    color={isDark ? '#000' : '#000'}
+                    fontSize={9}
+                  />
+                </Input>
+              </HStack>
+            </Box>
+
+            {/* Active Events Section - Horizontal Scroll */}
+            <Box>
+              <VStack space="sm">
+                <Text
+                  color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                  fontSize={14}
+                  fontWeight="$bold"
+                >
+                  Active Events
+                </Text>
+                {isActiveEventsLoading ? (
+                  <Box py="$4" alignItems="center">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+                  </Box>
+                ) : activeEventsError ? (
+                  <Box py="$4" alignItems="center">
+                    <Text color="#CE4A4A" fontSize={12}>
+                      Hata: {activeEventsError.message}
+                    </Text>
+                  </Box>
+                ) : activeEvents.length === 0 ? (
+                  <Box py="$4" alignItems="center">
+                    <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
+                      Henüz aktif etkinlik bulunmuyor
+                    </Text>
+                  </Box>
+                ) : (
+                  <FlatList
+                    data={activeEvents}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    ItemSeparatorComponent={() => <Box width={12} />}
+                    contentContainerStyle={{ paddingRight: 16 }}
+                    renderItem={({ item }) => (
+                      <EventCard
+                        data={item}
+                        isGrid={false}
+                        onPress={() => onEventPress(item.id)}
+                      />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    onEndReached={() => {
+                      if (hasNextActivePage && !isFetchingNextActivePage) {
+                        fetchNextActivePage();
+                      }
+                    }}
+                    onEndReachedThreshold={0.5}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={true}
+                  />
+                )}
+              </VStack>
+            </Box>
+
+            {/* Upcoming Events Section Header */}
+            <Box>
+              <Text
+                color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                fontSize={14}
+                fontWeight="$bold"
+              >
+                Upcoming Events
+              </Text>
+            </Box>
+
+            {/* Upcoming Events Loading State */}
+            {isUpcomingEventsLoading && upcomingEvents.length === 0 && (
+              <Box pt="$4" alignItems="center">
+                <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+              </Box>
+            )}
+
+            {/* Upcoming Events Error State */}
+            {upcomingEventsError && (
+              <Box pt="$4" alignItems="center" px="$4">
+                <Text color="#CE4A4A" fontSize={12}>
+                  Hata: {upcomingEventsError.message}
+                </Text>
+              </Box>
+            )}
+
+            {/* Upcoming Events Empty State */}
+            {!isUpcomingEventsLoading && upcomingEvents.length === 0 && !upcomingEventsError && (
+              <Box pt="$4" alignItems="center" px="$4">
+                <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
+                  Henüz yaklaşan etkinlik bulunmuyor
+                </Text>
+              </Box>
+            )}
+          </VStack>
+        }
+        ListFooterComponent={
+          isFetchingNextUpcomingPage ? (
+            <Box pt="$4" alignItems="center" width="100%">
+              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+          ) : null
+        }
+        onScroll={handleUpcomingEventsScroll}
+        scrollEventThrottle={400}
+        onEndReached={() => {
+          console.log('[Upcoming Events onEndReached] Tetiklendi', {
+            hasNextPage: hasNextUpcomingPage,
+            isFetching: isFetchingNextUpcomingPage,
+          });
+          if (hasNextUpcomingPage && !isFetchingNextUpcomingPage) {
+            console.log('[Upcoming Events] Yeni sayfa yükleniyor (onEndReached)...');
+            fetchNextUpcomingPage();
+          } else {
+            console.log('[Upcoming Events onEndReached] İstek atılmadı', {
+              reason: !hasNextUpcomingPage ? 'hasNextPage false' : 'isFetching true',
+            });
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        removeClippedSubviews={true}
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
+        nestedScrollEnabled={true}
+      />
+    </VStack>
+  );
+};
+

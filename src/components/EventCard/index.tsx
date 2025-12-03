@@ -10,7 +10,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { EventCardData } from '@/src/types/EventCard';
+import { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard';
 import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
@@ -18,7 +18,7 @@ const CARD_WIDTH = (width - 48) / 2;
 const GRID_CARD_WIDTH = (width - 48) / 2; // 16px padding on each side + 16px gap between cards
 
 interface EventCardProps {
-  data: EventCardData;
+  data: EventCardData | UpcomingEventCardData;
   onPress?: () => void;
   isGrid?: boolean;
 }
@@ -26,6 +26,10 @@ interface EventCardProps {
 export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  
+  // Type guard: UpcomingEventCardData'da interaction ve avatars yok
+  const isActiveEvent = 'interaction' in data && 'avatars' in data;
+  const activeEventData = isActiveEvent ? data as EventCardData : null;
 
   return (
     <Pressable onPress={onPress}>
@@ -172,50 +176,52 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           />
         </Box>
 
-        {/* Participants Section - Type1 and Type2 */}
-        <HStack px="$2" alignItems="center" justifyContent="space-between" my="$2">
-          <HStack alignItems="center" space="xs">
-            {data.avatars && data.avatars.length > 0
-              ? (() => {
-                  const validAvatarSources: Array<NonNullable<ReturnType<typeof toImageSource>>> = [];
-                  
-                  for (const avatar of data.avatars) {
-                    if (avatar) {
-                      const avatarSource = toImageSource(avatar);
-                      if (avatarSource) {
-                        validAvatarSources.push(avatarSource);
-                        if (validAvatarSources.length >= 4) break;
+        {/* Participants Section - Type1 and Type2 (Sadece Active Events için gösterilir) */}
+        {isActiveEvent && activeEventData && (
+          <HStack px="$2" alignItems="center" justifyContent="space-between" my="$2">
+            <HStack alignItems="center" space="xs">
+              {activeEventData.avatars && activeEventData.avatars.length > 0
+                ? (() => {
+                    const validAvatarSources: Array<NonNullable<ReturnType<typeof toImageSource>>> = [];
+                    
+                    for (const avatar of activeEventData.avatars) {
+                      if (avatar) {
+                        const avatarSource = toImageSource(avatar);
+                        if (avatarSource) {
+                          validAvatarSources.push(avatarSource);
+                          if (validAvatarSources.length >= 4) break;
+                        }
                       }
                     }
-                  }
 
-                  return validAvatarSources.length > 0
-                    ? validAvatarSources.map((avatarSource, index) => (
-                        <Image
-                          key={index}
-                          source={avatarSource}
-                          alt={`Participant ${index + 1}`}
-                          width={18}
-                          height={18}
-                          borderRadius={9}
-                          style={{
-                            marginLeft: index > 0 ? -12 : 0,
-                            zIndex: 4 - index,
-                          }}
-                        />
-                      ))
-                    : null;
-                })()
-              : null}
+                    return validAvatarSources.length > 0
+                      ? validAvatarSources.map((avatarSource, index) => (
+                          <Image
+                            key={index}
+                            source={avatarSource}
+                            alt={`Participant ${index + 1}`}
+                            width={18}
+                            height={18}
+                            borderRadius={9}
+                            style={{
+                              marginLeft: index > 0 ? -12 : 0,
+                              zIndex: 4 - index,
+                            }}
+                          />
+                        ))
+                      : null;
+                  })()
+                : null}
+            </HStack>
+            <Text
+              color={isDark ? '#FFFFFF' : '#B9B9B9'}
+              fontSize={9}
+              fontWeight="$medium"
+            >
+              {activeEventData.interaction || 0}+ Etkileşim
+            </Text>
           </HStack>
-          <Text
-            color={isDark ? '#FFFFFF' : '#B9B9B9'}
-            fontSize={9}
-            fontWeight="$medium"
-          >
-            {data.interaction || 0}+ Etkileşim
-          </Text>
-        </HStack>
+        )}
 
       </Box>
     </Pressable>

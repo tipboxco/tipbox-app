@@ -1,5 +1,5 @@
 import { apiService } from '../../../services/ApiService';
-import type { EventApiItem, EventsApiResponse } from '@/src/types/EventCard';
+import type { EventApiItem, EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
@@ -44,12 +44,12 @@ export const getActiveEvents = async (
  *
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
- * @returns EventsApiResponse - Events items ve pagination bilgisi
+ * @returns UpcomingEventsApiResponse - Events items ve pagination bilgisi (interaction ve participants yok)
  */
 export const getUpcomingEvents = async (
   cursor?: string,
   limit: number = 20
-): Promise<EventsApiResponse> => {
+): Promise<UpcomingEventsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
@@ -57,7 +57,7 @@ export const getUpcomingEvents = async (
   params.append('limit', limit.toString());
 
   try {
-    const response = await apiService.getClient().get<EventsApiResponse>(
+    const response = await apiService.getClient().get<UpcomingEventsApiResponse>(
       `/events/upcoming?${params.toString()}`
     );
     return response.data;

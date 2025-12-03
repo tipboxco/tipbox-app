@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts } from './communityEventsApi';
-import type { EventsApiResponse } from '@/src/types/EventCard';
+import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
@@ -61,7 +61,7 @@ export const useActiveEvents = (limit: number = 20) => {
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUpcomingEvents();
  */
 export const useUpcomingEvents = (limit: number = 20) => {
-  return useInfiniteQuery<EventsApiResponse, Error>({
+  return useInfiniteQuery<UpcomingEventsApiResponse, Error>({
     queryKey: eventsKeys.upcoming(undefined, limit),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
