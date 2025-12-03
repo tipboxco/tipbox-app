@@ -65,3 +65,27 @@ export interface LimitedEventApiResponse {
   endDate: string; // ISO string
 }
 
+// Achievement Status
+export type AchievementStatus = 'not-started' | 'in_progress' | 'completed';
+
+// Achievement Item - /events/achievements endpoint'inden gelen achievement bilgisi
+export interface AchievementApiItem {
+  id: string;
+  title: string;
+  image: string;
+  description: string;
+  current: number;
+  total: number;
+  status: AchievementStatus;
+}
+
+// Achievements API Response - /events/achievements endpoint'inden dönen response
+export interface AchievementsApiResponse {
+  items: AchievementApiItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+

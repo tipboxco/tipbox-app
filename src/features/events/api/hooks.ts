@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getLimitedEvent } from './communityEventsApi';
+import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getLimitedEvent, getAchievements } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse, LimitedEventApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
@@ -17,6 +17,8 @@ export const eventsKeys = {
   posts: (eventId: string, cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'posts', eventId, cursor, limit] as const,
   limited: () => [...eventsKeys.all, 'limited'] as const,
+  achievements: (cursor?: string, limit?: number) =>
+    [...eventsKeys.all, 'achievements', cursor, limit] as const,
 };
 
 /**
@@ -154,6 +156,38 @@ export const useLimitedEvent = () => {
   return useQuery<LimitedEventApiResponse, Error>({
     queryKey: eventsKeys.limited(),
     queryFn: () => getLimitedEvent(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Achievements infinite query hook
+ * /events/achievements endpoint'inden achievement listesini infinite scroll ile getirir
+ *
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useAchievements();
+ */
+export const useAchievements = (limit: number = 20) => {
+  return useInfiniteQuery<AchievementsApiResponse, Error>({
+    queryKey: eventsKeys.achievements(undefined, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getAchievements(cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination.cursor;
+    },
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',

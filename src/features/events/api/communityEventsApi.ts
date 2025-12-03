@@ -1,6 +1,6 @@
 import { apiService } from '../../../services/ApiService';
 import type { EventApiItem, EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse, LimitedEventApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
@@ -152,6 +152,41 @@ export const getLimitedEvent = async (): Promise<LimitedEventApiResponse> => {
   } catch (error: any) {
     console.error('Limited Event API Error:', {
       url: '/events/limited',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Achievements endpoint function
+ * /events/achievements endpoint'inden achievement listesini getirir (pagination ile)
+ *
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns AchievementsApiResponse - Achievement items ve pagination bilgisi
+ */
+export const getAchievements = async (
+  cursor?: string,
+  limit: number = 20
+): Promise<AchievementsApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<AchievementsApiResponse>(
+      `/events/achievements?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Achievements API Error:', {
+      url: `/events/achievements?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

@@ -20,7 +20,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
         borderWidth={1}
         borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
         borderRadius={10}
-        h={'auto'}
+        minHeight={200}
         w="100%"
         overflow="hidden"
         position="relative"
@@ -39,28 +39,34 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
           p='$4'
         />
 
-        <VStack space="xs" px={'$4'}>
-          <HStack space="sm" alignItems="center">
+        <VStack space="xs" px={'$4'} flex={1} justifyContent="space-between">
+          <VStack space="xs" flexShrink={1}>
+            <HStack space="sm" alignItems="flex-start" minHeight={18}>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize={12}
+                numberOfLines={2}
+                fontWeight="$bold"
+                textAlign="center"
+                w="100%"
+                flexWrap="wrap"
+              >
+                {data.title} 
+              </Text>
+            </HStack>
+
             <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={12}
-              fontWeight="$bold"
+              color={isDark ? '$textDark400' : '#575757'}
+              fontSize={9}
+              lineHeight={11}
               textAlign="center"
               w="100%"
+              numberOfLines={2}
+              minHeight={33}
             >
-              {data.title}
+              {data.description}
             </Text>
-          </HStack>
-
-          <Text
-            color={isDark ? '$textDark400' : '#575757'}
-            fontSize={9}
-            lineHeight={11}
-            textAlign="center"
-            w="100%"
-          >
-            {data.description}
-          </Text>
+          </VStack>
 
           <VStack space="xs" my={'$3'}>
             <Box
