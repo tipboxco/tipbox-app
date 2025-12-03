@@ -1,5 +1,5 @@
 import { apiService } from '../../../services/ApiService';
-import type { BrandCategory, BrandListItem } from '../types';
+import type { BrandCategory, BrandListItem, BrandCatalogResponse } from '../types';
 
 /**
  * Get Brand Categories endpoint function
@@ -24,10 +24,53 @@ export const getBrandCategories = async (): Promise<BrandCategory[]> => {
 export const getBrandsByCategory = async (
   categoryId: string
 ): Promise<BrandListItem[]> => {
-  const response = await apiService.getClient().get<BrandListItem[]>(
-    `/brands/categories/${categoryId}/brands`
-  );
-  return response.data;
+  try {
+    const response = await apiService.getClient().get<BrandListItem[]>(
+      `/brands/categories/${categoryId}/brands`
+    );
+    console.log('[BrandsByCategory API] Response:', JSON.stringify(response.data, null, 2));
+    console.log('[BrandsByCategory API] Response length:', response.data?.length);
+    if (response.data && response.data.length > 0) {
+      console.log('[BrandsByCategory API] First item:', JSON.stringify(response.data[0], null, 2));
+    }
+    return response.data;
+  } catch (error: any) {
+    console.error('Brands By Category API Error:', {
+      url: `/brands/categories/${categoryId}/brands`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Catalog endpoint function
+ * /brands/{brandId}/catalog API'sinden marka katalog bilgilerini getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns BrandCatalogResponse - Marka katalog bilgileri (banner, description, posts, vb.)
+ */
+export const getBrandCatalog = async (
+  brandId: string
+): Promise<BrandCatalogResponse> => {
+  try {
+    const response = await apiService.getClient().get<BrandCatalogResponse>(
+      `/brands/${brandId}/catalog`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Brand Catalog API Error:', {
+      url: `/brands/${brandId}/catalog`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 

@@ -20,6 +20,8 @@ export interface BrandCategory {
  * Brand List Item - /brands/categories/{category_id}/brands endpoint'inden gelen brand bilgisi
  */
 export interface BrandListItem {
+  brandId?: string; // API'den gelebilir veya gelmeyebilir
+  id?: string; // Alternatif olarak id gelebilir
   categoryId: string;
   name: string;
   image: string | null;
@@ -54,4 +56,70 @@ export interface CatalogProduct {
   image: string;
   productGroupId: string;
   subCategoryId: string;
+}
+
+/**
+ * Brand Catalog Post User - /brands/{brandId}/catalog response'undaki post user bilgisi
+ */
+export interface BrandCatalogPostUser {
+  id: string;
+  name: string;
+  title: string;
+  avatar: string;
+}
+
+/**
+ * Brand Catalog Post Stats - /brands/{brandId}/catalog response'undaki post stats bilgisi
+ */
+export interface BrandCatalogPostStats {
+  likes: number;
+  comments: number;
+  shares: number;
+  bookmarks: number;
+}
+
+/**
+ * Brand Catalog Post Context Data - /brands/{brandId}/catalog response'undaki post context data bilgisi
+ */
+export interface BrandCatalogPostContextData {
+  id: string;
+  name: string;
+  subName: string;
+  image: string;
+}
+
+/**
+ * Brand Catalog Post Data - /brands/{brandId}/catalog response'undaki post data bilgisi
+ */
+export interface BrandCatalogPostData {
+  id: string;
+  type: string;
+  user: BrandCatalogPostUser;
+  stats: BrandCatalogPostStats;
+  createdAt: string;
+  contextType: string;
+  contextData: BrandCatalogPostContextData;
+  content: string;
+  images: string[];
+}
+
+/**
+ * Brand Catalog Post - /brands/{brandId}/catalog response'undaki post item
+ */
+export interface BrandCatalogPost {
+  type: string;
+  data: BrandCatalogPostData;
+}
+
+/**
+ * Brand Catalog Response - /brands/{brandId}/catalog endpoint'inden dönen response
+ */
+export interface BrandCatalogResponse {
+  brandId: string;
+  name: string;
+  description: string;
+  bannerImage: string;
+  followers: number;
+  isJoined: boolean;
+  posts: BrandCatalogPost[];
 }

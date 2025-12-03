@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem } from '../types';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -11,6 +11,7 @@ export const catalogKeys = {
   categories: () => [...catalogKeys.all, 'categories'] as const,
   brandCategories: () => [...catalogKeys.all, 'brandCategories'] as const,
   brandList: (categoryId: string) => [...catalogKeys.all, 'brands', categoryId] as const,
+  brandCatalog: (brandId: string) => [...catalogKeys.all, 'brandCatalog', brandId] as const,
   subCategories: (categoryId: string) => [...catalogKeys.all, 'subCategories', categoryId] as const,
   productGroups: (subCategoryId: string) => [...catalogKeys.all, 'productGroups', subCategoryId] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
@@ -161,6 +162,34 @@ export const useCatalogProducts = (productGroupId: string | undefined) => {
     enabled: !!productGroupId,
     staleTime: 0, // Cache yok
     gcTime: 0, // Cache yok
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand Catalog query hook
+ * /brands/{brandId}/catalog endpoint'inden marka katalog bilgilerini getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useBrandCatalog('brand-123');
+ */
+export const useBrandCatalog = (brandId: string | undefined) => {
+  return useQuery<BrandCatalogResponse, Error>({
+    queryKey: brandId ? catalogKeys.brandCatalog(brandId) : ['catalog', 'brandCatalog', 'disabled'],
+    queryFn: () => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      return getBrandCatalog(brandId);
+    },
+    enabled: !!brandId,
+    staleTime: 0,
+    gcTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     retry: 1,

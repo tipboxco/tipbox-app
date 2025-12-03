@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -43,6 +43,20 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   const { data: brandsByCategory, isLoading: isBrandsLoading, error: brandsError } = useBrandsByCategory(
     currentStep === 'brands' ? selectedCategory?.id : undefined
   );
+
+  // Debug: API response'u kontrol et
+  useEffect(() => {
+    if (brandsByCategory) {
+      console.log('[BrandScreen] Brands By Category Data:', JSON.stringify(brandsByCategory, null, 2));
+      console.log('[BrandScreen] Brands Count:', brandsByCategory.length);
+      if (brandsByCategory.length > 0) {
+        console.log('[BrandScreen] First Brand Item:', JSON.stringify(brandsByCategory[0], null, 2));
+      }
+    }
+    if (brandsError) {
+      console.error('[BrandScreen] Brands Error:', brandsError);
+    }
+  }, [brandsByCategory, brandsError]);
 
   const handleCategoryPress = (category: CategoryCardCategory) => {
     setCurrentStep('brands');
@@ -94,9 +108,17 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     };
   };
 
-  const mapBrandListItemToBrandCardBrand = (brand: BrandListItem, index: number): BrandCardBrand => {
+  const mapBrandListItemToBrandCardBrand = (brand: BrandListItem): BrandCardBrand => {
+    // brandId veya id alanını kullan, yoksa categoryId-name kombinasyonu kullan
+    const brandId = brand.brandId || brand.id || `${brand.categoryId}-${brand.name}`;
+    
+    console.log('[BrandScreen] Mapping brand:', {
+      original: brand,
+      mappedId: brandId,
+    });
+    
     return {
-      id: `${brand.categoryId}-${brand.name}-${index}`,
+      id: brandId,
       name: brand.name,
       followers: '',
       logo: brand.image ? { uri: brand.image } : require('@/assets/avatar/ozan.png'),
@@ -112,7 +134,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         category.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     } else {
-      const brands = (brandsByCategory || []).map(mapBrandListItemToBrandCardBrand);
+      const brands = (brandsByCategory || []).map((brand) => mapBrandListItemToBrandCardBrand(brand));
       return brands.filter(brand =>
         brand.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -184,48 +206,75 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         </VStack>
       </Box>
 
+      {/* Loading State */}
+      {currentStep === 'brands' && isBrandsLoading && (
+        <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+          <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+        </Box>
+      )}
+
+      {/* Error State */}
+      {currentStep === 'brands' && brandsError && (
+        <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
+          <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+            Hata: {brandsError.message}
+          </Text>
+        </Box>
+      )}
+
+      {/* Empty State */}
+      {currentStep === 'brands' && !isBrandsLoading && !brandsError && currentData.length === 0 && (
+        <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
+          <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm" textAlign="center">
+            Bu kategoride henüz marka bulunmuyor
+          </Text>
+        </Box>
+      )}
+
       {/* Dynamic Grid */}
-      <ScrollView 
-        flex={1} 
-        px="$4" 
-        pb={scrollViewPaddingBottom}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-      >
-        <VStack space="md">
-          {currentData.map((item, index) => (
-            <HStack key={`row-${index}`} space="md" justifyContent="space-between">
-              {[0, 1, 2].map((colIndex) => {
-                const itemIndex = index * 3 + colIndex;
-                const currentItem = currentData[itemIndex];
-                
-                if (!currentItem) {
-                  return <Box key={`empty-${index}-${colIndex}`} flex={1} />;
-                }
-                
-                if (currentStep === 'categories') {
-                  return (
-                    <CategoryCard
-                      key={`category-${currentItem.id}-${index}-${colIndex}`}
-                      category={currentItem as CategoryCardCategory}
-                      onPress={() => handleCategoryPress(currentItem as CategoryCardCategory)}
-                    />
-                  );
-                } else {
-                  return (
-                    <BrandCard
-                      key={`brand-${currentItem.id}-${index}-${colIndex}`}
-                      brand={currentItem as BrandCardBrand}
-                      onPress={() => handleBrandPress(currentItem as BrandCardBrand)}
-                    />
-                  );
-                }
-              })}
-            </HStack>
-          ))}
-        </VStack>
-      </ScrollView>
+      {currentData.length > 0 && (
+        <ScrollView 
+          flex={1} 
+          px="$4" 
+          pb={scrollViewPaddingBottom}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+        >
+          <VStack space="md">
+            {currentData.map((item, index) => (
+              <HStack key={`row-${index}`} space="md" justifyContent="space-between">
+                {[0, 1, 2].map((colIndex) => {
+                  const itemIndex = index * 3 + colIndex;
+                  const currentItem = currentData[itemIndex];
+                  
+                  if (!currentItem) {
+                    return <Box key={`empty-${index}-${colIndex}`} flex={1} />;
+                  }
+                  
+                  if (currentStep === 'categories') {
+                    return (
+                      <CategoryCard
+                        key={`category-${currentItem.id}-${index}-${colIndex}`}
+                        category={currentItem as CategoryCardCategory}
+                        onPress={() => handleCategoryPress(currentItem as CategoryCardCategory)}
+                      />
+                    );
+                  } else {
+                    return (
+                      <BrandCard
+                        key={`brand-${currentItem.id}-${index}-${colIndex}`}
+                        brand={currentItem as BrandCardBrand}
+                        onPress={() => handleBrandPress(currentItem as BrandCardBrand)}
+                      />
+                    );
+                  }
+                })}
+              </HStack>
+            ))}
+          </VStack>
+        </ScrollView>
+      )}
     </Box>
   );
 };

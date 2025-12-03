@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Dimensions, FlatList, Animated } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { Dimensions, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -17,10 +17,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { mock_brand_detail } from '@/src/mock/catalog/brandCatalog';
 import { Feather } from '@expo/vector-icons';
 import PostCard from '@/src/components/PostCards/PostCard';
 import { useSafeAreaValues } from '@/src/utils';
+import { useBrandCatalog } from '../api/hooks';
+import type { BrandCatalogPost } from '../types';
+import type { PostCardData } from '@/src/types/PostCard';
+import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -34,10 +37,54 @@ const BrandDetailScreen: React.FC = () => {
     const route = useRoute<BrandDetailScreenRouteProp>();
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const { brandId } = route.params;
+    // Route params'dan brandId'yi güvenli şekilde al
+    const brandId = route.params?.brandId;
+    
+    // Debug: brandId kontrolü
+    useEffect(() => {
+        console.log('[BrandDetailScreen] Route params:', route.params);
+        console.log('[BrandDetailScreen] brandId:', brandId);
+    }, [route.params, brandId]);
 
-    // Find the brand from mock data
-    const brand = mock_brand_detail;
+    // Brand Catalog API hook
+    const {
+        data: brandCatalog,
+        isLoading: isBrandCatalogLoading,
+        error: brandCatalogError,
+    } = useBrandCatalog(brandId);
+
+    // Map BrandCatalogPost to PostCardData
+    const mapBrandPostToPostCardData = (post: BrandCatalogPost): PostCardData => {
+        const postData = post.data;
+        const avatarSource = toImageSource(postData.user.avatar);
+        
+        return {
+            id: postData.id,
+            user: {
+                id: postData.user.id,
+                name: postData.user.name,
+                title: postData.user.title,
+                avatar: avatarSource || require('@/assets/avatar/ozan.png'),
+            },
+            content: postData.content,
+            images: postData.images?.map(img => img) || [],
+            stats: {
+                likes: postData.stats.likes,
+                comments: postData.stats.comments,
+                shares: postData.stats.shares,
+                bookmarks: postData.stats.bookmarks,
+            },
+            createdAt: postData.createdAt,
+            contextType: postData.contextType as any,
+            contextData: postData.contextData ? {
+                id: postData.contextData.id,
+                name: postData.contextData.name,
+                subName: postData.contextData.subName,
+                image: postData.contextData.image,
+                isOwned: false, // API'den gelmiyor, default false
+            } : undefined,
+        };
+    };
 
     // Banner yüksekliği ve içerik başlangıç noktası
     const BANNER_HEIGHT = 250;
@@ -82,23 +129,44 @@ const BrandDetailScreen: React.FC = () => {
             } else if (value >= 180) {
                 opacity = 1;
             }
-            console.log('[BrandDetailScreen] ScrollY:', value, 'Calculated Opacity:', opacity.toFixed(2));
         });
         
         return () => {
             scrollY.removeListener(listenerId);
         };
-    }, []);
+    }, [headerOpacity]);
 
-    if (!brand) {
+    // Loading state
+    if (isBrandCatalogLoading) {
         return (
-            <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-                <Header
-                    title="Brand Not Found"
-                    showBackButton={true}
-                    onBackPress={() => navigation.goBack()}
-                />
-            </Box>
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4">
+                        Yükleniyor...
+                    </Text>
+                </Box>
+            </SafeAreaView>
+        );
+    }
+
+    // Error state
+    if (brandCatalogError || !brandCatalog) {
+        return (
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+                    <Header
+                        title="Brand Not Found"
+                        showBackButton={true}
+                        onBackPress={() => navigation.goBack()}
+                    />
+                    <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                        <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+                            {brandCatalogError ? `Hata: ${brandCatalogError.message}` : 'Marka bulunamadı'}
+                        </Text>
+                    </Box>
+                </Box>
+            </SafeAreaView>
         );
     }
 
@@ -127,6 +195,7 @@ const BrandDetailScreen: React.FC = () => {
                         right: 0,
                         width: '100%',
                         zIndex: 9999,
+                        elevation: 10,
                     }}
                 >
                     <Box 
@@ -134,7 +203,7 @@ const BrandDetailScreen: React.FC = () => {
                         width="100%"
                     >
                         <Header
-                            title={brand.name}
+                            title={brandCatalog.name}
                             showBackButton={true}
                             onBackPress={() => navigation.goBack()}
                             showShare={true}
@@ -157,7 +226,7 @@ const BrandDetailScreen: React.FC = () => {
                     overflow="hidden"
                 >
                     <Image
-                        source={brand.bannerImage}
+                        source={toImageSource(brandCatalog.bannerImage) || require('@/assets/banner/banner_01.png')}
                         alt="Brand Banner"
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
@@ -221,7 +290,7 @@ const BrandDetailScreen: React.FC = () => {
                             lineHeight={12}
                             mb="$2"
                         >
-                            Discover all experiences related to {brand.name}.
+                            Discover all experiences related to {brandCatalog.name}.
                         </Text>
                     </VStack>
                 </Box>
@@ -245,7 +314,7 @@ const BrandDetailScreen: React.FC = () => {
                                 fontWeight="$bold"
                                 mb="$1"
                             >
-                                {brand.name}
+                                {brandCatalog.name}
                             </Text>
                             <HStack alignItems="center" space="sm">
                                 <Feather name="users" size={12} color="#9D9D9D" />
@@ -254,16 +323,16 @@ const BrandDetailScreen: React.FC = () => {
                                     fontSize={9}
                                     fontWeight="$medium"
                                 >
-                                    {brand.followers}
+                                    {brandCatalog.followers} Followers
                                 </Text>
                             </HStack>
                         </VStack>
                         <Button
-                            bg="#C2E607"
+                            bg={brandCatalog.isJoined ? "rgba(215, 215, 215, 0.8)" : "#C2E607"}
                             borderRadius={10}
                             width={65}
                             height={24}
-                            onPress={() => console.log('Join')}
+                            onPress={() => console.log(brandCatalog.isJoined ? 'Leave' : 'Join')}
                         >
                             <ButtonText
                                 color="#000000"
@@ -271,7 +340,7 @@ const BrandDetailScreen: React.FC = () => {
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                Join
+                                {brandCatalog.isJoined ? 'Leave' : 'Join'}
                             </ButtonText>
                         </Button>
                     </HStack>
@@ -283,7 +352,7 @@ const BrandDetailScreen: React.FC = () => {
                         lineHeight={12}
                         mb="$4"
                     >
-                        {brand.description}
+                        {brandCatalog.description}
                     </Text>
 
                     {/* Browse Section */}
@@ -441,14 +510,22 @@ const BrandDetailScreen: React.FC = () => {
                         </HStack>
 
                         {/* Posts */}
-                        <VStack space="sm">
-                            {brand.posts.map((post) => (
-                                <PostCard
-                                    key={post.id}
-                                    data={post}
-                                />
-                            ))}
-                        </VStack>
+                        {brandCatalog.posts && brandCatalog.posts.length > 0 ? (
+                            <VStack space="sm">
+                                {brandCatalog.posts.map((post) => (
+                                    <PostCard
+                                        key={post.data.id}
+                                        data={mapBrandPostToPostCardData(post)}
+                                    />
+                                ))}
+                            </VStack>
+                        ) : (
+                            <Box py="$4" alignItems="center">
+                                <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
+                                    Henüz post bulunmuyor
+                                </Text>
+                            </Box>
+                        )}
                     </VStack>
                 </VStack>
             </Animated.ScrollView>
