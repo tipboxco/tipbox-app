@@ -145,3 +145,36 @@ export interface BrandFeedResponse {
     limit: number;
   };
 }
+
+/**
+ * Brand Product Stats - /brands/{brandId}/products response'undaki product stats bilgisi
+ */
+export interface BrandProductStats {
+  reviews: number;
+  likes: number;
+  share: number; // API'de "share" (tekil) olarak geliyor
+}
+
+/**
+ * Brand Product - /brands/{brandId}/products response'undaki product bilgisi
+ */
+export interface BrandProduct {
+  productId: string;
+  name: string;
+  image: string;
+  stats: BrandProductStats;
+}
+
+/**
+ * Brand Product Group - /brands/{brandId}/products response'undaki product group bilgisi
+ */
+export interface BrandProductGroup {
+  productGroupId: string;
+  productGroupName: string; // Title olarak kullanılacak
+  products: BrandProduct[];
+}
+
+/**
+ * Brand Product Book Response - /brands/{brandId}/products endpoint'inden dönen response
+ */
+export type BrandProductBookResponse = BrandProductGroup[];

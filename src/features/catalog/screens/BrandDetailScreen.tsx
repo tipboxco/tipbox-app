@@ -507,7 +507,11 @@ const BrandDetailScreen: React.FC = () => {
                                         borderRadius={10}
                                         width={65}
                                         height={24}
-                                        onPress={() => navigation.navigate('BrandProductBookScreen')}
+                                        onPress={() => {
+                                            if (brandId) {
+                                                navigation.navigate('BrandProductBookScreen', { brandId });
+                                            }
+                                        }}
                                     >
                                         <HStack alignItems="center" space="xs">
                                             <ButtonText

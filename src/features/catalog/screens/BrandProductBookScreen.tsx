@@ -1,6 +1,6 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, FlatList, Dimensions } from 'react-native';
+import { ScrollView, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import {
     Box,
     VStack,
@@ -12,29 +12,61 @@ import {
     InputField,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { mock_brand_product_data } from '@/src/mock/catalog/brandProduct';
 import { Feather } from '@expo/vector-icons';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useBrandProductBook } from '../api/hooks';
+import type { BrandProductGroup, BrandProduct } from '../types';
 
 const { width: screenWidth } = Dimensions.get('window');
 const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with padding
 const imageSize = cardWidth - 16; // Square image with padding
 
 type BrandProductBookScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandProductBookScreen'>;
+type BrandProductBookScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandProductBookScreen'>;
 
 const BrandProductBookScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<BrandProductBookScreenNavigationProp>();
+    const route = useRoute<BrandProductBookScreenRouteProp>();
     const bottomInset = useSafeAreaValues('bottom');
+    
+    const brandId = route.params?.brandId;
+    
+    // Brand Product Book API hook
+    const {
+        data: productBookData,
+        isLoading: isProductBookLoading,
+        error: productBookError,
+    } = useBrandProductBook(brandId);
 
-    const renderProductCard = ({ item }: { item: any }) => (
+    // Map BrandProduct to component format
+    const mapProductToCardData = (product: BrandProduct) => {
+        const imageSource = toImageSource(product.image) || require('@/assets/avatar/ozan.png');
+        
+        return {
+            id: product.productId,
+            name: product.name,
+            image: imageSource,
+            stats: {
+                reviews: product.stats.reviews,
+                likes: product.stats.likes,
+                shares: product.stats.share, // API'de "share" (tekil) olarak geliyor
+            },
+        };
+    };
+
+    const renderProductCard = ({ item }: { item: BrandProduct }) => {
+        const cardData = mapProductToCardData(item);
+        
+        return (
         <Pressable
-            onPress={() => navigation.navigate('BrandProductDetailScreen', { productId: item.id })}
+            onPress={() => navigation.navigate('BrandProductDetailScreen', { productId: cardData.id })}
         >
             <Box
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -51,7 +83,6 @@ const BrandProductBookScreen: React.FC = () => {
                     width={imageSize}
                     height={imageSize}
                     borderRadius={5}
-                    bg="rgba(0, 0, 0, 0.2)"
                     mb="$2"
                     alignItems="center"
                     justifyContent="center"
@@ -63,8 +94,8 @@ const BrandProductBookScreen: React.FC = () => {
                             height: '100%',
                             borderRadius: 5,
                         }}
-                        source={item.image}
-                        alt={item.name}
+                        source={cardData.image}
+                        alt={cardData.name}
                         resizeMode="cover"
                     />
                 </Box>
@@ -78,7 +109,7 @@ const BrandProductBookScreen: React.FC = () => {
                     textAlign="center"
                     numberOfLines={2}
                 >
-                    {item.name}
+                    {cardData.name}
                 </Text>
 
                 {/* Divider Line */}
@@ -104,7 +135,7 @@ const BrandProductBookScreen: React.FC = () => {
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
-                            {item.stats.reviews}
+                            {cardData.stats.reviews}
                         </Text>
                     </HStack>
 
@@ -121,7 +152,7 @@ const BrandProductBookScreen: React.FC = () => {
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
-                            {item.stats.likes}
+                            {cardData.stats.likes}
                         </Text>
                     </HStack>
 
@@ -138,17 +169,18 @@ const BrandProductBookScreen: React.FC = () => {
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
-                            {item.stats.shares}
+                            {cardData.stats.shares}
                         </Text>
                     </HStack>
                 </HStack>
             </VStack>
             </Box>
         </Pressable>
-    );
+        );
+    };
 
-    const renderProductGroup = (productGroup: any) => (
-        <VStack key={productGroup.id} space="xs" mb='$2'>
+    const renderProductGroup = (productGroup: BrandProductGroup) => (
+        <VStack key={productGroup.productGroupId} space="xs" mb='$2'>
             {/* Group Header */}
             <HStack justifyContent="space-between" alignItems="center" pr='$4'>
                 <Text
@@ -156,7 +188,7 @@ const BrandProductBookScreen: React.FC = () => {
                     fontSize={12}
                     fontWeight="$bold"
                 >
-                    {productGroup.title}
+                    {productGroup.productGroupName}
                 </Text>
                 <Feather name="chevron-right" size={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
             </HStack>
@@ -165,7 +197,7 @@ const BrandProductBookScreen: React.FC = () => {
             <FlatList
                 data={productGroup.products}
                 renderItem={renderProductCard}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.productId}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingRight: 16 }}
@@ -173,11 +205,52 @@ const BrandProductBookScreen: React.FC = () => {
         </VStack>
     );
 
+    // Loading state
+    if (isProductBookLoading) {
+        return (
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+                    <Header
+                        title="Marka Ürünleri Defteri"
+                        showBackButton={true}
+                        onBackPress={() => navigation.goBack()}
+                    />
+                    <Box flex={1} justifyContent="center" alignItems="center">
+                        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4">
+                            Yükleniyor...
+                        </Text>
+                    </Box>
+                </Box>
+            </SafeAreaView>
+        );
+    }
+
+    // Error state
+    if (productBookError || !productBookData) {
+        return (
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+                    <Header
+                        title="Marka Ürünleri Defteri"
+                        showBackButton={true}
+                        onBackPress={() => navigation.goBack()}
+                    />
+                    <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                        <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+                            {productBookError ? `Hata: ${productBookError.message}` : 'Ürün listesi bulunamadı'}
+                        </Text>
+                    </Box>
+                </Box>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 <Header
-                    title={mock_brand_product_data.title}
+                    title="Marka Ürünleri Defteri"
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />
@@ -210,7 +283,15 @@ const BrandProductBookScreen: React.FC = () => {
                     contentContainerStyle={{ paddingBottom: bottomInset }}
                 >
                     <VStack space="md" pb="$4" pl="$4">
-                        {mock_brand_product_data.productGroups.map(renderProductGroup)}
+                        {productBookData.length === 0 ? (
+                            <Box py="$4" alignItems="center">
+                                <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
+                                    Henüz ürün bulunmuyor
+                                </Text>
+                            </Box>
+                        ) : (
+                            productBookData.map(renderProductGroup)
+                        )}
                     </VStack>
                 </ScrollView>
             </Box>

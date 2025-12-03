@@ -1,5 +1,5 @@
 import { apiService } from '../../../services/ApiService';
-import type { BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse } from '../types';
+import type { BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse } from '../types';
 
 /**
  * Get Brand Categories endpoint function
@@ -110,4 +110,30 @@ export const getBrandFeed = async (
   }
 };
 
+/**
+ * Get Brand Product Book endpoint function
+ * /brands/{brandId}/products API'sinden marka ürün listesini getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns BrandProductBookResponse - Marka ürün grupları ve ürünleri
+ */
+export const getBrandProductBook = async (
+  brandId: string
+): Promise<BrandProductBookResponse> => {
+  try {
+    const response = await apiService.getClient().get<BrandProductBookResponse>(
+      `/brands/${brandId}/products`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Brand Product Book API Error:', {
+      url: `/brands/${brandId}/products`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
 

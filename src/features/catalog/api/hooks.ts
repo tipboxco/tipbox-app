@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse } from '../types';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -14,6 +14,7 @@ export const catalogKeys = {
   brandCatalog: (brandId: string) => [...catalogKeys.all, 'brandCatalog', brandId] as const,
   brandFeed: (brandId: string, cursor?: string, limit?: number) => 
     [...catalogKeys.all, 'brandFeed', brandId, cursor, limit] as const,
+  brandProductBook: (brandId: string) => [...catalogKeys.all, 'brandProductBook', brandId] as const,
   subCategories: (categoryId: string) => [...catalogKeys.all, 'subCategories', categoryId] as const,
   productGroups: (subCategoryId: string) => [...catalogKeys.all, 'productGroups', subCategoryId] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
@@ -230,6 +231,34 @@ export const useBrandFeed = (brandId: string | undefined, limit: number = 20) =>
     staleTime: 0, // Cache yok - veri hemen stale olur
     gcTime: 0, // Cache yok - veri hemen temizlenir
     refetchOnMount: 'always', // Her mount'ta yeniden fetch
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand Product Book query hook
+ * /brands/{brandId}/products endpoint'inden marka ürün listesini getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useBrandProductBook('brand-123');
+ */
+export const useBrandProductBook = (brandId: string | undefined) => {
+  return useQuery<BrandProductBookResponse, Error>({
+    queryKey: brandId ? catalogKeys.brandProductBook(brandId) : ['catalog', 'brandProductBook', 'disabled'],
+    queryFn: () => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      return getBrandProductBook(brandId);
+    },
+    enabled: !!brandId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     retry: 1,
   });
