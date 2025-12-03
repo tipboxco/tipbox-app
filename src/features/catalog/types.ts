@@ -123,3 +123,25 @@ export interface BrandCatalogResponse {
   isJoined: boolean;
   posts: BrandCatalogPost[];
 }
+
+/**
+ * Brand Feed Post - /brands/{brandId}/feed response'undaki post item (BrandCatalogPost ile aynı yapı)
+ */
+export interface BrandFeedPost {
+  type: string;
+  data: BrandCatalogPostData;
+}
+
+/**
+ * Brand Feed Response - /brands/{brandId}/feed endpoint'inden dönen response
+ */
+export interface BrandFeedResponse {
+  brandId: string;
+  name: string;
+  posts: BrandFeedPost[];
+  pagination?: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}

@@ -1,5 +1,5 @@
 import { apiService } from '../../../services/ApiService';
-import type { BrandCategory, BrandListItem, BrandCatalogResponse } from '../types';
+import type { BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse } from '../types';
 
 /**
  * Get Brand Categories endpoint function
@@ -64,6 +64,43 @@ export const getBrandCatalog = async (
   } catch (error: any) {
     console.error('Brand Catalog API Error:', {
       url: `/brands/${brandId}/catalog`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Feed endpoint function
+ * /brands/{brandId}/feed API'sinden marka feed postlarını getirir (pagination ile)
+ *
+ * @param brandId - Marka ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 3)
+ * @returns BrandFeedResponse - Marka feed postları ve pagination bilgisi
+ */
+export const getBrandFeed = async (
+  brandId: string,
+  cursor?: string,
+  limit: number = 3
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/feed?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Brand Feed API Error:', {
+      url: `/brands/${brandId}/feed?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

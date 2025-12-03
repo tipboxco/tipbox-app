@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse } from '../types';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -12,6 +12,8 @@ export const catalogKeys = {
   brandCategories: () => [...catalogKeys.all, 'brandCategories'] as const,
   brandList: (categoryId: string) => [...catalogKeys.all, 'brands', categoryId] as const,
   brandCatalog: (brandId: string) => [...catalogKeys.all, 'brandCatalog', brandId] as const,
+  brandFeed: (brandId: string, cursor?: string, limit?: number) => 
+    [...catalogKeys.all, 'brandFeed', brandId, cursor, limit] as const,
   subCategories: (categoryId: string) => [...catalogKeys.all, 'subCategories', categoryId] as const,
   productGroups: (subCategoryId: string) => [...catalogKeys.all, 'productGroups', subCategoryId] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
@@ -191,6 +193,43 @@ export const useBrandCatalog = (brandId: string | undefined) => {
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand Feed infinite query hook
+ * /brands/{brandId}/feed endpoint'inden marka feed postlarını infinite scroll ile getirir
+ *
+ * @param brandId - Marka ID'si
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandFeed('brand-123');
+ */
+export const useBrandFeed = (brandId: string | undefined, limit: number = 20) => {
+  return useInfiniteQuery<BrandFeedResponse, Error>({
+    queryKey: brandId ? catalogKeys.brandFeed(brandId, undefined, limit) : ['catalog', 'brandFeed', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getBrandFeed(brandId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: !!brandId,
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
   });

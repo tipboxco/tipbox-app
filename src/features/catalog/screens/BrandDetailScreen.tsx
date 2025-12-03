@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 import { Dimensions, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -20,8 +20,8 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import PostCard from '@/src/components/PostCards/PostCard';
 import { useSafeAreaValues } from '@/src/utils';
-import { useBrandCatalog } from '../api/hooks';
-import type { BrandCatalogPost } from '../types';
+import { useBrandCatalog, useBrandFeed } from '../api/hooks';
+import type { BrandCatalogPost, BrandFeedPost } from '../types';
 import type { PostCardData } from '@/src/types/PostCard';
 import { toImageSource } from '@/src/utils';
 
@@ -53,8 +53,19 @@ const BrandDetailScreen: React.FC = () => {
         error: brandCatalogError,
     } = useBrandCatalog(brandId);
 
-    // Map BrandCatalogPost to PostCardData
-    const mapBrandPostToPostCardData = (post: BrandCatalogPost): PostCardData => {
+    // Brand Feed API hook - infinite scroll ile posts getirilecek (3'erli)
+    // Limit parametresi query key'e dahil edildi, böylece limit değiştiğinde yeni query oluşturulur
+    const {
+        data: brandFeedData,
+        fetchNextPage: fetchNextBrandFeedPage,
+        hasNextPage: hasNextBrandFeedPage,
+        isFetchingNextPage: isFetchingNextBrandFeedPage,
+        isLoading: isBrandFeedLoading,
+        error: brandFeedError,
+    } = useBrandFeed(brandId, 3);
+
+    // Map BrandCatalogPost or BrandFeedPost to PostCardData
+    const mapBrandPostToPostCardData = useCallback((post: BrandCatalogPost | BrandFeedPost): PostCardData => {
         const postData = post.data;
         const avatarSource = toImageSource(postData.user.avatar);
         
@@ -84,33 +95,50 @@ const BrandDetailScreen: React.FC = () => {
                 isOwned: false, // API'den gelmiyor, default false
             } : undefined,
         };
-    };
+    }, []);
+
+    // Transform brand feed posts data for display (flatten all pages and remove duplicates)
+    const allPosts = useMemo(() => {
+        if (!brandFeedData?.pages) return [];
+        
+        const allItems = brandFeedData.pages.flatMap((page) => page.posts);
+        
+        // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
+        const uniqueItemsMap = new Map<string, BrandFeedPost>();
+        for (const item of allItems) {
+            if (!uniqueItemsMap.has(item.data.id)) {
+                uniqueItemsMap.set(item.data.id, item);
+            }
+        }
+        
+        return Array.from(uniqueItemsMap.values());
+    }, [brandFeedData?.pages]);
+
+    // Map posts to PostCardData format
+    const mappedPosts = useMemo(() => {
+        return allPosts.map(mapBrandPostToPostCardData);
+    }, [allPosts, mapBrandPostToPostCardData]);
 
     // Banner yüksekliği ve içerik başlangıç noktası
     const BANNER_HEIGHT = 250;
     const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
     const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
 
-    const handleScroll = (event: any) => {
+    const handleScroll = useCallback((event: any) => {
         const offsetY = event.nativeEvent.contentOffset.y;
         scrollY.setValue(offsetY);
         
-        // Debug: Scroll değerini logla
-        console.log('[BrandDetailScreen] Scroll Y:', offsetY);
-        
-        // Animasyon aralığı kontrolü ve opacity hesaplama
-        let calculatedOpacity = 0;
-        if (offsetY >= 100 && offsetY < 180) {
-            calculatedOpacity = (offsetY - 100) / (180 - 100);
-            console.log('[BrandDetailScreen] Header animasyon progress:', (calculatedOpacity * 100).toFixed(1) + '%', 'Opacity:', calculatedOpacity.toFixed(2));
-        } else if (offsetY >= 180) {
-            calculatedOpacity = 1;
-            console.log('[BrandDetailScreen] Header tamamen görünür (opacity: 1)');
-        } else {
-            calculatedOpacity = 0;
-            console.log('[BrandDetailScreen] Header gizli (opacity: 0)');
+        // Infinite scroll: ScrollView'in altına yaklaştığında yeni sayfa yükle
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const paddingToBottom = 300; // ScrollView'in altına yaklaşma mesafesi
+        const isCloseToBottom =
+            layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+        if (isCloseToBottom && hasNextBrandFeedPage && !isFetchingNextBrandFeedPage) {
+            fetchNextBrandFeedPage();
         }
-    };
+    }, [hasNextBrandFeedPage, isFetchingNextBrandFeedPage, fetchNextBrandFeedPage, mappedPosts.length]);
+
 
     // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır
     // 100px'de başlar, 180px'de tamamen görünür olur
@@ -215,7 +243,7 @@ const BrandDetailScreen: React.FC = () => {
 
             <Animated.ScrollView
                 onScroll={handleScroll}
-                scrollEventThrottle={16}
+                scrollEventThrottle={400}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Banner Image */}
@@ -510,21 +538,40 @@ const BrandDetailScreen: React.FC = () => {
                         </HStack>
 
                         {/* Posts */}
-                        {brandCatalog.posts && brandCatalog.posts.length > 0 ? (
-                            <VStack space="sm">
-                                {brandCatalog.posts.map((post) => (
-                                    <PostCard
-                                        key={post.data.id}
-                                        data={mapBrandPostToPostCardData(post)}
-                                    />
-                                ))}
-                            </VStack>
-                        ) : (
+                        {isBrandFeedLoading && mappedPosts.length === 0 ? (
+                            <Box py="$4" alignItems="center">
+                                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                                <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$2" fontSize={12}>
+                                    Yükleniyor...
+                                </Text>
+                            </Box>
+                        ) : brandFeedError ? (
+                            <Box py="$4" alignItems="center">
+                                <Text color="#CE4A4A" fontSize={12} textAlign="center">
+                                    Hata: {brandFeedError.message}
+                                </Text>
+                            </Box>
+                        ) : mappedPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
                                     Henüz post bulunmuyor
                                 </Text>
                             </Box>
+                        ) : (
+                            <VStack space="sm">
+                                {mappedPosts.map((post) => (
+                                    <PostCard
+                                        key={post.id}
+                                        data={post}
+                                    />
+                                ))}
+                                {/* Loading indicator for infinite scroll */}
+                                {isFetchingNextBrandFeedPage && (
+                                    <Box py="$4" alignItems="center">
+                                        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                                    </Box>
+                                )}
+                            </VStack>
                         )}
                     </VStack>
                 </VStack>
