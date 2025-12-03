@@ -43,7 +43,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     error: limitedEventError,
   } = useLimitedEvent();
 
-  // Achievements API hook
+  // Achievements API hook - 6'lı veri gelecek
   const {
     data: achievementsData,
     fetchNextPage: fetchNextAchievementsPage,
@@ -51,7 +51,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     isFetchingNextPage: isFetchingNextAchievementsPage,
     isLoading: isAchievementsLoading,
     error: achievementsError,
-  } = useAchievements(20);
+  } = useAchievements(6);
 
   // Map AchievementApiItem to SeeAllReward format (BadgeCard component'i için)
   const mapAchievementToSeeAllReward = useCallback((achievement: AchievementApiItem): SeeAllReward => {
