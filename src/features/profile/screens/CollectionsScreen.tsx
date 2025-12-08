@@ -11,13 +11,13 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import { ChevronLeft } from 'lucide-react-native';
 import { Header } from '@/src/components/Header';
-import { mockBadgesData } from '@/src/mock/profile/badges';
 import type { Badge } from '@/src/mock/profile/badges/types';
 import CollectionTabs from '../components/CollectionTabs';
 import AchievementBadgesTab from '../components/TabsPage/AchievementBadgesTab';
 import BridgeBadgesTab from '../components/TabsPage/BridgeBadgesTab';
 import BadgeDetail from '../components/BadgeDetail';
 import { useSafeAreaValues } from '@/src/utils';
+import { useAppStore } from '@/src/store/appStore';
 
 type CollectionsScreenNavigationProp = NativeStackNavigationProp<any, 'CollectionsScreen'>;
 
@@ -25,6 +25,8 @@ const CollectionsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CollectionsScreenNavigationProp>();
+  const { user } = useAppStore();
+  const userId = user?.id;
   const [activeTab, setActiveTab] = useState<'achievements' | 'bridges'>('achievements');
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -81,14 +83,14 @@ const CollectionsScreen: React.FC = () => {
       case 'achievements':
         return (
           <AchievementBadgesTab
-            badges={mockBadgesData.achievements}
+            userId={userId}
             onBadgePress={handleBadgePress}
           />
         );
       case 'bridges':
         return (
           <BridgeBadgesTab
-            badges={mockBadgesData.bridges}
+            userId={userId}
             onBadgePress={handleBadgePress}
           />
         );

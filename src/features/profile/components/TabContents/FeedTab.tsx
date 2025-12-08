@@ -346,6 +346,12 @@ export const FeedTab = () => {
     []
   );
 
+  // extraData için mappedPosts array'inin length'ini kullan
+  // Array değiştiğinde length de değişir, bu yeterli
+  // useMemo ile memoize et ki gereksiz re-render olmasın
+  // ÖNEMLİ: Tüm hook'lar koşullu return'lerden ÖNCE çağrılmalı
+  const flatListExtraData = useMemo(() => mappedPosts.length, [mappedPosts.length]);
+
   if (!userId) {
     return (
       <VStack px={16} py={16}>
@@ -388,11 +394,6 @@ export const FeedTab = () => {
     );
   }
 
-  // extraData için mappedPosts array'inin length'ini kullan
-  // Array değiştiğinde length de değişir, bu yeterli
-  // useMemo ile memoize et ki gereksiz re-render olmasın
-  const flatListExtraData = useMemo(() => mappedPosts.length, [mappedPosts.length]);
-
   return (
     <FlatList
       data={mappedPosts}
@@ -404,6 +405,8 @@ export const FeedTab = () => {
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
       removeClippedSubviews={true}
+      nestedScrollEnabled={true}
+      scrollEnabled={false}
       // Performance optimizations
       initialNumToRender={3}
       maxToRenderPerBatch={3}

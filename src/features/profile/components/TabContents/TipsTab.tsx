@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { FlatList } from 'react-native';
 import { VStack, Text } from '@gluestack-ui/themed';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useUserTipsAndTricks } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
-import { CardType } from '@/src/types/common';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { ProfileTipsAndTricks } from '../../types';
 
@@ -57,6 +57,11 @@ export const TipsTab = () => {
     error,
   } = useUserTipsAndTricks(userId);
 
+  const mappedTips = useMemo(() => {
+    if (!tips) return [];
+    return tips.map(mapTipsToCardData);
+  }, [tips]);
+
   if (!userId) {
     return (
       <VStack px={16} py={16}>
@@ -67,26 +72,47 @@ export const TipsTab = () => {
     );
   }
 
-  return (
-    <VStack space="md" px={16} py={16}>
-      {isLoading && (
-        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mb="$2">
+  if (isLoading) {
+    return (
+      <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
           Tips & Tricks yükleniyor...
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {error && (
-        <Text color="#CE4A4A" fontSize="$sm" mb="$2">
+  if (error) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color="#CE4A4A" fontSize="$sm">
           Tips & Tricks yüklenirken bir hata oluştu: {error.message}
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {tips
-        ?.filter((item) => item.type === CardType.TIPS_AND_TRICKS)
-        .map((item) => (
-          <TipsAndTricksPostCard key={item.id} data={mapTipsToCardData(item)} />
-        ))}
-    </VStack>
+  if (mappedTips.length === 0) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+          Henüz tips & tricks bulunmuyor.
+        </Text>
+      </VStack>
+    );
+  }
+
+  return (
+    <FlatList
+      data={mappedTips}
+      renderItem={({ item }) => <TipsAndTricksPostCard data={item} />}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+      scrollEnabled={false}
+      removeClippedSubviews={true}
+    />
   );
 };
 export default TipsTab;

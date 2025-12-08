@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { Box, Text, Pressable, HStack, VStack } from '@gluestack-ui/themed';
 import ProfileCard from '../components/ProfileCard';
 import { ReviewsTab, LadderTab, RepliesTab, TipsTab, FeedTab, BenchmarksTab } from '../components/TabContents';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useUserProfile } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
-import { useSafeAreaValues } from '@/src/utils';
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -24,7 +22,6 @@ const ProfileScreen = () => {
   const isDark = colorMode === 'dark';
   const { user } = useAppStore();
   const userId = user?.id;
-  const safeAreaBottom = useSafeAreaValues('bottom');
   
   // Profile API hook
   const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(userId);
@@ -56,79 +53,81 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      >
-        {/* Profile Card Content */}
-        {isProfileLoading ? (
-          <Box py={20} alignItems="center">
-            <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
-          </Box>
-        ) : profileError ? (
-          <Box py={20} alignItems="center">
-            <Text color="#CE4A4A">Hata: {profileError.message}</Text>
-          </Box>
-        ) : userProfile ? (
-          <Box>
-            <ProfileCard userData={userProfile} userId={userProfile.id} />
-          </Box>
-        ) : null}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={true}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          {/* Profile Card Content */}
+          {isProfileLoading ? (
+            <Box py={20} alignItems="center">
+              <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+            </Box>
+          ) : profileError ? (
+            <Box py={20} alignItems="center">
+              <Text color="#CE4A4A">Hata: {profileError.message}</Text>
+            </Box>
+          ) : userProfile ? (
+            <Box>
+              <ProfileCard userData={userProfile} userId={userProfile.id} />
+            </Box>
+          ) : null}
 
-        {/* Tab Bar - Trust/Collections tasarımı + yatay scroll */}
-        <VStack py={16} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
-            <HStack
-              px={16}
-              space="md"
+          {/* Tab Bar - Trust/Collections tasarımı + yatay scroll */}
+          <VStack py={16} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled={true}
             >
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.key;
-                return (
-                  <Pressable
-                    key={tab.key}
-                    onPress={() => setActiveTab(tab.key)}
-                    alignItems="center"
-                    justifyContent="center"
-                    pb="$1"
-                    position="relative"
-                    minWidth={75}
-                    flexShrink={0}
-                  >
-                    <Text
-                      textAlign="center"
-                      fontSize={12}
-                      fontWeight="$bold"
-                      color={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
-                      numberOfLines={1}
+              <HStack
+                px={16}
+                space="md"
+              >
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <Pressable
+                      key={tab.key}
+                      onPress={() => setActiveTab(tab.key)}
+                      alignItems="center"
+                      justifyContent="center"
+                      pb="$1"
+                      position="relative"
+                      minWidth={75}
                       flexShrink={0}
                     >
-                      {tab.title}
-                    </Text>
-                    <Box
-                      position="absolute"
-                      bottom={-1}
-                      left="15%"
-                      height={2}
-                      width="70%"
-                      borderRadius={999}
-                      bg={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
-                    />
-                  </Pressable>
-                );
-              })}
-            </HStack>
-          </ScrollView>
-        </VStack>
+                      <Text
+                        textAlign="center"
+                        fontSize={12}
+                        fontWeight="$bold"
+                        color={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
+                        numberOfLines={1}
+                        flexShrink={0}
+                      >
+                        {tab.title}
+                      </Text>
+                      <Box
+                        position="absolute"
+                        bottom={-1}
+                        left="15%"
+                        height={2}
+                        width="70%"
+                        borderRadius={999}
+                        bg={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </HStack>
+            </ScrollView>
+          </VStack>
 
-        {/* Tab Content */}
-        <Box>
-          {renderTabContent()}
-        </Box>
-      </ScrollView>
+          {/* Tab Content */}
+          <Box minHeight={400}>
+            {renderTabContent()}
+          </Box>
+        </ScrollView>
       </Box>
     </SafeAreaView>
   );

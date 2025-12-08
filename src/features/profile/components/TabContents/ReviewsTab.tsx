@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { FlatList } from 'react-native';
 import { VStack, Text } from '@gluestack-ui/themed';
 import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
 import { useUserReviews } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
-import { CardType } from '@/src/types/common';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { ProfileReview } from '../../types';
 
@@ -67,6 +67,11 @@ export const ReviewsTab = () => {
     error,
   } = useUserReviews(userId);
 
+  const mappedReviews = useMemo(() => {
+    if (!reviews) return [];
+    return reviews.map(mapReviewToCardData);
+  }, [reviews]);
+
   if (!userId) {
     return (
       <VStack px={16} py={16}>
@@ -77,26 +82,47 @@ export const ReviewsTab = () => {
     );
   }
 
-  return (
-    <VStack px={16} py={16} flex={1}>
-      {isLoading && (
-        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mb="$2">
+  if (isLoading) {
+    return (
+      <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
           Reviews yükleniyor...
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {error && (
-        <Text color="#CE4A4A" fontSize="$sm" mb="$2">
+  if (error) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color="#CE4A4A" fontSize="$sm">
           Reviews yüklenirken bir hata oluştu: {error.message}
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {reviews
-        ?.filter((review) => review.type === CardType.EXPERIENCE)
-        .map((review) => (
-          <ExperiencePostCard key={review.id} data={mapReviewToCardData(review)} />
-        ))}
-    </VStack>
+  if (mappedReviews.length === 0) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+          Henüz review bulunmuyor.
+        </Text>
+      </VStack>
+    );
+  }
+
+  return (
+    <FlatList
+      data={mappedReviews}
+      renderItem={({ item }) => <ExperiencePostCard data={item} />}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+      scrollEnabled={false}
+      removeClippedSubviews={true}
+    />
   );
 };
 export default ReviewsTab;

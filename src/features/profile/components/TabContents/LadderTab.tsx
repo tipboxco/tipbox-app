@@ -295,6 +295,7 @@ export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
               gap: COLUMN_GAP,
             }}
             showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
             scrollEnabled={false}
             // Layout animasyonu için
             onLayout={() => {

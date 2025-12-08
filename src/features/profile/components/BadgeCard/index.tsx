@@ -59,14 +59,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({
         borderRadius="$xl"
         p="$4"
         borderWidth={1}
-        borderColor={isDark ? '$borderDark800' : '$borderLight200'}
-        sx={{
-          shadowColor: '$black',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 4,
-          elevation: 2,
-        }}
+        borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
       >
         <VStack space="md" alignItems="center">
           {/* Badge Icon */}

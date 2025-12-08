@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { FlatList } from 'react-native';
 import { VStack, Text } from '@gluestack-ui/themed';
 import { BenchmarkPostCard } from '@/src/components/PostCards/BenchmarkPostCard';
 import { useUserBenchmarks } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
-import { CardType } from '@/src/types/common';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { ProfileBenchmark } from '../../types';
 
@@ -46,6 +46,11 @@ export const BenchmarksTab = () => {
     error,
   } = useUserBenchmarks(userId);
 
+  const mappedBenchmarks = useMemo(() => {
+    if (!benchmarks) return [];
+    return benchmarks.map(mapBenchmarkToCardData);
+  }, [benchmarks]);
+
   if (!userId) {
     return (
       <VStack px={16} py={16}>
@@ -56,26 +61,47 @@ export const BenchmarksTab = () => {
     );
   }
 
-  return (
-    <VStack px={16} py={16}>
-      {isLoading && (
-        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mb="$2">
+  if (isLoading) {
+    return (
+      <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
           Benchmarks yükleniyor...
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {error && (
-        <Text color="#CE4A4A" fontSize="$sm" mb="$2">
+  if (error) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color="#CE4A4A" fontSize="$sm">
           Benchmarks yüklenirken bir hata oluştu: {error.message}
         </Text>
-      )}
+      </VStack>
+    );
+  }
 
-      {benchmarks
-        ?.filter((item) => item.type === CardType.BENCHMARK)
-        .map((item) => (
-          <BenchmarkPostCard key={item.id} data={mapBenchmarkToCardData(item)} />
-        ))}
-    </VStack>
+  if (mappedBenchmarks.length === 0) {
+    return (
+      <VStack px={16} py={16}>
+        <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+          Henüz benchmark bulunmuyor.
+        </Text>
+      </VStack>
+    );
+  }
+
+  return (
+    <FlatList
+      data={mappedBenchmarks}
+      renderItem={({ item }) => <BenchmarkPostCard data={item} />}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+      scrollEnabled={false}
+      removeClippedSubviews={true}
+    />
   );
 };
 export default BenchmarksTab;

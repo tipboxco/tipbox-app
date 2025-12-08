@@ -9,6 +9,8 @@ import type {
   ProfileReplies,
   ProfileLadderBadge,
   ProfileFeedItem,
+  UserCollectionAchievementsApiResponse,
+  UserCollectionBridgesApiResponse,
 } from '../types';
 
 /**
@@ -193,5 +195,191 @@ export const getUserReplies = async (
     `/users/${userId}/questions`
   );
   return response.data;
+};
+
+/**
+ * Get User Collection Achievements endpoint function
+ * Kullanıcının collection achievements'larını getirir (pagination ile)
+ * 
+ * API Endpoint: GET /users/{id}/collections/achievements
+ * - cursor: Pagination cursor (opsiyonel)
+ * - limit: Sayfa başına item sayısı (default: 20, min: 1, max: 100)
+ * 
+ * @param userId - Kullanıcı ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns UserCollectionAchievementsApiResponse - Achievement items ve pagination bilgisi
+ */
+export const getUserCollectionAchievements = async (
+  userId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<UserCollectionAchievementsApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/collections/achievements?${params.toString()}`
+    );
+    
+    // Backend response formatını kontrol et ve normalize et
+    const responseData = response.data;
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = responseData.items || [];
+        const hasMore = items.length >= limit;
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      return responseData as UserCollectionAchievementsApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserCollectionAchievements] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getUserCollectionAchievements] API Error:', {
+      url: `/users/${userId}/collections/achievements?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get User Collection Bridges endpoint function
+ * Kullanıcının collection bridges'larını getirir (pagination ile)
+ * 
+ * API Endpoint: GET /users/{id}/collections/bridges
+ * - q: Badge adı veya açıklamasına göre arama (case-insensitive, opsiyonel)
+ * - cursor: Pagination cursor (opsiyonel)
+ * - limit: Sayfa başına item sayısı (default: 20, min: 1, max: 100)
+ * 
+ * Backend direkt array döndürüyor, pagination objesi oluşturulacak
+ * 
+ * @param userId - Kullanıcı ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param searchQuery - Arama sorgusu (opsiyonel)
+ * @returns UserCollectionBridgesApiResponse - Bridge items ve pagination bilgisi
+ */
+export const getUserCollectionBridges = async (
+  userId: string,
+  cursor?: string,
+  limit: number = 20,
+  searchQuery?: string
+): Promise<UserCollectionBridgesApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  if (searchQuery) {
+    params.append('q', searchQuery);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/collections/bridges?${params.toString()}`
+    );
+    
+    // Backend response formatını kontrol et ve normalize et
+    const responseData = response.data;
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = responseData.items || [];
+        const hasMore = items.length >= limit;
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      return responseData as UserCollectionBridgesApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserCollectionBridges] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getUserCollectionBridges] API Error:', {
+      url: `/users/${userId}/collections/bridges?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 

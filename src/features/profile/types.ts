@@ -3,6 +3,7 @@ import type { ReviewApiItem } from '@/src/types/ReviewsCard';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
+import type { AchievementApiItem } from '@/src/features/events/types';
 
 /**
  * Inventory Review - API'den gelen review bilgisi
@@ -213,4 +214,46 @@ export interface ProfileLadderBadge {
   current: number;
   total: number;
   tasks: ProfileLadderBadgeTask[];
+}
+
+/**
+ * User Collection Achievements API Response - Pagination ile birlikte
+ * /users/{id}/collections/achievements endpoint'inden dönen response
+ */
+export interface UserCollectionAchievementsApiResponse {
+  items: AchievementApiItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * Bridge Badge API Item - /users/{id}/collections/bridges endpoint'inden gelen bridge badge bilgisi
+ */
+export interface BridgeBadgeApiItem {
+  id: string;
+  title: string;
+  rarity: 'Usual' | 'Rare' | 'Epic' | 'Legendary';
+  image: string;
+  isClaimed: boolean;
+  nftAddress: string | null;
+  earnedDate: string; // ISO string
+  totalEarned: number;
+  tasks: unknown[]; // Boş array olarak geliyor, ileride detaylandırılabilir
+}
+
+/**
+ * User Collection Bridges API Response - Pagination ile birlikte
+ * /users/{id}/collections/bridges endpoint'inden dönen response
+ * Backend direkt array döndürüyor, pagination objesi oluşturulacak
+ */
+export interface UserCollectionBridgesApiResponse {
+  items: BridgeBadgeApiItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
 }

@@ -10,6 +10,8 @@ import {
   getUserTipsAndTricks,
   getUserReplies,
   getUserLadderBadges,
+  getUserCollectionAchievements,
+  getUserCollectionBridges,
   type UserFeedApiResponse,
 } from './profileApi';
 import type {
@@ -24,6 +26,8 @@ import type {
   ProfileReplies,
   ProfileLadderBadge,
   ProfileFeedItem,
+  UserCollectionAchievementsApiResponse,
+  UserCollectionBridgesApiResponse,
 } from '../types';
 
 /**
@@ -57,6 +61,11 @@ export const profileKeys = {
   ladders: () => [...profileKeys.all, 'ladders'] as const,
   userLadderBadges: (userId: string) =>
     [...profileKeys.ladders(), userId] as const,
+  collections: () => [...profileKeys.all, 'collections'] as const,
+  userCollectionAchievements: (userId: string, limit?: number) =>
+    [...profileKeys.collections(), 'achievements', userId, ...(limit ? [limit] : [])] as const,
+  userCollectionBridges: (userId: string, limit?: number) =>
+    [...profileKeys.collections(), 'bridges', userId, ...(limit ? [limit] : [])] as const,
 };
 
 /**
@@ -489,6 +498,84 @@ export const useUserReplies = (userId: string | undefined) => {
     staleTime: 0, // Cache yok
     gcTime: 0, // Cache yok
     refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Collection Achievements infinite query hook
+ * Kullanıcının collection achievements'larını infinite scroll ile getirir
+ *
+ * @param userId - Kullanıcı ID'si
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserCollectionAchievements('user-123', 20);
+ */
+export const useUserCollectionAchievements = (userId: string | undefined, limit: number = 20) => {
+  return useInfiniteQuery<UserCollectionAchievementsApiResponse, Error>({
+    queryKey: userId ? profileKeys.userCollectionAchievements(userId, limit) : ['profile', 'collections', 'achievements', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getUserCollectionAchievements(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      // Son item'ın id'sini cursor olarak kullan
+      return lastPage.pagination.cursor;
+    },
+    enabled: !!userId,
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: true, // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Collection Bridges infinite query hook
+ * Kullanıcının collection bridges'larını infinite scroll ile getirir
+ *
+ * @param userId - Kullanıcı ID'si
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserCollectionBridges('user-123', 20);
+ */
+export const useUserCollectionBridges = (userId: string | undefined, limit: number = 20) => {
+  return useInfiniteQuery<UserCollectionBridgesApiResponse, Error>({
+    queryKey: userId ? profileKeys.userCollectionBridges(userId, limit) : ['profile', 'collections', 'bridges', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getUserCollectionBridges(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      // Son item'ın id'sini cursor olarak kullan
+      return lastPage.pagination.cursor;
+    },
+    enabled: !!userId,
+    staleTime: 0, // Cache yok
+    gcTime: 0, // Cache yok
+    refetchOnMount: true, // Her mount'ta yeniden fetch et
     refetchOnWindowFocus: false,
     retry: 1,
   });
