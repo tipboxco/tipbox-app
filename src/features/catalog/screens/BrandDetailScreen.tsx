@@ -72,11 +72,16 @@ const BrandDetailScreen: React.FC = () => {
         isFetchingNextPage: isFetchingNextBrandFeedPage,
         isLoading: isBrandFeedLoading,
         error: brandFeedError,
-    } = useBrandFeed(brandId, 3);
+    } = useBrandFeed(brandId, 6);
 
-    // Map BrandFeedPost to PostCardData (Feed/Post type için)
+    // Map BrandFeedPost to PostCardData (Post type için)
     const mapBrandPostToPostCardData = useCallback((post: BrandFeedPost): PostCardData => {
-        const postData = post.data;
+        // Type guard: post type kontrolü
+        if (post.type !== 'post') {
+            throw new Error(`Expected post type, got ${post.type}`);
+        }
+        
+        const postData = post.data as import('@/src/features/profile/types').ProfilePost;
         const avatarSource = toImageSource(postData.user.avatar);
         
         return {
@@ -87,8 +92,10 @@ const BrandDetailScreen: React.FC = () => {
                 title: postData.user.title,
                 avatar: avatarSource || require('@/assets/avatar/ozan.png'),
             },
-            content: postData.content,
-            images: postData.images?.map(img => img) || [],
+            content: typeof postData.content === 'string' ? postData.content : '',
+            images: postData.images
+                ?.map((img: string) => toImageSource(img))
+                .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) || [],
             stats: {
                 likes: postData.stats.likes,
                 comments: postData.stats.comments,
@@ -96,35 +103,49 @@ const BrandDetailScreen: React.FC = () => {
                 bookmarks: postData.stats.bookmarks,
             },
             createdAt: postData.createdAt,
-            contextType: postData.contextType as any,
+            contextType: postData.contextType as import('@/src/types/common').ProductInfoType,
             contextData: postData.contextData ? {
                 id: postData.contextData.id,
                 name: postData.contextData.name,
                 subName: postData.contextData.subName,
                 image: postData.contextData.image,
-                isOwned: false, // API'den gelmiyor, default false
+                isOwned: postData.contextData.isOwned || false,
             } : undefined,
         };
     }, []);
 
     // Map Experience (ReviewApiItem) to ReviewCardData
-    const mapExperienceToCardData = useCallback((item: BrandFeedPost & { type: 'experience' }): ReviewCardData => {
-        const postData = item.data as any; // ReviewApiItem structure
+    const mapExperienceToCardData = useCallback((item: BrandFeedPost): ReviewCardData => {
+        // Type guard: experience type kontrolü
+        if (item.type !== 'experience') {
+            throw new Error(`Expected experience type, got ${item.type}`);
+        }
+        
+        const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
         const avatarSource = toImageSource(postData.user.avatar)!;
         const productImage = postData.contextData?.image
             ? toImageSource(postData.contextData.image)
             : undefined;
 
-        const content: ReviewCardContentItem[] = postData.content.map((contentItem: any) => ({
-            tag: {
-                icon: 'tag',
-                title: contentItem.title,
-            },
-            text: contentItem.content,
-            rating: Array(5)
-                .fill(false)
-                .map((_, index) => index < (contentItem.rating || 0)),
-        }));
+        // Content array'i map et - rating 0-100 arası, 0-5 arasına çevir (her 20 = 1 star)
+        const content: ReviewCardContentItem[] = Array.isArray(postData.content) 
+            ? postData.content.map((contentItem) => {
+                // Rating 0-100 arası, 0-5 arasına çevir
+                const ratingValue = contentItem.rating || 0;
+                const stars = Math.floor(ratingValue / 20); // 0-100 -> 0-5
+                
+                return {
+                    tag: {
+                        icon: 'tag' as const,
+                        title: contentItem.title || '',
+                    },
+                    text: contentItem.content || '',
+                    rating: Array(5)
+                        .fill(false)
+                        .map((_, index) => index < stars),
+                };
+            })
+            : [];
 
         return {
             id: postData.id,
@@ -153,11 +174,16 @@ const BrandDetailScreen: React.FC = () => {
     }, []);
 
     // Map Benchmark to BenchmarkCardData
-    const mapBenchmarkToCardData = useCallback((item: BrandFeedPost & { type: 'benchmark' }): BenchmarkCardData => {
-        const postData = item.data as any; // BenchmarkApiItem structure
+    const mapBenchmarkToCardData = useCallback((item: BrandFeedPost): BenchmarkCardData => {
+        // Type guard: benchmark type kontrolü
+        if (item.type !== 'benchmark') {
+            throw new Error(`Expected benchmark type, got ${item.type}`);
+        }
+        
+        const postData = item.data as import('@/src/types/BenchmarkCard').BenchmarkApiItem;
         const avatarSource = toImageSource(postData.user.avatar)!;
 
-        const products: BenchmarkProduct[] = postData.products.map((p: any) => ({
+        const products: BenchmarkProduct[] = (postData.products || []).map((p) => ({
             id: p.id,
             name: p.name,
             subName: p.subName,
@@ -175,15 +201,20 @@ const BrandDetailScreen: React.FC = () => {
                 avatar: avatarSource,
             },
             products,
-            content: postData.content,
+            content: typeof postData.content === 'string' ? postData.content : '',
             stats: postData.stats,
             createdAt: postData.createdAt,
         };
     }, []);
 
     // Map Tips to TipsCardData
-    const mapTipsToCardData = useCallback((item: BrandFeedPost & { type: 'tipsAndTricks' }): TipsCardData => {
-        const postData = item.data as any; // TipsApiItem structure
+    const mapTipsToCardData = useCallback((item: BrandFeedPost): TipsCardData => {
+        // Type guard: tipsAndTricks type kontrolü
+        if (item.type !== 'tipsAndTricks') {
+            throw new Error(`Expected tipsAndTricks type, got ${item.type}`);
+        }
+        
+        const postData = item.data as import('@/src/types/TipsAndTricksCard').TipsApiItem;
         const avatarSource = toImageSource(postData.user.avatar)!;
 
         const product: TipsProduct = {
@@ -210,7 +241,7 @@ const BrandDetailScreen: React.FC = () => {
                 avatar: avatarSource,
             },
             category,
-            content: postData.content,
+            content: typeof postData.content === 'string' ? postData.content : '',
             images: postData.images
                 ?.map((img: string) => toImageSource(img))
                 .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource),
@@ -221,8 +252,13 @@ const BrandDetailScreen: React.FC = () => {
     }, []);
 
     // Map Question to QuestionCardData
-    const mapQuestionToCardData = useCallback((item: BrandFeedPost & { type: 'question' }): QuestionCardData => {
-        const postData = item.data as any; // QuestionApiItem structure
+    const mapQuestionToCardData = useCallback((item: BrandFeedPost): QuestionCardData => {
+        // Type guard: question type kontrolü
+        if (item.type !== 'question') {
+            throw new Error(`Expected question type, got ${item.type}`);
+        }
+        
+        const postData = item.data as import('@/src/types/QuestionCard').QuestionApiItem;
         const avatarSource = toImageSource(postData.user.avatar)!;
 
         const product: QuestionCardProduct = {
@@ -249,7 +285,7 @@ const BrandDetailScreen: React.FC = () => {
                 avatar: avatarSource,
             },
             category,
-            content: postData.content,
+            content: typeof postData.content === 'string' ? postData.content : '',
             isBoosted: postData.isBoosted,
             images: postData.images
                 ?.map((img: string) => toImageSource(img))
@@ -282,19 +318,20 @@ const BrandDetailScreen: React.FC = () => {
         console.log(item.type === CardType.EXPERIENCE ? item.data : "");
         switch (item.type) {
             case CardType.EXPERIENCE:
+            case 'experience':
                 // Experience type için ReviewApiItem kullan ve ExperiencePostCard render et
                 if ('content' in item.data && Array.isArray(item.data.content)) {
                     return (
                         <ExperiencePostCard
                             key={item.data.id}
-                            data={mapExperienceToCardData(item as BrandFeedPost & { type: 'experience' })}
+                            data={mapExperienceToCardData(item)}
                         />
                     );
                 }
                 return null;
-            case CardType.FEED:
             case CardType.POST:
-                // Feed/Post type için PostCard render et
+            case 'post':
+                // Post type için PostCard render et
                 return (
                     <PostCard
                         key={item.data.id}
@@ -302,32 +339,36 @@ const BrandDetailScreen: React.FC = () => {
                     />
                 );
             case CardType.BENCHMARK:
+            case 'benchmark':
                 return (
                     <BenchmarkPostCard
                         key={item.data.id}
-                        data={mapBenchmarkToCardData(item as BrandFeedPost & { type: 'benchmark' })}
+                        data={mapBenchmarkToCardData(item)}
                     />
                 );
             case CardType.QUESTION:
+            case 'question':
                 // Question type kontrolü
                 if ('contextType' in item.data && 'contextData' in item.data && 'isBoosted' in item.data) {
                     return (
                         <QuestionPostCard
                             key={item.data.id}
-                            data={mapQuestionToCardData(item as BrandFeedPost & { type: 'question' })}
+                            data={mapQuestionToCardData(item)}
                         />
                     );
                 }
                 return null;
             case CardType.TIPS_AND_TRICKS:
+            case 'tipsAndTricks':
                 return (
                     <TipsAndTricksPostCard
                         key={item.data.id}
-                        data={mapTipsToCardData(item as BrandFeedPost & { type: 'tipsAndTricks' })}
+                        data={mapTipsToCardData(item)}
                     />
                 );
             case CardType.UPDATE:
-                // UpdatePostCard için şimdilik null döndür
+            case 'update':
+                // UpdatePostCard için şimdilik null döndür (UpdatePostCard mapping fonksiyonu eklenebilir)
                 return null;
             default:
                 return null;
@@ -574,7 +615,7 @@ const BrandDetailScreen: React.FC = () => {
                         <Button
                             bg={brandCatalog.isJoined ? "rgba(215, 215, 215, 0.8)" : "#C2E607"}
                             borderRadius={10}
-                            width={65}
+                            minWidth={65}
                             height={24}
                             onPress={() => console.log(brandCatalog.isJoined ? 'Leave' : 'Join')}
                         >
@@ -660,7 +701,11 @@ const BrandDetailScreen: React.FC = () => {
                                         borderRadius={10}
                                         width={65}
                                         height={24}
-                                        onPress={() => navigation.navigate('SurveyScreen')}
+                                        onPress={() => {
+                                            if (brandId) {
+                                                navigation.navigate('SurveyScreen', { brandId });
+                                            }
+                                        }}
                                     >
                                         <HStack alignItems="center" space="xs">
                                             <ButtonText

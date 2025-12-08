@@ -3,17 +3,10 @@ import { Box, VStack, HStack, Text, Button, ButtonText, Pressable } from '@glues
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 
+import type { Survey } from '../../types';
+
 interface SurveyCardProps {
-  survey: {
-    id: string;
-    title: string;
-    description: string;
-    type: string;
-    duration: string;
-    points: number;
-    status: 'start' | 'continue' | 'view_results';
-    progress?: number;
-  };
+  survey: Survey;
   onPress?: () => void;
 }
 

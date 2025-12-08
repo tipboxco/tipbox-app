@@ -11,7 +11,6 @@ export enum ProductInfoType {
 
 // Uygulama genelinde kullanılan kart tipleri
 export enum CardType {
-  FEED = 'feed',
   BENCHMARK = 'benchmark',
   POST = 'post',
   QUESTION = 'question',

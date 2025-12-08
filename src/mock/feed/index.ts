@@ -4,7 +4,7 @@ export const mock_feed_data: FeedItem[] = [
   // Feed Posts
   {
     id: 'feed-1',
-    type: 'feed',
+    type: 'post',
     user: {
       id: '1',
       name: 'Georgia Green',
@@ -53,7 +53,7 @@ export const mock_feed_data: FeedItem[] = [
   },
   {
     id: 'feed-2',
-    type: 'feed',
+    type: 'post',
     user: {
       id: '1',
       name: 'Georgia Green',

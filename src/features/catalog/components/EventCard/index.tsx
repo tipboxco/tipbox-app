@@ -2,10 +2,23 @@ import React from 'react';
 import { Box, VStack, HStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
-import { Event } from '@/src/mock/catalog/brandSurveys/types';
+import type { ImageSourcePropType } from 'react-native';
+
+/**
+ * EventCard Data - Component için event veri formatı
+ * API'den gelen Event tipinden map edilerek oluşturulur
+ */
+export interface EventCardData {
+  id: string;
+  title: string;
+  description: string;
+  dateRange: string;
+  status: 'joined' | 'join' | 'completed';
+  image: ImageSourcePropType;
+}
 
 interface EventCardProps {
-  event: Event;
+  event: EventCardData;
   onPress?: () => void;
 }
 

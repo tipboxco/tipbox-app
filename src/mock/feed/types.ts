@@ -1,4 +1,4 @@
-export type FeedItemType = 'feed' | 'benchmark' | 'post' | 'question' | 'tipsAndTricks' | 'update';
+export type FeedItemType = 'post' | 'benchmark' | 'question' | 'tipsAndTricks' | 'update';
 
 export interface BaseFeedItem {
   id: string;
@@ -20,7 +20,7 @@ export interface BaseFeedItem {
 }
 
 export interface FeedPost extends BaseFeedItem {
-  type: 'feed';
+  type: 'post';
   product: {
     id: string;
     name: string;

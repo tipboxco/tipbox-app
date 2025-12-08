@@ -288,7 +288,6 @@ export const FeedTab = () => {
           }
           return null;
         case CardType.POST:
-        case CardType.FEED:
         default:
           return {
             type: 'post' as const,

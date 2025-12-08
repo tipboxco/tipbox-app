@@ -306,14 +306,6 @@ export const FeedScreen = () => {
           );
         }
         return null;
-      case CardType.FEED:
-        // Feed type için ProfilePost kullan ve PostCard render et
-        return (
-          <PostCard
-            key={item.data.id}
-            data={mapFeedToCardData(item.data as ProfilePost)}
-          />
-        );
       case CardType.POST:
         // Post type için ProfilePost kullan ve PostCard render et
         return (
@@ -330,7 +322,7 @@ export const FeedScreen = () => {
           />
         );
       case CardType.QUESTION:
-        // Question type kontrolü - "feed" de question olarak kabul ediliyor
+        // Question type kontrolü
         if ('contextType' in item.data && 'contextData' in item.data && 'isBoosted' in item.data) {
           return (
             <QuestionPostCard

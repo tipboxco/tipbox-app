@@ -125,11 +125,46 @@ export interface BrandCatalogResponse {
 }
 
 /**
- * Brand Feed Post - /brands/{brandId}/feed response'undaki post item (BrandCatalogPost ile aynı yapı)
+ * Brand Update API Item - /brands/{brandId}/trends endpoint'inden gelen update type için
+ * Update type'ında content array olarak gelebilir
+ */
+export interface BrandUpdateApiItem {
+  id: string;
+  type: 'update';
+  user: BrandCatalogPostUser;
+  stats: BrandCatalogPostStats;
+  createdAt: string;
+  contextType: string;
+  contextData?: BrandCatalogPostContextData;
+  product?: {
+    id: string;
+    name: string;
+    subName: string;
+    image: string;
+  };
+  content: string | Array<{
+    title: string;
+    content: string;
+    rating?: number;
+  }>;
+  tags?: string[];
+  images: string[];
+}
+
+/**
+ * Brand Feed Post - /brands/{brandId}/trends ve /brands/{brandId}/feed response'undaki post item
+ * Union type kullanarak her card type için doğru data type'ını sağlar
+ * FeedApiItem ile aynı mantıkta çalışır
  */
 export interface BrandFeedPost {
   type: string;
-  data: BrandCatalogPostData;
+  data: 
+    | (import('@/src/features/profile/types').ProfilePost & { type: 'post' })
+    | (import('@/src/types/ReviewsCard').ReviewApiItem & { type: 'experience' })
+    | (import('@/src/types/BenchmarkCard').BenchmarkApiItem & { type: 'benchmark' })
+    | (import('@/src/types/TipsAndTricksCard').TipsApiItem & { type: 'tipsAndTricks' })
+    | (import('@/src/types/QuestionCard').QuestionApiItem & { type: 'question' })
+    | (BrandUpdateApiItem & { type: 'update' });
 }
 
 /**
@@ -178,3 +213,77 @@ export interface BrandProductGroup {
  * Brand Product Book Response - /brands/{brandId}/products endpoint'inden dönen response
  */
 export type BrandProductBookResponse = BrandProductGroup[];
+
+/**
+ * Survey - /brands/{brandId}/surveys endpoint'inden gelen survey bilgisi
+ * API'den gelen status değerleri: "start", "continue", "viewresults" (normalize edilerek "view_results" olarak dönüştürülür)
+ */
+export interface Survey {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  duration: string;
+  points: number;
+  status: 'start' | 'continue' | 'view_results'; // API'den "viewresults" geliyor, normalize edilerek "view_results" yapılıyor
+  progress?: number;
+}
+
+/**
+ * Brand Surveys Response - /brands/{brandId}/surveys endpoint'inden dönen response
+ */
+export interface BrandSurveysResponse {
+  items: Survey[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * Brand Trends Response - /brands/{brandId}/trends endpoint'inden dönen response
+ * Feed formatında trend içerikleri (pagination ile)
+ */
+export interface BrandTrendsResponse {
+  items: BrandFeedPost[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * Event Status Enum - /brands/{brandId}/events endpoint'inden gelen event status değerleri
+ */
+export enum EventStatus {
+  JOIN = 'join',
+  JOINED = 'joined',
+}
+
+/**
+ * Event - /brands/{brandId}/events endpoint'inden gelen event bilgisi
+ */
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  startDate: string; // ISO string
+  endDate: string; // ISO string
+  status: EventStatus;
+  image: string;
+}
+
+/**
+ * Brand Events Response - /brands/{brandId}/events endpoint'inden dönen response
+ */
+export interface BrandEventsResponse {
+  items: Event[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}

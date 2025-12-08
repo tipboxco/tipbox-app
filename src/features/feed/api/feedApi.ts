@@ -13,7 +13,6 @@ export interface FeedApiItem {
   type: string;
   data: 
     | (ProfilePost & { type: 'post' })
-    | (ProfilePost & { type: 'feed' })
     | (ReviewApiItem & { type: 'experience' })
     | (BenchmarkApiItem & { type: 'benchmark' })
     | (TipsApiItem & { type: 'tipsAndTricks' })

@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse } from '../types';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -15,6 +15,12 @@ export const catalogKeys = {
   brandFeed: (brandId: string, cursor?: string, limit?: number) => 
     [...catalogKeys.all, 'brandFeed', brandId, cursor, limit] as const,
   brandProductBook: (brandId: string) => [...catalogKeys.all, 'brandProductBook', brandId] as const,
+  brandSurveys: (brandId: string, limit?: number) => 
+    [...catalogKeys.all, 'brandSurveys', brandId, limit] as const,
+  brandTrends: (brandId: string, limit?: number) => 
+    [...catalogKeys.all, 'brandTrends', brandId, limit] as const,
+  brandEvents: (brandId: string, limit?: number) => 
+    [...catalogKeys.all, 'brandEvents', brandId, limit] as const,
   subCategories: (categoryId: string) => [...catalogKeys.all, 'subCategories', categoryId] as const,
   productGroups: (subCategoryId: string) => [...catalogKeys.all, 'productGroups', subCategoryId] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
@@ -237,6 +243,80 @@ export const useBrandFeed = (brandId: string | undefined, limit: number = 20) =>
 };
 
 /**
+ * Get Brand Surveys infinite query hook
+ * /brands/{brandId}/surveys endpoint'inden marka survey listesini infinite scroll ile getirir
+ *
+ * @param brandId - Marka ID'si
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandSurveys('brand-123');
+ */
+export const useBrandSurveys = (brandId: string | undefined, limit: number = 20) => {
+  return useInfiniteQuery<BrandSurveysResponse, Error>({
+    queryKey: brandId ? catalogKeys.brandSurveys(brandId, limit) : ['catalog', 'brandSurveys', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getBrandSurveys(brandId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: !!brandId,
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand Trends infinite query hook
+ * /brands/{brandId}/trends endpoint'inden marka trend içeriklerini infinite scroll ile getirir
+ *
+ * @param brandId - Marka ID'si
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandTrends('brand-123');
+ */
+export const useBrandTrends = (brandId: string | undefined, limit: number = 5) => {
+  return useInfiniteQuery<BrandTrendsResponse, Error>({
+    queryKey: brandId ? catalogKeys.brandTrends(brandId, limit) : ['catalog', 'brandTrends', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getBrandTrends(brandId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: !!brandId,
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
  * Get Brand Product Book query hook
  * /brands/{brandId}/products endpoint'inden marka ürün listesini getirir
  *
@@ -259,6 +339,43 @@ export const useBrandProductBook = (brandId: string | undefined) => {
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand Events infinite query hook
+ * /brands/{brandId}/events endpoint'inden marka event listesini infinite scroll ile getirir
+ *
+ * @param brandId - Marka ID'si
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandEvents('brand-123');
+ */
+export const useBrandEvents = (brandId: string | undefined, limit: number = 20) => {
+  return useInfiniteQuery<BrandEventsResponse, Error>({
+    queryKey: brandId ? catalogKeys.brandEvents(brandId, limit) : ['catalog', 'brandEvents', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getBrandEvents(brandId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: !!brandId,
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
   });

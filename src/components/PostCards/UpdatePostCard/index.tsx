@@ -237,15 +237,20 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
                   {item.text}
                 </Text>
                 <HStack ml={26} mt={8}>
-                  {item.rating.map((star, idx) => (
-                    <Feather
-                      key={idx}
-                      name="star"
-                      size={12}
-                      color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                      fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                    />
-                  ))}
+                  {item.rating.map((star, idx) => {
+                    // rating number[] olarak tanımlı (UpdatePost type'ında)
+                    // 1 = filled star, 0 = empty star
+                    const isStar = star === 1;
+                    return (
+                      <Feather
+                        key={idx}
+                        name="star"
+                        size={12}
+                        color={isStar ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
+                        fill={isStar ? (isDark ? '#fff' : '#829905') : 'transparent'}
+                      />
+                    );
+                  })}
                 </HStack>
               </VStack>
             ))}

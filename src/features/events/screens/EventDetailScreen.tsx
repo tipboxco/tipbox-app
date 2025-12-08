@@ -229,7 +229,6 @@ const EventDetailScreen: React.FC = () => {
     // Render feed item based on type (from FeedScreen)
     const renderFeedItem = (item: FeedApiItem) => {
         switch (item.type) {
-            case CardType.FEED:
             case CardType.POST:
                 return (
                     <PostCard

@@ -204,43 +204,43 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners, isDark }) => {
                     borderBottomRightRadius: 12,
                   }}
                 >
-                <LinearGradient
-                  colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
-                  start={{ x: 0, y: 1 }}
-                  end={{ x: 0, y: 0 }}
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 80,
-                    justifyContent: 'flex-end',
-                    paddingBottom: 12,
-                    paddingHorizontal: 16,
-                    borderBottomLeftRadius: 12,
-                    borderBottomRightRadius: 12,
-                  }}
-                >
-                  <VStack space="xs">
-                    <Text
-                      color="#FFFFFF"
-                      fontSize={14}
-                      fontWeight="$bold"
-                      numberOfLines={1}
-                    >
-                      {item.title}
-                    </Text>
-                    <Text
-                      color="#FFFFFF"
-                      fontSize={12}
-                      numberOfLines={2}
-                      opacity={0.9}
-                    >
-                      {item.description}
-                    </Text>
-                  </VStack>
-                </LinearGradient>
-              </Box>
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 0, y: 0 }}
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 80,
+                      justifyContent: 'flex-end',
+                      paddingBottom: 12,
+                      paddingHorizontal: 16,
+                      borderBottomLeftRadius: 12,
+                      borderBottomRightRadius: 12,
+                    }}
+                  >
+                    <VStack space="xs">
+                      <Text
+                        color="#FFFFFF"
+                        fontSize={14}
+                        fontWeight="$bold"
+                        numberOfLines={1}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        color="#FFFFFF"
+                        fontSize={12}
+                        numberOfLines={2}
+                        opacity={0.9}
+                      >
+                        {item.description}
+                      </Text>
+                    </VStack>
+                  </LinearGradient>
+                </Box>
               </Pressable>
             </Box>
           );
@@ -317,9 +317,9 @@ const ExploreScreen: React.FC = () => {
     try {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
+
       const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-      
+
       const formatDate = (date: Date): string => {
         const day = date.getDate().toString().padStart(2, '0');
         const month = months[date.getMonth()];
@@ -500,8 +500,8 @@ const ExploreScreen: React.FC = () => {
 
   const renderHottestItem = (item: FeedApiItem) => {
     switch (item.type) {
-      case CardType.FEED:
-        // Feed type için ProfilePost kullan ve PostCard render et
+      case CardType.POST:
+        // Post type için ProfilePost kullan ve PostCard render et
         return (
           <PostCard
             key={item.data.id}
@@ -551,8 +551,8 @@ const ExploreScreen: React.FC = () => {
         >
           <VStack space="md">
             {/* Search Bar - Trust_TrusterListScreen style */}
-            <VStack 
-              px="$4" 
+            <VStack
+              px="$4"
               py="$2"
               onLayout={(event) => {
                 const { height } = event.nativeEvent.layout;
@@ -588,7 +588,7 @@ const ExploreScreen: React.FC = () => {
 
             {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
             {!isLoadingBanners && banners && banners.length > 0 && (
-              <Box 
+              <Box
                 mb="$4"
                 onLayout={(event) => {
                   const { height } = event.nativeEvent.layout;
@@ -602,8 +602,12 @@ const ExploreScreen: React.FC = () => {
             )}
 
             {/* Category Tabs */}
-            <VStack 
+            <VStack
               bg={isDark ? '#000' : '#FFF'}
+              pt={0}
+              mt={0}
+              mb={0}
+              pb={0}
               onLayout={(event) => {
                 const { height } = event.nativeEvent.layout;
                 if (tabsHeight === 0) {
@@ -667,208 +671,208 @@ const ExploreScreen: React.FC = () => {
               </HStack>
             </VStack>
 
-              {/* Content based on active tab */}
-              {activeCategory === 'hottest' && (
-                <Box mb="$4" px="$4" flex={1}>
-                  {isLoading ? (
-                    <Box py="$8" alignItems="center">
-                      <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                    </Box>
-                  ) : error ? (
-                    <Box py="$8" alignItems="center">
-                      <Text color={isDark ? '#FFFFFF' : '#000000'}>
-                        Bir hata oluştu. Lütfen tekrar deneyin.
+            {/* Content based on active tab */}
+            {activeCategory === 'hottest' && (
+              <Box px="$4" pt={0} mt={0}>
+                {isLoading ? (
+                  <Box py="$8" alignItems="center">
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                  </Box>
+                ) : error ? (
+                  <Box py="$8" alignItems="center">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>
+                      Bir hata oluştu. Lütfen tekrar deneyin.
+                    </Text>
+                  </Box>
+                ) : hottestItems.length === 0 ? (
+                  <Box py="$8" alignItems="center">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>
+                      Henüz içerik bulunmuyor.
+                    </Text>
+                  </Box>
+                ) : (
+                  <FlatList
+                    data={hottestItems}
+                    renderItem={({ item }) => renderHottestItem(item)}
+                    keyExtractor={(item) => item.data.id}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.1}
+                    removeClippedSubviews={false}
+                    contentContainerStyle={{ paddingTop: 0 }}
+                    ListFooterComponent={
+                      isFetchingNextPage ? (
+                        <Box py="$4" alignItems="center">
+                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                        </Box>
+                      ) : null
+                    }
+                    scrollEnabled={false}
+                    nestedScrollEnabled={true}
+                  />
+                )}
+              </Box>
+            )}
+
+            {activeCategory === 'news' && (
+              <VStack space="md" mb="$4" pt={0} mt={0}>
+                {/* New Community Events Section */}
+                <Box pl="$4">
+                  <VStack space="sm" mb="$4">
+                    <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                        fontSize={14}
+                        fontWeight="$bold"
+                      >
+                        New Community Events
                       </Text>
-                    </Box>
-                  ) : hottestItems.length === 0 ? (
-                    <Box py="$8" alignItems="center">
-                      <Text color={isDark ? '#FFFFFF' : '#000000'}>
-                        Henüz içerik bulunmuyor.
-                      </Text>
-                    </Box>
-                  ) : (
-                    <FlatList
-                      data={hottestItems}
-                      renderItem={({ item }) => renderHottestItem(item)}
-                      keyExtractor={(item) => item.data.id}
-                      onEndReached={handleLoadMore}
-                      onEndReachedThreshold={0.1}
-                      removeClippedSubviews={false}
-                      ListFooterComponent={
-                        isFetchingNextPage ? (
-                          <Box py="$4" alignItems="center">
-                            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                          </Box>
-                        ) : null
-                      }
-                      scrollEnabled={false}
-                      nestedScrollEnabled={true}
-                      ItemSeparatorComponent={() => <Box height={16} />}
-                    />
-                  )}
+                      <Pressable onPress={handleSeeAllEvents}>
+                        <Text
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                          fontSize={12}
+                          fontWeight="$medium"
+                          textDecorationLine="underline"
+                        >
+                          See All Event Catalog
+                        </Text>
+                      </Pressable>
+                    </HStack>
+                    {isLoadingEvents ? (
+                      <Box py="$4" alignItems="center">
+                        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                      </Box>
+                    ) : events.length === 0 ? (
+                      <Box py="$4" alignItems="center">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
+                          Henüz etkinlik bulunmuyor.
+                        </Text>
+                      </Box>
+                    ) : (
+                      <FlatList
+                        data={events}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
+                        ItemSeparatorComponent={() => <Box width={12} />}
+                        renderItem={({ item }) => (
+                          <EventCard
+                            data={item}
+                            isGrid={false}
+                            onPress={() => handleEventPress(item.id)}
+                          />
+                        )}
+                        keyExtractor={(item) => item.id}
+                        nestedScrollEnabled={true}
+                      />
+                    )}
+                  </VStack>
                 </Box>
-              )}
 
-              {activeCategory === 'news' && (
-                <VStack space="md" mb="$4">
-                  {/* New Community Events Section */}
-                  <Box pl="$4">
-                    <VStack space="sm" mb="$4">
-                      <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
+                {/* New Brands Section */}
+                <Box pl="$4">
+                  <VStack space="sm" mb="$4">
+                    <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                        fontSize={14}
+                        fontWeight="$bold"
+                      >
+                        New Brands
+                      </Text>
+                      <Pressable onPress={handleSeeAllBrands}>
                         <Text
-                          color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                          fontSize={14}
-                          fontWeight="$bold"
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                          fontSize={12}
+                          fontWeight="$medium"
+                          textDecorationLine="underline"
                         >
-                          New Community Events
+                          See Brand Catalog
                         </Text>
-                        <Pressable onPress={handleSeeAllEvents}>
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={12}
-                            fontWeight="$medium"
-                            textDecorationLine="underline"
-                          >
-                            See All Event Catalog
-                          </Text>
-                        </Pressable>
-                      </HStack>
-                      {isLoadingEvents ? (
-                        <Box py="$4" alignItems="center">
-                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                        </Box>
-                      ) : events.length === 0 ? (
-                        <Box py="$4" alignItems="center">
-                          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
-                            Henüz etkinlik bulunmuyor.
-                          </Text>
-                        </Box>
-                      ) : (
-                        <FlatList
-                          data={events}
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={{ paddingRight: 16 }}
-                          ItemSeparatorComponent={() => <Box width={12} />}
-                          renderItem={({ item }) => (
-                            <EventCard
-                              data={item}
-                              isGrid={false}
-                              onPress={() => handleEventPress(item.id)}
-                            />
-                          )}
-                          keyExtractor={(item) => item.id}
-                          nestedScrollEnabled={true}
-                        />
-                      )}
-                    </VStack>
-                  </Box>
+                      </Pressable>
+                    </HStack>
+                    {isLoadingBrands ? (
+                      <Box py="$4" alignItems="center">
+                        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                      </Box>
+                    ) : brands.length === 0 ? (
+                      <Box py="$4" alignItems="center">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
+                          Henüz brand bulunmuyor.
+                        </Text>
+                      </Box>
+                    ) : (
+                      <FlatList
+                        data={brands}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
+                        ItemSeparatorComponent={() => <Box width={12} />}
+                        renderItem={({ item }) => (
+                          <BrandCard
+                            data={item}
+                            onPress={() => handleBrandPress(item.id)}
+                          />
+                        )}
+                        keyExtractor={(item) => item.id}
+                        nestedScrollEnabled={true}
+                      />
+                    )}
+                  </VStack>
+                </Box>
 
-                  {/* New Brands Section */}
-                  <Box pl="$4">
-                    <VStack space="sm" mb="$4">
-                      <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
+                {/* New Products Section */}
+                <Box pl="$4">
+                  <VStack space="sm">
+                    <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                        fontSize={14}
+                        fontWeight="$bold"
+                      >
+                        New Products
+                      </Text>
+                      <Pressable onPress={handleSeeAllProducts}>
                         <Text
-                          color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                          fontSize={14}
-                          fontWeight="$bold"
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                          fontSize={12}
+                          fontWeight="$medium"
+                          textDecorationLine="underline"
                         >
-                          New Brands
+                          See Product Catalog
                         </Text>
-                        <Pressable onPress={handleSeeAllBrands}>
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={12}
-                            fontWeight="$medium"
-                            textDecorationLine="underline"
-                          >
-                            See Brand Catalog
-                          </Text>
-                        </Pressable>
-                      </HStack>
-                      {isLoadingBrands ? (
-                        <Box py="$4" alignItems="center">
-                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                        </Box>
-                      ) : brands.length === 0 ? (
-                        <Box py="$4" alignItems="center">
-                          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
-                            Henüz brand bulunmuyor.
-                          </Text>
-                        </Box>
-                      ) : (
-                        <FlatList
-                          data={brands}
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={{ paddingRight: 16 }}
-                          ItemSeparatorComponent={() => <Box width={12} />}
-                          renderItem={({ item }) => (
-                            <BrandCard
-                              data={item}
-                              onPress={() => handleBrandPress(item.id)}
-                            />
-                          )}
-                          keyExtractor={(item) => item.id}
-                          nestedScrollEnabled={true}
-                        />
-                      )}
-                    </VStack>
-                  </Box>
-
-                  {/* New Products Section */}
-                  <Box pl="$4">
-                    <VStack space="sm">
-                      <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
-                        <Text
-                          color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                          fontSize={14}
-                          fontWeight="$bold"
-                        >
-                          New Products
+                      </Pressable>
+                    </HStack>
+                    {isLoadingProducts ? (
+                      <Box py="$4" alignItems="center">
+                        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                      </Box>
+                    ) : products.length === 0 ? (
+                      <Box py="$4" alignItems="center">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
+                          Henüz product bulunmuyor.
                         </Text>
-                        <Pressable onPress={handleSeeAllProducts}>
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={12}
-                            fontWeight="$medium"
-                            textDecorationLine="underline"
-                          >
-                            See Product Catalog
-                          </Text>
-                        </Pressable>
-                      </HStack>
-                      {isLoadingProducts ? (
-                        <Box py="$4" alignItems="center">
-                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                        </Box>
-                      ) : products.length === 0 ? (
-                        <Box py="$4" alignItems="center">
-                          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
-                            Henüz product bulunmuyor.
-                          </Text>
-                        </Box>
-                      ) : (
-                        <FlatList
-                          data={products}
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={{ paddingRight: 16 }}
-                          ItemSeparatorComponent={() => <Box width={12} />}
-                          renderItem={({ item }) => (
-                            <ProductCard
-                              data={item}
-                              onPress={() => handleProductPress(item.id)}
-                            />
-                          )}
-                          keyExtractor={(item) => item.id}
-                          nestedScrollEnabled={true}
-                        />
-                      )}
-                    </VStack>
-                  </Box>
-                </VStack>
-              )}
+                      </Box>
+                    ) : (
+                      <FlatList
+                        data={products}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 16 }}
+                        ItemSeparatorComponent={() => <Box width={12} />}
+                        renderItem={({ item }) => (
+                          <ProductCard
+                            data={item}
+                            onPress={() => handleProductPress(item.id)}
+                          />
+                        )}
+                        keyExtractor={(item) => item.id}
+                        nestedScrollEnabled={true}
+                      />
+                    )}
+                  </VStack>
+                </Box>
+              </VStack>
+            )}
           </VStack>
         </ScrollView>
 
