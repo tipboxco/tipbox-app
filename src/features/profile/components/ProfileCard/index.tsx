@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Modal, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, Modal, TouchableWithoutFeedback, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ import { ProfileStackParamList } from '../../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
 import type { UserProfile } from '../../types';
-import { useSafeAreaValues, useBottomTabBarHeightValue, toImageSource } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 
 interface ProfileCardProps {
   userData: UserProfile;
@@ -63,14 +63,23 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
   };
 
   return (
-    <Box>
+    <View style={{ margin: 0, padding: 0, width: '100%', alignSelf: 'stretch' }}>
       {/* Banner */}
-      <Box h={130} overflow="hidden" position="relative">
+      <Box 
+        h={160} 
+        overflow="hidden" 
+        position="relative" 
+        style={{ 
+          margin: 0, 
+          padding: 0, 
+          width: '100%',
+          alignSelf: 'stretch',
+        }}
+      >
         <Image
           source={toImageSource(userData.bannerUrl) || require('@/assets/banner/banner_01.png')}
           alt="Profile Banner"
-          w="100%"
-          h="100%"
+          style={{ width: '100%', height: '100%' }}
           resizeMode="cover"
         />
         {/* Overlay */}
@@ -87,14 +96,13 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
       {/* Banner Controls */}
       <Box
         position="absolute"
-        top={0}
+        top={safeAreaTop + 12}
         left={0}
         right={0}
         flexDirection="row"
         justifyContent="space-between"
         alignItems="flex-start"
         px={16}
-        paddingTop={32}
         pointerEvents="box-none"
         zIndex={2000}
       >
@@ -113,140 +121,29 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
         </Pressable>
       </Box>
 
-      {/* Profile Image */}
-      <Box 
-        position="absolute" 
-        top={104}
-        left={16}
-        borderRadius={100}
-        overflow="hidden"
-        w={68}
-        h={68}
-        borderWidth={2}
-        borderColor="$white"
-      >
-        <Image
-          source={toImageSource(userData.avatar) || require('@/assets/avatar/ozan.png')}
-          alt={userData.name}
-          w="100%"
-          h="100%"
-        />
-      </Box>
-
-      {/* Profile Info and Actions */}
-      <Box px={15} mt={50}>
-        <Box flexDirection="row" justifyContent="space-between" alignItems="flex-start">
-          <Box flex={1}>
-            <Text
-              color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize={14}
-              fontWeight="$bold"
-            >
-              {userData.name}
-            </Text>
-
-            {userData.biography && (
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={10}
-                lineHeight={15}
-                mt={2}
-              >
-                {userData.biography}
-              </Text>
-            )}
-
-            {/* Stats */}
-            <HStack space="xs" mt={10}>
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={10}
-                fontWeight="$bold"
-              >
-                {userData.stats.posts}
-              </Text>
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={10}
-              >
-                Posts
-              </Text>
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={10}
-              >
-                {" "}•{" "}
-              </Text>
-              <Pressable onPress={() => {
-                if (user?.id) {
-                  navigation.navigate('TrustList', { 
-                    userId: user.id,
-                    initialTab: 'trust' 
-                  });
-                }
-              }}>
-                <HStack alignItems="center" space="xs">
-                  <Text
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={10}
-                    fontWeight="$bold"
-                  >
-                    {userData.stats.trust}
-                  </Text>
-                  <Text
-                    color={isDark ? '$textDark400' : '$textLight600'}
-                    fontSize={10}
-                  >
-                    Trust
-                  </Text>
-                </HStack>
-              </Pressable>
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={10}
-              >
-                {" "}•{" "}
-              </Text>
-              <Pressable onPress={() => {
-                if (user?.id) {
-                  navigation.navigate('TrustList', { 
-                    userId: user.id,
-                    initialTab: 'truster' 
-                  });
-                }
-              }}>
-                <HStack alignItems="center" space="xs">
-                  <Text
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={10}
-                    fontWeight="$bold"
-                  >
-                    {userData.stats.truster > 999 ? `${Math.floor(userData.stats.truster / 1000)}K` : userData.stats.truster}
-                  </Text>
-                  <Text
-                    color={isDark ? '$textDark400' : '$textLight600'}
-                    fontSize={10}
-                  >
-                    Truster
-                  </Text>
-                </HStack>
-              </Pressable>
-            </HStack>
-
-            {/* Titles */}
-            {userData.titles && userData.titles.length > 0 && (
-              <Text
-                color={isDark ? '$textDark400' : '$textLight600'}
-                fontSize={10}
-                mt={2}
-              >
-                {userData.titles.join(" - ")}
-              </Text>
-            )}
+      {/* Profile Image and Action Buttons Row */}
+      <Box px={15} mt={-20} style={{ marginLeft: 0, marginRight: 0, paddingLeft: 15, paddingRight: 15 }}>
+        <HStack alignItems="flex-start" justifyContent="space-between" space="md">
+          {/* Profile Image */}
+          <Box 
+            borderRadius={100}
+            overflow="hidden"
+            w={68}
+            h={68}
+            borderWidth={2}
+            borderColor="$white"
+            flexShrink={0}
+          >
+            <Image
+              source={toImageSource(userData.avatar) || require('@/assets/avatar/ozan.png')}
+              alt={userData.name}
+              w="100%"
+              h="100%"
+            />
           </Box>
 
           {/* Action Buttons */}
-          <HStack space="sm" alignItems="center" position="absolute" right={0} top={-40}>
+          <HStack space="sm" alignItems="center" flexShrink={0} mt={32}>
             {isOwnProfile ? (
               // Kendi profili - Edit Profile butonu
               <Pressable
@@ -273,7 +170,8 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             ) : (
               // Başka kullanıcının profili - Action butonları
               <>
-                <Box 
+                {/* SendTIPS */}
+                <Pressable
                   w={30} 
                   h={30} 
                   bg="#F7F7F7" 
@@ -282,10 +180,16 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   borderColor="#E9E9E9"
                   justifyContent="center" 
                   alignItems="center"
+                  onPress={() => {
+                    // TODO: SendTIPS functionality
+                    console.log('[ProfileCard] SendTIPS pressed');
+                  }}
                 >
                   <Feather name="gift" size={14} color="#000" />
-                </Box>
-                <Box 
+                </Pressable>
+                
+                {/* 1-on-1 Request */}
+                <Pressable
                   w={30} 
                   h={30} 
                   bg="#F7F7F7" 
@@ -294,10 +198,16 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   borderColor="#E9E9E9"
                   justifyContent="center" 
                   alignItems="center"
+                  onPress={() => {
+                    // TODO: 1-on-1 Request functionality
+                    console.log('[ProfileCard] 1-on-1 Request pressed');
+                  }}
                 >
                   <Feather name="headphones" size={14} color="#000" />
-                </Box>
-                <Box 
+                </Pressable>
+                
+                {/* DM */}
+                <Pressable
                   w={30} 
                   h={30} 
                   bg="#F7F7F7" 
@@ -306,10 +216,16 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   borderColor="#E9E9E9"
                   justifyContent="center" 
                   alignItems="center"
+                  onPress={() => {
+                    // TODO: DM functionality
+                    console.log('[ProfileCard] DM pressed');
+                  }}
                 >
                   <Feather name="message-circle" size={14} color="#000" />
-                </Box>
-                <Box 
+                </Pressable>
+                
+                {/* Notification */}
+                <Pressable
                   w={30} 
                   h={30} 
                   bg="#F7F7F7" 
@@ -318,39 +234,161 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   borderColor="#E9E9E9"
                   justifyContent="center" 
                   alignItems="center"
+                  onPress={() => {
+                    // TODO: Notification functionality
+                    console.log('[ProfileCard] Notification pressed');
+                  }}
                 >
                   <Feather name="bell" size={14} color="#000" />
-                </Box>
-                {userData.isTrusted === false && (
-                  <Pressable
-                    bg="#F7F7F7"
-                    borderRadius={200}
-                    borderWidth={1}
-                    borderColor="#E9E9E9"
-                    px={12}
-                    py={8}
-                    flexDirection="row"
-                    alignItems="center"
-                    gap={2}
+                </Pressable>
+                
+                {/* Trust / Un Trust */}
+                <Pressable
+                  bg="#F7F7F7"
+                  borderRadius={200}
+                  borderWidth={1}
+                  borderColor="#E9E9E9"
+                  px={12}
+                  py={8}
+                  flexDirection="row"
+                  alignItems="center"
+                  gap={2}
+                  onPress={() => {
+                    // TODO: Trust/Un Trust functionality
+                    console.log('[ProfileCard] Trust/Un Trust pressed, isTrusted:', userData.isTrusted);
+                  }}
+                >
+                  <Feather 
+                    name={userData.isTrusted ? "user-minus" : "user-plus"} 
+                    size={14} 
+                    color="#000" 
+                  />
+                  <Text
+                    color="#000"
+                    fontSize={10}
+                    fontWeight="$semibold"
                   >
-                    <Feather name="user-plus" size={14} color="#000" />
-                    <Text
-                      color="#000"
-                      fontSize={10}
-                      fontWeight="$semibold"
-                    >
-                      Trust
-                    </Text>
-                  </Pressable>
-                )}
+                    {userData.isTrusted ? "Un Trust" : "Trust"}
+                  </Text>
+                </Pressable>
               </>
             )}
           </HStack>
-        </Box>
+        </HStack>
+      </Box>
+
+      {/* Profile Info */}
+      <Box px={15} mt={10} style={{ marginLeft: 0, marginRight: 0, paddingLeft: 15, paddingRight: 15 }}>
+        <Text
+          color={isDark ? '$textDark50' : '$textLight900'}
+          fontSize={14}
+          fontWeight="$bold"
+        >
+          {userData.name}
+        </Text>
+
+        {userData.biography && (
+          <Text
+            color={isDark ? '$textDark400' : '$textLight600'}
+            fontSize={10}
+            lineHeight={15}
+            mt={2}
+          >
+            {userData.biography}
+          </Text>
+        )}
+
+        {/* Stats */}
+        <HStack space="xs" mt={10}>
+          <Text
+            color={isDark ? '$textDark50' : '$textLight900'}
+            fontSize={10}
+            fontWeight="$bold"
+          >
+            {userData.stats.posts}
+          </Text>
+          <Text
+            color={isDark ? '$textDark400' : '$textLight600'}
+            fontSize={10}
+          >
+            Posts
+          </Text>
+          <Text
+            color={isDark ? '$textDark400' : '$textLight600'}
+            fontSize={10}
+          >
+            {" "}•{" "}
+          </Text>
+          <Pressable onPress={() => {
+            if (user?.id) {
+              navigation.navigate('TrustList', { 
+                userId: user.id,
+                initialTab: 'trust' 
+              });
+            }
+          }}>
+            <HStack alignItems="center" space="xs">
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize={10}
+                fontWeight="$bold"
+              >
+                {userData.stats.trust}
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '$textLight600'}
+                fontSize={10}
+              >
+                Trust
+              </Text>
+            </HStack>
+          </Pressable>
+          <Text
+            color={isDark ? '$textDark400' : '$textLight600'}
+            fontSize={10}
+          >
+            {" "}•{" "}
+          </Text>
+          <Pressable onPress={() => {
+            if (user?.id) {
+              navigation.navigate('TrustList', { 
+                userId: user.id,
+                initialTab: 'truster' 
+              });
+            }
+          }}>
+            <HStack alignItems="center" space="xs">
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize={10}
+                fontWeight="$bold"
+              >
+                {userData.stats.truster > 999 ? `${Math.floor(userData.stats.truster / 1000)}K` : userData.stats.truster}
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '$textLight600'}
+                fontSize={10}
+              >
+                Truster
+              </Text>
+            </HStack>
+          </Pressable>
+        </HStack>
+
+        {/* Titles */}
+        {userData.titles && userData.titles.length > 0 && (
+          <Text
+            color={isDark ? '$textDark400' : '$textLight600'}
+            fontSize={10}
+            mt={2}
+          >
+            {userData.titles.join(" - ")}
+          </Text>
+        )}
       </Box>
 
       {/* Inventory Header */}
-      <Box mt={20} px={15}>
+      <Box mt={20} px={15} style={{ marginLeft: 0, marginRight: 0, paddingLeft: 15, paddingRight: 15 }}>
         <Box
           w="100%"
           h={34}
@@ -497,7 +535,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
           </Box>
         </TouchableWithoutFeedback>
       </Modal>
-    </Box>
+    </View>
   );
 };
 

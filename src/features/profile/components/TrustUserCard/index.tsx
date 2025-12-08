@@ -34,6 +34,7 @@ interface TrustUserCardProps {
   isPopoverOpen: boolean;
   onPopoverOpen: () => void;
   onPopoverClose: () => void;
+  onUserPress?: () => void;
 }
 
 export const TrustUserCard = ({
@@ -42,6 +43,7 @@ export const TrustUserCard = ({
   isPopoverOpen,
   onPopoverOpen,
   onPopoverClose,
+  onUserPress,
 }: TrustUserCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -68,6 +70,12 @@ export const TrustUserCard = ({
       px={16}
       borderBottomWidth={showBorder ? 1 : 0}
       borderBottomColor={isDark ? '#333' : '#E9E9E9'}
+    >
+      <Pressable 
+        flex={1}
+        onPress={onUserPress}
+        flexDirection="row"
+        alignItems="center"
     >
       <HStack alignItems="center" space="md" flex={1}>
         {/* Avatar with Trust Level Ring */}
@@ -117,6 +125,7 @@ export const TrustUserCard = ({
           </Text>
         </VStack>
       </HStack>
+      </Pressable>
 
       {/* More Options Popover */}
       <Popover

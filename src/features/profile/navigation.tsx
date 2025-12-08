@@ -14,7 +14,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 
 // Profile Stack için type tanımlaması
 export type ProfileStackParamList = {
-  ProfileMain: undefined;
+  ProfileMain: { userId?: string } | undefined;
   ProfileEdit: undefined;
   InventoryList: { userId: string };
   InventoryDetail: { itemId: string };
@@ -41,6 +41,22 @@ export const ProfileNavigator = () => {
       <Stack.Screen
         name="ProfileMain"
         component={ProfileScreen}
+        options={{
+          contentStyle: {
+            backgroundColor: isDark ? '#000000' : '#FFFFFF',
+            padding: 0,
+            margin: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+            marginTop: 0,
+            marginBottom: 0,
+            marginLeft: 0,
+            marginRight: 0,
+          },
+          animation: 'none',
+        }}
       />
       <Stack.Screen
         name="ProfileEdit"

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack } from '@gluestack-ui/themed';
+import { useRoute } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ProfileCard from '../components/ProfileCard';
 import { ReviewsTab, LadderTab, RepliesTab, TipsTab, FeedTab, BenchmarksTab } from '../components/TabContents';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useUserProfile } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
+import { ProfileStackParamList } from '../navigation';
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -17,14 +19,19 @@ const TABS = [
   { key: 'ladders',     title: 'Ladders' },
 ];
 
-const ProfileScreen = () => {
+type ProfileScreenProps = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
+
+const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { user } = useAppStore();
-  const userId = user?.id;
   
-  // Profile API hook
-  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(userId);
+  // Route params'tan userId al, yoksa store'daki user.id'yi kullan
+  const routeUserId = route.params?.userId;
+  const targetUserId = routeUserId || user?.id;
+  
+  // Profile API hook - targetUserId ile profil bilgilerini getir
+  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(targetUserId);
   
   const [activeTab, setActiveTab] = useState('feed');
 
@@ -51,13 +58,13 @@ const ProfileScreen = () => {
 
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled={true}
-          contentContainerStyle={{ flexGrow: 1 }}
-        >
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} style={{ margin: 0, padding: 0 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+        contentContainerStyle={{ flexGrow: 1 }}
+        style={{ margin: 0, padding: 0 }}
+      >
           {/* Profile Card Content */}
           {isProfileLoading ? (
             <Box py={20} alignItems="center">
@@ -68,9 +75,7 @@ const ProfileScreen = () => {
               <Text color="#CE4A4A">Hata: {profileError.message}</Text>
             </Box>
           ) : userProfile ? (
-            <Box>
-              <ProfileCard userData={userProfile} userId={userProfile.id} />
-            </Box>
+            <ProfileCard userData={userProfile} userId={targetUserId} />
           ) : null}
 
           {/* Tab Bar - Trust/Collections tasarımı + yatay scroll */}
@@ -128,8 +133,7 @@ const ProfileScreen = () => {
             {renderTabContent()}
           </Box>
         </ScrollView>
-      </Box>
-    </SafeAreaView>
+    </Box>
   );
 };
 

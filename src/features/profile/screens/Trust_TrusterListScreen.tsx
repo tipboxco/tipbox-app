@@ -41,6 +41,7 @@ export const Trust_TrusterListScreen = () => {
     const isDark = colorMode === 'dark';
     const route = useRoute<TrustListScreenRouteProp>();
     const navigation = useNavigation<TrustListScreenNavigationProp>();
+    const profileNavigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
     const bottomInset = useSafeAreaValues('bottom');
 
     const userId = route.params?.userId;
@@ -339,6 +340,9 @@ export const Trust_TrusterListScreen = () => {
                                         isPopoverOpen={openPopoverId === user.id}
                                         onPopoverOpen={() => handlePopoverOpen(user.id)}
                                         onPopoverClose={handlePopoverClose}
+                                        onUserPress={() => {
+                                            profileNavigation.navigate('ProfileMain', { userId: user.id });
+                                        }}
                                     />
                                 ))
                             )}
@@ -397,6 +401,9 @@ export const Trust_TrusterListScreen = () => {
                                     isPopoverOpen={openPopoverId === user.id}
                                     onPopoverOpen={() => handlePopoverOpen(user.id)}
                                     onPopoverClose={handlePopoverClose}
+                                    onUserPress={() => {
+                                        profileNavigation.navigate('ProfileMain', { userId: user.id });
+                                    }}
                                 />
                             )))}
                         </ScrollView>
