@@ -11,6 +11,8 @@ import type {
   ProfileFeedItem,
   UserCollectionAchievementsApiResponse,
   UserCollectionBridgesApiResponse,
+  TrustUser,
+  TrusterUser,
 } from '../types';
 
 /**
@@ -383,3 +385,101 @@ export const getUserCollectionBridges = async (
   }
 };
 
+/**
+ * Get Trust List endpoint function
+ * Kullanıcının trust listesini getirir
+ * 
+ * @param userId - Kullanıcı ID'si
+ * @param searchQuery - İsim veya kullanıcı adına göre arama (opsiyonel)
+ * @returns TrustUser[] - Trust listesi
+ */
+export const getTrustList = async (
+  userId: string,
+  searchQuery?: string
+): Promise<TrustUser[]> => {
+  const params = searchQuery ? { q: searchQuery } : {};
+  const response = await apiService.getClient().get<TrustUser[]>(
+    `/users/${userId}/trusts`,
+    { params }
+  );
+  return response.data;
+};
+
+/**
+ * Get Truster List endpoint function
+ * Kullanıcının truster listesini getirir
+ *
+ * @param userId - Kullanıcı ID'si
+ * @param searchQuery - İsim veya kullanıcı adına göre arama (opsiyonel)
+ * @returns TrusterUser[] - Truster listesi
+ */
+export const getTrusterList = async (
+  userId: string,
+  searchQuery?: string
+): Promise<TrusterUser[]> => {
+  const params = searchQuery ? { q: searchQuery } : {};
+  const response = await apiService.getClient().get<TrusterUser[]>(
+    `/users/${userId}/trusters`,
+    { params }
+  );
+  return response.data;
+};
+
+/**
+ * Add to Trust List endpoint function
+ * Kullanıcıyı trust listesine ekler
+ * 
+ * API Endpoint: POST /users/trust
+ * Kullanıcının kendi ID'si token üzerinden backend'e iletilir
+ * 
+ * @param targetUserId - Trust listesine eklenecek kullanıcının ID'si
+ * @returns void - Başarılı durumda 201 Created döner
+ */
+export const addToTrustList = async (
+  targetUserId: string
+): Promise<void> => {
+  try {
+    await apiService.getClient().post(
+      '/users/trust',
+      { targetUserId }
+    );
+  } catch (error: any) {
+    console.error('[addToTrustList] API Error:', {
+      url: '/users/trust',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Remove from Trust List endpoint function
+ * Kullanıcıyı trust listesinden kaldırır (untrust)
+ * 
+ * API Endpoint: DELETE /users/trusts/{targetUserId}
+ * Kullanıcının kendi ID'si token üzerinden backend'e iletilir
+ * 
+ * @param targetUserId - Trust listesinden kaldırılacak kullanıcının ID'si
+ * @returns void - Başarılı durumda 204 No Content döner
+ */
+export const removeFromTrustList = async (
+  targetUserId: string
+): Promise<void> => {
+  try {
+    await apiService.getClient().delete(
+      `/users/trusts/${targetUserId}`
+    );
+  } catch (error: any) {
+    console.error('[removeFromTrustList] API Error:', {
+      url: `/users/trusts/${targetUserId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};

@@ -1,6 +1,5 @@
-import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
-import { getTrustList, getTrusterList } from './trustApi';
 import {
   getUserProfile,
   getInventory,
@@ -12,8 +11,13 @@ import {
   getUserLadderBadges,
   getUserCollectionAchievements,
   getUserCollectionBridges,
+  getTrustList,
+  getTrusterList,
+  addToTrustList,
+  removeFromTrustList,
   type UserFeedApiResponse,
 } from './profileApi';
+import { useAppStore } from '@/src/store/appStore';
 import type {
   TrustUser,
   TrusterUser,
@@ -578,6 +582,74 @@ export const useUserCollectionBridges = (userId: string | undefined, limit: numb
     refetchOnMount: true, // Her mount'ta yeniden fetch et
     refetchOnWindowFocus: false,
     retry: 1,
+  });
+};
+
+/**
+ * Add to Trust List mutation hook
+ * Kullanıcıyı trust listesine ekler
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: trustUser, isPending } = useAddToTrustList();
+ * trustUser('target-user-id');
+ */
+export const useAddToTrustList = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAppStore();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (targetUserId: string) => addToTrustList(targetUserId),
+    onSuccess: () => {
+      // Trust listesini invalidate et - güncel listeyi göster
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.trusts(),
+        });
+        // Profil bilgilerini de invalidate et - trust sayısı güncellenecek
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('[useAddToTrustList] Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Remove from Trust List mutation hook
+ * Kullanıcıyı trust listesinden kaldırır (untrust)
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: untrustUser, isPending } = useRemoveFromTrustList();
+ * untrustUser('target-user-id');
+ */
+export const useRemoveFromTrustList = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAppStore();
+
+  return useMutation<void, Error, string>({
+    mutationFn: (targetUserId: string) => removeFromTrustList(targetUserId),
+    onSuccess: () => {
+      // Trust listesini invalidate et - güncel listeyi göster
+      if (user?.id) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.trusts(),
+        });
+        // Profil bilgilerini de invalidate et - trust sayısı güncellenecek
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('[useRemoveFromTrustList] Mutation error:', error);
+    },
   });
 };
 

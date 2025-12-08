@@ -18,6 +18,7 @@ import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
 import type { UserProfile } from '../../types';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useAddToTrustList, useRemoveFromTrustList } from '../../api/hooks';
 
 interface ProfileCardProps {
   userData: UserProfile;
@@ -42,6 +43,8 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const { user } = useAppStore();
   const safeAreaTop = useSafeAreaValues('top');
+  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
+  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
   
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === userId;
@@ -254,9 +257,18 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                   alignItems="center"
                   gap={2}
                   onPress={() => {
-                    // TODO: Trust/Un Trust functionality
-                    console.log('[ProfileCard] Trust/Un Trust pressed, isTrusted:', userData.isTrusted);
+                    if (!userId) return;
+                    
+                    if (userData.isTrusted) {
+                      // Un Trust - Trust listesinden kaldır
+                      untrustUser(userId);
+                    } else {
+                      // Trust - Trust listesine ekle
+                      trustUser(userId);
+                    }
                   }}
+                  disabled={isTrusting || isUntrusting}
+                  opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
                 >
                   <Feather 
                     name={userData.isTrusted ? "user-minus" : "user-plus"} 
@@ -268,7 +280,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     fontSize={10}
                     fontWeight="$semibold"
                   >
-                    {userData.isTrusted ? "Un Trust" : "Trust"}
+                    {isTrusting ? "Ekleniyor..." : isUntrusting ? "Kaldırılıyor..." : (userData.isTrusted ? "Un Trust" : "Trust")}
                   </Text>
                 </Pressable>
               </>
