@@ -26,6 +26,7 @@ import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { ProfilePost } from '@/src/features/profile/types';
@@ -35,6 +36,8 @@ import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
+import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
+import { ProductInfoType } from '@/src/types/common';
 
 const { width } = Dimensions.get('window');
 
@@ -226,6 +229,73 @@ const EventDetailScreen: React.FC = () => {
         };
     };
 
+    // Map Update to UpdateCardData (from FeedScreen)
+    const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
+        const avatarSource = toImageSource(item.user.avatar)!;
+        
+        // ContextType'ı ProductInfoType'a çevir
+        let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
+        if (item.contextType === 'product_group') {
+            productInfoType = ProductInfoType.PRODUCT_GROUP;
+        } else if (item.contextType === 'sub_category') {
+            productInfoType = ProductInfoType.SUB_CATEGORY;
+        }
+
+        // relatedPost.content formatını component'in beklediği formata çevir
+        const relatedPostContent = item.relatedPost.content.map((contentItem) => {
+            // Rating'i number'dan number[]'e çevir (5 yıldız için)
+            const ratingArray: number[] = Array(5).fill(0);
+            const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5); // 0-100'den 0-5'e çevir
+            for (let i = 0; i < ratingValue; i++) {
+                ratingArray[i] = 1;
+            }
+
+            return {
+                tag: {
+                    icon: 'tag',
+                    title: contentItem.title,
+                },
+                text: contentItem.content,
+                rating: ratingArray,
+            };
+        });
+
+        return {
+            id: item.id,
+            user: {
+                id: item.user.id,
+                name: item.user.name,
+                title: item.user.title,
+                avatar: avatarSource,
+            },
+            stats: item.stats,
+            createdAt: item.createdAt,
+            contextType: productInfoType,
+            product: {
+                id: item.relatedPost.product.id,
+                name: item.relatedPost.product.name,
+                subName: item.relatedPost.product.subName,
+                image: toImageSource(item.relatedPost.product.image)!,
+                isOwned: item.relatedPost.product.isOwned,
+            },
+            content: item.content,
+            images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+            relatedPost: {
+                id: item.relatedPost.id,
+                product: {
+                    id: item.relatedPost.product.id,
+                    name: item.relatedPost.product.name,
+                    subName: item.relatedPost.product.subName,
+                    image: toImageSource(item.relatedPost.product.image)!,
+                    isOwned: item.relatedPost.product.isOwned,
+                },
+                content: relatedPostContent,
+                tags: item.relatedPost.tags,
+                images: item.relatedPost.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+            },
+        };
+    };
+
     // Render feed item based on type (from FeedScreen)
     const renderFeedItem = (item: FeedApiItem) => {
         switch (item.type) {
@@ -260,6 +330,17 @@ const EventDetailScreen: React.FC = () => {
                         data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
                     />
                 );
+            case CardType.UPDATE:
+                // Update type için UpdateApiItem kullan ve UpdatePostCard render et
+                if ('relatedPost' in item.data && 'contextType' in item.data) {
+                    return (
+                        <UpdatePostCard
+                            key={item.data.id}
+                            data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
+                        />
+                    );
+                }
+                return null;
             default:
                 return null;
         }

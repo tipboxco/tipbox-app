@@ -114,7 +114,7 @@ export const getUserPosts = async (
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
-      const hasMore = items.length >= limit;
+    const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
       
       console.log('[getUserPosts] Normalized Response:', {
@@ -147,13 +147,13 @@ export const getUserPosts = async (
           cursor: items.length > 0 ? items[items.length - 1].id : undefined,
           itemIds: items.map((item: any) => item?.id).filter(Boolean),
         });
-        
-        return {
-          items,
-          pagination: {
-            hasMore,
-            limit,
-            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+    
+    return {
+      items,
+      pagination: {
+        hasMore,
+        limit,
+        cursor: items.length > 0 ? items[items.length - 1].id : undefined,
           },
         };
       }

@@ -5,24 +5,27 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/src/navigation/navigation.types';
-import { UpdatePost } from '@/src/mock/feed/types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import type { UpdateCardData } from '@/src/types/UpdateCard';
 import { toImageSource } from '@/src/utils';
 
 interface UpdatePostCardProps {
-  data: UpdatePost;
+  data: UpdateCardData;
   hideProduct?: boolean;
 }
 
 const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [showRelatedPost, setShowRelatedPost] = useState(false);
+  const navigation = useNavigation<any>();
   const [isTranslated, setIsTranslated] = useState(false);
+
+  // Product'ı relatedPost.product'tan al
+  const product = data.relatedPost.product;
+  
+  // ContextType'a göre ProductInfoType belirle
+  const productInfoType = data.contextType || ProductInfoType.PRODUCT;
 
   return (
     <VStack
@@ -73,14 +76,15 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       </VStack>
 
       {/* Product */}
-      {!hideProduct && data.product && (
+      {!hideProduct && product && (
         <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <ProductInfoCard
             size="small"
-            type={ProductInfoType.PRODUCT}
-            image={toImageSource(data.product.image)}
-            title={data.product.name}
-            subName={data.product.subName}
+            type={productInfoType}
+            image={toImageSource(product.image)}
+            title={product.name}
+            subName={product.subName}
+            isOwned={product.isOwned}
             onPress={() => {
               navigation.navigate('Post', {
                 screen: 'PostDetailScreen',
@@ -118,20 +122,12 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       {/* Content */}
       <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         <Pressable onPress={() => {
-          // Create relatedPostData if relatedPost exists
-          const relatedPostData = data.relatedPost ? {
-            ...data,
-            content: data.relatedPost.content,
-            tags: data.relatedPost.tags || [],
-            images: data.relatedPost.images || [],
-          } : undefined;
-
+          // Navigate to PostDetailScreen
           navigation.navigate('Post', {
             screen: 'PostDetailScreen',
             params: { 
               postData: data, 
               type: 'update',
-              relatedPostData: relatedPostData,
             }
           });
         }}>
@@ -165,30 +161,18 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
           </Pressable>
         </Box>
 
-        {/* See Related Post / Hide Related Post Button */}
+        {/* See Related Post Button - Detay sayfasına yönlendirir */}
         {data.relatedPost && (
           <Pressable 
             onPress={() => {
-              // Navigate to PostDetailScreen with showRelatedPost flag
-              if (data.relatedPost) {
-                // Create a post data object compatible with ExperiencePostCardDetail
-                const relatedPostData = {
-                  ...data,
-                  content: data.relatedPost.content,
-                  tags: data.relatedPost.tags || [],
-                  images: data.relatedPost.images || [],
-                };
-                
-                navigation.navigate('Post', {
-                  screen: 'PostDetailScreen',
-                  params: { 
-                    postData: data, // Original update post data
-                    relatedPostData: relatedPostData, // Related post data
-                    type: 'update',
-                    showRelatedPost: true
-                  }
-                });
-              }
+              // Detay sayfasına yönlendir (related post detay sayfasında açılacak)
+              navigation.navigate('Post', {
+                screen: 'PostDetailScreen',
+                params: { 
+                  postData: data, 
+                  type: 'update',
+                }
+              });
             }} 
             mt={10}
           >
@@ -211,85 +195,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
         </VStack>
       )}
 
-      {/* Related Post Details - Shown when See Related Post is clicked */}
-      {showRelatedPost && data.relatedPost && (
-        <>
-          {/* Related Post Content */}
-          <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            {data.relatedPost.content.map((item, index) => (
-              <VStack key={index} py={8}>
-                <HStack space="sm" alignItems="center">
-                  <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
-                  <Text
-                    color={isDark ? '$textDark50' : '#000'}
-                    fontSize={'$xs'}
-                    fontWeight="$bold"
-                  >
-                    {item.tag.title}
-                  </Text>
-                </HStack>
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  numberOfLines={data.relatedPost?.images && data.relatedPost.images.length > 0 ? 3 : 6}
-                  fontSize={'$2xs'}
-                  ml={26}
-                >
-                  {item.text}
-                </Text>
-                <HStack ml={26} mt={8}>
-                  {item.rating.map((star, idx) => {
-                    // rating number[] olarak tanımlı (UpdatePost type'ında)
-                    // 1 = filled star, 0 = empty star
-                    const isStar = star === 1;
-                    return (
-                      <Feather
-                        key={idx}
-                        name="star"
-                        size={12}
-                        color={isStar ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                        fill={isStar ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                      />
-                    );
-                  })}
-                </HStack>
-              </VStack>
-            ))}
-          </VStack>
-
-          {/* Related Post Tags */}
-          {data.relatedPost.tags && data.relatedPost.tags.length > 0 && (
-            <HStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9" flexWrap="wrap">
-              {data.relatedPost.tags.map((tag, index) => (
-                <HStack
-                  key={index}
-                  bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
-                  borderWidth={1}
-                  borderColor={'#E9E9E9'}
-                  rounded={'$full'}
-                  px={16}
-                  py={6}
-                  mr={4}
-                >
-                  <Text
-                    color={isDark ? '$textDark50' : '#000'}
-                    fontSize={config.tokens.fontSizes['4xs'] as number}
-                    fontWeight="$semibold"
-                  >
-                    {tag}
-                  </Text>
-                </HStack>
-              ))}
-            </HStack>
-          )}
-
-          {/* Related Post Images */}
-          {data.relatedPost.images && data.relatedPost.images.length > 0 && (
-            <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              <CardImageCarousel images={data.relatedPost.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
-            </VStack>
-          )}
-        </>
-      )}
+      {/* Related Post Details - Sadece detay sayfasında gösterilecek, burada render edilmiyor */}
 
       {/* Stats */}
       <HStack

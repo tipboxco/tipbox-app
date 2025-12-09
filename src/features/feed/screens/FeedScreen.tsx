@@ -22,7 +22,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFeed } from '../api/hooks';
-import { CardType } from '@/src/types/common';
+import { CardType, ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import type { FeedApiItem } from '../api/feedApi';
@@ -31,6 +31,7 @@ import type { ProfilePost } from '@/src/features/profile/types';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
 import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
@@ -400,6 +401,73 @@ export const FeedScreen = () => {
     };
   };
 
+  // Map Update to UpdateCardData
+  const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
+    const avatarSource = toImageSource(item.user.avatar)!;
+    
+    // ContextType'ı ProductInfoType'a çevir
+    let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
+    if (item.contextType === 'product_group') {
+      productInfoType = ProductInfoType.PRODUCT_GROUP;
+    } else if (item.contextType === 'sub_category') {
+      productInfoType = ProductInfoType.SUB_CATEGORY;
+    }
+
+    // relatedPost.content formatını component'in beklediği formata çevir
+    const relatedPostContent = item.relatedPost.content.map((contentItem) => {
+      // Rating'i number'dan number[]'e çevir (5 yıldız için)
+      const ratingArray: number[] = Array(5).fill(0);
+      const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5); // 0-100'den 0-5'e çevir
+      for (let i = 0; i < ratingValue; i++) {
+        ratingArray[i] = 1;
+      }
+
+      return {
+        tag: {
+          icon: 'tag',
+          title: contentItem.title,
+        },
+        text: contentItem.content,
+        rating: ratingArray,
+      };
+    });
+
+    return {
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
+      },
+      stats: item.stats,
+      createdAt: item.createdAt,
+      contextType: productInfoType,
+      product: {
+        id: item.relatedPost.product.id,
+        name: item.relatedPost.product.name,
+        subName: item.relatedPost.product.subName,
+        image: toImageSource(item.relatedPost.product.image)!,
+        isOwned: item.relatedPost.product.isOwned,
+      },
+      content: item.content,
+      images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+      relatedPost: {
+        id: item.relatedPost.id,
+        product: {
+          id: item.relatedPost.product.id,
+          name: item.relatedPost.product.name,
+          subName: item.relatedPost.product.subName,
+          image: toImageSource(item.relatedPost.product.image)!,
+          isOwned: item.relatedPost.product.isOwned,
+        },
+        content: relatedPostContent,
+        tags: item.relatedPost.tags,
+        images: item.relatedPost.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+      },
+    };
+  };
+
   const renderFeedItem = (item: FeedApiItem) => {
     switch (item.type) {
       case CardType.EXPERIENCE:
@@ -447,8 +515,15 @@ export const FeedScreen = () => {
           />
         );
       case CardType.UPDATE:
-        // UpdatePostCard için mock tip hala kullanılıyor, bu ayrı bir refactoring konusu
-        console.warn('[FeedScreen] UPDATE type item detected but not rendered:', item.data.id);
+        // Update type için UpdateApiItem kullan ve UpdatePostCard render et
+        if ('relatedPost' in item.data && 'contextType' in item.data) {
+          return (
+            <UpdatePostCard
+              key={item.data.id}
+              data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
+            />
+          );
+        }
         return null;
       default:
         console.warn('[FeedScreen] Unknown item type, not rendered:', {

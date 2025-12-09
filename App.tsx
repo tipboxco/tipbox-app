@@ -25,14 +25,14 @@ export default function App() {
           <PortalProvider>
             <BottomSheetModalProvider>
               <GlobalBottomSheetProvider>
-                <GluestackProvider>
-                  <StatusBar
-                    translucent
-                    backgroundColor={isDark ? '#000000' : '#FAFAFA'}
-                    barStyle={isDark ? 'light-content' : 'dark-content'}
-                  />
-                  <Navigation />
-                </GluestackProvider>
+              <GluestackProvider>
+                <StatusBar
+                  translucent
+                  backgroundColor={isDark ? '#000000' : '#FAFAFA'}
+                  barStyle={isDark ? 'light-content' : 'dark-content'}
+                />
+                <Navigation />
+              </GluestackProvider>
               </GlobalBottomSheetProvider>
             </BottomSheetModalProvider>
           </PortalProvider>

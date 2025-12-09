@@ -101,27 +101,6 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
         </Text>
       </VStack>
 
-      {/* Translate Button */}
-      <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        <Pressable onPress={() => setIsTranslated(!isTranslated)}>
-          <HStack alignItems="center" space="xs">
-            <Image
-              source={require('@/assets/translate.png')}
-              alt="translate"
-              width={16}
-              height={16}
-            />
-            <Text
-              color="#829905"
-              fontSize={config.tokens.fontSizes['2xs'] as number}
-              textDecorationLine="underline"
-            >
-              {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-            </Text>
-          </HStack>
-        </Pressable>
-      </Box>
-
       {/* Images */}
       {data.images && data.images.length > 0 && (
         <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
@@ -158,37 +137,47 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
             </VStack>
           )}
 
-          {/* Price and Shopping Experience Card */}
+          {/* Content Cards - Map ile oluşturuluyor */}
           {((relatedPostData?.content && relatedPostData.content.length > 0) || (data.relatedPost?.content && data.relatedPost.content.length > 0)) && (
-              <Box
-                bg="##FAFAFA"
-                borderRadius={10}
-                overflow="hidden"
-              >
-                {/* Card Header */}
-                <VStack px={16} py={8} space="xs">
-                  <HStack alignItems="center" space="xs">
-                    <Feather name="tag" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+            <VStack px={16} space="md" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+              {(relatedPostData?.content || data.relatedPost?.content || []).map((contentItem: any, index: number) => (
+                <Box
+                  key={index}
+                  bg={isDark ? '$backgroundDark800' : '#FAFAFA'}
+                  borderRadius={10}
+                  overflow="hidden"
+                >
+                {/* Card Header - Başlık ve Content aynı hizada */}
+                <HStack px={16} py={8} alignItems="flex-start" space="sm">
+                  <Feather 
+                    name={contentItem.tag.icon === 'tag' ? 'tag' : 'package'} 
+                    size={18} 
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    style={{ marginTop: 2 }}
+                  />
+                  <VStack flex={1} space="xs">
                     <Text
                       fontSize={11}
                       fontWeight="$semibold"
                       color={isDark ? '$textDark50' : '#3B3B3B'}
                     >
-                      Price and Shopping Experience
+                      {contentItem.tag.title}
                     </Text>
-                  </HStack>
-                  <Text
-                    color={isDark ? '$textDark50' : '#000000'}
-                    fontSize={10}
-                    lineHeight={14}
-                  >
-                    {(relatedPostData?.content || data.relatedPost?.content || []).find((item: any) => item.tag.icon === 'tag')?.text || ''}
-                  </Text>
-                </VStack>
+                    <Text
+                      color={isDark ? '$textDark50' : '#000000'}
+                      fontSize={10}
+                      lineHeight={14}
+                    >
+                      {contentItem.text}
+                    </Text>
+                  </VStack>
+                </HStack>
 
-                {/* Rating Section */}
-                <Box px={16} pb={12}>
-                  <VStack space="xs">
+                {/* Rating Section - Başlık ve content ile aynı hizada */}
+                <HStack px={16} pb={12} alignItems="flex-start" space="sm">
+                  {/* Icon yerine boşluk - hizalama için */}
+                  <Box width={18} />
+                  <VStack flex={1} space="xs">
                     <Text
                       fontSize={11}
                       fontWeight="$semibold"
@@ -198,9 +187,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                     </Text>
                     <HStack space="xs">
                       {[1, 2, 3, 4, 5].map((star) => {
-                        const content = relatedPostData?.content || data.relatedPost?.content || [];
-                        const priceItem = content.find((item: any) => item.tag.icon === 'tag');
-                        const rating = priceItem?.rating || [];
+                        const rating = contentItem.rating || [];
                         const isFilled = star <= rating.filter((r: number) => r === 1).length;
                         return (
                           <Feather
@@ -214,73 +201,15 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                       })}
                     </HStack>
                   </VStack>
-                </Box>
+                </HStack>
               </Box>
-          )}
-
-          {/* Product and Usage Experience Card */}
-          {((relatedPostData?.content && relatedPostData.content.length > 0) || (data.relatedPost?.content && data.relatedPost.content.length > 0)) && (
-              <Box
-                bg="##FAFAFA"
-                borderRadius={10}
-                overflow="hidden"
-              >
-                {/* Card Header */}
-                <VStack px={16} py={8} space="xs">
-                  <HStack alignItems="center" space="xs">
-                    <Feather name="package" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
-                    <Text
-                      fontSize={11}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#3B3B3B'}
-                    >
-                      Product and Usage Experience
-                    </Text>
-                  </HStack>
-                  <Text
-                    color={isDark ? '$textDark50' : '#000000'}
-                    fontSize={10}
-                    lineHeight={14}
-                  >
-                    {(relatedPostData?.content || data.relatedPost?.content || []).find((item: any) => item.tag.icon === 'package')?.text || ''}
-                  </Text>
-                </VStack>
-
-                {/* Rating Section */}
-                <Box px={16} pb={12}>
-                  <VStack space="xs">
-                    <Text
-                      fontSize={11}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#3B3B3B'}
-                    >
-                      Rate Experience
-                    </Text>
-                    <HStack space="xs">
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const content = relatedPostData?.content || data.relatedPost?.content || [];
-                        const productItem = content.find((item: any) => item.tag.icon === 'package');
-                        const rating = productItem?.rating || [];
-                        const isFilled = star <= rating.filter((r: number) => r === 1).length;
-                        return (
-                          <Feather
-                            key={star}
-                            name="star"
-                            size={24}
-                            color={isFilled ? '#829905' : '#E9E9E9'}
-                            fill={isFilled ? '#829905' : 'transparent'}
-                          />
-                        );
-                      })}
-                    </HStack>
-                  </VStack>
-                </Box>
-              </Box>
+              ))}
+            </VStack>
           )}
 
           {/* Tags Section */}
           {((relatedPostData?.tags && relatedPostData.tags.length > 0) || (data.relatedPost?.tags && data.relatedPost.tags.length > 0)) && (
-              <HStack px={16} py={10} flexWrap="wrap" gap={4}>
+              <HStack px={16} py={10} flexWrap="wrap" gap={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                 {(relatedPostData?.tags || data.relatedPost?.tags || []).map((tag: string, index: number) => (
                   <Box
                     key={index}
@@ -303,6 +232,27 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData }:
                 ))}
               </HStack>
           )}
+
+          {/* Translate Button - Tags'in altında */}
+          <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+            <Pressable onPress={() => setIsTranslated(!isTranslated)}>
+              <HStack alignItems="center" space="xs">
+                <Image
+                  source={require('@/assets/translate.png')}
+                  alt="translate"
+                  width={16}
+                  height={16}
+                />
+                <Text
+                  color="#829905"
+                  fontSize={config.tokens.fontSizes['2xs'] as number}
+                  textDecorationLine="underline"
+                >
+                  {isTranslated ? 'Automatically translated from English.' : 'Translate'}
+                </Text>
+              </HStack>
+            </Pressable>
+          </Box>
 
           {/* Stats */}
           <HStack

@@ -83,10 +83,10 @@ export const CatalogScreen = () => {
           height: 5,
         },
         onChange: (index: number) => {
-          // Reset bottom sheet key when sheet closes to reset view state
-          if (index === -1) {
-            setBottomSheetKey(prev => prev + 1);
-          }
+    // Reset bottom sheet key when sheet closes to reset view state
+    if (index === -1) {
+      setBottomSheetKey(prev => prev + 1);
+    }
         },
       }
     );

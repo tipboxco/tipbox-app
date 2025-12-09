@@ -107,7 +107,7 @@ export const PostsScreen = () => {
         onPostTypeSelect={handlePostTypeSelect}
         onViewChange={(view) => {
           // View change is handled internally by CreatePostBottomSheet
-          console.log('BottomSheet view changed:', view);
+    console.log('BottomSheet view changed:', view);
         }}
         stage={getCatalogStage()}
       />,

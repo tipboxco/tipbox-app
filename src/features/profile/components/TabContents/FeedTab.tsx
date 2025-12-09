@@ -232,7 +232,7 @@ const FeedTabComponent = () => {
   // Render sayısını takip et ve değişen değerleri log'la
   const renderCountRef = useRef(0);
   const prevValuesRef = useRef<any>({});
-  
+
   // User Posts API hook with infinite scroll
   const {
     data,

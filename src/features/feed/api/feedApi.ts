@@ -4,6 +4,7 @@ import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
 import type { ReviewApiItem } from '@/src/types/ReviewsCard';
 import type { ProfilePost } from '@/src/features/profile/types';
+import type { UpdateApiItem } from '@/src/types/UpdateCard';
 import { CardType } from '@/src/types/common';
 
 /**
@@ -16,7 +17,8 @@ export interface FeedApiItem {
     | (ReviewApiItem & { type: 'experience' })
     | (BenchmarkApiItem & { type: 'benchmark' })
     | (TipsApiItem & { type: 'tipsAndTricks' })
-    | (QuestionApiItem & { type: 'question' });
+    | (QuestionApiItem & { type: 'question' })
+    | (UpdateApiItem & { type: 'update' });
 }
 
 /**

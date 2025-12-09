@@ -151,8 +151,8 @@ export const CreateBenchmarkPostScreen = () => {
           </Pressable>
           <Pressable
             onPress={() => {
-              setProductSource('Catalog');
-              setShowProductSelector(true);
+    setProductSource('Catalog');
+    setShowProductSelector(true);
               closeBottomSheet();
             }}
             bg={isDark ? '$backgroundDark800' : '#FFFFFF'}

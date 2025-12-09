@@ -39,7 +39,7 @@ const BenchmarksTabComponent = () => {
   const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  
+
   // Render sayısını takip et ve değişen değerleri log'la
   const renderCountRef = useRef(0);
   const prevValuesRef = useRef<any>({});

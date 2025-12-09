@@ -37,9 +37,9 @@ const CollectionsScreen: React.FC = () => {
     
     const handleClose = () => {
       closeBottomSheet();
-      setTimeout(() => setSelectedBadge(null), 300);
+    setTimeout(() => setSelectedBadge(null), 300);
     };
-    
+
     // Badge detail content'i hazırla
     openBottomSheet(
       <Box flex={1}>
@@ -96,10 +96,10 @@ const CollectionsScreen: React.FC = () => {
           backgroundColor: isDark ? '#666666' : '#CCCCCC',
         },
         onChange: (index: number) => {
-          // Sheet kapandığında selectedBadge'i temizle
-          if (index === -1) {
+    // Sheet kapandığında selectedBadge'i temizle
+    if (index === -1) {
             setTimeout(() => setSelectedBadge(null), 300);
-          }
+    }
         },
       }
     );
