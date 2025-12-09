@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager, ActivityIndicator } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -24,15 +24,122 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
+const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const userId = useCurrentUserIdOrLogout();
-  const { data: ladderBadges, isLoading, error } = useUserLadderBadges(userId);
+  
+  // Render sayısını takip et ve değişen değerleri log'la
+  const renderCountRef = useRef(0);
+  const prevValuesRef = useRef<any>({});
+  
+  // Ladder Badges API hook with infinite scroll
+  const {
+    data: ladderBadgesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useUserLadderBadges(userId, 5);
+
+  useEffect(() => {
+    renderCountRef.current += 1;
+    const currentValues = {
+      userId,
+      colorMode,
+      dataPagesCount: ladderBadgesData?.pages?.length,
+      hasNextPage,
+      isFetchingNextPage,
+      isLoading,
+      error: error?.message,
+    };
+    
+    const changedValues: string[] = [];
+    Object.keys(currentValues).forEach((key) => {
+      const typedKey = key as keyof typeof currentValues;
+      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
+        changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
+      }
+    });
+    
+    console.log(`[LadderTab] Render #${renderCountRef.current}`, {
+      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
+      current: currentValues,
+    });
+    
+    prevValuesRef.current = currentValues;
+  });
+
+  // Flatten all pages into a single array - Duplicate ID'leri filtrele
+  const ladderBadges = useMemo(() => {
+    if (!ladderBadgesData?.pages) return [];
+    const allItems = ladderBadgesData.pages.flatMap((page) => page.items ?? []);
+    
+    // Detaylı log: Duplicate filter öncesi
+    console.log('[LadderTab] Duplicate Filter Öncesi:', {
+      pagesCount: ladderBadgesData.pages.length,
+      allItemsCount: allItems.length,
+      allItemIds: allItems.map((item) => item.id),
+      pagesItemIds: ladderBadgesData.pages.map((page, idx) => ({
+        pageIndex: idx,
+        itemIds: page.items?.map((item) => item.id) || [],
+      })),
+    });
+    
+    // ID'ye göre unique item'ları filtrele
+    const uniqueItems = allItems.filter((item, index, self) => 
+      index === self.findIndex((t) => t.id === item.id)
+    );
+    
+    // Detaylı log: Duplicate filter sonrası
+    console.log('[LadderTab] Duplicate Filter Sonrası:', {
+      allItemsCount: allItems.length,
+      uniqueItemsCount: uniqueItems.length,
+      duplicatesRemoved: allItems.length - uniqueItems.length,
+      uniqueItemIds: uniqueItems.map((item) => item.id),
+    });
+    
+    return uniqueItems;
+  }, [ladderBadgesData]);
+
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
   const [selectedBadge, setSelectedBadge] = useState<ProfileLadderBadge | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // onEndReached loop'unu önlemek için ref
+  const isLoadingMoreRef = useRef(false);
+
+  // ladderBadges.length değiştiğinde ref'i güncelle
+  useEffect(() => {
+    // Item sayısı değiştiğinde flag'i reset et (yeni veri geldi demektir)
+    isLoadingMoreRef.current = false;
+  }, [ladderBadges.length]);
+
+  const handleLoadMore = useCallback(() => {
+    // Eğer zaten yükleme yapılıyorsa, tekrar tetikleme
+    if (isLoadingMoreRef.current) {
+      return;
+    }
+
+    // Eğer hasNextPage false ise veya zaten fetch yapılıyorsa, işlem yapma
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    // Flag'i set et
+    isLoadingMoreRef.current = true;
+
+    fetchNextPage()
+      .finally(() => {
+        // Fetch tamamlandığında flag'i reset et
+        // Kısa bir delay ekle ki onEndReached tekrar tetiklenmesin
+        setTimeout(() => {
+          isLoadingMoreRef.current = false;
+        }, 1000);
+      });
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, ladderBadges.length]);
 
   // Filtreleme değiştiğinde animasyon için
   const handleFilterChange = (newFilter: 'all' | 'in_progress' | 'completed') => {
@@ -199,10 +306,11 @@ export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
     }
   }, [selectedFilter, ladderBadges]);
 
-  if (isLoading) {
+  if (isLoading && ladderBadges.length === 0) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" py={20}>
-        <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+        <Text color={isDark ? '#fff' : '#000'} mt="$2">Yükleniyor...</Text>
       </Box>
     );
   }
@@ -297,6 +405,15 @@ export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
             scrollEnabled={false}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <Box py={20} alignItems="center">
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
+              ) : null
+            }
             // Layout animasyonu için
             onLayout={() => {
               LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -315,4 +432,5 @@ export const LadderTab: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   );
 };
 
+export const LadderTab = React.memo(LadderTabComponent);
 export default LadderTab;

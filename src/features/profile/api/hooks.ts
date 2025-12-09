@@ -25,10 +25,15 @@ import type {
   InventoryItem,
   ProfilePost,
   ProfileReview,
+  ProfileReviewsApiResponse,
   ProfileBenchmark,
+  ProfileBenchmarksApiResponse,
   ProfileTipsAndTricks,
+  ProfileTipsAndTricksApiResponse,
   ProfileReplies,
+  ProfileRepliesApiResponse,
   ProfileLadderBadge,
+  ProfileLadderBadgesApiResponse,
   ProfileFeedItem,
   UserCollectionAchievementsApiResponse,
   UserCollectionBridgesApiResponse,
@@ -364,144 +369,204 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3) => {
     refetchOnMount: true, // Her mount'ta yeniden fetch et
     refetchOnWindowFocus: false,
     retry: 1,
+    // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
+    // Sadece data, hasNextPage ve error değişiklikleri render tetikler
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };
 
 /**
- * Get User Reviews query hook
- * Kullanıcının profil review postlarını getirir (cache olmadan)
+ * Get User Reviews infinite query hook
+ * Kullanıcının profil review postlarını infinite scroll ile getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useUserReviews('user-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserReviews('user-123', 5);
  */
-export const useUserReviews = (userId: string | undefined) => {
-  return useQuery<ProfileReview[], Error>({
+export const useUserReviews = (userId: string | undefined, limit: number = 5) => {
+  return useInfiniteQuery<ProfileReviewsApiResponse, Error>({
     queryKey: userId ? profileKeys.userReviews(userId) : ['profile', 'reviews', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return getUserReviews(userId);
+      const cursor = pageParam as string | undefined;
+      return getUserReviews(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
+    // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
+    // Sadece data, hasNextPage ve error değişiklikleri render tetikler
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading'],
   });
 };
 
 /**
- * Get User Benchmarks query hook
- * Kullanıcının profil benchmark postlarını getirir (cache olmadan)
+ * Get User Benchmarks infinite query hook
+ * Kullanıcının profil benchmark postlarını infinite scroll ile getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useUserBenchmarks('user-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserBenchmarks('user-123', 5);
  */
-export const useUserBenchmarks = (userId: string | undefined) => {
-  return useQuery<ProfileBenchmark[], Error>({
+export const useUserBenchmarks = (userId: string | undefined, limit: number = 5) => {
+  return useInfiniteQuery<ProfileBenchmarksApiResponse, Error>({
     queryKey: userId ? profileKeys.userBenchmarks(userId) : ['profile', 'benchmarks', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return getUserBenchmarks(userId);
+      const cursor = pageParam as string | undefined;
+      return getUserBenchmarks(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
+    // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
+    // Sadece data, hasNextPage ve error değişiklikleri render tetikler
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading'],
   });
 };
 
 /**
- * Get User Tips & Tricks query hook
- * Kullanıcının profil tips & tricks postlarını getirir (cache olmadan)
+ * Get User Tips & Tricks infinite query hook
+ * Kullanıcının profil tips & tricks postlarını infinite scroll ile getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useUserTipsAndTricks('user-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserTipsAndTricks('user-123', 5);
  */
-export const useUserTipsAndTricks = (userId: string | undefined) => {
-  return useQuery<ProfileTipsAndTricks[], Error>({
+export const useUserTipsAndTricks = (userId: string | undefined, limit: number = 5) => {
+  return useInfiniteQuery<ProfileTipsAndTricksApiResponse, Error>({
     queryKey: userId ? profileKeys.userTipsAndTricks(userId) : ['profile', 'tips', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return getUserTipsAndTricks(userId);
+      const cursor = pageParam as string | undefined;
+      return getUserTipsAndTricks(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
+    // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
+    // Sadece data, hasNextPage ve error değişiklikleri render tetikler
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading'],
   });
 };
 
 /**
- * Get User Ladder Badges query hook
- * Kullanıcının profil ladder badge'lerini getirir (cache olmadan)
+ * Get User Ladder Badges infinite query hook
+ * Kullanıcının profil ladder badge'lerini infinite scroll ile getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useUserLadderBadges('user-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserLadderBadges('user-123', 5);
  */
-export const useUserLadderBadges = (userId: string | undefined) => {
-  return useQuery<ProfileLadderBadge[], Error>({
+export const useUserLadderBadges = (userId: string | undefined, limit: number = 5) => {
+  return useInfiniteQuery<ProfileLadderBadgesApiResponse, Error>({
     queryKey: userId ? profileKeys.userLadderBadges(userId) : ['profile', 'ladders', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return getUserLadderBadges(userId);
+      const cursor = pageParam as string | undefined;
+      return getUserLadderBadges(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
+    // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
+    // Sadece data, hasNextPage ve error değişiklikleri render tetikler
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading'],
   });
 };
 
 /**
- * Get User Replies / Questions query hook
- * Kullanıcının profil replies/question postlarını getirir (cache olmadan)
+ * Get User Replies / Questions infinite query hook
+ * Kullanıcının profil replies/question postlarını infinite scroll ile getirir
  *
  * @param userId - Kullanıcı ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useUserReplies('user-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserReplies('user-123', 5);
  */
-export const useUserReplies = (userId: string | undefined) => {
-  return useQuery<ProfileReplies[], Error>({
+export const useUserReplies = (userId: string | undefined, limit: number = 5) => {
+  return useInfiniteQuery<ProfileRepliesApiResponse, Error>({
     queryKey: userId ? profileKeys.userReplies(userId) : ['profile', 'replies', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return getUserReplies(userId);
+      const cursor = pageParam as string | undefined;
+      return getUserReplies(userId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
   });

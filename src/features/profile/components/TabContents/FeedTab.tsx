@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { VStack, Text, Box } from '@gluestack-ui/themed';
 import PostCard from '@/src/components/PostCards/PostCard';
@@ -224,11 +224,15 @@ type MappedPost =
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
 
-export const FeedTab = () => {
+const FeedTabComponent = () => {
   const userId = useCurrentUserIdOrLogout();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-
+  
+  // Render sayısını takip et ve değişen değerleri log'la
+  const renderCountRef = useRef(0);
+  const prevValuesRef = useRef<any>({});
+  
   // User Posts API hook with infinite scroll
   const {
     data,
@@ -238,24 +242,74 @@ export const FeedTab = () => {
     isLoading,
     isPending,
     error,
-  } = useUserPosts(userId, 3);
+  } = useUserPosts(userId, 5);
+
+  useEffect(() => {
+    renderCountRef.current += 1;
+    const currentValues = {
+      userId,
+      colorMode,
+      dataPagesCount: data?.pages?.length,
+      hasNextPage,
+      isFetchingNextPage,
+      isLoading,
+      isPending,
+      error: error?.message,
+    };
+    
+    const changedValues: string[] = [];
+    Object.keys(currentValues).forEach((key) => {
+      const typedKey = key as keyof typeof currentValues;
+      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
+        changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
+      }
+    });
+    
+    console.log(`[FeedTab] Render #${renderCountRef.current}`, {
+      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
+      current: currentValues,
+    });
+    
+    prevValuesRef.current = currentValues;
+  });
 
   // Flatten all pages into a single array - useMemo ile memoize et
   // Duplicate ID'leri filtrele (backend cursor desteklemiyorsa aynı item'lar tekrar gelebilir)
   // Mapping sonuçlarını da cache'le - böylece React.memo düzgün çalışır
   const posts = useMemo(() => {
     const allItems = data?.pages.flatMap((page) => page.items) ?? [];
+    
+    // Detaylı log: Duplicate filter öncesi
+    console.log('[FeedTab] Duplicate Filter Öncesi:', {
+      pagesCount: data?.pages?.length || 0,
+      allItemsCount: allItems.length,
+      allItemIds: allItems.map((item) => item.id),
+      pagesItemIds: data?.pages?.map((page, idx) => ({
+        pageIndex: idx,
+        itemIds: page.items?.map((item) => item.id) || [],
+      })) || [],
+    });
+    
     // ID'ye göre unique item'ları filtrele
     const uniqueItems = allItems.filter((item, index, self) => 
       index === self.findIndex((t) => t.id === item.id)
     );
+    
+    // Detaylı log: Duplicate filter sonrası
+    console.log('[FeedTab] Duplicate Filter Sonrası:', {
+      allItemsCount: allItems.length,
+      uniqueItemsCount: uniqueItems.length,
+      duplicatesRemoved: allItems.length - uniqueItems.length,
+      uniqueItemIds: uniqueItems.map((item) => item.id),
+    });
+    
     return uniqueItems;
   }, [data]);
 
   // Mapping sonuçlarını cache'le - her item için bir kez hesapla
   // Bu sayede React.memo düzgün çalışır (aynı referanslar)
   const mappedPosts = useMemo(() => {
-    return posts.map((post) => {
+    const mapped = posts.map((post) => {
       switch (post.type) {
         case CardType.EXPERIENCE:
           if ('contextData' in post && 'content' in post && Array.isArray(post.content)) {
@@ -296,6 +350,15 @@ export const FeedTab = () => {
           };
       }
     }).filter((item): item is NonNullable<typeof item> => item !== null);
+    
+    // Detaylı log: Mapping sonrası
+    console.log('[FeedTab] Mapping Sonrası:', {
+      postsCount: posts.length,
+      mappedCount: mapped.length,
+      mappedIds: mapped.map((item) => item.id),
+    });
+    
+    return mapped;
   }, [posts]);
 
   // Duplicate key'leri önlemek için unique key oluştur
@@ -303,23 +366,53 @@ export const FeedTab = () => {
     return item.id;
   }, []);
 
+  // onEndReached loop'unu önlemek için ref
+  const isLoadingMoreRef = useRef(false);
+  const lastItemsCountRef = useRef(0);
+
+  // mappedPosts.length değiştiğinde lastItemsCountRef'i güncelle
+  useEffect(() => {
+    lastItemsCountRef.current = mappedPosts.length;
+  }, [mappedPosts.length]);
+
   const handleLoadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    // Eğer zaten yükleme yapılıyorsa veya item sayısı değişmediyse, tekrar tetikleme
+    if (isLoadingMoreRef.current) {
+      return;
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Footer için activity indicator rengini memoize et
-  const activityIndicatorColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);
+    // Eğer hasNextPage false ise veya zaten fetch yapılıyorsa, işlem yapma
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
 
-  const renderFooter = useCallback(() => {
-    if (!isFetchingNextPage) return null;
+    // Flag'i set et
+    isLoadingMoreRef.current = true;
+
+    fetchNextPage()
+      .finally(() => {
+        // Fetch tamamlandığında flag'i reset et
+        // Kısa bir delay ekle ki onEndReached tekrar tetiklenmesin
+        setTimeout(() => {
+          isLoadingMoreRef.current = false;
+        }, 1000);
+      });
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, mappedPosts.length]);
+
+  // Footer component'ini memoize et - isFetchingNextPage değişiklikleri render tetiklemez
+  // ama footer'ı göstermek için değeri kullanabiliriz
+  const LoadingFooter = React.memo(({ isFetching, isDark }: { isFetching: boolean; isDark: boolean }) => {
+    if (!isFetching) return null;
     return (
       <Box py={20} alignItems="center">
-        <ActivityIndicator size="small" color={activityIndicatorColor} />
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
       </Box>
     );
-  }, [isFetchingNextPage, activityIndicatorColor]);
+  });
+
+  const renderFooter = useCallback(() => {
+    return <LoadingFooter isFetching={isFetchingNextPage} isDark={isDark} />;
+  }, [isFetchingNextPage, isDark]);
 
   // Render item - artık mapping yapmıyoruz, sadece render ediyoruz
   // Mapping sonuçları zaten cache'lenmiş durumda
@@ -399,7 +492,7 @@ export const FeedTab = () => {
       renderItem={renderItem}
       keyExtractor={getItemKey}
       onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.1}
+      onEndReachedThreshold={0.5}
       ListFooterComponent={renderFooter}
       contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
@@ -417,4 +510,5 @@ export const FeedTab = () => {
     />
   );
 };
+export const FeedTab = React.memo(FeedTabComponent);
 export default FeedTab;

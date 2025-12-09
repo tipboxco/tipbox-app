@@ -169,10 +169,36 @@ export type ProfileFeedItem = ProfilePost | ProfileReview | ProfileBenchmark | P
 export type ProfileReview = ReviewApiItem;
 
 /**
+ * Profile Reviews API Response - Pagination ile birlikte
+ * /users/{id}/reviews endpoint'inden dönen response
+ */
+export interface ProfileReviewsApiResponse {
+  items: ProfileReview[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
  * Profile Benchmarks - Kullanıcının benchmark postları
  * /users/{id}/benchmarks endpoint'inden dönen tip
  */
 export type ProfileBenchmark = BenchmarkApiItem;
+
+/**
+ * Profile Benchmarks API Response - Pagination ile birlikte
+ * /users/{id}/benchmarks endpoint'inden dönen response
+ */
+export interface ProfileBenchmarksApiResponse {
+  items: ProfileBenchmark[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
 
 /**
  * Profile Tips & Tricks - Kullanıcının tips & tricks postları
@@ -181,10 +207,36 @@ export type ProfileBenchmark = BenchmarkApiItem;
 export type ProfileTipsAndTricks = TipsApiItem;
 
 /**
+ * Profile Tips & Tricks API Response - Pagination ile birlikte
+ * /users/{id}/tips endpoint'inden dönen response
+ */
+export interface ProfileTipsAndTricksApiResponse {
+  items: ProfileTipsAndTricks[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
  * Profile Replies / Questions - Kullanıcının replies/question postları
  * /users/{id}/replies endpoint'inden dönen tip
  */
 export type ProfileReplies = QuestionApiItem;
+
+/**
+ * Profile Replies API Response - Pagination ile birlikte
+ * /users/{id}/replies endpoint'inden dönen response
+ */
+export interface ProfileRepliesApiResponse {
+  items: ProfileReplies[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
 
 /**
  * Profile Ladder Badge Task - Ladder badge task bilgisi
@@ -195,6 +247,19 @@ export interface ProfileLadderBadgeTask {
   current: number;
   total: number;
   isCompleted: boolean;
+}
+
+/**
+ * Profile Ladder Badges API Response - Pagination ile birlikte
+ * /users/{id}/ladder/badges endpoint'inden dönen response
+ */
+export interface ProfileLadderBadgesApiResponse {
+  items: ProfileLadderBadge[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
 }
 
 /**

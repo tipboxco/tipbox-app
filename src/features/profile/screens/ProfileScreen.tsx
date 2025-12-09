@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { Box, Text, Pressable, HStack, VStack } from '@gluestack-ui/themed';
 import { useRoute } from '@react-navigation/native';
@@ -35,7 +35,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   const [activeTab, setActiveTab] = useState('feed');
 
-  const renderTabContent = () => {
+  // Tab content'i memoize et - sadece activeTab değiştiğinde yeniden render et
+  const renderTabContent = useMemo(() => {
     switch (activeTab) {
       case 'feed':
         return <FeedTab />;
@@ -52,7 +53,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       default:
         return <FeedTab />;
     }
-  };
+  }, [activeTab]);
 
 
 
@@ -130,7 +131,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
           {/* Tab Content */}
           <Box minHeight={400}>
-            {renderTabContent()}
+            {renderTabContent}
           </Box>
         </ScrollView>
     </Box>

@@ -4,10 +4,15 @@ import type {
   InventoryItem,
   ProfilePost,
   ProfileReview,
+  ProfileReviewsApiResponse,
   ProfileBenchmark,
+  ProfileBenchmarksApiResponse,
   ProfileTipsAndTricks,
+  ProfileTipsAndTricksApiResponse,
   ProfileReplies,
+  ProfileRepliesApiResponse,
   ProfileLadderBadge,
+  ProfileLadderBadgesApiResponse,
   ProfileFeedItem,
   UserCollectionAchievementsApiResponse,
   UserCollectionBridgesApiResponse,
@@ -80,31 +85,97 @@ export const getUserPosts = async (
   limit: number = 3
 ): Promise<UserFeedApiResponse> => {
   const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
   params.append('limit', limit.toString());
-  
-  // Not: Backend'de cursor parametresi yok (API dokümantasyonunda yok)
-  // Bu yüzden cursor'ı query parametresi olarak göndermiyoruz
-  // Backend cursor destekliyorsa, ileride eklenebilir
 
   try {
-    const response = await apiService.getClient().get<ProfileFeedItem[]>(
+    const response = await apiService.getClient().get<any>(
       `/users/${userId}/feed?${params.toString()}`
     );
     
-    // Backend'den direkt array geliyor
-    const items = response.data || [];
+    const responseData = response.data;
     
-    // Pagination bilgisini oluştur
-    // Eğer gelen item sayısı limit'e eşit veya fazlaysa, daha fazla item olabilir
-    // Eğer limit'ten azsa, tüm item'lar gelmiş demektir
-    const hasMore = items.length >= limit;
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserPosts] API Response Detay:', {
+      url: `/users/${userId}/feed?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
     
-    return {
-      items,
-      pagination: {
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserPosts] Normalized Response:', {
+        itemsCount: items.length,
         hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: cursorValue,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = Array.isArray(responseData.items) ? responseData.items : [];
+        const hasMore = items.length >= limit;
+        
+        console.log('[getUserPosts] Normalized Response (object format):', {
+          itemsCount: items.length,
+          hasMore,
+          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          itemIds: items.map((item: any) => item?.id).filter(Boolean),
+        });
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      console.log('[getUserPosts] Response (already formatted):', {
+        itemsCount: responseData.items?.length || 0,
+        hasMore: responseData.pagination?.hasMore,
+        cursor: responseData.pagination?.cursor,
+        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
+      });
+      
+      return responseData as UserFeedApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserPosts] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
         limit,
-        cursor: items.length > 0 ? items[items.length - 1].id : undefined,
       },
     };
   } catch (error: any) {
@@ -121,82 +192,595 @@ export const getUserPosts = async (
 
 /**
  * Get User Reviews endpoint function
- * Kullanıcının review postlarını getirir
+ * Kullanıcının review postlarını getirir (pagination ile)
  *
  * @param userId - Kullanıcı ID'si
- * @returns ProfileReview[] - Kullanıcının review listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns ProfileReviewsApiResponse - Kullanıcının review listesi ve pagination bilgisi
  */
 export const getUserReviews = async (
-  userId: string
-): Promise<ProfileReview[]> => {
-  const response = await apiService.getClient().get<ProfileReview[]>(
-    `/users/${userId}/reviews`
-  );
-  return response.data;
+  userId: string,
+  cursor?: string,
+  limit: number = 5
+): Promise<ProfileReviewsApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/reviews?${params.toString()}`
+    );
+    
+    const responseData = response.data;
+    
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserReviews] API Response Detay:', {
+      url: `/users/${userId}/reviews?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserReviews] Normalized Response:', {
+        itemsCount: items.length,
+        hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: cursorValue,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = Array.isArray(responseData.items) ? responseData.items : [];
+        const hasMore = items.length >= limit;
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      console.log('[getUserReviews] Response (already formatted):', {
+        itemsCount: responseData.items?.length || 0,
+        hasMore: responseData.pagination?.hasMore,
+        cursor: responseData.pagination?.cursor,
+        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
+      });
+      
+      return responseData as ProfileReviewsApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserReviews] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getUserReviews] API Error:', {
+      url: `/users/${userId}/reviews?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
  * Get User Benchmarks endpoint function
- * Kullanıcının benchmark postlarını getirir
+ * Kullanıcının benchmark postlarını getirir (pagination ile)
  *
  * @param userId - Kullanıcı ID'si
- * @returns ProfileBenchmark[] - Kullanıcının benchmark listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns ProfileBenchmarksApiResponse - Kullanıcının benchmark listesi ve pagination bilgisi
  */
 export const getUserBenchmarks = async (
-  userId: string
-): Promise<ProfileBenchmark[]> => {
-  const response = await apiService.getClient().get<ProfileBenchmark[]>(
-    `/users/${userId}/benchmarks`
-  );
-  return response.data;
+  userId: string,
+  cursor?: string,
+  limit: number = 5
+): Promise<ProfileBenchmarksApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/benchmarks?${params.toString()}`
+    );
+    
+    const responseData = response.data;
+    
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserBenchmarks] API Response Detay:', {
+      url: `/users/${userId}/benchmarks?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserBenchmarks] Normalized Response:', {
+        itemsCount: items.length,
+        hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: cursorValue,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = Array.isArray(responseData.items) ? responseData.items : [];
+        const hasMore = items.length >= limit;
+        
+        console.log('[getUserBenchmarks] Normalized Response (object format):', {
+          itemsCount: items.length,
+          hasMore,
+          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          itemIds: items.map((item: any) => item?.id).filter(Boolean),
+        });
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      console.log('[getUserBenchmarks] Response (already formatted):', {
+        itemsCount: responseData.items?.length || 0,
+        hasMore: responseData.pagination?.hasMore,
+        cursor: responseData.pagination?.cursor,
+        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
+      });
+      
+      return responseData as ProfileBenchmarksApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserBenchmarks] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getUserBenchmarks] API Error:', {
+      url: `/users/${userId}/benchmarks?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
  * Get User Tips & Tricks endpoint function
- * Kullanıcının tips & tricks postlarını getirir
+ * Kullanıcının tips & tricks postlarını getirir (pagination ile)
  *
  * @param userId - Kullanıcı ID'si
- * @returns ProfileTipsAndTricks[] - Kullanıcının tips & tricks listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns ProfileTipsAndTricksApiResponse - Kullanıcının tips & tricks listesi ve pagination bilgisi
  */
 export const getUserTipsAndTricks = async (
-  userId: string
-): Promise<ProfileTipsAndTricks[]> => {
-  const response = await apiService.getClient().get<ProfileTipsAndTricks[]>(
-    `/users/${userId}/tips`
-  );
-  return response.data;
+  userId: string,
+  cursor?: string,
+  limit: number = 5
+): Promise<ProfileTipsAndTricksApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/tips?${params.toString()}`
+    );
+    
+    const responseData = response.data;
+    
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserTipsAndTricks] API Response Detay:', {
+      url: `/users/${userId}/tips?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserTipsAndTricks] Normalized Response:', {
+        itemsCount: items.length,
+        hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: cursorValue,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = Array.isArray(responseData.items) ? responseData.items : [];
+        const hasMore = items.length >= limit;
+        
+        console.log('[getUserTipsAndTricks] Normalized Response (object format):', {
+          itemsCount: items.length,
+          hasMore,
+          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          itemIds: items.map((item: any) => item?.id).filter(Boolean),
+        });
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      console.log('[getUserTipsAndTricks] Response (already formatted):', {
+        itemsCount: responseData.items?.length || 0,
+        hasMore: responseData.pagination?.hasMore,
+        cursor: responseData.pagination?.cursor,
+        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
+      });
+      
+      return responseData as ProfileTipsAndTricksApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserTipsAndTricks] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getUserTipsAndTricks] API Error:', {
+      url: `/users/${userId}/tips?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
  * Get User Ladder Badges endpoint function
- * Kullanıcının ladder badge'lerini getirir
+ * Kullanıcının ladder badge'lerini getirir (pagination ile)
  *
  * @param userId - Kullanıcı ID'si
- * @returns ProfileLadderBadge[] - Kullanıcının ladder badge listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns ProfileLadderBadgesApiResponse - Kullanıcının ladder badge listesi ve pagination bilgisi
  */
 export const getUserLadderBadges = async (
-  userId: string
-): Promise<ProfileLadderBadge[]> => {
-  const response = await apiService.getClient().get<ProfileLadderBadge[]>(
-    `/users/${userId}/ladder/badges`
-  );
-  return response.data;
+  userId: string,
+  cursor?: string,
+  limit: number = 5
+): Promise<ProfileLadderBadgesApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/ladder/badges?${params.toString()}`
+    );
+    
+    const responseData = response.data;
+    
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserLadderBadges] API Response Detay:', {
+      url: `/users/${userId}/ladder/badges?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserLadderBadges] Normalized Response:', {
+        itemsCount: items.length,
+        hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: cursorValue,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = Array.isArray(responseData.items) ? responseData.items : [];
+        const hasMore = items.length >= limit;
+        
+        console.log('[getUserLadderBadges] Normalized Response (object format):', {
+          itemsCount: items.length,
+          hasMore,
+          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          itemIds: items.map((item: any) => item?.id).filter(Boolean),
+        });
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      console.log('[getUserLadderBadges] Response (already formatted):', {
+        itemsCount: responseData.items?.length || 0,
+        hasMore: responseData.pagination?.hasMore,
+        cursor: responseData.pagination?.cursor,
+        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
+      });
+      
+      return responseData as ProfileLadderBadgesApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserLadderBadges] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getUserLadderBadges] API Error:', {
+      url: `/users/${userId}/ladder/badges?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
- * Get User Questions endpoint function
- * Kullanıcının questions postlarını getirir
+ * Get User Questions/Replies endpoint function
+ * Kullanıcının questions/replies postlarını getirir (pagination ile)
  *
  * @param userId - Kullanıcı ID'si
- * @returns ProfileReplies[] - Kullanıcının question listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 5)
+ * @returns ProfileRepliesApiResponse - Kullanıcının question/replies listesi ve pagination bilgisi
  */
 export const getUserReplies = async (
-  userId: string
-): Promise<ProfileReplies[]> => {
-  const response = await apiService.getClient().get<ProfileReplies[]>(
-    `/users/${userId}/questions`
-  );
-  return response.data;
+  userId: string,
+  cursor?: string,
+  limit: number = 5
+): Promise<ProfileRepliesApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/questions?${params.toString()}`
+    );
+    
+    const responseData = response.data;
+    
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserReplies] API Response Detay:', {
+      url: `/users/${userId}/questions?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserReplies] Normalized Response:', {
+        itemsCount: items.length,
+        hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          limit,
+          cursor: cursorValue,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      // Pagination objesi eksikse oluştur
+      if (!responseData.pagination) {
+        const items = Array.isArray(responseData.items) ? responseData.items : [];
+        const hasMore = items.length >= limit;
+        
+        console.log('[getUserReplies] Normalized Response (object format):', {
+          itemsCount: items.length,
+          hasMore,
+          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          itemIds: items.map((item: any) => item?.id).filter(Boolean),
+        });
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            limit,
+            cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta
+      console.log('[getUserReplies] Response (already formatted):', {
+        itemsCount: responseData.items?.length || 0,
+        hasMore: responseData.pagination?.hasMore,
+        cursor: responseData.pagination?.cursor,
+        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
+      });
+      
+      return responseData as ProfileRepliesApiResponse;
+    }
+    
+    // Beklenmeyen format
+    console.warn('[getUserReplies] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getUserReplies] API Error:', {
+      url: `/users/${userId}/questions?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
@@ -231,17 +815,39 @@ export const getUserCollectionAchievements = async (
     // Backend response formatını kontrol et ve normalize et
     const responseData = response.data;
     
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserReviews] API Response Detay:', {
+      url: `/users/${userId}/reviews?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
+    
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
       const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserReviews] Normalized Response:', {
+        itemsCount: items.length,
+        hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
       
       return {
         items,
         pagination: {
           hasMore,
           limit,
-          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          cursor: cursorValue,
         },
       };
     }
@@ -328,17 +934,39 @@ export const getUserCollectionBridges = async (
     // Backend response formatını kontrol et ve normalize et
     const responseData = response.data;
     
+    // Detaylı log: Backend'den ne geldi?
+    console.log('[getUserReviews] API Response Detay:', {
+      url: `/users/${userId}/reviews?${params.toString()}`,
+      cursor,
+      limit,
+      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
+      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
+      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
+      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
+      allItemIds: Array.isArray(responseData) 
+        ? responseData.map((item: any) => item?.id).filter(Boolean)
+        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
+    });
+    
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
       const hasMore = items.length >= limit;
+      const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
+      
+      console.log('[getUserReviews] Normalized Response:', {
+        itemsCount: items.length,
+        hasMore,
+        cursor: cursorValue,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean),
+      });
       
       return {
         items,
         pagination: {
           hasMore,
           limit,
-          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
+          cursor: cursorValue,
         },
       };
     }
