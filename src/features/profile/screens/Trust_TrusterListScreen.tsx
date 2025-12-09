@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     VStack,
@@ -20,7 +20,7 @@ import { Header } from '@/src/components/Header';
 import { TrustUser as ApiTrustUser, TrusterUser as ApiTrusterUser } from '@/src/features/profile/types';
 import { TrustUserCard, TrustUserCardUser } from '../components/TrustUserCard';
 import { SuggestionCard } from '../components/SuggestionCard';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useTrustList, useTrusterList } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
 import { useSafeAreaValues } from '@/src/utils';
@@ -52,7 +52,9 @@ export const Trust_TrusterListScreen = () => {
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
     const [selectedSort, setSelectedSort] = useState<'default' | 'newest' | 'oldest'>('default');
-    const bottomSheetRef = useRef<BottomSheet>(null);
+    
+    // Global bottom sheet hook
+    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
     // Debounce search query - Trust sekmesi için API'ye istek atmadan önce 500ms bekle
     useEffect(() => {
@@ -139,27 +141,155 @@ export const Trust_TrusterListScreen = () => {
         setOpenPopoverId(null);
     };
 
-    // Bottom sheet callbacks
-    const handleSheetChanges = useCallback((index: number) => {
-        console.log('[FilterBottomSheet] sheet index ->', index);
-    }, []);
-
-    const renderFilterBackdrop = useCallback(
-        (props: BottomSheetBackdropProps) => (
-            <BottomSheetBackdrop
-                {...props}
-                appearsOnIndex={0}
-                disappearsOnIndex={-1}
-                pressBehavior="close"
-                opacity={0.5}
-            />
-        ),
-        []
-    );
-
     const handleSortSelect = (sort: 'default' | 'newest' | 'oldest') => {
         setSelectedSort(sort);
-        bottomSheetRef.current?.close();
+        closeBottomSheet();
+    };
+
+    const handleFilterPress = () => {
+        openBottomSheet(
+            <VStack flex={1} px={16} py={20}>
+                {/* Sort Header */}
+                <HStack justifyContent="center" mb={20}>
+                    <Text
+                        color={isDark ? '#fff' : '#000'}
+                        fontSize={16}
+                        fontWeight="$bold"
+                    >
+                        Sort
+                    </Text>
+                </HStack>
+
+                {/* Sort Options */}
+                <VStack space="md">
+                    {/* Default Option */}
+                    <Pressable onPress={() => handleSortSelect('default')}>
+                        <HStack
+                            alignItems="center"
+                            justifyContent="space-between"
+                            py={10}
+                        >
+                            <Text
+                                color={isDark ? '#fff' : '#000'}
+                                fontSize={14}
+                                fontWeight="$normal"
+                            >
+                                Default
+                            </Text>
+                            <Box
+                                width={20}
+                                height={20}
+                                borderRadius={10}
+                                borderWidth={1}
+                                borderColor="#B8B8B7"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                {selectedSort === 'default' && (
+                                    <Box
+                                        width={14}
+                                        height={14}
+                                        borderRadius={7}
+                                        bg="#B8B8B7"
+                                    />
+                                )}
+                            </Box>
+                        </HStack>
+                    </Pressable>
+
+                    {/* Newest Option */}
+                    <Pressable onPress={() => handleSortSelect('newest')}>
+                        <HStack
+                            alignItems="center"
+                            justifyContent="space-between"
+                            py={10}
+                        >
+                            <Text
+                                color={isDark ? '#fff' : '#000'}
+                                fontSize={14}
+                                fontWeight="$normal"
+                            >
+                                Sort by: Newest
+                            </Text>
+                            <Box
+                                width={20}
+                                height={20}
+                                borderRadius={10}
+                                borderWidth={1}
+                                borderColor="#B8B8B7"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                {selectedSort === 'newest' && (
+                                    <Box
+                                        width={14}
+                                        height={14}
+                                        borderRadius={7}
+                                        bg="#B8B8B7"
+                                    />
+                                )}
+                            </Box>
+                        </HStack>
+                    </Pressable>
+
+                    {/* Oldest Option */}
+                    <Pressable onPress={() => handleSortSelect('oldest')}>
+                        <HStack
+                            alignItems="center"
+                            justifyContent="space-between"
+                            py={10}
+                        >
+                            <Text
+                                color={isDark ? '#fff' : '#000'}
+                                fontSize={14}
+                                fontWeight="$normal"
+                            >
+                                Sort by: Oldest
+                            </Text>
+                            <Box
+                                width={20}
+                                height={20}
+                                borderRadius={10}
+                                borderWidth={1}
+                                borderColor="#B8B8B7"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                {selectedSort === 'oldest' && (
+                                    <Box
+                                        width={14}
+                                        height={14}
+                                        borderRadius={7}
+                                        bg="#B8B8B7"
+                                    />
+                                )}
+                            </Box>
+                        </HStack>
+                    </Pressable>
+                </VStack>
+            </VStack>,
+            {
+                enablePanDownToClose: true,
+                enableDynamicSizing: true,
+                animateOnMount: true,
+                paddingBottom: bottomInset,
+                backgroundStyle: {
+                    backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+                    borderTopLeftRadius: 20,
+                    borderTopRightRadius: 20,
+                },
+                handleStyle: {
+                    backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+                    borderTopLeftRadius: 20,
+                    borderTopRightRadius: 20,
+                },
+                handleIndicatorStyle: {
+                    backgroundColor: isDark ? '#333333' : '#B8B8B7',
+                    width: 40,
+                    height: 4,
+                },
+            }
+        );
     };
 
     return (
@@ -257,18 +387,7 @@ export const Trust_TrusterListScreen = () => {
                             </Input>
                             {/* Filter Icon - Only for Truster tab */}
                             {activeTab === 'truster' && (
-                                <Pressable p={8} onPress={() => {
-                                    console.log('Filter pressed, bottomSheetRef:', bottomSheetRef.current);
-                                    if (bottomSheetRef.current) {
-                                        bottomSheetRef.current.expand();
-                                    } else {
-                                        setTimeout(() => {
-                                            if (bottomSheetRef.current) {
-                                                bottomSheetRef.current.expand();
-                                            }
-                                        }, 100);
-                                    }
-                                }}>
+                                <Pressable p={8}                                 onPress={handleFilterPress}>
                                     <Feather
                                         name="filter"
                                         size={18}
@@ -426,155 +545,6 @@ export const Trust_TrusterListScreen = () => {
                     />
                 )}
 
-                {/* Filter Bottom Sheet */}
-                <BottomSheet
-                    ref={bottomSheetRef}
-                    index={-1}
-                    onChange={handleSheetChanges}
-                    enablePanDownToClose
-                    enableDynamicSizing
-                    backdropComponent={renderFilterBackdrop}
-                    backgroundStyle={{
-                        backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
-                        borderTopLeftRadius: 20,
-                        borderTopRightRadius: 20,
-                    }}
-                    handleStyle={{
-                        backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
-                        borderTopLeftRadius: 20,
-                        borderTopRightRadius: 20,
-                    }}
-                    handleIndicatorStyle={{
-                        backgroundColor: isDark ? '#333333' : '#B8B8B7',
-                        width: 40,
-                        height: 4,
-                    }}
-                >
-                    <BottomSheetView
-                        style={{ paddingBottom: bottomInset }}
-                    >
-                        <VStack flex={1} px={16} py={20}>
-                            {/* Sort Header */}
-                            <HStack justifyContent="center" mb={20}>
-                                <Text
-                                    color={isDark ? '#fff' : '#000'}
-                                    fontSize={16}
-                                    fontWeight="$bold"
-                                >
-                                    Sort
-                                </Text>
-                            </HStack>
-
-                            {/* Sort Options */}
-                            <VStack space="md">
-                                {/* Default Option */}
-                                <Pressable onPress={() => handleSortSelect('default')}>
-                                    <HStack
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                        py={10}
-                                    >
-                                        <Text
-                                            color={isDark ? '#fff' : '#000'}
-                                            fontSize={14}
-                                            fontWeight="$normal"
-                                        >
-                                            Default
-                                        </Text>
-                                        <Box
-                                            width={20}
-                                            height={20}
-                                            borderRadius={10}
-                                            borderWidth={1}
-                                            borderColor="#B8B8B7"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                        >
-                                            {selectedSort === 'default' && (
-                                                <Box
-                                                    width={14}
-                                                    height={14}
-                                                    borderRadius={7}
-                                                    bg="#B8B8B7"
-                                                />
-                                            )}
-                                        </Box>
-                                    </HStack>
-                                </Pressable>
-
-                                {/* Newest Option */}
-                                <Pressable onPress={() => handleSortSelect('newest')}>
-                                    <HStack
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                        py={10}
-                                    >
-                                        <Text
-                                            color={isDark ? '#fff' : '#000'}
-                                            fontSize={14}
-                                            fontWeight="$normal"
-                                        >
-                                            Sort by: Newest
-                                        </Text>
-                                        <Box
-                                            width={20}
-                                            height={20}
-                                            borderRadius={10}
-                                            borderWidth={1}
-                                            borderColor="#B8B8B7"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                        >
-                                            {selectedSort === 'newest' && (
-                                                <Box
-                                                    width={14}
-                                                    height={14}
-                                                    borderRadius={7}
-                                                    bg="#B8B8B7"
-                                                />
-                                            )}
-                                        </Box>
-                                    </HStack>
-                                </Pressable>
-
-                                {/* Oldest Option */}
-                                <Pressable onPress={() => handleSortSelect('oldest')}>
-                                    <HStack
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                        py={10}
-                                    >
-                                        <Text
-                                            color={isDark ? '#fff' : '#000'}
-                                            fontSize={14}
-                                            fontWeight="$normal"
-                                        >
-                                            Sort by: Oldest
-                                        </Text>
-                                        <Box
-                                            width={20}
-                                            height={20}
-                                            borderRadius={10}
-                                            borderWidth={1}
-                                            borderColor="#B8B8B7"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                        >
-                                            {selectedSort === 'oldest' && (
-                                                <Box
-                                                    width={14}
-                                                    height={14}
-                                                    borderRadius={7}
-                                                    bg="#B8B8B7"
-                                                />
-                                            )}
-                                        </Box>
-                                    </HStack>
-                                </Pressable>
-                            </VStack>
-                        </VStack>
-                    </BottomSheetView>
-                </BottomSheet>
             </VStack>
         </SafeAreaView>
     );

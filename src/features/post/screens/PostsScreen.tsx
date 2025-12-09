@@ -25,7 +25,7 @@ import { mock_feed_data } from '@/src/mock/feed';
 import { UpdatePost } from '@/src/mock/feed/types';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
@@ -46,23 +46,14 @@ export const PostsScreen = () => {
       }
     : undefined;
 
-  // Bottom sheet refs
-  const createPostBottomSheetRef = useRef<BottomSheet>(null);
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // Bottom sheet state
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-      />
-    ),
-    []
-  );
-
   // Convert stage from PostsScreen to CatalogStage format
-  const getCatalogStage = (): 'subcategories' | 'productgroups' | 'products' | undefined => {
+  const getCatalogStage = useCallback((): 'subcategories' | 'productgroups' | 'products' | undefined => {
     switch (stage) {
       case 'SubCategories':
         return 'subcategories';
@@ -73,40 +64,18 @@ export const PostsScreen = () => {
       default:
         return undefined;
     }
-  };
+  }, [stage]);
 
   const handleFilterPress = () => {
     // Handle filter/sort action
     console.log('Filter/Sort pressed');
   };
 
-  const handleCreatePress = () => {
-    // Reset bottom sheet key to remount component and reset view
-    setBottomSheetKey(prev => prev + 1);
-    // Open bottom sheet
-    if (createPostBottomSheetRef.current) {
-      createPostBottomSheetRef.current.snapToIndex(0);
-    } else {
-      setTimeout(() => {
-        if (createPostBottomSheetRef.current) {
-          createPostBottomSheetRef.current.snapToIndex(0);
-        }
-      }, 100);
-    }
-  };
-
-  const handleSheetChanges = useCallback((index: number) => {
-    // Reset bottom sheet key when sheet closes to reset view state
-    if (index === -1) {
-      setBottomSheetKey(prev => prev + 1);
-    }
-  }, []);
-
-  const handlePostTypeSelect = (type: string) => {
+  const handlePostTypeSelect = useCallback((type: string) => {
     console.log('Post type selected:', type);
     
     // Close bottom sheet first
-    createPostBottomSheetRef.current?.close();
+    closeBottomSheet();
     
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
@@ -125,11 +94,39 @@ export const PostsScreen = () => {
       });
     }
     // Handle other post types here if needed
-  };
+  }, [navigation, selectedProductPayload, closeBottomSheet]);
 
-  const handleViewChange = (view: 'options' | 'experience' | 'product-selection') => {
-    console.log('BottomSheet view changed:', view);
-  };
+  const handleCreatePress = useCallback(() => {
+    // Reset bottom sheet key to remount component and reset view
+    setBottomSheetKey(prev => prev + 1);
+    
+    openBottomSheet(
+      <CreatePostBottomSheet
+        key={bottomSheetKey + 1}
+        onClose={closeBottomSheet}
+        onPostTypeSelect={handlePostTypeSelect}
+        onViewChange={(view) => {
+          // View change is handled internally by CreatePostBottomSheet
+          console.log('BottomSheet view changed:', view);
+        }}
+        stage={getCatalogStage()}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        animateOnMount: true,
+        paddingBottom: 8,
+        onChange: (index: number) => {
+          // Reset bottom sheet key when sheet closes to reset view state
+          if (index === -1) {
+            setBottomSheetKey(prev => prev + 1);
+          }
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, getCatalogStage, handlePostTypeSelect]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -222,50 +219,6 @@ export const PostsScreen = () => {
       {/* Create Button */}
       <CreateButton onPress={handleCreatePress} />
 
-      {/* Create Post Bottom Sheet */}
-      <BottomSheet
-        ref={createPostBottomSheetRef}
-        style={{ zIndex: 20 }}
-        containerStyle={{
-          zIndex: 20,
-          elevation: 20,
-        }}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        onChange={handleSheetChanges}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#CCCCCC',
-          width: 40,
-          height: 4,
-        }}
-      >
-        <BottomSheetView style={{ paddingBottom: 8 }}>
-          <CreatePostBottomSheet
-            key={bottomSheetKey}
-            onClose={() => {
-              createPostBottomSheetRef.current?.close();
-            }}
-            onPostTypeSelect={handlePostTypeSelect}
-            onViewChange={handleViewChange}
-            stage={getCatalogStage()}
-          />
-        </BottomSheetView>
-      </BottomSheet>
       </Box>
     </SafeAreaView>
   );

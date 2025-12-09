@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import {
   Box,
@@ -145,14 +145,35 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     return Array.from(uniqueEventsMap.values());
   }, [upcomingEventsData?.pages]);
 
-  // fetchNextUpcomingPage'i wrap edip log ekliyoruz
+  // fetchNextUpcomingPage'i wrap edip loop koruması ekliyoruz
+  const isLoadingMoreRef = useRef(false);
   const fetchNextUpcomingPage = useCallback(() => {
+    if (isLoadingMoreRef.current) {
+      console.log('[Upcoming Events] Zaten yükleme devam ediyor, istek atılmadı');
+      return;
+    }
+    
+    if (!hasNextUpcomingPage || isFetchingNextUpcomingPage) {
+      console.log('[Upcoming Events] Yeni sayfa yok veya zaten yükleniyor', {
+        hasNextPage: hasNextUpcomingPage,
+        isFetching: isFetchingNextUpcomingPage,
+      });
+      return;
+    }
+    
     console.log('[Upcoming Events] fetchNextUpcomingPage çağrıldı', {
       hasNextPage: hasNextUpcomingPage,
       isFetching: isFetchingNextUpcomingPage,
       currentItemsCount: upcomingEvents.length,
     });
+    
+    isLoadingMoreRef.current = true;
     fetchNextUpcomingPageOriginal();
+    
+    // 1 saniye sonra flag'i sıfırla
+    setTimeout(() => {
+      isLoadingMoreRef.current = false;
+    }, 1000);
   }, [fetchNextUpcomingPageOriginal, hasNextUpcomingPage, isFetchingNextUpcomingPage, upcomingEvents.length]);
 
   // Upcoming Events için scroll handler - nested scroll durumunda onEndReached düzgün çalışmayabilir
@@ -347,17 +368,9 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
         onScroll={handleUpcomingEventsScroll}
         scrollEventThrottle={400}
         onEndReached={() => {
-          console.log('[Upcoming Events onEndReached] Tetiklendi', {
-            hasNextPage: hasNextUpcomingPage,
-            isFetching: isFetchingNextUpcomingPage,
-          });
-          if (hasNextUpcomingPage && !isFetchingNextUpcomingPage) {
-            console.log('[Upcoming Events] Yeni sayfa yükleniyor (onEndReached)...');
+          // onEndReached sürekli tetiklenmesini önlemek için kontrol
+          if (hasNextUpcomingPage && !isFetchingNextUpcomingPage && !isLoadingMoreRef.current) {
             fetchNextUpcomingPage();
-          } else {
-            console.log('[Upcoming Events onEndReached] İstek atılmadı', {
-              reason: !hasNextUpcomingPage ? 'hasNextPage false' : 'isFetching true',
-            });
           }
         }}
         onEndReachedThreshold={0.5}

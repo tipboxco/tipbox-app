@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Platform, FlatList, ActivityIndicator } from 'react-native';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
@@ -18,7 +18,7 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFeed } from '../api/hooks';
@@ -50,8 +50,8 @@ export const FeedScreen = () => {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
-  // Bottom sheet refs
-  const expertBottomSheetRef = useRef<BottomSheet>(null);
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   // Feed API hook with infinite scroll
   const {
@@ -61,10 +61,112 @@ export const FeedScreen = () => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useFeed(3); // Test için limit 3 olarak ayarlandı
+  } = useFeed(10); // Test için limit 3 olarak ayarlandı
 
-  // Flatten all pages into a single array
-  const feedItems = data?.pages.flatMap((page) => page.items) ?? [];
+  // Console log for debugging - FeedScreen data
+  useEffect(() => {
+    if (data?.pages) {
+      console.log('[FeedScreen] useFeed Hook Result:');
+      console.log('  - Data Pages Count:', data.pages.length);
+      console.log('  - Total Items:', data.pages.flatMap((page) => page.items).length);
+      console.log('  - hasNextPage:', hasNextPage);
+      console.log('  - isFetchingNextPage:', isFetchingNextPage);
+      console.log('  - isLoading:', isLoading);
+      console.log('  - error:', error ? error.message : null);
+      
+      // Her sayfanın detaylarını ayrı ayrı logla
+      data.pages.forEach((page, pageIndex) => {
+        console.log(`[FeedScreen] Page ${pageIndex + 1}:`, {
+          itemsCount: page.items.length,
+          pagination: page.pagination,
+          items: page.items.map((item) => ({
+            id: item.data.id,
+            type: item.type,
+            dataId: item.data.id,
+            dataType: item.data.type || 'unknown',
+          })),
+        });
+      });
+      
+      // Tüm ID'leri listele
+      const allIds = data.pages.flatMap((page) => 
+        page.items.map((item) => item.data.id)
+      );
+      console.log('[FeedScreen] All Item IDs:', allIds);
+      
+      // Her item'ın type'ını logla
+      const itemsByType = data.pages.flatMap((page) => 
+        page.items.map((item) => ({
+          id: item.data.id,
+          type: item.type,
+        }))
+      );
+      console.log('[FeedScreen] Items by Type:', {
+        update: itemsByType.filter(item => item.type === 'update').length,
+        benchmark: itemsByType.filter(item => item.type === 'benchmark').length,
+        experience: itemsByType.filter(item => item.type === 'experience').length,
+        post: itemsByType.filter(item => item.type === 'post').length,
+        question: itemsByType.filter(item => item.type === 'question').length,
+        tipsAndTricks: itemsByType.filter(item => item.type === 'tipsAndTricks').length,
+        total: itemsByType.length,
+      });
+      
+      // Duplicate ID kontrolü
+      const uniqueIds = Array.from(new Set(allIds));
+      if (allIds.length !== uniqueIds.length) {
+        console.warn('[FeedScreen] Duplicate IDs detected:', {
+          total: allIds.length,
+          unique: uniqueIds.length,
+          duplicates: allIds.length - uniqueIds.length,
+        });
+        // Duplicate ID'leri bul
+        const duplicateIds = allIds.filter((id, index) => allIds.indexOf(id) !== index);
+        console.warn('[FeedScreen] Duplicate ID list:', Array.from(new Set(duplicateIds)));
+      }
+    }
+  }, [data, hasNextPage, isFetchingNextPage, isLoading, error]);
+
+  // Flatten all pages into a single array and remove duplicates by ID
+  const feedItems = useMemo(() => {
+    if (!data?.pages) return [];
+    
+    const allItems = data.pages.flatMap((page) => page.items);
+    
+    // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
+    const uniqueItemsMap = new Map<string, FeedApiItem>();
+    for (const item of allItems) {
+      const itemId = item.data.id;
+      if (!uniqueItemsMap.has(itemId)) {
+        uniqueItemsMap.set(itemId, item);
+      }
+    }
+    
+    const uniqueItems = Array.from(uniqueItemsMap.values());
+    
+    // Debug: Duplicate kontrolü
+    if (allItems.length !== uniqueItems.length) {
+      console.warn('[FeedScreen] Duplicate items detected:', {
+        total: allItems.length,
+        unique: uniqueItems.length,
+        duplicates: allItems.length - uniqueItems.length,
+      });
+    }
+    
+    // Debug: Render edilecek item sayısını logla
+    console.log('[FeedScreen] feedItems after filtering:', {
+      totalItems: uniqueItems.length,
+      itemsByType: {
+        update: uniqueItems.filter(item => item.type === CardType.UPDATE).length,
+        benchmark: uniqueItems.filter(item => item.type === CardType.BENCHMARK).length,
+        experience: uniqueItems.filter(item => item.type === CardType.EXPERIENCE).length,
+        post: uniqueItems.filter(item => item.type === CardType.POST).length,
+        question: uniqueItems.filter(item => item.type === CardType.QUESTION).length,
+        tipsAndTricks: uniqueItems.filter(item => item.type === CardType.TIPS_AND_TRICKS).length,
+      },
+    });
+    
+    return uniqueItems;
+  }, [data?.pages]);
 
   const handleSearchPress = () => {
     setIsSearchVisible(true);
@@ -96,30 +198,35 @@ export const FeedScreen = () => {
 
   const handleExpertPress = () => {
     console.log('[FeedScreen] Expert button pressed');
-    if (expertBottomSheetRef.current) {
-      expertBottomSheetRef.current.snapToIndex(0);
-    } else {
-      console.log('[FeedScreen] Expert BottomSheet ref is null, trying again...');
-      setTimeout(() => {
-        if (expertBottomSheetRef.current) {
-          expertBottomSheetRef.current.snapToIndex(0);
-        } else {
-          console.log('[FeedScreen] Expert BottomSheet ref still null after timeout');
-        }
-      }, 100);
-    }
+    console.log('[FeedScreen] Opening ExpertBottomSheet via global bottom sheet');
+    openBottomSheet(
+      <>
+        {/* Header */}
+        <VStack space="md" pb={'$3'} mb={'$4'} borderBottomWidth={1} borderBottomColor="#D9D9D9">
+          <HStack justifyContent="center" alignItems="center">
+            <Text
+              fontSize={16}
+              fontWeight="$bold"
+              color={isDark ? '#FFFFFF' : '#000000'}
+              textAlign="center"
+            >
+              Expert Now
+            </Text>
+          </HStack>
+        </VStack>
+        <ExpertBottomSheet onClose={closeBottomSheet} />
+      </>,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
+      }
+    );
   };
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-      />
-    ),
-    []
-  );
 
   // Map Feed to PostCardData
   const mapFeedToCardData = (item: ProfilePost): PostCardData => {
@@ -341,8 +448,13 @@ export const FeedScreen = () => {
         );
       case CardType.UPDATE:
         // UpdatePostCard için mock tip hala kullanılıyor, bu ayrı bir refactoring konusu
+        console.warn('[FeedScreen] UPDATE type item detected but not rendered:', item.data.id);
         return null;
       default:
+        console.warn('[FeedScreen] Unknown item type, not rendered:', {
+          id: item.data.id,
+          type: item.type,
+        });
         return null;
     }
   };
@@ -417,51 +529,6 @@ export const FeedScreen = () => {
           onPress={handleExpertPress}
         />
 
-        {/* Expert Bottom Sheet */}
-        <BottomSheet
-          ref={expertBottomSheetRef}
-          index={-1}
-          enablePanDownToClose
-          enableOverDrag={false}
-          enableHandlePanningGesture={true}
-          enableContentPanningGesture={true}
-          animateOnMount={true}
-          backdropComponent={renderBackdrop}
-          backgroundStyle={{
-            backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-            borderTopLeftRadius: 30,
-            borderTopRightRadius: 30,
-          }}
-          handleStyle={{
-            backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-            borderTopLeftRadius: 30,
-            borderTopRightRadius: 30,
-          }}
-          handleIndicatorStyle={{
-            backgroundColor: isDark ? '#333333' : '#CCCCCC',
-            width: 40,
-            height: 4,
-          }}
-        >
-          <BottomSheetView style={{ paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight }}>
-            {/* Header */}
-            <VStack space="md" pb={'$3'} mb={'$4'} borderBottomWidth={1} borderBottomColor="#D9D9D9">
-              <HStack justifyContent="center" alignItems="center">
-                <Text
-                  fontSize={16}
-                  fontWeight="$bold"
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  textAlign="center"
-                >
-                  Expert Now
-                </Text>
-              </HStack>
-            </VStack>
-            <ExpertBottomSheet
-              onClose={() => expertBottomSheetRef.current?.close()}
-            />
-          </BottomSheetView>
-        </BottomSheet>
       </Box>
     </SafeAreaView>
   );

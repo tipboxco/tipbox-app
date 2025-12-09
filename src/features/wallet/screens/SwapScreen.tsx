@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, HStack, Text, Pressable, Input, InputField } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
@@ -6,7 +6,7 @@ import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 
 export const SwapScreen: React.FC = () => {
@@ -19,8 +19,9 @@ export const SwapScreen: React.FC = () => {
   const [activeToken, setActiveToken] = useState<'TIP' | 'SOL'>('TIP');
 
   // Bottom sheet refs
-  const insufficientBalanceSheetRef = useRef<BottomSheet>(null);
-  const successBottomSheetRef = useRef<BottomSheet>(null);
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
   const [successTransactionDetails, setSuccessTransactionDetails] = useState<{
     sentAmount?: string;
     receivedAmount?: string;
@@ -76,15 +77,132 @@ export const SwapScreen: React.FC = () => {
     // Check if amount exceeds balance
     if (activeToken === 'TIP' && numericValue > MAX_TIPS) {
       // Open insufficient balance bottom sheet
-      if (insufficientBalanceSheetRef.current) {
-        insufficientBalanceSheetRef.current.expand();
-      } else {
-        setTimeout(() => {
-          if (insufficientBalanceSheetRef.current) {
-            insufficientBalanceSheetRef.current.expand();
-          }
-        }, 100);
-      }
+      const { remaining, required } = getInsufficientBalanceDetails();
+      openBottomSheet(
+        <VStack px="$4" py="$4" space="lg" flex={1}>
+          {/* Header with back button */}
+          <HStack alignItems="center" space="md" mb="$2">
+            <Pressable onPress={closeBottomSheet}>
+              <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+            </Pressable>
+            <HStack flex={1} justifyContent="center" alignItems="center">
+              <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+                Swap
+              </Text>
+            </HStack>
+            <Box w={24} />
+          </HStack>
+
+          {/* Warning Icon and Message */}
+          <VStack alignItems="center" space="md" py="$4">
+            <Box
+              w={146}
+              h={146}
+              rounded={5}
+              bg="#D9D9D9"
+              $dark-bg="$backgroundDark700"
+              alignItems="center"
+              justifyContent="center"
+            />
+            <VStack alignItems="center" space="xs" px="$4">
+              <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
+                Not Enought TIP
+              </Text>
+              <Text fontSize={12} fontWeight="$normal" color="$textLight900" $dark-color="$textDark50" textAlign="center" lineHeight={18}>
+                You don't have enough TIP in your wallet for this transaction.
+              </Text>
+            </VStack>
+          </VStack>
+
+          {/* Remaining and Required Card */}
+          <Box
+            bg="$backgroundLight0"
+            $dark-bg="$backgroundDark800"
+            borderWidth={1}
+            borderColor="#E9E9E9"
+            $dark-borderColor="$borderDark600"
+            rounded={5}
+            p="$4"
+          >
+            <VStack space="md">
+              {/* Remaining Row */}
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
+                  Remaining
+                </Text>
+                <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
+                  {remaining.toFixed(0)} TIP
+                </Text>
+              </HStack>
+
+              {/* Divider */}
+              <Box h={1} bg="#EBEBEB" $dark-bg="$borderDark600" />
+
+              {/* Required Row */}
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
+                  Required
+                </Text>
+                <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
+                  {required} TIP
+                </Text>
+              </HStack>
+            </VStack>
+          </Box>
+
+          {/* Action Buttons */}
+          <HStack space="md" mt="auto">
+            <Pressable
+              onPress={() => {
+                console.log('Buy TIP pressed');
+                closeBottomSheet();
+              }}
+              bg="#C2E607"
+              $dark-bg="#C2E607"
+              rounded={8}
+              py="$3"
+              flex={1}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Text fontSize={12} fontWeight="$bold" color="#111111" textAlign="center">
+                Buy TIP
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                closeBottomSheet();
+                setPayAmount('');
+                setReceiveAmount('');
+              }}
+              bg="#F5F5F5"
+              $dark-bg="$backgroundDark700"
+              rounded={8}
+              py="$3"
+              flex={1}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Text fontSize={12} fontWeight="$bold" color="#9E9E9E" $dark-color="$textDark400" textAlign="center">
+                Cancel
+              </Text>
+            </Pressable>
+          </HStack>
+        </VStack>,
+        {
+          enablePanDownToClose: true,
+          enableOverDrag: false,
+          enableHandlePanningGesture: true,
+          enableContentPanningGesture: true,
+          enableDynamicSizing: true,
+          animateOnMount: true,
+          handleIndicatorStyle: {
+            backgroundColor: isDark ? '#333333' : '#B8B8B7',
+            width: 70,
+            height: 5,
+          },
+        }
+      );
     } else {
       // Proceed with swap - show success
       console.log('Swap Now pressed - proceeding with swap');
@@ -109,15 +227,36 @@ export const SwapScreen: React.FC = () => {
       
       // Open success bottom sheet
       setTimeout(() => {
-        if (successBottomSheetRef.current) {
-          successBottomSheetRef.current.expand();
-        } else {
-          setTimeout(() => {
-            if (successBottomSheetRef.current) {
-              successBottomSheetRef.current.expand();
-            }
-          }, 100);
-        }
+        openBottomSheet(
+          <SuccessBottomSheet
+            onClose={() => {
+              closeBottomSheet();
+              setSuccessTransactionDetails(null);
+            }}
+            title="Swap Successful"
+            message="Your swap transaction has been completed successfully."
+            transactionDetails={{
+              sentAmount,
+              receivedAmount,
+              transactionFee: '$0.495',
+              remainingBalance,
+              transactionId,
+            }}
+          />,
+          {
+            enablePanDownToClose: true,
+            enableOverDrag: false,
+            enableHandlePanningGesture: true,
+            enableContentPanningGesture: true,
+            enableDynamicSizing: true,
+            animateOnMount: true,
+            handleIndicatorStyle: {
+              backgroundColor: isDark ? '#333333' : '#B8B8B7',
+              width: 70,
+              height: 5,
+            },
+          }
+        );
       }, 300);
       
       // Reset amounts after showing success
@@ -128,17 +267,6 @@ export const SwapScreen: React.FC = () => {
     }
   };
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        opacity={0.3}
-      />
-    ),
-    []
-  );
 
   // Calculate remaining and required amounts
   const getInsufficientBalanceDetails = () => {
@@ -508,191 +636,6 @@ export const SwapScreen: React.FC = () => {
         </VStack>
       </ScrollView>
 
-      {/* Insufficient Balance Bottom Sheet */}
-      <BottomSheet
-        ref={insufficientBalanceSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        enableDynamicSizing
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        }}
-      >
-        <BottomSheetView>
-          <VStack px="$4" py="$4" space="lg" flex={1}>
-            {/* Header with back button */}
-            <HStack alignItems="center" space="md" mb="$2">
-              <Pressable onPress={() => insufficientBalanceSheetRef.current?.close()}>
-                <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-              </Pressable>
-              <HStack flex={1} justifyContent="center" alignItems="center">
-                <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                  Swap
-                </Text>
-              </HStack>
-              <Box w={24} />
-            </HStack>
-
-            {/* Warning Icon and Message */}
-            <VStack alignItems="center" space="md" py="$4">
-              <Box
-                w={146}
-                h={146}
-                rounded={5}
-                bg="#D9D9D9"
-                $dark-bg="$backgroundDark700"
-                alignItems="center"
-                justifyContent="center"
-              />
-              <VStack alignItems="center" space="xs" px="$4">
-                <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
-                  Not Enought TIP
-                </Text>
-                <Text fontSize={12} fontWeight="$normal" color="$textLight900" $dark-color="$textDark50" textAlign="center" lineHeight={18}>
-                  You don't have enough TIP in your wallet for this transaction.
-                </Text>
-              </VStack>
-            </VStack>
-
-            {/* Remaining and Required Card */}
-            {(() => {
-              const { remaining, required } = getInsufficientBalanceDetails();
-              return (
-                <Box
-                  bg="$backgroundLight0"
-                  $dark-bg="$backgroundDark800"
-                  borderWidth={1}
-                  borderColor="#E9E9E9"
-                  $dark-borderColor="$borderDark600"
-                  rounded={5}
-                  p="$4"
-                >
-                  <VStack space="md">
-                    {/* Remaining Row */}
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                        Remaining
-                      </Text>
-                      <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
-                        {remaining.toFixed(0)} TIP
-                      </Text>
-                    </HStack>
-
-                    {/* Divider */}
-                    <Box h={1} bg="#EBEBEB" $dark-bg="$borderDark600" />
-
-                    {/* Required Row */}
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                        Required
-                      </Text>
-                      <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
-                        {required} TIP
-                      </Text>
-                    </HStack>
-                  </VStack>
-                </Box>
-              );
-            })()}
-
-            {/* Action Buttons */}
-            <HStack space="md" mt="auto">
-              <Pressable
-                onPress={() => {
-                  console.log('Buy TIP pressed');
-                  insufficientBalanceSheetRef.current?.close();
-                }}
-                bg="#C2E607"
-                $dark-bg="#C2E607"
-                rounded={8}
-                py="$3"
-                flex={1}
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize={12} fontWeight="$bold" color="#111111" textAlign="center">
-                  Buy TIP
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  insufficientBalanceSheetRef.current?.close();
-                  setPayAmount('');
-                  setReceiveAmount('');
-                }}
-                bg="#F5F5F5"
-                $dark-bg="$backgroundDark700"
-                rounded={8}
-                py="$3"
-                flex={1}
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize={12} fontWeight="$bold" color="#9E9E9E" $dark-color="$textDark400" textAlign="center">
-                  Cancel
-                </Text>
-              </Pressable>
-            </HStack>
-          </VStack>
-        </BottomSheetView>
-      </BottomSheet>
-
-      {/* Success Bottom Sheet */}
-      <BottomSheet
-        ref={successBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        enableDynamicSizing
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        }}
-      >
-        <BottomSheetView>
-          <SuccessBottomSheet
-            onClose={() => {
-              successBottomSheetRef.current?.close();
-              setSuccessTransactionDetails(null);
-            }}
-            title="Swap Successful"
-            message="Your swap transaction has been completed successfully."
-            transactionDetails={successTransactionDetails || undefined}
-          />
-        </BottomSheetView>
-      </BottomSheet>
       </Box>
     </SafeAreaView>
   );

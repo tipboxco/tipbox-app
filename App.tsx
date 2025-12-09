@@ -12,6 +12,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryProvider } from '@/src/providers/QueryProvider';
+import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
 
 export default function App() {
   const { colorMode } = useColorMode();
@@ -23,14 +24,16 @@ export default function App() {
         <SafeAreaProvider>
           <PortalProvider>
             <BottomSheetModalProvider>
-              <GluestackProvider>
-                <StatusBar
-                  translucent
-                  backgroundColor={isDark ? '#000000' : '#FAFAFA'}
-                  barStyle={isDark ? 'light-content' : 'dark-content'}
-                />
-                <Navigation />
-              </GluestackProvider>
+              <GlobalBottomSheetProvider>
+                <GluestackProvider>
+                  <StatusBar
+                    translucent
+                    backgroundColor={isDark ? '#000000' : '#FAFAFA'}
+                    barStyle={isDark ? 'light-content' : 'dark-content'}
+                  />
+                  <Navigation />
+                </GluestackProvider>
+              </GlobalBottomSheetProvider>
             </BottomSheetModalProvider>
           </PortalProvider>
         </SafeAreaProvider>

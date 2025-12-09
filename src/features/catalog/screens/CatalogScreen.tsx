@@ -11,8 +11,8 @@ import { Category } from '@/src/mock/catalog/productCatalog/types';
 import { ProductCatalogScreen } from './ProductCatalogScreen';
 import { BrandScreen } from './BrandScreen';
 import { Search } from 'lucide-react-native';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 
@@ -29,8 +29,10 @@ export const CatalogScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [headerHeight, setHeaderHeight] = useState(40); // Default header height
   
-  // BottomSheet state ve ref'leri
-  const createPostBottomSheetRef = useRef<BottomSheet>(null);
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // BottomSheet state
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [currentView, setCurrentView] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>('categories');
@@ -40,19 +42,6 @@ export const CatalogScreen = () => {
   
   // Brand isminin pozisyonu (Header Info Box yüksekliği yaklaşık 80-100px)
   const BRAND_TITLE_THRESHOLD = 80;
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-        opacity={0.5}
-      />
-    ),
-    []
-  );
 
   const handleBrandCategorySelection = (category: Category) => {
     setSelectedCategory(category);
@@ -64,29 +53,50 @@ export const CatalogScreen = () => {
     console.log('Create a Post pressed');
     // Reset bottom sheet key to remount component and reset view
     setBottomSheetKey(prev => prev + 1);
-    if (createPostBottomSheetRef.current) {
-      createPostBottomSheetRef.current.expand();
-    } else {
-      setTimeout(() => {
-        if (createPostBottomSheetRef.current) {
-          createPostBottomSheetRef.current.expand();
-        }
-      }, 100);
-    }
-  }, []);
-
-  const handleSheetChanges = useCallback((index: number) => {
-    // Reset bottom sheet key when sheet closes to reset view state
-    if (index === -1) {
-      setBottomSheetKey(prev => prev + 1);
-    }
-  }, []);
+    
+    openBottomSheet(
+      <CreatePostBottomSheet
+        key={bottomSheetKey + 1}
+        onClose={closeBottomSheet}
+        onPostTypeSelect={handlePostTypeSelect}
+        onViewChange={handleViewChange}
+        stage={currentView === 'categories' ? undefined : currentView as 'subcategories' | 'productgroups' | 'products'}
+        selectedProduct={selectedProduct ? {
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          subName: selectedProduct.description || undefined,
+          image: selectedProduct.image,
+          hasDiscount: false,
+        } : undefined}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: Platform.OS === 'ios' ? 32 + 8 : 45 + 8,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+        onChange: (index: number) => {
+          // Reset bottom sheet key when sheet closes to reset view state
+          if (index === -1) {
+            setBottomSheetKey(prev => prev + 1);
+          }
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, isDark]);
 
   const handlePostTypeSelect = useCallback((type: string) => {
     console.log('Post type selected:', type);
     
     // Close bottom sheet first
-    createPostBottomSheetRef.current?.close();
+    closeBottomSheet();
     
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
@@ -140,7 +150,7 @@ export const CatalogScreen = () => {
         },
       });
     }
-  }, [navigation, selectedProduct]);
+  }, [navigation, selectedProduct, closeBottomSheet]);
 
   const handleViewChange = useCallback((view: 'options' | 'experience' | 'product-selection') => {
     console.log('BottomSheet view changed:', view);
@@ -342,53 +352,6 @@ export const CatalogScreen = () => {
         />
       </Pressable>
 
-      {/* Create Post Bottom Sheet */}
-      <BottomSheet
-        ref={createPostBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        enableDynamicSizing
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        onChange={handleSheetChanges}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        }}
-      >
-        <BottomSheetView style={{ paddingBottom: Platform.OS === 'ios' ? 32 + 8 : 45 + 8 }}>
-          <CreatePostBottomSheet
-            key={bottomSheetKey}
-            onClose={() => {
-              createPostBottomSheetRef.current?.close();
-            }}
-            onPostTypeSelect={handlePostTypeSelect}
-            onViewChange={handleViewChange}
-            stage={currentView === 'categories' ? undefined : currentView as 'subcategories' | 'productgroups' | 'products'}
-            selectedProduct={selectedProduct ? {
-              id: selectedProduct.id,
-              name: selectedProduct.name,
-              subName: selectedProduct.description || undefined,
-              image: selectedProduct.image,
-              hasDiscount: false,
-            } : undefined}
-          />
-        </BottomSheetView>
-      </BottomSheet>
       </Box>
     </SafeAreaView>
   );

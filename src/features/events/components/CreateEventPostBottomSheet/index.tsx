@@ -12,7 +12,6 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../../navigation';
 import CategoryCard, { Category } from '../CategoryCard';
@@ -26,6 +25,7 @@ type CreateEventPostBottomSheetNavigationProp = NativeStackNavigationProp<Events
 interface CreateEventPostBottomSheetProps {
     onClose: () => void;
     onProductSelect: (product: Category) => void;
+    navigation: CreateEventPostBottomSheetNavigationProp; // Required: GlobalBottomSheet içinde navigation context yok
 }
 
 // Mock categories data
@@ -47,10 +47,10 @@ const mockCategories: Category[] = [
 export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProps> = ({
     onClose,
     onProductSelect,
+    navigation,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const navigation = useNavigation<CreateEventPostBottomSheetNavigationProp>();
     const [currentView, setCurrentView] = useState<'options' | 'inventory' | 'catalog'>('options');
     const [searchQuery, setSearchQuery] = useState('');
 

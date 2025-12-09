@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { ScrollView, Alert, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -22,12 +22,13 @@ import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { EventType } from '@/src/utils';
 import { EventProduct } from '@/src/mock/events/communityEvents/types';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
 import { InventoryItem } from '@/src/mock/inventory/types';
 import { Header } from '@/src/components/Header';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventsStackParamList, 'EventCreatePost'>;
@@ -42,6 +43,13 @@ const EventCreatePost: React.FC = () => {
     const [selectedProduct, setSelectedProduct] = useState<Category | null>(null);
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
+    
+    // Global bottom sheet hook
+    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+    
+    // Safe area and tab bar insets
+    const insets = useSafeAreaInsets();
+    const tabBarHeight = useBottomTabBarHeight();
     
     // Get eventType, product, and productSource from route params
     const eventType = route.params?.eventType;
@@ -69,35 +77,32 @@ const EventCreatePost: React.FC = () => {
         }
     }, [routeProductSource]);
 
-    // Bottom sheet refs
-    const bottomSheetRef = useRef<BottomSheet>(null);
-
-    const renderBackdrop = useCallback(
-        (props: BottomSheetBackdropProps) => (
-            <BottomSheetBackdrop
-                {...props}
-                appearsOnIndex={0}
-                disappearsOnIndex={-1}
-            />
-        ),
-        []
-    );
-
-    const handleSelectProduct = () => {
-        // Open bottom sheet
-        if (bottomSheetRef.current) {
-            bottomSheetRef.current.snapToIndex(0);
-        }
-    };
-
-    const handleCloseBottomSheet = () => {
-        bottomSheetRef.current?.close();
-    };
-
-    const handleProductSelect = (product: Category) => {
+    // handleProductSelect'i önce tanımla (handleSelectProduct'ta kullanılıyor)
+    const handleProductSelect = useCallback((product: Category) => {
         setSelectedProduct(product);
-        handleCloseBottomSheet();
-    };
+        closeBottomSheet();
+    }, [closeBottomSheet]);
+
+    const handleSelectProduct = useCallback(() => {
+        // Open bottom sheet using global manager
+        // Navigation'ı prop olarak geç (GlobalBottomSheet içinde navigation context yok)
+        openBottomSheet(
+            <CreateEventPostBottomSheet
+                onClose={closeBottomSheet}
+                onProductSelect={handleProductSelect}
+                navigation={navigation}
+            />,
+            {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableHandlePanningGesture: true,
+                enableContentPanningGesture: true,
+                enableDynamicSizing: true,
+                animateOnMount: true,
+                paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
+            }
+        );
+    }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation]);
 
     const handleCatalogProductSelect = (product: Product) => {
         const productCategory: Category = {
@@ -190,8 +195,8 @@ const EventCreatePost: React.FC = () => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 <VStack space="lg" p="$4">
                     {/* Select Product Button or Selected Product Card */}
-                    {/* Only show product selection if eventType is TYPE1 */}
-                    {eventType === EventType.TYPE1 && (
+                    {/* Show product selection if eventType is TYPE1 or undefined (default events) */}
+                    {(eventType === EventType.TYPE1 || eventType === undefined) && (
                         <>
                             {selectedProduct ? (
                                 <ProductInfoCard
@@ -312,39 +317,6 @@ const EventCreatePost: React.FC = () => {
                 </VStack>
             </ScrollView>
 
-            {/* Select Product Bottom Sheet */}
-            <BottomSheet
-                ref={bottomSheetRef}
-                index={-1}
-                enablePanDownToClose
-                enableOverDrag={false}
-                enableHandlePanningGesture={true}
-                enableContentPanningGesture={true}
-                animateOnMount={true}
-                backdropComponent={renderBackdrop}
-                backgroundStyle={{
-                    backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-                    borderTopLeftRadius: 30,
-                    borderTopRightRadius: 30,
-                }}
-                handleStyle={{
-                    backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-                    borderTopLeftRadius: 30,
-                    borderTopRightRadius: 30,
-                }}
-                handleIndicatorStyle={{
-                    backgroundColor: isDark ? '#333333' : '#CCCCCC',
-                    width: 40,
-                    height: 4,
-                }}
-            >
-                <BottomSheetView style={{ paddingBottom: Platform.OS === 'ios' ? 34 + 8 : 45 + 8 }}>
-                    <CreateEventPostBottomSheet
-                        onClose={handleCloseBottomSheet}
-                        onProductSelect={handleProductSelect}
-                    />
-                </BottomSheetView>
-            </BottomSheet>
         </Box>
         </SafeAreaView>
     );

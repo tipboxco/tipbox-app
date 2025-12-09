@@ -1,11 +1,11 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Textarea, TextareaInput, Image } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
@@ -44,19 +44,8 @@ export const CreateBenchmarkPostScreen = () => {
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
 
-  // Bottom sheet refs
-  const productSelectBottomSheetRef = useRef<BottomSheet>(null);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-      />
-    ),
-    []
-  );
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   // Initialize first product from route params
   useEffect(() => {
@@ -98,26 +87,132 @@ export const CreateBenchmarkPostScreen = () => {
   };
 
   const handleProductSelect = () => {
-    // Open bottom sheet for product selection
-    if (productSelectBottomSheetRef.current) {
-      productSelectBottomSheetRef.current.snapToIndex(0);
-    }
-  };
-
-  const handleCloseBottomSheet = () => {
-    productSelectBottomSheetRef.current?.close();
-  };
-
-  const handleCatalogPress = () => {
-    setProductSource('Catalog');
-    setShowProductSelector(true);
-    handleCloseBottomSheet();
-  };
-
-  const handleInventoryPress = () => {
-    setProductSource('Inventory');
-    setShowProductSelector(true);
-    handleCloseBottomSheet();
+    openBottomSheet(
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FDFDFB'} px="$4" py="$4">
+        <VStack space="md">
+          <Text
+            fontSize={16}
+            fontWeight="$bold"
+            color={isDark ? '$textDark50' : '#000000'}
+            textAlign="center"
+            mb="$2"
+          >
+            Ürün Seç
+          </Text>
+          <Pressable
+            onPress={() => {
+              setProductSource('Inventory');
+              setShowProductSelector(true);
+              closeBottomSheet();
+            }}
+            bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+            borderWidth={1}
+            borderColor="#E9E9E9"
+            $dark-borderColor="$borderDark600"
+            borderRadius={10}
+            p="$4"
+          >
+            <HStack alignItems="center" space="md">
+              <Box
+                w={40}
+                h={40}
+                bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
+                borderRadius={8}
+                justifyContent="center"
+                alignItems="center"
+              >
+                <Feather
+                  name="package"
+                  size={20}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
+              </Box>
+              <VStack flex={1}>
+                <Text
+                  fontSize={14}
+                  fontWeight="$semibold"
+                  color={isDark ? '$textDark50' : '#000000'}
+                >
+                  Envanterimden Seç
+                </Text>
+                <Text
+                  fontSize={11}
+                  color={isDark ? '$textDark400' : '#787878'}
+                >
+                  Envanterinizden seçin
+                </Text>
+              </VStack>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={isDark ? '#FFFFFF' : '#000000'}
+              />
+            </HStack>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setProductSource('Catalog');
+              setShowProductSelector(true);
+              closeBottomSheet();
+            }}
+            bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
+            borderWidth={1}
+            borderColor="#E9E9E9"
+            $dark-borderColor="$borderDark600"
+            borderRadius={10}
+            p="$4"
+          >
+            <HStack alignItems="center" space="md">
+              <Box
+                w={40}
+                h={40}
+                bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
+                borderRadius={8}
+                justifyContent="center"
+                alignItems="center"
+              >
+                <Feather
+                  name="grid"
+                  size={20}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
+              </Box>
+              <VStack flex={1}>
+                <Text
+                  fontSize={14}
+                  fontWeight="$semibold"
+                  color={isDark ? '$textDark50' : '#000000'}
+                >
+                  Katalogdan Seç
+                </Text>
+                <Text
+                  fontSize={11}
+                  color={isDark ? '$textDark400' : '#787878'}
+                >
+                  Ürün kataloğuna göz atın
+                </Text>
+              </VStack>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color={isDark ? '#FFFFFF' : '#000000'}
+              />
+            </HStack>
+          </Pressable>
+        </VStack>
+      </Box>,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
   };
 
   const handleCatalogProductSelect = (product: Product) => {
@@ -349,141 +444,6 @@ export const CreateBenchmarkPostScreen = () => {
         </VStack>
       </ScrollView>
 
-      {/* Product Selection Bottom Sheet */}
-      <BottomSheet
-        ref={productSelectBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        }}
-      >
-        <BottomSheetView>
-          <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FDFDFB'} px="$4" py="$4">
-            <VStack space="md">
-              <Text
-                fontSize={16}
-                fontWeight="$bold"
-                color={isDark ? '$textDark50' : '#000000'}
-                textAlign="center"
-                mb="$2"
-              >
-                Select Product Source
-              </Text>
-
-              {/* Add From Inventory */}
-              <Pressable
-                onPress={handleInventoryPress}
-                bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                $dark-borderColor="$borderDark600"
-                borderRadius={10}
-                p="$4"
-              >
-                <HStack alignItems="center" space="md">
-                  <Box
-                    w={40}
-                    h={40}
-                    bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
-                    borderRadius={8}
-                    justifyContent="center"
-                    alignItems="center"
-                  >
-                    <Feather
-                      name="package"
-                      size={20}
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </Box>
-                  <VStack flex={1}>
-                    <Text
-                      fontSize={14}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#000000'}
-                    >
-                      Add From Inventory
-                    </Text>
-                    <Text
-                      fontSize={11}
-                      color={isDark ? '$textDark400' : '#787878'}
-                    >
-                      Select from your inventory
-                    </Text>
-                  </VStack>
-                  <Feather
-                    name="chevron-right"
-                    size={20}
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  />
-                </HStack>
-              </Pressable>
-
-              {/* Add From Catalog */}
-              <Pressable
-                onPress={handleCatalogPress}
-                bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                $dark-borderColor="$borderDark600"
-                borderRadius={10}
-                p="$4"
-              >
-                <HStack alignItems="center" space="md">
-                  <Box
-                    w={40}
-                    h={40}
-                    bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
-                    borderRadius={8}
-                    justifyContent="center"
-                    alignItems="center"
-                  >
-                    <Feather
-                      name="grid"
-                      size={20}
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </Box>
-                  <VStack flex={1}>
-                    <Text
-                      fontSize={14}
-                      fontWeight="$semibold"
-                      color={isDark ? '$textDark50' : '#000000'}
-                    >
-                      Add From Catalog
-                    </Text>
-                    <Text
-                      fontSize={11}
-                      color={isDark ? '$textDark400' : '#787878'}
-                    >
-                      Browse product catalog
-                    </Text>
-                  </VStack>
-                  <Feather
-                    name="chevron-right"
-                    size={20}
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  />
-                </HStack>
-              </Pressable>
-            </VStack>
-          </Box>
-        </BottomSheetView>
-      </BottomSheet>
       </Box>
     </SafeAreaView>
   );

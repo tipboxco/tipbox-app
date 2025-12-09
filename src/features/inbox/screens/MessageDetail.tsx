@@ -13,7 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
 import MessageDetailActionButtons from '../components/MessageDetailActionButtons';
@@ -110,31 +110,59 @@ const MessageDetailScreen: React.FC = () => {
   const navigation = useNavigation<MessageDetailScreenNavigationProp>();
   const route = useRoute();
   const flatListRef = useRef<FlatList>(null);
-  const sendTipsBottomSheetRef = useRef<BottomSheet>(null);
-  const oneOnOneSupportBottomSheetRef = useRef<BottomSheet>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>(mockMessageHistory);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
+
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
-  // Handle Send TIPS button press
-  const handleSendTipsPress = useCallback(() => {
-    sendTipsBottomSheetRef.current?.expand();
-  }, []);
+  // Route params'dan gelen verileri al
+  const params = (route.params as MessageDetailScreenParams) || {
+    messageId: '',
+    senderName: 'Unknown',
+    senderTitle: '',
+    senderAvatar: undefined,
+  };
 
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number) => {
     console.log('Send TIPS:', amount);
     // TODO: Implement send tips logic
-    sendTipsBottomSheetRef.current?.close();
-  }, []);
+    closeBottomSheet();
+  }, [closeBottomSheet]);
 
-  // Handle Request 1-on-1 Support button press
-  const handleRequestSupportPress = useCallback(() => {
-    oneOnOneSupportBottomSheetRef.current?.expand();
-  }, []);
+  // Handle Send TIPS button press
+  const handleSendTipsPress = () => {
+    const routeParams = (route.params as MessageDetailScreenParams) || {
+      messageId: '',
+      senderName: 'Unknown',
+      senderTitle: '',
+      senderAvatar: undefined,
+    };
+    
+    openBottomSheet(
+      <SendTipsBottomSheet
+        senderName={routeParams.senderName}
+        senderTitle={routeParams.senderTitle}
+        senderAvatar={routeParams.senderAvatar}
+        onClose={closeBottomSheet}
+        onSend={handleSendTips}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
+      }
+    );
+  };
 
   // Handle Send Support Request
   const handleSendSupport = useCallback((supportType: string, message: string, amount: number) => {
@@ -160,29 +188,39 @@ const MessageDetailScreen: React.FC = () => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
 
-    oneOnOneSupportBottomSheetRef.current?.close();
-  }, []);
+    closeBottomSheet();
+  }, [closeBottomSheet]);
 
-
-  // Backdrop component
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-      />
-    ),
-    []
-  );
-
-  // Route params'dan gelen verileri al
-  const params = (route.params as MessageDetailScreenParams) || {
-    messageId: '1',
-    senderName: 'Mehmet Koç',
-    senderTitle: 'Technology Enthusiast',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+  // Handle Request 1-on-1 Support button press
+  const handleRequestSupportPress = () => {
+    const routeParams = (route.params as MessageDetailScreenParams) || {
+      messageId: '',
+      senderName: 'Unknown',
+      senderTitle: '',
+      senderAvatar: undefined,
+    };
+    
+    openBottomSheet(
+      <OneOnOneSupportBottomSheet
+        expertName={routeParams.senderName}
+        expertTitle={routeParams.senderTitle}
+        expertAvatar={routeParams.senderAvatar}
+        onClose={closeBottomSheet}
+        onSend={handleSendSupport}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
+      }
+    );
   };
+
+
 
   // Yeni mesaj gönderme
   const handleSendMessage = (messageText: string) => {
@@ -482,67 +520,6 @@ const MessageDetailScreen: React.FC = () => {
         onRequestSupportPress={handleRequestSupportPress}
       />
 
-      {/* Send TIPS BottomSheet */}
-      <BottomSheet
-        ref={sendTipsBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        enableDynamicSizing
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        style={{ zIndex: 20 }}
-        containerStyle={{ zIndex: 20, elevation: 20 }}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#8C8C8C' : '#E9E9E9',
-        }}
-      >
-        <BottomSheetView style={{ flex: 1 }}>
-          <SendTipsBottomSheet
-            senderName={params.senderName}
-            senderTitle={params.senderTitle}
-            senderAvatar={params.senderAvatar}
-            onClose={() => sendTipsBottomSheetRef.current?.close()}
-            onSend={handleSendTips}
-          />
-        </BottomSheetView>
-      </BottomSheet>
-
-      {/* One-on-One Support BottomSheet */}
-      <BottomSheet
-        ref={oneOnOneSupportBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        enableDynamicSizing
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        style={{ zIndex: 20 }}
-        containerStyle={{ zIndex: 20, elevation: 20 }}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#8C8C8C' : '#E9E9E9',
-        }}
-      >
-        <BottomSheetView style={{ flex: 1 }}>
-          <OneOnOneSupportBottomSheet
-            expertName={params.senderName}
-            expertTitle={params.senderTitle}
-            expertAvatar={params.senderAvatar}
-            onClose={() => oneOnOneSupportBottomSheetRef.current?.close()}
-            onSend={handleSendSupport}
-          />
-        </BottomSheetView>
-      </BottomSheet>
     </Box>
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { FlatList, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
 import { VStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -36,11 +36,13 @@ const InventoryScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
-  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const navigation = useNavigation<InventoryScreenNavigationProp>();
   const route = useRoute<InventoryScreenRouteProp>();
   const insets = useSafeAreaInsets();
   const { user } = useAppStore();
+  
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   // Route params'tan userId al
   const { userId } = route.params;
@@ -50,9 +52,6 @@ const InventoryScreen = () => {
   
   // Create Button'u sadece kendi envanteri ise göster
   const showCreateButton = currentUserId === userId;
-  
-  // Bottom sheet refs
-  const createPostBottomSheetRef = useRef<BottomSheet>(null);
 
   // API'den envanter ürünlerini getir
   const { data: inventoryItems, isLoading, isError } = useInventory();
@@ -74,32 +73,30 @@ const InventoryScreen = () => {
 
   const handleCreatePress = () => {
     console.log('Create button pressed');
-    if (createPostBottomSheetRef.current) {
-      createPostBottomSheetRef.current.expand();
-      setIsBottomSheetOpen(true);
-    } else {
-      setTimeout(() => {
-        if (createPostBottomSheetRef.current) {
-          createPostBottomSheetRef.current.expand();
-          setIsBottomSheetOpen(true);
-        }
-      }, 100);
-    }
+    openBottomSheet(
+      <CreatePostBottomSheet
+        onClose={closeBottomSheet}
+        onPostTypeSelect={handlePostTypeSelect}
+        onViewChange={handleViewChange}
+        showExperienceOptionsDirectly={true}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8,
+      }
+    );
   };
-
-  const handleSheetChanges = useCallback((index: number) => {
-    if (index === -1) {
-      setIsBottomSheetOpen(false);
-    } else {
-      setIsBottomSheetOpen(true);
-    }
-  }, []);
 
   const handlePostTypeSelect = (type: string, experienceOption?: 'own' | 'tried') => {
     console.log('Post type selected:', type, 'experienceOption:', experienceOption);
     
     // Close bottom sheet first
-    createPostBottomSheetRef.current?.close();
+    closeBottomSheet();
     
     // Navigate to CreateExperiencePostScreen
     if (type === 'experience') {
@@ -118,18 +115,6 @@ const InventoryScreen = () => {
     console.log('BottomSheet view changed:', view);
   };
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-        opacity={0.5}
-      />
-    ),
-    []
-  );
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -234,44 +219,6 @@ const InventoryScreen = () => {
       )}
 
       {/* Create Post Bottom Sheet */}
-      <BottomSheet
-        ref={createPostBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        enableHandlePanningGesture={true}
-        enableContentPanningGesture={true}
-        enableDynamicSizing
-        animateOnMount={true}
-        backdropComponent={renderBackdrop}
-        onChange={handleSheetChanges}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#CCCCCC',
-          width: 40,
-          height: 4,
-        }}
-      >
-        <BottomSheetView>
-          <CreatePostBottomSheet
-            onClose={() => {
-              createPostBottomSheetRef.current?.close();
-            }}
-            onPostTypeSelect={handlePostTypeSelect}
-            onViewChange={handleViewChange}
-            showExperienceOptionsDirectly={true}
-          />
-        </BottomSheetView>
-      </BottomSheet>
       </VStack>
     </SafeAreaView>
   );
