@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef, useEffect } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { Box, VStack, Text } from '@gluestack-ui/themed';
 import { Badge } from '@/src/mock/profile/badges/types';
@@ -45,6 +45,9 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   const currentUserId = useCurrentUserIdOrLogout();
   const targetUserId = userId || currentUserId;
 
+  // Her sayfada 3'er achievement getirilecek
+  const ACHIEVEMENTS_PER_PAGE = 4;
+
   // User Collection Achievements API hook with infinite scroll
   const {
     data,
@@ -54,29 +57,90 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     isLoading,
     isPending,
     error,
-  } = useUserCollectionAchievements(targetUserId, 20);
+  } = useUserCollectionAchievements(targetUserId, ACHIEVEMENTS_PER_PAGE);
 
   // Flatten all pages into a single array - useMemo ile memoize et
   const achievements = useMemo(() => {
     if (!data?.pages) return [];
+    
+    // Her sayfadaki item'ları logla
+    console.log('[AchievementBadgesTab] Pages Data:', {
+      totalPages: data.pages.length,
+      pagesDetail: data.pages.map((page, index) => ({
+        pageIndex: index,
+        itemsCount: page.items?.length || 0,
+        itemIds: page.items?.map((item: any) => item.id) || [],
+      })),
+    });
+    
     const allItems = data.pages.flatMap((page) => page.items ?? []);
+    
+    console.log('[AchievementBadgesTab] All Items Before Filtering:', {
+      totalItems: allItems.length,
+      allItemIds: allItems.map((item: any) => item.id),
+    });
+    
     // ID'ye göre unique item'ları filtrele
     const uniqueItems = allItems.filter((item, index, self) => 
       index === self.findIndex((t) => t.id === item.id)
     );
+    
+    const duplicates = allItems.length - uniqueItems.length;
+    
+    console.log('[AchievementBadgesTab] After Duplicate Filtering:', {
+      totalItemsBefore: allItems.length,
+      uniqueItemsCount: uniqueItems.length,
+      duplicatesRemoved: duplicates,
+      uniqueItemIds: uniqueItems.map((item: any) => item.id),
+    });
+    
     return uniqueItems;
   }, [data]);
 
   // Map achievements to Badge format
   const mappedBadges = useMemo(() => {
-    return achievements.map(mapAchievementToBadge);
+    const badges = achievements.map(mapAchievementToBadge);
+    
+    console.log('[AchievementBadgesTab] Mapped Badges:', {
+      badgesCount: badges.length,
+      badgeIds: badges.map((badge) => badge.id),
+    });
+    
+    return badges;
   }, [achievements]);
 
+  // onEndReached loop'unu önlemek için ref
+  const isLoadingMoreRef = useRef(false);
+  const lastItemsCountRef = useRef(0);
+
+  // mappedBadges.length değiştiğinde lastItemsCountRef'i güncelle
+  useEffect(() => {
+    lastItemsCountRef.current = mappedBadges.length;
+  }, [mappedBadges.length]);
+
   const handleLoadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    // Eğer zaten yükleme yapılıyorsa, tekrar tetikleme
+    if (isLoadingMoreRef.current) {
+      return;
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    // Eğer hasNextPage false ise veya zaten fetch yapılıyorsa, işlem yapma
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    // Flag'i set et
+    isLoadingMoreRef.current = true;
+
+    fetchNextPage()
+      .finally(() => {
+        // Fetch tamamlandığında flag'i reset et
+        // Kısa bir delay ekle ki onEndReached tekrar tetiklenmesin
+        setTimeout(() => {
+          isLoadingMoreRef.current = false;
+        }, 1000);
+      });
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, mappedBadges.length]);
 
   // Footer için activity indicator
   const activityIndicatorColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);
@@ -149,7 +213,7 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
       showsVerticalScrollIndicator={false}
       columnWrapperStyle={{ justifyContent: 'space-between' }}
       onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.1}
+      onEndReachedThreshold={0.5}
       ListFooterComponent={renderFooter}
       removeClippedSubviews={true}
       // Performance optimizations

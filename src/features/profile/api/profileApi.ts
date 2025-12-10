@@ -816,10 +816,16 @@ export const getUserCollectionAchievements = async (
     const responseData = response.data;
     
     // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserReviews] API Response Detay:', {
-      url: `/users/${userId}/reviews?${params.toString()}`,
+    console.log('[getUserCollectionAchievements] API Request:', {
+      url: `/users/${userId}/collections/achievements?${params.toString()}`,
+      requestedLimit: limit,
       cursor,
-      limit,
+    });
+    
+    console.log('[getUserCollectionAchievements] API Response Detay:', {
+      url: `/users/${userId}/collections/achievements?${params.toString()}`,
+      cursor,
+      requestedLimit: limit,
       responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
       rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
       firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
@@ -835,11 +841,13 @@ export const getUserCollectionAchievements = async (
       const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
       
-      console.log('[getUserReviews] Normalized Response:', {
-        itemsCount: items.length,
+      console.log('[getUserCollectionAchievements] Normalized Response:', {
+        requestedLimit: limit,
+        actualItemsCount: items.length,
         hasMore,
         cursor: cursorValue,
         itemIds: items.map((item: any) => item?.id).filter(Boolean),
+        warning: items.length !== limit ? `⚠️ Backend ${limit} yerine ${items.length} item döndürdü!` : '✅ Limit doğru',
       });
       
       return {
@@ -935,10 +943,17 @@ export const getUserCollectionBridges = async (
     const responseData = response.data;
     
     // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserReviews] API Response Detay:', {
-      url: `/users/${userId}/reviews?${params.toString()}`,
+    console.log('[getUserCollectionBridges] API Request:', {
+      url: `/users/${userId}/collections/bridges?${params.toString()}`,
+      requestedLimit: limit,
       cursor,
-      limit,
+      searchQuery,
+    });
+    
+    console.log('[getUserCollectionBridges] API Response Detay:', {
+      url: `/users/${userId}/collections/bridges?${params.toString()}`,
+      cursor,
+      requestedLimit: limit,
       responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
       rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
       firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
@@ -954,11 +969,13 @@ export const getUserCollectionBridges = async (
       const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
       
-      console.log('[getUserReviews] Normalized Response:', {
-        itemsCount: items.length,
+      console.log('[getUserCollectionBridges] Normalized Response:', {
+        requestedLimit: limit,
+        actualItemsCount: items.length,
         hasMore,
         cursor: cursorValue,
         itemIds: items.map((item: any) => item?.id).filter(Boolean),
+        warning: items.length !== limit ? `⚠️ Backend ${limit} yerine ${items.length} item döndürdü!` : '✅ Limit doğru',
       });
       
       return {
