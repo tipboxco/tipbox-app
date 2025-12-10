@@ -634,12 +634,21 @@ export const useUserCollectionBridges = (userId: string | undefined, limit: numb
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
-      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
-      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+      // Eğer hasMore false ise, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore) {
+        // Log'u sadece ilk kez bas (re-render'ları azaltmak için)
         return undefined;
       }
-      // Son item'ın id'sini cursor olarak kullan
-      return lastPage.pagination.cursor;
+      
+      // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini cursor olarak kullan
+      const cursor = lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].id : undefined);
+      
+      // Log'u sadece önemli durumlarda bas (re-render'ları azaltmak için)
+      if (cursor) {
+        console.log('[useUserCollectionBridges] getNextPageParam: Will fetch next page with cursor:', cursor);
+      }
+      
+      return cursor;
     },
     enabled: !!userId,
     staleTime: 0, // Cache yok

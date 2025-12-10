@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { Box, VStack, Text } from '@gluestack-ui/themed';
 import { Badge } from '@/src/mock/profile/badges/types';
@@ -36,10 +36,11 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
   const currentUserId = useCurrentUserIdOrLogout();
   const targetUserId = userId || currentUserId;
 
-  // Her sayfada 4'er bridge badge getirilecek
-  const BRIDGES_PER_PAGE = 4;
+  // Her sayfada 10'ar bridge badge getirilecek
+  const BRIDGES_PER_PAGE = 10;
 
   // User Collection Bridges API hook with infinite scroll
+  const queryResult = useUserCollectionBridges(targetUserId, BRIDGES_PER_PAGE);
   const {
     data,
     fetchNextPage,
@@ -47,102 +48,133 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
     isFetchingNextPage,
     isLoading,
     error,
-  } = useUserCollectionBridges(targetUserId, BRIDGES_PER_PAGE);
+    isFetching,
+    isRefetching,
+    status,
+    fetchStatus,
+  } = queryResult;
+
+  // hasNextPage false olduğunda bir kere denemek için ref
+  const hasAttemptedRef = useRef(false);
+  
+  // hasNextPage değiştiğinde ref'i reset et (sadece true olduğunda)
+  useEffect(() => {
+    if (hasNextPage) {
+      hasAttemptedRef.current = false;
+    }
+  }, [hasNextPage]);
 
   // Flatten all pages into a single array - useMemo ile memoize et
   const bridges = useMemo(() => {
     if (!data?.pages) return [];
     
-    // Her sayfadaki item'ları logla
-    console.log('[BridgeBadgesTab] Pages Data:', {
-      totalPages: data.pages.length,
-      pagesDetail: data.pages.map((page, index) => ({
-        pageIndex: index,
-        itemsCount: page.items?.length || 0,
-        itemIds: page.items?.map((item: any) => item.id) || [],
-      })),
-    });
-    
     const allItems = data.pages.flatMap((page) => page.items ?? []);
     
-    console.log('[BridgeBadgesTab] All Items Before Filtering:', {
-      totalItems: allItems.length,
-      allItemIds: allItems.map((item: any) => item.id),
-    });
+    // ID'ye göre unique item'ları filtrele (backend aynı badge'i farklı tarihlerde kazanılmış olarak döndürebilir)
+    // En son kazanılan badge'i tut (earnedDate'e göre)
+    const uniqueItemsMap = new Map<string, BridgeBadgeApiItem>();
+    for (const item of allItems) {
+      const existing = uniqueItemsMap.get(item.id);
+      if (!existing || new Date(item.earnedDate) > new Date(existing.earnedDate)) {
+        uniqueItemsMap.set(item.id, item);
+      }
+    }
     
-    // ID'ye göre unique item'ları filtrele
-    const uniqueItems = allItems.filter((item, index, self) => 
-      index === self.findIndex((t) => t.id === item.id)
-    );
-    
-    const duplicates = allItems.length - uniqueItems.length;
-    
-    console.log('[BridgeBadgesTab] After Duplicate Filtering:', {
-      totalItemsBefore: allItems.length,
-      uniqueItemsCount: uniqueItems.length,
-      duplicatesRemoved: duplicates,
-      uniqueItemIds: uniqueItems.map((item: any) => item.id),
-    });
-    
-    return uniqueItems;
+    return Array.from(uniqueItemsMap.values());
   }, [data]);
 
   // Map bridges to Badge format
   const mappedBadges = useMemo(() => {
-    const badges = bridges.map(mapBridgeToBadge);
-    
-    console.log('[BridgeBadgesTab] Mapped Badges:', {
-      badgesCount: badges.length,
-      badgeIds: badges.map((badge) => badge.id),
-    });
-    
-    return badges;
+    return bridges.map(mapBridgeToBadge);
   }, [bridges]);
 
-  // onEndReached loop'unu önlemek için ref
-  const isLoadingMoreRef = useRef(false);
-  const lastItemsCountRef = useRef(0);
-
-  // mappedBadges.length değiştiğinde lastItemsCountRef'i güncelle
+  // Console log: API'den gelen veriyi göster - sadece data gerçekten değiştiğinde
+  const prevDataKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    lastItemsCountRef.current = mappedBadges.length;
-  }, [mappedBadges.length]);
+    if (data?.pages) {
+      // Sadece pages sayısı ve her page'in item sayısı değiştiğinde log bas
+      const dataKey = `${data.pages.length}-${data.pages.map(p => p.items?.length || 0).join(',')}`;
+      
+      if (prevDataKeyRef.current !== dataKey) {
+        prevDataKeyRef.current = dataKey;
+        
+        console.log('[BridgeBadgesTab] ========================================');
+        console.log('[BridgeBadgesTab] API Response Data:');
+        console.log('[BridgeBadgesTab] Total Pages:', data.pages.length);
+        
+        data.pages.forEach((page, pageIndex) => {
+          console.log(`[BridgeBadgesTab] Page ${pageIndex + 1}:`, {
+            itemsCount: page.items?.length || 0,
+            pagination: page.pagination,
+            itemIds: page.items?.map((item) => item.id) || [],
+          });
+        });
+        
+        console.log('[BridgeBadgesTab] All Bridges (after flattening & deduplication):', {
+          totalCount: bridges.length,
+          bridgeIds: bridges.map((item) => item.id),
+          note: 'Backend 10 item döndürdü ama duplicate ID\'ler var, unique filter sonrası 6 item kaldı',
+        });
+        
+        console.log('[BridgeBadgesTab] Infinite Scroll State:', {
+          hasNextPage,
+          isFetchingNextPage,
+          totalPages: data.pages.length,
+          lastPageHasMore: data.pages[data.pages.length - 1]?.pagination?.hasMore,
+          lastPageCursor: data.pages[data.pages.length - 1]?.pagination?.cursor,
+        });
+        
+        console.log('[BridgeBadgesTab] ========================================');
+      }
+    }
+  }, [data, bridges]);
+
+  // Loading state için state - scroll yaptığında loading gösterilsin
+  const [isManuallyLoading, setIsManuallyLoading] = useState(false);
 
   const handleLoadMore = useCallback(() => {
-    // Eğer zaten yükleme yapılıyorsa, tekrar tetikleme
-    if (isLoadingMoreRef.current) {
+    // Eğer hasNextPage false ise ve daha önce denemediysek, bir kere dene
+    if (!hasNextPage && hasAttemptedRef.current) {
       return;
     }
-
-    // Eğer hasNextPage false ise veya zaten fetch yapılıyorsa, işlem yapma
-    if (!hasNextPage || isFetchingNextPage) {
+    
+    // Eğer zaten fetch yapılıyorsa veya manuel loading yapılıyorsa, skip
+    if (isFetchingNextPage || isManuallyLoading) {
       return;
     }
-
-    // Flag'i set et
-    isLoadingMoreRef.current = true;
-
+    
+    // hasNextPage false ise, bir kere denemek için flag set et
+    if (!hasNextPage) {
+      hasAttemptedRef.current = true;
+    }
+    
+    setIsManuallyLoading(true);
+    
     fetchNextPage()
-      .finally(() => {
-        // Fetch tamamlandığında flag'i reset et
-        // Kısa bir delay ekle ki onEndReached tekrar tetiklenmesin
-        setTimeout(() => {
-          isLoadingMoreRef.current = false;
-        }, 1000);
+      .then(() => {
+        setIsManuallyLoading(false);
+      })
+      .catch((error) => {
+        console.error('[BridgeBadgesTab] ❌ Fetch error:', error);
+        setIsManuallyLoading(false);
       });
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage, mappedBadges.length]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, isManuallyLoading]);
 
-  // Footer için activity indicator
+  // Footer için activity indicator - scroll yaptığında veya fetch yapılırken göster
   const activityIndicatorColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);
+  const showLoading = isFetchingNextPage || isManuallyLoading;
 
   const renderFooter = useCallback(() => {
-    if (!isFetchingNextPage) return null;
+    if (!showLoading) return null;
     return (
       <Box py={20} alignItems="center">
         <ActivityIndicator size="small" color={activityIndicatorColor} />
       </Box>
     );
-  }, [isFetchingNextPage, activityIndicatorColor]);
+  }, [showLoading, activityIndicatorColor]);
+  
+  // FlatList için keyExtractor - memoize et
+  const keyExtractor = useCallback((item: Badge) => item.id, []);
 
   const renderItem = useCallback(({ item }: { item: Badge }) => {
     return (
@@ -154,6 +186,18 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
       </Box>
     );
   }, [onBadgePress]);
+
+  // contentContainerStyle - memoize et (early return'lerden ÖNCE olmalı!)
+  const contentContainerStyle = useMemo(() => ({
+    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingBottom: bottomInset + 8,
+  }), [bottomInset]);
+  
+  // columnWrapperStyle - memoize et (early return'lerden ÖNCE olmalı!)
+  const columnWrapperStyle = useMemo(() => ({
+    justifyContent: 'space-between' as const,
+  }), []);
 
   // Loading state
   if (isLoading && !data) {
@@ -193,24 +237,19 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
     <FlatList
       data={mappedBadges}
       renderItem={renderItem}
-      keyExtractor={(item) => item.id}
+      keyExtractor={keyExtractor}
       numColumns={2}
-      contentContainerStyle={{
-        paddingHorizontal: 8,
-        paddingTop: 8,
-        paddingBottom: bottomInset,
-      }}
+      contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={false}
-      columnWrapperStyle={{ justifyContent: 'space-between' }}
+      columnWrapperStyle={columnWrapperStyle}
       onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.5}
+      onEndReachedThreshold={0.1}
       ListFooterComponent={renderFooter}
-      removeClippedSubviews={true}
+      removeClippedSubviews={false}
       // Performance optimizations
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
+      initialNumToRender={6}
+      maxToRenderPerBatch={6}
       windowSize={5}
-      updateCellsBatchingPeriod={50}
     />
   );
 };

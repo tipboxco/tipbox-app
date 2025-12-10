@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +37,31 @@ export const TabNavigator = () => {
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
 
+  // Debug: Android'de insets.bottom değerini logla (sadece ilk render'da)
+  useMemo(() => {
+    if (Platform.OS === 'android') {
+      console.log('[TabNavigator] Android insets.bottom:', insets.bottom);
+    }
+  }, []);
+
+  // tabBarStyle'ı useMemo ile optimize et - sürekli re-render'ı önle
+  const tabBarStyle = useMemo(() => {
+    const androidBottomPadding = insets.bottom;
+    
+    return {
+      backgroundColor: '#FAFAFA',
+      borderTopColor: '#E9E9E9',
+      height: Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding,
+      paddingTop: 4,
+      paddingBottom: Platform.OS === 'ios' ? insets.bottom : androidBottomPadding,
+      position: 'absolute' as const,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1000,
+    };
+  }, [insets.bottom]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -70,18 +95,7 @@ export const TabNavigator = () => {
         tabBarActiveTintColor: '#758600',
         tabBarInactiveTintColor: '#000000',
         tabBarShowLabel: false,
-        tabBarStyle: {
-          backgroundColor: '#FAFAFA',
-          borderTopColor: '#E9E9E9',
-          height: Platform.OS === 'ios' ? 45 + insets.bottom : 45 + Math.max(insets.bottom, 34),
-          paddingTop: 4,
-          paddingBottom: Platform.OS === 'ios' ? insets.bottom : Math.max(insets.bottom, 34),
-          position: 'absolute',
-          bottom: Platform.OS === 'android' ? insets.bottom : 0,
-          left: 0,
-          right: 0,
-          zIndex: 1000,
-        },
+        tabBarStyle,
       })}
     >
       <Tab.Screen

@@ -26,6 +26,8 @@ import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAn
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { UpdatePost } from '@/src/mock/feed/types';
+import type { UpdateCardData } from '@/src/types/UpdateCard';
+import { ProductInfoType } from '@/src/types/common';
 import { CardType } from '@/src/types/common';
 
 type SurveyScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'SurveyScreen'>;
@@ -167,6 +169,13 @@ const SurveyScreen: React.FC = () => {
     }
     
     const postData = post.data as import('@/src/features/profile/types').ProfilePost;
+    
+    // Data validation: postData ve user kontrolü
+    if (!postData || !postData.user) {
+      console.warn('[mapBrandPostToPostCardData] Missing postData or user:', { post, postData });
+      throw new Error('Missing required data: postData or user');
+    }
+    
     const avatarSource = toImageSource(postData.user.avatar);
     
     return {
@@ -206,6 +215,13 @@ const SurveyScreen: React.FC = () => {
     }
     
     const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
+    
+    // Data validation: postData kontrolü
+    if (!postData || !postData.user) {
+      console.warn('[mapExperienceToCardData] Missing postData or user:', { item, postData });
+      throw new Error('Missing required data: postData or user');
+    }
+    
     const avatarSource = toImageSource(postData.user.avatar)!;
     const productImage = postData.contextData?.image
       ? toImageSource(postData.contextData.image)
@@ -264,6 +280,13 @@ const SurveyScreen: React.FC = () => {
     }
     
     const postData = item.data as import('@/src/types/BenchmarkCard').BenchmarkApiItem;
+    
+    // Data validation: postData kontrolü
+    if (!postData || !postData.user) {
+      console.warn('[mapBenchmarkToCardData] Missing postData or user:', { item, postData });
+      throw new Error('Missing required data: postData or user');
+    }
+    
     const avatarSource = toImageSource(postData.user.avatar)!;
 
     const products: BenchmarkProduct[] = (postData.products || []).map((p) => ({
@@ -297,19 +320,26 @@ const SurveyScreen: React.FC = () => {
     }
     
     const postData = item.data as import('@/src/types/TipsAndTricksCard').TipsApiItem;
-    const avatarSource = toImageSource(postData.user.avatar)!;
+    
+    // Data validation: postData ve contextData kontrolü
+    if (!postData || !postData.contextData) {
+      console.warn('[mapTipsToCardData] Missing postData or contextData:', { item, postData });
+      throw new Error('Missing required data: postData or contextData');
+    }
+    
+    const avatarSource = toImageSource(postData.user?.avatar)!;
 
     const product: TipsProduct = {
-      id: postData.contextData.id,
-      name: postData.contextData.name,
-      subName: postData.contextData.subName,
+      id: postData.contextData.id || '',
+      name: postData.contextData.name || '',
+      subName: postData.contextData.subName || '',
       image: toImageSource(postData.contextData.image)!,
     };
 
     const category: TipsCategory = {
-      id: postData.contextData.id,
-      name: postData.contextData.name,
-      subCategory: postData.contextData.subName,
+      id: postData.contextData.id || '',
+      name: postData.contextData.name || '',
+      subCategory: postData.contextData.subName || '',
       image: toImageSource(postData.contextData.image)!,
       product,
     };
@@ -340,19 +370,26 @@ const SurveyScreen: React.FC = () => {
     }
     
     const postData = item.data as import('@/src/types/QuestionCard').QuestionApiItem;
-    const avatarSource = toImageSource(postData.user.avatar)!;
+    
+    // Data validation: postData ve contextData kontrolü
+    if (!postData || !postData.contextData) {
+      console.warn('[mapQuestionToCardData] Missing postData or contextData:', { item, postData });
+      throw new Error('Missing required data: postData or contextData');
+    }
+    
+    const avatarSource = toImageSource(postData.user?.avatar)!;
 
     const product: QuestionCardProduct = {
-      id: postData.contextData.id,
-      name: postData.contextData.name,
-      subName: postData.contextData.subName,
+      id: postData.contextData.id || '',
+      name: postData.contextData.name || '',
+      subName: postData.contextData.subName || '',
       image: toImageSource(postData.contextData.image)!,
     };
 
     const category: QuestionCardCategory = {
-      id: postData.contextData.id,
-      name: postData.contextData.name,
-      subCategory: postData.contextData.subName,
+      id: postData.contextData.id || '',
+      name: postData.contextData.name || '',
+      subCategory: postData.contextData.subName || '',
       image: toImageSource(postData.contextData.image)!,
       product,
     };
@@ -376,14 +413,21 @@ const SurveyScreen: React.FC = () => {
     };
   }, []);
 
-  const mapUpdateToCardData = useCallback((item: BrandFeedPost): UpdatePost => {
+  const mapUpdateToCardData = useCallback((item: BrandFeedPost): UpdateCardData => {
     // Type guard: update type kontrolü
     if (item.type !== 'update') {
       throw new Error(`Expected update type, got ${item.type}`);
     }
     
     const postData = item.data as import('@/src/features/catalog/types').BrandUpdateApiItem;
-    const avatarSource = toImageSource(postData.user.avatar);
+    
+    // Data validation: postData kontrolü
+    if (!postData) {
+      console.warn('[mapUpdateToCardData] Missing postData:', { item });
+      throw new Error('Missing required data: postData');
+    }
+    
+    const avatarSource = toImageSource(postData.user?.avatar);
 
     // Update type'ında content array olabilir, string'e çevir
     let contentString = '';
@@ -398,6 +442,14 @@ const SurveyScreen: React.FC = () => {
 
     // Product bilgisini al (product veya contextData'dan)
     const productData = postData.product || postData.contextData;
+    
+    // contextType'ı ProductInfoType'a çevir (BrandUpdateApiItem'da contextType yoksa default 'product')
+    let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
+    if (postData.contextType === 'product_group') {
+      productInfoType = ProductInfoType.PRODUCT_GROUP;
+    } else if (postData.contextType === 'sub_category') {
+      productInfoType = ProductInfoType.SUB_CATEGORY;
+    }
 
     // RelatedPost için content array'ini map et
     const relatedPostContent = Array.isArray(postData.content) && postData.content.length > 0
@@ -413,55 +465,83 @@ const SurveyScreen: React.FC = () => {
             },
             text: typeof c === 'string' ? c : (c.content || ''),
             rating: Array(5)
-              .fill(false)
-              .map((_, index) => index < stars),
+              .fill(0)
+              .map((_, index) => index < stars ? 1 : 0), // number[] formatına çevir
           };
         })
-      : undefined;
+      : [];
+
+    // relatedPost için id gerekli (postData.id kullanılabilir)
+    const relatedPostId = postData.id || '';
+
+    // Product data için isOwned kontrolü (BrandUpdateApiItem'da isOwned yok)
+    const productIsOwned = (productData as any)?.isOwned || false;
 
     return {
       id: postData.id,
-      type: 'update',
       user: {
-        id: postData.user.id,
-        name: postData.user.name,
-        title: postData.user.title,
+        id: postData.user?.id || '',
+        name: postData.user?.name || '',
+        title: postData.user?.title || '',
         avatar: avatarSource || require('@/assets/avatar/ozan.png'),
-        action: 'Updated their post',
       },
+      contextType: productInfoType,
       product: productData ? {
-        id: productData.id,
-        name: productData.name,
-        subName: productData.subName,
+        id: productData.id || '',
+        name: productData.name || '',
+        subName: productData.subName || '',
         image: toImageSource(productData.image) || require('@/assets/product/product_01.png'),
-        hasDiscount: false, // BrandUpdateApiItem'da hasDiscount yok
-      } : undefined,
+        isOwned: productIsOwned,
+      } : {
+        id: '',
+        name: '',
+        subName: '',
+        image: require('@/assets/product/product_01.png'),
+        isOwned: false,
+      },
       content: contentString,
       images: postData.images
         ?.map((img: string) => toImageSource(img))
         .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) || [],
-      stats: postData.stats,
-      createdAt: postData.createdAt,
-      updateInfo: {
-        title: 'Post Updated',
-        description: 'Updated post information',
+      stats: postData.stats || {
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        bookmarks: 0,
       },
-      relatedPost: relatedPostContent ? {
-        content: relatedPostContent.map(item => ({
-          tag: item.tag,
-          text: item.text,
-          rating: item.rating.map((isStar: boolean) => isStar ? 1 : 0), // boolean[] -> number[]
-        })),
+      createdAt: postData.createdAt || '',
+      relatedPost: {
+        id: relatedPostId,
+        product: productData ? {
+          id: productData.id || '',
+          name: productData.name || '',
+          subName: productData.subName || '',
+          image: toImageSource(productData.image) || require('@/assets/product/product_01.png'),
+          isOwned: productIsOwned,
+        } : {
+          id: '',
+          name: '',
+          subName: '',
+          image: require('@/assets/product/product_01.png'),
+          isOwned: false,
+        },
+        content: relatedPostContent,
         tags: postData.tags || [],
         images: postData.images
           ?.map((img: string) => toImageSource(img))
           .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) || [],
-      } : undefined,
+      },
     };
   }, []);
 
   // Render feed item based on type
   const renderTrendItem = useCallback((item: BrandFeedPost) => {
+    // Data validation: item ve item.data kontrolü
+    if (!item || !item.data) {
+      console.warn('[renderTrendItem] Missing item or item.data:', { item });
+      return null;
+    }
+    
     switch (item.type) {
       case CardType.EXPERIENCE:
       case 'experience':

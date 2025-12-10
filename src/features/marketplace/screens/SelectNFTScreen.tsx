@@ -62,7 +62,7 @@ const SelectNFTScreen = () => {
         <Header
           title="Select NFT"
           showBackButton={true}
-          onBackPress={() => {}}
+          onBackPress={() => navigation.goBack()}
         />
 
         {/* NFT Grid */}

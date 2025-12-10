@@ -229,10 +229,6 @@ const FeedTabComponent = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
-  // Render sayısını takip et ve değişen değerleri log'la
-  const renderCountRef = useRef(0);
-  const prevValuesRef = useRef<any>({});
-
   // User Posts API hook with infinite scroll
   const {
     data,
@@ -244,64 +240,16 @@ const FeedTabComponent = () => {
     error,
   } = useUserPosts(userId, 5);
 
-  useEffect(() => {
-    renderCountRef.current += 1;
-    const currentValues = {
-      userId,
-      colorMode,
-      dataPagesCount: data?.pages?.length,
-      hasNextPage,
-      isFetchingNextPage,
-      isLoading,
-      isPending,
-      error: error?.message,
-    };
-    
-    const changedValues: string[] = [];
-    Object.keys(currentValues).forEach((key) => {
-      const typedKey = key as keyof typeof currentValues;
-      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
-        changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
-      }
-    });
-    
-    console.log(`[FeedTab] Render #${renderCountRef.current}`, {
-      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
-      current: currentValues,
-    });
-    
-    prevValuesRef.current = currentValues;
-  });
-
   // Flatten all pages into a single array - useMemo ile memoize et
   // Duplicate ID'leri filtrele (backend cursor desteklemiyorsa aynı item'lar tekrar gelebilir)
   // Mapping sonuçlarını da cache'le - böylece React.memo düzgün çalışır
   const posts = useMemo(() => {
     const allItems = data?.pages.flatMap((page) => page.items) ?? [];
     
-    // Detaylı log: Duplicate filter öncesi
-    console.log('[FeedTab] Duplicate Filter Öncesi:', {
-      pagesCount: data?.pages?.length || 0,
-      allItemsCount: allItems.length,
-      allItemIds: allItems.map((item) => item.id),
-      pagesItemIds: data?.pages?.map((page, idx) => ({
-        pageIndex: idx,
-        itemIds: page.items?.map((item) => item.id) || [],
-      })) || [],
-    });
-    
     // ID'ye göre unique item'ları filtrele
     const uniqueItems = allItems.filter((item, index, self) => 
       index === self.findIndex((t) => t.id === item.id)
     );
-    
-    // Detaylı log: Duplicate filter sonrası
-    console.log('[FeedTab] Duplicate Filter Sonrası:', {
-      allItemsCount: allItems.length,
-      uniqueItemsCount: uniqueItems.length,
-      duplicatesRemoved: allItems.length - uniqueItems.length,
-      uniqueItemIds: uniqueItems.map((item) => item.id),
-    });
     
     return uniqueItems;
   }, [data]);
@@ -350,13 +298,6 @@ const FeedTabComponent = () => {
           };
       }
     }).filter((item): item is NonNullable<typeof item> => item !== null);
-    
-    // Detaylı log: Mapping sonrası
-    console.log('[FeedTab] Mapping Sonrası:', {
-      postsCount: posts.length,
-      mappedCount: mapped.length,
-      mappedIds: mapped.map((item) => item.id),
-    });
     
     return mapped;
   }, [posts]);

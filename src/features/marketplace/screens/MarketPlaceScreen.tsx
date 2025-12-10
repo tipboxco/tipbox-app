@@ -92,7 +92,7 @@ const MarketPlaceScreen = () => {
         <Header
           title="Marketplace"
           showBackButton={true}
-          onBackPress={() => {}}
+          onBackPress={() => navigation.goBack()}
         />
 
         {/* Search Filter */}

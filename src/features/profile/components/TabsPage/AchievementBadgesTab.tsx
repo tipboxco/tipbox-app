@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { Box, VStack, Text } from '@gluestack-ui/themed';
 import { Badge } from '@/src/mock/profile/badges/types';
@@ -45,8 +45,8 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   const currentUserId = useCurrentUserIdOrLogout();
   const targetUserId = userId || currentUserId;
 
-  // Her sayfada 3'er achievement getirilecek
-  const ACHIEVEMENTS_PER_PAGE = 4;
+  // Her sayfada 10'ar achievement getirilecek
+  const ACHIEVEMENTS_PER_PAGE = 10;
 
   // User Collection Achievements API hook with infinite scroll
   const {
@@ -55,7 +55,6 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-    isPending,
     error,
   } = useUserCollectionAchievements(targetUserId, ACHIEVEMENTS_PER_PAGE);
 
@@ -63,84 +62,102 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   const achievements = useMemo(() => {
     if (!data?.pages) return [];
     
-    // Her sayfadaki item'ları logla
-    console.log('[AchievementBadgesTab] Pages Data:', {
-      totalPages: data.pages.length,
-      pagesDetail: data.pages.map((page, index) => ({
-        pageIndex: index,
-        itemsCount: page.items?.length || 0,
-        itemIds: page.items?.map((item: any) => item.id) || [],
-      })),
-    });
-    
     const allItems = data.pages.flatMap((page) => page.items ?? []);
     
-    console.log('[AchievementBadgesTab] All Items Before Filtering:', {
-      totalItems: allItems.length,
-      allItemIds: allItems.map((item: any) => item.id),
-    });
+    // ID'ye göre unique item'ları filtrele (cursor pagination'da aynı item tekrar gelebilir)
+    const uniqueItemsMap = new Map<string, AchievementApiItem>();
+    for (const item of allItems) {
+      if (!uniqueItemsMap.has(item.id)) {
+        uniqueItemsMap.set(item.id, item);
+      }
+    }
     
-    // ID'ye göre unique item'ları filtrele
-    const uniqueItems = allItems.filter((item, index, self) => 
-      index === self.findIndex((t) => t.id === item.id)
-    );
-    
-    const duplicates = allItems.length - uniqueItems.length;
-    
-    console.log('[AchievementBadgesTab] After Duplicate Filtering:', {
-      totalItemsBefore: allItems.length,
-      uniqueItemsCount: uniqueItems.length,
-      duplicatesRemoved: duplicates,
-      uniqueItemIds: uniqueItems.map((item: any) => item.id),
-    });
-    
-    return uniqueItems;
+    return Array.from(uniqueItemsMap.values());
   }, [data]);
 
   // Map achievements to Badge format
   const mappedBadges = useMemo(() => {
-    const badges = achievements.map(mapAchievementToBadge);
-    
-    console.log('[AchievementBadgesTab] Mapped Badges:', {
-      badgesCount: badges.length,
-      badgeIds: badges.map((badge) => badge.id),
-    });
-    
-    return badges;
+    return achievements.map(mapAchievementToBadge);
   }, [achievements]);
 
-  // onEndReached loop'unu önlemek için ref
-  const isLoadingMoreRef = useRef(false);
-  const lastItemsCountRef = useRef(0);
-
-  // mappedBadges.length değiştiğinde lastItemsCountRef'i güncelle
+  // Console log: API'den gelen veriyi göster
   useEffect(() => {
-    lastItemsCountRef.current = mappedBadges.length;
-  }, [mappedBadges.length]);
+    if (data?.pages) {
+      console.log('[AchievementBadgesTab] ========================================');
+      console.log('[AchievementBadgesTab] API Response Data:');
+      console.log('[AchievementBadgesTab] Total Pages:', data.pages.length);
+      
+      data.pages.forEach((page, pageIndex) => {
+        console.log(`[AchievementBadgesTab] Page ${pageIndex + 1}:`, {
+          itemsCount: page.items?.length || 0,
+          pagination: page.pagination,
+          items: page.items?.map((item) => ({
+            id: item.id,
+            title: item.title,
+            image: item.image,
+            description: item.description,
+            current: item.current,
+            total: item.total,
+            status: item.status,
+          })) || [],
+        });
+      });
+      
+      console.log('[AchievementBadgesTab] All Achievements (after flattening):', {
+        totalCount: achievements.length,
+        achievementIds: achievements.map((item) => item.id),
+        achievements: achievements.map((item) => ({
+          id: item.id,
+          title: item.title,
+          image: item.image,
+          description: item.description,
+          current: item.current,
+          total: item.total,
+          status: item.status,
+        })),
+      });
+      
+      console.log('[AchievementBadgesTab] Mapped Badges:', {
+        totalCount: mappedBadges.length,
+        badgeIds: mappedBadges.map((badge) => badge.id),
+        badges: mappedBadges.map((badge) => ({
+          id: badge.id,
+          title: badge.title,
+          rarity: badge.rarity,
+          category: badge.category,
+        })),
+      });
+      
+      console.log('[AchievementBadgesTab] Infinite Scroll State:', {
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        error: error ? error.message : null,
+      });
+      
+      console.log('[AchievementBadgesTab] ========================================');
+    }
+  }, [data, achievements, mappedBadges, hasNextPage, isFetchingNextPage, isLoading, error]);
 
   const handleLoadMore = useCallback(() => {
-    // Eğer zaten yükleme yapılıyorsa, tekrar tetikleme
-    if (isLoadingMoreRef.current) {
-      return;
-    }
-
-    // Eğer hasNextPage false ise veya zaten fetch yapılıyorsa, işlem yapma
-    if (!hasNextPage || isFetchingNextPage) {
-      return;
-    }
-
-    // Flag'i set et
-    isLoadingMoreRef.current = true;
-
-    fetchNextPage()
-      .finally(() => {
-        // Fetch tamamlandığında flag'i reset et
-        // Kısa bir delay ekle ki onEndReached tekrar tetiklenmesin
-        setTimeout(() => {
-          isLoadingMoreRef.current = false;
-        }, 1000);
+    console.log('[AchievementBadgesTab] 🔄 Scroll Event Triggered:', {
+      hasNextPage,
+      isFetchingNextPage,
+      currentAchievementsCount: achievements.length,
+      currentBadgesCount: mappedBadges.length,
+    });
+    
+    if (hasNextPage && !isFetchingNextPage) {
+      console.log('[AchievementBadgesTab] ✅ Fetching next page...');
+      fetchNextPage();
+    } else {
+      console.log('[AchievementBadgesTab] ⏸️ Skipping fetch:', {
+        reason: !hasNextPage ? 'No more pages' : 'Already fetching',
+        hasNextPage,
+        isFetchingNextPage,
       });
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage, mappedBadges.length]);
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, achievements.length, mappedBadges.length]);
 
   // Footer için activity indicator
   const activityIndicatorColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);
@@ -165,7 +182,7 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     );
   }, [onBadgePress]);
 
-  // Loading state - isLoading kullan çünkü infinite query'de isPending sadece ilk fetch için true olur
+  // Loading state
   if (isLoading && !data) {
     return (
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
@@ -208,19 +225,14 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
       contentContainerStyle={{
         paddingHorizontal: 8,
         paddingTop: 8,
-        paddingBottom: bottomInset,
+        paddingBottom: bottomInset + 8,
       }}
       showsVerticalScrollIndicator={false}
       columnWrapperStyle={{ justifyContent: 'space-between' }}
       onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.5}
+      onEndReachedThreshold={0.1}
       ListFooterComponent={renderFooter}
-      removeClippedSubviews={true}
-      // Performance optimizations
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
-      windowSize={5}
-      updateCellsBatchingPeriod={50}
+      removeClippedSubviews={false}
     />
   );
 };

@@ -1005,8 +1005,37 @@ export const getUserCollectionBridges = async (
         };
       }
       
-      // Zaten doğru formatta
-      return responseData as UserCollectionBridgesApiResponse;
+      // Zaten doğru formatta - backend'den gelen pagination'ı kullan
+      const items = responseData.items || [];
+      const pagination = responseData.pagination || {};
+      
+      // Eğer items boşsa ve hasMore true ise, bu bir sorun demektir - hasMore'u false yap
+      // Backend'in cursor pagination'ı düzgün çalışmıyor olabilir
+      const correctedHasMore = items.length > 0 ? pagination.hasMore : false;
+      
+      // Cursor yoksa son item'ın id'sini cursor olarak kullan
+      const finalCursor = pagination.cursor || (items.length > 0 ? items[items.length - 1].id : undefined);
+      
+      console.log('[getUserCollectionBridges] Response (already formatted):', {
+        itemsCount: items.length,
+        backendHasMore: pagination.hasMore,
+        correctedHasMore,
+        backendCursor: pagination.cursor,
+        fallbackCursor: items.length > 0 ? items[items.length - 1].id : undefined,
+        finalCursor,
+        itemIds: items.map((item: any) => item?.id).filter(Boolean) || [],
+        warning: items.length === 0 && pagination.hasMore ? '⚠️ Backend hasMore=true ama items boş! hasMore false yapıldı.' : null,
+      });
+      
+      // Cursor'ı güncelle ve hasMore'u düzelt
+      return {
+        items,
+        pagination: {
+          ...pagination,
+          hasMore: correctedHasMore,
+          cursor: finalCursor,
+        },
+      } as UserCollectionBridgesApiResponse;
     }
     
     // Beklenmeyen format
