@@ -14,7 +14,7 @@ interface ExpertButtonProps {
 export const ExpertButton: React.FC<ExpertButtonProps> = ({ onPress, extraPadding = 16 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding });
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding });
 
   return (
     <Pressable

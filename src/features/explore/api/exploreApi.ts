@@ -24,7 +24,33 @@ export const getHottest = async (
   const response = await apiService.getClient().get<FeedApiResponse>(
     `/explore/hottest?${params.toString()}`
   );
-  return response.data;
+  
+  const responseData = response.data;
+  
+  // Eğer items boşsa ve hasMore true ise, bu bir sorun demektir - hasMore'u false yap
+  // Backend'in cursor pagination'ı düzgün çalışmıyor olabilir
+  if (responseData.items.length === 0 && responseData.pagination.hasMore) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  // Eğer items.length < limit ise, daha fazla item yok demektir
+  if (responseData.items.length > 0 && responseData.items.length < limit) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  return responseData;
 };
 
 /**
@@ -42,52 +68,148 @@ export const getMarketplaceBanners = async (): Promise<MarketplaceBanner[]> => {
 
 /**
  * Get Explore Events endpoint function
- * Explore sayfasındaki "What's New" sekmesindeki yeni event'leri getirir
+ * Explore sayfasındaki "What's New" sekmesindeki yeni event'leri getirir (pagination ile)
  *
- * @param limit - Gösterilecek event sayısı (default: 10, max: 10)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına event sayısı (default: 10, max: 10)
  * @returns EventsApiResponse - Event listesi ve pagination bilgisi
  */
-export const getExploreEvents = async (limit: number = 10): Promise<EventsApiResponse> => {
+export const getExploreEvents = async (
+  cursor?: string,
+  limit: number = 10
+): Promise<EventsApiResponse> => {
   const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
   params.append('limit', Math.min(limit, 10).toString()); // Max 10
 
   const response = await apiService.getClient().get<EventsApiResponse>(
     `/explore/events?${params.toString()}`
   );
-  return response.data;
+  
+  const responseData = response.data;
+  
+  // Eğer items boşsa ve hasMore true ise, bu bir sorun demektir - hasMore'u false yap
+  if (responseData.items.length === 0 && responseData.pagination.hasMore) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  // Eğer items.length < limit ise, daha fazla item yok demektir
+  if (responseData.items.length > 0 && responseData.items.length < limit) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  return responseData;
 };
 
 /**
  * Get New Brands endpoint function
- * Explore sayfasındaki "What's New" sekmesindeki yeni brand'leri getirir
+ * Explore sayfasındaki "What's New" sekmesindeki yeni brand'leri getirir (pagination ile)
  *
- * @param limit - Gösterilecek brand sayısı (default: 10)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına brand sayısı (default: 10)
  * @returns NewBrandsApiResponse - Brand listesi ve pagination bilgisi
  */
-export const getNewBrands = async (limit: number = 10): Promise<NewBrandsApiResponse> => {
+export const getNewBrands = async (
+  cursor?: string,
+  limit: number = 10
+): Promise<NewBrandsApiResponse> => {
   const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
   params.append('limit', limit.toString());
 
   const response = await apiService.getClient().get<NewBrandsApiResponse>(
     `/explore/brands/new?${params.toString()}`
   );
-  return response.data;
+  
+  const responseData = response.data;
+  
+  // Eğer items boşsa ve hasMore true ise, bu bir sorun demektir - hasMore'u false yap
+  if (responseData.items.length === 0 && responseData.pagination.hasMore) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  // Eğer items.length < limit ise, daha fazla item yok demektir
+  if (responseData.items.length > 0 && responseData.items.length < limit) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  return responseData;
 };
 
 /**
  * Get New Products endpoint function
- * Explore sayfasındaki "What's New" sekmesindeki yeni product'leri getirir
+ * Explore sayfasındaki "What's New" sekmesindeki yeni product'leri getirir (pagination ile)
  *
- * @param limit - Gösterilecek product sayısı (default: 10)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına product sayısı (default: 10)
  * @returns NewProductsApiResponse - Product listesi ve pagination bilgisi
  */
-export const getNewProducts = async (limit: number = 10): Promise<NewProductsApiResponse> => {
+export const getNewProducts = async (
+  cursor?: string,
+  limit: number = 10
+): Promise<NewProductsApiResponse> => {
   const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
   params.append('limit', limit.toString());
 
   const response = await apiService.getClient().get<NewProductsApiResponse>(
     `/explore/products/new?${params.toString()}`
   );
-  return response.data;
+  
+  const responseData = response.data;
+  
+  // Eğer items boşsa ve hasMore true ise, bu bir sorun demektir - hasMore'u false yap
+  if (responseData.items.length === 0 && responseData.pagination.hasMore) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  // Eğer items.length < limit ise, daha fazla item yok demektir
+  if (responseData.items.length > 0 && responseData.items.length < limit) {
+    return {
+      ...responseData,
+      pagination: {
+        ...responseData.pagination,
+        hasMore: false,
+      },
+    };
+  }
+  
+  return responseData;
 };
 
