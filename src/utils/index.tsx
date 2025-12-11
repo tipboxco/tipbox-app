@@ -59,7 +59,7 @@ export const useBottomOffset = (options: { includeTabBar?: boolean; extraPadding
   const tabBarHeight = includeTabBar ? useBottomTabBarHeight() : 0;
   const safeAreaBottom = useSafeAreaValues('bottom');
   
-  return tabBarHeight + safeAreaBottom + extraPadding;
+  return safeAreaBottom + extraPadding;
 };
 
 /**
