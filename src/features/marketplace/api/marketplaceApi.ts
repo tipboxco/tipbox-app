@@ -46,13 +46,22 @@ export const getMarketplaceListings = async (
 
 /**
  * Get My NFTs endpoint function
- * Kullanıcıya ait NFT'leri getirir
+ * Kullanıcıya ait NFT'leri getirir (pagination ile)
  *
+ * @param offset - Başlangıç offset'i (default: 0)
+ * @param limit - Getirilecek NFT sayısı (default: 12)
  * @returns UserNFTsApiResponse - Kullanıcıya ait NFT listesi (array)
  */
-export const getMyNFTs = async (): Promise<UserNFTsApiResponse> => {
+export const getMyNFTs = async (
+  offset: number = 0,
+  limit: number = 12
+): Promise<UserNFTsApiResponse> => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('offset', offset.toString());
+  queryParams.append('limit', limit.toString());
+
   const response = await apiService.getClient().get<UserNFTsApiResponse>(
-    '/marketplace/my-nfts'
+    `/marketplace/my-nfts?${queryParams.toString()}`
   );
   return response.data;
 };

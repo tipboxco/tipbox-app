@@ -30,38 +30,7 @@ interface BannerCarouselProps {
 }
 
 const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDark }) => {
-  // Render sayısını takip et
-  const renderCountRef = React.useRef(0);
-  const prevValuesRef = React.useRef<any>({});
-
   const carouselRef = useRef<ICarouselInstance>(null);
-  // progress shared value kaldırıldı - pagination kullanılmadığı için gereksiz ve Reanimated uyarısına neden oluyor
-  
-  // banners array referansını stabilize et
-  const bannersLength = banners?.length ?? 0;
-  
-  React.useEffect(() => {
-    renderCountRef.current += 1;
-    const currentValues = {
-      bannersCount: bannersLength,
-      isDark,
-    };
-    
-    const changedValues: string[] = [];
-    Object.keys(currentValues).forEach((key) => {
-      const typedKey = key as keyof typeof currentValues;
-      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
-        changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
-      }
-    });
-    
-    console.log(`[BannerCarousel] Render #${renderCountRef.current}`, {
-      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
-      current: currentValues,
-    });
-    
-    prevValuesRef.current = currentValues;
-  }, [bannersLength, isDark]); // bannersLength kullanıldı
   const carouselPadding = 16; // Sağdan soldan padding
   const itemSpacing = 12; // Görseller arası boşluk
   const carouselWidth = Dimensions.get('window').width;
@@ -284,40 +253,11 @@ const ExploreScreen: React.FC = () => {
   const [bannerHeight, setBannerHeight] = useState(0);
   const [tabsHeight, setTabsHeight] = useState(0);
 
-  // Render sayısını takip et
-  const renderCountRef = useRef(0);
-  const prevValuesRef = useRef<any>({});
-
   // Marketplace Banners API hook
   const {
     data: banners,
     isLoading: isLoadingBanners,
   } = useMarketplaceBanners();
-
-  React.useEffect(() => {
-    renderCountRef.current += 1;
-    const currentValues = {
-      colorMode,
-      activeCategory,
-      bannersCount: banners?.length,
-      isLoadingBanners,
-    };
-    
-    const changedValues: string[] = [];
-    Object.keys(currentValues).forEach((key) => {
-      const typedKey = key as keyof typeof currentValues;
-      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
-        changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
-      }
-    });
-    
-    console.log(`[ExploreScreen] Render #${renderCountRef.current}`, {
-      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
-      current: currentValues,
-    });
-    
-    prevValuesRef.current = currentValues;
-  }, [colorMode, activeCategory, banners?.length, isLoadingBanners]); // Dependency array eklendi
 
   const handleSearchPress = () => {
     setIsSearchVisible(true);

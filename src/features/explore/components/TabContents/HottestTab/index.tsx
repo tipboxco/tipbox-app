@@ -267,10 +267,6 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
   const isDark = colorMode === 'dark';
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
   
-  // Render sayısını takip et
-  const renderCountRef = useRef(0);
-  const prevValuesRef = useRef<any>({});
-  
   // onEndReached loop'unu önlemek için ref
   const isLoadingMoreRef = useRef(false);
 
@@ -299,47 +295,8 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
       }
     }
     
-    const uniqueItems = Array.from(uniqueItemsMap.values());
-    
-    // Duplicate kontrolü
-    if (allItems.length !== uniqueItems.length) {
-      console.log('[HottestTab] Duplicate items detected:', {
-        total: allItems.length,
-        unique: uniqueItems.length,
-        duplicates: allItems.length - uniqueItems.length,
-      });
-    }
-    
-    return uniqueItems;
+    return Array.from(uniqueItemsMap.values());
   }, [data?.pages]);
-
-  React.useEffect(() => {
-    renderCountRef.current += 1;
-    const currentValues = {
-      colorMode,
-      dataPagesCount: data?.pages?.length,
-      hottestItemsCount: hottestItems.length,
-      hasNextPage,
-      isFetchingNextPage,
-      isLoading,
-      error: error?.message,
-    };
-    
-    const changedValues: string[] = [];
-    Object.keys(currentValues).forEach((key) => {
-      const typedKey = key as keyof typeof currentValues;
-      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
-        changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
-      }
-    });
-    
-    console.log(`[HottestTab] Render #${renderCountRef.current}`, {
-      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
-      current: currentValues,
-    });
-    
-    prevValuesRef.current = currentValues;
-  }, [colorMode, data?.pages?.length, hottestItems.length, hasNextPage, isFetchingNextPage, isLoading, error?.message]); // Dependency array eklendi
 
   // Item sayısı değiştiğinde ref'i güncelle
   React.useEffect(() => {

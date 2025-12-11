@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useBottomOffset } from '@/src/utils';
 
 interface FloatingActionButtonProps {
   onPress?: () => void;
@@ -10,11 +11,12 @@ interface FloatingActionButtonProps {
 export const FloatingActionButton = ({ onPress }: FloatingActionButtonProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 20 });
 
   return (
     <Pressable
       position="absolute"
-      bottom={20}
+      bottom={bottomOffset}
       right={20}
       width={60}
       height={60}

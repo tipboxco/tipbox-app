@@ -29,10 +29,6 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  // Render sayısını takip et
-  const renderCountRef = useRef(0);
-  const prevValuesRef = useRef<any>({});
-
   // Explore Events API hook with infinite scroll
   const {
     data: eventsData,
@@ -118,18 +114,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       }
     }
     
-    const uniqueItems = Array.from(uniqueItemsMap.values());
-    
-    // Duplicate kontrolü
-    if (allItems.length !== uniqueItems.length) {
-      console.log('[NewsTab] Events duplicate items detected:', {
-        total: allItems.length,
-        unique: uniqueItems.length,
-        duplicates: allItems.length - uniqueItems.length,
-      });
-    }
-    
-    return uniqueItems.map(mapEventToCardData);
+    return Array.from(uniqueItemsMap.values()).map(mapEventToCardData);
   }, [eventsData?.pages]);
 
   // Map API brand data to BrandCard format
@@ -172,18 +157,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       }
     }
     
-    const uniqueItems = Array.from(uniqueItemsMap.values());
-    
-    // Duplicate kontrolü
-    if (allItems.length !== uniqueItems.length) {
-      console.log('[NewsTab] Brands duplicate items detected:', {
-        total: allItems.length,
-        unique: uniqueItems.length,
-        duplicates: allItems.length - uniqueItems.length,
-      });
-    }
-    
-    return uniqueItems.map(mapBrandToCardData);
+    return Array.from(uniqueItemsMap.values()).map(mapBrandToCardData);
   }, [brandsData?.pages]);
 
   // Flatten all pages into a single array and remove duplicates by ID for products
@@ -201,73 +175,8 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       }
     }
     
-    const uniqueItems = Array.from(uniqueItemsMap.values());
-    
-    // Duplicate kontrolü
-    if (allItems.length !== uniqueItems.length) {
-      console.log('[NewsTab] Products duplicate items detected:', {
-        total: allItems.length,
-        unique: uniqueItems.length,
-        duplicates: allItems.length - uniqueItems.length,
-      });
-    }
-    
-    return uniqueItems.map((item, index) => mapProductToCardData(item, index));
+    return Array.from(uniqueItemsMap.values()).map((item, index) => mapProductToCardData(item, index));
   }, [productsData?.pages]);
-
-  React.useEffect(() => {
-    renderCountRef.current += 1;
-    const currentValues = {
-      colorMode,
-      eventsPagesCount: eventsData?.pages?.length,
-      eventsCount: events.length,
-      brandsPagesCount: brandsData?.pages?.length,
-      brandsCount: brands.length,
-      productsPagesCount: productsData?.pages?.length,
-      productsCount: products.length,
-      hasNextEventsPage,
-      hasNextBrandsPage,
-      hasNextProductsPage,
-      isFetchingNextEventsPage,
-      isFetchingNextBrandsPage,
-      isFetchingNextProductsPage,
-      isLoadingEvents,
-      isLoadingBrands,
-      isLoadingProducts,
-    };
-    
-    const changedValues: string[] = [];
-    Object.keys(currentValues).forEach((key) => {
-      const typedKey = key as keyof typeof currentValues;
-      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
-        changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
-      }
-    });
-    
-    console.log(`[NewsTab] Render #${renderCountRef.current}`, {
-      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
-      current: currentValues,
-    });
-    
-    prevValuesRef.current = currentValues;
-  }, [
-    colorMode,
-    eventsData?.pages?.length,
-    events.length,
-    brandsData?.pages?.length,
-    brands.length,
-    productsData?.pages?.length,
-    products.length,
-    hasNextEventsPage,
-    hasNextBrandsPage,
-    hasNextProductsPage,
-    isFetchingNextEventsPage,
-    isFetchingNextBrandsPage,
-    isFetchingNextProductsPage,
-    isLoadingEvents,
-    isLoadingBrands,
-    isLoadingProducts,
-  ]); // Dependency array eklendi
 
   // Item sayısı değiştiğinde ref'leri güncelle
   React.useEffect(() => {

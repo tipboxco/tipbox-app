@@ -6,6 +6,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { UserNFT } from '@/src/mock/marketplace/NFTList/types';
+import { useBottomOffset } from '@/src/utils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -18,6 +19,7 @@ const NFTDetailScreen = () => {
 
     const [selectedPrice, setSelectedPrice] = useState(1500);
     const [footerHeight, setFooterHeight] = useState(100);
+    const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
     const handleSellNFT = () => {
         // NFT satış işlemi
@@ -36,7 +38,7 @@ const NFTDetailScreen = () => {
             <ScrollView 
                 style={{ flex: 1 }} 
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: footerHeight }}
+                contentContainerStyle={{ paddingBottom: footerHeight + bottomOffset }}
             >
                 <VStack space="md" p="$4">
                     {/* NFT Image */}
@@ -268,7 +270,7 @@ const NFTDetailScreen = () => {
             <Box
                 onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
                 position="absolute"
-                bottom={0}
+                bottom={bottomOffset}
                 left={0}
                 right={0}
                 bg={isDark ? '$backgroundDark900' : '$backgroundLight50'}
