@@ -1,20 +1,25 @@
 import React from 'react';
-import { Platform } from 'react-native';
 import { Box, Pressable, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useBottomOffset } from '@/src/utils';
 
 interface ExpertButtonProps {
   onPress: () => void;
+  /**
+   * Tab bar'ın üstünde ekstra boşluk (default: 16)
+   */
+  extraPadding?: number;
 }
 
-export const ExpertButton: React.FC<ExpertButtonProps> = ({ onPress }) => {
+export const ExpertButton: React.FC<ExpertButtonProps> = ({ onPress, extraPadding = 16 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding });
 
   return (
     <Pressable
       position="absolute"
-      bottom={Platform.OS === 'ios' ? 40 : 60} // Tab bar'ın üstünde
+      bottom={bottomOffset}
       right={16}
       width={68}
       height={68}

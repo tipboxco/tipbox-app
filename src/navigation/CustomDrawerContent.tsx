@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/src/features/profile/api/profileApi';
 import { profileKeys } from '@/src/features/profile/api/hooks';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, useBottomOffset } from '@/src/utils';
 
 interface MenuItem {
   id: string;
@@ -48,6 +48,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const user = useAppStore(state => state.user);
   const updateUser = useAppStore(state => state.updateUser);
   const insets = useSafeAreaInsets();
+  const bottomPadding = useBottomOffset({ extraPadding: 16 });
   
   // Store'daki user değişikliğini takip et (sonsuz döngüyü önlemek için)
   const previousUserRef = useRef<{ id?: string; fullName?: string; avatar?: string } | null>(null);
@@ -229,7 +230,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
         contentContainerStyle={{ 
           flexGrow: 1,
           paddingTop: 0,
-          paddingBottom: 0,
+          paddingBottom: bottomPadding,
           paddingLeft: 0,
           paddingRight: 0,
           margin: 0,

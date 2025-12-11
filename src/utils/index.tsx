@@ -37,6 +37,39 @@ export const useBottomTabBarHeightValue = () => {
   return useBottomTabBarHeight();
 };
 
+/**
+ * Bottom offset değerini hesaplar.
+ * Safe area bottom inset + opsiyonel tab bar yüksekliği + opsiyonel padding değerini döndürür.
+ * Floating button'lar, side menu ve benzeri component'ler için kullanılabilir.
+ * 
+ * @param options - Konfigürasyon seçenekleri
+ * @param options.includeTabBar - Tab bar yüksekliğini dahil et (default: false)
+ * @param options.extraPadding - Ekstra boşluk (default: 16)
+ * @returns Bottom offset değeri (pixel)
+ * 
+ * @example
+ * // Floating button için (tab bar dahil):
+ * const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding: 16 });
+ * 
+ * // Side menu için (sadece safe area):
+ * const bottomPadding = useBottomOffset({ extraPadding: 16 });
+ */
+export const useBottomOffset = (options: { includeTabBar?: boolean; extraPadding?: number } = {}): number => {
+  const { includeTabBar = false, extraPadding = 16 } = options;
+  const tabBarHeight = includeTabBar ? useBottomTabBarHeight() : 0;
+  const safeAreaBottom = useSafeAreaValues('bottom');
+  
+  return tabBarHeight + safeAreaBottom + extraPadding;
+};
+
+/**
+ * @deprecated useBottomOffset kullanın
+ * Floating action button'lar için bottom offset değerini hesaplar.
+ */
+export const useFloatingButtonBottomOffset = (extraPadding: number = 16): number => {
+  return useBottomOffset({ includeTabBar: true, extraPadding });
+};
+
 export const toImageSource = (
   value: string | ImageSourcePropType | null | undefined,
 ): ImageSourcePropType | undefined => {

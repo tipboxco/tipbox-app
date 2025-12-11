@@ -2,7 +2,9 @@
 if (typeof global.Promise === 'undefined') {
   global.Promise = require('promise');
 }
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 import Navigation from '@/src/navigation';
 import { GluestackProvider } from '@/src/components/ui';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,6 +19,19 @@ import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProv
 export default function App() {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+
+  // Android navigation bar'ı theme'e göre ayarla
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      if (isDark) {
+        NavigationBar.setBackgroundColorAsync('#000000');
+        NavigationBar.setButtonStyleAsync('light'); // ikonlar beyaz
+      } else {
+        NavigationBar.setBackgroundColorAsync('#FAFAFA');
+        NavigationBar.setButtonStyleAsync('dark'); // ikonlar siyah
+      }
+    }
+  }, [isDark]);
 
   return (
     <QueryProvider>
