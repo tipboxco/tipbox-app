@@ -23,7 +23,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFeed } from '../api/hooks';
 import { CardType, ProductInfoType } from '@/src/types/common';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, useBottomOffset } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import type { FeedApiItem } from '../api/feedApi';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
@@ -50,6 +50,9 @@ export const FeedScreen = () => {
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  
+  // Bottom padding for FlatList content
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -587,7 +590,7 @@ export const FeedScreen = () => {
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={false}
             />

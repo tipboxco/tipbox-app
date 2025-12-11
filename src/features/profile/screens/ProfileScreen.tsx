@@ -9,7 +9,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { ProfileStackParamList } from '../navigation';
-import { toImageSource, useSafeAreaValues } from '@/src/utils';
+import { toImageSource, useSafeAreaValues, useBottomOffset } from '@/src/utils';
 import { CardType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
@@ -25,6 +25,7 @@ import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import { LadderTab } from '../components/TabContents';
 import { Feather } from '@expo/vector-icons';
 
 const TABS = [
@@ -257,7 +258,8 @@ type MappedPost =
 // List item type
 type ListItem = 
   | { type: 'TAB_BAR' }
-  | { type: 'POST'; id: string; data: MappedPost };
+  | { type: 'POST'; id: string; data: MappedPost }
+  | { type: 'LADDER_CONTENT' };
 
 // TabsBar Component
 interface TabsBarProps {
@@ -279,7 +281,7 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
       >
-        <HStack space="md" py={12}>
+        <HStack space="xs" py={12}>
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
             return (
@@ -292,7 +294,7 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
                 position="relative"
                 minWidth={75}
                 flexShrink={0}
-                mr={16}
+                mr={8}
               >
                 <Text
                   textAlign="center"
@@ -331,6 +333,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<any>();
   const safeAreaTop = useSafeAreaValues('top');
+  
+  // Bottom padding for FlatList content
+  const bottomPadding = useBottomOffset({ includeTabBar: true, extraPadding: 16 });
   
   // Route params'tan userId al, yoksa store'daki user.id'yi kullan
   const routeUserId = route.params?.userId;
@@ -432,13 +437,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     return mapped;
   }, [activeTabQuery.data]);
   
-  // FlatList data: [TAB_BAR, ...posts]
+  // FlatList data: [TAB_BAR, ...posts] veya [TAB_BAR, LADDER_CONTENT]
   const listData = useMemo<ListItem[]>(() => {
+    if (activeTab === 'ladders') {
+      return [
+        { type: 'TAB_BAR' },
+        { type: 'LADDER_CONTENT' },
+      ];
+    }
     return [
       { type: 'TAB_BAR' },
       ...mappedPosts.map((post) => ({ type: 'POST' as const, id: post.id, data: post })),
     ];
-  }, [mappedPosts]);
+  }, [mappedPosts, activeTab]);
   
   // Render item
   const renderItem = useCallback(({ item }: { item: ListItem }) => {
@@ -454,6 +465,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           isDark={isDark}
         />
       );
+    }
+    
+    // Render LadderTab content
+    if (item.type === 'LADDER_CONTENT') {
+      return <LadderTab />;
     }
     
     // Render post card
@@ -488,6 +504,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const keyExtractor = useCallback((item: ListItem, index: number) => {
     if (item.type === 'TAB_BAR') {
       return 'tab-bar';
+    }
+    if (item.type === 'LADDER_CONTENT') {
+      return 'ladder-content';
     }
     return item.id || `post-${index}`;
   }, []);
@@ -988,7 +1007,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               </Box>
             ) : null
           }
-          contentContainerStyle={{ paddingBottom: 16 }}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={true}
           initialNumToRender={5}
