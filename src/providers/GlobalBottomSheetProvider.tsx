@@ -23,13 +23,10 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
    * Bottom sheet aç
    */
   const openBottomSheet = useCallback((newContent: ReactNode, newOptions?: BottomSheetOptions) => {
-    console.log('[GlobalBottomSheetProvider] Opening bottom sheet with content:', !!newContent);
-    console.log('[GlobalBottomSheetProvider] Setting content, options, and isOpen...');
     // Tüm state'leri aynı anda set et
     setContent(newContent);
     setOptions(newOptions || null);
     setIsOpen(true);
-    console.log('[GlobalBottomSheetProvider] All states set');
   }, []);
 
   /**

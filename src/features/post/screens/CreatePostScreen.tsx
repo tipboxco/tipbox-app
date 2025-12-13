@@ -1,30 +1,114 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, Pressable, Textarea, TextareaInput } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Box, ScrollView, VStack } from '@gluestack-ui/themed';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { FormProvider } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { usePostForm } from '../hooks/usePostForm';
+import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
+import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
+import { useCreateFreePost } from '../api/hooks';
+import { mapProductInfoTypeToContextType } from '../types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-// Mock data for product info
-const productInfo = {
-  image: require('@/assets/product/product_01.png'),
-  title: 'Computers & Tablet\nTechnology Subcategories',
-};
+import type { PostStackParamList } from '../navigation';
+import type { PostFormData } from '../schemas/postSchema';
 
 type CreatePostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type CreatePostScreenRouteProp = RouteProp<PostStackParamList, 'CreatePostScreen'>;
 
 export const CreatePostScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreatePostScreenNavigationProp>();
-  const [postText, setPostText] = useState('');
+  const route = useRoute<CreatePostScreenRouteProp>();
+  const methods = usePostForm();
+  const { handleSubmit, formState, watch, trigger, getValues } = methods;
+  const createPostMutation = useCreateFreePost();
+  
+  // Route params'dan context bilgilerini al
+  const { contextType, contextId, productInfo } = route.params || {};
+  
+  // Form değerlerini izle - TÜM form değerlerini loglamak için
+  const postText = watch('postText');
+  const selectedImages = watch('selectedImages');
+  const allFormValues = watch(); // Tüm form değerlerini al
+  const prevValuesRef = useRef<{ postText?: string; selectedImages?: string[]; isValid?: boolean; errors?: any }>({});
+
+  // Form state değişikliklerini logla - TÜM form değerlerini içerecek şekilde
+  useEffect(() => {
+    const currentValues = {
+      postText: postText || '',
+      selectedImages: selectedImages || [],
+      isValid: formState.isValid,
+      errors: formState.errors,
+    };
+
+    const changedValues: string[] = [];
+    Object.keys(currentValues).forEach((key) => {
+      const typedKey = key as keyof typeof currentValues;
+      if (prevValuesRef.current[typedKey] !== currentValues[typedKey]) {
+        if (key === 'errors' || key === 'selectedImages') {
+          changedValues.push(`${key}: ${JSON.stringify(prevValuesRef.current[typedKey])} → ${JSON.stringify(currentValues[typedKey])}`);
+        } else {
+          changedValues.push(`${key}: ${prevValuesRef.current[typedKey]} → ${currentValues[typedKey]}`);
+        }
+      }
+    });
+
+    if (changedValues.length > 0) {
+      console.log('[CreatePostScreen] 🔄 Form State Changed:', {
+        changed: changedValues,
+        current: {
+          postText: currentValues.postText,
+          postTextLength: currentValues.postText.length,
+          selectedImages: currentValues.selectedImages,
+          isValid: currentValues.isValid,
+          errors: currentValues.errors,
+        },
+      });
+      
+      // TÜM form değerlerini logla (React Hook Form'dan)
+      console.log('[CreatePostScreen] 📋 All Form Values (from React Hook Form):', {
+        ...allFormValues,
+        postText: allFormValues.postText || '',
+        selectedImages: allFormValues.selectedImages || [],
+      });
+    }
+
+    prevValuesRef.current = currentValues;
+  }, [postText, selectedImages, formState.isValid, formState.errors, allFormValues]);
+
+  // Component mount olduğunda log
+  useEffect(() => {
+    console.log('[CreatePostScreen] 🚀 Component Mounted');
+    console.log('[CreatePostScreen] 📋 Route Params:', {
+      contextType,
+      contextId,
+      productInfo: productInfo ? {
+        title: productInfo.title,
+        subName: productInfo.subName,
+        hasImage: !!productInfo.image,
+      } : null,
+    });
+    console.log('[CreatePostScreen] 📋 Initial Form State:', {
+      postText: postText || '',
+      selectedImages: selectedImages || [],
+      isValid: formState.isValid,
+      errors: formState.errors,
+    });
+    console.log('[CreatePostScreen] 📋 All Initial Form Values:', getValues());
+  }, []);
 
   const handleBackPress = () => {
+    console.log('[CreatePostScreen] Back button pressed');
+    console.log('[CreatePostScreen] Current form values before navigation:', {
+      postText: postText || '',
+      isValid: formState.isValid,
+    });
     // Navigate to Feed screen
     navigation.navigate('Main', {
       screen: 'Feed',
@@ -35,154 +119,148 @@ export const CreatePostScreen = () => {
   };
 
   const handleImagePicker = () => {
-    // Handle image picker action
-    console.log('Open image picker');
+    console.log('[CreatePostScreen] Image picker button pressed');
+    // TODO: Implement image picker
   };
 
-  const handleShare = () => {
-    console.log('Share button pressed');
+  const onSubmit = async (data: PostFormData) => {
+    console.log('[CreatePostScreen] ========== FORM SUBMITTED ==========');
+    console.log('[CreatePostScreen] 📤 Submitted Form Data (from React Hook Form):', {
+      postText: data.postText,
+      postTextLength: data.postText.length,
+      selectedImages: data.selectedImages || [],
+      isValid: formState.isValid,
+    });
+    
+    // Context type ve ID'yi route params'dan al
+    if (!contextType || !contextId) {
+      console.error('[CreatePostScreen] ❌ Missing contextType or contextId in route params');
+      return;
+    }
+    
+    const apiContextType = mapProductInfoTypeToContextType(contextType);
+    
+    console.log('[CreatePostScreen] 📤 API Request Data:', {
+      contextType: apiContextType,
+      contextId,
+      description: data.postText,
+      images: data.selectedImages || [],
+    });
+    
+    try {
+      const response = await createPostMutation.mutateAsync({
+        contextType: apiContextType,
+        contextId,
+        description: data.postText,
+        images: data.selectedImages,
+      });
+      
+      console.log('[CreatePostScreen] ✅ API Response:', response);
+      console.log('[CreatePostScreen] ====================================');
+      
+      // Başarılı olursa geri dön
+      navigation.navigate('Main', {
+        screen: 'Feed',
+        params: {
+          screen: 'FeedScreen',
+        },
+      });
+    } catch (error: any) {
+      console.error('[CreatePostScreen] ❌ API Error:', error);
+      console.log('[CreatePostScreen] ====================================');
+      // TODO: Error handling UI göster
+    }
   };
 
-  const characterCount = postText.length;
-  const maxCharacters = 500;
+  const handleSharePress = () => {
+    console.log('[CreatePostScreen] 🔘 Share button pressed');
+    console.log('[CreatePostScreen] 📋 Form validation before submit:', {
+      isValid: formState.isValid,
+      errors: formState.errors,
+      postText: postText || '',
+      postTextLength: postText?.length || 0,
+      selectedImages: selectedImages || [],
+    });
+    
+    // TÜM form değerlerini logla
+    const allValues = getValues();
+    console.log('[CreatePostScreen] 📋 All Form Values (getValues()):', allValues);
+    
+    // Manual validation trigger
+    trigger().then((isValid) => {
+      console.log('[CreatePostScreen] ✅ Manual validation result:', isValid);
+      if (isValid) {
+        handleSubmit(onSubmit)();
+      } else {
+        console.log('[CreatePostScreen] ❌ Form validation failed, errors:', formState.errors);
+      }
+    });
+  };
 
-  // Check if share button should be enabled (content entered)
-  const isShareEnabled = postText.trim().length > 0;
+  // Check if share button should be enabled (form is valid)
+  const isShareEnabled = formState.isValid;
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
-      {/* Header */}
-      <Header
-        title="Write a Post"
-        leftAction="cancel"
-        onLeftActionPress={handleBackPress}
-        rightButton={{
-          text: 'Share',
-          backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
-          borderWidth: 1,
-          borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-          textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-          fontSize: 12,
-          borderRadius: 25,
-          paddingX: 24,
-          paddingY: 8,
-          onPress: handleShare,
-        }}
-      />
+      <FormProvider {...methods}>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+          {/* Header */}
+          <Header
+            title="Write a Post"
+            leftAction="cancel"
+            onLeftActionPress={handleBackPress}
+            rightButton={{
+              text: 'Share',
+              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              borderWidth: 1,
+              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              fontSize: 12,
+              borderRadius: 25,
+              paddingX: 24,
+              paddingY: 8,
+              onPress: handleSharePress,
+            }}
+          />
 
-      {/* Content */}
-      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-        <VStack space="md" pb={100}>
-          {/* Product Info Card */}
-          <Box px="$4" py="$2">
-            <ProductInfoCard
-              image={productInfo.image}
-              title={productInfo.title}
-              size="big"
-              type={ProductInfoType.SUB_CATEGORY}
-            />
-          </Box>
+          {/* Content */}
+          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+            <VStack space="md" pb={100}>
+              {/* Product Info Card */}
+              {productInfo && (
+                <Box px="$4" py="$2">
+                  <ProductInfoCard
+                    image={productInfo.image}
+                    title={productInfo.title}
+                    subName={productInfo.subName}
+                    size="big"
+                    type={contextType || ProductInfoType.SUB_CATEGORY}
+                  />
+                </Box>
+              )}
 
-          {/* Post Description Section */}
-          <VStack px={16} space="xs">
-            {/* Section Title */}
-            <Text
-              color={isDark ? '$textDark400' : '#B9B9B9'}
-              fontSize={10}
-              fontWeight="$bold"
-            >
-              Post Description
-            </Text>
-
-            {/* Text Input Area */}
-            <Box
-              bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              borderRadius={5}
-              overflow="hidden"
-              minHeight={174}
-              position="relative"
-            >
-              {/* Text Input */}
-              <Textarea
-                bg="transparent"
-                borderWidth={0}
-                flex={1}
-                minHeight={174}
-              >
-                <TextareaInput
+              {/* Post Description Section */}
+              <VStack px={16} space="xs">
+                <ControlledTextarea
+                  name="postText"
                   placeholder="Type your Post here..."
-                  placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  color={isDark ? '$textDark50' : '#000000'}
-                  fontSize={10}
-                  lineHeight={12}
-                  value={postText}
-                  onChangeText={setPostText}
-                  maxLength={maxCharacters}
-                  style={{
-                    textAlignVertical: 'top',
-                    paddingTop: 10,
-                    paddingBottom: 32,
-                    paddingLeft: 8,
-                    paddingRight: 8,
-                  }}
+                  maxLength={500}
+                  label="Post Description"
                 />
-              </Textarea>
+              </VStack>
 
-              {/* Character Count - Bottom Right */}
-              <Box
-                position="absolute"
-                bottom={8}
-                right={8}
-              >
-                <Text
-                  color={isDark ? '$textDark400' : '#A3A3A3'}
-                  fontSize={9}
-                  fontWeight="$medium"
-                >
-                  {characterCount}/{maxCharacters}
-                </Text>
-              </Box>
-            </Box>
-          </VStack>
-
-          {/* Images Section */}
-          <VStack px={16} space="xs">
-            {/* Section Title */}
-            <Text
-              color={isDark ? '$textDark400' : '#A3A3A3'}
-              fontSize={10}
-              fontWeight="$bold"
-            >
-              Images
-            </Text>
-
-            {/* Image Picker Area */}
-            <Pressable onPress={handleImagePicker}>
-              <Box
-                width={64}
-                height={64}
-                bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
-                borderWidth={1}
-                borderColor="#9E9E9E"
-                borderStyle="dashed"
-                borderRadius={5}
-                justifyContent="center"
-                alignItems="center"
-              >
-                <Feather
-                  name="plus"
-                  size={24}
-                  color={isDark ? '#C1BEBF' : '#C1BEBF'}
+              {/* Images Section */}
+              <VStack px={16} space="xs">
+                <ControlledImagePicker
+                  name="selectedImages"
+                  label="Images"
+                  maxImages={10}
                 />
-              </Box>
-            </Pressable>
-          </VStack>
-        </VStack>
-      </ScrollView>
-      </Box>
+              </VStack>
+            </VStack>
+          </ScrollView>
+        </Box>
+      </FormProvider>
     </SafeAreaView>
   );
 };

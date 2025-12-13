@@ -15,6 +15,7 @@ import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
+import { ProductInfoType } from '@/src/types/common';
 
 type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -36,6 +37,9 @@ export const CatalogScreen = () => {
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [currentView, setCurrentView] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>('categories');
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | undefined>(undefined);
+  const [selectedProductGroupId, setSelectedProductGroupId] = useState<string | undefined>(undefined);
+  const [breadcrumbItems, setBreadcrumbItems] = useState<any[]>([]);
   
   // Scroll animasyonu için Animated.Value
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -189,9 +193,15 @@ export const CatalogScreen = () => {
   const handleProductCatalogStateChange = useCallback((data: {
     selectedProduct: any | null;
     currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedSubCategoryId?: string;
+    selectedProductGroupId?: string;
+    breadcrumbItems: any[];
   }) => {
     setSelectedProduct(data.selectedProduct);
     setCurrentView(data.currentView);
+    setSelectedSubCategoryId(data.selectedSubCategoryId);
+    setSelectedProductGroupId(data.selectedProductGroupId);
+    setBreadcrumbItems(data.breadcrumbItems);
   }, []);
 
   // Scroll handler - Brand ismini geçtikten sonra Header opacity'sini arttır

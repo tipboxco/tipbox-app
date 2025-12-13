@@ -36,7 +36,7 @@ export const PostsScreen = () => {
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
   
-  const { stage, name, productInfo, selectedProduct } = route.params;
+  const { stage, name, productInfo, selectedProduct, contextType, contextId } = route.params;
   const selectedProductPayload = selectedProduct
     ? {
         id: selectedProduct.id,
@@ -79,7 +79,33 @@ export const PostsScreen = () => {
     
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
-      navigation.navigate('CreatePostScreen');
+      // Stage'e göre contextType belirle
+      let determinedContextType: ProductInfoType | undefined = contextType;
+      let determinedContextId: string | undefined = contextId;
+      
+      // Eğer contextType yoksa stage'den belirle
+      if (!determinedContextType) {
+        switch (stage) {
+          case 'Product':
+            determinedContextType = ProductInfoType.PRODUCT;
+            determinedContextId = selectedProduct?.id;
+            break;
+          case 'ProductGroup':
+            determinedContextType = ProductInfoType.PRODUCT_GROUP;
+            // ProductGroup için contextId yok, bu durumda hata verebilir
+            break;
+          case 'SubCategories':
+            determinedContextType = ProductInfoType.SUB_CATEGORY;
+            // SubCategory için contextId yok, bu durumda hata verebilir
+            break;
+        }
+      }
+      
+      navigation.navigate('CreatePostScreen', {
+        contextType: determinedContextType,
+        contextId: determinedContextId,
+        productInfo,
+      });
     } else if (type === 'tips') {
       navigation.navigate('CreateTipsAndTrickPostScreen');
     } else if (type === 'question') {

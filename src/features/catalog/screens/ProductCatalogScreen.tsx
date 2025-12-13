@@ -13,6 +13,7 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts } from '../api/hooks';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
 import { toImageSource } from '@/src/utils';
+import { ProductInfoType } from '@/src/types/common';
 
 type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -23,6 +24,9 @@ interface ProductCatalogScreenProps {
   onStateChange?: (data: {
     selectedProduct: any | null;
     currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedSubCategoryId?: string;
+    selectedProductGroupId?: string;
+    breadcrumbItems: BreadcrumbItem[];
   }) => void;
   scrollViewPaddingBottom?: number;
 }
@@ -107,8 +111,11 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     onStateChange?.({
       selectedProduct,
       currentView,
+      selectedSubCategoryId,
+      selectedProductGroupId,
+      breadcrumbItems,
     });
-  }, [selectedProduct, currentView, onStateChange]);
+  }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems, onStateChange]);
 
   const resetToRoot = useCallback(() => {
     setBreadcrumbItems([]);
@@ -404,12 +411,29 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
 
     // Navigate to PostsScreen with parameters (productInfo is required)
     if (productInfo) {
+      // ContextType ve contextId'yi belirle
+      let contextType: ProductInfoType | undefined;
+      let contextId: string | undefined;
+      
+      if (productItem && selectedProduct) {
+        contextType = ProductInfoType.PRODUCT;
+        contextId = productItem.id;
+      } else if (productGroupItem && selectedProductGroupId) {
+        contextType = ProductInfoType.PRODUCT_GROUP;
+        contextId = productGroupItem.id;
+      } else if (subCategoryItem && selectedSubCategoryId) {
+        contextType = ProductInfoType.SUB_CATEGORY;
+        contextId = subCategoryItem.id;
+      }
+      
       navigation.navigate('Post', {
         screen: 'PostsScreen',
         params: {
           stage,
           name,
           productInfo,
+          contextType,
+          contextId,
         },
       });
     }

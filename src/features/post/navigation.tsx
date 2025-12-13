@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PostDetailScreen, PostsScreen, CreatePostScreen, CreateTipsAndTrickPostScreen, CreateQuestionPostScreen, CreateExperiencePostScreen, CreateBenchmarkPostScreen, CreateUpdatePostScreen } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { ProductInfoType } from '@/src/types/common';
 
 // Post Stack için type tanımlaması
 export type PostStackParamList = {
@@ -20,8 +21,18 @@ export type PostStackParamList = {
       description?: string;
       image: any;
     };
+    contextType?: ProductInfoType;
+    contextId?: string;
   };
-  CreatePostScreen: undefined;
+  CreatePostScreen: {
+    contextType?: ProductInfoType;
+    contextId?: string;
+    productInfo?: {
+      image: any;
+      title: string;
+      subName?: string;
+    };
+  };
   CreateTipsAndTrickPostScreen: undefined;
   CreateQuestionPostScreen: undefined;
   CreateExperiencePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string }; fromInventory?: boolean; experienceOption?: 'own' | 'tried' };
