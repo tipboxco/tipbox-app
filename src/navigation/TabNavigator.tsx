@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
+import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -36,6 +37,9 @@ export const TabNavigator = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
+  
+  // Global navigation UI state'ten tab bar visibility'yi al
+  const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
 
   // Debug: Android'de insets.bottom değerini logla (sadece ilk render'da)
   useMemo(() => {
@@ -45,8 +49,14 @@ export const TabNavigator = () => {
   }, []);
 
   // tabBarStyle'ı useMemo ile optimize et - sürekli re-render'ı önle
+  // Tab bar visibility'ye göre display kontrolü yap
   const tabBarStyle = useMemo(() => {
     const androidBottomPadding = insets.bottom;
+    
+    // Tab bar gizliyse display: 'none' kullan
+    if (!isTabBarVisible) {
+      return { display: 'none' as const };
+    }
     
     return {
       backgroundColor: '#FAFAFA',
@@ -60,7 +70,7 @@ export const TabNavigator = () => {
       right: 0,
       zIndex: 1000,
     };
-  }, [insets.bottom]);
+  }, [insets.bottom, isTabBarVisible]);
 
   return (
     <Tab.Navigator

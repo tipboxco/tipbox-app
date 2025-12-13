@@ -1,18 +1,20 @@
 import React from 'react';
-import { Platform } from 'react-native';
 import { Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { useBottomOffset } from '@/src/utils';
 
 interface CreateButtonProps {
   onPress: () => void;
 }
 
 export const CreateButton = ({ onPress }: CreateButtonProps) => {
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
+  
   return (
     <Pressable
       onPress={onPress}
       position="absolute"
-      bottom={Platform.OS === 'ios' ? 8 : 8}
+      bottom={bottomOffset}
       right={16}
       zIndex={10}
     >

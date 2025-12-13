@@ -21,12 +21,12 @@ export type PostStackParamList = {
       description?: string;
       image: any;
     };
-    contextType?: ProductInfoType;
-    contextId?: string;
+    contextType?: ProductInfoType; // Sadece type gönderiliyor, ID store'dan okunacak
+    contextId?: string; // Backward compatibility için optional (fallback)
   };
   CreatePostScreen: {
-    contextType?: ProductInfoType;
-    contextId?: string;
+    contextType?: ProductInfoType; // Sadece type gönderiliyor, ID store'dan okunacak
+    contextId?: string; // Backward compatibility için optional (fallback)
     productInfo?: {
       image: any;
       title: string;

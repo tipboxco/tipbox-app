@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { FormProvider } from 'react-hook-form';
+import { FormProvider, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
@@ -12,6 +12,11 @@ import { ControlledTextarea } from '../components/FormFields/ControlledTextarea'
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { useCreateFreePost } from '../api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
+import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
+import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { CameraScreen } from '../components/CameraScreen';
+import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { PostStackParamList } from '../navigation';
@@ -28,9 +33,87 @@ export const CreatePostScreen = () => {
   const methods = usePostForm();
   const { handleSubmit, formState, watch, trigger, getValues } = methods;
   const createPostMutation = useCreateFreePost();
+  const toast = useToast();
+  const [showCamera, setShowCamera] = useState(false);
+  const [lastPhotoUri, setLastPhotoUri] = useState<string | null>(null);
   
-  // Route params'dan context bilgilerini al
-  const { contextType, contextId, productInfo } = route.params || {};
+  // Global navigation UI store'dan kamera state'ini yönet
+  const setCameraOpen = useNavigationUIStore((state) => state.setCameraOpen);
+  
+  // Kamera açık/kapalı durumunu global store'a bildir
+  useEffect(() => {
+    setCameraOpen(showCamera);
+    
+    // Cleanup: component unmount olduğunda kamera state'ini sıfırla
+    return () => {
+      setCameraOpen(false);
+    };
+  }, [showCamera, setCameraOpen]);
+  
+  // Flow store'dan context bilgilerini al (route params yerine)
+  const contextType = useCreatePostFlowStore((state) => state.contextType);
+  const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
+  const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
+  const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+  
+  // CatalogUIStore'dan ID'leri al (type'a göre)
+  const selectedProductId = useCatalogUIStore((state) => state.selectedProductId);
+  const selectedSubCategoryId = useCatalogUIStore((state) => state.selectedSubCategoryId);
+  const selectedProductGroupId = useCatalogUIStore((state) => state.selectedProductGroupId);
+  const getContextIdFromStore = useCatalogUIStore((state) => state.getContextId);
+  
+  // Route params'dan da al (fallback için, backward compatibility)
+  const routeParams = route.params || {};
+  const routeContextType = routeParams.contextType;
+  const routeContextId = routeParams.contextId;
+  const routeProductInfo = routeParams.productInfo;
+  
+  // Store'dan gelen değerler varsa onları kullan, yoksa route params'ı kullan
+  const finalContextType = contextType || routeContextType;
+  
+  // ID'yi önce CreatePostFlowStore'dan al, yoksa CatalogUIStore'dan type'a göre al, yoksa route params'tan al
+  let finalContextId = contextId;
+  if (!finalContextId && finalContextType) {
+    // Type'a göre CatalogUIStore'dan ID'yi al
+    const apiContextType = finalContextType === ProductInfoType.PRODUCT ? 'product' :
+                          finalContextType === ProductInfoType.PRODUCT_GROUP ? 'product_group' :
+                          'sub_category';
+    finalContextId = getContextIdFromStore(apiContextType);
+  }
+  // Son fallback: route params
+  if (!finalContextId) {
+    finalContextId = routeContextId;
+  }
+  
+  const finalProductInfo = productInfoSnapshot || routeProductInfo;
+  
+  // Debug: Store durumunu logla (component mount olduğunda)
+  useEffect(() => {
+    console.log('🔍 [CreatePostScreen] Store State Check:', {
+      flowStore: {
+        contextType,
+        contextId,
+        productInfoSnapshot: productInfoSnapshot ? { title: productInfoSnapshot.title } : null,
+        isValidFlow,
+      },
+      catalogUIStore: {
+        selectedProductId,
+        selectedSubCategoryId,
+        selectedProductGroupId,
+      },
+      routeParams: {
+        contextType: routeContextType,
+        contextId: routeContextId,
+        productInfo: routeProductInfo ? { title: routeProductInfo.title } : null,
+      },
+      final: {
+        contextType: finalContextType,
+        contextId: finalContextId,
+        productInfo: finalProductInfo ? { title: finalProductInfo.title } : null,
+      },
+    });
+  }, [contextType, contextId, productInfoSnapshot, isValidFlow, selectedProductId, selectedSubCategoryId, selectedProductGroupId, routeContextType, routeContextId, routeProductInfo, finalContextType, finalContextId, finalProductInfo]);
   
   // Form değerlerini izle - TÜM form değerlerini loglamak için
   const postText = watch('postText');
@@ -85,13 +168,23 @@ export const CreatePostScreen = () => {
   // Component mount olduğunda log
   useEffect(() => {
     console.log('[CreatePostScreen] 🚀 Component Mounted');
-    console.log('[CreatePostScreen] 📋 Route Params:', {
-      contextType,
-      contextId,
-      productInfo: productInfo ? {
-        title: productInfo.title,
-        subName: productInfo.subName,
-        hasImage: !!productInfo.image,
+    console.log('[CreatePostScreen] 📋 Flow Store Context:', {
+      contextType: finalContextType,
+      contextId: finalContextId,
+      isValidFlow,
+      productInfo: finalProductInfo ? {
+        title: finalProductInfo.title,
+        subName: finalProductInfo.subName,
+        hasImage: !!finalProductInfo.image,
+      } : null,
+    });
+    console.log('[CreatePostScreen] 📋 Route Params (fallback):', {
+      contextType: routeContextType,
+      contextId: routeContextId,
+      productInfo: routeProductInfo ? {
+        title: routeProductInfo.title,
+        subName: routeProductInfo.subName,
+        hasImage: !!routeProductInfo.image,
       } : null,
     });
     console.log('[CreatePostScreen] 📋 Initial Form State:', {
@@ -109,18 +202,65 @@ export const CreatePostScreen = () => {
       postText: postText || '',
       isValid: formState.isValid,
     });
-    // Navigate to Feed screen
-    navigation.navigate('Main', {
-      screen: 'Feed',
-      params: {
-        screen: 'FeedScreen',
-      },
-    });
+    // Clear flow context on cancel/back
+    clearFlow();
+    // Navigate back
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // Fallback: Navigate to Catalog screen if can't go back
+      navigation.navigate('Main', {
+        screen: 'Catalog',
+        params: {
+          screen: 'CatalogScreen',
+        },
+      });
+    }
   };
 
   const handleImagePicker = () => {
     console.log('[CreatePostScreen] Image picker button pressed');
-    // TODO: Implement image picker
+    
+    // Mevcut seçili image sayısını al
+    const currentImages = methods.getValues('selectedImages') || [];
+    const remainingSlots = 10 - currentImages.length;
+    
+    if (remainingSlots <= 0) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Limit Aşıldı</ToastTitle>
+                <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      return;
+    }
+
+    // Instagram tarzı: Custom kamera screen'ini aç
+    setShowCamera(true);
+  };
+
+  const handlePhotoTaken = (uri: string) => {
+    console.log('[CreatePostScreen] ✅ Photo taken:', uri);
+    const currentImages = methods.getValues('selectedImages') || [];
+    const newImages = [...currentImages, uri];
+    methods.setValue('selectedImages', newImages, { shouldValidate: true });
+    setLastPhotoUri(uri);
+    setShowCamera(false);
+  };
+
+  // Seçili image'lerin sonuncusunu lastPhotoUri olarak kullan
+  const currentImages = methods.watch('selectedImages') || [];
+  const displayLastPhotoUri = lastPhotoUri || (currentImages.length > 0 ? currentImages[currentImages.length - 1] : null);
+
+  const handleCameraClose = () => {
+    setShowCamera(false);
   };
 
   const onSubmit = async (data: PostFormData) => {
@@ -132,17 +272,17 @@ export const CreatePostScreen = () => {
       isValid: formState.isValid,
     });
     
-    // Context type ve ID'yi route params'dan al
-    if (!contextType || !contextId) {
-      console.error('[CreatePostScreen] ❌ Missing contextType or contextId in route params');
+    // Context type ve ID'yi flow store'dan al (route params fallback)
+    if (!finalContextType || !finalContextId) {
+      console.error('[CreatePostScreen] ❌ Missing contextType or contextId in flow store or route params');
       return;
     }
     
-    const apiContextType = mapProductInfoTypeToContextType(contextType);
+    const apiContextType = mapProductInfoTypeToContextType(finalContextType);
     
     console.log('[CreatePostScreen] 📤 API Request Data:', {
       contextType: apiContextType,
-      contextId,
+      contextId: finalContextId,
       description: data.postText,
       images: data.selectedImages || [],
     });
@@ -150,7 +290,7 @@ export const CreatePostScreen = () => {
     try {
       const response = await createPostMutation.mutateAsync({
         contextType: apiContextType,
-        contextId,
+        contextId: finalContextId,
         description: data.postText,
         images: data.selectedImages,
       });
@@ -158,16 +298,51 @@ export const CreatePostScreen = () => {
       console.log('[CreatePostScreen] ✅ API Response:', response);
       console.log('[CreatePostScreen] ====================================');
       
-      // Başarılı olursa geri dön
-      navigation.navigate('Main', {
-        screen: 'Feed',
-        params: {
-          screen: 'FeedScreen',
+      // Başarılı toast göster
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Post Oluşturuldu</ToastTitle>
+                <ToastDescription>Postunuz başarıyla oluşturuldu!</ToastDescription>
+              </Toast>
+            </Box>
+          );
         },
+      });
+      
+      // Clear flow context on successful submit
+      clearFlow();
+      
+      // Başarılı olursa Catalog ekranına yönlendir
+      navigation.navigate('Main', {
+        screen: 'Catalog',
+        params: {} as any,
       });
     } catch (error: any) {
       console.error('[CreatePostScreen] ❌ API Error:', error);
       console.log('[CreatePostScreen] ====================================');
+      
+      // Hata toast göster
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+      
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
       // TODO: Error handling UI göster
     }
   };
@@ -201,8 +376,16 @@ export const CreatePostScreen = () => {
   const isShareEnabled = formState.isValid;
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <FormProvider {...methods}>
+    <>
+      {showCamera ? (
+        <CameraScreen
+          onPhotoTaken={handlePhotoTaken}
+          onClose={handleCameraClose}
+          lastPhotoUri={displayLastPhotoUri}
+        />
+      ) : (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+          <FormProvider {...methods}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
           {/* Header */}
           <Header
@@ -227,14 +410,14 @@ export const CreatePostScreen = () => {
           <ScrollView flex={1} showsVerticalScrollIndicator={false}>
             <VStack space="md" pb={100}>
               {/* Product Info Card */}
-              {productInfo && (
+              {finalProductInfo && (
                 <Box px="$4" py="$2">
                   <ProductInfoCard
-                    image={productInfo.image}
-                    title={productInfo.title}
-                    subName={productInfo.subName}
+                    image={finalProductInfo.image}
+                    title={finalProductInfo.title}
+                    subName={finalProductInfo.subName}
                     size="big"
-                    type={contextType || ProductInfoType.SUB_CATEGORY}
+                    type={finalContextType || ProductInfoType.SUB_CATEGORY}
                   />
                 </Box>
               )}
@@ -255,6 +438,13 @@ export const CreatePostScreen = () => {
                   name="selectedImages"
                   label="Images"
                   maxImages={10}
+                  onImagePicker={handleImagePicker}
+                  onRemoveImage={(index) => {
+                    const currentImages = methods.getValues('selectedImages') || [];
+                    const newImages = currentImages.filter((_: any, i: number) => i !== index);
+                    methods.setValue('selectedImages', newImages, { shouldValidate: true });
+                    console.log('[CreatePostScreen] ✅ Image removed at index:', index);
+                  }}
                 />
               </VStack>
             </VStack>
@@ -262,6 +452,8 @@ export const CreatePostScreen = () => {
         </Box>
       </FormProvider>
     </SafeAreaView>
+      )}
+    </>
   );
 };
 

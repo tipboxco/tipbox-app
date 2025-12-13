@@ -71,6 +71,14 @@ export const Header = ({
       switch (leftAction) {
         case 'back':
           iconName = 'arrow-left';
+          // Back için fallback: navigation.goBack()
+          if (!onPress) {
+            onPress = () => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              }
+            };
+          }
           break;
         case 'menu':
           iconName = 'menu';
@@ -89,9 +97,22 @@ export const Header = ({
           break;
         case 'cancel':
           iconName = 'x';
+          // Cancel için fallback: navigation.goBack()
+          if (!onPress) {
+            onPress = () => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              }
+            };
+          }
           break;
         default:
           return null;
+      }
+
+      // onPress undefined ise buton render edilmemeli
+      if (!onPress) {
+        return null;
       }
 
       return (
