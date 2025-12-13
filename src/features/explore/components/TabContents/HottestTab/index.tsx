@@ -7,6 +7,7 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
+import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import { useHottest } from '../../../api/hooks';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import { toImageSource, useBottomOffset } from '@/src/utils';
