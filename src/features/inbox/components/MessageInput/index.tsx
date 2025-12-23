@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   HStack,
@@ -13,19 +13,68 @@ interface MessageInputProps {
   onSendMessage?: (message: string) => void;
   onAddImage?: () => void;
   placeholder?: string;
+  onTypingStart?: () => void;
+  onTypingStop?: () => void;
+  threadId?: string | null;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   onAddImage,
   placeholder = 'Mesajınızı yazın...',
+  onTypingStart,
+  onTypingStop,
+  threadId,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [message, setMessage] = useState('');
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingTimeRef = useRef<number>(0);
+
+  // Typing indicator logic
+  useEffect(() => {
+    if (message.trim() && threadId) {
+      const now = Date.now();
+      
+      // İlk karakter yazıldığında typing başlat
+      if (now - lastTypingTimeRef.current > 1000) {
+        onTypingStart?.();
+        lastTypingTimeRef.current = now;
+      }
+
+      // Mevcut timeout'u temizle
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // 3 saniye sonra typing durdur
+      typingTimeoutRef.current = setTimeout(() => {
+        onTypingStop?.();
+      }, 3000);
+    } else {
+      // Mesaj boşsa typing durdur
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      onTypingStop?.();
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [message, threadId, onTypingStart, onTypingStop]);
 
   const handleSend = () => {
     if (message.trim() && onSendMessage) {
+      // Typing'i durdur
+      onTypingStop?.();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
       onSendMessage(message.trim());
       setMessage('');
     }

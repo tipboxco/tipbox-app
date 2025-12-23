@@ -57,3 +57,69 @@ export const getMyNFTs = async (): Promise<UserNFTsApiResponse> => {
   return response.data;
 };
 
+/**
+ * Create Listing Request Interface
+ */
+export interface CreateListingRequest {
+  nftId: string;
+  amount: number;
+}
+
+/**
+ * Create Listing Response Interface
+ */
+export interface CreateListingResponse {
+  id: string;
+  title: string;
+  description?: string;
+  username: string;
+  price: string;
+  image: string;
+  userAvatar?: string;
+  rarity: string;
+  type: string;
+  listedAt: string;
+  sellerId: string;
+  nftId: string;
+}
+
+/**
+ * Create Marketplace Listing endpoint function
+ * NFT'yi satışa koyar
+ *
+ * @param data - Create Listing request data
+ * @returns CreateListingResponse - Oluşturulan listing bilgileri
+ */
+export const createListing = async (
+  data: CreateListingRequest
+): Promise<CreateListingResponse> => {
+  const response = await apiService.getClient().post<CreateListingResponse>(
+    '/marketplace/listings',
+    data
+  );
+  return response.data;
+};
+
+/**
+ * Delete Listing Response Interface
+ */
+export interface DeleteListingResponse {
+  message: string;
+}
+
+/**
+ * Delete Marketplace Listing endpoint function
+ * Listing'i satıştan kaldırır (delist)
+ *
+ * @param listingId - Listing ID'si
+ * @returns DeleteListingResponse - İşlem sonucu mesajı
+ */
+export const deleteListing = async (
+  listingId: string
+): Promise<DeleteListingResponse> => {
+  const response = await apiService.getClient().delete<DeleteListingResponse>(
+    `/marketplace/listings/${listingId}`
+  );
+  return response.data;
+};
+

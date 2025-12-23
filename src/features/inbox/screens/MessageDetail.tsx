@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
@@ -14,6 +14,18 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useAppStore } from '@/src/store/appStore';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '../api/hooks';
+import { socketService } from '@/src/services/SocketService';
+import type {
+  SocketMessageEvent,
+  ThreadJoinedEvent,
+  ThreadLeftEvent,
+  ThreadJoinErrorEvent,
+  MessageSendErrorEvent,
+} from '@/src/services/SocketService/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { inboxKeys } from '../api/hooks';
 import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
 import MessageDetailActionButtons from '../components/MessageDetailActionButtons';
@@ -34,12 +46,16 @@ interface MessageDetailItem {
     amount: number;
     status: 'pending' | 'accepted' | 'completed' | 'declined';
   };
+  // Message status indicators
+  isRead?: boolean; // Mesaj okundu mu?
+  readAt?: string; // Okunma zamanı
 }
 
 type MessageDetailScreenNavigationProp = NativeStackNavigationProp<any, 'MessageDetailScreen'>;
 
 interface MessageDetailScreenParams {
   messageId: string;
+  recipientUserId?: string; // Mesaj gönderilecek kullanıcı ID'si
   senderName: string;
   senderTitle: string;
   senderAvatar: any;
@@ -128,12 +144,285 @@ const MessageDetailScreen: React.FC = () => {
     senderAvatar: undefined,
   };
 
+  // Get current user from store
+  const { user } = useAppStore();
+  const sendGiftMutation = useSendGift();
+  const createSupportRequestMutation = useCreateSupportRequest();
+  const sendDirectMessageMutation = useSendDirectMessage();
+  const queryClient = useQueryClient();
+
+  // Thread ID state
+  const [threadId, setThreadId] = useState<string | null>(null);
+  // Typing indicator state
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUserId, setTypingUserId] = useState<string | null>(null);
+  // Typing timeout ref
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Socket connection and event listeners
+  useEffect(() => {
+    // Socket bağlantısını kur
+    const connectSocket = async () => {
+      try {
+        if (!socketService.isConnected()) {
+          await socketService.connect();
+        }
+      } catch (error) {
+        console.error('[MessageDetail] Socket connection error:', error);
+      }
+    };
+
+    connectSocket();
+
+    // Thread oluştur veya al
+    const initializeThread = async () => {
+      const routeParams = (route.params as MessageDetailScreenParams) || {};
+      const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
+
+      if (!recipientUserId || !user?.id) {
+        return;
+      }
+
+      try {
+        // Thread API'sini import et (getOrCreateThread)
+        const { getOrCreateThread } = await import('../api/messagesApi');
+        const thread = await getOrCreateThread(recipientUserId);
+        setThreadId(thread.id);
+
+        // Thread room'una katıl
+        if (socketService.isConnected()) {
+          socketService.joinThread(thread.id);
+        }
+      } catch (error: any) {
+        console.error('[MessageDetail] Thread initialization error:', error);
+        
+        // 404 hatası: Thread endpoint backend'de yok, fallback olarak recipientUserId'yi threadId olarak kullan
+        if (error?.response?.status === 404) {
+          console.warn('[MessageDetail] Thread endpoint not found (404), using recipientUserId as threadId');
+          // Thread endpoint yoksa, recipientUserId'yi threadId olarak kullan
+          // Bu durumda socket thread sistemi çalışmayabilir ama mesaj gönderme çalışır
+          setThreadId(recipientUserId);
+        } else {
+          // Diğer hatalar için de fallback
+          console.warn('[MessageDetail] Thread initialization failed, using recipientUserId as fallback');
+          setThreadId(recipientUserId);
+        }
+      }
+    };
+
+    initializeThread();
+
+    // Socket event handler'ları
+    const handleNewMessage = (eventData: SocketMessageEvent) => {
+      console.log('[MessageDetail] New message received:', eventData);
+
+      const routeParams = (route.params as MessageDetailScreenParams) || {};
+      const currentUserId = user?.id;
+      const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
+
+      // Bu mesaj bu thread'e ait mi kontrol et
+      if (
+        eventData.recipientId === currentUserId ||
+        eventData.senderId === recipientUserId ||
+        eventData.recipientId === recipientUserId
+      ) {
+        // Mesaj tipine göre işle
+        if (eventData.messageType === 'message') {
+          // Normal mesaj
+          const newMessage: MessageDetailItem = {
+            id: eventData.messageId,
+            text: eventData.message,
+            timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            isSent: eventData.senderId === currentUserId,
+            senderName: eventData.senderId === currentUserId ? undefined : routeParams.senderName,
+            senderAvatar: eventData.senderId === currentUserId ? undefined : routeParams.senderAvatar,
+            isRead: false, // Yeni mesaj henüz okunmadı
+          };
+
+          // Eğer mesaj bizim gönderdiğimizse ve görüldüyse, görüldü işaretini ekle
+          if (eventData.senderId === currentUserId) {
+            // Mesaj gönderildiğinde henüz okunmadı
+            newMessage.isRead = false;
+          }
+
+          setMessages((prev) => {
+            // Duplicate kontrolü
+            if (prev.some((msg) => msg.id === eventData.messageId)) {
+              return prev;
+            }
+            return [...prev, newMessage];
+          });
+
+          // Scroll to bottom
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        } else if (eventData.messageType === 'send-tips') {
+          // TIPS mesajı - şu an için sadece log
+          console.log('[MessageDetail] TIPS message received:', eventData);
+          // TODO: TIPS mesajını UI'da göster
+        } else if (eventData.messageType === 'support-request') {
+          // Support request mesajı - şu an için sadece log
+          console.log('[MessageDetail] Support request received:', eventData);
+          // TODO: Support request mesajını UI'da göster
+        }
+
+        // Mesaj listesini invalidate et (inbox listesini güncelle)
+        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      }
+    };
+
+    const handleMessageSent = (eventData: SocketMessageEvent) => {
+      console.log('[MessageDetail] Message sent confirmation:', eventData);
+      
+      // Optimistic update'teki mesajı gerçek mesaj ID'si ile güncelle
+      setMessages((prev) =>
+        prev.map((msg) => {
+          // Eğer bu mesaj henüz ID'si yoksa (optimistic update) ve içerik eşleşiyorsa
+          if (msg.text === eventData.message && msg.isSent && !msg.id.startsWith(eventData.messageId)) {
+            return {
+              ...msg,
+              id: eventData.messageId,
+            };
+          }
+          return msg;
+        })
+      );
+    };
+
+    // Thread event handlers
+    const handleThreadJoined = (data: { threadId: string }) => {
+      console.log('[MessageDetail] Thread joined:', data.threadId);
+    };
+
+    const handleThreadLeft = (data: { threadId: string }) => {
+      console.log('[MessageDetail] Thread left:', data.threadId);
+    };
+
+    const handleThreadJoinError = (error: { threadId: string; reason: string }) => {
+      console.error('[MessageDetail] Thread join error:', error.reason);
+      Alert.alert('Hata', `Thread'e katılamadı: ${error.reason}`);
+    };
+
+    const handleMessageSendError = (error: { reason: string }) => {
+      console.error('[MessageDetail] Message send error:', error.reason);
+      Alert.alert('Hata', `Mesaj gönderilemedi: ${error.reason}`);
+    };
+
+    // Typing indicator handler
+    const handleUserTyping = (data: { userId: string; threadId: string; isTyping: boolean }) => {
+      if (data.threadId === threadId) {
+        setIsTyping(data.isTyping);
+        setTypingUserId(data.isTyping ? data.userId : null);
+
+        // Typing indicator'ı 3 saniye sonra otomatik kapat
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+
+        if (data.isTyping) {
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+            setTypingUserId(null);
+          }, 3000);
+        }
+      }
+    };
+
+    // Message read handler
+    const handleMessageRead = (data: { messageId: string; threadId: string; readBy: string; timestamp: string }) => {
+      if (data.threadId === threadId) {
+        // Mesajı okundu olarak işaretle
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === data.messageId) {
+              return {
+                ...msg,
+                isRead: true,
+                readAt: data.timestamp,
+              };
+            }
+            return msg;
+          })
+        );
+      }
+    };
+
+    // Event listener'ları ekle
+    socketService.on('new_message', handleNewMessage);
+    socketService.on('message_sent', handleMessageSent);
+    socketService.on('thread_joined', handleThreadJoined);
+    socketService.on('thread_left', handleThreadLeft);
+    socketService.on('thread_join_error', handleThreadJoinError);
+    socketService.on('message_send_error', handleMessageSendError);
+    socketService.on('user_typing', handleUserTyping);
+    socketService.on('message_read', handleMessageRead);
+
+    // Cleanup: Component unmount olduğunda listener'ları kaldır ve thread'den ayrıl
+    return () => {
+      socketService.off('new_message', handleNewMessage);
+      socketService.off('message_sent', handleMessageSent);
+      socketService.off('thread_joined', handleThreadJoined);
+      socketService.off('thread_left', handleThreadLeft);
+      socketService.off('thread_join_error', handleThreadJoinError);
+      socketService.off('message_send_error', handleMessageSendError);
+      socketService.off('user_typing', handleUserTyping);
+      socketService.off('message_read', handleMessageRead);
+
+      // Typing timeout'u temizle
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Typing'i durdur
+      if (threadId) {
+        socketService.stopTyping(threadId);
+      }
+
+      // Thread'den ayrıl
+      if (threadId) {
+        socketService.leaveThread(threadId);
+      }
+    };
+  }, [user?.id, route.params, queryClient, threadId]);
+
   // Handle Send TIPS
-  const handleSendTips = useCallback((amount: number) => {
-    console.log('Send TIPS:', amount);
-    // TODO: Implement send tips logic
-    closeBottomSheet();
-  }, [closeBottomSheet]);
+  const handleSendTips = useCallback((amount: number, message?: string) => {
+    if (!user?.id) {
+      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      return;
+    }
+
+    const routeParams = (route.params as MessageDetailScreenParams) || {};
+    const recipientUserId = routeParams.recipientUserId || routeParams.messageId; // Fallback to messageId if recipientUserId not provided
+
+    if (!recipientUserId) {
+      Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı');
+      return;
+    }
+
+    sendGiftMutation.mutate(
+      {
+        senderUserId: user.id,
+        recipientUserId: recipientUserId,
+        message: message || '',
+        amount: amount,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        onSuccess: () => {
+          Alert.alert('Başarılı', 'TIPS başarıyla gönderildi');
+          closeBottomSheet();
+        },
+        onError: (error) => {
+          Alert.alert('Hata', error.message || 'TIPS gönderilirken bir hata oluştu');
+        },
+      }
+    );
+  }, [user, route, sendGiftMutation, closeBottomSheet]);
 
   // Handle Send TIPS button press
   const handleSendTipsPress = () => {
@@ -166,30 +455,65 @@ const MessageDetailScreen: React.FC = () => {
 
   // Handle Send Support Request
   const handleSendSupport = useCallback((supportType: string, message: string, amount: number) => {
-    console.log('Send Support Request:', { supportType, message, amount });
+    if (!user?.id) {
+      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      return;
+    }
 
-    const newSupportRequest: MessageDetailItem = {
-      id: Date.now().toString(),
-      text: '',
-      timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-      isSent: true, // Kullanıcı kendisi oluşturuyor, sağa yaslanmalı
-      type: 'support_request',
-      supportRequest: {
-        supportType: supportType,
+    const routeParams = (route.params as MessageDetailScreenParams) || {};
+    const recipientUserId = routeParams.recipientUserId || routeParams.messageId; // Fallback to messageId if recipientUserId not provided
+
+    if (!recipientUserId) {
+      Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı');
+      return;
+    }
+
+    // Map supportType to API format
+    const apiSupportType = supportType === 'Product Authentication' ? 'PRODUCT' : 
+                          supportType === 'Technical Support' ? 'TECHNICAL' : 'GENERAL';
+
+    createSupportRequestMutation.mutate(
+      {
+        senderUserId: user.id,
+        recipientUserId: recipientUserId,
+        type: apiSupportType as 'GENERAL' | 'TECHNICAL' | 'PRODUCT',
         message: message,
-        amount: amount,
+        amount: amount.toString(),
         status: 'pending',
+        timestamp: new Date().toISOString(),
       },
-    };
+      {
+        onSuccess: () => {
+          // Local state'e ekle (socket event'ten sonra gerçek mesaj gelecek)
+          const newSupportRequest: MessageDetailItem = {
+            id: Date.now().toString(),
+            text: '',
+            timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+            isSent: true,
+            type: 'support_request',
+            supportRequest: {
+              supportType: supportType,
+              message: message,
+              amount: amount,
+              status: 'pending',
+            },
+          };
 
-    setMessages((prev) => [...prev, newSupportRequest]);
+          setMessages((prev) => [...prev, newSupportRequest]);
 
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
 
-    closeBottomSheet();
-  }, [closeBottomSheet]);
+          Alert.alert('Başarılı', 'Destek talebi başarıyla gönderildi');
+          closeBottomSheet();
+        },
+        onError: (error) => {
+          Alert.alert('Hata', error.message || 'Destek talebi gönderilirken bir hata oluştu');
+        },
+      }
+    );
+  }, [user, route, createSupportRequestMutation, closeBottomSheet]);
 
   // Handle Request 1-on-1 Support button press
   const handleRequestSupportPress = () => {
@@ -226,6 +550,22 @@ const MessageDetailScreen: React.FC = () => {
   const handleSendMessage = (messageText: string) => {
     if (!messageText.trim()) return;
 
+    if (!user?.id) {
+      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      return;
+    }
+
+    // Thread ID yoksa recipientUserId'yi kullan (fallback)
+    const routeParams = (route.params as MessageDetailScreenParams) || {};
+    const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
+    const effectiveThreadId = threadId || recipientUserId;
+    
+    if (!effectiveThreadId) {
+      Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı.');
+      return;
+    }
+
+    // Optimistic update - local state'e ekle
     const newMessage: MessageDetailItem = {
       id: Date.now().toString(),
       text: messageText,
@@ -239,6 +579,49 @@ const MessageDetailScreen: React.FC = () => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
+
+    // Socket üzerinden mesaj gönder (önerilen yöntem)
+    // Not: Thread endpoint yoksa socket thread sistemi çalışmayabilir
+    if (socketService.isConnected() && threadId) {
+      try {
+        socketService.sendMessage(effectiveThreadId, messageText);
+      } catch (error) {
+        console.error('[MessageDetail] Socket send error:', error);
+        // Fallback: REST API kullan
+        if (recipientUserId) {
+          sendDirectMessageMutation.mutate(
+            {
+              recipientUserId: recipientUserId,
+              message: messageText,
+            },
+            {
+              onError: (error) => {
+                // Hata durumunda mesajı geri al
+                setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id));
+                Alert.alert('Hata', error.message || 'Mesaj gönderilirken bir hata oluştu');
+              },
+            }
+          );
+        }
+      }
+    } else {
+      // Socket bağlı değilse veya threadId yoksa REST API kullan
+      if (recipientUserId) {
+        sendDirectMessageMutation.mutate(
+          {
+            recipientUserId: recipientUserId,
+            message: messageText,
+          },
+          {
+            onError: (error) => {
+              // Hata durumunda mesajı geri al
+              setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id));
+              Alert.alert('Hata', error.message || 'Mesaj gönderilirken bir hata oluştu');
+            },
+          }
+        );
+      }
+    }
   };
 
   // Toggle support request expansion
@@ -457,14 +840,42 @@ const MessageDetailScreen: React.FC = () => {
             </Text>
           </Box>
 
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize={8}
-            fontWeight="$normal"
-            mb="$1"
-          >
-            {item.timestamp}
-          </Text>
+          <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
+            <Text
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              fontSize={8}
+              fontWeight="$normal"
+            >
+              {item.timestamp}
+            </Text>
+            {/* Read receipt (görüldü) - sadece gönderilen mesajlarda */}
+            {isSent && (
+              <HStack space="xs" alignItems="center">
+                {item.isRead ? (
+                  <>
+                    <Feather
+                      name="check"
+                      size={12}
+                      color={isDark ? '#4CAF50' : '#4CAF50'}
+                    />
+                    <Text
+                      color={isDark ? '#4CAF50' : '#4CAF50'}
+                      fontSize={7}
+                      fontWeight="$normal"
+                    >
+                      Görüldü
+                    </Text>
+                  </>
+                ) : (
+                  <Feather
+                    name="check"
+                    size={12}
+                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  />
+                )}
+              </HStack>
+            )}
+          </VStack>
         </HStack>
       </VStack>
     );
@@ -507,10 +918,59 @@ const MessageDetailScreen: React.FC = () => {
           paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
         }}
       >
+        {/* Typing Indicator */}
+        {isTyping && typingUserId && typingUserId !== user?.id && (
+          <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+            <HStack space="xs" alignItems="center">
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize={10}
+                fontStyle="italic"
+              >
+                {params.senderName || 'Kullanıcı'} yazıyor
+              </Text>
+              <HStack space="xs" alignItems="center">
+                <Box
+                  width={6}
+                  height={6}
+                  borderRadius={3}
+                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  style={{ opacity: 0.4 }}
+                />
+                <Box
+                  width={6}
+                  height={6}
+                  borderRadius={3}
+                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  style={{ opacity: 0.6 }}
+                />
+                <Box
+                  width={6}
+                  height={6}
+                  borderRadius={3}
+                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  style={{ opacity: 0.8 }}
+                />
+              </HStack>
+            </HStack>
+          </Box>
+        )}
+
         <MessageInput
           onSendMessage={handleSendMessage}
           onAddImage={() => console.log('Görsel eklenecek')}
           placeholder="Mesajınızı yazın..."
+          threadId={threadId}
+          onTypingStart={() => {
+            if (threadId && socketService.isConnected()) {
+              socketService.startTyping(threadId);
+            }
+          }}
+          onTypingStop={() => {
+            if (threadId && socketService.isConnected()) {
+              socketService.stopTyping(threadId);
+            }
+          }}
         />
       </Box>
 

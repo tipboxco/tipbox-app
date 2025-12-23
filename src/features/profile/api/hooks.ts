@@ -15,7 +15,10 @@ import {
   getTrusterList,
   addToTrustList,
   removeFromTrustList,
+  updateProfile,
   type UserFeedApiResponse,
+  type UpdateProfileRequest,
+  type UpdateProfileResponse,
 } from './profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import type {
@@ -723,6 +726,43 @@ export const useRemoveFromTrustList = () => {
     },
     onError: (error) => {
       console.error('[useRemoveFromTrustList] Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Update Profile mutation hook
+ * Kullanıcının kendi profil bilgilerini günceller
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: updateUserProfile, isPending } = useUpdateProfile();
+ * updateUserProfile({
+ *   name: 'Ömer Faruk',
+ *   biography: 'Teknoloji meraklısı',
+ *   badge: ['badge-456', 'badge-789']
+ * });
+ */
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  const { user, updateUser } = useAppStore();
+
+  return useMutation<UpdateProfileResponse, Error, UpdateProfileRequest>({
+    mutationFn: updateProfile,
+    onSuccess: (data) => {
+      // Profil query'sini güncelle
+      if (user?.id) {
+        queryClient.setQueryData(profileKeys.profile(user.id), data.profile);
+        // Store'daki user bilgisini de güncelle
+        updateUser({
+          fullName: data.profile.name,
+          avatar: data.profile.avatar || undefined,
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('[useUpdateProfile] Mutation error:', error);
     },
   });
 };

@@ -21,7 +21,7 @@ interface SendTipsBottomSheetProps {
     senderTitle: string;
     senderAvatar: any;
     onClose: () => void;
-    onSend?: (amount: number) => void;
+    onSend?: (amount: number, message?: string) => void;
 }
 
 export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
@@ -64,7 +64,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     const handleConfirm = () => {
         const numericAmount = parseFloat(amount) || 0;
         console.log('Send TIPS:', { amount: numericAmount, description });
-        onSend?.(numericAmount);
+        onSend?.(numericAmount, description);
         // Modal'ı kapat
         setIsSuccessModalVisible(false);
         // BottomSheet'i kapat

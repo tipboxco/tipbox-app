@@ -34,6 +34,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
+import { useUpdateProfile } from '../api/hooks';
 import type { ProfileStackParamList } from '../navigation';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
@@ -52,11 +53,56 @@ const ProfileEditScreen: React.FC = () => {
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [selectedAvatarType, setSelectedAvatarType] = useState<'picture' | 'cosmetic'>('picture');
 
+  // Update Profile mutation
+  const updateProfileMutation = useUpdateProfile();
+
   const handleSave = () => {
-    // TODO: Implement save functionality
-    Alert.alert('Success', 'Profile updated successfully!', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
+    // Validate name (min 2 characters)
+    if (name.trim().length < 2) {
+      Alert.alert('Hata', 'İsim en az 2 karakter olmalıdır');
+      return;
+    }
+
+    // Validate biography (max 500 characters)
+    if (bio.trim().length > 500) {
+      Alert.alert('Hata', 'Biyografi en fazla 500 karakter olabilir');
+      return;
+    }
+
+    // Collect badge IDs (filter out empty strings)
+    const badgeIds = [badge1, badge2, badge3].filter((badge) => badge.trim().length > 0);
+
+    // Prepare update data
+    const updateData: {
+      name?: string;
+      biography?: string;
+      badge?: string[];
+      cosmetic?: string | null;
+      avatar?: string | null;
+      banner?: string | null;
+    } = {
+      name: name.trim(),
+      biography: bio.trim() || undefined,
+    };
+
+    // Add badge array if there are any badges
+    if (badgeIds.length > 0) {
+      updateData.badge = badgeIds;
+    }
+
+    // TODO: Add avatar, banner, cosmetic when image picker is implemented
+    // For now, we'll only update name, biography, and badges
+
+    updateProfileMutation.mutate(updateData, {
+      onSuccess: () => {
+        Alert.alert('Başarılı', 'Profil başarıyla güncellendi!', [
+          { text: 'Tamam', onPress: () => navigation.goBack() }
+        ]);
+      },
+      onError: (error) => {
+        Alert.alert('Hata', error.message || 'Profil güncellenirken bir hata oluştu');
+      },
+    });
   };
 
   const handleAvatarChange = () => {

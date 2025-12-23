@@ -1,6 +1,7 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getMarketplaceListings, getMyNFTs } from './marketplaceApi';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getMarketplaceListings, getMyNFTs, createListing, deleteListing } from './marketplaceApi';
 import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTsApiResponse } from '../types';
+import type { CreateListingRequest, CreateListingResponse, DeleteListingResponse } from './marketplaceApi';
 
 /**
  * Query Keys - Marketplace feature için cache key pattern'leri
@@ -74,6 +75,56 @@ export const useMyNFTs = () => {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     retry: 1,
+  });
+};
+
+/**
+ * Create Marketplace Listing mutation hook
+ * NFT'yi satışa koyar
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: listNFT, isPending } = useCreateListing();
+ * listNFT({ nftId: 'nft-123', amount: 125.50 });
+ */
+export const useCreateListing = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<CreateListingResponse, Error, CreateListingRequest>({
+    mutationFn: createListing,
+    onSuccess: () => {
+      // Listings ve myNFTs query'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
+    },
+    onError: (error) => {
+      console.error('[useCreateListing] Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Delete Marketplace Listing mutation hook
+ * Listing'i satıştan kaldırır (delist)
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: delistNFT, isPending } = useDeleteListing();
+ * delistNFT('listing-123');
+ */
+export const useDeleteListing = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<DeleteListingResponse, Error, string>({
+    mutationFn: deleteListing,
+    onSuccess: () => {
+      // Listings ve myNFTs query'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
+    },
+    onError: (error) => {
+      console.error('[useDeleteListing] Mutation error:', error);
+    },
   });
 };
 

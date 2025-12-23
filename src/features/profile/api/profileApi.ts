@@ -21,6 +21,26 @@ import type {
 } from '../types';
 
 /**
+ * Update Profile Request Interface
+ */
+export interface UpdateProfileRequest {
+  name?: string;
+  biography?: string;
+  banner?: string | null;
+  avatar?: string | null;
+  cosmetic?: string | null;
+  badge?: string[];
+}
+
+/**
+ * Update Profile Response Interface
+ */
+export interface UpdateProfileResponse {
+  success: boolean;
+  profile: UserProfile;
+}
+
+/**
  * Get User Profile endpoint function
  * Kullanıcı profil bilgilerini getirir
  * 
@@ -32,6 +52,23 @@ export const getUserProfile = async (
 ): Promise<UserProfile> => {
   const response = await apiService.getClient().get<UserProfile>(
     `/users/${userId}/profile`
+  );
+  return response.data;
+};
+
+/**
+ * Update Profile endpoint function
+ * Kullanıcının kendi profil bilgilerini günceller
+ * 
+ * @param data - Update Profile request data
+ * @returns UpdateProfileResponse - Güncellenmiş profil bilgileri
+ */
+export const updateProfile = async (
+  data: UpdateProfileRequest
+): Promise<UpdateProfileResponse> => {
+  const response = await apiService.getClient().put<UpdateProfileResponse>(
+    '/users/me/profile',
+    data
   );
   return response.data;
 };

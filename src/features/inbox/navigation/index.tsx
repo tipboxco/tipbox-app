@@ -8,6 +8,7 @@ export type InboxStackParamList = {
   InboxScreen: undefined;
   MessageDetailScreen: {
     messageId: string;
+    recipientUserId?: string; // Mesaj gönderilecek kullanıcı ID'si
     senderName: string;
     senderTitle: string;
     senderAvatar: any;
@@ -20,6 +21,7 @@ export type InboxStackParamList = {
     userTitle?: string;
     userAvatar?: any;
     requestId?: string;
+    recipientUserId?: string; // Support request gönderilecek kullanıcı ID'si
   };
 };
 

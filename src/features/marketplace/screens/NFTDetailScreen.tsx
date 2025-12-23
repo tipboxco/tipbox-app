@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ScrollView, Dimensions } from 'react-native';
+import { ScrollView, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Text, Box, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { UserNFT } from '@/src/mock/marketplace/NFTList/types';
+import { useCreateListing } from '../api/hooks';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -19,9 +20,38 @@ const NFTDetailScreen = () => {
     const [selectedPrice, setSelectedPrice] = useState(1500);
     const [footerHeight, setFooterHeight] = useState(100);
 
+    // Create Listing mutation
+    const createListingMutation = useCreateListing();
+
     const handleSellNFT = () => {
-        // NFT satış işlemi
-        console.log('NFT satılıyor:', nftData);
+        // Validate price
+        if (selectedPrice <= 0) {
+            Alert.alert('Hata', 'Fiyat 0\'dan büyük olmalıdır');
+            return;
+        }
+
+        // Validate NFT ID
+        if (!nftData?.id) {
+            Alert.alert('Hata', 'NFT bilgisi bulunamadı');
+            return;
+        }
+
+        createListingMutation.mutate(
+            {
+                nftId: nftData.id,
+                amount: selectedPrice,
+            },
+            {
+                onSuccess: (data) => {
+                    Alert.alert('Başarılı', 'NFT başarıyla satışa koyuldu!', [
+                        { text: 'Tamam', onPress: () => navigation.goBack() }
+                    ]);
+                },
+                onError: (error) => {
+                    Alert.alert('Hata', error.message || 'NFT satışa koyulurken bir hata oluştu');
+                },
+            }
+        );
     };
 
     return (
