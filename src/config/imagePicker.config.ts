@@ -23,6 +23,15 @@ export const imagePickerConfig = {
     cropperCircleOverlay: true, // Yuvarlak crop overlay
   } satisfies ImagePickerOptions,
 
+  galleryMultiple: {
+    mediaTypes: 'Images' as const,
+    allowsEditing: false, // Multiple selection'da editing kapalı
+    quality: 0.7,
+    allowsMultipleSelection: true,
+    base64: false,
+    exif: false,
+  } satisfies ImagePickerOptions,
+
   // Yükleme limitleri
   maxFileSize: 5 * 1024 * 1024, // 5MB
   allowedTypes: ['image/jpeg', 'image/png'],

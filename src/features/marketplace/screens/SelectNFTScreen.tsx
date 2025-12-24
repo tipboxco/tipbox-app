@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { VStack, ScrollView, HStack, Pressable, Text, Box } from '@gluestack-ui/themed';
-import { ActivityIndicator } from 'react-native';
+import { VStack, HStack, Pressable, Text, Box } from '@gluestack-ui/themed';
+import { FlatList, ActivityIndicator } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { UserNFTCard } from '../components/UserNFTCard';
@@ -21,15 +21,24 @@ const SelectNFTScreen = () => {
   
   const [selectedNFTs, setSelectedNFTs] = useState<string[]>([]);
 
-  // My NFTs API hook
+  // onEndReached loop'unu önlemek için ref
+  const isLoadingMoreRef = useRef(false);
+
+  // My NFTs API hook with infinite scroll
   const {
-    data: nftListings,
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
     error,
-  } = useMyNFTs();
+  } = useMyNFTs(12);
+
+  // Flatten all pages into a single array
+  const nftListings = data?.pages.flatMap((page) => page) ?? [];
 
   // Map API response to UserNFTCardData
-  const mapListingToCardData = (listing: UserNFTApiItem): UserNFTCardData => {
+  const mapListingToCardData = useCallback((listing: UserNFTApiItem): UserNFTCardData => {
     const imageSource = toImageSource(listing.image);
     return {
       id: listing.id,
@@ -37,23 +46,69 @@ const SelectNFTScreen = () => {
       username: listing.username,
       image: imageSource || require('@/assets/inventory/product_01.png'), // Fallback if image is null
     };
-  };
+  }, []);
 
-  const userNFTData: UserNFTCardData[] = nftListings?.map(mapListingToCardData) ?? [];
+  // Flatten and map all pages into a single array, remove duplicates by ID
+  const userNFTData = useMemo(() => {
+    if (!nftListings.length) return [];
+    
+    // Remove duplicates by ID
+    const uniqueItemsMap = new Map<string, UserNFTApiItem>();
+    for (const item of nftListings) {
+      if (!uniqueItemsMap.has(item.id)) {
+        uniqueItemsMap.set(item.id, item);
+      }
+    }
+    
+    return Array.from(uniqueItemsMap.values()).map(mapListingToCardData);
+  }, [nftListings, mapListingToCardData]);
 
-  const handleNFTPress = (nftId: string) => {
+  // Group NFTs into rows of 3
+  const groupedNFTs = useMemo(() => {
+    const rows: UserNFTCardData[][] = [];
+    for (let i = 0; i < userNFTData.length; i += 3) {
+      rows.push(userNFTData.slice(i, i + 3));
+    }
+    return rows;
+  }, [userNFTData]);
+
+  // Item sayısı değiştiğinde ref'i güncelle
+  React.useEffect(() => {
+    isLoadingMoreRef.current = false;
+  }, [userNFTData.length]);
+
+  const handleLoadMore = useCallback(() => {
+    if (isLoadingMoreRef.current) {
+      return;
+    }
+
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    isLoadingMoreRef.current = true;
+
+    fetchNextPage()
+      .finally(() => {
+        setTimeout(() => {
+          isLoadingMoreRef.current = false;
+        }, 1000);
+      });
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const handleNFTPress = useCallback((nftId: string) => {
     // Find the NFT data
     const nftData = userNFTData.find(nft => nft.id === nftId);
     if (nftData) {
       // Navigate to NFT detail screen
       (navigation as any).navigate('NFTDetailScreen', { nftData });
     }
-  };
+  }, [userNFTData, navigation]);
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     console.log('Selected NFTs:', selectedNFTs);
     // Burada seçilen NFT'ler ile devam etme işlemi yapılabilir
-  };
+  }, [selectedNFTs]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -67,7 +122,7 @@ const SelectNFTScreen = () => {
 
         {/* NFT Grid */}
         <Box flex={1}>
-          {isLoading ? (
+          {isLoading && userNFTData.length === 0 ? (
             <Box flex={1} justifyContent="center" alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>
@@ -84,28 +139,37 @@ const SelectNFTScreen = () => {
               </Text>
             </Box>
           ) : (
-            <ScrollView 
-              flex={1} 
-              px={15} 
+            <FlatList
+              data={groupedNFTs}
+              renderItem={({ item }) => (
+                <HStack space="sm" justifyContent="space-between" mb="$3" px={15}>
+                  {item.map((nft) => (
+                    <VStack key={nft.id} width={cardWidth}>
+                      <UserNFTCard 
+                        data={nft} 
+                        isSelected={selectedNFTs.includes(nft.id)}
+                        onPress={() => handleNFTPress(nft.id)}
+                      />
+                    </VStack>
+                  ))}
+                  {/* If odd number of items, add empty space */}
+                  {item.length < 3 && <VStack width={cardWidth} />}
+                </HStack>
+              )}
+              keyExtractor={(item, index) => `row-${index}`}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                isFetchingNextPage ? (
+                  <Box py={20} alignItems="center">
+                    <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                  </Box>
+                ) : null
+              }
+              contentContainerStyle={{ paddingBottom: 20 }}
               showsVerticalScrollIndicator={false}
-            >
-              <VStack space="md" pb={20}>
-                {/* Render NFTs in rows of 3 */}
-                {Array.from({ length: Math.ceil(userNFTData.length / 3) }, (_, rowIndex) => (
-                  <HStack key={rowIndex} space="sm" justifyContent="space-between">
-                    {userNFTData.slice(rowIndex * 3, (rowIndex + 1) * 3).map((nft) => (
-                      <VStack key={nft.id} width={cardWidth}>
-                        <UserNFTCard 
-                          data={nft} 
-                          isSelected={selectedNFTs.includes(nft.id)}
-                          onPress={() => handleNFTPress(nft.id)}
-                        />
-                      </VStack>
-                    ))}
-                  </HStack>
-                ))}
-              </VStack>
-            </ScrollView>
+              removeClippedSubviews={false}
+            />
           )}
         </Box>
 

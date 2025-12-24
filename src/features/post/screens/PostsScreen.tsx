@@ -26,6 +26,9 @@ import { UpdatePost } from '@/src/mock/feed/types';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
+import { useBottomOffset } from '@/src/utils';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
@@ -36,7 +39,7 @@ export const PostsScreen = () => {
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
   
-  const { stage, name, productInfo, selectedProduct } = route.params;
+  const { stage, name, productInfo, selectedProduct, contextType, contextId } = route.params;
   const selectedProductPayload = selectedProduct
     ? {
         id: selectedProduct.id,
@@ -48,6 +51,9 @@ export const PostsScreen = () => {
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // Bottom offset for bottom sheet padding
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
   
   // Bottom sheet state
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
@@ -79,7 +85,65 @@ export const PostsScreen = () => {
     
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
-      navigation.navigate('CreatePostScreen');
+      // CatalogUIStore'dan ID'leri al
+      const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+      const selectedSubCategoryId = useCatalogUIStore.getState().selectedSubCategoryId;
+      const selectedProductGroupId = useCatalogUIStore.getState().selectedProductGroupId;
+      
+      // Route params'tan type'ı al (fallback için contextType da kontrol et)
+      let determinedContextType: ProductInfoType | undefined = contextType;
+      let determinedContextId: string | undefined = contextId; // Backward compatibility için route params'tan al
+      
+      // Eğer contextType yoksa stage'den belirle
+      if (!determinedContextType) {
+        switch (stage) {
+          case 'Product':
+            determinedContextType = ProductInfoType.PRODUCT;
+            break;
+          case 'ProductGroup':
+            determinedContextType = ProductInfoType.PRODUCT_GROUP;
+            break;
+          case 'SubCategories':
+            determinedContextType = ProductInfoType.SUB_CATEGORY;
+            break;
+        }
+      }
+      
+      // Type'a göre store'dan ID'yi al (route params fallback)
+      if (!determinedContextId && determinedContextType) {
+        switch (determinedContextType) {
+          case ProductInfoType.PRODUCT:
+            determinedContextId = selectedProductId || selectedProduct?.id;
+            break;
+          case ProductInfoType.PRODUCT_GROUP:
+            determinedContextId = selectedProductGroupId;
+            break;
+          case ProductInfoType.SUB_CATEGORY:
+            determinedContextId = selectedSubCategoryId;
+            break;
+        }
+      }
+      
+      // Store'da ID yoksa hata göster
+      if (!determinedContextType || !determinedContextId) {
+        console.error('[PostsScreen] ❌ Missing contextType or contextId. Type:', determinedContextType, 'ID:', determinedContextId);
+        // TODO: Show error toast/modal to user
+        return;
+      }
+      
+      // Save to flow store
+      const setFlowContext = useCreatePostFlowStore.getState().setFlowContext;
+      setFlowContext(determinedContextType, determinedContextId, productInfo ? {
+        image: productInfo.image,
+        title: productInfo.title,
+        subName: productInfo.subName,
+      } : undefined);
+      
+      navigation.navigate('CreatePostScreen', {
+        contextType: determinedContextType,
+        // contextId artık route params'tan gönderilmiyor, store'dan okunacak
+        productInfo,
+      });
     } else if (type === 'tips') {
       navigation.navigate('CreateTipsAndTrickPostScreen');
     } else if (type === 'question') {
@@ -117,7 +181,7 @@ export const PostsScreen = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         animateOnMount: true,
-        paddingBottom: 8,
+        paddingBottom: bottomOffset,
         onChange: (index: number) => {
           // Reset bottom sheet key when sheet closes to reset view state
           if (index === -1) {
@@ -216,8 +280,10 @@ export const PostsScreen = () => {
         </VStack>
       </ScrollView>
 
-      {/* Create Button */}
-      <CreateButton onPress={handleCreatePress} />
+      {/* Create Button - Sadece Product stage'inde göster */}
+      {stage === 'Product' && (
+        <CreateButton onPress={handleCreatePress} />
+      )}
 
       </Box>
     </SafeAreaView>

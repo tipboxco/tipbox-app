@@ -6,6 +6,12 @@ export interface ImagePickerResult {
   asset?: ImagePickerAsset;
 }
 
+export interface ImagePickerMultipleResult {
+  success: boolean;
+  error?: string;
+  assets?: ImagePickerAsset[];
+}
+
 export interface ImageValidationResult {
   isValid: boolean;
   error?: string;
@@ -14,5 +20,6 @@ export interface ImageValidationResult {
 export interface IImagePickerService {
   pickFromCamera: () => Promise<ImagePickerResult>;
   pickFromGallery: () => Promise<ImagePickerResult>;
+  pickMultipleFromGallery: (maxSelection?: number) => Promise<ImagePickerMultipleResult>;
   validateImage: (asset: ImagePickerAsset) => ImageValidationResult;
 } 

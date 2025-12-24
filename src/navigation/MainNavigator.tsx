@@ -22,7 +22,7 @@ export const MainNavigator = () => {
         <Stack.Screen name="Auth" component={AuthNavigator} />
       ) : (
         <>
-          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen name="Tabs" component={TabNavigator} />
           <Stack.Screen name="Settings" component={SettingsNavigator} />
           <Stack.Screen name="MoreSchoise" component={MoreSchoiseNavigator} />
         </>

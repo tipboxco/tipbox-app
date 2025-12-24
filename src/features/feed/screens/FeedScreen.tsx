@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Platform, FlatList, ActivityIndicator } from 'react-native';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
@@ -23,7 +23,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFeed } from '../api/hooks';
 import { CardType, ProductInfoType } from '@/src/types/common';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, useBottomOffset } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import type { FeedApiItem } from '../api/feedApi';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
@@ -50,6 +50,9 @@ export const FeedScreen = () => {
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  
+  // Bottom padding for FlatList content
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -62,70 +65,7 @@ export const FeedScreen = () => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useFeed(10); // Test için limit 3 olarak ayarlandı
-
-  // Console log for debugging - FeedScreen data
-  useEffect(() => {
-    if (data?.pages) {
-      console.log('[FeedScreen] useFeed Hook Result:');
-      console.log('  - Data Pages Count:', data.pages.length);
-      console.log('  - Total Items:', data.pages.flatMap((page) => page.items).length);
-      console.log('  - hasNextPage:', hasNextPage);
-      console.log('  - isFetchingNextPage:', isFetchingNextPage);
-      console.log('  - isLoading:', isLoading);
-      console.log('  - error:', error ? error.message : null);
-      
-      // Her sayfanın detaylarını ayrı ayrı logla
-      data.pages.forEach((page, pageIndex) => {
-        console.log(`[FeedScreen] Page ${pageIndex + 1}:`, {
-          itemsCount: page.items.length,
-          pagination: page.pagination,
-          items: page.items.map((item) => ({
-            id: item.data.id,
-            type: item.type,
-            dataId: item.data.id,
-            dataType: item.data.type || 'unknown',
-          })),
-        });
-      });
-      
-      // Tüm ID'leri listele
-      const allIds = data.pages.flatMap((page) => 
-        page.items.map((item) => item.data.id)
-      );
-      console.log('[FeedScreen] All Item IDs:', allIds);
-      
-      // Her item'ın type'ını logla
-      const itemsByType = data.pages.flatMap((page) => 
-        page.items.map((item) => ({
-          id: item.data.id,
-          type: item.type,
-        }))
-      );
-      console.log('[FeedScreen] Items by Type:', {
-        update: itemsByType.filter(item => item.type === 'update').length,
-        benchmark: itemsByType.filter(item => item.type === 'benchmark').length,
-        experience: itemsByType.filter(item => item.type === 'experience').length,
-        post: itemsByType.filter(item => item.type === 'post').length,
-        question: itemsByType.filter(item => item.type === 'question').length,
-        tipsAndTricks: itemsByType.filter(item => item.type === 'tipsAndTricks').length,
-        total: itemsByType.length,
-      });
-      
-      // Duplicate ID kontrolü
-      const uniqueIds = Array.from(new Set(allIds));
-      if (allIds.length !== uniqueIds.length) {
-        console.warn('[FeedScreen] Duplicate IDs detected:', {
-          total: allIds.length,
-          unique: uniqueIds.length,
-          duplicates: allIds.length - uniqueIds.length,
-        });
-        // Duplicate ID'leri bul
-        const duplicateIds = allIds.filter((id, index) => allIds.indexOf(id) !== index);
-        console.warn('[FeedScreen] Duplicate ID list:', Array.from(new Set(duplicateIds)));
-      }
-    }
-  }, [data, hasNextPage, isFetchingNextPage, isLoading, error]);
+  } = useFeed(10);
 
   // Flatten all pages into a single array and remove duplicates by ID
   const feedItems = useMemo(() => {
@@ -142,31 +82,7 @@ export const FeedScreen = () => {
       }
     }
     
-    const uniqueItems = Array.from(uniqueItemsMap.values());
-    
-    // Debug: Duplicate kontrolü
-    if (allItems.length !== uniqueItems.length) {
-      console.warn('[FeedScreen] Duplicate items detected:', {
-        total: allItems.length,
-        unique: uniqueItems.length,
-        duplicates: allItems.length - uniqueItems.length,
-      });
-    }
-    
-    // Debug: Render edilecek item sayısını logla
-    console.log('[FeedScreen] feedItems after filtering:', {
-      totalItems: uniqueItems.length,
-      itemsByType: {
-        update: uniqueItems.filter(item => item.type === CardType.UPDATE).length,
-        benchmark: uniqueItems.filter(item => item.type === CardType.BENCHMARK).length,
-        experience: uniqueItems.filter(item => item.type === CardType.EXPERIENCE).length,
-        post: uniqueItems.filter(item => item.type === CardType.POST).length,
-        question: uniqueItems.filter(item => item.type === CardType.QUESTION).length,
-        tipsAndTricks: uniqueItems.filter(item => item.type === CardType.TIPS_AND_TRICKS).length,
-      },
-    });
-    
-    return uniqueItems;
+    return Array.from(uniqueItemsMap.values());
   }, [data?.pages]);
 
   const handleSearchPress = () => {
@@ -198,8 +114,6 @@ export const FeedScreen = () => {
   };
 
   const handleExpertPress = () => {
-    console.log('[FeedScreen] Expert button pressed');
-    console.log('[FeedScreen] Opening ExpertBottomSheet via global bottom sheet');
     openBottomSheet(
       <>
         {/* Header */}
@@ -526,10 +440,6 @@ export const FeedScreen = () => {
         }
         return null;
       default:
-        console.warn('[FeedScreen] Unknown item type, not rendered:', {
-          id: item.data.id,
-          type: item.type,
-        });
         return null;
     }
   };
@@ -587,7 +497,7 @@ export const FeedScreen = () => {
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={false}
             />

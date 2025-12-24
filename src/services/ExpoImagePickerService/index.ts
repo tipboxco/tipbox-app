@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { imagePickerConfig } from '../../config/imagePicker.config';
-import type { IImagePickerService, ImagePickerResult, ImageValidationResult } from './types';
+import type { IImagePickerService, ImagePickerResult, ImagePickerMultipleResult, ImageValidationResult } from './types';
 
 class ExpoImagePickerService implements IImagePickerService {
   private static instance: ExpoImagePickerService;
@@ -117,6 +117,56 @@ class ExpoImagePickerService implements IImagePickerService {
       return {
         success: true,
         asset,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Fotoğraf seçilirken bir hata oluştu',
+      };
+    }
+  }
+
+  public async pickMultipleFromGallery(maxSelection: number = 10): Promise<ImagePickerMultipleResult> {
+    try {
+      const hasPermission = await this.requestMediaLibraryPermission();
+      if (!hasPermission) {
+        return {
+          success: false,
+          error: 'Galeri izni verilmedi',
+        };
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        ...imagePickerConfig.galleryMultiple,
+        selectionLimit: maxSelection,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return {
+          success: false,
+          error: 'Fotoğraf seçilmedi',
+        };
+      }
+
+      // Tüm asset'leri validate et
+      const validAssets: ImagePicker.ImagePickerAsset[] = [];
+      for (const asset of result.assets) {
+        const validation = this.validateImage(asset);
+        if (validation.isValid) {
+          validAssets.push(asset);
+        }
+      }
+
+      if (validAssets.length === 0) {
+        return {
+          success: false,
+          error: 'Seçilen fotoğraflardan hiçbiri geçerli değil',
+        };
+      }
+
+      return {
+        success: true,
+        assets: validAssets,
       };
     } catch (error) {
       return {

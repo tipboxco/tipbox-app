@@ -44,6 +44,7 @@
     "@gluestack-ui/themed": "^1.1.73",
     "@gluestack-ui/toast": "^1.0.9",
     "@gorhom/bottom-sheet": "^5.2.3",
+    "@hookform/resolvers": "^5.2.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/drawer": "^7.5.3",
@@ -74,6 +75,7 @@
     "promise": "^8.3.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-hook-form": "^7.68.0",
     "react-native": "0.81.5",
     "react-native-circular-progress": "^1.4.1",
     "react-native-collapsible-tab-view": "^8.0.1",
@@ -98,6 +100,7 @@
     "tailwindcss": "^3.4.17",
     "text-encoding": "^0.7.0",
     "web-streams-polyfill": "^4.2.0",
+    "zod": "^4.1.13",
     "zustand": "^5.0.6"
   },
   "devDependencies": {

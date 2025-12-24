@@ -12,9 +12,12 @@ export const exploreKeys = {
   hottest: (cursor?: string, limit?: number) =>
     [...exploreKeys.all, 'hottest', cursor, limit] as const,
   marketplaceBanners: () => [...exploreKeys.all, 'marketplace-banners'] as const,
-  events: (limit?: number) => [...exploreKeys.all, 'events', limit] as const,
-  newBrands: (limit?: number) => [...exploreKeys.all, 'brands', 'new', limit] as const,
-  newProducts: (limit?: number) => [...exploreKeys.all, 'products', 'new', limit] as const,
+  events: (cursor?: string, limit?: number) =>
+    [...exploreKeys.all, 'events', cursor, limit] as const,
+  newBrands: (cursor?: string, limit?: number) =>
+    [...exploreKeys.all, 'brands', 'new', cursor, limit] as const,
+  newProducts: (cursor?: string, limit?: number) =>
+    [...exploreKeys.all, 'products', 'new', cursor, limit] as const,
 };
 
 /**
@@ -36,7 +39,8 @@ export const useHottest = (limit: number = 20) => {
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
-      if (!lastPage.pagination.hasMore) {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
         return undefined;
       }
       
@@ -73,20 +77,32 @@ export const useMarketplaceBanners = () => {
 };
 
 /**
- * Get Explore Events query hook
- * Explore sayfasındaki "What's New" sekmesindeki yeni event'leri getirir
- * Scroll ile daha fazla veri getirilmez, sadece 10 tane gösterilir
+ * Get Explore Events infinite query hook
+ * Explore sayfasındaki "What's New" sekmesindeki yeni event'leri infinite scroll ile getirir
  *
- * @param limit - Gösterilecek event sayısı (default: 10, max: 10)
- * @returns React Query query hook result
+ * @param limit - Sayfa başına event sayısı (default: 10, max: 10)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useExploreEvents();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExploreEvents(10);
  */
 export const useExploreEvents = (limit: number = 10) => {
-  return useQuery<EventsApiResponse, Error>({
-    queryKey: exploreKeys.events(limit),
-    queryFn: () => getExploreEvents(limit),
+  return useInfiniteQuery<EventsApiResponse, Error>({
+    queryKey: exploreKeys.events(undefined, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getExploreEvents(cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      
+      // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
+      return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].eventId : undefined);
+    },
     staleTime: 5 * 60 * 1000, // 5 dakika
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,
@@ -96,20 +112,32 @@ export const useExploreEvents = (limit: number = 10) => {
 };
 
 /**
- * Get New Brands query hook
- * Explore sayfasındaki "What's New" sekmesindeki yeni brand'leri getirir
- * Scroll ile daha fazla veri getirilmez, sadece 10 tane gösterilir
+ * Get New Brands infinite query hook
+ * Explore sayfasındaki "What's New" sekmesindeki yeni brand'leri infinite scroll ile getirir
  *
- * @param limit - Gösterilecek brand sayısı (default: 10)
- * @returns React Query query hook result
+ * @param limit - Sayfa başına brand sayısı (default: 10)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useNewBrands();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useNewBrands(10);
  */
 export const useNewBrands = (limit: number = 10) => {
-  return useQuery<NewBrandsApiResponse, Error>({
-    queryKey: exploreKeys.newBrands(limit),
-    queryFn: () => getNewBrands(limit),
+  return useInfiniteQuery<NewBrandsApiResponse, Error>({
+    queryKey: exploreKeys.newBrands(undefined, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getNewBrands(cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      
+      // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
+      return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].brandId : undefined);
+    },
     staleTime: 5 * 60 * 1000, // 5 dakika
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,
@@ -119,20 +147,32 @@ export const useNewBrands = (limit: number = 10) => {
 };
 
 /**
- * Get New Products query hook
- * Explore sayfasındaki "What's New" sekmesindeki yeni product'leri getirir
- * Scroll ile daha fazla veri getirilmez, sadece 10 tane gösterilir
+ * Get New Products infinite query hook
+ * Explore sayfasındaki "What's New" sekmesindeki yeni product'leri infinite scroll ile getirir
  *
- * @param limit - Gösterilecek product sayısı (default: 10)
- * @returns React Query query hook result
+ * @param limit - Sayfa başına product sayısı (default: 10)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useNewProducts();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useNewProducts(10);
  */
 export const useNewProducts = (limit: number = 10) => {
-  return useQuery<NewProductsApiResponse, Error>({
-    queryKey: exploreKeys.newProducts(limit),
-    queryFn: () => getNewProducts(limit),
+  return useInfiniteQuery<NewProductsApiResponse, Error>({
+    queryKey: exploreKeys.newProducts(undefined, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getNewProducts(cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      
+      // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
+      return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].productId : undefined);
+    },
     staleTime: 5 * 60 * 1000, // 5 dakika
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false,

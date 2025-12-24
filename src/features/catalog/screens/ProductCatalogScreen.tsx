@@ -13,6 +13,9 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts } from '../api/hooks';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
 import { toImageSource } from '@/src/utils';
+import { ProductInfoType } from '@/src/types/common';
+import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
+import { useCatalogUIStore } from '../store/catalogUIStore';
 
 type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -23,6 +26,9 @@ interface ProductCatalogScreenProps {
   onStateChange?: (data: {
     selectedProduct: any | null;
     currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedSubCategoryId?: string;
+    selectedProductGroupId?: string;
+    breadcrumbItems: BreadcrumbItem[];
   }) => void;
   scrollViewPaddingBottom?: number;
 }
@@ -34,14 +40,28 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   const [searchQuery, setSearchQuery] = useState('');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
   
-  // Seçili kategori ID'si (subcategories çekmek için)
+  // Create Post Flow Store
+  const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
+  
+  // Catalog UI Store
+  const setSelectedProduct = useCatalogUIStore((state) => state.setSelectedProduct);
+  const setSelectedSubCategory = useCatalogUIStore((state) => state.setSelectedSubCategory);
+  const setSelectedProductGroup = useCatalogUIStore((state) => state.setSelectedProductGroup);
+  const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
+  
+  // Seçili kategori ID'si (subcategories çekmek için) - Local state (API için)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   
-  // Seçili alt kategori ID'si (product groups çekmek için)
-  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | undefined>(undefined);
+  // Seçili alt kategori ID'si (product groups çekmek için) - Store'dan oku
+  const selectedSubCategoryId = useCatalogUIStore((state) => state.selectedSubCategoryId);
+  const setSelectedSubCategoryId = useCatalogUIStore((state) => state.setSelectedSubCategory);
   
-  // Seçili ürün grubu ID'si (products çekmek için)
-  const [selectedProductGroupId, setSelectedProductGroupId] = useState<string | undefined>(undefined);
+  // Seçili ürün grubu ID'si (products çekmek için) - Store'dan oku
+  const selectedProductGroupId = useCatalogUIStore((state) => state.selectedProductGroupId);
+  const setSelectedProductGroupId = useCatalogUIStore((state) => state.setSelectedProductGroup);
+  
+  // Current view - Store'dan oku
+  const currentView = useCatalogUIStore((state) => state.currentView);
   
   // API'den kategorileri getir
   const { data: catalogCategories, isLoading, isError } = useCatalogCategories();
@@ -99,25 +119,28 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       subCategoryId: product.subCategoryId,
       description: '', // API'den description gelmiyor
     })) || [];
-  const [currentView, setCurrentView] = useState<'categories' | 'subcategories' | 'productgroups' | 'products'>('categories');
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  // Local state for product object (for UI display only)
+  const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
   // State değişikliklerini parent'a bildir
   useEffect(() => {
     onStateChange?.({
       selectedProduct,
       currentView,
+      selectedSubCategoryId,
+      selectedProductGroupId,
+      breadcrumbItems,
     });
-  }, [selectedProduct, currentView, onStateChange]);
+  }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems, onStateChange]);
 
   const resetToRoot = useCallback(() => {
     setBreadcrumbItems([]);
     setSelectedCategoryId(undefined);
     setSelectedSubCategoryId(undefined);
     setSelectedProductGroupId(undefined);
-    setSelectedProduct(null);
+    setSelectedProductLocal(null);
     setCurrentView('categories');
-  }, []);
+  }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView, setSelectedProductLocal]);
 
   const handleCategoryPress = (category: { id: string; name: string; image: any }) => {
     console.log('📂 [Catalog] Category seçildi:', {
@@ -129,7 +152,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     setSelectedCategoryId(category.id);
     setSelectedSubCategoryId(undefined); // Subcategory'yi temizle
     setSelectedProductGroupId(undefined); // ProductGroup'u temizle
-    setSelectedProduct(null);
+    setSelectedProductLocal(null);
 
     setBreadcrumbItems([
       {
@@ -167,7 +190,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     // Seçili alt kategori ID'sini set et (product groups API çağrısı için)
     setSelectedSubCategoryId(subCategory.id);
     setSelectedProductGroupId(undefined); // ProductGroup'u temizle
-    setSelectedProduct(null);
+    setSelectedProductLocal(null);
 
     setBreadcrumbItems(
       [
@@ -192,7 +215,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     
     // Seçili ürün grubu ID'sini set et (products API çağrısı için)
     setSelectedProductGroupId(productGroup.id);
-    setSelectedProduct(null);
+    setSelectedProductLocal(null);
 
     const currentCategory = breadcrumbItems.find(item => item.type === 'category');
     const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
@@ -243,7 +266,16 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     );
     
     // Store selected product for CreatePostBottomSheet
-    setSelectedProduct(product);
+    setSelectedProductLocal(product);
+    // Store'a product ID'yi kaydet
+    setSelectedProduct(product.id);
+    
+    // Save to flow store for CreatePostScreen
+    setFlowContext(ProductInfoType.PRODUCT, product.id, {
+      image: product.image,
+      title: product.name,
+      subName: product.description || product.name,
+    });
     
     navigation.navigate('Post', {
       screen: 'PostsScreen',
@@ -261,6 +293,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
           description: product.description || '',
           image: product.image,
         },
+        contextType: ProductInfoType.PRODUCT,
+        // contextId artık route params'tan gönderilmiyor, store'dan okunacak
       },
     });
     
@@ -290,7 +324,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       setSelectedCategoryId(item.id);
       setSelectedSubCategoryId(undefined);
       setSelectedProductGroupId(undefined);
-      setSelectedProduct(null);
+      setSelectedProductLocal(null);
+      setSelectedProduct(undefined);
       setCurrentView('subcategories');
       return;
     }
@@ -306,7 +341,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       setSelectedCategoryId(categoryItem?.id);
       setSelectedSubCategoryId(item.id);
       setSelectedProductGroupId(undefined);
-      setSelectedProduct(null);
+      setSelectedProductLocal(null);
+      setSelectedProduct(undefined);
       setCurrentView('productgroups');
       return;
     }
@@ -323,7 +359,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       setSelectedCategoryId(categoryItem?.id);
       setSelectedSubCategoryId(subCategoryItem?.id);
       setSelectedProductGroupId(item.id);
-      setSelectedProduct(null);
+      setSelectedProductLocal(null);
+      setSelectedProduct(undefined);
       setCurrentView('products');
       return;
     }
@@ -341,7 +378,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       setSelectedCategoryId(categoryItem?.id);
       setSelectedSubCategoryId(subCategoryItem?.id);
       setSelectedProductGroupId(productGroupItem?.id);
-      setSelectedProduct(item.data || null);
+      setSelectedProductLocal(item.data || null);
+      // Store'a product ID'yi kaydet
+      setSelectedProduct(item.data?.id);
       setCurrentView('products');
     }
   };
@@ -381,14 +420,46 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       // ProductGroup selected (with SubCategory) - title=SubCategory, subName=ProductGroup
       stage = 'ProductGroup';
       name = productGroupItem.name;
-      // TODO: Implement when subcategories and product groups API is available
-      // productInfo will be set when API endpoints are available
+      const productGroup = currentProductGroups.find(pg => pg.id === productGroupItem.id);
+      if (productGroup) {
+        productInfo = {
+          image: productGroup.image,
+          title: productGroup.name,
+          subName: subCategoryItem.name,
+        };
+      } else {
+        // Fallback: SubCategory bilgisini kullan
+        const subCategory = currentSubCategories.find(sc => sc.id === subCategoryItem.id);
+        if (subCategory) {
+          productInfo = {
+            image: subCategory.image,
+            title: subCategory.name,
+            subName: productGroupItem.name,
+          };
+        }
+      }
     } else if (subCategoryItem && categoryItem) {
       // SubCategory selected (with Category) - title=Category, subName=SubCategory
       stage = 'SubCategories';
       name = subCategoryItem.name;
-      // TODO: Implement when subcategories API is available
-      // productInfo will be set when API endpoints are available
+      const subCategory = currentSubCategories.find(sc => sc.id === subCategoryItem.id);
+      if (subCategory) {
+        productInfo = {
+          image: subCategory.image,
+          title: subCategory.name,
+          subName: categoryItem.name,
+        };
+      } else {
+        // Fallback: Category bilgisini kullan
+        const category = currentCategories.find(cat => cat.id === categoryItem.id);
+        if (category) {
+          productInfo = {
+            image: category.image,
+            title: category.name,
+            subName: subCategoryItem.name,
+          };
+        }
+      }
     } else if (categoryItem) {
       // Category selected (fallback)
       stage = 'SubCategories';
@@ -402,14 +473,73 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       }
     }
 
-    // Navigate to PostsScreen with parameters (productInfo is required)
+    // Navigate to PostsScreen with parameters
+    // productInfo oluşturulamadıysa bile navigation yap (fallback productInfo ile)
+    if (!productInfo) {
+      // Fallback: En azından bir productInfo oluştur
+      const categoryItem = breadcrumbItems.find(item => item.type === 'category');
+      const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
+      const productGroupItem = breadcrumbItems.find(item => item.type === 'productGroup');
+      
+      if (productGroupItem) {
+        const productGroup = currentProductGroups.find(pg => pg.id === productGroupItem.id);
+        productInfo = {
+          image: productGroup?.image || (subCategoryItem ? currentSubCategories.find(sc => sc.id === subCategoryItem.id)?.image : undefined) || currentCategories[0]?.image,
+          title: productGroupItem.name,
+          subName: subCategoryItem?.name || categoryItem?.name,
+        };
+      } else if (subCategoryItem) {
+        const subCategory = currentSubCategories.find(sc => sc.id === subCategoryItem.id);
+        productInfo = {
+          image: subCategory?.image || (categoryItem ? currentCategories.find(cat => cat.id === categoryItem.id)?.image : undefined) || currentCategories[0]?.image,
+          title: subCategoryItem.name,
+          subName: categoryItem?.name,
+        };
+      } else if (categoryItem) {
+        const category = currentCategories.find(cat => cat.id === categoryItem.id);
+        productInfo = {
+          image: category?.image || currentCategories[0]?.image,
+          title: categoryItem.name,
+        };
+      }
+    }
+    
     if (productInfo) {
+      // ContextType ve contextId'yi belirle
+      let contextType: ProductInfoType | undefined;
+      let contextId: string | undefined;
+      
+      if (productItem && selectedProduct) {
+        contextType = ProductInfoType.PRODUCT;
+        contextId = productItem.id;
+      } else if (productGroupItem && selectedProductGroupId) {
+        contextType = ProductInfoType.PRODUCT_GROUP;
+        contextId = productGroupItem.id;
+      } else if (subCategoryItem && selectedSubCategoryId) {
+        contextType = ProductInfoType.SUB_CATEGORY;
+        contextId = subCategoryItem.id;
+      }
+      
+      // Save to flow store for CreatePostScreen
+      if (contextType && contextId) {
+        setFlowContext(contextType, contextId, {
+          image: productInfo.image,
+          title: productInfo.title,
+          subName: productInfo.subName,
+        });
+      }
+      
+      // CatalogUIStore zaten güncellenmiş (handleCategoryPress, handleSubCategoryPress, handleProductGroupPress, handleProductPress içinde)
+      // Burada sadece navigation yapılıyor
+      
       navigation.navigate('Post', {
         screen: 'PostsScreen',
         params: {
           stage,
           name,
           productInfo,
+          contextType, // Sadece type gönderiliyor, ID store'dan okunacak
+          // contextId artık gönderilmiyor, store'dan okunacak
         },
       });
     }

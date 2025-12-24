@@ -58,18 +58,33 @@ export const useMarketplaceListings = (params: MarketplaceListingsParams = {}) =
 };
 
 /**
- * Get My NFTs query hook
- * Kullanıcıya ait NFT'leri getirir
+ * Get My NFTs infinite query hook
+ * Kullanıcıya ait NFT'leri infinite scroll ile getirir
  *
- * @returns React Query query hook result
+ * @param limit - Her sayfada getirilecek NFT sayısı (default: 12)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useMyNFTs();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyNFTs(12);
  */
-export const useMyNFTs = () => {
-  return useQuery<UserNFTsApiResponse, Error>({
+export const useMyNFTs = (limit: number = 12) => {
+  return useInfiniteQuery<UserNFTsApiResponse, Error>({
     queryKey: marketplaceKeys.myNFTs(),
-    queryFn: () => getMyNFTs(),
+    queryFn: ({ pageParam }) => {
+      const offset = pageParam as number;
+      return getMyNFTs(offset, limit);
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      // Eğer son sayfadaki item sayısı limit'ten azsa, daha fazla veri yok
+      if (lastPage.length < limit) {
+        return undefined;
+      }
+      
+      // Bir sonraki offset'i hesapla
+      const currentOffset = allPages.reduce((sum, page) => sum + page.length, 0);
+      return currentOffset;
+    },
     staleTime: 0, // Cache yok
     gcTime: 0, // Cache yok
     refetchOnMount: true,

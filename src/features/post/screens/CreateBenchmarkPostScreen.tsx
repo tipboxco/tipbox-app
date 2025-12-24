@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, Pressable, Textarea, TextareaInput, Image } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, Pressable, Image } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { FormProvider, Controller, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -10,81 +11,30 @@ import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
 import { InventoryItem } from '@/src/mock/inventory/types';
+import { useBenchmarkPostForm } from '../hooks/useBenchmarkPostForm';
+import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
+import { ProductComparisonCard } from '../components/ProductComparisonCard';
+import { DashedProductCard } from '../components/DashedProductCard';
 import type { PostStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ProductComparisonCard } from '../components/ProductComparisonCard';
-import { DashedProductCard } from '../components/DashedProductCard';
+import type { BenchmarkPostFormData } from '../schemas/benchmarkPostSchema';
 
 type CreateBenchmarkPostScreenRouteProp = RouteProp<PostStackParamList, 'CreateBenchmarkPostScreen'>;
 type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface SelectedProduct {
-  id: string;
-  name: string;
-  brand?: string;
-  subName?: string;
-  image?: any;
-  isOwned?: boolean;
-}
-
-export const CreateBenchmarkPostScreen = () => {
+// Product Comparison Field Component
+const ProductComparisonField: React.FC = () => {
+  const { control, watch, setValue } = useFormContext<BenchmarkPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<CreateBenchmarkPostScreenNavigationProp>();
-  const route = useRoute<CreateBenchmarkPostScreenRouteProp>();
-  
-  const { product } = route.params || {};
-  
-  const [postText, setPostText] = useState('');
-  const [selectedProduct1, setSelectedProduct1] = useState<SelectedProduct | null>(null);
-  const [selectedProduct2, setSelectedProduct2] = useState<SelectedProduct | null>(null);
-  const [selectedChoice, setSelectedChoice] = useState<'product1' | 'product2' | null>(null);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
 
-  // Global bottom sheet hook
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-
-  // Initialize first product from route params
-  useEffect(() => {
-    if (product) {
-      // Parse product name to extract brand if possible
-      const nameParts = product.name.split(' ');
-      const brand = nameParts.length > 1 ? nameParts[0] : undefined;
-      const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
-      
-      const initialProduct: SelectedProduct = {
-        id: product.id,
-        name: productName,
-        brand: brand,
-        subName: product.description,
-        image: product.image,
-        isOwned: false, // You can determine this based on your logic
-      };
-      setSelectedProduct1(initialProduct);
-    }
-  }, [product]);
-
-  const handleBackPress = () => {
-    // Navigate to Feed screen
-    navigation.navigate('Main', {
-      screen: 'Feed',
-      params: {
-        screen: 'FeedScreen',
-      },
-    });
-  };
-
-  const handleImagePicker = () => {
-    console.log('Open image picker');
-    // TODO: Implement image picker
-  };
-
-  const handleRemoveImage = (index: number) => {
-    setSelectedImages(selectedImages.filter((_, i) => i !== index));
-  };
+  const selectedProduct1 = watch('selectedProduct1');
+  const selectedProduct2 = watch('selectedProduct2');
+  const selectedChoice = watch('selectedChoice');
 
   const handleProductSelect = () => {
     openBottomSheet(
@@ -151,8 +101,8 @@ export const CreateBenchmarkPostScreen = () => {
           </Pressable>
           <Pressable
             onPress={() => {
-    setProductSource('Catalog');
-    setShowProductSelector(true);
+              setProductSource('Catalog');
+              setShowProductSelector(true);
               closeBottomSheet();
             }}
             bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
@@ -216,13 +166,11 @@ export const CreateBenchmarkPostScreen = () => {
   };
 
   const handleCatalogProductSelect = (product: Product) => {
-    // Parse product name to extract brand if possible
-    // Catalog products might have format like "Brand ProductName" or just "ProductName"
     const nameParts = product.name.split(' ');
     const brand = nameParts.length > 1 ? nameParts[0] : undefined;
     const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
     
-    const selectedProduct: SelectedProduct = {
+    const selectedProduct = {
       id: product.id,
       name: productName,
       brand: brand,
@@ -230,13 +178,13 @@ export const CreateBenchmarkPostScreen = () => {
       image: product.image,
       isOwned: false,
     };
-    setSelectedProduct2(selectedProduct);
+    setValue('selectedProduct2', selectedProduct, { shouldValidate: true });
     setShowProductSelector(false);
     setProductSource(null);
   };
 
   const handleInventoryProductSelect = (product: InventoryItem) => {
-    const selectedProduct: SelectedProduct = {
+    const selectedProduct = {
       id: product.id,
       name: product.model,
       brand: product.brand,
@@ -244,7 +192,7 @@ export const CreateBenchmarkPostScreen = () => {
       image: product.image,
       isOwned: true,
     };
-    setSelectedProduct2(selectedProduct);
+    setValue('selectedProduct2', selectedProduct, { shouldValidate: true });
     setShowProductSelector(false);
     setProductSource(null);
   };
@@ -253,20 +201,6 @@ export const CreateBenchmarkPostScreen = () => {
     setShowProductSelector(false);
     setProductSource(null);
   };
-
-  const handleProductChoice = (productNumber: 1 | 2) => {
-    setSelectedChoice(productNumber === 1 ? 'product1' : 'product2');
-  };
-
-  const handleShare = () => {
-    console.log('Share button pressed');
-  };
-
-  const characterCount = postText.length;
-  const maxCharacters = 500;
-
-  // Check if share button should be enabled (content, both products selected, and choice made)
-  const isShareEnabled = postText.trim().length > 0 && selectedProduct1 !== null && selectedProduct2 !== null && selectedChoice !== null;
 
   // Show product selector if productSource is set
   if (showProductSelector && productSource) {
@@ -287,164 +221,162 @@ export const CreateBenchmarkPostScreen = () => {
     }
   }
 
+  return (
+    <VStack px={16} space="xs">
+      <Text
+        color={isDark ? '$textDark400' : '#B9B9B9'}
+        fontSize={10}
+        fontWeight="$bold"
+      >
+        Product Comparison
+      </Text>
+      <Box position="relative" width="100%">
+        <HStack justifyContent="space-between" width="100%" alignItems="stretch">
+          {selectedProduct1 ? (
+            <Controller
+              name="selectedChoice"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <ProductComparisonCard
+                  product={selectedProduct1}
+                  isSelected={value === 'product1'}
+                  onPress={() => onChange('product1')}
+                />
+              )}
+            />
+          ) : null}
+          
+          {selectedProduct2 ? (
+            <Controller
+              name="selectedChoice"
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <ProductComparisonCard
+                  product={selectedProduct2}
+                  isSelected={value === 'product2'}
+                  onPress={() => onChange('product2')}
+                />
+              )}
+            />
+          ) : (
+            <DashedProductCard onPress={handleProductSelect} />
+          )}
+        </HStack>
+        
+        {(selectedProduct1 || selectedProduct2) && (
+          <Box
+            position="absolute"
+            top="50%"
+            left="50%"
+            style={{
+              transform: [{ translateX: -20 }, { translateY: -20 }],
+            }}
+            width={40}
+            height={40}
+            zIndex={10}
+            pointerEvents="none"
+          >
+            <Image
+              source={require('@/assets/common/benchmarks.png')}
+              alt="benchmarks"
+              width={40}
+              height={40}
+            />
+          </Box>
+        )}
+      </Box>
+    </VStack>
+  );
+};
+
+export const CreateBenchmarkPostScreen = () => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const navigation = useNavigation<CreateBenchmarkPostScreenNavigationProp>();
+  const route = useRoute<CreateBenchmarkPostScreenRouteProp>();
+  const { product } = route.params || {};
+  const methods = useBenchmarkPostForm();
+  const { handleSubmit, formState, setValue } = methods;
+
+  // Initialize first product from route params
+  useEffect(() => {
+    if (product) {
+      const nameParts = product.name.split(' ');
+      const brand = nameParts.length > 1 ? nameParts[0] : undefined;
+      const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
+      
+      const initialProduct = {
+        id: product.id,
+        name: productName,
+        brand: brand,
+        subName: product.description,
+        image: product.image,
+        isOwned: false,
+      };
+      setValue('selectedProduct1', initialProduct, { shouldValidate: true });
+    }
+  }, [product, setValue]);
+
+  const handleBackPress = () => {
+    navigation.navigate('Main', {
+      screen: 'Feed',
+      params: {
+        screen: 'FeedScreen',
+      },
+    });
+  };
+
+  const onSubmit = (data: BenchmarkPostFormData) => {
+    console.log('Form submitted:', data);
+    // TODO: Backend entegrasyonu
+  };
+
+  // Check if share button should be enabled (form is valid)
+  const isShareEnabled = formState.isValid;
+
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
-      {/* Header */}
-      <Header
-        title="Comparison Post"
-        leftAction="cancel"
-        onLeftActionPress={handleBackPress}
-        rightButton={{
-          text: 'Share',
-          backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
-          borderWidth: 1,
-          borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
-          textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-          fontSize: 12,
-          borderRadius: 25,
-          paddingX: 24,
-          paddingY: 8,
-          onPress: handleShare,
-        }}
-      />
+      <FormProvider {...methods}>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+          {/* Header */}
+          <Header
+            title="Comparison Post"
+            leftAction="cancel"
+            onLeftActionPress={handleBackPress}
+            rightButton={{
+              text: 'Share',
+              backgroundColor: isShareEnabled ? '#D0F205' : '#EDEDED',
+              borderWidth: 1,
+              borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
+              textColor: isShareEnabled ? '#111111' : '#B1B1B1',
+              fontSize: 12,
+              borderRadius: 25,
+              paddingX: 24,
+              paddingY: 8,
+              onPress: handleSubmit(onSubmit),
+            }}
+          />
 
-      {/* Content */}
-      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-        <VStack space="md">
-          {/* Product Comparison Section */}
-          <VStack px={16} space="xs">
-            {/* Section Title */}
-            <Text
-              color={isDark ? '$textDark400' : '#B9B9B9'}
-              fontSize={10}
-              fontWeight="$bold"
-            >
-              Product Comparison
-            </Text>
+          {/* Content */}
+          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+            <VStack space="md">
+              {/* Product Comparison Section */}
+              <ProductComparisonField />
 
-            {/* Product Comparison Container */}
-            <Box position="relative" width="100%">
-              <HStack justifyContent="space-between" width="100%" alignItems="stretch">
-                {/* First Product - Always render ProductCard if product exists */}
-                {selectedProduct1 ? (
-                  <ProductComparisonCard
-                    product={selectedProduct1}
-                    isSelected={selectedChoice === 'product1'}
-                    onPress={() => handleProductChoice(1)}
-                  />
-                ) : null}
-                
-                {/* Second Product - DashedCard if not selected, ProductCard if selected */}
-                {selectedProduct2 ? (
-                  <ProductComparisonCard
-                    product={selectedProduct2}
-                    isSelected={selectedChoice === 'product2'}
-                    onPress={() => handleProductChoice(2)}
-                  />
-                ) : (
-                  <DashedProductCard
-                    onPress={handleProductSelect}
-                  />
-                )}
-              </HStack>
-              
-              {/* Benchmark Icon - Center */}
-              {(selectedProduct1 || selectedProduct2) && (
-                <Box
-                  position="absolute"
-                  top="50%"
-                  left="50%"
-                  style={{
-                    transform: [{ translateX: -20 }, { translateY: -20 }],
-                  }}
-                  width={40}
-                  height={40}
-                  zIndex={10}
-                  pointerEvents="none"
-                >
-                  <Image
-                    source={require('@/assets/common/benchmarks.png')}
-                    alt="benchmarks"
-                    width={40}
-                    height={40}
-                  />
-                </Box>
-              )}
-            </Box>
-          </VStack>
-
-          {/* Post Description Section */}
-          <VStack px={16} space="xs">
-            {/* Section Title */}
-            <Text
-              color={isDark ? '$textDark400' : '#B9B9B9'}
-              fontSize={10}
-              fontWeight="$bold"
-            >
-              Benchmark Description
-            </Text>
-
-            {/* Text Input Area */}
-            <Box
-              bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              $dark-borderColor="$borderDark600"
-              borderRadius={5}
-              overflow="hidden"
-              minHeight={174}
-              position="relative"
-            >
-              {/* Text Input */}
-              <Textarea
-                bg="transparent"
-                borderWidth={0}
-                flex={1}
-                minHeight={174}
-              >
-                <TextareaInput
+              {/* Post Description Section */}
+              <VStack px={16} space="xs">
+                <ControlledTextarea
+                  name="postText"
                   placeholder="Type your Comparison Post here..."
-                  placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  color={isDark ? '$textDark50' : '#000000'}
-                  fontSize={10}
-                  lineHeight={12}
-                  value={postText}
-                  onChangeText={setPostText}
-                  maxLength={maxCharacters}
-                  style={{
-                    textAlignVertical: 'top',
-                    paddingTop: 10,
-                    paddingBottom: 32,
-                    paddingLeft: 8,
-                    paddingRight: 8,
-                  }}
+                  maxLength={500}
+                  label="Benchmark Description"
                 />
-              </Textarea>
-
-              {/* Character Count - Bottom Right */}
-              <Box
-                position="absolute"
-                bottom={8}
-                right={8}
-              >
-                <Text
-                  color={isDark ? '$textDark400' : '#A3A3A3'}
-                  fontSize={9}
-                  fontWeight="$medium"
-                >
-                  {characterCount}/{maxCharacters}
-                </Text>
-              </Box>
-            </Box>
-          </VStack>
-
-
-        </VStack>
-      </ScrollView>
-
-      </Box>
+              </VStack>
+            </VStack>
+          </ScrollView>
+        </Box>
+      </FormProvider>
     </SafeAreaView>
   );
 };

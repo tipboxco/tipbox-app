@@ -7,7 +7,8 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useContext } from 'react';
+import { GlobalBottomSheetContext } from '@/src/providers/GlobalBottomSheetProvider';
 import { DEFAULT_BOTTOM_SHEET_OPTIONS, BottomSheetOptions } from './types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GluestackProvider } from '@/src/components/ui';
@@ -23,17 +24,11 @@ export const GlobalBottomSheet: React.FC = () => {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const isExpandingRef = useRef(false);
   
-  const { isOpen, content, options, closeBottomSheet } = useGlobalBottomSheet();
-
-  // Debug log'ları
-  useEffect(() => {
-    console.log('[GlobalBottomSheet] State:', {
-      isOpen,
-      hasContent: !!content,
-      hasOptions: !!options,
-      isExpanding: isExpandingRef.current,
-    });
-  }, [isOpen, content, options]);
+  const context = useContext(GlobalBottomSheetContext);
+  if (!context) {
+    throw new Error('GlobalBottomSheet must be used within GlobalBottomSheetProvider');
+  }
+  const { isOpen, content, options, closeBottomSheet } = context;
 
   // Options'ı merge et (default + custom)
   const mergedOptions: Required<Omit<BottomSheetOptions, 'snapPoints' | 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom'>> & {
@@ -51,49 +46,33 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // Bottom sheet açıldığında expand et
   useEffect(() => {
-    console.log('[GlobalBottomSheet] useEffect triggered:', {
-      isOpen,
-      hasContent: !!content,
-      hasRef: !!bottomSheetRef.current,
-      enableDynamicSizing: mergedOptions.enableDynamicSizing,
-    });
-
     if (isOpen && content && !isExpandingRef.current) {
       // Ref'in hazır olmasını bekle - daha uzun timeout ve retry mekanizması
       let retryCount = 0;
       const maxRetries = 10;
       
       const tryExpand = () => {
-        console.log(`[GlobalBottomSheet] Attempting to expand (retry ${retryCount + 1}/${maxRetries}), ref exists:`, !!bottomSheetRef.current);
-        
         if (bottomSheetRef.current) {
           try {
             isExpandingRef.current = true;
             if (mergedOptions.snapPoints && mergedOptions.snapPoints.length > 0) {
               // Snap points varsa ilk snap point'e git
-              console.log('[GlobalBottomSheet] Using snapPoints:', mergedOptions.snapPoints);
               bottomSheetRef.current.snapToIndex(mergedOptions.initialSnapIndex || 0);
             } else if (mergedOptions.enableDynamicSizing) {
               // Dynamic sizing varsa expand et
-              console.log('[GlobalBottomSheet] Expanding with dynamic sizing');
               bottomSheetRef.current.expand();
             } else {
               // Fallback: expand et
-              console.log('[GlobalBottomSheet] Expanding (fallback)');
               bottomSheetRef.current.expand();
             }
-            console.log('[GlobalBottomSheet] Expand called successfully');
           } catch (error) {
-            console.error('[GlobalBottomSheet] Error expanding:', error);
             isExpandingRef.current = false;
           }
         } else {
           retryCount++;
           if (retryCount < maxRetries) {
-            console.log(`[GlobalBottomSheet] Ref is null, retrying in 100ms... (${retryCount}/${maxRetries})`);
             setTimeout(tryExpand, 100);
           } else {
-            console.warn('[GlobalBottomSheet] Ref is still null after max retries');
             isExpandingRef.current = false;
           }
         }
@@ -103,12 +82,10 @@ export const GlobalBottomSheet: React.FC = () => {
       const timeoutId = setTimeout(tryExpand, 50);
       
       return () => {
-        console.log('[GlobalBottomSheet] Cleaning up timeout');
         clearTimeout(timeoutId);
       };
     } else if (!isOpen && bottomSheetRef.current) {
       // Kapat
-      console.log('[GlobalBottomSheet] Closing bottom sheet');
       isExpandingRef.current = false;
       bottomSheetRef.current.close();
     }
@@ -132,17 +109,13 @@ export const GlobalBottomSheet: React.FC = () => {
   // Sheet değişikliklerini handle et
   const handleSheetChanges = useCallback(
     (index: number) => {
-      console.log('[GlobalBottomSheet] Sheet changed, index:', index);
-      
       // Sheet açıldığında (index >= 0) ve henüz expand edilmediyse
       if (index >= 0 && isOpen && content && !isExpandingRef.current) {
-        console.log('[GlobalBottomSheet] Sheet opened, already expanded');
         isExpandingRef.current = true;
       }
       
       // Sheet kapandığında (index === -1)
       if (index === -1) {
-        console.log('[GlobalBottomSheet] Sheet closed, calling closeBottomSheet');
         isExpandingRef.current = false;
         closeBottomSheet();
       }
@@ -193,13 +166,11 @@ export const GlobalBottomSheet: React.FC = () => {
   // Padding bottom - default: safe area + tab bar height (45)
   const paddingBottom = mergedOptions.paddingBottom ?? (Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8);
 
-  // Ref callback - ref set edildiğinde log (TÜM HOOK'LAR ERKEN RETURN'DEN ÖNCE OLMALI)
+  // Ref callback - ref set edildiğinde (TÜM HOOK'LAR ERKEN RETURN'DEN ÖNCE OLMALI)
   const setRef = useCallback((ref: BottomSheet | null) => {
-    console.log('[GlobalBottomSheet] Ref callback called, ref:', !!ref);
     bottomSheetRef.current = ref;
     if (ref && isOpen && content) {
       // Ref set edildiğinde hemen expand et
-      console.log('[GlobalBottomSheet] Ref set, attempting immediate expand');
       setTimeout(() => {
         try {
           if (mergedOptions.snapPoints && mergedOptions.snapPoints.length > 0) {
@@ -209,9 +180,8 @@ export const GlobalBottomSheet: React.FC = () => {
           } else {
             ref.expand();
           }
-          console.log('[GlobalBottomSheet] Immediate expand successful');
         } catch (error) {
-          console.error('[GlobalBottomSheet] Immediate expand error:', error);
+          // Silent error handling
         }
       }, 50);
     }
@@ -232,11 +202,8 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // Eğer content yoksa render etme (HOOK'LARDAN SONRA)
   if (!content || !isOpen) {
-    console.log('[GlobalBottomSheet] Not rendering - content:', !!content, 'isOpen:', isOpen);
     return null;
   }
-
-  console.log('[GlobalBottomSheet] Rendering BottomSheet component');
 
   // Portal kullanmadan direkt render et - Portal ref sorunlarına neden oluyor
   return (

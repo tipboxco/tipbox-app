@@ -58,8 +58,7 @@ export const useBottomOffset = (options: { includeTabBar?: boolean; extraPadding
   const { includeTabBar = false, extraPadding = 16 } = options;
   const tabBarHeight = includeTabBar ? useBottomTabBarHeight() : 0;
   const safeAreaBottom = useSafeAreaValues('bottom');
-  
-  return tabBarHeight + safeAreaBottom + extraPadding;
+  return safeAreaBottom + tabBarHeight + extraPadding;
 };
 
 /**
@@ -67,7 +66,7 @@ export const useBottomOffset = (options: { includeTabBar?: boolean; extraPadding
  * Floating action button'lar için bottom offset değerini hesaplar.
  */
 export const useFloatingButtonBottomOffset = (extraPadding: number = 16): number => {
-  return useBottomOffset({ includeTabBar: true, extraPadding });
+  return useBottomOffset({ includeTabBar: false, extraPadding });
 };
 
 export const toImageSource = (
