@@ -95,18 +95,17 @@ export const FeedScreen = () => {
 
   const handleTabChange = (tab: 'wallet' | 'inventory') => {
     if (tab === 'wallet') {
-      navigation.navigate('Main', {
-        screen: 'Wallet',
+      // Wallet ekranına git - WalletNavigator otomatik olarak bağlantı durumuna göre WalletConnection veya WalletScreen'i gösterir
+      navigation.navigate('Wallet', {
+        screen: 'WalletScreen',
       });
     } else if (tab === 'inventory') {
       if (user?.id) {
-        navigation.navigate('Main', {
-          screen: 'Profile',
+        // Inventory ekranına git - InventoryScreen mount olduğunda useInventory hook'u otomatik olarak /inventory endpoint'ine GET isteği atacak
+        navigation.navigate('Profile', {
+          screen: 'InventoryList',
           params: {
-            screen: 'InventoryList',
-            params: {
-              userId: user.id,
-            },
+            userId: user.id,
           },
         });
       }
@@ -156,7 +155,7 @@ export const FeedScreen = () => {
         id: item.user.id,
         name: item.user.name,
         title: item.user.title,
-        avatar: toImageSource(item.user.avatar)!,
+        avatar: toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png'),
       },
       content: contentString,
       images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
@@ -169,21 +168,23 @@ export const FeedScreen = () => {
 
   // Map Experience (ReviewApiItem) to ReviewCardData
   const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
-    const avatarSource = toImageSource(item.user.avatar)!;
+    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
     const productImage = item.contextData?.image
       ? toImageSource(item.contextData.image)
       : undefined;
 
-    const content: ReviewCardContentItem[] = item.content.map((contentItem) => ({
-      tag: {
-        icon: 'tag',
-        title: contentItem.title,
-      },
-      text: contentItem.content,
-      rating: Array(5)
-        .fill(false)
-        .map((_, index) => index < (contentItem.rating || 0)),
-    }));
+    const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
+      ? item.content.map((contentItem) => ({
+          tag: {
+            icon: 'tag',
+            title: contentItem.title,
+          },
+          text: contentItem.content,
+          rating: Array(5)
+            .fill(false)
+            .map((_, index) => index < (contentItem.rating || 0)),
+        }))
+      : [];
 
     return {
       id: item.id,
@@ -213,16 +214,18 @@ export const FeedScreen = () => {
 
   // Map Benchmark to BenchmarkCardData
   const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
-    const avatarSource = toImageSource(item.user.avatar)!;
+    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
 
-    const products: BenchmarkProduct[] = item.products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      subName: p.subName,
-      image: toImageSource(p.image)!,
-      isOwned: p.isOwned,
-      choice: p.choice,
-    }));
+    const products: BenchmarkProduct[] = (item.products && Array.isArray(item.products))
+      ? item.products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          subName: p.subName,
+          image: toImageSource(p?.image) || require('@/assets/inventory/product_01.png'),
+          isOwned: p.isOwned,
+          choice: p.choice,
+        }))
+      : [];
 
     return {
       id: item.id,
@@ -241,20 +244,24 @@ export const FeedScreen = () => {
 
   // Map Tips to TipsCardData
   const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
-    const avatarSource = toImageSource(item.user.avatar)!;
+    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
 
+    const productImage = toImageSource(item.contextData?.image);
+    if (!productImage) {
+      console.warn('[mapTipsToCardData] Missing product image for item:', item.id);
+    }
     const product: TipsProduct = {
       id: item.contextData.id,
       name: item.contextData.name,
       subName: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
+      image: productImage || require('@/assets/inventory/product_01.png'),
     };
 
     const category: TipsCategory = {
       id: item.contextData.id,
       name: item.contextData.name,
       subCategory: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
+      image: productImage || require('@/assets/inventory/product_01.png'),
       product,
     };
 
@@ -279,20 +286,25 @@ export const FeedScreen = () => {
 
   // Map Question to QuestionCardData
   const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-    const avatarSource = toImageSource(item.user.avatar)!;
+    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+
+    const productImage = toImageSource(item.contextData?.image);
+    if (!productImage) {
+      console.warn('[mapQuestionToCardData] Missing product image for item:', item.id);
+    }
 
     const product: QuestionCardProduct = {
       id: item.contextData.id,
       name: item.contextData.name,
       subName: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
+      image: productImage || require('@/assets/inventory/product_01.png'),
     };
 
     const category: QuestionCardCategory = {
       id: item.contextData.id,
       name: item.contextData.name,
       subCategory: item.contextData.subName,
-      image: toImageSource(item.contextData.image)!,
+      image: productImage || require('@/assets/inventory/product_01.png'),
       product,
     };
 
@@ -317,7 +329,7 @@ export const FeedScreen = () => {
 
   // Map Update to UpdateCardData
   const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
-    const avatarSource = toImageSource(item.user.avatar)!;
+    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
     
     // ContextType'ı ProductInfoType'a çevir
     let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
@@ -328,23 +340,25 @@ export const FeedScreen = () => {
     }
 
     // relatedPost.content formatını component'in beklediği formata çevir
-    const relatedPostContent = item.relatedPost.content.map((contentItem) => {
-      // Rating'i number'dan number[]'e çevir (5 yıldız için)
-      const ratingArray: number[] = Array(5).fill(0);
-      const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5); // 0-100'den 0-5'e çevir
-      for (let i = 0; i < ratingValue; i++) {
-        ratingArray[i] = 1;
-      }
+    const relatedPostContent = (item.relatedPost?.content && Array.isArray(item.relatedPost.content))
+      ? item.relatedPost.content.map((contentItem) => {
+          // Rating'i number'dan number[]'e çevir (5 yıldız için)
+          const ratingArray: number[] = Array(5).fill(0);
+          const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5); // 0-100'den 0-5'e çevir
+          for (let i = 0; i < ratingValue; i++) {
+            ratingArray[i] = 1;
+          }
 
-      return {
-        tag: {
-          icon: 'tag',
-          title: contentItem.title,
-        },
-        text: contentItem.content,
-        rating: ratingArray,
-      };
-    });
+          return {
+            tag: {
+              icon: 'tag',
+              title: contentItem.title,
+            },
+            text: contentItem.content,
+            rating: ratingArray,
+          };
+        })
+      : [];
 
     return {
       id: item.id,
@@ -361,7 +375,7 @@ export const FeedScreen = () => {
         id: item.relatedPost.product.id,
         name: item.relatedPost.product.name,
         subName: item.relatedPost.product.subName,
-        image: toImageSource(item.relatedPost.product.image)!,
+        image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
         isOwned: item.relatedPost.product.isOwned,
       },
       content: item.content,
@@ -372,7 +386,7 @@ export const FeedScreen = () => {
           id: item.relatedPost.product.id,
           name: item.relatedPost.product.name,
           subName: item.relatedPost.product.subName,
-          image: toImageSource(item.relatedPost.product.image)!,
+          image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
           isOwned: item.relatedPost.product.isOwned,
         },
         content: relatedPostContent,

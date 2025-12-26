@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
+import { API_CONFIG } from '@/src/config/api.config';
 
 // Event Type Enum
 export enum EventType {
@@ -69,15 +70,60 @@ export const useFloatingButtonBottomOffset = (extraPadding: number = 16): number
   return useBottomOffset({ includeTabBar: false, extraPadding });
 };
 
+// Image source cache - aynı URL için aynı obje referansını döndürmek için
+const imageSourceCache = new Map<string, ImageSourcePropType>();
+
+/**
+ * Image URL'lerindeki localhost'u gerçek IP adresi ile değiştirir
+ * Mobil cihazlarda localhost çalışmadığı için gerekli
+ */
+const normalizeImageUrl = (url: string): string => {
+  try {
+    // localhost veya 127.0.0.1 içeren URL'leri düzelt
+    if (url.includes('localhost') || url.includes('127.0.0.1')) {
+      // Media base URL'i al (varsa MEDIA_BASE_URL, yoksa BASE_URL'den port'u değiştir)
+      const mediaBaseUrl = API_CONFIG.MEDIA_BASE_URL || API_CONFIG.BASE_URL.replace(':3000', ':9000');
+      
+      // URL'i parse et ve host'u değiştir
+      const urlObj = new URL(url);
+      const mediaUrlObj = new URL(mediaBaseUrl);
+      
+      // Host ve port'u değiştir
+      urlObj.hostname = mediaUrlObj.hostname;
+      urlObj.port = mediaUrlObj.port;
+      
+      const normalizedUrl = urlObj.toString();
+      return normalizedUrl;
+    }
+    return url;
+  } catch (error) {
+    console.warn('[normalizeImageUrl] URL parse error:', error, 'Original URL:', url);
+    return url;
+  }
+};
+
 export const toImageSource = (
   value: string | ImageSourcePropType | null | undefined,
 ): ImageSourcePropType | undefined => {
   if (!value) return undefined;
 
   if (typeof value === 'string') {
-    return { uri: value };
+    // localhost içeren URL'leri normalize et
+    const normalizedUrl = normalizeImageUrl(value);
+    
+    // Cache'den kontrol et - aynı URL için aynı referansı döndür
+    if (imageSourceCache.has(normalizedUrl)) {
+      return imageSourceCache.get(normalizedUrl);
+    }
+    
+    // Yeni source oluştur ve cache'e ekle
+    const imageSource: ImageSourcePropType = { uri: normalizedUrl };
+    imageSourceCache.set(normalizedUrl, imageSource);
+    
+    return imageSource;
   }
 
+  // String değilse (require() veya zaten ImageSourcePropType) direkt döndür
   return value;
 }
 /**

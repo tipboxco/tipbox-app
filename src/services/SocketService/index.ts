@@ -52,6 +52,12 @@ class SocketService {
       return;
     }
 
+    // Eğer max reconnect attempts'a ulaşıldıysa, tekrar deneme
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.warn('[SocketService] Max reconnection attempts reached previously. Resetting and retrying...');
+      this.reconnectAttempts = 0;
+    }
+
     try {
       this.isConnecting = true;
 
@@ -110,23 +116,49 @@ class SocketService {
       this.socket.on('disconnect', (reason) => {
         console.log('[SocketService] Disconnected:', reason);
         this.isConnecting = false;
+        
+        // Eğer server tarafından kesildiyse (token geçersiz olabilir)
+        if (reason === 'io server disconnect') {
+          console.warn('[SocketService] Server disconnected the connection. Possible reasons:');
+          console.warn('  - Token expired or invalid');
+          console.warn('  - Server restart');
+          console.warn('  - Authentication failed');
+        }
       });
 
       this.socket.on('connect_error', (error) => {
-        console.error('[SocketService] Connection error:', error);
-        console.error('[SocketService] Error details:', {
-          message: error.message,
-          type: error.type,
-          description: error.description,
-        });
-        console.warn('[SocketService] Socket server may not be running or URL is incorrect');
-        console.warn('[SocketService] Application will continue with REST API fallback');
         this.isConnecting = false;
         this.reconnectAttempts++;
         
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        // Token geçersizse veya authentication hatası varsa
+        if (error.message.includes('Authentication') || error.message.includes('Unauthorized') || error.message.includes('token')) {
+          console.error('[SocketService] Authentication error:', error.message);
+          console.warn('[SocketService] Token may be invalid or expired. Please re-login.');
+          // Token hatası varsa reconnect denemelerini durdur
+          this.reconnectAttempts = this.maxReconnectAttempts;
+          this.disconnect();
+          return;
+        }
+        
+        // İlk hatalarda sadece uyarı ver
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          console.warn(`[SocketService] Connection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} failed:`, error.message);
+          console.warn(`[SocketService] Retrying in ${Math.min(1000 * this.reconnectAttempts, 5000)}ms...`);
+        } else {
+          // Son denemede detaylı hata logla
           console.error('[SocketService] Max reconnection attempts reached');
-          console.warn('[SocketService] Socket features disabled. Using REST API only.');
+          console.error('[SocketService] Connection error details:', {
+            message: error.message,
+            type: error.type,
+            description: error.description,
+            url: socketUrl,
+          });
+          console.warn('[SocketService] Possible causes:');
+          console.warn('  - Backend socket server is not running');
+          console.warn('  - Network connectivity issues');
+          console.warn('  - Invalid or expired access token');
+          console.warn('  - Incorrect socket URL or path');
+          console.warn('[SocketService] Socket features disabled. Application will continue with REST API only.');
           // Son denemede bağlantıyı kapat ama uygulama çalışmaya devam eder
           this.disconnect();
         }
@@ -138,15 +170,18 @@ class SocketService {
       });
 
       this.socket.on('reconnect_attempt', (attemptNumber) => {
-        console.log('[SocketService] Reconnection attempt', attemptNumber);
+        console.log(`[SocketService] Reconnection attempt ${attemptNumber}/${this.maxReconnectAttempts}`);
+        this.reconnectAttempts = attemptNumber;
       });
 
       this.socket.on('reconnect_error', (error) => {
-        console.error('[SocketService] Reconnection error:', error);
+        console.warn(`[SocketService] Reconnection error (attempt ${this.reconnectAttempts}):`, error.message);
       });
 
       this.socket.on('reconnect_failed', () => {
-        console.error('[SocketService] Reconnection failed');
+        console.error('[SocketService] All reconnection attempts failed');
+        console.warn('[SocketService] Socket features disabled. Using REST API only.');
+        this.reconnectAttempts = this.maxReconnectAttempts;
       });
 
     } catch (error) {
@@ -233,8 +268,14 @@ class SocketService {
   /**
    * Thread room'una katılır
    * @param threadId - Thread ID
+   * @param onJoined - Başarılı katılım callback'i (opsiyonel)
+   * @param onError - Hata callback'i (opsiyonel)
    */
-  public joinThread(threadId: string): void {
+  public joinThread(
+    threadId: string,
+    onJoined?: (data: ThreadJoinedEvent) => void,
+    onError?: (error: ThreadJoinErrorEvent) => void
+  ): void {
     if (!this.socket?.connected) {
       console.warn('[SocketService] Socket not connected, cannot join thread:', threadId);
       return;
@@ -242,6 +283,22 @@ class SocketService {
 
     this.socket.emit('join_thread', threadId);
     console.log('[SocketService] Joining thread:', threadId);
+
+    // Başarılı katılım onayını dinle
+    if (onJoined) {
+      this.socket.once('thread_joined', (data: ThreadJoinedEvent) => {
+        console.log('[SocketService] Thread joined:', data.threadId);
+        onJoined(data);
+      });
+    }
+
+    // Hata durumunu dinle
+    if (onError) {
+      this.socket.once('thread_join_error', (error: ThreadJoinErrorEvent) => {
+        console.error('[SocketService] Thread join error:', error.reason);
+        onError(error);
+      });
+    }
   }
 
   /**
@@ -261,8 +318,15 @@ class SocketService {
    * Mesaj gönderir (Socket üzerinden - önerilen yöntem)
    * @param threadId - Thread ID
    * @param message - Mesaj içeriği
+   * @param onSent - Mesaj gönderildi callback'i (opsiyonel)
+   * @param onError - Hata callback'i (opsiyonel)
    */
-  public sendMessage(threadId: string, message: string): void {
+  public sendMessage(
+    threadId: string,
+    message: string,
+    onSent?: (data: MessageSentEvent) => void,
+    onError?: (error: MessageSendErrorEvent) => void
+  ): void {
     if (!this.socket?.connected) {
       console.warn('[SocketService] Socket not connected, cannot send message');
       return;
@@ -273,6 +337,22 @@ class SocketService {
       message,
     });
     console.log('[SocketService] Sending message to thread:', threadId);
+
+    // Mesaj gönderildi onayını dinle
+    if (onSent) {
+      this.socket.once('message_sent', (data: MessageSentEvent) => {
+        console.log('[SocketService] Message sent:', data.messageId);
+        onSent(data);
+      });
+    }
+
+    // Hata durumunu dinle
+    if (onError) {
+      this.socket.once('message_send_error', (error: MessageSendErrorEvent) => {
+        console.error('[SocketService] Message send error:', error.reason);
+        onError(error);
+      });
+    }
   }
 
   /**

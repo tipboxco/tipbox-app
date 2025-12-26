@@ -191,20 +191,30 @@ const MessageDetailScreen: React.FC = () => {
 
         // Thread room'una katıl
         if (socketService.isConnected()) {
-          socketService.joinThread(thread.id);
+          socketService.joinThread(
+            thread.id,
+            (data) => {
+              console.log('[MessageDetail] Thread joined:', data.threadId);
+            },
+            (error) => {
+              console.warn('[MessageDetail] Thread join error:', error.reason);
+            }
+          );
         }
       } catch (error: any) {
-        console.error('[MessageDetail] Thread initialization error:', error);
-        
-        // 404 hatası: Thread endpoint backend'de yok, fallback olarak recipientUserId'yi threadId olarak kullan
-        if (error?.response?.status === 404) {
-          console.warn('[MessageDetail] Thread endpoint not found (404), using recipientUserId as threadId');
-          // Thread endpoint yoksa, recipientUserId'yi threadId olarak kullan
-          // Bu durumda socket thread sistemi çalışmayabilir ama mesaj gönderme çalışır
+        // 404 hatası: Thread endpoint backend'de henüz implement edilmemiş
+        // Bu beklenen bir durum olabilir, fallback olarak recipientUserId'yi threadId olarak kullan
+        if (error?.response?.status === 404 || error?.isThreadEndpointNotFound) {
+          // Log'u daha az gürültülü hale getir - bu beklenen bir durum
+          console.info('[MessageDetail] Thread endpoint not available, using recipientUserId as threadId (fallback mode)');
           setThreadId(recipientUserId);
+          
+          // Fallback modda socket thread sistemi çalışmayabilir
+          // Ama mesaj gönderme REST API üzerinden çalışmaya devam eder
         } else {
-          // Diğer hatalar için de fallback
-          console.warn('[MessageDetail] Thread initialization failed, using recipientUserId as fallback');
+          // Diğer hatalar için de fallback ama daha fazla log
+          console.warn('[MessageDetail] Thread initialization failed:', error?.message || error);
+          console.warn('[MessageDetail] Using recipientUserId as fallback threadId');
           setThreadId(recipientUserId);
         }
       }

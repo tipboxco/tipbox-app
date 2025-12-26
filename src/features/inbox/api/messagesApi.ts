@@ -28,10 +28,23 @@ export interface ThreadResponse {
 }
 
 export const getOrCreateThread = async (recipientId: string): Promise<ThreadResponse> => {
-  const response = await apiService.getClient().post<ThreadResponse>('/messages/threads', {
-    recipientId,
-  });
-  return response.data;
+  try {
+    const response = await apiService.getClient().post<ThreadResponse>('/messages/threads', {
+      recipientId,
+    });
+    return response.data;
+  } catch (error: any) {
+    // 404 hatası: Thread endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      // Daha açıklayıcı bir hata fırlat
+      const notFoundError = new Error('Thread endpoint not found (404). Backend may not have implemented this endpoint yet.');
+      (notFoundError as any).response = { status: 404 };
+      (notFoundError as any).isThreadEndpointNotFound = true;
+      throw notFoundError;
+    }
+    // Diğer hataları olduğu gibi fırlat
+    throw error;
+  }
 };
 
 /**

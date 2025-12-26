@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Dimensions, Pressable as RNPressable, Modal, StyleSheet, Animated, PanResponder, PanResponderGestureState } from 'react-native';
+import { Dimensions, Pressable as RNPressable, Modal, StyleSheet, Animated, PanResponder, PanResponderGestureState, Keyboard, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
@@ -33,6 +33,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFilter, setSelectedFilter] = useState<'users' | 'brands' | 'products'>('users');
     const [isAnimating, setIsAnimating] = useState(false);
+    const [isModalReady, setIsModalReady] = useState(false);
+    const inputRef = useRef<any>(null);
     
     // Animation
     const modalHeight = SCREEN_HEIGHT * 0.9 + insets.top + 8;
@@ -41,27 +43,59 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
     useEffect(() => {
         if (visible) {
-            // Reset panY when modal opens
+            // Reset states when modal opens - hemen yap
             panY.setValue(0);
-            slideAnim.setValue(-modalHeight);
+            slideAnim.setValue(-modalHeight); // Başlangıçta yukarıda (ekranın dışında)
             setIsAnimating(false);
+            setIsModalReady(false);
             
-            // Slide down from top
+            // Animasyonu hemen başlat - gecikme yok
+            // requestAnimationFrame kaldırıldı - direkt başlat
+            // Yukarıdan aşağı kaydır - hızlı ve smooth
             Animated.spring(slideAnim, {
                 toValue: 0,
                 useNativeDriver: true,
-                tension: 65,
-                friction: 11,
-            }).start();
+                tension: 100, // Daha hızlı
+                friction: 8, // Daha smooth
+                velocity: 0,
+            }).start(({ finished }) => {
+                if (finished) {
+                    // Animation tamamlandıktan sonra modal'ı hazır olarak işaretle
+                    setIsModalReady(true);
+                    // Kısa bir delay sonra klavyeyi aç (modal tamamen görünür olduktan sonra)
+                    setTimeout(() => {
+                        if (inputRef.current) {
+                            inputRef.current.focus();
+                        }
+                    }, 50);
+                }
+            });
+        } else {
+            // Modal kapandığında klavyeyi kapat
+            Keyboard.dismiss();
+            setIsModalReady(false);
+            // Reset animasyon
+            slideAnim.setValue(-modalHeight);
+            panY.setValue(0);
         }
     }, [visible, slideAnim, panY, modalHeight]);
 
     // Handler for closing animation
     const handleCloseAnimation = useCallback((currentPanY: number, duration: number) => {
         setIsAnimating(true);
-        Animated.timing(panY, {
+        // Mevcut pozisyonu al (slideAnim + panY)
+        const currentSlideValue = (slideAnim as any)._value;
+        const currentPanValue = (panY as any)._value;
+        const totalCurrentValue = currentSlideValue + currentPanValue;
+        
+        // panY'yi sıfırla ve slideAnim'i kullanarak kapat
+        panY.setValue(0);
+        slideAnim.setValue(totalCurrentValue);
+        
+        // Yukarıya kaydır (-modalHeight kadar)
+        Animated.timing(slideAnim, {
             toValue: -modalHeight,
-            duration: duration,
+            duration: Math.max(200, Math.min(400, duration)),
             useNativeDriver: true,
         }).start(({ finished }) => {
             if (finished) {
@@ -93,33 +127,44 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 return isVertical && hasMovement;
             },
             onPanResponderMove: (_, gestureState) => {
-                // Allow both upward and downward movement, but limit downward movement
-                const maxDownwardMovement = 100; // Maximum pixels user can drag down
-                const newValue = gestureState.dy > maxDownwardMovement ? maxDownwardMovement : gestureState.dy;
-                panY.setValue(newValue);
+                // Modal yukarıdan aşağı kayıyor, bu yüzden:
+                // dy > 0: Parmak aşağı gidiyor, modal'ı aşağı kaydır (açık tut, ama sınırlı)
+                // dy < 0: Parmak yukarı gidiyor, modal'ı yukarı kaydır (kapat)
+                
+                if (gestureState.dy < 0) {
+                    // Yukarı doğru sürükleme - modal'ı yukarı kaydır (kapat)
+                    // Negatif değer modal'ı yukarı kaydırır
+                    panY.setValue(gestureState.dy);
+                } else {
+                    // Aşağı doğru sürükleme - hafif bounce efekti (sınırlı)
+                    const maxDownward = 50; // Maksimum aşağı kayma
+                    const bounceValue = Math.min(gestureState.dy * 0.2, maxDownward);
+                    panY.setValue(bounceValue);
+                }
             },
             onPanResponderRelease: (_, gestureState) => {
                 const { dy, vy } = gestureState;
                 
-                // Check if the final movement is upward and significant
+                // Yukarı sürükleme (dy < 0): Modal'ı kapat
+                // Aşağı sürükleme (dy > 0): Modal'ı açık tut
                 const isUpwardSwipe = dy < 0;
                 const hasEnoughDistance = Math.abs(dy) > SWIPE_THRESHOLD;
-                const hasEnoughVelocity = vy < -0.3; // Negative velocity means upward (reduced for better UX)
+                const hasEnoughVelocity = vy < -0.5; // Negatif velocity = yukarı
                 
-                // Only close if user ended with upward movement
+                // Sadece yukarı sürükleme ile kapat
                 if (isUpwardSwipe && (hasEnoughDistance || hasEnoughVelocity)) {
-                    // Close the modal - continue from current position without jumping
-                    const currentPosition = (panY as any)._value;
-                    const remainingDistance = -modalHeight - currentPosition;
-                    const duration = Math.max(200, Math.min(350, Math.abs(remainingDistance / 2.5)));
-                    handleCloseAnimation(currentPosition, duration);
+                    // Modal'ı kapat - mevcut pozisyondan devam et
+                    const currentPanValue = (panY as any)._value;
+                    const duration = Math.max(250, Math.min(400, Math.abs(currentPanValue / 2)));
+                    handleCloseAnimation(currentPanValue, duration);
                 } else {
-                    // Snap back to original position
+                    // Orijinal pozisyona geri dön - smooth spring animation
                     Animated.spring(panY, {
                         toValue: 0,
                         useNativeDriver: true,
-                        tension: 100,
-                        friction: 10,
+                        tension: 120,
+                        friction: 8,
+                        velocity: 0,
                     }).start();
                 }
             },
@@ -133,8 +178,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
         { id: 'products' as const, label: 'Products' },
     ];
 
-    // Mock user data
-    const mockUsers = [
+    // Mock user data - useMemo ile cache'le (performans için)
+    const mockUsers = useMemo(() => [
         {
             id: '1',
             name: 'John Smith',
@@ -163,10 +208,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             avatar: require('@/assets/avatar/ozan.png'),
             trustLevel: 4,
         },
-    ];
+    ], []);
 
-    // Mock brand data
-    const mockBrands = [
+    // Mock brand data - useMemo ile cache'le
+    const mockBrands = useMemo(() => [
         {
             id: '1',
             name: 'Apple',
@@ -191,10 +236,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             category: 'Sports',
             logo: require('@/assets/inventory/product_04.png'),
         },
-    ];
+    ], []);
 
-    // Mock product data
-    const mockProducts = [
+    // Mock product data - useMemo ile cache'le
+    const mockProducts = useMemo(() => [
         {
             id: '1',
             name: 'Dyson V15s',
@@ -219,11 +264,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             description: 'Ultra 512GB Phantom Black',
             image: require('@/assets/inventory/product_04.png'),
         },
-    ];
+    ], []);
 
-
-    // Get category title
-    const getCategoryTitle = () => {
+    // Get category title - useMemo ile cache'le
+    const categoryTitle = useMemo(() => {
         switch (selectedFilter) {
             case 'users':
                 return 'Users';
@@ -234,7 +278,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             default:
                 return 'Users';
         }
-    };
+    }, [selectedFilter]);
 
     const handleSearch = (query: string) => {
         console.log('Searching for:', query);
@@ -242,26 +286,37 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     };
 
     const handleOverlayClose = useCallback(() => {
-        // Animate close when overlay is pressed
-        const currentPosition = (panY as any)._value;
-        handleCloseAnimation(currentPosition, 250);
+        // Klavyeyi önce kapat
+        Keyboard.dismiss();
+        // Kısa bir delay sonra modal'ı kapat (klavye animasyonu tamamlansın)
+        setTimeout(() => {
+            const currentPosition = (panY as any)._value;
+            handleCloseAnimation(currentPosition, 250);
+        }, Platform.OS === 'ios' ? 100 : 50);
     }, [panY, handleCloseAnimation]);
 
-    // Keep rendering modal during animation even if visible is false
-    if (!visible && !isAnimating) return null;
+    // Modal'ı her zaman render et (performans için) ama görünürlüğü kontrol et
+    // Bu sayede modal hemen render edilir ve animasyon gecikmesi olmaz
+    const shouldRenderModal = visible || isAnimating;
+
+    // Modal'ı hemen render et - gecikme olmadan
+    if (!shouldRenderModal) {
+        return null;
+    }
 
     return (
         <Modal
-            visible={visible || isAnimating}
-            animationType="fade"
+            visible={true}
+            animationType="none"
             transparent={true}
             onRequestClose={handleOverlayClose}
             statusBarTranslucent
+            hardwareAccelerated={true}
         >
             <Box style={styles.container}>
-                {/* Overlay Background */}
+                {/* Overlay Background - z-index düşük */}
                 <RNPressable 
-                    style={styles.overlay}
+                    style={[styles.overlay, { zIndex: 1, elevation: 1 }]}
                     onPress={handleOverlayClose}
                 />
 
@@ -278,11 +333,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                             borderBottomLeftRadius: 24,
                             borderBottomRightRadius: 24,
                             overflow: 'hidden',
+                            zIndex: 10, // Overlay'den yüksek
+                            elevation: 10, // Android için
                             transform: [
                                 { translateY: Animated.add(slideAnim, panY) }
                             ],
                         },
                     ]}
+                    renderToHardwareTextureAndroid={true}
+                    shouldRasterizeIOS={true}
                 >
                     <Box flex={1} >
                         {/* Header */}
@@ -303,6 +362,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                             />
                             <Input flex={1} borderWidth={0} bg="transparent">
                                 <InputField
+                                    ref={inputRef}
                                     placeholder="Search for products, posts, users..."
                                     placeholderTextColor={isDark ? '#8E8E93' : '#8E8E93'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -311,7 +371,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                     onChangeText={setSearchQuery}
                                     onSubmitEditing={() => handleSearch(searchQuery)}
                                     returnKeyType="search"
-                                    autoFocus
+                                    autoFocus={false}
+                                    editable={isModalReady}
                                 />
                             </Input>
                             {searchQuery.length > 0 && (
@@ -370,7 +431,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark50' : '#B9B9B9'}
                                         >
-                                            {getCategoryTitle()}
+                                            {categoryTitle}
                                         </Text>
                                     </HStack>
                                     
@@ -449,7 +510,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark50' : '#B9B9B9'}
                                         >
-                                            {getCategoryTitle()}
+                                            {categoryTitle}
                                         </Text>
                                     </HStack>
                                     
@@ -517,7 +578,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                                             fontWeight="$semibold"
                                             color={isDark ? '$textDark50' : '#B9B9B9'}
                                         >
-                                            {getCategoryTitle()}
+                                            {categoryTitle}
                                         </Text>
                                     </HStack>
                                     

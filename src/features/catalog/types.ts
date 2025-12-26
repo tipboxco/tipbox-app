@@ -210,9 +210,17 @@ export interface BrandProductGroup {
 }
 
 /**
- * Brand Product Book Response - /brands/{brandId}/products endpoint'inden dönen response
+ * Brand Product Book Response - /brands/{brandId}/groups endpoint'inden dönen response
+ * Pagination ile birlikte product group listesi
  */
-export type BrandProductBookResponse = BrandProductGroup[];
+export interface BrandProductBookResponse {
+  items: BrandProductGroup[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
 
 /**
  * Survey - /brands/{brandId}/surveys endpoint'inden gelen survey bilgisi

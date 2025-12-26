@@ -353,6 +353,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
+  const [showMenu, setShowMenu] = useState(false);
   const listRef = useRef<FlatList<ListItem>>(null);
   
   // API hooks for each tab
@@ -572,20 +573,108 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               <Feather name="chevron-left" size={24} color="#fff" />
             </Pressable>
 
-            {isOwnProfile && (
+            <Pressable
+              onPress={() => {
+                if (isOwnProfile) {
+                  navigation.navigate('ProfileEdit');
+                } else {
+                  setShowMenu(!showMenu);
+                }
+              }}
+              style={{ zIndex: 2000 }}
+            >
+              <Feather name="more-vertical" size={24} color="#fff" />
+            </Pressable>
+            
+            {/* Dropdown Menu Overlay */}
+            {!isOwnProfile && showMenu && (
               <Pressable
-                onPress={() => {
-                  rootNavigation.navigate('Main', {
-                    screen: 'Profile',
-                    params: {
-                      screen: 'ProfileEdit',
-                    },
-                  });
-                }}
-                style={{ zIndex: 2000 }}
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                bottom={0}
+                onPress={() => setShowMenu(false)}
+                style={{ zIndex: 2500 }}
+              />
+            )}
+            
+            {/* Dropdown Menu */}
+            {!isOwnProfile && showMenu && (
+              <Box
+                position="absolute"
+                top={72}
+                right={16}
+                width={189}
+                bg="#FAFAFA"
+                borderRadius={5}
+                zIndex={3000}
+                shadowColor="#000"
+                shadowOffset={{ width: 0, height: 2 }}
+                shadowOpacity={0.1}
+                shadowRadius={4}
+                elevation={5}
               >
-                <Feather name="more-vertical" size={24} color="#fff" />
-              </Pressable>
+                <VStack>
+                  <Pressable
+                    onPress={() => {
+                      console.log('[ProfileScreen] Paylaş pressed');
+                      setShowMenu(false);
+                    }}
+                    px={16}
+                    py={12}
+                    borderTopLeftRadius={5}
+                    borderTopRightRadius={5}
+                    $hover={{ bg: '#F0F0F0' }}
+                    $pressed={{ bg: '#F0F0F0' }}
+                  >
+                    <HStack alignItems="center" space="sm">
+                      <Feather name="share-2" size={16} color="#000" />
+                      <Text color="#000" fontSize={14} fontWeight="$normal">
+                        Paylaş
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  
+                  <Pressable
+                    onPress={() => {
+                      console.log('[ProfileScreen] Şikayet Et pressed');
+                      setShowMenu(false);
+                    }}
+                    px={16}
+                    py={12}
+                    $hover={{ bg: '#F0F0F0' }}
+                    $pressed={{ bg: '#F0F0F0' }}
+                  >
+                    <HStack alignItems="center" space="sm">
+                      <Feather name="flag" size={16} color="#000" />
+                      <Text color="#000" fontSize={14} fontWeight="$normal">
+                        Şikayet Et
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  
+                  <Pressable
+                    onPress={() => {
+                      console.log('[ProfileScreen] Engelle pressed');
+                      setShowMenu(false);
+                    }}
+                    px={16}
+                    py={12}
+                    borderBottomLeftRadius={5}
+                    borderBottomRightRadius={5}
+                    $hover={{ bg: '#F0F0F0' }}
+                    $pressed={{ bg: '#F0F0F0' }}
+                  >
+                    <HStack alignItems="center" space="sm">
+                      <Feather name="x-circle" size={16} color="#000" />
+                      <Text color="#000" fontSize={14} fontWeight="$normal">
+                        Engelle
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </VStack>
+              </Box>
             )}
           </Box>
         </Box>
@@ -625,12 +714,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   alignItems="center"
                   gap={6}
                   onPress={() => {
-                    rootNavigation.navigate('Main', {
-                      screen: 'Profile',
-                      params: {
-                        screen: 'ProfileEdit',
-                      },
-                    });
+                    navigation.navigate('ProfileEdit');
                   }}
                 >
                   <Feather name="edit-2" size={14} color="#000" />
@@ -877,14 +961,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               justifyContent="center"
               alignItems="center"
               onPress={() => {
-                rootNavigation.navigate('Main', {
-                  screen: 'Profile',
-                  params: {
-                    screen: 'InventoryList',
-                    params: {
-                      userId: userProfile.id,
-                    },
-                  },
+                navigation.navigate('InventoryList', {
+                  userId: userProfile.id,
                 });
               }}
             >
@@ -941,12 +1019,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               </HStack>
               <Pressable
                 onPress={() => {
-                  rootNavigation.navigate('Main', {
-                    screen: 'Profile',
-                    params: {
-                      screen: 'Collections',
-                    },
-                  });
+                  navigation.navigate('Collections');
                 }}
               >
                 <Text

@@ -112,22 +112,58 @@ export const getBrandFeed = async (
 
 /**
  * Get Brand Product Book endpoint function
- * /brands/{brandId}/products API'sinden marka ürün listesini getirir
+ * /brands/{brandId}/groups API'sinden marka ürün gruplarını getirir (pagination ile)
  *
  * @param brandId - Marka ID'si
- * @returns BrandProductBookResponse - Marka ürün grupları ve ürünleri
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandProductBookResponse - Marka ürün grupları ve pagination bilgisi
  */
 export const getBrandProductBook = async (
-  brandId: string
+  brandId: string,
+  cursor?: string,
+  limit: number = 20
 ): Promise<BrandProductBookResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
   try {
-    const response = await apiService.getClient().get<BrandProductBookResponse>(
-      `/brands/${brandId}/products`
+    const response = await apiService.getClient().get<any>(
+      `/brands/${brandId}/groups?${params.toString()}`
     );
-    return response.data;
+
+    const responseData = response.data;
+
+    // Response formatı: { items: [...], pagination: {...} }
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      const items = responseData.items || [];
+      const pagination = responseData.pagination || {
+        hasMore: items.length >= limit,
+        limit,
+        cursor: items.length > 0 ? items[items.length - 1]?.productGroupId : undefined,
+      };
+
+      return {
+        items,
+        pagination,
+      };
+    }
+
+    // Beklenmeyen format
+    console.warn('[getBrandProductBook] Unexpected response format:', responseData);
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
   } catch (error: any) {
-    console.error('Brand Product Book API Error:', {
-      url: `/brands/${brandId}/products`,
+    console.error('[getBrandProductBook] API Error:', {
+      url: `/brands/${brandId}/groups?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

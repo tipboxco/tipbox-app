@@ -102,7 +102,9 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     if (!activeEventsData?.pages) return [];
     
     const allEvents = activeEventsData.pages.flatMap((page) => 
-      page.items.map(mapEventToCardData)
+      (page.items && Array.isArray(page.items))
+        ? page.items.map(mapEventToCardData)
+        : []
     );
     
     // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
@@ -131,7 +133,9 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     if (!upcomingEventsData?.pages) return [];
     
     const allEvents = upcomingEventsData.pages.flatMap((page) => 
-      page.items.map(mapUpcomingEventToCardData)
+      (page.items && Array.isArray(page.items))
+        ? page.items.map(mapUpcomingEventToCardData)
+        : []
     );
     
     // Remove duplicates by ID

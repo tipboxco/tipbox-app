@@ -75,50 +75,64 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den seçili ürün grubuna ait products'ı getir
   const { data: catalogProducts } = useCatalogProducts(selectedProductGroupId);
   
-  // Görsel verisini normalize eden yardımcı fonksiyon
-  const normalizeImage = (image: any) => toImageSource(image) as any;
+  // Görsel verisini normalize eden yardımcı fonksiyon - useCallback ile memoize et
+  const normalizeImage = useCallback((image: any) => {
+    return toImageSource(image) as any;
+  }, []);
 
-  // API'den gelen kategorileri Category formatına dönüştür
-  const currentCategories =
-    catalogCategories?.map(cat => ({
+  // API'den gelen kategorileri Category formatına dönüştür - useMemo ile cache'le
+  const currentCategories = useMemo(() => {
+    if (!catalogCategories) return [];
+    
+    return catalogCategories.map(cat => ({
       id: cat.categoryId,
       name: cat.name,
       icon: 'folder',
       // API'den gelen görsel string, require ya da { uri } olabilir – hepsini normalize et
       image: normalizeImage(cat.image),
       subCategories: [], // API'den subCategories gelmiyor, boş array
-    })) || [];
+    }));
+  }, [catalogCategories, normalizeImage]);
 
-  // API'den gelen subcategories'i formatla
-  const currentSubCategories =
-    catalogSubCategories?.map(subCat => ({
+  // API'den gelen subcategories'i formatla - useMemo ile cache'le
+  const currentSubCategories = useMemo(() => {
+    if (!catalogSubCategories) return [];
+    
+    return catalogSubCategories.map(subCat => ({
       id: subCat.subCategoryId,
       name: subCat.name,
       image: normalizeImage(subCat.image),
       categoryId: subCat.categoryId,
       productGroups: [], // API'den productGroups gelmiyor, boş array
-    })) || [];
+    }));
+  }, [catalogSubCategories, normalizeImage]);
 
-  // API'den gelen product groups'u formatla
-  const currentProductGroups =
-    catalogProductGroups?.map(productGroup => ({
+  // API'den gelen product groups'u formatla - useMemo ile cache'le
+  const currentProductGroups = useMemo(() => {
+    if (!catalogProductGroups) return [];
+    
+    return catalogProductGroups.map(productGroup => ({
       id: productGroup.productGroupId,
       name: productGroup.name,
       image: normalizeImage(productGroup.image),
       subCategoryId: productGroup.subCategoryId,
       products: [], // API'den products gelmiyor, boş array
-    })) || [];
+    }));
+  }, [catalogProductGroups, normalizeImage]);
 
-  // API'den gelen products'ı formatla
-  const currentProducts =
-    catalogProducts?.map(product => ({
+  // API'den gelen products'ı formatla - useMemo ile cache'le
+  const currentProducts = useMemo(() => {
+    if (!catalogProducts) return [];
+    
+    return catalogProducts.map(product => ({
       id: product.productId,
       name: product.name,
       image: normalizeImage(product.image),
       productGroupId: product.productGroupId,
       subCategoryId: product.subCategoryId,
       description: '', // API'den description gelmiyor
-    })) || [];
+    }));
+  }, [catalogProducts, normalizeImage]);
   // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 

@@ -8,7 +8,7 @@ import {
   Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { formatRelativeTime } from '@/src/utils';
+import { formatRelativeTime, toImageSource } from '@/src/utils';
 import type { InboxMessage } from '../../types';
 
 interface MessageCardProps {
@@ -40,7 +40,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress }) => {
         <Image
           source={
             data.senderAvatar
-              ? { uri: data.senderAvatar }
+              ? toImageSource(data.senderAvatar) || require('@/assets/avatar/ozan.png')
               : require('@/assets/avatar/ozan.png')
           }
           alt={data.senderName}

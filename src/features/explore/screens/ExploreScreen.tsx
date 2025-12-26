@@ -19,9 +19,12 @@ import { SearchModal } from '@/src/components/SearchModal';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { HottestTab, NewsTab } from '../components';
 import { useMarketplaceBanners } from '../api/hooks';
 import type { MarketplaceBanner } from '../types';
+import type { ExploreStackParamList } from '../navigation';
 
 // Banner Carousel Component (CardImageCarousel style)
 interface BannerCarouselProps {
@@ -245,7 +248,7 @@ const BannerCarousel = React.memo(BannerCarouselComponent, (prevProps, nextProps
 const ExploreScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NativeStackNavigationProp<ExploreStackParamList & RootStackParamList>>();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'hottest' | 'news'>('hottest');
   const bottomInset = useSafeAreaValues('bottom');
@@ -269,8 +272,15 @@ const ExploreScreen: React.FC = () => {
 
   // Callback fonksiyonlarını useCallback ile sarmalayarak referanslarını stabilize et
   const handleEventPress = useCallback((eventId: string) => {
-    console.log('Event pressed:', eventId);
-  }, []);
+    // Events stack'ine navigate et - FeedScreen'deki gibi Main üzerinden
+    navigation.navigate('Main', {
+      screen: 'Events',
+      params: {
+        screen: 'EventDetail',
+        params: { eventId },
+      },
+    });
+  }, [navigation]);
 
   const handleSeeAllEvents = useCallback(() => {
     console.log('See All Event Catalog pressed');

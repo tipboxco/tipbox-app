@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import {
@@ -38,12 +38,21 @@ const BrandProductBookScreen: React.FC = () => {
     
     const brandId = route.params?.brandId;
     
-    // Brand Product Book API hook
+    // Brand Product Book API hook (infinite query)
     const {
         data: productBookData,
         isLoading: isProductBookLoading,
         error: productBookError,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
     } = useBrandProductBook(brandId);
+
+    // Flatten all pages into a single array
+    const allProductGroups = useMemo(() => {
+        if (!productBookData?.pages) return [];
+        return productBookData.pages.flatMap((page) => page.items);
+    }, [productBookData?.pages]);
 
     // Map BrandProduct to component format
     const mapProductToCardData = (product: BrandProduct) => {
@@ -227,7 +236,7 @@ const BrandProductBookScreen: React.FC = () => {
     }
 
     // Error state
-    if (productBookError || !productBookData) {
+    if (productBookError) {
         return (
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
@@ -281,16 +290,33 @@ const BrandProductBookScreen: React.FC = () => {
                 {/* Content */}
                 <ScrollView
                     contentContainerStyle={{ paddingBottom: bottomInset }}
+                    onScroll={(event) => {
+                        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+                        const paddingToBottom = 20;
+                        const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+                        
+                        if (isCloseToBottom && hasNextPage && !isFetchingNextPage) {
+                            fetchNextPage();
+                        }
+                    }}
+                    scrollEventThrottle={400}
                 >
                     <VStack space="md" pb="$4" pl="$4">
-                        {productBookData.length === 0 ? (
+                        {allProductGroups.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
                                     Henüz ürün bulunmuyor
                                 </Text>
                             </Box>
                         ) : (
-                            productBookData.map(renderProductGroup)
+                            <>
+                                {allProductGroups.map(renderProductGroup)}
+                                {isFetchingNextPage && (
+                                    <Box py="$4" alignItems="center">
+                                        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                                    </Box>
+                                )}
+                            </>
                         )}
                     </VStack>
                 </ScrollView>

@@ -8,6 +8,7 @@ import {
   Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { toImageSource } from '@/src/utils';
 import { SupportRequest } from '@/src/mock/inbox/SupportRequests/types';
 
 interface SupportRequestCardProps {
@@ -48,7 +49,11 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
             alignItems="center"
           >
             <Image
-              source={data.userAvatar}
+              source={
+                typeof data.userAvatar === 'string'
+                  ? toImageSource(data.userAvatar) || require('@/assets/avatar/ozan.png')
+                  : data.userAvatar || require('@/assets/avatar/ozan.png')
+              }
               alt={data.userName}
               width={42}
               height={42}

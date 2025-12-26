@@ -14,6 +14,7 @@ import type { CategoryCardCategory } from '../components/CategoryCard';
 import type { BrandCardBrand } from '../components/BrandCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
+import { toImageSource } from '@/src/utils';
 
 type BrandScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'CatalogScreen'>;
 
@@ -104,7 +105,8 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     return {
       id: category.categoryId,
       name: category.name,
-      image: category.image ? { uri: category.image } : require('@/assets/inventory/product_01.png'),
+      // CategoryCard component'i toImageSource kullanıyor, bu yüzden direkt string geçiyoruz
+      image: category.image || require('@/assets/inventory/product_01.png'),
     };
   };
 
@@ -121,7 +123,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       id: brandId,
       name: brand.name,
       followers: '',
-      logo: brand.image ? { uri: brand.image } : require('@/assets/avatar/ozan.png'),
+      logo: toImageSource(brand.image) || require('@/assets/avatar/ozan.png'),
       bannerImage: require('@/assets/events/banner.png'),
       isJoined: false,
     };

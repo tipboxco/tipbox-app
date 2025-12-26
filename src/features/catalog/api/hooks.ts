@@ -317,28 +317,37 @@ export const useBrandTrends = (brandId: string | undefined, limit: number = 5) =
 };
 
 /**
- * Get Brand Product Book query hook
- * /brands/{brandId}/products endpoint'inden marka ürün listesini getirir
+ * Get Brand Product Book infinite query hook
+ * /brands/{brandId}/groups endpoint'inden marka ürün gruplarını infinite scroll ile getirir
  *
  * @param brandId - Marka ID'si
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
  *
  * @example
- * const { data, isLoading, error } = useBrandProductBook('brand-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandProductBook('brand-123');
  */
-export const useBrandProductBook = (brandId: string | undefined) => {
-  return useQuery<BrandProductBookResponse, Error>({
+export const useBrandProductBook = (brandId: string | undefined, limit: number = 20) => {
+  return useInfiniteQuery<BrandProductBookResponse, Error>({
     queryKey: brandId ? catalogKeys.brandProductBook(brandId) : ['catalog', 'brandProductBook', 'disabled'],
-    queryFn: () => {
+    queryFn: ({ pageParam }) => {
       if (!brandId) {
         throw new Error('Brand ID is required');
       }
-      return getBrandProductBook(brandId);
+      const cursor = pageParam as string | undefined;
+      return getBrandProductBook(brandId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!brandId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false,
     retry: 1,
   });
