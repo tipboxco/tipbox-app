@@ -66,11 +66,40 @@ export const getUserProfile = async (
 export const updateProfile = async (
   data: UpdateProfileRequest
 ): Promise<UpdateProfileResponse> => {
-  const response = await apiService.getClient().put<UpdateProfileResponse>(
-    '/users/me/profile',
-    data
-  );
-  return response.data;
+  try {
+    // Request body'yi logla
+    console.log('[updateProfile] Request data:', JSON.stringify(data, null, 2));
+    console.log('[updateProfile] Request URL: PUT /users/me/profile');
+    
+    const response = await apiService.getClient().put<UpdateProfileResponse>(
+      '/users/me/profile',
+      data
+    );
+    
+    console.log('[updateProfile] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    // Detaylı hata loglama
+    console.error('[updateProfile] ❌ API Error:', {
+      url: '/users/me/profile',
+      method: 'PUT',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: data,
+      responseData: error.response?.data,
+      errorMessage: error.message,
+      fullError: error,
+    });
+    
+    // Backend'den gelen hata mesajını throw et
+    if (error.response?.data?.message) {
+      const backendError = new Error(error.response.data.message);
+      (backendError as any).response = error.response;
+      throw backendError;
+    }
+    
+    throw error;
+  }
 };
 
 /**

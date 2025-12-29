@@ -209,18 +209,33 @@ const ProfileEditScreen: React.FC = () => {
     // TODO: Add avatar, banner, cosmetic when image picker is implemented
     // For now, we'll only update name, biography, and badges
 
+    // Request data'yı logla
+    console.log('[ProfileEditScreen] Sending update request:', JSON.stringify(updateData, null, 2));
+    
     updateProfileMutation.mutate(updateData, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('[ProfileEditScreen] ✅ Profile updated successfully:', data);
         Alert.alert('Başarılı', 'Profil başarıyla güncellendi!', [
           { text: 'Tamam', onPress: () => navigation.goBack() }
         ]);
       },
       onError: (error: any) => {
+        console.error('[ProfileEditScreen] ❌ Update profile error:', {
+          error,
+          message: error?.message,
+          response: error?.response,
+          responseData: error?.response?.data,
+          responseStatus: error?.response?.status,
+          requestData: updateData,
+        });
+        
+        // Backend'den gelen detaylı hata mesajını göster
         const errorMessage = error?.response?.data?.message || 
+                           error?.response?.data?.error ||
                            error?.message || 
                            'Profil güncellenirken bir hata oluştu';
+        
         Alert.alert('Hata', errorMessage);
-        console.error('[ProfileEditScreen] Update profile error:', error);
       },
     });
   };
