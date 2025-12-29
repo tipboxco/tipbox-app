@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -12,6 +12,9 @@ import { useTipsAndTrickPostForm } from '../hooks/useTipsAndTrickPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { useCreateTipsAndTricksPost } from '../api/hooks';
+import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { mapProductInfoTypeToContextType } from '../types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TipsAndTrickPostFormData } from '../schemas/tipsAndTrickPostSchema';
@@ -181,6 +184,12 @@ export const CreateTipsAndTrickPostScreen = () => {
   const { handleSubmit, formState, getValues, setValue } = methods;
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const toast = useToast();
+  const createTipsAndTricksPostMutation = useCreateTipsAndTricksPost();
+  
+  // Flow store'dan context bilgilerini al
+  const contextType = useCreatePostFlowStore((state) => state.contextType);
+  const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
 
   const handleBackPress = () => {
     // Navigate to Feed screen
@@ -273,9 +282,117 @@ export const CreateTipsAndTrickPostScreen = () => {
     }
   };
 
-  const onSubmit = (data: TipsAndTrickPostFormData) => {
-    console.log('Form submitted:', data);
-    // TODO: Backend entegrasyonu
+  // Form'daki category değerini API formatına çevir
+  const mapCategoryToBenefitCategory = (category: string): 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result' => {
+    const mapping: Record<string, 'time_saving' | 'energy_efficiency' | 'durability' | 'better_result'> = {
+      'time-saving': 'time_saving',
+      'energy-efficiency': 'energy_efficiency',
+      'durability': 'durability',
+      'better-result': 'better_result',
+    };
+    return mapping[category] || 'time_saving';
+  };
+
+  const onSubmit = async (data: TipsAndTrickPostFormData) => {
+    console.log('[CreateTipsAndTrickPostScreen] Form submitted:', data);
+    
+    // ContextType ve contextId kontrolü
+    if (!contextType || !contextId) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      return;
+    }
+    
+    // API contextType'a çevir
+    const apiContextType = mapProductInfoTypeToContextType(contextType);
+    
+    // Category'yi API formatına çevir
+    const benefitCategory = mapCategoryToBenefitCategory(data.selectedCategory);
+    
+    try {
+      const response = await createTipsAndTricksPostMutation.mutateAsync({
+        contextType: apiContextType,
+        contextId: contextId,
+        description: data.tipsText,
+        benefitCategory: benefitCategory,
+        images: data.selectedImages || [],
+      });
+      
+      console.log('[CreateTipsAndTrickPostScreen] ✅ API Response:', response);
+      
+      // Başarılı toast göster
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Post Oluşturuldu</ToastTitle>
+                <ToastDescription>Tips & Tricks gönderiniz başarıyla oluşturuldu!</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      
+      // Clear flow context on successful submit
+      clearFlow();
+      
+      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              state: {
+                routes: [
+                  {
+                    name: 'Feed',
+                    state: {
+                      routes: [{ name: 'FeedScreen' }],
+                    },
+                  },
+                ],
+                index: 0,
+              },
+            },
+          ],
+        })
+      );
+    } catch (error: any) {
+      console.error('[CreateTipsAndTrickPostScreen] ❌ API Error:', error);
+      
+      // Hata toast göster
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+      
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
   // Check if share button should be enabled (form is valid)

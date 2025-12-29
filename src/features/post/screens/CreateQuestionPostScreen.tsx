@@ -1,7 +1,7 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -13,6 +13,9 @@ import { useQuestionPostForm } from '../hooks/useQuestionPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { useCreateQuestionPost } from '../api/hooks';
+import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { mapProductInfoTypeToContextType } from '../types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { QuestionPostFormData } from '../schemas/questionPostSchema';
@@ -106,6 +109,12 @@ export const CreateQuestionPostScreen = () => {
   const { handleSubmit, formState, getValues, setValue } = methods;
   const availableTips = 250;
   const toast = useToast();
+  const createQuestionPostMutation = useCreateQuestionPost();
+  
+  // Flow store'dan context bilgilerini al
+  const contextType = useCreatePostFlowStore((state) => state.contextType);
+  const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
 
   const handleBackPress = () => {
     // Navigate to Feed screen
@@ -198,9 +207,134 @@ export const CreateQuestionPostScreen = () => {
     }
   };
 
-  const onSubmit = (data: QuestionPostFormData) => {
-    console.log('Form submitted:', data);
-    // TODO: Backend entegrasyonu
+  // Boost option'ı API formatına çevir (şimdilik 'no-boost' için boş string)
+  // TODO: Backend'den boost options'ı çekip gerçek ID'leri kullan
+  const mapBoostToBoostOptionId = (boost: string): string => {
+    if (boost === 'no-boost') {
+      return ''; // Backend'in 'no-boost' için özel bir ID'si olabilir, şimdilik boş string
+    }
+    // Diğer boost option'lar için backend'den ID çekilmesi gerekiyor
+    return boost;
+  };
+
+  const onSubmit = async (data: QuestionPostFormData) => {
+    console.log('[CreateQuestionPostScreen] Form submitted:', data);
+    
+    // ContextType ve contextId kontrolü
+    if (!contextType || !contextId) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      return;
+    }
+    
+    // API contextType'a çevir
+    const apiContextType = mapProductInfoTypeToContextType(contextType);
+    
+    // Boost option ID'sini al
+    const selectedBoostOptionId = mapBoostToBoostOptionId(data.selectedBoost);
+    
+    // Boost option ID kontrolü (backend zorunlu kılıyor)
+    if (!selectedBoostOptionId) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>Boost option seçimi zorunludur.</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      return;
+    }
+    
+    try {
+      const response = await createQuestionPostMutation.mutateAsync({
+        contextType: apiContextType,
+        contextId: contextId,
+        description: data.questionText,
+        selectedBoostOptionId: selectedBoostOptionId,
+        images: data.selectedImages || [],
+      });
+      
+      console.log('[CreateQuestionPostScreen] ✅ API Response:', response);
+      
+      // Başarılı toast göster
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Post Oluşturuldu</ToastTitle>
+                <ToastDescription>Soru gönderiniz başarıyla oluşturuldu!</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      
+      // Clear flow context on successful submit
+      clearFlow();
+      
+      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              state: {
+                routes: [
+                  {
+                    name: 'Feed',
+                    state: {
+                      routes: [{ name: 'FeedScreen' }],
+                    },
+                  },
+                ],
+                index: 0,
+              },
+            },
+          ],
+        })
+      );
+    } catch (error: any) {
+      console.error('[CreateQuestionPostScreen] ❌ API Error:', error);
+      
+      // Hata toast göster
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+      
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
   // Check if share button should be enabled (form is valid)

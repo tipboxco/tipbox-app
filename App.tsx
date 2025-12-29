@@ -27,7 +27,7 @@ export default function App() {
         NavigationBar.setBackgroundColorAsync('#000000');
         NavigationBar.setButtonStyleAsync('light'); // ikonlar beyaz
       } else {
-        NavigationBar.setBackgroundColorAsync('#FAFAFA');
+        NavigationBar.setBackgroundColorAsync('#ffffff');
         NavigationBar.setButtonStyleAsync('dark'); // ikonlar siyah
       }
     }
@@ -43,7 +43,7 @@ export default function App() {
               <GluestackProvider>
                 <StatusBar
                   translucent
-                  backgroundColor={isDark ? '#000000' : '#FAFAFA'}
+                  backgroundColor={isDark ? '#000000' : '#ffffff'}
                   barStyle={isDark ? 'light-content' : 'dark-content'}
                 />
                 <Navigation />

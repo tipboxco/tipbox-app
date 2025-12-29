@@ -1,7 +1,7 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -13,6 +13,9 @@ import { useUpdatePostForm } from '../hooks/useUpdatePostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { useCreateUpdatePost } from '../api/hooks';
+import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { mapProductInfoTypeToContextType } from '../types';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -30,6 +33,12 @@ export const CreateUpdatePostScreen = () => {
   const methods = useUpdatePostForm();
   const { handleSubmit, formState, getValues, setValue, watch } = methods;
   const toast = useToast();
+  const createUpdatePostMutation = useCreateUpdatePost();
+  
+  // Flow store'dan context bilgilerini al
+  const contextType = useCreatePostFlowStore((state) => state.contextType);
+  const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   
   // Mock experience content - in real app, this would come from props or be fetched
   const experienceContent = [
@@ -150,10 +159,103 @@ export const CreateUpdatePostScreen = () => {
     console.log('Remove image at index:', index);
   };
 
-  const onSubmit = (data: UpdatePostFormData) => {
-    console.log('Form submitted:', data);
-    console.log('Product from route params:', product);
-    // TODO: Backend entegrasyonu - product'ı ayrı parametre olarak gönder
+  const onSubmit = async (data: UpdatePostFormData) => {
+    console.log('[CreateUpdatePostScreen] Form submitted:', data);
+    console.log('[CreateUpdatePostScreen] Product from route params:', product);
+    
+    // ContextType ve contextId kontrolü
+    if (!contextType || !contextId) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      return;
+    }
+    
+    // API contextType'a çevir
+    const apiContextType = mapProductInfoTypeToContextType(contextType);
+    
+    try {
+      const response = await createUpdatePostMutation.mutateAsync({
+        contextType: apiContextType,
+        contextId: contextId,
+        content: data.description, // API'de "content" field'ı kullanılıyor
+        images: data.selectedImages || [],
+      });
+      
+      console.log('[CreateUpdatePostScreen] ✅ API Response:', response);
+      
+      // Başarılı toast göster
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                <ToastTitle>Post Oluşturuldu</ToastTitle>
+                <ToastDescription>Update gönderiniz başarıyla oluşturuldu!</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+      
+      // Clear flow context on successful submit
+      clearFlow();
+      
+      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              state: {
+                routes: [
+                  {
+                    name: 'Feed',
+                    state: {
+                      routes: [{ name: 'FeedScreen' }],
+                    },
+                  },
+                ],
+                index: 0,
+              },
+            },
+          ],
+        })
+      );
+    } catch (error: any) {
+      console.error('[CreateUpdatePostScreen] ❌ API Error:', error);
+      
+      // Hata toast göster
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+      
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
   // Check if share button should be enabled (product exists and form is valid)

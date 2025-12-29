@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { FormProvider } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -11,6 +11,9 @@ import { StepThreeScreen } from '../components/CreateExperienceSteps/StepThreeSc
 import { SelectProduct } from '../components/CreateExperienceSteps/SelectProduct';
 import { useExperiencePostForm } from '../hooks/useExperiencePostForm';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { useCreateExperiencePost } from '../api/hooks';
+import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { mapProductInfoTypeToContextType } from '../types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { PostStackParamList } from '../navigation';
@@ -43,6 +46,12 @@ export const CreateExperiencePostScreen = () => {
     );
     const { handleSubmit, formState, validateStep, watch, setValue, getValues } = methods;
     const toast = useToast();
+    const createExperiencePostMutation = useCreateExperiencePost();
+    
+    // Flow store'dan context bilgilerini al
+    const contextType = useCreatePostFlowStore((state) => state.contextType);
+    const contextId = useCreatePostFlowStore((state) => state.contextId);
+    const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
     
     const selectedProduct = watch('selectedProduct');
     const step1Duration = watch('step1Duration');
@@ -72,12 +81,27 @@ export const CreateExperiencePostScreen = () => {
             }
         } else if (currentStep === 0) {
             // Navigate to Feed screen
-            navigation.navigate('Main', {
-                screen: 'Feed',
-                params: {
-                    screen: 'FeedScreen',
-                },
-            });
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        {
+                            name: 'Main',
+                            state: {
+                                routes: [
+                                    {
+                                        name: 'Feed',
+                                        state: {
+                                            routes: [{ name: 'FeedScreen' }],
+                                        },
+                                    },
+                                ],
+                                index: 0,
+                            },
+                        },
+                    ],
+                })
+            );
         }
     };
 
@@ -109,9 +133,160 @@ export const CreateExperiencePostScreen = () => {
         setCurrentStep(1);
     };
 
-    const onSubmit = (data: ExperiencePostFormData) => {
-        console.log('Form submitted:', data);
-        // TODO: Backend entegrasyonu
+    // Form'daki duration, condition, frequency değerlerini API ID formatına çevir
+    // TODO: Backend'den experience options'ı çekip gerçek ID'leri kullan
+    const mapFormValueToId = (value: string): string => {
+        // Şimdilik form değerini direkt ID olarak kullanıyoruz
+        // Backend'den options çekildiğinde bu mapping güncellenecek
+        return value;
+    };
+
+    const onSubmit = async (data: ExperiencePostFormData) => {
+        console.log('[CreateExperiencePostScreen] Form submitted:', data);
+        
+        // ContextType ve contextId kontrolü
+        if (!contextType || !contextId) {
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Hata</ToastTitle>
+                                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+            return;
+        }
+        
+        // Ürün kontrolü
+        if (!data.selectedProduct) {
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Hata</ToastTitle>
+                                <ToastDescription>Ürün seçimi zorunludur.</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+            return;
+        }
+        
+        // API contextType'a çevir
+        const apiContextType = mapProductInfoTypeToContextType(contextType);
+        
+        // Experience array'ini oluştur
+        const experience = [];
+        
+        // Price and shopping experience
+        if (data.priceExperienceText && data.priceRating) {
+            experience.push({
+                type: 'price_and_shopping' as const,
+                content: data.priceExperienceText,
+                rating: data.priceRating,
+            });
+        }
+        
+        // Product and usage experience
+        if (data.productExperienceText && data.productRating) {
+            experience.push({
+                type: 'product_and_usage' as const,
+                content: data.productExperienceText,
+                rating: data.productRating,
+            });
+        }
+        
+        // Experience array kontrolü
+        if (experience.length === 0) {
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Hata</ToastTitle>
+                                <ToastDescription>En az bir deneyim kategorisi doldurulmalıdır.</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+            return;
+        }
+        
+        // Status'u belirle (fromInventory ve experienceOption'a göre)
+        const status: 'own' | 'tested' = (fromInventory && experienceOption === 'own') ? 'own' : 'tested';
+        
+        try {
+            const response = await createExperiencePostMutation.mutateAsync({
+                contextType: apiContextType,
+                contextId: contextId,
+                selectedDurationId: mapFormValueToId(data.step1Duration),
+                selectedLocationId: mapFormValueToId(data.selectedCondition), // Condition -> Location mapping
+                selectedPurposeId: mapFormValueToId(data.selectedFrequency), // Frequency -> Purpose mapping
+                content: data.experienceText,
+                experience: experience,
+                status: status,
+                images: data.selectedImages || [],
+            });
+            
+            console.log('[CreateExperiencePostScreen] ✅ API Response:', response);
+            
+            // Başarılı toast göster
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                                <ToastTitle>Post Oluşturuldu</ToastTitle>
+                                <ToastDescription>Deneyim gönderiniz başarıyla oluşturuldu!</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+            
+            // Clear flow context on successful submit
+            clearFlow();
+            
+            // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
+            navigation.navigate('Main', {
+                screen: 'Feed',
+                params: {
+                    screen: 'FeedScreen',
+                },
+            });
+        } catch (error: any) {
+            console.error('[CreateExperiencePostScreen] ❌ API Error:', error);
+            
+            // Hata toast göster
+            const errorMessage = error?.response?.data?.message || 
+                                error?.message || 
+                                'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+            
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Hata</ToastTitle>
+                                <ToastDescription>{errorMessage}</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+        }
     };
 
     const handleImagePicker = async () => {

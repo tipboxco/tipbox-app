@@ -25,6 +25,8 @@ import type {
 import type { FeedApiResponse, FeedApiItem } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 import { profileKeys } from '@/src/features/profile/api/hooks';
+import type { UserFeedApiResponse } from '@/src/features/profile/api/profileApi';
+import type { ProfileFeedItem } from '@/src/features/profile/types';
 
 /**
  * Query Keys - Interactions feature için cache key pattern'leri
@@ -88,6 +90,45 @@ const updateStats = (
   ...stats,
   ...updates,
 });
+
+/**
+ * Helper: Profile feed içinde post bul ve güncelle
+ */
+const updatePostInProfileFeed = (
+  feedData: UserFeedApiResponse | undefined,
+  postId: string,
+  updater: (post: ProfileFeedItem) => ProfileFeedItem
+): UserFeedApiResponse | undefined => {
+  if (!feedData || !feedData.items || !Array.isArray(feedData.items)) {
+    return feedData;
+  }
+
+  return {
+    ...feedData,
+    items: feedData.items.map((item) => {
+      if (item?.id === postId) {
+        return updater(item);
+      }
+      return item;
+    }),
+  };
+};
+
+/**
+ * Helper: Infinite query pages içinde profile feed post bul ve güncelle
+ */
+const updatePostInInfiniteProfileFeed = (
+  pages: UserFeedApiResponse[] | undefined,
+  postId: string,
+  updater: (post: ProfileFeedItem) => ProfileFeedItem
+): UserFeedApiResponse[] | undefined => {
+  if (!pages || !Array.isArray(pages)) return pages;
+
+  return pages.map((page) => {
+    const updated = updatePostInProfileFeed(page, postId, updater);
+    return updated || page;
+  });
+};
 
 /**
  * Get Post Status query hook
@@ -196,13 +237,80 @@ export const useLikePost = () => {
         }
       );
 
-      // Profile feed'leri için de güncelle
+      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
+      // Infinite query pages için güncelle
       queryClient.setQueriesData(
-        { queryKey: profileKeys.posts() },
+        { queryKey: profileKeys.posts(), type: 'infinite' },
         (old: any) => {
-          if (!old) return old;
-          // Profile feed'lerini güncelle
-          return old;
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
+              isLiked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
+              isLiked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
+              isLiked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.tips(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
+              isLiked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.replies(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: post.stats.likes + 1 }),
+              isLiked: true,
+            })),
+          };
         }
       );
 
@@ -271,6 +379,83 @@ export const useUnlikePost = () => {
         }
       );
 
+      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
+      // Infinite query pages için güncelle
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.posts(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
+              isLiked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
+              isLiked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
+              isLiked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.tips(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
+              isLiked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.replies(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { likes: Math.max(0, post.stats.likes - 1) }),
+              isLiked: false,
+            })),
+          };
+        }
+      );
+
       return { previousFeedPages };
     },
     onError: (err, postId, context) => {
@@ -327,6 +512,83 @@ export const useBookmarkPost = () => {
           return {
             ...old,
             pages: updatePostInInfiniteFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
+              isBookmarked: true,
+            })),
+          };
+        }
+      );
+
+      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
+      // Infinite query pages için güncelle
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.posts(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
+              isBookmarked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
+              isBookmarked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
+              isBookmarked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.tips(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
+              isBookmarked: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.replies(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
               ...post,
               stats: updateStats(post.stats, { bookmarks: post.stats.bookmarks + 1 }),
               isBookmarked: true,
@@ -401,6 +663,83 @@ export const useUnbookmarkPost = () => {
         }
       );
 
+      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
+      // Infinite query pages için güncelle
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.posts(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
+              isBookmarked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
+              isBookmarked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
+              isBookmarked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.tips(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
+              isBookmarked: false,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.replies(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { bookmarks: Math.max(0, post.stats.bookmarks - 1) }),
+              isBookmarked: false,
+            })),
+          };
+        }
+      );
+
       return { previousFeedPages };
     },
     onError: (err, postId, context) => {
@@ -451,6 +790,78 @@ export const useCreateComment = () => {
             ...post,
             stats: updateStats(post.stats, { comments: post.stats.comments + 1 }),
           }));
+        }
+      );
+
+      // Profile feed'lerindeki comment sayısını da artır (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
+      // Infinite query pages için güncelle
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.posts(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { comments: post.stats.comments + 1 }),
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { comments: post.stats.comments + 1 }),
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { comments: post.stats.comments + 1 }),
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.tips(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { comments: post.stats.comments + 1 }),
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.replies(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { comments: post.stats.comments + 1 }),
+            })),
+          };
         }
       );
 
@@ -596,6 +1007,83 @@ export const useSharePost = () => {
           return {
             ...old,
             pages: updatePostInInfiniteFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
+      // Infinite query pages için güncelle
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.posts(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.tips(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
+              ...post,
+              stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
+              isShared: true,
+            })),
+          };
+        }
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: profileKeys.replies(), type: 'infinite' },
+        (old: any) => {
+          if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: updatePostInInfiniteProfileFeed(old.pages, variables.postId, (post) => ({
               ...post,
               stats: updateStats(post.stats, { shares: post.stats.shares + 1 }),
               isShared: true,

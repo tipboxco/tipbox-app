@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -12,17 +12,6 @@ import {
   InputField,
   Textarea,
   TextareaInput,
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectIcon,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicatorWrapper,
-  SelectDragIndicator,
-  SelectItem,
-  ChevronDownIcon,
   Modal,
   ModalBackdrop,
   ModalContent,
@@ -35,14 +24,26 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
 import { useUpdateProfile } from '../api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomOffset } from '@/src/utils';
 import type { ProfileStackParamList } from '../navigation';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
+
+// Badge listesi - API'den çekilebilir
+const AVAILABLE_BADGES = [
+  { id: 'everyday_consumer', label: 'Everyday Consumer' },
+  { id: 'home_appliance', label: 'Home Appliance Enthusiast' },
+  { id: 'product_reviewer', label: 'Product Reviewer' },
+  { id: 'tech_expert', label: 'Tech Expert' },
+] as const;
 
 const ProfileEditScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ProfileEditScreenNavigationProp>();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   // Form state
   const [name, setName] = useState(mock_user_card.name);
@@ -52,9 +53,113 @@ const ProfileEditScreen: React.FC = () => {
   const [badge3, setBadge3] = useState('');
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [selectedAvatarType, setSelectedAvatarType] = useState<'picture' | 'cosmetic'>('picture');
+  const [selectedBadgeSlot, setSelectedBadgeSlot] = useState<1 | 2 | 3 | null>(null);
 
   // Update Profile mutation
   const updateProfileMutation = useUpdateProfile();
+
+  // Badge seçimi için bottom sheet aç
+  const handleBadgeSelect = useCallback((slot: 1 | 2 | 3) => {
+    setSelectedBadgeSlot(slot);
+    
+    // Mevcut seçili badge'leri al
+    const currentBadges = [badge1, badge2, badge3];
+    const currentSlotValue = currentBadges[slot - 1];
+    
+    // Bottom sheet içeriği
+    const badgeContent = (
+      <Box px="$4" pb={bottomOffset}>
+        <VStack space="md">
+          <Text
+            fontSize={18}
+            fontWeight="$bold"
+            color={isDark ? '$textDark50' : '$textLight900'}
+            mb="$2"
+          >
+            Badge Seç
+          </Text>
+          
+          {/* Badge listesi */}
+          <VStack space="sm">
+            {/* None seçeneği */}
+            <Pressable
+              onPress={() => {
+                if (slot === 1) setBadge1('');
+                else if (slot === 2) setBadge2('');
+                else if (slot === 3) setBadge3('');
+                closeBottomSheet();
+                setSelectedBadgeSlot(null);
+              }}
+              bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
+              borderRadius={8}
+              p="$3"
+              borderWidth={currentSlotValue === '' ? 2 : 0}
+              borderColor="#E8FF6B"
+            >
+              <Text
+                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize={14}
+              >
+                Badge Seçme
+              </Text>
+            </Pressable>
+            
+            {/* Badge seçenekleri */}
+            {AVAILABLE_BADGES.map((badge) => {
+              const isSelected = currentSlotValue === badge.id;
+              const isUsedInOtherSlot = 
+                (slot !== 1 && badge1 === badge.id) ||
+                (slot !== 2 && badge2 === badge.id) ||
+                (slot !== 3 && badge3 === badge.id);
+              
+              return (
+                <Pressable
+                  key={badge.id}
+                  onPress={() => {
+                    if (isUsedInOtherSlot) {
+                      Alert.alert('Uyarı', 'Bu badge zaten başka bir slotta kullanılıyor');
+                      return;
+                    }
+                    if (slot === 1) setBadge1(badge.id);
+                    else if (slot === 2) setBadge2(badge.id);
+                    else if (slot === 3) setBadge3(badge.id);
+                    closeBottomSheet();
+                    setSelectedBadgeSlot(null);
+                  }}
+                  bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
+                  borderRadius={8}
+                  p="$3"
+                  borderWidth={isSelected ? 2 : 0}
+                  borderColor="#E8FF6B"
+                  opacity={isUsedInOtherSlot ? 0.5 : 1}
+                >
+                  <Text
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    fontSize={14}
+                    fontWeight={isSelected ? '$bold' : '$normal'}
+                  >
+                    {badge.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </VStack>
+        </VStack>
+      </Box>
+    );
+    
+    openBottomSheet(badgeContent, {
+      enablePanDownToClose: true,
+      enableDynamicSizing: true,
+      backdropPressBehavior: 'close',
+    });
+  }, [badge1, badge2, badge3, isDark, bottomOffset, openBottomSheet, closeBottomSheet]);
+
+  // Badge label'ını al
+  const getBadgeLabel = useCallback((badgeId: string) => {
+    const badge = AVAILABLE_BADGES.find((b) => b.id === badgeId);
+    return badge ? badge.label : 'Badge Seç';
+  }, []);
 
   const handleSave = () => {
     // Validate name (min 2 characters)
@@ -72,7 +177,8 @@ const ProfileEditScreen: React.FC = () => {
     // Collect badge IDs (filter out empty strings)
     const badgeIds = [badge1, badge2, badge3].filter((badge) => badge.trim().length > 0);
 
-    // Prepare update data
+    // Prepare update data - API formatına uygun
+    // Tüm field'ları gönder (boş string'ler yerine undefined/null kullan)
     const updateData: {
       name?: string;
       biography?: string;
@@ -80,15 +186,25 @@ const ProfileEditScreen: React.FC = () => {
       cosmetic?: string | null;
       avatar?: string | null;
       banner?: string | null;
-    } = {
-      name: name.trim(),
-      biography: bio.trim() || undefined,
-    };
+    } = {};
 
-    // Add badge array if there are any badges
+    // Name zorunlu - her zaman gönder
+    if (name.trim().length > 0) {
+      updateData.name = name.trim();
+    }
+
+    // Biography sadece doluysa ekle (boş string gönderme)
+    if (bio.trim().length > 0) {
+      updateData.biography = bio.trim();
+    }
+
+    // Badge array'i sadece varsa ekle
     if (badgeIds.length > 0) {
       updateData.badge = badgeIds;
     }
+
+    // TODO: Add avatar, banner, cosmetic when image picker is implemented
+    // Şimdilik null göndermiyoruz
 
     // TODO: Add avatar, banner, cosmetic when image picker is implemented
     // For now, we'll only update name, biography, and badges
@@ -99,8 +215,12 @@ const ProfileEditScreen: React.FC = () => {
           { text: 'Tamam', onPress: () => navigation.goBack() }
         ]);
       },
-      onError: (error) => {
-        Alert.alert('Hata', error.message || 'Profil güncellenirken bir hata oluştu');
+      onError: (error: any) => {
+        const errorMessage = error?.response?.data?.message || 
+                           error?.message || 
+                           'Profil güncellenirken bir hata oluştu';
+        Alert.alert('Hata', errorMessage);
+        console.error('[ProfileEditScreen] Update profile error:', error);
       },
     });
   };
@@ -287,106 +407,76 @@ const ProfileEditScreen: React.FC = () => {
               </Text>
               
               {/* Badge 1 */}
-              <Select
-                selectedValue={badge1}
-                onValueChange={setBadge1}
+              <Pressable
+                onPress={() => handleBadgeSelect(1)}
+                bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
+                borderWidth={0}
+                borderRadius={8}
+                p="$3"
+                flexDirection="row"
+                justifyContent="space-between"
+                alignItems="center"
               >
-                <SelectTrigger
-                  variant="outline"
-                  size="xl"
-                  bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
-                  borderWidth={0}
-                  borderRadius={8}
+                <Text
+                  color={badge1 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
+                  fontSize={11}
                 >
-                  <SelectInput
-                    placeholder="Select Badge 1"
-                    placeholderTextColor={isDark ? '#666' : '#999'}
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={11}
-                  />
-                  <SelectIcon mr="$3" as={ChevronDownIcon} />
-                </SelectTrigger>
-                <SelectPortal>
-                  <SelectBackdrop />
-                  <SelectContent>
-                    <SelectDragIndicatorWrapper>
-                      <SelectDragIndicator />
-                    </SelectDragIndicatorWrapper>
-                    <SelectItem label="Everyday Consumer" value="everyday_consumer" />
-                    <SelectItem label="Home Appliance Enthusiast" value="home_appliance" />
-                    <SelectItem label="Product Reviewer" value="product_reviewer" />
-                    <SelectItem label="Tech Expert" value="tech_expert" />
-                  </SelectContent>
-                </SelectPortal>
-              </Select>
+                  {badge1 ? getBadgeLabel(badge1) : 'Select Badge 1'}
+                </Text>
+                <Feather
+                  name="chevron-down"
+                  size={16}
+                  color={isDark ? '#666' : '#999'}
+                />
+              </Pressable>
 
               {/* Badge 2 */}
-              <Select
-                selectedValue={badge2}
-                onValueChange={setBadge2}
+              <Pressable
+                onPress={() => handleBadgeSelect(2)}
+                bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
+                borderWidth={0}
+                borderRadius={8}
+                p="$3"
+                flexDirection="row"
+                justifyContent="space-between"
+                alignItems="center"
               >
-                <SelectTrigger
-                  variant="outline"
-                  size="xl"
-                  bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
-                  borderWidth={0}
-                  borderRadius={8}
+                <Text
+                  color={badge2 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
+                  fontSize={11}
                 >
-                  <SelectInput
-                    placeholder="Select Badge 2"
-                    placeholderTextColor={isDark ? '#666' : '#999'}
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={11}
-                  />
-                  <SelectIcon mr="$3" as={ChevronDownIcon} />
-                </SelectTrigger>
-                <SelectPortal>
-                  <SelectBackdrop />
-                  <SelectContent>
-                    <SelectDragIndicatorWrapper>
-                      <SelectDragIndicator />
-                    </SelectDragIndicatorWrapper>
-                    <SelectItem label="Everyday Consumer" value="everyday_consumer" />
-                    <SelectItem label="Home Appliance Enthusiast" value="home_appliance" />
-                    <SelectItem label="Product Reviewer" value="product_reviewer" />
-                    <SelectItem label="Tech Expert" value="tech_expert" />
-                  </SelectContent>
-                </SelectPortal>
-              </Select>
+                  {badge2 ? getBadgeLabel(badge2) : 'Select Badge 2'}
+                </Text>
+                <Feather
+                  name="chevron-down"
+                  size={16}
+                  color={isDark ? '#666' : '#999'}
+                />
+              </Pressable>
 
               {/* Badge 3 */}
-              <Select
-                selectedValue={badge3}
-                onValueChange={setBadge3}
+              <Pressable
+                onPress={() => handleBadgeSelect(3)}
+                bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
+                borderWidth={0}
+                borderRadius={8}
+                p="$3"
+                flexDirection="row"
+                justifyContent="space-between"
+                alignItems="center"
               >
-                <SelectTrigger
-                  variant="outline"
-                  size="xl"
-                  bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
-                  borderWidth={0}
-                  borderRadius={8}
+                <Text
+                  color={badge3 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
+                  fontSize={11}
                 >
-                  <SelectInput
-                    placeholder="Select Badge 3"
-                    placeholderTextColor={isDark ? '#666' : '#999'}
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={11}
-                  />
-                  <SelectIcon mr="$3" as={ChevronDownIcon} />
-                </SelectTrigger>
-                <SelectPortal>
-                  <SelectBackdrop />
-                  <SelectContent>
-                    <SelectDragIndicatorWrapper>
-                      <SelectDragIndicator />
-                    </SelectDragIndicatorWrapper>
-                    <SelectItem label="Everyday Consumer" value="everyday_consumer" />
-                    <SelectItem label="Home Appliance Enthusiast" value="home_appliance" />
-                    <SelectItem label="Product Reviewer" value="product_reviewer" />
-                    <SelectItem label="Tech Expert" value="tech_expert" />
-                  </SelectContent>
-                </SelectPortal>
-              </Select>
+                  {badge3 ? getBadgeLabel(badge3) : 'Select Badge 3'}
+                </Text>
+                <Feather
+                  name="chevron-down"
+                  size={16}
+                  color={isDark ? '#666' : '#999'}
+                />
+              </Pressable>
             </VStack>
           </VStack>
         </VStack>

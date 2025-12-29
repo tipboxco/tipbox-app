@@ -3,6 +3,7 @@ import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getL
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
+import { feedKeys } from '@/src/features/feed/api/hooks';
 
 /**
  * Query Keys - Events feature için cache key pattern'leri
@@ -221,6 +222,10 @@ export const useCreateEventPost = (eventId: string) => {
       queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
       // Event detail'i de invalidate et (post sayısı değişebilir)
       queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      // Ana feed'i invalidate et ki yeni post görünsün
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      // Profil feed'lerini de invalidate et (kullanıcı kendi gönderisini görebilsin)
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 };

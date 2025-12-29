@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { FormProvider, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -316,11 +316,28 @@ export const CreatePostScreen = () => {
       // Clear flow context on successful submit
       clearFlow();
       
-      // Başarılı olursa Catalog ekranına yönlendir
-      navigation.navigate('Main', {
-        screen: 'Catalog',
-        params: {} as any,
-      });
+      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              state: {
+                routes: [
+                  {
+                    name: 'Feed',
+                    state: {
+                      routes: [{ name: 'FeedScreen' }],
+                    },
+                  },
+                ],
+                index: 0,
+              },
+            },
+          ],
+        })
+      );
     } catch (error: any) {
       console.error('[CreatePostScreen] ❌ API Error:', error);
       console.log('[CreatePostScreen] ====================================');
