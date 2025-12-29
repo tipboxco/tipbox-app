@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, VStack, HStack, Pressable, Text } from '@gluestack-ui/themed';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -6,7 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { PaymentTab } from './PaymentAndSubscriptionTabsScreen/PaymentTab';
 import { SubscriptionTab } from './PaymentAndSubscriptionTabsScreen/SubscriptionTab';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomOffset } from '@/src/utils';
 import AddPaymentMethodBottomSheet from '../components/AddPaymentMethodBottomSheet';
 
 export const PaymentAndSubscriptionScreen: React.FC = () => {
@@ -16,33 +17,38 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'payment' | 'subscription'>('payment');
   
-  // Bottom sheet refs
-  const addPaymentMethodBottomSheetRef = useRef<BottomSheet>(null);
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-      />
-    ),
-    []
-  );
+  const handleAddPaymentMethod = useCallback(() => {
+    openBottomSheet(
+      <AddPaymentMethodBottomSheet onClose={closeBottomSheet} />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableDynamicSizing: true,
+        backgroundStyle: {
+          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        },
+        handleStyle: {
+          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+        },
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#CCCCCC',
+          width: 40,
+          height: 4,
+        },
+        paddingBottom: bottomOffset,
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, isDark, bottomOffset]);
 
-  const handleAddPaymentMethod = () => {
-    if (addPaymentMethodBottomSheetRef.current) {
-      addPaymentMethodBottomSheetRef.current.snapToIndex(0);
-    } else {
-      setTimeout(() => {
-        if (addPaymentMethodBottomSheetRef.current) {
-          addPaymentMethodBottomSheetRef.current.snapToIndex(0);
-        }
-      }, 100);
-    }
-  };
-
-  const renderTabContent = () => {
+  const renderTabContent = useCallback(() => {
     switch (activeTab) {
       case 'payment':
         return <PaymentTab onAddPaymentMethod={handleAddPaymentMethod} />;
@@ -51,7 +57,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
       default:
         return <PaymentTab onAddPaymentMethod={handleAddPaymentMethod} />;
     }
-  };
+  }, [activeTab, handleAddPaymentMethod]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -126,36 +132,6 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
           {renderTabContent()}
         </Box>
       </VStack>
-
-      {/* Add Payment Method Bottom Sheet */}
-      <BottomSheet
-        ref={addPaymentMethodBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#CCCCCC',
-          width: 40,
-          height: 4,
-        }}
-      >
-        <BottomSheetView>
-          <AddPaymentMethodBottomSheet
-            onClose={() => addPaymentMethodBottomSheetRef.current?.close()}
-          />
-        </BottomSheetView>
-      </BottomSheet>
     </Box>
     </SafeAreaView>
   );

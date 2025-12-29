@@ -4,7 +4,6 @@ import { Box, Text, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { ChevronLeft } from 'lucide-react-native';
 import { Header } from '@/src/components/Header';
 import type { Badge } from '@/src/mock/profile/badges/types';

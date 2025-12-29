@@ -7,7 +7,7 @@ import {
   createUpdatePost,
   createExperiencePost,
 } from './postApi';
-import type { CreatePostRequest, CreatePostResponse } from '../types';
+import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 import type { 
   CreateBenchmarkPostRequest,
   CreateTipsAndTricksPostRequest,
@@ -23,6 +23,39 @@ import { feedKeys } from '@/src/features/feed/api/hooks';
 export const postKeys = {
   all: ['posts'] as const,
   free: () => [...postKeys.all, 'free'] as const,
+};
+
+/**
+ * Helper function to invalidate context-based feed queries
+ */
+const invalidateContextFeed = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  contextType: ApiContextType,
+  contextId: string
+) => {
+  // Invalidate context-specific feed queries
+  switch (contextType) {
+    case 'product':
+      queryClient.invalidateQueries({ 
+        queryKey: feedKeys.productFeed(contextId) 
+      });
+      break;
+    case 'product_group':
+      queryClient.invalidateQueries({ 
+        queryKey: feedKeys.productGroupFeed(contextId) 
+      });
+      break;
+    case 'sub_category':
+      queryClient.invalidateQueries({ 
+        queryKey: feedKeys.subCategoryFeed(contextId) 
+      });
+      break;
+  }
+  
+  // Also invalidate general feed with context parameters
+  queryClient.invalidateQueries({ 
+    queryKey: feedKeys.feed(undefined, undefined, contextType, contextId) 
+  });
 };
 
 /**
@@ -43,7 +76,10 @@ export const useCreateFreePost = () => {
   
   return useMutation<CreatePostResponse, Error, CreatePostRequest>({
     mutationFn: createFreePost,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Context-based feed'i invalidate et
+      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
       // Ana feed'i invalidate et ki yeni post görünsün
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       // Post listesini de invalidate et
@@ -76,7 +112,10 @@ export const useCreateBenchmarkPost = () => {
   
   return useMutation<CreatePostResponse, Error, CreateBenchmarkPostRequest>({
     mutationFn: createBenchmarkPost,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Context-based feed'i invalidate et
+      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
       // Ana feed'i invalidate et ki yeni post görünsün
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       // Post listesini de invalidate et
@@ -95,7 +134,10 @@ export const useCreateTipsAndTricksPost = () => {
   
   return useMutation<CreatePostResponse, Error, CreateTipsAndTricksPostRequest>({
     mutationFn: createTipsAndTricksPost,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Context-based feed'i invalidate et
+      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -111,7 +153,10 @@ export const useCreateQuestionPost = () => {
   
   return useMutation<CreatePostResponse, Error, CreateQuestionPostRequest>({
     mutationFn: createQuestionPost,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Context-based feed'i invalidate et
+      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -127,7 +172,10 @@ export const useCreateUpdatePost = () => {
   
   return useMutation<CreatePostResponse, Error, CreateUpdatePostRequest>({
     mutationFn: createUpdatePost,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Context-based feed'i invalidate et
+      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -143,7 +191,10 @@ export const useCreateExperiencePost = () => {
   
   return useMutation<CreatePostResponse, Error, CreateExperiencePostRequest>({
     mutationFn: createExperiencePost,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Context-based feed'i invalidate et
+      invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });

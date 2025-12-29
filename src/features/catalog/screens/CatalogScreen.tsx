@@ -134,8 +134,8 @@ export const CatalogScreen = () => {
     );
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProductLocal, isDark]);
 
-  const handlePostTypeSelect = useCallback((type: string) => {
-    console.log('Post type selected:', type);
+  const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
+    console.log('Post type selected:', type, 'experienceOption:', experienceOption);
     
     // Close bottom sheet first
     closeBottomSheet();
@@ -226,6 +226,8 @@ export const CatalogScreen = () => {
             image: selectedProductLocal.image,
             brand: selectedProductLocal.brand,
           } : undefined,
+          fromInventory: experienceOption === 'own',
+          experienceOption: experienceOption,
         },
       });
     } else if (type === 'comparison') {

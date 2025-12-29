@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   Box, 
   VStack, 
@@ -15,7 +15,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SettingsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useBottomOffset } from '@/src/utils';
 import ChangePasswordBottomSheet from '../components/ChangePasswordBottomSheet';
 import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,9 +41,9 @@ export const SettingsScreen = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Bottom sheet refs
-  const changePasswordBottomSheetRef = useRef<BottomSheet>(null);
-  const yourDevicesBottomSheetRef = useRef<BottomSheet>(null);
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   const settingSections: SettingSection[] = [
     {
@@ -53,21 +54,30 @@ export const SettingsScreen = () => {
           icon: 'user',
           title: 'Change Password',
           onPress: () => {
-            console.log('[SettingsScreen] Change Password pressed');
-            console.log('[SettingsScreen] BottomSheet ref:', changePasswordBottomSheetRef.current);
-            if (changePasswordBottomSheetRef.current) {
-              changePasswordBottomSheetRef.current.snapToIndex(0);
-            } else {
-              console.log('[SettingsScreen] BottomSheet ref is null, trying again...');
-              // Ref henüz hazır değilse, kısa bir gecikme ile tekrar dene
-              setTimeout(() => {
-                if (changePasswordBottomSheetRef.current) {
-                  changePasswordBottomSheetRef.current.snapToIndex(0);
-                } else {
-                  console.log('[SettingsScreen] BottomSheet ref still null after timeout');
-                }
-              }, 100);
-            }
+            openBottomSheet(
+              <ChangePasswordBottomSheet onClose={closeBottomSheet} />,
+              {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableDynamicSizing: true,
+                backgroundStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleIndicatorStyle: {
+                  backgroundColor: isDark ? '#333333' : '#CCCCCC',
+                  width: 40,
+                  height: 4,
+                },
+                paddingBottom: bottomOffset,
+              }
+            );
           },
         },
         {
@@ -104,20 +114,30 @@ export const SettingsScreen = () => {
           icon: 'smartphone',
           title: 'Your Devices',
           onPress: () => {
-            console.log('[SettingsScreen] Your Devices pressed');
-            console.log('[SettingsScreen] Your Devices BottomSheet ref:', yourDevicesBottomSheetRef.current);
-            if (yourDevicesBottomSheetRef.current) {
-              yourDevicesBottomSheetRef.current.snapToIndex(0);
-            } else {
-              console.log('[SettingsScreen] Your Devices BottomSheet ref is null, trying again...');
-              setTimeout(() => {
-                if (yourDevicesBottomSheetRef.current) {
-                  yourDevicesBottomSheetRef.current.snapToIndex(0);
-                } else {
-                  console.log('[SettingsScreen] Your Devices BottomSheet ref still null after timeout');
-                }
-              }, 100);
-            }
+            openBottomSheet(
+              <YourDevicesBottomSheet onClose={closeBottomSheet} />,
+              {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableDynamicSizing: true,
+                backgroundStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleStyle: {
+                  backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                  borderTopLeftRadius: 30,
+                  borderTopRightRadius: 30,
+                },
+                handleIndicatorStyle: {
+                  backgroundColor: isDark ? '#333333' : '#B8B8B7',
+                  width: 40,
+                  height: 4,
+                },
+                paddingBottom: bottomOffset,
+              }
+            );
           },
         },
       ],
@@ -147,17 +167,6 @@ export const SettingsScreen = () => {
       item.title.toLowerCase().includes(searchQuery.toLowerCase())
     ),
   })).filter(section => section.items.length > 0);
-
-  const renderBackdrop = React.useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}     // 0. indexte overlay görünsün
-        disappearsOnIndex={-1} // sadece kapalıyken (-1) kaybolsun
-      />
-    ),
-    []
-  );
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -273,66 +282,6 @@ export const SettingsScreen = () => {
           ))}
         </VStack>
       </ScrollView>
-
-      {/* Change Password Bottom Sheet */}
-      <BottomSheet
-        ref={changePasswordBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#CCCCCC',
-          width: 40,
-          height: 4,
-        }}
-      >
-        <BottomSheetView>
-          <ChangePasswordBottomSheet
-            onClose={() => changePasswordBottomSheetRef.current?.close()}
-          />
-        </BottomSheetView>
-      </BottomSheet>
-
-      {/* Your Devices Bottom Sheet */}
-      <BottomSheet
-        ref={yourDevicesBottomSheetRef}
-        index={-1}
-        enablePanDownToClose
-        enableOverDrag={false}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleStyle={{
-          backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-          borderTopLeftRadius: 30,
-          borderTopRightRadius: 30,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 40,
-          height: 4,
-        }}
-      >
-        <BottomSheetView>
-          <YourDevicesBottomSheet
-            onClose={() => yourDevicesBottomSheetRef.current?.close()}
-          />
-        </BottomSheetView>
-      </BottomSheet>
     </Box>
     </SafeAreaView>
   );

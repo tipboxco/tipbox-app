@@ -1,7 +1,7 @@
 import React, { useRef, useMemo, useCallback, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, Pressable } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, Pressable, Text } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -16,19 +16,22 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
 import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
-import { mock_posts } from '@/src/mock/profile/posts';
-import { mock_tips_and_tricks_posts } from '@/src/mock/profile/tipsAndTricks';
-import { mock_questions } from '@/src/mock/profile/questions';
-import { mock_benchmark_posts } from '@/src/mock/profile/benchmark';
-import { mock_post_cards } from '@/src/mock/profile/feed';
-import { mock_feed_data } from '@/src/mock/feed';
-import { UpdatePost } from '@/src/mock/feed/types';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { useBottomOffset } from '@/src/utils';
+import { useFeed } from '@/src/features/feed/api/hooks';
+import { mapProductInfoTypeToContextType } from '../types';
+import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
+import type { ProfilePost } from '@/src/features/profile/types';
+import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
+import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
+import type { QuestionApiItem } from '@/src/types/QuestionCard';
+import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { UpdateApiItem } from '@/src/types/UpdateCard';
+import { toImageSource } from '@/src/utils';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
@@ -58,6 +61,75 @@ export const PostsScreen = () => {
   // Bottom sheet state
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
 
+  // Determine contextType and contextId for feed API
+  const feedContextType = useMemo((): 'sub_category' | 'product_group' | 'product' | undefined => {
+    // Priority: route params > stage
+    if (contextType) {
+      return mapProductInfoTypeToContextType(contextType);
+    }
+    
+    switch (stage) {
+      case 'Product':
+        return 'product';
+      case 'ProductGroup':
+        return 'product_group';
+      case 'SubCategories':
+        return 'sub_category';
+      default:
+        return undefined;
+    }
+  }, [contextType, stage]);
+
+  const feedContextId = useMemo((): string | undefined => {
+    // Priority: route params > store > selectedProduct
+    if (contextId) {
+      return contextId;
+    }
+    
+    const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+    const selectedSubCategoryId = useCatalogUIStore.getState().selectedSubCategoryId;
+    const selectedProductGroupId = useCatalogUIStore.getState().selectedProductGroupId;
+    
+    switch (feedContextType) {
+      case 'product':
+        return selectedProductId || selectedProduct?.id;
+      case 'product_group':
+        return selectedProductGroupId;
+      case 'sub_category':
+        return selectedSubCategoryId;
+      default:
+        return undefined;
+    }
+  }, [contextId, feedContextType, selectedProduct]);
+
+  // Feed API hook with context
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useFeed(20, feedContextType, feedContextId);
+
+  // Flatten all pages into a single array and remove duplicates by ID
+  const feedItems = useMemo(() => {
+    if (!data?.pages) return [];
+    
+    const allItems = data.pages.flatMap((page) => page.items);
+    
+    // Remove duplicates by ID
+    const uniqueItemsMap = new Map<string, FeedApiItem>();
+    for (const item of allItems) {
+      const itemId = item.data.id;
+      if (!uniqueItemsMap.has(itemId)) {
+        uniqueItemsMap.set(itemId, item);
+      }
+    }
+    
+    return Array.from(uniqueItemsMap.values());
+  }, [data?.pages]);
+
   // Convert stage from PostsScreen to CatalogStage format
   const getCatalogStage = useCallback((): 'subcategories' | 'productgroups' | 'products' | undefined => {
     switch (stage) {
@@ -77,8 +149,8 @@ export const PostsScreen = () => {
     console.log('Filter/Sort pressed');
   };
 
-  const handlePostTypeSelect = useCallback((type: string) => {
-    console.log('Post type selected:', type);
+  const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
+    console.log('Post type selected:', type, 'experienceOption:', experienceOption);
     
     // Close bottom sheet first
     closeBottomSheet();
@@ -148,6 +220,12 @@ export const PostsScreen = () => {
       navigation.navigate('CreateTipsAndTrickPostScreen');
     } else if (type === 'question') {
       navigation.navigate('CreateQuestionPostScreen');
+    } else if (type === 'experience') {
+      navigation.navigate('CreateExperiencePostScreen', {
+        product: selectedProductPayload,
+        fromInventory: experienceOption === 'own',
+        experienceOption: experienceOption,
+      });
     } else if (type === 'comparison') {
       navigation.navigate('CreateBenchmarkPostScreen', {
         product: selectedProductPayload,
@@ -212,73 +290,96 @@ export const PostsScreen = () => {
       />
 
       {/* Content */}
-      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-        <VStack space="md">
-          {/* Product Info Card */}
-          <Box px="$4" py="$2">
-            <ProductInfoCard
-              image={productInfo.image}
-              title={productInfo.title}
-              subName={productInfo.subName}
-              size="big"
-              type={ProductInfoType.SUB_CATEGORY}
-            />
+      <Box flex={1}>
+        {/* Product Info Card */}
+        <Box px="$4" py="$2">
+          <ProductInfoCard
+            image={productInfo.image}
+            title={productInfo.title}
+            subName={productInfo.subName}
+            size="big"
+            type={contextType || ProductInfoType.SUB_CATEGORY}
+          />
+        </Box>
+
+        {/* Feed Items */}
+        {isLoading && feedItems.length === 0 ? (
+          <Box flex={1} justifyContent="center" alignItems="center">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
           </Box>
-
-          {/* Posts */}
-          <VStack px={16} space="md">
-            {/* PostCard */}
-            {mock_posts.length > 0 && (
-              <PostCard
-                data={mock_posts[0]}
-                hideProduct={true}
-              />
-            )}
-
-            {/* TipsAndTricksPostCard */}
-            {mock_tips_and_tricks_posts.length > 0 && (
-              <TipsAndTricksPostCard
-                data={mock_tips_and_tricks_posts[0]}
-                hideProduct={true}
-              />
-            )}
-
-            {/* QuestionPostCard */}
-            {mock_questions.length > 0 && (
-              <QuestionPostCard
-                data={mock_questions[0]}
-                hideProduct={true}
-              />
-            )}
-
-            {/* BenchmarkPostCard */}
-            {mock_benchmark_posts.length > 0 && (
-              <BenchmarkPostCard
-                data={mock_benchmark_posts[0]}
-              />
-            )}
-
-            {/* ExperiencePostCard */}
-            {mock_post_cards.length > 0 && (
-              <ExperiencePostCard
-                data={mock_post_cards[0]}
-                hideProduct={true}
-              />
-            )}
-
-            {/* UpdatePostCard */}
-            {(() => {
-              const updatePost = mock_feed_data.find(item => item.type === 'update') as UpdatePost | undefined;
-              return updatePost ? (
-                <UpdatePostCard
-                  data={updatePost}
-                  hideProduct={true}
-                />
-              ) : null;
-            })()}
-          </VStack>
-        </VStack>
-      </ScrollView>
+        ) : error ? (
+          <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+            <VStack space="md" alignItems="center">
+              <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
+                Feed Yüklenemedi
+              </Text>
+              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
+                {error.message || 'Bilinmeyen bir hata oluştu'}
+              </Text>
+            </VStack>
+          </Box>
+        ) : feedItems.length === 0 ? (
+          <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+            <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+              Henüz bu context için gönderi bulunmuyor.
+            </Text>
+          </Box>
+        ) : (
+          <FlatList
+            data={feedItems}
+            renderItem={({ item }) => {
+              // FeedScreen'deki render mantığını kullan
+              // Şimdilik basit bir render yapalım, daha sonra FeedScreen'deki mapping fonksiyonlarını ekleyebiliriz
+              switch (item.type) {
+                case 'post':
+                  return (
+                    <Box px={16} py={8}>
+                      <PostCard
+                        data={{
+                          id: (item.data as ProfilePost).id,
+                          user: {
+                            id: (item.data as ProfilePost).user.id,
+                            name: (item.data as ProfilePost).user.name,
+                            title: (item.data as ProfilePost).user.title,
+                            avatar: toImageSource((item.data as ProfilePost).user.avatar) || require('@/assets/avatar/ozan.png'),
+                          },
+                          content: Array.isArray((item.data as ProfilePost).content)
+                            ? (item.data as ProfilePost).content.map((c: any) => c.content || '').join(' ')
+                            : ((item.data as ProfilePost).content || ''),
+                          images: (item.data as ProfilePost).images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+                          stats: (item.data as ProfilePost).stats,
+                          createdAt: (item.data as ProfilePost).createdAt,
+                          contextType: (item.data as ProfilePost).contextType,
+                          contextData: (item.data as ProfilePost).contextData,
+                        }}
+                        hideProduct={true}
+                      />
+                    </Box>
+                  );
+                default:
+                  return null;
+              }
+            }}
+            keyExtractor={(item) => item.data.id}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.1}
+            ListFooterComponent={() => {
+              if (!isFetchingNextPage) return null;
+              return (
+                <Box py={20} alignItems="center">
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
+              );
+            }}
+            contentContainerStyle={{ paddingBottom: bottomOffset }}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </Box>
 
       {/* Create Button - Sadece Product stage'inde göster */}
       {stage === 'Product' && (

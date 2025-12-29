@@ -7,8 +7,15 @@ import type { FeedApiResponse, FeedApiItem } from './feedApi';
  */
 export const feedKeys = {
   all: ['feed'] as const,
-  feed: (cursor?: string, limit?: number) =>
-    [...feedKeys.all, cursor, limit] as const,
+  feed: (cursor?: string, limit?: number, contextType?: string, contextId?: string) =>
+    [...feedKeys.all, cursor, limit, contextType, contextId] as const,
+  // Context-based feed keys
+  productFeed: (productId: string, cursor?: string, limit?: number) =>
+    [...feedKeys.all, 'product', productId, cursor, limit] as const,
+  productGroupFeed: (productGroupId: string, cursor?: string, limit?: number) =>
+    [...feedKeys.all, 'productGroup', productGroupId, cursor, limit] as const,
+  subCategoryFeed: (subCategoryId: string, cursor?: string, limit?: number) =>
+    [...feedKeys.all, 'subCategory', subCategoryId, cursor, limit] as const,
 };
 
 /**
@@ -16,17 +23,24 @@ export const feedKeys = {
  * Kullanıcının feed akışını infinite scroll ile getirir
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param contextType - Context type (opsiyonel): 'sub_category' | 'product_group' | 'product'
+ * @param contextId - Context ID (opsiyonel): UUID
  * @returns React Query infinite query hook result
  *
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useFeed();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useFeed(20, 'product', 'product-123');
  */
-export const useFeed = (limit: number = 20) => {
+export const useFeed = (
+  limit: number = 20,
+  contextType?: 'sub_category' | 'product_group' | 'product',
+  contextId?: string
+) => {
   return useInfiniteQuery<FeedApiResponse, Error>({
-    queryKey: feedKeys.feed(undefined, limit),
+    queryKey: feedKeys.feed(undefined, limit, contextType, contextId),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getFeed(cursor, limit);
+      return getFeed(cursor, limit, contextType, contextId);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

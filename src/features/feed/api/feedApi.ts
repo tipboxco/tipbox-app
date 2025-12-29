@@ -39,17 +39,27 @@ export interface FeedApiResponse {
  *
  * @param cursor - Pagination cursor (son item'ın id'si, opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @param contextType - Context type (opsiyonel): 'sub_category' | 'product_group' | 'product'
+ * @param contextId - Context ID (opsiyonel): UUID
  * @returns FeedApiResponse - Feed items ve pagination bilgisi
  */
 export const getFeed = async (
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  contextType?: 'sub_category' | 'product_group' | 'product',
+  contextId?: string
 ): Promise<FeedApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (contextType) {
+    params.append('contextType', contextType);
+  }
+  if (contextId) {
+    params.append('contextId', contextId);
+  }
 
   try {
     const response = await apiService.getClient().get<FeedApiResponse>(
