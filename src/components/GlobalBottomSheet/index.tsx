@@ -31,7 +31,7 @@ export const GlobalBottomSheet: React.FC = () => {
   const { isOpen, content, options, closeBottomSheet } = context;
 
   // Options'ı merge et (default + custom)
-  const mergedOptions: Required<Omit<BottomSheetOptions, 'snapPoints' | 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom'>> & {
+  const mergedOptions: Required<Omit<BottomSheetOptions, 'snapPoints' | 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom' | 'keyboardBehavior' | 'keyboardBlurBehavior' | 'android_keyboardInputMode'>> & {
     snapPoints?: (string | number)[];
     onChange?: (index: number) => void;
     onClose?: () => void;
@@ -39,6 +39,9 @@ export const GlobalBottomSheet: React.FC = () => {
     handleStyle?: any;
     handleIndicatorStyle?: any;
     paddingBottom?: number;
+    keyboardBehavior?: 'interactive' | 'fillParent' | 'extend';
+    keyboardBlurBehavior?: 'none' | 'restore';
+    android_keyboardInputMode?: 'adjustResize' | 'adjustPan';
   } = {
     ...DEFAULT_BOTTOM_SHEET_OPTIONS,
     ...options,
@@ -91,7 +94,7 @@ export const GlobalBottomSheet: React.FC = () => {
     }
   }, [isOpen, content, mergedOptions.snapPoints, mergedOptions.enableDynamicSizing, mergedOptions.initialSnapIndex]);
 
-  // Backdrop component
+  // Backdrop component - klavye açıldığında kararmaması için
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop
@@ -99,8 +102,13 @@ export const GlobalBottomSheet: React.FC = () => {
         appearsOnIndex={0}
         disappearsOnIndex={-1}
         pressBehavior={mergedOptions.backdropPressBehavior}
-        opacity={mergedOptions.backdropOpacity}
+        opacity={mergedOptions.backdropOpacity ?? 0.5}
         enableTouchThrough={false}
+        // Klavye açıldığında backdrop'un opacity'sini sabit tut
+        style={{
+          ...props.style,
+          opacity: mergedOptions.backdropOpacity ?? 0.5,
+        }}
       />
     ),
     [mergedOptions.backdropPressBehavior, mergedOptions.backdropOpacity]
@@ -133,6 +141,7 @@ export const GlobalBottomSheet: React.FC = () => {
     backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+    opacity: 1, // Bottom sheet'in opacity'sini sabit tut (klavye açıldığında kararmasın)
   };
 
   const defaultHandleStyle = {
@@ -147,10 +156,11 @@ export const GlobalBottomSheet: React.FC = () => {
     height: 4,
   };
 
-  // Merge styles
+  // Merge styles - opacity'yi her zaman 1 tut (klavye açıldığında bottom sheet kararmasın)
   const backgroundStyle = {
     ...defaultBackgroundStyle,
     ...mergedOptions.backgroundStyle,
+    opacity: 1, // Bottom sheet'in opacity'sini her zaman 1 tut
   };
 
   const handleStyle = {
@@ -222,6 +232,9 @@ export const GlobalBottomSheet: React.FC = () => {
       backgroundStyle={backgroundStyle}
       handleStyle={handleStyle}
       handleIndicatorStyle={handleIndicatorStyle}
+      keyboardBehavior={mergedOptions.keyboardBehavior || 'interactive'}
+      keyboardBlurBehavior={mergedOptions.keyboardBlurBehavior || 'restore'}
+      android_keyboardInputMode={mergedOptions.android_keyboardInputMode || 'adjustResize'}
       // Z-index: Tab bar'dan yüksek
       style={{ 
         zIndex: 10000,

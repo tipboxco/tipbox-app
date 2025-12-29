@@ -39,6 +39,11 @@ export interface BottomSheetOptions {
   
   // Initial snap index
   initialSnapIndex?: number;
+
+  // Keyboard behavior
+  keyboardBehavior?: 'interactive' | 'fillParent' | 'extend';
+  keyboardBlurBehavior?: 'none' | 'restore';
+  android_keyboardInputMode?: 'adjustResize' | 'adjustPan';
 }
 
 /**

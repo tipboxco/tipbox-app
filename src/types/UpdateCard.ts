@@ -39,6 +39,10 @@ export interface UpdateApiItem {
   };
   content: string;
   images: string[];
+  // Interaction states
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
 }
 
 /**

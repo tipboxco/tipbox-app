@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext } from 'react-hook-form';
@@ -10,6 +10,8 @@ import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { useTipsAndTrickPostForm } from '../hooks/useTipsAndTrickPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
+import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
+import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TipsAndTrickPostFormData } from '../schemas/tipsAndTrickPostSchema';
@@ -176,8 +178,9 @@ export const CreateTipsAndTrickPostScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateTipsAndTrickPostScreenNavigationProp>();
   const methods = useTipsAndTrickPostForm();
-  const { handleSubmit, formState } = methods;
+  const { handleSubmit, formState, getValues, setValue } = methods;
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const toast = useToast();
 
   const handleBackPress = () => {
     // Navigate to Feed screen
@@ -189,10 +192,85 @@ export const CreateTipsAndTrickPostScreen = () => {
     });
   };
 
-  const handleImagePicker = () => {
-    // Handle image picker action
-    console.log('Open image picker');
-    // TODO: Implement image picker
+  const handleImagePicker = async () => {
+    try {
+      const currentImages = getValues('selectedImages') || [];
+      const remainingSlots = 10 - currentImages.length;
+      
+      if (remainingSlots <= 0) {
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Limit Aşıldı</ToastTitle>
+                  <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+        return;
+      }
+
+      const result = await imagePickerService.pickMultipleFromGallery(remainingSlots);
+      
+      if (result.success && result.assets && result.assets.length > 0) {
+        const newImageUris = result.assets
+          .map(asset => asset.uri)
+          .filter((uri): uri is string => !!uri);
+        
+        if (newImageUris.length > 0) {
+          const updatedImages = [...currentImages, ...newImageUris];
+          setValue('selectedImages', updatedImages, { shouldValidate: true });
+        } else {
+          toast.show({
+            placement: 'top',
+            render: ({ id }: { id: string }) => {
+              return (
+                <Box maxWidth="90%" alignSelf="center" px="$4">
+                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                    <ToastTitle>Hata</ToastTitle>
+                    <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
+                  </Toast>
+                </Box>
+              );
+            },
+          });
+        }
+      } else if (result.error) {
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Hata</ToastTitle>
+                  <ToastDescription>{result.error}</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('Image picker error:', error);
+      const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
   const onSubmit = (data: TipsAndTrickPostFormData) => {
@@ -260,7 +338,12 @@ export const CreateTipsAndTrickPostScreen = () => {
 
               {/* Images Section */}
               <VStack px={16} space="xs" mt="$4">
-                {/* TODO: Implement ControlledImagePicker when image picker is ready */}
+                <ControlledImagePicker
+                  name="selectedImages"
+                  label="Images"
+                  maxImages={10}
+                  onImagePicker={handleImagePicker}
+                />
               </VStack>
             </VStack>
           </ScrollView>

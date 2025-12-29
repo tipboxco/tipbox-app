@@ -278,6 +278,9 @@ class SocketService {
   ): void {
     if (!this.socket?.connected) {
       console.warn('[SocketService] Socket not connected, cannot join thread:', threadId);
+      if (onError) {
+        onError({ threadId, reason: 'Socket not connected' });
+      }
       return;
     }
 
@@ -287,16 +290,26 @@ class SocketService {
     // Başarılı katılım onayını dinle
     if (onJoined) {
       this.socket.once('thread_joined', (data: ThreadJoinedEvent) => {
-        console.log('[SocketService] Thread joined:', data.threadId);
-        onJoined(data);
+        // ThreadId kontrolü yap (backend'den gelen threadId ile eşleşmeli)
+        if (data.threadId === threadId) {
+          console.log('[SocketService] Thread joined:', data.threadId);
+          onJoined(data);
+        } else {
+          console.warn('[SocketService] Thread ID mismatch. Expected:', threadId, 'Received:', data.threadId);
+        }
       });
     }
 
     // Hata durumunu dinle
     if (onError) {
       this.socket.once('thread_join_error', (error: ThreadJoinErrorEvent) => {
-        console.error('[SocketService] Thread join error:', error.reason);
-        onError(error);
+        // ThreadId kontrolü yap
+        if (error.threadId === threadId) {
+          console.error('[SocketService] Thread join error:', error.reason);
+          onError(error);
+        } else {
+          console.warn('[SocketService] Thread join error for different thread. Expected:', threadId, 'Received:', error.threadId);
+        }
       });
     }
   }
@@ -329,20 +342,37 @@ class SocketService {
   ): void {
     if (!this.socket?.connected) {
       console.warn('[SocketService] Socket not connected, cannot send message');
+      if (onError) {
+        onError({ reason: 'Socket not connected' });
+      }
+      return;
+    }
+
+    // Mesaj boşsa gönderme
+    if (!message || message.trim().length === 0) {
+      console.warn('[SocketService] Cannot send empty message');
+      if (onError) {
+        onError({ reason: 'Message cannot be empty' });
+      }
       return;
     }
 
     this.socket.emit('send_message', {
       threadId,
-      message,
+      message: message.trim(),
     });
     console.log('[SocketService] Sending message to thread:', threadId);
 
     // Mesaj gönderildi onayını dinle
     if (onSent) {
       this.socket.once('message_sent', (data: MessageSentEvent) => {
-        console.log('[SocketService] Message sent:', data.messageId);
-        onSent(data);
+        // ThreadId kontrolü yap (backend'den gelen threadId ile eşleşmeli)
+        if (data.threadId === threadId) {
+          console.log('[SocketService] Message sent:', data.messageId);
+          onSent(data);
+        } else {
+          console.warn('[SocketService] Message sent for different thread. Expected:', threadId, 'Received:', data.threadId);
+        }
       });
     }
 

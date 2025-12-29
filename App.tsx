@@ -15,8 +15,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryProvider } from '@/src/providers/QueryProvider';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
-import { AppState, AppStateStatus } from 'react-native';
-import { socketService } from '@/src/services/SocketService';
 
 export default function App() {
   const { colorMode } = useColorMode();
@@ -34,30 +32,6 @@ export default function App() {
       }
     }
   }, [isDark]);
-
-  // AppState listener - Socket bağlantısını yönet
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'background') {
-        // Uygulama arka plana gittiğinde socket'i disconnect etme
-        // Socket.IO otomatik olarak yeniden bağlanacak
-        console.log('[App] App moved to background');
-      } else if (nextAppState === 'active') {
-        // Uygulama ön plana geldiğinde socket bağlantısını kontrol et
-        console.log('[App] App moved to foreground');
-        if (!socketService.isConnected()) {
-          // Bağlantı yoksa tekrar bağlanmayı dene
-          socketService.connect().catch((error) => {
-            console.warn('[App] Socket reconnection failed:', error);
-          });
-        }
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
 
   return (
     <QueryProvider>

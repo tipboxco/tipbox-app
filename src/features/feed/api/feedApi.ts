@@ -51,9 +51,24 @@ export const getFeed = async (
   }
   params.append('limit', limit.toString());
 
-  const response = await apiService.getClient().get<FeedApiResponse>(
-    `/feed?${params.toString()}`
-  );
-  return response.data;
+  try {
+    const response = await apiService.getClient().get<FeedApiResponse>(
+      `/feed?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getFeed] API Error:', {
+      url: `/feed?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      config: {
+        baseURL: error.config?.baseURL,
+        headers: error.config?.headers,
+      },
+    });
+    throw error;
+  }
 };
 

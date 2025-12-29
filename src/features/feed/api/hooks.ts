@@ -41,7 +41,15 @@ export const useFeed = (limit: number = 20) => {
     gcTime: 0, // Cache yok - veri hemen temizlenir
     refetchOnMount: true, // Her mount'ta yeniden fetch
     refetchOnWindowFocus: true, // Focus'ta yeniden fetch
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // 500 hatası için retry yapma (backend sorunu)
+      if (error?.response?.status === 500) {
+        console.error('[useFeed] Server error (500), skipping retry:', error.response?.data);
+        return false;
+      }
+      // Diğer hatalar için 1 kez retry yap
+      return failureCount < 1;
+    },
   });
 };
 

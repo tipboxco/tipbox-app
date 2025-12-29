@@ -3,6 +3,7 @@ import { persist, createJSONStorage, devtools } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
+import { socketService } from '../services/SocketService';
 
 // Types
 type ColorMode = 'light' | 'dark';
@@ -132,6 +133,9 @@ export const useAppStore = create<AppState>()(
         logout: async () => {
           try {
             set({ isLoading: true, error: null });
+            
+            // Socket bağlantısını kapat
+            socketService.disconnect();
             
             // Token'ları SecureStore'dan temizle
             await TokenService.clearTokens();

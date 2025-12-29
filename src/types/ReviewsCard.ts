@@ -42,6 +42,10 @@ export interface ReviewApiItem {
   content: ReviewApiContentBlock[];
   tags: string[];
   images: string[];
+  // Interaction states
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
 }
 
 /**

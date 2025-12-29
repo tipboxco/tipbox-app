@@ -1,6 +1,6 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider } from 'react-hook-form';
@@ -12,6 +12,7 @@ import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import { useUpdatePostForm } from '../hooks/useUpdatePostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
+import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -27,7 +28,8 @@ export const CreateUpdatePostScreen = () => {
   const route = useRoute<CreateUpdatePostScreenRouteProp>();
   const { product } = route.params || {};
   const methods = useUpdatePostForm();
-  const { handleSubmit, formState } = methods;
+  const { handleSubmit, formState, getValues, setValue, watch } = methods;
+  const toast = useToast();
   
   // Mock experience content - in real app, this would come from props or be fetched
   const experienceContent = [
@@ -62,9 +64,85 @@ export const CreateUpdatePostScreen = () => {
     });
   };
 
-  const handleImagePicker = () => {
-    console.log('Open image picker');
-    // TODO: Implement image picker
+  const handleImagePicker = async () => {
+    try {
+      const currentImages = getValues('selectedImages') || [];
+      const remainingSlots = 10 - currentImages.length;
+      
+      if (remainingSlots <= 0) {
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Limit Aşıldı</ToastTitle>
+                  <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+        return;
+      }
+
+      const result = await imagePickerService.pickMultipleFromGallery(remainingSlots);
+      
+      if (result.success && result.assets && result.assets.length > 0) {
+        const newImageUris = result.assets
+          .map(asset => asset.uri)
+          .filter((uri): uri is string => !!uri); // URI'leri filtrele
+        
+        if (newImageUris.length > 0) {
+          const updatedImages = [...currentImages, ...newImageUris];
+          setValue('selectedImages', updatedImages, { shouldValidate: true });
+        } else {
+          toast.show({
+            placement: 'top',
+            render: ({ id }: { id: string }) => {
+              return (
+                <Box maxWidth="90%" alignSelf="center" px="$4">
+                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                    <ToastTitle>Hata</ToastTitle>
+                    <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
+                  </Toast>
+                </Box>
+              );
+            },
+          });
+        }
+      } else if (result.error) {
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Hata</ToastTitle>
+                  <ToastDescription>{result.error}</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('Image picker error:', error);
+      const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>{errorMessage}</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
   const handleRemoveImage = (index: number) => {

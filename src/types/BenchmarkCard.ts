@@ -36,6 +36,10 @@ export interface BenchmarkApiItem {
   contextType: ProductInfoType;
   products: BenchmarkApiProduct[];
   content: string;
+  // Interaction states
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
 }
 
 /**

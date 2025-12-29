@@ -3,7 +3,7 @@ import { TouchableOpacity } from 'react-native';
 import { Box, VStack, Text, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { InventoryItem } from '../../types';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, cleanNewlines } from '@/src/utils';
 
 interface InventoryCardProps {
   item: InventoryItem;
@@ -34,7 +34,7 @@ export const InventoryCard = ({ item, width, onPress }: InventoryCardProps) => {
           justifyContent="center"
         >
           <Image
-            source={toImageSource(item.image)!}
+            source={toImageSource(item.image) || require('@/assets/inventory/product_01.png')}
             alt={`${item.brand.name} ${item.brand.model}`}
             width={100}
             height={100}
@@ -48,7 +48,9 @@ export const InventoryCard = ({ item, width, onPress }: InventoryCardProps) => {
             fontWeight="$bold"
             numberOfLines={3}
           >
-            {item.brand.name}\n{item.brand.model}\n{item.brand.specs}
+            {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
+              .filter(Boolean)
+              .join(' ')}
           </Text>
         </VStack>
       </Box>

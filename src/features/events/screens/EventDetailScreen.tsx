@@ -935,6 +935,7 @@ const EventDetailScreen: React.FC = () => {
                                 : undefined;
                             
                             navigation.navigate('EventCreatePost', {
+                                eventId: eventId, // Event ID'yi gönder
                                 eventType: eventTypeForNav,
                                 product: product,
                             });

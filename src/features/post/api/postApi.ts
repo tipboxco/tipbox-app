@@ -23,9 +23,25 @@ export const createFreePost = async (
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {
       // React Native'de FormData için image object formatı
-      // URI'den dosya uzantısını çıkar (varsayılan: jpeg)
-      const fileExtension = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
-      const mimeType = fileExtension === 'png' ? 'image/png' : 'image/jpeg';
+      // iOS'ta URI'ler ph:// veya assets-library:// ile başlayabilir ve uzantı içermeyebilir
+      // Bu durumda varsayılan olarak JPEG kullan
+      let fileExtension = 'jpg';
+      let mimeType = 'image/jpeg';
+      
+      // URI'den dosya uzantısını çıkar (eğer varsa)
+      const uriLower = imageUri.toLowerCase();
+      if (uriLower.includes('.')) {
+        const ext = imageUri.split('.').pop()?.toLowerCase();
+        if (ext === 'png') {
+          fileExtension = 'png';
+          mimeType = 'image/png';
+        } else if (ext === 'jpg' || ext === 'jpeg') {
+          fileExtension = 'jpg';
+          mimeType = 'image/jpeg';
+        }
+      }
+      // iOS'ta ph:// veya assets-library:// URI'leri için varsayılan JPEG kullan
+      // Expo Image Picker zaten görsel formatlarını destekliyor
       
       formData.append('images', {
         uri: imageUri,

@@ -9,7 +9,7 @@ import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useInventory } from '../api/hooks';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, cleanNewlines } from '@/src/utils';
 import { ProfileStackParamList } from '../navigation';
 
 const InventoryDetailScreen = () => {
@@ -117,14 +117,14 @@ const InventoryDetailScreen = () => {
               color={isDark ? '$textDark50' : '#A3A3A3'}
               textAlign="center"
             >
-              {item.brand.name}{'\n'}{item.brand.model}
+              {cleanNewlines(item.brand.name)} {cleanNewlines(item.brand.model)}
             </Text>
             <Text
               fontSize={10}
               color={isDark ? '$textDark400' : '#A3A3A3'}
               textAlign="center"
             >
-              {item.brand.specs}
+              {cleanNewlines(item.brand.specs)}
             </Text>
           </VStack>
         </Box>

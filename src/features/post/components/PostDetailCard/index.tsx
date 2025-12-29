@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VStack, Text, Image, HStack, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import CardImageCarousel from '@/src/components/CardImageCarousel';
@@ -9,15 +9,75 @@ import { Post } from '@/src/mock/profile/posts/types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
+import {
+  useLikePost,
+  useUnlikePost,
+  useBookmarkPost,
+  useUnbookmarkPost,
+  useSharePost,
+  usePostStatus,
+} from '@/src/features/interactions/api/hooks';
 
 interface PostDetailCardProps {
     data: Post;
+    onCommentPress?: () => void;
 }
 
-export const PostDetailCard = ({ data }: PostDetailCardProps) => {
+export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [isTranslated, setIsTranslated] = useState(false);
+    const [isLiked, setIsLiked] = useState(false);
+    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [isShared, setIsShared] = useState(false);
+
+    // Interaction hooks
+    const likePostMutation = useLikePost();
+    const unlikePostMutation = useUnlikePost();
+    const bookmarkPostMutation = useBookmarkPost();
+    const unbookmarkPostMutation = useUnbookmarkPost();
+    const sharePostMutation = useSharePost();
+    const { data: postStatus } = usePostStatus(data.id);
+
+    // Sync with post status from API
+    useEffect(() => {
+        if (postStatus) {
+            setIsLiked(postStatus.liked);
+            setIsBookmarked(postStatus.favorited);
+            setIsShared(postStatus.shared);
+        }
+    }, [postStatus]);
+
+    // Action handlers
+    const handleLike = () => {
+        if (isLiked) {
+            setIsLiked(false);
+            unlikePostMutation.mutate(data.id);
+        } else {
+            setIsLiked(true);
+            likePostMutation.mutate(data.id);
+        }
+    };
+
+    const handleBookmark = () => {
+        if (isBookmarked) {
+            setIsBookmarked(false);
+            unbookmarkPostMutation.mutate(data.id);
+        } else {
+            setIsBookmarked(true);
+            bookmarkPostMutation.mutate(data.id);
+        }
+    };
+
+    const handleShare = () => {
+        // Zaten paylaşılmışsa tekrar paylaşma
+        if (isShared) return;
+        
+        sharePostMutation.mutate({
+            postId: data.id,
+            shareType: 'INTERNAL_REPOST',
+        });
+    };
 
     return (
         <VStack bg={isDark ? '$backgroundDark900' : '$white'}>
@@ -130,22 +190,48 @@ export const PostDetailCard = ({ data }: PostDetailCardProps) => {
                 justifyContent="space-between"
             >
                 <HStack>
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="heart" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.likes}</Text>
-                    </HStack>
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.comments}</Text>
-                    </HStack>
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.shares}</Text>
-                    </HStack>
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="bookmark" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">{data.stats.bookmarks}</Text>
-                    </HStack>
+                    <Pressable onPress={handleLike}>
+                        <HStack mr={10} alignItems="center">
+                            <Feather
+                                name="heart"
+                                size={24}
+                                color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
+                                fill={isLiked ? '#FF3040' : 'none'}
+                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                {data.stats.likes}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable onPress={() => onCommentPress?.()}>
+                        <HStack mr={10} alignItems="center">
+                            <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                {data.stats.comments}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable onPress={handleShare}>
+                        <HStack mr={10} alignItems="center">
+                            <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                {data.stats.shares}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable onPress={handleBookmark}>
+                        <HStack mr={10} alignItems="center">
+                            <Feather
+                                name="bookmark"
+                                size={24}
+                                color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
+                                fill={isBookmarked ? '#829905' : 'none'}
+                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                {data.stats.bookmarks}
+                            </Text>
+                        </HStack>
+                    </Pressable>
                 </HStack>
                 <Box>
                     <Image

@@ -42,6 +42,10 @@ export interface QuestionApiItem {
   content: string;
   isBoosted: boolean;
   images: string[];
+  // Interaction states
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
 }
 
 /**

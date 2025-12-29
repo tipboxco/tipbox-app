@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, KeyboardAvoidingView, Platform, Dimensions, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { VStack, Text, HStack, Image, Pressable, Box, Popover, PopoverBackdrop, PopoverContent, PopoverBody, PopoverArrow } from '@gluestack-ui/themed';
+import { VStack, Text, HStack, Pressable, Box, Input, InputField } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -16,93 +16,13 @@ import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CommentsCard from '@/src/components/CommentsCard';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useSafeAreaValues, toImageSource, formatRelativeTime } from '@/src/utils';
+import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
+import type { CommentWithReplies } from '@/src/features/interactions/types';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { CommentBottomSheet } from '../components/CommentBottomSheet';
 
 type PostDetailScreenRouteProp = RouteProp<PostStackParamList, 'PostDetailScreen'>;
-
-
-const renderComments = (item: any, postData: any, isDark: boolean) => {
-    return (
-        <VStack key={item} position="relative" borderWidth={1} borderColor="red" px={12}>
-            <HStack alignItems="flex-start" py={8}>
-                <Image
-                    source={toImageSource(postData.user.avatar)!}
-                    alt="User Avatar"
-                    width={48}
-                    height={48}
-                    borderRadius={100}
-                    mr={12}
-                />
-                <VStack flex={1}>
-                    <VStack>
-                        <Text
-                            color={isDark ? '#fff' : '#000'}
-                            fontSize={'$xs'}
-                            fontWeight="$bold"
-                            mr={8}
-                        >
-                            {postData.user.name}
-                        </Text>
-                        <Text
-                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            fontSize={config.tokens.fontSizes['3xs'] as number}
-                            fontWeight="$medium"
-                        >
-                            {postData.user.title}
-                        </Text>
-                    </VStack>
-                    <Text
-                        color={isDark ? '#fff' : '#000'}
-                        fontSize={config.tokens.fontSizes['2xs'] as number}
-                        lineHeight={12}
-                    >
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud.
-                    </Text>
-                </VStack>
-            </HStack>
-            <Text
-                position="absolute"
-                top={8}
-                right={12}
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize={config.tokens.fontSizes['3xs'] as number}
-                fontWeight="$medium"
-            >
-                54m
-            </Text>
-        </VStack>
-    );
-};
-
-const MOCK_COMMENTS = [
-    {
-        id: '1',
-        userName: 'Michael Clark',
-        userTitle: 'Tech Enthusiast',
-        avatar: require('@/assets/avatar/ozan.png'),
-        timeAgo: '12m',
-        content:
-            'Really helpful review, especially the part about battery performance in daily usage. Curious to see how it behaves after a few months. I have been considering this product for quite some time and your detailed explanation about day-to-day usage, charging cycles, and overall reliability over longer periods was exactly what I was looking for. It would be great to hear an update again after a few more weeks of use to understand if there is any noticeable degradation or changes in performance compared to the first days.',
-    },
-    {
-        id: '2',
-        userName: 'Sarah Johnson',
-        userTitle: 'Early Tech Adopter',
-        avatar: require('@/assets/avatar/ozan.png'),
-        timeAgo: '1h',
-        content:
-            'I was between this model and the previous generation. Your detailed comparison really cleared things up for me, thanks!',
-    },
-    {
-        id: '3',
-        userName: 'David Miller',
-        userTitle: 'Smart Home Explorer',
-        avatar: require('@/assets/avatar/ozan.png'),
-        timeAgo: '3h',
-        content:
-            'Would love to hear more about long‑term durability. Have you noticed any issues with build quality or overheating?',
-    },
-];
 
 export const PostDetailScreen = () => {
     const { colorMode } = useColorMode();
@@ -114,8 +34,141 @@ export const PostDetailScreen = () => {
     const [selectedOption, setSelectedOption] = useState('Newest');
     const bottomInset = useSafeAreaValues('bottom');
 
+    // Get post ID from postData
+    const postId = postData.id;
+
+    // Fetch comments
+    const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
+    const createCommentMutation = useCreateComment();
+
+    // Global bottom sheet hook
+    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+
+    // Klavye yüksekliği için state
+    const [keyboardHeight, setKeyboardHeight] = useState(Platform.OS === 'ios' ? 300 : 250);
+
+    // Klavye event listener'ları - klavye yüksekliğini güncellemek için
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (event) => {
+                const height = event.endCoordinates.height;
+                setKeyboardHeight(height);
+                console.log('[PostDetailScreen] Keyboard opened, height:', height);
+            }
+        );
+
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                setKeyboardHeight(Platform.OS === 'ios' ? 300 : 250); // Default değere dön
+                console.log('[PostDetailScreen] Keyboard closed');
+            }
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
+
+    // Handle comment input press - bottom sheet'i aç ve input'a focus yap
+    const handleCommentInputPress = () => {
+        // Ekran yüksekliğini al
+        const screenHeight = Dimensions.get('window').height;
+        // Bottom sheet klavye yüksekliği kadar yukarıda açılacak
+        // İlk snap point: input + handler + padding için yeterli alan
+        const firstSnapPoint = 120;
+        // İkinci snap point: ekranın %50'si
+        const secondSnapPoint = screenHeight * 0.5;
+
+        openBottomSheet(
+            <CommentBottomSheet
+                postId={postId}
+                onCommentSubmit={(comment) => {
+                    createCommentMutation.mutate(
+                        {
+                            postId,
+                            comment,
+                        },
+                        {
+                            onSuccess: () => {
+                                closeBottomSheet();
+                                Keyboard.dismiss();
+                            },
+                            onError: (error) => {
+                                console.error('[PostDetailScreen] Error creating comment:', error);
+                            },
+                        }
+                    );
+                }}
+                isSubmitting={createCommentMutation.isPending}
+                autoFocus={true} // Bottom sheet açıldığında input'a focus yap ve klavyeyi aç
+            />,
+            {
+                snapPoints: [firstSnapPoint, secondSnapPoint],
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableHandlePanningGesture: true,
+                enableContentPanningGesture: true,
+                enableDynamicSizing: false,
+                animateOnMount: true,
+                initialSnapIndex: 0,
+                // Bottom sheet'in bottom uzaklığı klavye yüksekliği kadar olacak
+                paddingBottom: keyboardHeight, // Klavye yüksekliği kadar padding
+                keyboardBehavior: 'extend', // Klavye açıldığında bottom sheet genişler
+                keyboardBlurBehavior: 'restore',
+                android_keyboardInputMode: 'adjustResize',
+                backdropOpacity: 0, // Backdrop hiç kararmasın
+            }
+        );
+    };
+
+    // Flatten comments with replies for display
+    const flattenedComments: Array<{
+        id: string;
+        userName: string;
+        userTitle: string;
+        avatar: any;
+        timeAgo: string;
+        content: string;
+    }> = [];
+
+    if (commentsData?.comments) {
+        commentsData.comments.forEach((item: CommentWithReplies) => {
+            // Main comment
+            flattenedComments.push({
+                id: item.comment.id,
+                userName: item.user.name || 'Anonymous',
+                userTitle: item.user.avatar ? '' : '', // API'de title yok, boş bırakıyoruz
+                avatar: item.user.avatar ? toImageSource(item.user.avatar) : require('@/assets/avatar/ozan.png'),
+                timeAgo: formatRelativeTime(item.comment.createdAt),
+                content: item.comment.comment,
+            });
+
+            // Replies
+            if (item.replies && item.replies.length > 0) {
+                item.replies.forEach((reply) => {
+                    // Reply'ler için user bilgisi yok, main comment'in user'ını kullanıyoruz
+                    flattenedComments.push({
+                        id: reply.id,
+                        userName: item.user.name || 'Anonymous',
+                        userTitle: '',
+                        avatar: item.user.avatar ? toImageSource(item.user.avatar) : require('@/assets/avatar/ozan.png'),
+                        timeAgo: formatRelativeTime(reply.createdAt),
+                        content: reply.comment,
+                    });
+                });
+            }
+        });
+    }
+
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+        >
         <VStack flex={1} bg={isDark ? '#000000' : '#fff'}>
             {/* Status Bar & Header */}
             <Header
@@ -134,25 +187,27 @@ export const PostDetailScreen = () => {
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: bottomInset }}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                keyboardShouldPersistTaps="handled"
             >
                 {/* Detail Card */}
                 {type === 'tipsAndTricks' ? (
-                    <TipsAndTricksPostCardDetail data={postData} />
+                    <TipsAndTricksPostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
                 ) : type === 'question' ? (
-                    <QuestionPostCardDetail data={postData} />
+                    <QuestionPostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
                 ) : type === 'benchmark' ? (
-                    <BenchmarkPostCardDetail data={postData} />
+                    <BenchmarkPostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
                 ) : type === 'experience' ? (
-                    <ExperiencePostCardDetail data={postData} />
+                    <ExperiencePostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
                 ) : type === 'update' ? (
                     <UpdatePostCardDetail 
                         data={postData} 
                         showRelatedPost={showRelatedPost}
                         relatedPostData={relatedPostData}
+                        onCommentPress={handleCommentInputPress}
                     />
                 ) : (
-                    <PostDetailCard data={postData} />
+                    <PostDetailCard data={postData} onCommentPress={handleCommentInputPress} />
                 )}
 
                 {/* Comments Header + Filter */}
@@ -197,20 +252,80 @@ export const PostDetailScreen = () => {
                 </HStack>
 
                 {/* Comments List */}
-                <VStack space="xs">
-                    {MOCK_COMMENTS.map((comment) => (
-                        <CommentsCard
-                            key={comment.id}
-                            userName={comment.userName}
-                            userTitle={comment.userTitle}
-                            avatar={comment.avatar}
-                            timeAgo={comment.timeAgo}
-                            content={comment.content}
-                        />
-                    ))}
-                </VStack>
+                {isLoadingComments ? (
+                    <Box px="$4" py="$4">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'}>Loading comments...</Text>
+                    </Box>
+                ) : flattenedComments.length === 0 ? (
+                    <Box px="$4" py="$4">
+                        <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No comments yet. Be the first to comment!</Text>
+                    </Box>
+                ) : (
+                    <VStack space="xs">
+                        {flattenedComments.map((comment) => (
+                            <CommentsCard
+                                key={comment.id}
+                                userName={comment.userName}
+                                userTitle={comment.userTitle}
+                                avatar={comment.avatar}
+                                timeAgo={comment.timeAgo}
+                                content={comment.content}
+                            />
+                        ))}
+                    </VStack>
+                )}
             </ScrollView>
+
+            {/* Comment Input Button - Opens Bottom Sheet */}
+            <Pressable
+                onPress={handleCommentInputPress}
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                borderTopWidth={1}
+                borderColor={isDark ? '#333' : '#E9E9E9'}
+                px="$4"
+                py="$3"
+                style={{
+                    paddingBottom: Platform.OS === 'ios' ? bottomInset : 12,
+                }}
+            >
+                <HStack space="sm" alignItems="center">
+                    {/* Comment Input Placeholder */}
+                    <Input
+                        flex={1}
+                        bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                        borderWidth={0}
+                        borderRadius={20}
+                        height={40}
+                        pointerEvents="none"
+                    >
+                        <InputField
+                            placeholder="Write a comment..."
+                            placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize={14}
+                            editable={false}
+                        />
+                    </Input>
+
+                    {/* Send Button (disabled - opens bottom sheet) */}
+                    <Box
+                        width={40}
+                        height={40}
+                        borderRadius={20}
+                        bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <Feather
+                            name="send"
+                            size={18}
+                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        />
+                    </Box>
+                </HStack>
+            </Pressable>
         </VStack>
+        </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

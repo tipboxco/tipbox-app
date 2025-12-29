@@ -159,7 +159,7 @@ const MessageDetailScreen: React.FC = () => {
   // Typing timeout ref
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Socket connection and event listeners
+  // Thread initialization effect - sadece user ve route params değiştiğinde çalışır
   useEffect(() => {
     // Socket bağlantısını kur
     const connectSocket = async () => {
@@ -169,12 +169,11 @@ const MessageDetailScreen: React.FC = () => {
         }
       } catch (error) {
         console.error('[MessageDetail] Socket connection error:', error);
+        // Socket bağlantısı başarısız olsa bile devam et (REST API kullanılacak)
       }
     };
 
-    connectSocket();
-
-    // Thread oluştur veya al
+    // Thread oluştur veya al ve socket'e katıl
     const initializeThread = async () => {
       const routeParams = (route.params as MessageDetailScreenParams) || {};
       const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
@@ -184,23 +183,39 @@ const MessageDetailScreen: React.FC = () => {
       }
 
       try {
+        // Önce socket bağlantısını kur
+        await connectSocket();
+
         // Thread API'sini import et (getOrCreateThread)
         const { getOrCreateThread } = await import('../api/messagesApi');
         const thread = await getOrCreateThread(recipientUserId);
         setThreadId(thread.id);
 
-        // Thread room'una katıl
-        if (socketService.isConnected()) {
-          socketService.joinThread(
-            thread.id,
-            (data) => {
-              console.log('[MessageDetail] Thread joined:', data.threadId);
-            },
-            (error) => {
-              console.warn('[MessageDetail] Thread join error:', error.reason);
-            }
-          );
-        }
+        // Socket bağlantısı başarılı olduktan sonra thread room'una katıl
+        // Socket bağlantısı biraz zaman alabilir, bu yüzden birkaç kez deneyelim
+        let attempts = 0;
+        const maxAttempts = 5;
+        const joinThreadWithRetry = () => {
+          if (socketService.isConnected()) {
+            socketService.joinThread(
+              thread.id,
+              (data) => {
+                console.log('[MessageDetail] Thread joined:', data.threadId);
+              },
+              (error) => {
+                console.warn('[MessageDetail] Thread join error:', error.reason);
+              }
+            );
+          } else if (attempts < maxAttempts) {
+            attempts++;
+            setTimeout(joinThreadWithRetry, 500);
+          } else {
+            console.warn('[MessageDetail] Socket connection timeout, thread join skipped');
+          }
+        };
+
+        // Socket bağlantısını bekle ve thread'e katıl
+        joinThreadWithRetry();
       } catch (error: any) {
         // 404 hatası: Thread endpoint backend'de henüz implement edilmemiş
         // Bu beklenen bir durum olabilir, fallback olarak recipientUserId'yi threadId olarak kullan
@@ -221,8 +236,15 @@ const MessageDetailScreen: React.FC = () => {
     };
 
     initializeThread();
+  }, [user?.id, route.params]);
 
-    // Socket event handler'ları
+  // Socket event listeners effect - sadece threadId değiştiğinde çalışır
+  useEffect(() => {
+    if (!threadId) {
+      return;
+    }
+
+    // Socket event handler'ları - useCallback ile wrap edilmiş handler'lar kullanılıyor
     const handleNewMessage = (eventData: SocketMessageEvent) => {
       console.log('[MessageDetail] New message received:', eventData);
 
@@ -371,7 +393,7 @@ const MessageDetailScreen: React.FC = () => {
     socketService.on('user_typing', handleUserTyping);
     socketService.on('message_read', handleMessageRead);
 
-    // Cleanup: Component unmount olduğunda listener'ları kaldır ve thread'den ayrıl
+    // Cleanup: threadId değiştiğinde veya component unmount olduğunda listener'ları kaldır ve thread'den ayrıl
     return () => {
       socketService.off('new_message', handleNewMessage);
       socketService.off('message_sent', handleMessageSent);
@@ -397,7 +419,7 @@ const MessageDetailScreen: React.FC = () => {
         socketService.leaveThread(threadId);
       }
     };
-  }, [user?.id, route.params, queryClient, threadId]);
+  }, [threadId, user?.id, route.params, queryClient]);
 
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number, message?: string) => {

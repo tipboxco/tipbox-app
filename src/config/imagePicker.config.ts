@@ -2,7 +2,7 @@ import { ImagePickerOptions } from 'expo-image-picker';
 
 export const imagePickerConfig = {
   camera: {
-    mediaTypes: 'Images' as const,
+    mediaTypes: 'images' as const,
     allowsEditing: true,
     aspect: [1, 1] as [number, number],
     quality: 0.7,
@@ -13,7 +13,7 @@ export const imagePickerConfig = {
   } satisfies ImagePickerOptions,
 
   gallery: {
-    mediaTypes: 'Images' as const,
+    mediaTypes: 'images' as const,
     allowsEditing: true,
     aspect: [1, 1] as [number, number],
     quality: 0.7,
@@ -24,17 +24,30 @@ export const imagePickerConfig = {
   } satisfies ImagePickerOptions,
 
   galleryMultiple: {
-    mediaTypes: 'Images' as const,
+    mediaTypes: 'images' as const,
     allowsEditing: false, // Multiple selection'da editing kapalı
-    quality: 0.7,
+    quality: 1, // iOS'ta format sorunlarını önlemek için quality 1 yapıldı
     allowsMultipleSelection: true,
     base64: false,
     exif: false,
+    // iOS için özel ayarlar
+    presentationStyle: 'pageSheet' as const, // iOS'ta daha iyi çalışması için
   } satisfies ImagePickerOptions,
 
   // Yükleme limitleri
-  maxFileSize: 5 * 1024 * 1024, // 5MB
-  allowedTypes: ['image/jpeg', 'image/png'],
+  maxFileSize: 10 * 1024 * 1024, // 10MB (artırıldı)
+  // Tüm görsel formatlarını destekle
+  allowedTypes: [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+    'image/bmp',
+    'image/tiff',
+  ],
 } as const;
 
 export type ImagePickerConfig = typeof imagePickerConfig; 

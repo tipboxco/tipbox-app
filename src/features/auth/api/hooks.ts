@@ -3,6 +3,7 @@ import { register, login } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
 import type { RegisterResponse, ApiLoginResponse } from '../types';
 import { useAppStore } from '../../../store/appStore';
+import { socketService } from '../../../services/SocketService';
 
 /**
  * Query Keys - Auth feature için cache key pattern'leri
@@ -64,6 +65,18 @@ export const useLogin = () => {
         email: data.email,
         isGuest: false,
       });
+
+      // Socket bağlantısını başlat (login sonrası)
+      try {
+        if (!socketService.isConnected()) {
+          console.log('[useLogin] Starting socket connection after login...');
+          await socketService.connect();
+          console.log('[useLogin] Socket connection established');
+        }
+      } catch (error) {
+        console.warn('[useLogin] Socket connection failed (non-critical):', error);
+        // Socket bağlantı hatası kritik değil, uygulama REST API ile devam edebilir
+      }
     },
     onError: (error) => {
       // Hata durumunda işlemler burada yapılabilir

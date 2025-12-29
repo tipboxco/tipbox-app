@@ -154,6 +154,10 @@ export interface ProfilePost {
   contextData?: ProfilePostContextData;
   content: string | ProfilePostContentBlock[];
   images?: string[];
+  // Interaction states
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
 }
 
 /**

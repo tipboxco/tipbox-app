@@ -493,9 +493,39 @@ export const FeedScreen = () => {
             </Box>
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
-              <Text color="#CE4A4A" fontSize="$sm">
-                Feed yüklenirken bir hata oluştu: {error.message}
-              </Text>
+              <VStack space="md" alignItems="center">
+                <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
+                  Feed Yüklenemedi
+                </Text>
+                {(error as any)?.response?.status === 500 ? (
+                  <>
+                    <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
+                      Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.
+                    </Text>
+                    {(error as any)?.response?.data?.error?.message && (
+                      <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center" mt="$2">
+                        {(error as any).response.data.error.message}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
+                      {error.message || 'Bilinmeyen bir hata oluştu'}
+                    </Text>
+                    {(error as any)?.response?.status && (
+                      <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
+                        HTTP Status: {(error as any).response.status}
+                      </Text>
+                    )}
+                    {(error as any)?.response?.data?.message && (
+                      <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
+                        {(error as any).response.data.message}
+                      </Text>
+                    )}
+                  </>
+                )}
+              </VStack>
             </Box>
           ) : feedItems.length === 0 ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">

@@ -3,7 +3,7 @@ import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/theme
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, cleanNewlines } from '@/src/utils';
 
 interface ProductInfoCardProps {
   // Product information
@@ -83,7 +83,7 @@ export const ProductInfoCard = ({
             fontWeight="$bold"
             numberOfLines={size === 'big' ? 3 : 2}
           >
-            {title}
+            {cleanNewlines(title)}
           </Text>
           {subName && (
             <Text
@@ -92,7 +92,7 @@ export const ProductInfoCard = ({
               fontWeight="$normal"
               numberOfLines={1}
             >
-              {subName}
+              {cleanNewlines(subName)}
             </Text>
           )}
           {/* Owned Status */}

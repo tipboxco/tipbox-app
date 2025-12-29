@@ -53,6 +53,10 @@ export interface PostCardData {
   // Yeni profil feed API yapısı için
   contextType?: ProductInfoType;
   contextData?: PostContextData;
+  // Interaction states
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
 }
 
 

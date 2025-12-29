@@ -196,3 +196,92 @@ export const getAchievements = async (
   }
 };
 
+/**
+ * Create Event Post endpoint function
+ * Belirli bir event için post oluşturur
+ *
+ * @param eventId - Event ID
+ * @param data - Post creation data
+ * @returns CreateEventPostResponse - Created post response
+ */
+export interface CreateEventPostRequest {
+  description: string;
+  productId?: string; // Opsiyonel: Eğer product seçildiyse
+  images?: string[]; // Array of image URIs
+}
+
+export interface CreateEventPostResponse {
+  id: string;
+  message: string;
+}
+
+export const createEventPost = async (
+  eventId: string,
+  data: CreateEventPostRequest
+): Promise<CreateEventPostResponse> => {
+  const client = apiService.getClient();
+  
+  // FormData oluştur (multipart/form-data için)
+  const formData = new FormData();
+  formData.append('description', data.description);
+  
+  // Product ID varsa ekle
+  if (data.productId) {
+    formData.append('productId', data.productId);
+  }
+  
+  // Images varsa ekle
+  if (data.images && data.images.length > 0) {
+    data.images.forEach((imageUri, index) => {
+      // React Native'de FormData için image object formatı
+      // iOS'ta URI'ler ph:// veya assets-library:// ile başlayabilir ve uzantı içermeyebilir
+      // Bu durumda varsayılan olarak JPEG kullan
+      let fileExtension = 'jpg';
+      let mimeType = 'image/jpeg';
+      
+      // URI'den dosya uzantısını çıkar (eğer varsa)
+      const uriLower = imageUri.toLowerCase();
+      if (uriLower.includes('.')) {
+        const ext = imageUri.split('.').pop()?.toLowerCase();
+        if (ext === 'png') {
+          fileExtension = 'png';
+          mimeType = 'image/png';
+        } else if (ext === 'jpg' || ext === 'jpeg') {
+          fileExtension = 'jpg';
+          mimeType = 'image/jpeg';
+        }
+      }
+      // iOS'ta ph:// veya assets-library:// URI'leri için varsayılan JPEG kullan
+      // Expo Image Picker zaten görsel formatlarını destekliyor
+      
+      formData.append('images', {
+        uri: imageUri,
+        type: mimeType,
+        name: `image_${index}.${fileExtension}`,
+      } as any);
+    });
+  }
+  
+  try {
+    const response = await client.post<CreateEventPostResponse>(
+      `/events/${eventId}/posts`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Create Event Post API Error:', {
+      url: `/events/${eventId}/posts`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+

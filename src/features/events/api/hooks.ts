@@ -1,5 +1,5 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getLimitedEvent, getAchievements } from './communityEventsApi';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getLimitedEvent, getAchievements, createEventPost, type CreateEventPostRequest, type CreateEventPostResponse } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
@@ -193,6 +193,35 @@ export const useAchievements = (limit: number = 20) => {
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     retry: 1,
+  });
+};
+
+/**
+ * Create Event Post mutation hook
+ * Belirli bir event için post oluşturur
+ *
+ * @param eventId - Event ID
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const createPost = useCreateEventPost('eventId123');
+ * createPost.mutate({
+ *   description: 'Post description',
+ *   productId: 'productId123',
+ *   images: ['imageUri1', 'imageUri2']
+ * });
+ */
+export const useCreateEventPost = (eventId: string) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<CreateEventPostResponse, Error, CreateEventPostRequest>({
+    mutationFn: (data) => createEventPost(eventId, data),
+    onSuccess: () => {
+      // Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
+      queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
+      // Event detail'i de invalidate et (post sayısı değişebilir)
+      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+    },
   });
 };
 

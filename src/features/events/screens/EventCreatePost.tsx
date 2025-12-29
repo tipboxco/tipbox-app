@@ -9,6 +9,11 @@ import {
     Pressable,
     Textarea,
     TextareaInput,
+    useToast,
+    Toast,
+    ToastTitle,
+    ToastDescription,
+    Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -29,6 +34,8 @@ import { InventoryItem } from '@/src/mock/inventory/types';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { useCreateEventPost } from '../api/hooks';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventsStackParamList, 'EventCreatePost'>;
@@ -43,18 +50,24 @@ const EventCreatePost: React.FC = () => {
     const [selectedProduct, setSelectedProduct] = useState<Category | null>(null);
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+    const toast = useToast();
     
     // Safe area and tab bar insets
     const insets = useSafeAreaInsets();
     const tabBarHeight = useBottomTabBarHeight();
     
-    // Get eventType, product, and productSource from route params
+    // Get eventId, eventType, product, and productSource from route params
+    const eventId = route.params?.eventId;
     const eventType = route.params?.eventType;
     const eventProduct = route.params?.product;
     const routeProductSource = route.params?.productSource;
+    
+    // Event post mutation hook
+    const createEventPostMutation = useCreateEventPost(eventId || '');
     
     // Auto-select product if eventType is TYPE2
     useEffect(() => {
@@ -139,17 +152,184 @@ const EventCreatePost: React.FC = () => {
         navigation.setParams({ productSource: undefined });
     };
 
-    const handleAddPhoto = () => {
-        // TODO: Implement image picker
-        console.log('Add photo');
+    const handleAddPhoto = async () => {
+        try {
+            const remainingSlots = 10 - selectedImages.length;
+            
+            if (remainingSlots <= 0) {
+                toast.show({
+                    placement: 'top',
+                    render: ({ id }: { id: string }) => {
+                        return (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Limit Aşıldı</ToastTitle>
+                                    <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        );
+                    },
+                });
+                return;
+            }
+
+            const result = await imagePickerService.pickMultipleFromGallery(remainingSlots);
+            
+            if (result.success && result.assets && result.assets.length > 0) {
+                const newImageUris = result.assets
+                    .map(asset => asset.uri)
+                    .filter((uri): uri is string => !!uri);
+                
+                if (newImageUris.length > 0) {
+                    setSelectedImages(prev => [...prev, ...newImageUris]);
+                } else {
+                    toast.show({
+                        placement: 'top',
+                        render: ({ id }: { id: string }) => {
+                            return (
+                                <Box maxWidth="90%" alignSelf="center" px="$4">
+                                    <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                        <ToastTitle>Hata</ToastTitle>
+                                        <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
+                                    </Toast>
+                                </Box>
+                            );
+                        },
+                    });
+                }
+            } else if (result.error) {
+                toast.show({
+                    placement: 'top',
+                    render: ({ id }: { id: string }) => {
+                        return (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastDescription>{result.error}</ToastDescription>
+                                </Toast>
+                            </Box>
+                        );
+                    },
+                });
+            }
+        } catch (error: any) {
+            console.error('Image picker error:', error);
+            const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Hata</ToastTitle>
+                                <ToastDescription>{errorMessage}</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+        }
     };
 
-    const handleShare = () => {
-        console.log('Share button pressed');
+    const handleRemoveImage = (index: number) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
     };
 
-    // Check if share button should be enabled (product selected and content entered)
-    const isShareEnabled = selectedProduct !== null && content.trim().length > 0;
+    const handleShare = async () => {
+        try {
+            // Validation
+            if (!eventId) {
+                toast.show({
+                    placement: 'top',
+                    render: ({ id }: { id: string }) => {
+                        return (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastDescription>Event ID bulunamadı.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        );
+                    },
+                });
+                return;
+            }
+
+            if (!content.trim()) {
+                toast.show({
+                    placement: 'top',
+                    render: ({ id }: { id: string }) => {
+                        return (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastDescription>Post açıklaması gereklidir.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        );
+                    },
+                });
+                return;
+            }
+
+            // Product ID'yi al (eğer product seçildiyse)
+            const productId = selectedProduct?.id;
+
+            // API çağrısı
+            const response = await createEventPostMutation.mutateAsync({
+                description: content.trim(),
+                productId: productId,
+                images: selectedImages,
+            });
+
+            console.log('Event post created:', response);
+
+            // Başarılı toast göster
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                                <ToastTitle>Başarılı</ToastTitle>
+                                <ToastDescription>Post başarıyla oluşturuldu!</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+
+            // Event detail ekranına geri dön
+            navigation.goBack();
+        } catch (error: any) {
+            console.error('Event post creation error:', error);
+            
+            const errorMessage = error?.response?.data?.message || 
+                                error?.message || 
+                                'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+            
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Hata</ToastTitle>
+                                <ToastDescription>{errorMessage}</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+        }
+    };
+
+    // Check if share button should be enabled
+    // TYPE2 event'lerde product zaten seçili, TYPE1'de product seçilmeli
+    // Her durumda content ve eventId gereklidir
+    const isShareEnabled = !!eventId && 
+                           content.trim().length > 0 && 
+                           (eventType === EventType.TYPE2 || selectedProduct !== null);
 
     // Show product selector if productSource is set
     if (showProductSelector && productSource) {
@@ -295,24 +475,68 @@ const EventCreatePost: React.FC = () => {
                         >
                             Images
                         </Text>
+                        <HStack space="sm" flexWrap="wrap">
+                            {/* Display selected images */}
+                            {selectedImages.map((imageUri, index) => (
+                                <Box
+                                    key={index}
+                                    width={64}
+                                    height={64}
+                                    borderRadius={5}
+                                    overflow="hidden"
+                                    position="relative"
+                                >
+                                    <Image
+                                        source={{ uri: imageUri }}
+                                        width={64}
+                                        height={64}
+                                        resizeMode="cover"
+                                        alt={`Selected image ${index + 1}`}
+                                    />
                         <Pressable
-                            onPress={handleAddPhoto}
-                            borderWidth={2}
-                            borderStyle="dashed"
-                            borderColor={isDark ? '#333' : '#D9D9D9'}
-                            borderRadius={8}
+                                        position="absolute"
+                                        top={2}
+                                        right={2}
+                                        bg="rgba(0, 0, 0, 0.5)"
+                                        borderRadius={12}
+                                        width={20}
+                                        height={20}
+                                        justifyContent="center"
+                                        alignItems="center"
+                                        onPress={() => handleRemoveImage(index)}
+                                    >
+                                        <Feather
+                                            name="x"
+                                            size={12}
+                                            color="#FFFFFF"
+                                        />
+                                    </Pressable>
+                                </Box>
+                            ))}
+
+                            {/* Add Image Button */}
+                            {selectedImages.length < 10 && (
+                                <Pressable onPress={handleAddPhoto}>
+                                    <Box
                             width={64}
                             height={64}
+                                        bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
+                                        borderWidth={1}
+                                        borderColor="#9E9E9E"
+                                        borderStyle="dashed"
+                                        borderRadius={5}
                             justifyContent="center"
                             alignItems="center"
-                            bg="transparent"
                         >
                             <Feather
                                 name="plus"
-                                size={36}
-                                color={isDark ? '#666' : '#CCCCCC'}
+                                            size={24}
+                                            color={isDark ? '#C1BEBF' : '#C1BEBF'}
                             />
+                                    </Box>
                         </Pressable>
+                            )}
+                        </HStack>
                     </VStack>
                 </VStack>
             </ScrollView>

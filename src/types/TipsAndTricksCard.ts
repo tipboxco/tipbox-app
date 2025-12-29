@@ -37,6 +37,10 @@ export interface TipsApiItem {
   content: string;
   tag: string;
   images: string[];
+  // Interaction states
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isShared?: boolean;
 }
 
 /**

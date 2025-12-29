@@ -200,6 +200,23 @@ export const useCurrentUserIdOrLogout = (): string | undefined => {
 };
 
 /**
+ * String'lerdeki newline karakterlerini temizler
+ * Backend'den gelen "Apple\nVisionMax\n55" gibi string'leri düzeltir
+ * 
+ * @param text - Temizlenecek text
+ * @param replacement - Newline yerine konulacak karakter (default: ' ' - boşluk)
+ * @returns Temizlenmiş text
+ * 
+ * @example
+ * cleanNewlines("Apple\nVisionMax\n55") // "Apple VisionMax 55"
+ * cleanNewlines("Apple\nVisionMax\n55", " - ") // "Apple - VisionMax - 55"
+ */
+export const cleanNewlines = (text: string | null | undefined, replacement: string = ' '): string => {
+  if (!text) return '';
+  return text.replace(/\\n|\n/g, replacement).trim();
+};
+
+/**
  * Countdown formatı: "DDD:HH:MM:SS" (Gün:Saat:Dakika:Saniye)
  * Örnek: "165:08:34" -> 165 gün, 8 saat, 34 dakika
  */
