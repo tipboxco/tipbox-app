@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -8,29 +8,57 @@ import {
   Pressable,
   Input,
   InputField,
+  ActivityIndicator,
+  Button,
+  ButtonText,
+  useToast,
+  Toast,
+  ToastTitle,
+  ToastDescription,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSupportSessionPrice, useUpdateSupportSessionPrice } from '../api/hooks';
+
+const MIN_PRICE = 50;
+const TIPS_TO_USD_RATIO = 10; // 10 TIPS = 1 USD
 
 export const SupportSettingsScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
+  const toast = useToast();
+
+  // API hooks
+  const { data: priceData, isLoading, error } = useSupportSessionPrice();
+  const updateMutation = useUpdateSupportSessionPrice();
 
   // Support settings state
   const [tipsAmount, setTipsAmount] = useState('50');
   const [usdAmount, setUsdAmount] = useState('5');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Initialize from API data
+  useEffect(() => {
+    if (priceData?.price !== null && priceData?.price !== undefined) {
+      const price = priceData.price;
+      setTipsAmount(price.toString());
+      setUsdAmount(Math.round(price / TIPS_TO_USD_RATIO).toString());
+      setHasChanges(false);
+    }
+  }, [priceData]);
 
   const handleTipsChange = (value: string) => {
     // Sadece sayısal değerleri kabul et
     const numericValue = value.replace(/[^0-9]/g, '');
     setTipsAmount(numericValue);
     
-    // TIPS'i USD'ye çevir (basit oran: 10 TIPS = 1 USD)
-    const usdValue = Math.round(parseInt(numericValue || '0') / 10);
+    // TIPS'i USD'ye çevir
+    const usdValue = Math.round(parseInt(numericValue || '0') / TIPS_TO_USD_RATIO);
     setUsdAmount(usdValue.toString());
+    setHasChanges(true);
   };
 
   const handleUsdChange = (value: string) => {
@@ -38,9 +66,62 @@ export const SupportSettingsScreen = () => {
     const numericValue = value.replace(/[^0-9]/g, '');
     setUsdAmount(numericValue);
     
-    // USD'yi TIPS'e çevir (basit oran: 1 USD = 10 TIPS)
-    const tipsValue = parseInt(numericValue || '0') * 10;
+    // USD'yi TIPS'e çevir
+    const tipsValue = parseInt(numericValue || '0') * TIPS_TO_USD_RATIO;
     setTipsAmount(tipsValue.toString());
+    setHasChanges(true);
+  };
+
+  const handleSave = async () => {
+    const price = parseInt(tipsAmount || '0');
+
+    // Validation
+    if (!price || price < MIN_PRICE) {
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+              <ToastTitle>Geçersiz Fiyat</ToastTitle>
+              <ToastDescription>Minimum {MIN_PRICE} TIPS olmalıdır</ToastDescription>
+            </Toast>
+          </Box>
+        ),
+      });
+      return;
+    }
+
+    try {
+      await updateMutation.mutateAsync({ price });
+      setHasChanges(false);
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+              <ToastTitle>Başarılı</ToastTitle>
+              <ToastDescription>Destek oturumu fiyatı güncellendi</ToastDescription>
+            </Toast>
+          </Box>
+        ),
+      });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error?.message || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          'Fiyat güncellenirken bir hata oluştu';
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+              <ToastTitle>Hata</ToastTitle>
+              <ToastDescription>{errorMessage}</ToastDescription>
+            </Toast>
+          </Box>
+        ),
+      });
+    }
   };
 
   return (
@@ -56,6 +137,17 @@ export const SupportSettingsScreen = () => {
         />
 
         <ScrollView flex={1} px="$4">
+          {isLoading ? (
+            <Box flex={1} justifyContent="center" alignItems="center" py="$10">
+              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+          ) : error ? (
+            <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
+              <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+                {error.message || 'Fiyat bilgisi yüklenirken bir hata oluştu'}
+              </Text>
+            </Box>
+          ) : (
           <VStack space="lg">
             {/* Set TIPS Amount Section */}
             <VStack space="sm">
@@ -173,7 +265,7 @@ export const SupportSettingsScreen = () => {
               color="#B9B9B9"
               lineHeight={12}
             >
-              * Minimum of 50 TIPS can be set.
+              * Minimum of {MIN_PRICE} TIPS can be set.
             </Text>
             <Text
               fontSize={10}
@@ -184,7 +276,28 @@ export const SupportSettingsScreen = () => {
               * The amount can be changed once every 10 days.
             </Text>
           </VStack>
+
+          {/* Save Button */}
+          {hasChanges && (
+            <Button
+              bg="#E2FF46"
+              borderRadius={8}
+              onPress={handleSave}
+              disabled={updateMutation.isPending}
+              opacity={updateMutation.isPending ? 0.5 : 1}
+              mt="$4"
+            >
+              <ButtonText
+                color="#000000"
+                fontSize={14}
+                fontWeight="$bold"
+              >
+                {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+              </ButtonText>
+            </Button>
+          )}
           </VStack>
+          )}
         </ScrollView>
       </Box>
     </SafeAreaView>

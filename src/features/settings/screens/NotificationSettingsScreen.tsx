@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -9,75 +9,136 @@ import {
     Switch,
     Input,
     InputField,
+    Spinner,
+    useToast,
+    Toast,
+    ToastTitle,
+    ToastDescription,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
-
-interface NotificationSetting {
-    id: string;
-    title: string;
-    subtitle?: string;
-    enabled: boolean;
-    onToggle: (enabled: boolean) => void;
-}
+import { useNotificationSettings, useUpdateNotificationSettings } from '../api/hooks';
+import { NotificationCode } from '../types';
 
 export const NotificationSettingsScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation();
+    const toast = useToast();
 
-    // Notification settings state
-    const [allNotifications, setAllNotifications] = useState(true);
-    const [trustNotifications, setTrustNotifications] = useState(true);
-    const [supportNotifications, setSupportNotifications] = useState(true);
-    const [messageNotifications, setMessageNotifications] = useState(true);
-    const [collectionNotifications, setCollectionNotifications] = useState(true);
-    const [postNotifications, setPostNotifications] = useState(true);
+    // API hooks
+    const { data: notificationSettings, isLoading, error } = useNotificationSettings();
+    const updateMutation = useUpdateNotificationSettings();
 
-    const notificationSettings: NotificationSetting[] = [
+    // Local state for UI
+    const [localSettings, setLocalSettings] = useState<Record<number, boolean>>({});
+
+    // Initialize local state from API data
+    useEffect(() => {
+        if (notificationSettings) {
+            const settingsMap: Record<number, boolean> = {};
+            notificationSettings.forEach((setting) => {
+                settingsMap[setting.notificationCode] = setting.value;
+            });
+            setLocalSettings(settingsMap);
+        }
+    }, [notificationSettings]);
+
+    // Get setting value by code
+    const getSettingValue = (code: NotificationCode): boolean => {
+        return localSettings[code] ?? false;
+    };
+
+    // Update setting value
+    const updateSetting = async (code: NotificationCode, value: boolean) => {
+        // Optimistic update
+        setLocalSettings((prev) => ({ ...prev, [code]: value }));
+
+        // Prepare all settings for API
+        const allSettings = [
+            { notificationCode: NotificationCode.EMAIL, value: localSettings[NotificationCode.EMAIL] ?? false },
+            { notificationCode: NotificationCode.PUSH, value: localSettings[NotificationCode.PUSH] ?? false },
+            { notificationCode: NotificationCode.IN_APP, value: localSettings[NotificationCode.IN_APP] ?? false },
+        ];
+        
+        // Update the changed setting
+        const settingIndex = allSettings.findIndex((s) => s.notificationCode === code);
+        if (settingIndex !== -1) {
+            allSettings[settingIndex].value = value;
+        }
+
+        try {
+            await updateMutation.mutateAsync({ settings: allSettings });
+            toast.show({
+                placement: 'top',
+                render: ({ id }) => (
+                    <Box maxWidth="90%" alignSelf="center" px="$4">
+                        <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                            <ToastTitle>Başarılı</ToastTitle>
+                            <ToastDescription>Bildirim ayarları güncellendi</ToastDescription>
+                        </Toast>
+                    </Box>
+                ),
+            });
+        } catch (error: any) {
+            // Revert optimistic update on error
+            setLocalSettings((prev) => ({ ...prev, [code]: !value }));
+            const errorMessage = error?.response?.data?.message || error?.message || 'Bildirim ayarları güncellenirken bir hata oluştu';
+            toast.show({
+                placement: 'top',
+                render: ({ id }) => (
+                    <Box maxWidth="90%" alignSelf="center" px="$4">
+                        <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                            <ToastTitle>Hata</ToastTitle>
+                            <ToastDescription>{errorMessage}</ToastDescription>
+                        </Toast>
+                    </Box>
+                ),
+            });
+        }
+    };
+
+    // Calculate "All Notifications" state
+    const allNotifications = useMemo(() => {
+        return (
+            getSettingValue(NotificationCode.EMAIL) &&
+            getSettingValue(NotificationCode.PUSH) &&
+            getSettingValue(NotificationCode.IN_APP)
+        );
+    }, [localSettings]);
+
+    // Toggle all notifications
+    const handleAllNotificationsToggle = async (enabled: boolean) => {
+        await Promise.all([
+            updateSetting(NotificationCode.EMAIL, enabled),
+            updateSetting(NotificationCode.PUSH, enabled),
+            updateSetting(NotificationCode.IN_APP, enabled),
+        ]);
+    };
+
+    // Notification setting items for display
+    const notificationItems = [
         {
-            id: 'trust',
-            title: 'Trust - Truster Notifications',
-            enabled: trustNotifications,
-            onToggle: setTrustNotifications,
+            id: 'email',
+            code: NotificationCode.EMAIL,
+            title: 'Email Notifications',
+            subtitle: 'Receive notifications via email',
         },
         {
-            id: 'support',
-            title: '1-on-1 Support Notifications',
-            enabled: supportNotifications,
-            onToggle: setSupportNotifications,
+            id: 'push',
+            code: NotificationCode.PUSH,
+            title: 'Push Notifications',
+            subtitle: 'Receive push notifications on your device',
         },
         {
-            id: 'message',
-            title: 'Message Notifications',
-            enabled: messageNotifications,
-            onToggle: setMessageNotifications,
-        },
-        {
-            id: 'collection',
-            title: 'Collection Notifications',
-            enabled: collectionNotifications,
-            onToggle: setCollectionNotifications,
-        },
-        {
-            id: 'post',
-            title: 'Post Notifications',
-            enabled: postNotifications,
-            onToggle: setPostNotifications,
+            id: 'in-app',
+            code: NotificationCode.IN_APP,
+            title: 'In-App Notifications',
+            subtitle: 'Receive notifications within the app',
         },
     ];
-
-    const handleAllNotificationsToggle = (enabled: boolean) => {
-        setAllNotifications(enabled);
-        // Tüm alt kategorileri de aynı duruma getir
-        setTrustNotifications(enabled);
-        setSupportNotifications(enabled);
-        setMessageNotifications(enabled);
-        setCollectionNotifications(enabled);
-        setPostNotifications(enabled);
-    };
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -92,35 +153,18 @@ export const NotificationSettingsScreen = () => {
             />
 
             <ScrollView flex={1} px="$4" py="$2">
-                <VStack space="lg">
-                    {/* Search Bar */}
-                    <Box
-                        bg="#F2F2F2"
-                        borderRadius={20}
-                        px="$4"
-                        py="$1"
-                        flexDirection="row"
-                        alignItems="center"
-                    >
-                        <Feather
-                            name="search"
-                            size={20}
-                            color="#8C8C8C"
-                        />
-                        <Input
-                            flex={1}
-                            borderWidth={0}
-                            bg="transparent"
-                            ml="$2"
-                        >
-                            <InputField
-                                placeholder="Ürün Grubu seçin veya ürün adı arayın"
-                                placeholderTextColor="#B9B9B9"
-                                color={isDark ? '#FFFFFF' : '#000000'}
-                                fontSize={9}
-                            />
-                        </Input>
+                {isLoading ? (
+                    <Box flex={1} justifyContent="center" alignItems="center" py="$10">
+                        <Spinner size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                     </Box>
+                ) : error ? (
+                    <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
+                        <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+                            {error.message || 'Bildirim ayarları yüklenirken bir hata oluştu'}
+                        </Text>
+                    </Box>
+                ) : (
+                <VStack space="lg">
 
                     {/* Push Notifications Section */}
                     <VStack space="sm">
@@ -176,31 +220,43 @@ export const NotificationSettingsScreen = () => {
 
                     {/* Individual Notification Settings */}
                     <VStack space="xs">
-                        {notificationSettings.map((setting, index) => (
+                        {notificationItems.map((item) => (
                             <Box
-                                key={setting.id}
+                                key={item.id}
                                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                                 borderRadius={10}
                                 px="$2"
                                 py="$1"
                             >
                                 <HStack justifyContent="space-between" alignItems="center">
-                                    <Text
-                                        fontSize={11}
-                                        fontWeight="$semibold"
-                                        color={isDark ? '#FFFFFF' : '#000000'}
-                                    >
-                                        {setting.title}
-                                    </Text>
+                                    <VStack flex={1} space="xs">
+                                        <Text
+                                            fontSize={11}
+                                            fontWeight="$semibold"
+                                            color={isDark ? '#FFFFFF' : '#000000'}
+                                        >
+                                            {item.title}
+                                        </Text>
+                                        {item.subtitle && (
+                                            <Text
+                                                fontSize={9}
+                                                fontWeight="$normal"
+                                                color="#B9B9B9"
+                                            >
+                                                {item.subtitle}
+                                            </Text>
+                                        )}
+                                    </VStack>
 
                                     <Switch
-                                        value={setting.enabled}
-                                        onValueChange={setting.onToggle}
+                                        value={getSettingValue(item.code)}
+                                        onValueChange={(value) => updateSetting(item.code, value)}
+                                        disabled={updateMutation.isPending}
                                         trackColor={{
                                             false: isDark ? '#333333' : '#E5E5E5',
                                             true: '#34C759',
                                         }}
-                                        thumbColor={setting.enabled ? '#FFFFFF' : '#FFFFFF'}
+                                        thumbColor={getSettingValue(item.code) ? '#FFFFFF' : '#FFFFFF'}
                                         style={{
                                             transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }],
                                         }}
@@ -210,6 +266,7 @@ export const NotificationSettingsScreen = () => {
                         ))}
                     </VStack>
                 </VStack>
+                )}
             </ScrollView>
             </Box>
         </SafeAreaView>

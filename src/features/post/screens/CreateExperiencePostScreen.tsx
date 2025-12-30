@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { ActivityIndicator, Keyboard } from 'react-native';
+import { Box, useToast, Toast, ToastTitle, ToastDescription, VStack, Text } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { FormProvider } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -11,7 +12,7 @@ import { StepThreeScreen } from '../components/CreateExperienceSteps/StepThreeSc
 import { SelectProduct } from '../components/CreateExperienceSteps/SelectProduct';
 import { useExperiencePostForm } from '../hooks/useExperiencePostForm';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateExperiencePost } from '../api/hooks';
+import { useCreateExperiencePost, useSplitExperience } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -47,11 +48,18 @@ export const CreateExperiencePostScreen = () => {
     const { handleSubmit, formState, validateStep, watch, setValue, getValues } = methods;
     const toast = useToast();
     const createExperiencePostMutation = useCreateExperiencePost();
+    const splitExperienceMutation = useSplitExperience();
     
-    // Flow store'dan context bilgilerini al
+    // Get context information from flow store
     const contextType = useCreatePostFlowStore((state) => state.contextType);
     const contextId = useCreatePostFlowStore((state) => state.contextId);
     const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+    
+    // Store AI split response
+    const [experienceSnippetId, setExperienceSnippetId] = useState<string | undefined>(undefined);
+    
+    // Loading state (only for spinner)
+    const [isSplitLoading, setIsSplitLoading] = useState(false);
     
     const selectedProduct = watch('selectedProduct');
     const step1Duration = watch('step1Duration');
@@ -106,6 +114,9 @@ export const CreateExperiencePostScreen = () => {
     };
 
     const handleNextPress = async () => {
+        // Dismiss keyboard
+        Keyboard.dismiss();
+        
         if (currentStep === 0) {
             const isValid = await validateStep(0);
             if (isValid) {
@@ -119,11 +130,105 @@ export const CreateExperiencePostScreen = () => {
         } else if (currentStep === 2) {
             const isValid = await validateStep(2);
             if (isValid) {
-                // TODO: Backend'den AI ile ayrılmış metinleri al
-                // Şimdilik mock data kullanıyoruz
-                setValue('priceExperienceText', 'Price and shopping experience summary...');
-                setValue('productExperienceText', 'Product and usage experience summary...');
-                setCurrentStep(3);
+                // Product ID validation
+                if (!selectedProduct?.id) {
+                    toast.show({
+                        placement: 'top',
+                        render: ({ id }: { id: string }) => (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Error</ToastTitle>
+                                    <ToastDescription>Product not selected. Please select a product.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        ),
+                    });
+                    return;
+                }
+
+                // Experience text validation
+                if (!experienceText || experienceText.trim().length < 10) {
+                    toast.show({
+                        placement: 'top',
+                        render: ({ id }: { id: string }) => (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Error</ToastTitle>
+                                    <ToastDescription>Experience text must be at least 10 characters.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        ),
+                    });
+                    return;
+                }
+
+                // Gemini AI split request
+                setIsSplitLoading(true);
+                
+                try {
+                    console.log('[CreateExperiencePostScreen] 📤 Calling split-experience API...');
+                    const response = await splitExperienceMutation.mutateAsync({
+                        productId: selectedProduct.id,
+                        content: experienceText.trim(),
+                    });
+
+                    console.log('[CreateExperiencePostScreen] ✅ Split response received:', response);
+
+                    // Set AI response to form
+                    if (response.priceAndShopping) {
+                        setValue('priceExperienceText', response.priceAndShopping.content);
+                        setValue('priceRating', response.priceAndShopping.rating);
+                    } else {
+                        setValue('priceExperienceText', '');
+                        setValue('priceRating', 0);
+                    }
+
+                    if (response.productAndUsage) {
+                        setValue('productExperienceText', response.productAndUsage.content);
+                        setValue('productRating', response.productAndUsage.rating);
+                    } else {
+                        setValue('productExperienceText', '');
+                        setValue('productRating', 0);
+                    }
+
+                    // Store experienceSnippetId (will be used in final step)
+                    setExperienceSnippetId(response.experienceSnippetId);
+
+                    // Move to Step 3
+                    setIsSplitLoading(false);
+                    setCurrentStep(3);
+                } catch (error: any) {
+                    console.error('[CreateExperiencePostScreen] ❌ Split experience error:', error);
+                    
+                    setIsSplitLoading(false);
+                    
+                    // Timeout check
+                    const isTimeout = error?.code === 'ECONNABORTED' || 
+                                    error?.message?.includes('timeout') ||
+                                    error?.message?.includes('exceeded');
+                    
+                    let errorMessage: string;
+                    if (isTimeout) {
+                        errorMessage = 'AI processing timed out. Please try again or continue manually.';
+                    } else {
+                        errorMessage = error?.response?.data?.message || 
+                                       error?.response?.data?.error?.message ||
+                                       error?.message || 
+                                       'An error occurred while processing experience text. Please try again.';
+                    }
+                    
+                    toast.show({
+                        placement: 'top',
+                        render: ({ id }: { id: string }) => (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastDescription>{errorMessage}</ToastDescription>
+                                </Toast>
+                            </Box>
+                        ),
+                    });
+                }
             }
         }
     };
@@ -133,18 +238,19 @@ export const CreateExperiencePostScreen = () => {
         setCurrentStep(1);
     };
 
-    // Form'daki duration, condition, frequency değerlerini API ID formatına çevir
-    // TODO: Backend'den experience options'ı çekip gerçek ID'leri kullan
+
+    // Convert duration, condition, frequency values from form to API ID format
+    // TODO: Fetch experience options from backend and use real IDs
     const mapFormValueToId = (value: string): string => {
-        // Şimdilik form değerini direkt ID olarak kullanıyoruz
-        // Backend'den options çekildiğinde bu mapping güncellenecek
+        // For now, we use the form value directly as ID
+        // This mapping will be updated when options are fetched from backend
         return value;
     };
 
     const onSubmit = async (data: ExperiencePostFormData) => {
         console.log('[CreateExperiencePostScreen] Form submitted:', data);
         
-        // ContextType ve contextId kontrolü
+        // ContextType and contextId validation
         if (!contextType || !contextId) {
             toast.show({
                 placement: 'top',
@@ -152,8 +258,8 @@ export const CreateExperiencePostScreen = () => {
                     return (
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
+                                <ToastTitle>Error</ToastTitle>
+                                <ToastDescription>Context information not found. Please try again.</ToastDescription>
                             </Toast>
                         </Box>
                     );
@@ -162,7 +268,7 @@ export const CreateExperiencePostScreen = () => {
             return;
         }
         
-        // Ürün kontrolü
+        // Product validation
         if (!data.selectedProduct) {
             toast.show({
                 placement: 'top',
@@ -170,8 +276,8 @@ export const CreateExperiencePostScreen = () => {
                     return (
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>Ürün seçimi zorunludur.</ToastDescription>
+                                <ToastTitle>Error</ToastTitle>
+                                <ToastDescription>Product selection is required.</ToastDescription>
                             </Toast>
                         </Box>
                     );
@@ -180,10 +286,10 @@ export const CreateExperiencePostScreen = () => {
             return;
         }
         
-        // API contextType'a çevir
+        // Convert to API contextType
         const apiContextType = mapProductInfoTypeToContextType(contextType);
         
-        // Experience array'ini oluştur
+        // Create experience array
         const experience = [];
         
         // Price and shopping experience
@@ -204,7 +310,7 @@ export const CreateExperiencePostScreen = () => {
             });
         }
         
-        // Experience array kontrolü
+        // Experience array validation
         if (experience.length === 0) {
             toast.show({
                 placement: 'top',
@@ -212,8 +318,8 @@ export const CreateExperiencePostScreen = () => {
                     return (
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>En az bir deneyim kategorisi doldurulmalıdır.</ToastDescription>
+                                <ToastTitle>Error</ToastTitle>
+                                <ToastDescription>At least one experience category must be filled.</ToastDescription>
                             </Toast>
                         </Box>
                     );
@@ -222,33 +328,113 @@ export const CreateExperiencePostScreen = () => {
             return;
         }
         
-        // Status'u belirle (fromInventory ve experienceOption'a göre)
+        // Determine status (based on fromInventory and experienceOption)
         const status: 'own' | 'tested' = (fromInventory && experienceOption === 'own') ? 'own' : 'tested';
+        
+        // Convert form values to IDs
+        const selectedDurationId = mapFormValueToId(data.step1Duration);
+        const selectedLocationId = mapFormValueToId(data.selectedCondition); // Condition -> Location mapping
+        const selectedPurposeId = mapFormValueToId(data.selectedFrequency); // Frequency -> Purpose mapping
+        
+        console.log('[CreateExperiencePostScreen] Mapping form values to IDs:', {
+            step1Duration: data.step1Duration,
+            selectedDurationId: selectedDurationId,
+            selectedCondition: data.selectedCondition,
+            selectedLocationId: selectedLocationId,
+            selectedFrequency: data.selectedFrequency,
+            selectedPurposeId: selectedPurposeId,
+        });
+        
+        // Required field validation
+        if (!selectedDurationId || selectedDurationId.trim() === '') {
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Error</ToastTitle>
+                                <ToastDescription>Duration selection is required.</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+            return;
+        }
+        
+        if (!selectedLocationId || selectedLocationId.trim() === '') {
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Error</ToastTitle>
+                                <ToastDescription>Location selection is required.</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+            return;
+        }
+        
+        if (!selectedPurposeId || selectedPurposeId.trim() === '') {
+            toast.show({
+                placement: 'top',
+                render: ({ id }: { id: string }) => {
+                    return (
+                        <Box maxWidth="90%" alignSelf="center" px="$4">
+                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                <ToastTitle>Error</ToastTitle>
+                                <ToastDescription>Purpose selection is required.</ToastDescription>
+                            </Toast>
+                        </Box>
+                    );
+                },
+            });
+            return;
+        }
+        
+        console.log('[CreateExperiencePostScreen] Submitting with:', {
+            contextType: apiContextType,
+            contextId: contextId,
+            selectedDurationId: selectedDurationId,
+            selectedLocationId: selectedLocationId,
+            selectedPurposeId: selectedPurposeId,
+            content: data.experienceText?.substring(0, 50) + '...',
+            experience: experience,
+            status: status,
+            imagesCount: data.selectedImages?.length || 0,
+            experienceSnippetId: experienceSnippetId,
+        });
         
         try {
             const response = await createExperiencePostMutation.mutateAsync({
                 contextType: apiContextType,
                 contextId: contextId,
-                selectedDurationId: mapFormValueToId(data.step1Duration),
-                selectedLocationId: mapFormValueToId(data.selectedCondition), // Condition -> Location mapping
-                selectedPurposeId: mapFormValueToId(data.selectedFrequency), // Frequency -> Purpose mapping
+                selectedDurationId: selectedDurationId,
+                selectedLocationId: selectedLocationId,
+                selectedPurposeId: selectedPurposeId,
                 content: data.experienceText,
                 experience: experience,
                 status: status,
                 images: data.selectedImages || [],
+                experienceSnippetId: experienceSnippetId, // Snippet ID from AI split
             });
             
             console.log('[CreateExperiencePostScreen] ✅ API Response:', response);
             
-            // Başarılı toast göster
+            // Show success toast
             toast.show({
                 placement: 'top',
                 render: ({ id }: { id: string }) => {
                     return (
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                                <ToastTitle>Post Oluşturuldu</ToastTitle>
-                                <ToastDescription>Deneyim gönderiniz başarıyla oluşturuldu!</ToastDescription>
+                                <ToastTitle>Post Created</ToastTitle>
+                                <ToastDescription>Your experience post has been created successfully!</ToastDescription>
                             </Toast>
                         </Box>
                     );
@@ -258,20 +444,36 @@ export const CreateExperiencePostScreen = () => {
             // Clear flow context on successful submit
             clearFlow();
             
-            // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
-            navigation.navigate('Main', {
-                screen: 'Feed',
-                params: {
-                    screen: 'FeedScreen',
-                },
-            });
+            // If successful, navigate to Feed screen so user can see their post
+            // Clear navigation stack using CommonActions.reset
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [
+                        {
+                            name: 'Main',
+                            state: {
+                                routes: [
+                                    {
+                                        name: 'Feed',
+                                        state: {
+                                            routes: [{ name: 'FeedScreen' }],
+                                        },
+                                    },
+                                ],
+                                index: 0,
+                            },
+                        },
+                    ],
+                })
+            );
         } catch (error: any) {
             console.error('[CreateExperiencePostScreen] ❌ API Error:', error);
             
-            // Hata toast göster
+            // Show error toast
             const errorMessage = error?.response?.data?.message || 
                                 error?.message || 
-                                'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                                'An error occurred while creating the post. Please try again.';
             
             toast.show({
                 placement: 'top',
@@ -517,6 +719,9 @@ export const CreateExperiencePostScreen = () => {
 
     // Render Step 2
     if (currentStep === 2) {
+        const isStep2Loading = isSplitLoading || splitExperienceMutation.isPending;
+        const isStep2NextDisabled = !isStep2NextEnabled || isStep2Loading;
+        
         return (
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
                 <FormProvider {...methods}>
@@ -528,30 +733,59 @@ export const CreateExperiencePostScreen = () => {
                             onLeftActionPress={handleBackPress}
                             rightButton={{
                                 text: 'Next',
-                                backgroundColor: isStep2NextEnabled ? '#D0F205' : '#EDEDED',
+                                backgroundColor: isStep2NextDisabled ? '#EDEDED' : '#D0F205',
                                 borderWidth: 1,
-                                borderColor: isStep2NextEnabled ? '#B8CC04' : '#B1B1B1',
-                                textColor: isStep2NextEnabled ? '#111111' : '#B1B1B1',
+                                borderColor: isStep2NextDisabled ? '#B1B1B1' : '#B8CC04',
+                                textColor: isStep2NextDisabled ? '#B1B1B1' : '#111111',
                                 fontSize: 12,
                                 borderRadius: 25,
                                 paddingX: 24,
                                 paddingY: 8,
                                 onPress: handleNextPress,
+                                disabled: isStep2NextDisabled,
                             }}
                         />
 
                         {/* Step 2 Content */}
-                        <StepTwoScreen
-                            experienceText={experienceText || ''}
-                            onExperienceTextChange={(text) => setValue('experienceText', text)}
-                            selectedDuration={step1Duration || ''}
-                            selectedCondition={selectedCondition || ''}
-                            selectedFrequency={selectedFrequency || ''}
-                            selectedImages={watch('selectedImages') || []}
-                            onImagePicker={handleImagePicker}
-                            onRemoveImage={handleRemoveImage}
-                            selectedProduct={selectedProduct}
-                        />
+                        <Box flex={1} position="relative">
+                            <StepTwoScreen
+                                experienceText={experienceText || ''}
+                                onExperienceTextChange={(text) => setValue('experienceText', text)}
+                                selectedDuration={step1Duration || ''}
+                                selectedCondition={selectedCondition || ''}
+                                selectedFrequency={selectedFrequency || ''}
+                                selectedImages={watch('selectedImages') || []}
+                                onImagePicker={handleImagePicker}
+                                onRemoveImage={handleRemoveImage}
+                                selectedProduct={selectedProduct}
+                            />
+                            
+                            {/* Loading Overlay - Only spinner (no screen darkening) */}
+                            {isStep2Loading && (
+                                <Box
+                                    position="absolute"
+                                    top={0}
+                                    left={0}
+                                    right={0}
+                                    bottom={0}
+                                    bg="transparent"
+                                    justifyContent="center"
+                                    alignItems="center"
+                                    pointerEvents="box-none"
+                                >
+                                    <VStack space="md" alignItems="center" bg="transparent">
+                                        <ActivityIndicator size="large" color={isDark ? '#E2FF46' : '#8B5CF6'} />
+                                        <Text
+                                            color={isDark ? '#FFFFFF' : '#000000'}
+                                            fontSize={14}
+                                            fontWeight="$medium"
+                                        >
+                                            Processing experience content...
+                                        </Text>
+                                    </VStack>
+                                </Box>
+                            )}
+                        </Box>
                     </Box>
                 </FormProvider>
             </SafeAreaView>

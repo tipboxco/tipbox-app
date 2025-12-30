@@ -262,9 +262,9 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             });
           }}
         >
-          <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-            <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
-          </VStack>
+        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+          <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
+        </VStack>
         </Pressable>
       )}
 
@@ -282,7 +282,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       >
         <HStack>
           <Pressable onPress={handleLike}>
-            <HStack mr={10} alignItems="center">
+          <HStack mr={10} alignItems="center">
               <Feather
                 name="heart"
                 size={24}
@@ -292,26 +292,26 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
               <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                 {data.stats.likes}
               </Text>
-            </HStack>
+          </HStack>
           </Pressable>
           <Pressable onPress={handleComment}>
-            <HStack mr={10} alignItems="center">
-              <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+          <HStack mr={10} alignItems="center">
+            <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
               <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                 {data.stats.comments}
               </Text>
-            </HStack>
+          </HStack>
           </Pressable>
           <Pressable onPress={handleShare}>
-            <HStack mr={10} alignItems="center">
-              <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+          <HStack mr={10} alignItems="center">
+            <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
               <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                 {data.stats.shares}
               </Text>
-            </HStack>
+          </HStack>
           </Pressable>
           <Pressable onPress={handleBookmark}>
-            <HStack mr={10} alignItems="center">
+          <HStack mr={10} alignItems="center">
               <Feather
                 name="bookmark"
                 size={24}
@@ -321,7 +321,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
               <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                 {data.stats.bookmarks}
               </Text>
-            </HStack>
+          </HStack>
           </Pressable>
         </HStack>
         <Box>

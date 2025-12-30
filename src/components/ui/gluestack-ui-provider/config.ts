@@ -163,4 +163,21 @@ export const config = createConfig({
     align: 'alignItems',
     flex: 'flex',
   },
+  components: {
+    ...(defaultConfig.components || {}),
+    ToastTitle: {
+      baseStyle: {
+        fontSize: '$sm',
+        fontWeight: '$semibold',
+        lineHeight: '$sm',
+      },
+    },
+    ToastDescription: {
+      baseStyle: {
+        fontSize: '$xs',
+        fontWeight: '$normal',
+        lineHeight: '$xs',
+      },
+    },
+  },
 });

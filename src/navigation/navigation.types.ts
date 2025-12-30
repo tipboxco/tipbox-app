@@ -12,6 +12,7 @@ import { NotificationsStackParamList } from '@/src/features/notifications/naviga
 import { BookmarksStackParamList } from '@/src/features/bookmarks/navigation';
 import { MarketplaceStackParamList } from '@/src/features/marketplace/navigation';
 import { InboxStackParamList } from '@/src/features/inbox/navigation';
+import { WalletStackParamList } from '@/src/features/wallet/navigation';
 
 // Main Stack için type tanımlaması (TabNavigator içindeki Stack)
 // Her tab'ın kendi Stack Navigator'ı var ve tüm ekranlar bu Stack'ler içinde
@@ -26,7 +27,7 @@ export type MainStackParamList = {
   Post: NavigatorScreenParams<PostStackParamList>;
   Bookmarks: NavigatorScreenParams<BookmarksStackParamList>;
   Marketplace: NavigatorScreenParams<MarketplaceStackParamList>;
-  Wallet: undefined;
+  Wallet: NavigatorScreenParams<WalletStackParamList>;
 };
 
 // Root Stack için type tanımlaması
@@ -35,4 +36,6 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<MainStackParamList>;
   Settings: NavigatorScreenParams<SettingsStackParamList>;
   MoreSchoise: NavigatorScreenParams<MoreSchoiseStackParamList>;
+  Wallet: NavigatorScreenParams<WalletStackParamList>;
+  Profile: NavigatorScreenParams<ProfileStackParamList>;
 };

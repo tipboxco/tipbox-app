@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   VStack,
@@ -6,97 +6,152 @@ import {
   Text,
   ScrollView,
   Pressable,
+  ActivityIndicator,
+  useToast,
+  Toast,
+  ToastTitle,
+  ToastDescription,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { usePrivacySettings, useUpdatePrivacySettings } from '../api/hooks';
+import { PrivacyCode } from '../types';
 
 interface PrivacyOption {
-  id: string;
+  id: 'trust-only' | 'everyone';
   label: string;
-}
-
-interface PrivacySetting {
-  id: string;
-  title: string;
-  description: string;
-  selectedOption: string;
-  options: PrivacyOption[];
-  onSelect: (optionId: string) => void;
 }
 
 export const PrivacySettingsScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
+  const toast = useToast();
 
-  // Privacy settings state
-  const [nftCollectionPrivacy, setNftCollectionPrivacy] = useState('trusters-only');
-  const [trustListPrivacy, setTrustListPrivacy] = useState('everyone');
-  const [supportSessionPrivacy, setSupportSessionPrivacy] = useState('everyone');
+  // API hooks
+  const { data: privacySettings, isLoading, error } = usePrivacySettings();
+  const updateMutation = useUpdatePrivacySettings();
 
-  const privacyOptions = {
-    'trusters-only': { id: 'trusters-only', label: 'Trusters Only' },
-    'everyone': { id: 'everyone', label: 'Everyone' },
-    'friends': { id: 'friends', label: 'Friends Only' },
-    'private': { id: 'private', label: 'Private' },
+  // Local state for UI
+  const [localSettings, setLocalSettings] = useState<Record<number, 'trust-only' | 'everyone'>>({});
+  const [openDropdowns, setOpenDropdowns] = useState<Record<number, boolean>>({});
+
+  // Initialize local state from API data
+  useEffect(() => {
+    if (privacySettings) {
+      const settingsMap: Record<number, 'trust-only' | 'everyone'> = {};
+      privacySettings.forEach((setting) => {
+        settingsMap[setting.privacyCode] = setting.selectedValue;
+      });
+      setLocalSettings(settingsMap);
+    }
+  }, [privacySettings]);
+
+  // Get setting value by code
+  const getSettingValue = (code: PrivacyCode): 'trust-only' | 'everyone' => {
+    return localSettings[code] ?? 'everyone';
   };
 
-  const privacySettings: PrivacySetting[] = [
+  // Update setting value
+  const updateSetting = async (code: PrivacyCode, value: 'trust-only' | 'everyone') => {
+    // Optimistic update
+    setLocalSettings((prev) => ({ ...prev, [code]: value }));
+    setOpenDropdowns((prev) => ({ ...prev, [code]: false }));
+
+    // Prepare all settings for API
+    const allSettings = [
+      { privacyCode: PrivacyCode.NFT_BADGE_COLLECTIONS, selectedValue: localSettings[PrivacyCode.NFT_BADGE_COLLECTIONS] ?? 'trust-only' },
+      { privacyCode: PrivacyCode.TRUST_TRUSTER_LIST, selectedValue: localSettings[PrivacyCode.TRUST_TRUSTER_LIST] ?? 'everyone' },
+      { privacyCode: PrivacyCode.ONE_ON_ONE_SUPPORT, selectedValue: localSettings[PrivacyCode.ONE_ON_ONE_SUPPORT] ?? 'everyone' },
+    ];
+    
+    // Update the changed setting
+    const settingIndex = allSettings.findIndex((s) => s.privacyCode === code);
+    if (settingIndex !== -1) {
+      allSettings[settingIndex].selectedValue = value;
+    }
+
+    try {
+      await updateMutation.mutateAsync({ settings: allSettings });
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+              <ToastTitle>Başarılı</ToastTitle>
+              <ToastDescription>Gizlilik ayarları güncellendi</ToastDescription>
+            </Toast>
+          </Box>
+        ),
+      });
+    } catch (error: any) {
+      // Revert optimistic update on error
+      setLocalSettings((prev) => {
+        const current = prev[code];
+        return { ...prev, [code]: current ?? 'everyone' };
+      });
+      const errorMessage = error?.response?.data?.message || error?.message || 'Gizlilik ayarları güncellenirken bir hata oluştu';
+      toast.show({
+        placement: 'top',
+        render: ({ id }) => (
+          <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+              <ToastTitle>Hata</ToastTitle>
+              <ToastDescription>{errorMessage}</ToastDescription>
+            </Toast>
+          </Box>
+        ),
+      });
+    }
+  };
+
+  const privacyOptions: PrivacyOption[] = [
+    { id: 'trust-only', label: 'Trust Only' },
+    { id: 'everyone', label: 'Everyone' },
+  ];
+
+  // Privacy setting items for display
+  const privacyItems = [
     {
       id: 'nft-collections',
+      code: PrivacyCode.NFT_BADGE_COLLECTIONS,
       title: 'NFT / Badge Collections',
       description: 'Choose who can view your NFT / Badge Collections.',
-      selectedOption: nftCollectionPrivacy,
-      options: [
-        privacyOptions['trusters-only'],
-        privacyOptions['everyone'],
-        privacyOptions['friends'],
-        privacyOptions['private'],
-      ],
-      onSelect: setNftCollectionPrivacy,
+      defaultValue: 'trust-only' as const,
     },
     {
       id: 'trust-list',
+      code: PrivacyCode.TRUST_TRUSTER_LIST,
       title: 'Trust / Truster List',
       description: 'Choose who can view your Trust / Truster List.',
-      selectedOption: trustListPrivacy,
-      options: [
-        privacyOptions['everyone'],
-        privacyOptions['trusters-only'],
-        privacyOptions['friends'],
-        privacyOptions['private'],
-      ],
-      onSelect: setTrustListPrivacy,
+      defaultValue: 'everyone' as const,
     },
     {
       id: 'support-session',
+      code: PrivacyCode.ONE_ON_ONE_SUPPORT,
       title: '1-on-1 Support Session Request',
       description: 'Choose who can request a 1-on-1 Support Session.',
-      selectedOption: supportSessionPrivacy,
-      options: [
-        privacyOptions['everyone'],
-        privacyOptions['trusters-only'],
-        privacyOptions['friends'],
-        privacyOptions['private'],
-      ],
-      onSelect: setSupportSessionPrivacy,
+      defaultValue: 'everyone' as const,
     },
   ];
 
-  const renderPrivacySetting = (setting: PrivacySetting) => {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const selectedOption = setting.options.find(opt => opt.id === setting.selectedOption);
+  const renderPrivacySetting = (item: typeof privacyItems[0]) => {
+    const isDropdownOpen = openDropdowns[item.code] || false;
+    const selectedValue = getSettingValue(item.code);
+    const selectedOption = privacyOptions.find(opt => opt.id === selectedValue);
 
     return (
-      <VStack key={setting.id} space="xs">
+      <VStack key={item.id} space="xs">
         {/* Main Setting Card */}
         <Box
           bg={isDark ? '#1A1A1A' : '#FFFFFF'}
           borderRadius={10}
           mb={'$1'}
+          px="$4"
+          py="$3"
         >
           <VStack space="xs">
             <Text
@@ -104,7 +159,7 @@ export const PrivacySettingsScreen = () => {
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              {setting.title}
+              {item.title}
             </Text>
             <Text
               fontSize={10}
@@ -112,14 +167,15 @@ export const PrivacySettingsScreen = () => {
               color="#B9B9B9"
               lineHeight={12}
             >
-              {setting.description}
+              {item.description}
             </Text>
           </VStack>
         </Box>
 
         {/* Dropdown Selector */}
         <Pressable
-          onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+          onPress={() => setOpenDropdowns((prev) => ({ ...prev, [item.code]: !prev[item.code] }))}
+          disabled={updateMutation.isPending}
         >
           <Box
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
@@ -131,6 +187,7 @@ export const PrivacySettingsScreen = () => {
             flexDirection="row"
             justifyContent="space-between"
             alignItems="center"
+            opacity={updateMutation.isPending ? 0.5 : 1}
           >
             <Text
               fontSize={11}
@@ -150,26 +207,25 @@ export const PrivacySettingsScreen = () => {
         {/* Dropdown Options */}
         {isDropdownOpen && (
           <VStack space="xs">
-            {setting.options.map((option) => (
+            {privacyOptions.map((option) => (
               <Pressable
                 key={option.id}
-                onPress={() => {
-                  setting.onSelect(option.id);
-                  setIsDropdownOpen(false);
-                }}
+                onPress={() => updateSetting(item.code, option.id)}
+                disabled={updateMutation.isPending}
               >
                 <Box
                   bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                   borderRadius={10}
                   borderWidth={1}
-                  borderColor={setting.selectedOption === option.id ? '#34C759' : '#B9B9B9'}
+                  borderColor={selectedValue === option.id ? '#34C759' : '#B9B9B9'}
                   px="$4"
                   py="$2"
+                  opacity={updateMutation.isPending ? 0.5 : 1}
                 >
                   <Text
                     fontSize={11}
                     fontWeight="$medium"
-                    color={setting.selectedOption === option.id ? '#34C759' : '#B9B9B9'}
+                    color={selectedValue === option.id ? '#34C759' : '#B9B9B9'}
                   >
                     {option.label}
                   </Text>
@@ -195,9 +251,21 @@ export const PrivacySettingsScreen = () => {
         />
 
         <ScrollView flex={1} px="$4" py="$6">
-          <VStack space="lg">
-            {privacySettings.map((setting) => renderPrivacySetting(setting))}
-          </VStack>
+          {isLoading ? (
+            <Box flex={1} justifyContent="center" alignItems="center" py="$10">
+              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+          ) : error ? (
+            <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
+              <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+                {error.message || 'Gizlilik ayarları yüklenirken bir hata oluştu'}
+              </Text>
+            </Box>
+          ) : (
+            <VStack space="lg">
+              {privacyItems.map((item) => renderPrivacySetting(item))}
+            </VStack>
+          )}
         </ScrollView>
       </Box>
     </SafeAreaView>

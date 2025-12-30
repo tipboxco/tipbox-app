@@ -238,150 +238,150 @@ const MessageDetailScreen: React.FC = () => {
     initializeThread();
   }, [user?.id, route.params]);
 
-  // Socket event listeners effect - sadece threadId değiştiğinde çalışır
-  useEffect(() => {
-    if (!threadId) {
-      return;
-    }
+  // Socket event handler'ları - useCallback ile wrap edilmiş handler'lar
+  const handleNewMessage = useCallback((eventData: SocketMessageEvent) => {
+    console.log('[MessageDetail] New message received:', eventData);
 
-    // Socket event handler'ları - useCallback ile wrap edilmiş handler'lar kullanılıyor
-    const handleNewMessage = (eventData: SocketMessageEvent) => {
-      console.log('[MessageDetail] New message received:', eventData);
+    const routeParams = (route.params as MessageDetailScreenParams) || {};
+    const currentUserId = user?.id;
+    const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
 
-      const routeParams = (route.params as MessageDetailScreenParams) || {};
-      const currentUserId = user?.id;
-      const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
+    // Bu mesaj bu thread'e ait mi kontrol et
+    if (
+      eventData.recipientId === currentUserId ||
+      eventData.senderId === recipientUserId ||
+      eventData.recipientId === recipientUserId
+    ) {
+      // Mesaj tipine göre işle
+      if (eventData.messageType === 'message') {
+        // Normal mesaj
+        const newMessage: MessageDetailItem = {
+          id: eventData.messageId,
+          text: eventData.message,
+          timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          isSent: eventData.senderId === currentUserId,
+          senderName: eventData.senderId === currentUserId ? undefined : routeParams.senderName,
+          senderAvatar: eventData.senderId === currentUserId ? undefined : routeParams.senderAvatar,
+          isRead: false, // Yeni mesaj henüz okunmadı
+        };
 
-      // Bu mesaj bu thread'e ait mi kontrol et
-      if (
-        eventData.recipientId === currentUserId ||
-        eventData.senderId === recipientUserId ||
-        eventData.recipientId === recipientUserId
-      ) {
-        // Mesaj tipine göre işle
-        if (eventData.messageType === 'message') {
-          // Normal mesaj
-          const newMessage: MessageDetailItem = {
-            id: eventData.messageId,
-            text: eventData.message,
-            timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-            isSent: eventData.senderId === currentUserId,
-            senderName: eventData.senderId === currentUserId ? undefined : routeParams.senderName,
-            senderAvatar: eventData.senderId === currentUserId ? undefined : routeParams.senderAvatar,
-            isRead: false, // Yeni mesaj henüz okunmadı
-          };
-
-          // Eğer mesaj bizim gönderdiğimizse ve görüldüyse, görüldü işaretini ekle
-          if (eventData.senderId === currentUserId) {
-            // Mesaj gönderildiğinde henüz okunmadı
-            newMessage.isRead = false;
-          }
-
-          setMessages((prev) => {
-            // Duplicate kontrolü
-            if (prev.some((msg) => msg.id === eventData.messageId)) {
-              return prev;
-            }
-            return [...prev, newMessage];
-          });
-
-          // Scroll to bottom
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        } else if (eventData.messageType === 'send-tips') {
-          // TIPS mesajı - şu an için sadece log
-          console.log('[MessageDetail] TIPS message received:', eventData);
-          // TODO: TIPS mesajını UI'da göster
-        } else if (eventData.messageType === 'support-request') {
-          // Support request mesajı - şu an için sadece log
-          console.log('[MessageDetail] Support request received:', eventData);
-          // TODO: Support request mesajını UI'da göster
+        // Eğer mesaj bizim gönderdiğimizse ve görüldüyse, görüldü işaretini ekle
+        if (eventData.senderId === currentUserId) {
+          // Mesaj gönderildiğinde henüz okunmadı
+          newMessage.isRead = false;
         }
 
-        // Mesaj listesini invalidate et (inbox listesini güncelle)
-        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-      }
-    };
+        setMessages((prev) => {
+          // Duplicate kontrolü
+          if (prev.some((msg) => msg.id === eventData.messageId)) {
+            return prev;
+          }
+          return [...prev, newMessage];
+        });
 
-    const handleMessageSent = (eventData: SocketMessageEvent) => {
-      console.log('[MessageDetail] Message sent confirmation:', eventData);
-      
-      // Optimistic update'teki mesajı gerçek mesaj ID'si ile güncelle
+        // Scroll to bottom
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      } else if (eventData.messageType === 'send-tips') {
+        // TIPS mesajı - şu an için sadece log
+        console.log('[MessageDetail] TIPS message received:', eventData);
+        // TODO: TIPS mesajını UI'da göster
+      } else if (eventData.messageType === 'support-request') {
+        // Support request mesajı - şu an için sadece log
+        console.log('[MessageDetail] Support request received:', eventData);
+        // TODO: Support request mesajını UI'da göster
+      }
+
+      // Mesaj listesini invalidate et (inbox listesini güncelle)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    }
+  }, [user?.id, route.params, queryClient]);
+
+  const handleMessageSent = useCallback((eventData: SocketMessageEvent) => {
+    console.log('[MessageDetail] Message sent confirmation:', eventData);
+    
+    // Optimistic update'teki mesajı gerçek mesaj ID'si ile güncelle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        // Eğer bu mesaj henüz ID'si yoksa (optimistic update) ve içerik eşleşiyorsa
+        if (msg.text === eventData.message && msg.isSent && !msg.id.startsWith(eventData.messageId)) {
+          return {
+            ...msg,
+            id: eventData.messageId,
+          };
+        }
+        return msg;
+      })
+    );
+  }, []);
+
+  // Thread event handlers
+  const handleThreadJoined = useCallback((data: { threadId: string }) => {
+    console.log('[MessageDetail] Thread joined:', data.threadId);
+  }, []);
+
+  const handleThreadLeft = useCallback((data: { threadId: string }) => {
+    console.log('[MessageDetail] Thread left:', data.threadId);
+  }, []);
+
+  const handleThreadJoinError = useCallback((error: { threadId: string; reason: string }) => {
+    console.error('[MessageDetail] Thread join error:', error.reason);
+    Alert.alert('Hata', `Thread'e katılamadı: ${error.reason}`);
+  }, []);
+
+  const handleMessageSendError = useCallback((error: { reason: string }) => {
+    console.error('[MessageDetail] Message send error:', error.reason);
+    Alert.alert('Hata', `Mesaj gönderilemedi: ${error.reason}`);
+  }, []);
+
+  // Typing indicator handler
+  const handleUserTyping = useCallback((data: { userId: string; threadId: string; isTyping: boolean }) => {
+    if (data.threadId === threadId) {
+      setIsTyping(data.isTyping);
+      setTypingUserId(data.isTyping ? data.userId : null);
+
+      // Typing indicator'ı 3 saniye sonra otomatik kapat
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      if (data.isTyping) {
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false);
+          setTypingUserId(null);
+        }, 3000);
+      }
+    }
+  }, [threadId]);
+
+  // Message read handler
+  const handleMessageRead = useCallback((data: { messageId: string; threadId: string; readBy: string; timestamp: string }) => {
+    if (data.threadId === threadId) {
+      // Mesajı okundu olarak işaretle
       setMessages((prev) =>
         prev.map((msg) => {
-          // Eğer bu mesaj henüz ID'si yoksa (optimistic update) ve içerik eşleşiyorsa
-          if (msg.text === eventData.message && msg.isSent && !msg.id.startsWith(eventData.messageId)) {
+          if (msg.id === data.messageId) {
             return {
               ...msg,
-              id: eventData.messageId,
+              isRead: true,
+              readAt: data.timestamp,
             };
           }
           return msg;
         })
       );
-    };
+    }
+  }, [threadId]);
 
-    // Thread event handlers
-    const handleThreadJoined = (data: { threadId: string }) => {
-      console.log('[MessageDetail] Thread joined:', data.threadId);
-    };
-
-    const handleThreadLeft = (data: { threadId: string }) => {
-      console.log('[MessageDetail] Thread left:', data.threadId);
-    };
-
-    const handleThreadJoinError = (error: { threadId: string; reason: string }) => {
-      console.error('[MessageDetail] Thread join error:', error.reason);
-      Alert.alert('Hata', `Thread'e katılamadı: ${error.reason}`);
-    };
-
-    const handleMessageSendError = (error: { reason: string }) => {
-      console.error('[MessageDetail] Message send error:', error.reason);
-      Alert.alert('Hata', `Mesaj gönderilemedi: ${error.reason}`);
-    };
-
-    // Typing indicator handler
-    const handleUserTyping = (data: { userId: string; threadId: string; isTyping: boolean }) => {
-      if (data.threadId === threadId) {
-        setIsTyping(data.isTyping);
-        setTypingUserId(data.isTyping ? data.userId : null);
-
-        // Typing indicator'ı 3 saniye sonra otomatik kapat
-        if (typingTimeoutRef.current) {
-          clearTimeout(typingTimeoutRef.current);
-        }
-
-        if (data.isTyping) {
-          typingTimeoutRef.current = setTimeout(() => {
-            setIsTyping(false);
-            setTypingUserId(null);
-          }, 3000);
-        }
-      }
-    };
-
-    // Message read handler
-    const handleMessageRead = (data: { messageId: string; threadId: string; readBy: string; timestamp: string }) => {
-      if (data.threadId === threadId) {
-        // Mesajı okundu olarak işaretle
-        setMessages((prev) =>
-          prev.map((msg) => {
-            if (msg.id === data.messageId) {
-              return {
-                ...msg,
-                isRead: true,
-                readAt: data.timestamp,
-              };
-            }
-            return msg;
-          })
-        );
-      }
-    };
+  // Socket event listeners effect - sadece threadId ve handler'lar değiştiğinde çalışır
+  useEffect(() => {
+    if (!threadId) {
+      return;
+    }
 
     // Event listener'ları ekle
     socketService.on('new_message', handleNewMessage);
@@ -419,7 +419,7 @@ const MessageDetailScreen: React.FC = () => {
         socketService.leaveThread(threadId);
       }
     };
-  }, [threadId, user?.id, route.params, queryClient]);
+  }, [threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead]);
 
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number, message?: string) => {

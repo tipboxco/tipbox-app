@@ -107,3 +107,75 @@ export interface ChangePasswordResponse {
   success: boolean;
   message: string;
 }
+
+// Notification Settings Types
+export interface NotificationSetting {
+  notificationCode: number; // 0: EMAIL, 1: PUSH, 2: IN_APP
+  value: boolean;
+}
+
+export interface UpdateNotificationSettingsRequest {
+  settings: NotificationSetting[];
+}
+
+export interface UpdateNotificationSettingsResponse {
+  success: boolean;
+  message: string;
+}
+
+// Privacy Settings Types
+export interface PrivacySetting {
+  privacyCode: number; // 0: NFT_BADGE_COLLECTIONS, 1: TRUST_TRUSTER_LIST, 2: ONE_ON_ONE_SUPPORT
+  selectedValue: 'trust-only' | 'everyone';
+}
+
+export interface UpdatePrivacySettingsRequest {
+  settings: PrivacySetting[];
+}
+
+export interface UpdatePrivacySettingsResponse {
+  success: boolean;
+  message: string;
+}
+
+// Support Session Price Types
+export interface SupportSessionPriceResponse {
+  price: number | null;
+}
+
+export interface UpdateSupportSessionPriceRequest {
+  price: number;
+}
+
+export interface UpdateSupportSessionPriceResponse {
+  success: boolean;
+  message: string;
+}
+
+// Device Types
+export interface Device {
+  id: string;
+  name: string;
+  location: string | null;
+  date: string; // ISO 8601 format
+  isActive: boolean;
+}
+
+export interface DeleteDeviceResponse {
+  success: boolean;
+  message: string;
+}
+
+// Notification Codes Enum
+export enum NotificationCode {
+  EMAIL = 0,
+  PUSH = 1,
+  IN_APP = 2,
+}
+
+// Privacy Codes Enum
+export enum PrivacyCode {
+  NFT_BADGE_COLLECTIONS = 0,
+  TRUST_TRUSTER_LIST = 1,
+  ONE_ON_ONE_SUPPORT = 2,
+}

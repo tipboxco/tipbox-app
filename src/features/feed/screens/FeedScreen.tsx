@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { Platform, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,8 +21,9 @@ import UpdatePostCard from '@/src/components/PostCards/UpdatePostCard';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useFeed } from '../api/hooks';
+import { useFeed, useFeedFiltered } from '../api/hooks';
 import { CardType, ProductInfoType } from '@/src/types/common';
+import type { FeedFilterParams } from '../api/feedApi';
 import { toImageSource, useBottomOffset } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import type { FeedApiItem } from '../api/feedApi';
@@ -57,7 +58,50 @@ export const FeedScreen = () => {
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
-  // Feed API hook with infinite scroll
+  // Filtre state'i
+  // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
+  // 
+  // Filtre Parametreleri:
+  // - interests: Interest type'ları array'i (INVENTORY_MATCH, CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
+  //   Backend'de category ile birleştirilir (OR mantığı)
+  // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
+  //   contentPostTags ve tags tablolarında arama yapılır
+  // - category: Tek bir kategori ID'si
+  //   Backend'de interests ile birleştirilir (OR mantığı)
+  // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
+  const [filters, setFilters] = useState<FeedFilterParams>({});
+
+  // Log filter changes (especially for interests)
+  useEffect(() => {
+    if (filters.interests && filters.interests.length > 0) {
+      console.log('[FeedScreen] 🔍 Interests filter changed:', {
+        interests: filters.interests,
+        allFilters: filters,
+      });
+    }
+  }, [filters.interests]);
+
+  // Filtre aktif mi kontrolü
+  // Herhangi bir filtre seçilmişse filtered feed API'sini kullan
+  const hasActiveFilters = useMemo(() => {
+    return !!(
+      (filters.interests && filters.interests.length > 0) ||
+      (filters.tags && filters.tags.length > 0) ||
+      filters.category ||
+      filters.sort
+    );
+  }, [filters]);
+
+  // Feed API hooks - her ikisini de çağır, sadece birini aktif et
+  // Normal feed: /feed endpoint'i (filtre yok)
+  // Filtered feed: /feed/filtered endpoint'i (filtre var)
+  const normalFeedQuery = useFeed(10);
+  const filteredFeedQuery = useFeedFiltered(10, filters);
+
+  // Filtre varsa filtered feed'i, yoksa normal feed'i kullan
+  // Bu sayede filtre değiştiğinde otomatik olarak doğru endpoint çağrılır
+  const feedQuery = hasActiveFilters ? filteredFeedQuery : normalFeedQuery;
+
   const {
     data,
     fetchNextPage,
@@ -65,7 +109,9 @@ export const FeedScreen = () => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useFeed(10);
+    refetch,
+    isRefetching,
+  } = feedQuery;
 
   // Flatten all pages into a single array and remove duplicates by ID
   const feedItems = useMemo(() => {
@@ -96,13 +142,13 @@ export const FeedScreen = () => {
   const handleTabChange = (tab: 'wallet' | 'inventory') => {
     if (tab === 'wallet') {
       // Wallet ekranına git - WalletNavigator otomatik olarak bağlantı durumuna göre WalletConnection veya WalletScreen'i gösterir
-      navigation.navigate('Wallet', {
+      (navigation as any).navigate('Wallet', {
         screen: 'WalletScreen',
       });
     } else if (tab === 'inventory') {
       if (user?.id) {
         // Inventory ekranına git - InventoryScreen mount olduğunda useInventory hook'u otomatik olarak /inventory endpoint'ine GET isteği atacak
-        navigation.navigate('Profile', {
+        (navigation as any).navigate('Profile', {
           screen: 'InventoryList',
           params: {
             userId: user.id,
@@ -485,7 +531,7 @@ export const FeedScreen = () => {
           onSearchPress={handleSearchPress}
         />
         <AssetAccessCard onTabChange={handleTabChange} />
-        <FilterBar />
+        <FilterBar filters={filters} onFiltersChange={setFilters} />
         <Box flex={1}>
           {isLoading && feedItems.length === 0 ? (
             <Box flex={1} justifyContent="center" alignItems="center">
@@ -521,7 +567,7 @@ export const FeedScreen = () => {
                     {(error as any)?.response?.data?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
                         {(error as any).response.data.message}
-                      </Text>
+              </Text>
                     )}
                   </>
                 )}
@@ -544,6 +590,14 @@ export const FeedScreen = () => {
               contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefetching}
+                  onRefresh={() => refetch()}
+                  tintColor={isDark ? '#FFFFFF' : '#000000'}
+                  colors={isDark ? ['#FFFFFF'] : ['#000000']}
+                />
+              }
             />
           )}
         </Box>

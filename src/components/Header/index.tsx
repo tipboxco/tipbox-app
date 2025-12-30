@@ -16,6 +16,7 @@ interface RightButtonProps {
   paddingX?: number;
   paddingY?: number;
   onPress: () => void;
+  disabled?: boolean;
 }
 
 interface HeaderProps {
@@ -59,6 +60,9 @@ export const Header = ({
 }: HeaderProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  
+  // Navigation'ı her zaman çağır - NavigationContainer dışındaysa hata fırlatır
+  // Bu durumda Header component'i NavigationContainer içinde kullanılmalı
   const navigation = useNavigation<DrawerNavigationProp<any>>();
 
   // Sol kısım için render fonksiyonu
@@ -218,7 +222,12 @@ export const Header = ({
     // Normal Button
     if (rightButton) {
       actions.push(
-        <Pressable key="right-button" onPress={rightButton.onPress}>
+        <Pressable 
+          key="right-button" 
+          onPress={rightButton.onPress}
+          disabled={rightButton.disabled}
+          opacity={rightButton.disabled ? 0.5 : 1}
+        >
           <Box
             bg={rightButton.backgroundColor || (isDark ? '#8B5CF6' : '#8B5CF6')}
             borderWidth={rightButton.borderWidth !== undefined ? rightButton.borderWidth : 0}

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   createFreePost, 
   createBenchmarkPost,
@@ -6,6 +6,8 @@ import {
   createQuestionPost,
   createUpdatePost,
   createExperiencePost,
+  splitExperience,
+  getBoostOptions,
 } from './postApi';
 import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 import type { 
@@ -14,6 +16,9 @@ import type {
   CreateQuestionPostRequest,
   CreateUpdatePostRequest,
   CreateExperiencePostRequest,
+  SplitExperienceRequest,
+  SplitExperienceResponse,
+  BoostOption,
 } from './postApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 
@@ -23,6 +28,7 @@ import { feedKeys } from '@/src/features/feed/api/hooks';
 export const postKeys = {
   all: ['posts'] as const,
   free: () => [...postKeys.all, 'free'] as const,
+  boostOptions: () => [...postKeys.all, 'boostOptions'] as const,
 };
 
 /**
@@ -180,6 +186,42 @@ export const useCreateUpdatePost = () => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
+  });
+};
+
+/**
+ * Get Boost Options query hook
+ * Question post için kullanılabilir boost option'ları getirir
+ * 
+ * @example
+ * const { data, isLoading, error } = useBoostOptions();
+ */
+export const useBoostOptions = () => {
+  return useQuery<BoostOption[], Error>({
+    queryKey: postKeys.boostOptions(),
+    queryFn: getBoostOptions,
+    staleTime: 5 * 60 * 1000, // 5 dakika cache
+    gcTime: 10 * 60 * 1000, // 10 dakika garbage collection
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Split Experience mutation hook
+ * Gemini AI ile deneyim metnini kategorilere ayırır
+ * 
+ * @example
+ * const splitMutation = useSplitExperience();
+ * splitMutation.mutate({
+ *   productId: 'product-123',
+ *   content: 'Bu ürünü aldım, çok memnun kaldım...'
+ * });
+ */
+export const useSplitExperience = () => {
+  return useMutation<SplitExperienceResponse, Error, SplitExperienceRequest>({
+    mutationFn: splitExperience,
   });
 };
 

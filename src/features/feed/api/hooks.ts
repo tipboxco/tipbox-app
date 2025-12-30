@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { getFeed } from './feedApi';
-import type { FeedApiResponse, FeedApiItem } from './feedApi';
+import { getFeed, getFilteredFeed } from './feedApi';
+import type { FeedApiResponse, FeedApiItem, FeedFilterParams } from './feedApi';
 
 /**
  * Query Keys - Feed feature için cache key pattern'leri
@@ -9,6 +9,8 @@ export const feedKeys = {
   all: ['feed'] as const,
   feed: (cursor?: string, limit?: number, contextType?: string, contextId?: string) =>
     [...feedKeys.all, cursor, limit, contextType, contextId] as const,
+  filtered: (cursor?: string, limit?: number, filters?: FeedFilterParams) =>
+    [...feedKeys.all, 'filtered', cursor, limit, filters] as const,
   // Context-based feed keys
   productFeed: (productId: string, cursor?: string, limit?: number) =>
     [...feedKeys.all, 'product', productId, cursor, limit] as const,
@@ -59,6 +61,56 @@ export const useFeed = (
       // 500 hatası için retry yapma (backend sorunu)
       if (error?.response?.status === 500) {
         console.error('[useFeed] Server error (500), skipping retry:', error.response?.data);
+        return false;
+      }
+      // Diğer hatalar için 1 kez retry yap
+      return failureCount < 1;
+    },
+  });
+};
+
+/**
+ * Get Filtered Feed infinite query hook
+ * Filtrelenmiş feed akışını infinite scroll ile getirir
+ *
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param filters - Filtre parametreleri (interests, tags, category, sort)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useFeedFiltered(20, {
+ *   interests: ['category-1', 'category-2'],
+ *   tags: ['Review', 'Benchmark'],
+ *   sort: 'recent'
+ * });
+ */
+export const useFeedFiltered = (
+  limit: number = 20,
+  filters?: FeedFilterParams
+) => {
+  return useInfiniteQuery<FeedApiResponse, Error>({
+    queryKey: feedKeys.filtered(undefined, limit, filters),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getFilteredFeed(cursor, limit, filters);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination.hasMore) {
+        return undefined;
+      }
+      
+      // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
+      return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].data.id : undefined);
+    },
+    staleTime: 0, // Cache yok - veri hemen stale olur
+    gcTime: 0, // Cache yok - veri hemen temizlenir
+    refetchOnMount: true, // Her mount'ta yeniden fetch
+    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    retry: (failureCount, error: any) => {
+      // 500 hatası için retry yapma (backend sorunu)
+      if (error?.response?.status === 500) {
+        console.error('[useFeedFiltered] Server error (500), skipping retry:', error.response?.data);
         return false;
       }
       // Diğer hatalar için 1 kez retry yap

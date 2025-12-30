@@ -267,7 +267,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
             >
                 <HStack>
                     <Pressable onPress={handleLike}>
-                        <HStack mr={10} alignItems="center">
+                    <HStack mr={10} alignItems="center">
                             <Feather
                                 name="heart"
                                 size={24}
@@ -277,26 +277,26 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.likes}
                             </Text>
-                        </HStack>
+                    </HStack>
                     </Pressable>
                     <Pressable onPress={handleComment}>
-                        <HStack mr={10} alignItems="center">
-                            <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+                    <HStack mr={10} alignItems="center">
+                        <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.comments}
                             </Text>
-                        </HStack>
+                    </HStack>
                     </Pressable>
                     <Pressable onPress={handleShare}>
-                        <HStack mr={10} alignItems="center">
-                            <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+                    <HStack mr={10} alignItems="center">
+                        <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.shares}
                             </Text>
-                        </HStack>
+                    </HStack>
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
-                        <HStack mr={10} alignItems="center">
+                    <HStack mr={10} alignItems="center">
                             <Feather
                                 name="bookmark"
                                 size={24}
@@ -306,7 +306,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.bookmarks}
                             </Text>
-                        </HStack>
+                    </HStack>
                     </Pressable>
                 </HStack>
                 <Box>

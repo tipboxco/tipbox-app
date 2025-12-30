@@ -13,12 +13,13 @@ import { useQuestionPostForm } from '../hooks/useQuestionPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateQuestionPost } from '../api/hooks';
+import { useCreateQuestionPost, useBoostOptions } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { QuestionPostFormData } from '../schemas/questionPostSchema';
+import type { BoostOption } from '../api/postApi';
 
 // Mock data for product info
 const productInfo = {
@@ -26,50 +27,10 @@ const productInfo = {
   title: 'Computers & Tablet\nTechnology Subcategories',
 };
 
-// Boost options
-const boostOptions = [
-  {
-    id: 'no-boost',
-    title: 'No Boost',
-    price: 'Free',
-    description: 'Standart Visibility',
-    borderColor: '#829905',
-    iconBg: '#829905',
-    isPopular: true,
-  },
-  {
-    id: 'standard-boost',
-    title: 'Standart Boost',
-    price: '50 TIPS',
-    description: '2x Visibility for 24 Hours',
-    borderColor: '#829905',
-    iconBg: '#829905',
-    isPopular: false,
-  },
-  {
-    id: 'premium-boost',
-    title: 'Premium Boost',
-    price: '100 TIPS',
-    description: '5x Visibility for 48 Hours',
-    borderColor: '#829905',
-    iconBg: '#829905',
-    isPopular: false,
-  },
-  {
-    id: 'ultimate-boost',
-    title: 'Ultimate Boost',
-    price: '200 TIPS',
-    description: '10x Visibility for 7 Days',
-    borderColor: '#829905',
-    iconBg: '#829905',
-    isPopular: false,
-  },
-];
-
 type CreateQuestionPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 // Boost Options Component with Controller
-const BoostOptionsField: React.FC = () => {
+const BoostOptionsField: React.FC<{ boostOptions: BoostOption[] }> = ({ boostOptions }) => {
   const { control, watch } = useFormContext<QuestionPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -86,10 +47,10 @@ const BoostOptionsField: React.FC = () => {
               key={option.id}
               id={option.id}
               title={option.title}
-              price={option.price}
+              price={`${option.amount} TIPS`}
               description={option.description}
-              borderColor={option.borderColor}
-              iconBg={option.iconBg}
+              borderColor="#829905"
+              iconBg="#829905"
               isPopular={option.isPopular}
               isSelected={selectedBoost === option.id}
               onPress={() => onChange(option.id)}
@@ -110,6 +71,9 @@ export const CreateQuestionPostScreen = () => {
   const availableTips = 250;
   const toast = useToast();
   const createQuestionPostMutation = useCreateQuestionPost();
+  
+  // Boost options'ı API'den çek
+  const { data: boostOptions = [], isLoading: isLoadingBoostOptions, error: boostOptionsError } = useBoostOptions();
   
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
@@ -207,14 +171,22 @@ export const CreateQuestionPostScreen = () => {
     }
   };
 
-  // Boost option'ı API formatına çevir (şimdilik 'no-boost' için boş string)
-  // TODO: Backend'den boost options'ı çekip gerçek ID'leri kullan
-  const mapBoostToBoostOptionId = (boost: string): string => {
-    if (boost === 'no-boost') {
-      return ''; // Backend'in 'no-boost' için özel bir ID'si olabilir, şimdilik boş string
+  // Boost option ID'sini bul (form'daki selectedBoost artık gerçek boost option ID'si)
+  const getBoostOptionId = (selectedBoost: string): string | null => {
+    // Eğer boost option seçilmediyse veya boş string ise null döndür
+    if (!selectedBoost || selectedBoost.trim() === '') {
+      return null;
     }
-    // Diğer boost option'lar için backend'den ID çekilmesi gerekiyor
-    return boost;
+    
+    // Boost options listesinde bu ID'yi ara
+    const foundOption = boostOptions.find(option => option.id === selectedBoost);
+    if (foundOption) {
+      return foundOption.id; // Gerçek UUID ID'si
+    }
+    
+    // Bulunamazsa null döndür (backend'e gönderilmeyecek)
+    console.warn('[CreateQuestionPostScreen] Boost option not found:', selectedBoost);
+    return null;
   };
 
   const onSubmit = async (data: QuestionPostFormData) => {
@@ -241,8 +213,8 @@ export const CreateQuestionPostScreen = () => {
     // API contextType'a çevir
     const apiContextType = mapProductInfoTypeToContextType(contextType);
     
-    // Boost option ID'sini al
-    const selectedBoostOptionId = mapBoostToBoostOptionId(data.selectedBoost);
+    // Boost option ID'sini al (gerçek UUID)
+    const selectedBoostOptionId = getBoostOptionId(data.selectedBoost);
     
     // Boost option ID kontrolü (backend zorunlu kılıyor)
     if (!selectedBoostOptionId) {
@@ -261,6 +233,14 @@ export const CreateQuestionPostScreen = () => {
       });
       return;
     }
+    
+    console.log('[CreateQuestionPostScreen] Submitting with:', {
+      contextType: apiContextType,
+      contextId: contextId,
+      description: data.questionText,
+      selectedBoostOptionId: selectedBoostOptionId,
+      imagesCount: data.selectedImages?.length || 0,
+    });
     
     try {
       const response = await createQuestionPostMutation.mutateAsync({
@@ -408,7 +388,27 @@ export const CreateQuestionPostScreen = () => {
                 </Text>
 
                 {/* Boost Options */}
-                <BoostOptionsField />
+                {isLoadingBoostOptions ? (
+                  <Box py="$4" alignItems="center">
+                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize={12}>
+                      Boost seçenekleri yükleniyor...
+                    </Text>
+                  </Box>
+                ) : boostOptionsError ? (
+                  <Box py="$4" alignItems="center">
+                    <Text color={isDark ? '$red500' : '#EF4444'} fontSize={12}>
+                      Boost seçenekleri yüklenirken hata oluştu
+                    </Text>
+                  </Box>
+                ) : boostOptions.length === 0 ? (
+                  <Box py="$4" alignItems="center">
+                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize={12}>
+                      Boost seçeneği bulunamadı
+                    </Text>
+                  </Box>
+                ) : (
+                  <BoostOptionsField boostOptions={boostOptions} />
+                )}
 
                 {/* TIPS Available Info */}
                 <HStack alignItems="center" space="xs">

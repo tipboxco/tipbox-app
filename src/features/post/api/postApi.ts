@@ -2,6 +2,43 @@ import { apiService } from '@/src/services/ApiService';
 import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 
 /**
+ * Boost Option - Question post için boost seçeneği
+ */
+export interface BoostOption {
+  id: string;              // Boost option ID (UUID)
+  image: string;           // Boost option görseli
+  title: string;           // Boost option başlığı
+  description: string;      // Boost option açıklaması
+  amount: number;          // Boost miktarı (TIPS)
+  isPopular: boolean;      // Popüler boost option mu?
+}
+
+/**
+ * Get Boost Options endpoint function
+ * Question post için kullanılabilir boost option'ları getirir
+ * 
+ * @returns BoostOption[] - Boost option listesi
+ */
+export const getBoostOptions = async (): Promise<BoostOption[]> => {
+  try {
+    const response = await apiService.getClient().get<BoostOption[]>(
+      '/posts/boost-options'
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBoostOptions] API Error:', {
+      url: '/posts/boost-options',
+      method: 'GET',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
  * Create Free Post endpoint function
  * Sub Category, Product Group veya Product için serbest gönderi oluşturur
  *
@@ -220,50 +257,87 @@ export interface CreateQuestionPostRequest {
 export const createQuestionPost = async (
   data: CreateQuestionPostRequest
 ): Promise<CreatePostResponse> => {
-  const client = apiService.getClient();
-  
-  const formData = new FormData();
-  formData.append('contextType', data.contextType);
-  formData.append('contextId', data.contextId);
-  formData.append('description', data.description);
-  formData.append('selectedBoostOptionId', data.selectedBoostOptionId);
-  
-  if (data.images && data.images.length > 0) {
-    data.images.forEach((imageUri, index) => {
-      let fileExtension = 'jpg';
-      let mimeType = 'image/jpeg';
-      
-      const uriLower = imageUri.toLowerCase();
-      if (uriLower.includes('.')) {
-        const ext = imageUri.split('.').pop()?.toLowerCase();
-        if (ext === 'png') {
-          fileExtension = 'png';
-          mimeType = 'image/png';
-        } else if (ext === 'jpg' || ext === 'jpeg') {
-          fileExtension = 'jpg';
-          mimeType = 'image/jpeg';
-        }
-      }
-      
-      formData.append('images', {
-        uri: imageUri,
-        type: mimeType,
-        name: `image_${index}.${fileExtension}`,
-      } as any);
+  try {
+    console.log('[createQuestionPost] Request data:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      description: data.description?.substring(0, 50) + '...',
+      selectedBoostOptionId: data.selectedBoostOptionId,
+      imagesCount: data.images?.length || 0,
     });
-  }
-  
-  const response = await client.post<CreatePostResponse>(
-    '/posts/question',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    
+    const client = apiService.getClient();
+    
+    const formData = new FormData();
+    formData.append('contextType', data.contextType);
+    formData.append('contextId', data.contextId);
+    formData.append('description', data.description);
+    formData.append('selectedBoostOptionId', data.selectedBoostOptionId);
+    
+    if (data.images && data.images.length > 0) {
+      data.images.forEach((imageUri, index) => {
+        let fileExtension = 'jpg';
+        let mimeType = 'image/jpeg';
+        
+        const uriLower = imageUri.toLowerCase();
+        if (uriLower.includes('.')) {
+          const ext = imageUri.split('.').pop()?.toLowerCase();
+          if (ext === 'png') {
+            fileExtension = 'png';
+            mimeType = 'image/png';
+          } else if (ext === 'jpg' || ext === 'jpeg') {
+            fileExtension = 'jpg';
+            mimeType = 'image/jpeg';
+          }
+        }
+        
+        formData.append('images', {
+          uri: imageUri,
+          type: mimeType,
+          name: `image_${index}.${fileExtension}`,
+        } as any);
+      });
     }
-  );
-  
-  return response.data;
+    
+    console.log('[createQuestionPost] Request URL: POST /posts/question');
+    console.log('[createQuestionPost] FormData fields:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      description: data.description?.substring(0, 50) + '...',
+      selectedBoostOptionId: data.selectedBoostOptionId,
+      imagesCount: data.images?.length || 0,
+    });
+    
+    const response = await client.post<CreatePostResponse>(
+      '/posts/question',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    console.log('[createQuestionPost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[createQuestionPost] ❌ API Error:', {
+      url: '/posts/question',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        description: data.description?.substring(0, 50) + '...',
+        selectedBoostOptionId: data.selectedBoostOptionId,
+        imagesCount: data.images?.length || 0,
+      },
+      responseData: error.response?.data,
+      errorMessage: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
@@ -355,57 +429,196 @@ export interface CreateExperiencePostRequest {
 export const createExperiencePost = async (
   data: CreateExperiencePostRequest
 ): Promise<CreatePostResponse> => {
-  const client = apiService.getClient();
-  
-  const formData = new FormData();
-  formData.append('contextType', data.contextType);
-  formData.append('contextId', data.contextId);
-  formData.append('selectedDurationId', data.selectedDurationId);
-  formData.append('selectedLocationId', data.selectedLocationId);
-  formData.append('selectedPurposeId', data.selectedPurposeId);
-  formData.append('content', data.content);
-  formData.append('experience', JSON.stringify(data.experience));
-  formData.append('status', data.status);
-  
-  if (data.experienceSnippetId) {
-    formData.append('experienceSnippetId', data.experienceSnippetId);
-  }
-  
-  if (data.images && data.images.length > 0) {
-    data.images.forEach((imageUri, index) => {
-      let fileExtension = 'jpg';
-      let mimeType = 'image/jpeg';
-      
-      const uriLower = imageUri.toLowerCase();
-      if (uriLower.includes('.')) {
-        const ext = imageUri.split('.').pop()?.toLowerCase();
-        if (ext === 'png') {
-          fileExtension = 'png';
-          mimeType = 'image/png';
-        } else if (ext === 'jpg' || ext === 'jpeg') {
-          fileExtension = 'jpg';
-          mimeType = 'image/jpeg';
-        }
-      }
-      
-      formData.append('images', {
-        uri: imageUri,
-        type: mimeType,
-        name: `image_${index}.${fileExtension}`,
-      } as any);
+  try {
+    console.log('[createExperiencePost] Request data:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      selectedDurationId: data.selectedDurationId,
+      selectedLocationId: data.selectedLocationId,
+      selectedPurposeId: data.selectedPurposeId,
+      content: data.content?.substring(0, 50) + '...',
+      experience: data.experience,
+      status: data.status,
+      experienceSnippetId: data.experienceSnippetId,
+      imagesCount: data.images?.length || 0,
     });
-  }
-  
-  const response = await client.post<CreatePostResponse>(
-    '/posts/experience',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    
+    // Zorunlu alan kontrolü
+    if (!data.selectedDurationId || data.selectedDurationId.trim() === '') {
+      throw new Error('selectedDurationId is required and cannot be empty');
     }
-  );
-  
-  return response.data;
+    if (!data.selectedLocationId || data.selectedLocationId.trim() === '') {
+      throw new Error('selectedLocationId is required and cannot be empty');
+    }
+    if (!data.selectedPurposeId || data.selectedPurposeId.trim() === '') {
+      throw new Error('selectedPurposeId is required and cannot be empty');
+    }
+    
+    const client = apiService.getClient();
+    
+    const formData = new FormData();
+    formData.append('contextType', data.contextType);
+    formData.append('contextId', data.contextId);
+    formData.append('selectedDurationId', data.selectedDurationId);
+    formData.append('selectedLocationId', data.selectedLocationId);
+    formData.append('selectedPurposeId', data.selectedPurposeId);
+    formData.append('content', data.content);
+    formData.append('experience', JSON.stringify(data.experience));
+    formData.append('status', data.status);
+    
+    if (data.experienceSnippetId) {
+      formData.append('experienceSnippetId', data.experienceSnippetId);
+    }
+    
+    if (data.images && data.images.length > 0) {
+      data.images.forEach((imageUri, index) => {
+        let fileExtension = 'jpg';
+        let mimeType = 'image/jpeg';
+        
+        const uriLower = imageUri.toLowerCase();
+        if (uriLower.includes('.')) {
+          const ext = imageUri.split('.').pop()?.toLowerCase();
+          if (ext === 'png') {
+            fileExtension = 'png';
+            mimeType = 'image/png';
+          } else if (ext === 'jpg' || ext === 'jpeg') {
+            fileExtension = 'jpg';
+            mimeType = 'image/jpeg';
+          }
+        }
+        
+        formData.append('images', {
+          uri: imageUri,
+          type: mimeType,
+          name: `image_${index}.${fileExtension}`,
+        } as any);
+      });
+    }
+    
+    console.log('[createExperiencePost] Request URL: POST /posts/experience');
+    console.log('[createExperiencePost] FormData fields:', {
+      contextType: data.contextType,
+      contextId: data.contextId,
+      selectedDurationId: data.selectedDurationId,
+      selectedLocationId: data.selectedLocationId,
+      selectedPurposeId: data.selectedPurposeId,
+      content: data.content?.substring(0, 50) + '...',
+      experience: JSON.stringify(data.experience),
+      status: data.status,
+      experienceSnippetId: data.experienceSnippetId,
+      imagesCount: data.images?.length || 0,
+    });
+    
+    const response = await client.post<CreatePostResponse>(
+      '/posts/experience',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    console.log('[createExperiencePost] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[createExperiencePost] ❌ API Error:', {
+      url: '/posts/experience',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: {
+        contextType: data.contextType,
+        contextId: data.contextId,
+        selectedDurationId: data.selectedDurationId,
+        selectedLocationId: data.selectedLocationId,
+        selectedPurposeId: data.selectedPurposeId,
+        content: data.content?.substring(0, 50) + '...',
+        experience: data.experience,
+        status: data.status,
+        experienceSnippetId: data.experienceSnippetId,
+        imagesCount: data.images?.length || 0,
+      },
+      responseData: error.response?.data,
+      errorMessage: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Split Experience Request Body
+ * Gemini AI ile deneyim metnini kategorilere ayırmak için
+ */
+export interface SplitExperienceRequest {
+  productId: string;
+  content: string;
+}
+
+/**
+ * Split Experience Response
+ * AI'dan dönen split edilmiş deneyim bilgileri
+ */
+export interface SplitExperienceResponse {
+  experienceSnippetId: string;
+  priceAndShopping: {
+    content: string;
+    rating: number;
+    placeholder?: string | null;
+    isEnhanced?: boolean;
+  } | null;
+  productAndUsage: {
+    content: string;
+    rating: number;
+    placeholder?: string | null;
+    isEnhanced?: boolean;
+  } | null;
+  metadata: {
+    tokensUsed: number | null;
+    processingTimeMs: number;
+    model: string;
+    promptVersion: string;
+  };
+}
+
+/**
+ * Split Experience endpoint function
+ * Gemini AI ile deneyim metnini kategorilere ayırır
+ * 
+ * @param data - Split Experience request data
+ * @returns SplitExperienceResponse - AI'dan dönen split edilmiş deneyim bilgileri
+ */
+export const splitExperience = async (
+  data: SplitExperienceRequest
+): Promise<SplitExperienceResponse> => {
+  try {
+    console.log('[splitExperience] Request data:', JSON.stringify(data, null, 2));
+    console.log('[splitExperience] Request URL: POST /posts/experience/split');
+    
+    // AI işlemleri için timeout'u 60 saniyeye çıkar (default: 10 saniye)
+    const response = await apiService.getClient().post<SplitExperienceResponse>(
+      '/posts/experience/split',
+      data,
+      {
+        timeout: 60000, // 60 saniye - AI işlemleri daha uzun sürebilir
+      }
+    );
+    
+    console.log('[splitExperience] ✅ Success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[splitExperience] ❌ API Error:', {
+      url: '/posts/experience/split',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: data,
+      responseData: error.response?.data,
+      errorMessage: error.message,
+      isTimeout: error.code === 'ECONNABORTED' || error.message?.includes('timeout'),
+    });
+    
+    throw error;
+  }
 };
 

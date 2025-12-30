@@ -13,10 +13,10 @@
       "url": "https://u.expo.dev/098fbee5-88e4-49ba-bb37-80601a5d47af"
     },
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/tipbox_logo.png", 
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/tipbox_logo.png",  
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -58,7 +58,7 @@
       "package": "com.devkocmehmet.tipboxapp",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/tipbox_logo.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -73,7 +73,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/tipbox_logo.png",
           "color": "#ffffff"
         }
       ],

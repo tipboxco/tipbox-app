@@ -4,5 +4,9 @@
  */
 
 export * from './changePasswordApi';
+export * from './notificationsApi';
+export * from './privacyApi';
+export * from './supportSessionPriceApi';
+export * from './devicesApi';
 export * from './hooks';
 

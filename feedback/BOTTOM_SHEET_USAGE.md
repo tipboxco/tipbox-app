@@ -3,12 +3,12 @@
 Bu dosya projede `@gorhom/bottom-sheet` kütüphanesinin kullanıldığı tüm yerleri içermektedir.
 
 ## 📊 Özet
-- **Toplam Dosya Sayısı**: 28 dosya
-- **Toplam Kullanım**: 348 referans
+- **Toplam Dosya Sayısı**: 29 dosya
+- **Toplam Kullanım**: 365+ referans
 
 ---
 
-## 📁 Screen Dosyaları (14 dosya)
+## 📁 Screen Dosyaları (15 dosya)
 
 ### Feed Feature
 1. **`src/features/feed/screens/FeedScreen.tsx`**
@@ -24,54 +24,59 @@ Bu dosya projede `@gorhom/bottom-sheet` kütüphanesinin kullanıldığı tüm y
    - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
    - Kullanım: 22 referans
 
+4. **`src/features/post/screens/CreateExperiencePostScreen.tsx`**
+   - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
+   - Kullanım: 17 referans
+   - Özel: Split Experience dialog için bottom sheet kullanımı
+
 ### Catalog Feature
-4. **`src/features/catalog/screens/ProductCatalogScreen.tsx`**
+5. **`src/features/catalog/screens/ProductCatalogScreen.tsx`**
    - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
    - Kullanım: 24 referans
 
 ### Profile Feature
-5. **`src/features/profile/screens/Trust_TrusterListScreen.tsx`**
+6. **`src/features/profile/screens/Trust_TrusterListScreen.tsx`**
    - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`
    - Kullanım: 11 referans
 
-6. **`src/features/profile/screens/InventoryScreen.tsx`**
+7. **`src/features/profile/screens/InventoryScreen.tsx`**
    - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
    - Kullanım: 24 referans
 
-7. **`src/features/profile/screens/CollectionsScreen.tsx`**
+8. **`src/features/profile/screens/CollectionsScreen.tsx`**
    - Import: `BottomSheet` ve diğer componentler
    - Kullanım: 19 referans
 
 ### Wallet Feature
-8. **`src/features/wallet/screens/WalletScreen.tsx`**
+9. **`src/features/wallet/screens/WalletScreen.tsx`**
    - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
    - Kullanım: 40 referans
 
-9. **`src/features/wallet/screens/SwapScreen.tsx`**
+10. **`src/features/wallet/screens/SwapScreen.tsx`**
    - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
    - Kullanım: 8 referans
 
 ### Inbox Feature
-10. **`src/features/inbox/screens/MessageDetail.tsx`**
+11. **`src/features/inbox/screens/MessageDetail.tsx`**
     - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
     - Kullanım: 31 referans
 
 ### Settings Feature
-11. **`src/features/settings/screens/PaymentAndSubscriptionScreen.tsx`**
+12. **`src/features/settings/screens/PaymentAndSubscriptionScreen.tsx`**
     - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
     - Kullanım: 16 referans
 
-12. **`src/features/settings/screens/SettingsScreen.tsx`**
+13. **`src/features/settings/screens/SettingsScreen.tsx`**
     - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
     - Kullanım: 35 referans
 
 ### Events Feature
-13. **`src/features/events/screens/EventCreatePost.tsx`**
+14. **`src/features/events/screens/EventCreatePost.tsx`**
     - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`, `BottomSheetBackdropProps`
     - Kullanım: 17 referans
 
 ### Profile Components
-14. **`src/features/profile/components/TabContents/LadderTab.tsx`**
+15. **`src/features/profile/components/TabContents/LadderTab.tsx`**
     - Import: `BottomSheet`, `BottomSheetView`, `BottomSheetBackdrop`
     - Kullanım: 10 referans
 
@@ -159,7 +164,7 @@ Bu dosya projede `@gorhom/bottom-sheet` kütüphanesinin kullanıldığı tüm y
 - **Wallet**: 3 screen + 3 component = 6 dosya
 - **Settings**: 2 screen + 3 component = 5 dosya
 - **Profile**: 3 screen + 1 component = 4 dosya
-- **Post**: 2 screen = 2 dosya
+- **Post**: 3 screen = 3 dosya
 - **Inbox**: 1 screen + 2 component = 3 dosya
 - **Events**: 1 screen + 1 component = 2 dosya
 - **Feed**: 1 screen = 1 dosya

@@ -256,7 +256,11 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                             </Text>
                         </HStack>
                     </Pressable>
-                    <Pressable onPress={() => onCommentPress?.()}>
+                    <Pressable 
+                        onPress={onCommentPress || undefined}
+                        disabled={!onCommentPress}
+                        opacity={onCommentPress ? 1 : 0.5}
+                    >
                         <HStack mr={10} alignItems="center">
                             <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
