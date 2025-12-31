@@ -70,46 +70,57 @@ export const CreateExperiencePostScreen = () => {
     const productRating = watch('productRating');
 
     const handleBackPress = () => {
+        // If we're in a multi-step flow, go back to previous step
         if (currentStep === 3) {
             setCurrentStep(2);
         } else if (currentStep === 2) {
             setCurrentStep(1);
         } else if (currentStep === 1) {
-            // If we came from SelectProduct, go back to it, otherwise go to Feed
+            // If we came from SelectProduct, go back to it, otherwise go to previous screen
             if (!product) {
                 setCurrentStep(0);
             } else {
-                // Navigate to Feed screen
-                navigation.navigate('Main', {
-                    screen: 'Feed',
-                    params: {
-                        screen: 'FeedScreen',
-                    },
-                });
+                // Go back to previous screen
+                if (navigation.canGoBack()) {
+                    navigation.goBack();
+                } else {
+                    // Fallback: Navigate to Feed screen
+                    navigation.navigate('Main', {
+                        screen: 'Feed',
+                        params: {
+                            screen: 'FeedScreen',
+                        },
+                    });
+                }
             }
         } else if (currentStep === 0) {
-            // Navigate to Feed screen
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        {
-                            name: 'Main',
-                            state: {
-                                routes: [
-                                    {
-                                        name: 'Feed',
-                                        state: {
-                                            routes: [{ name: 'FeedScreen' }],
+            // Go back to previous screen
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                // Fallback: Navigate to Feed screen
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [
+                            {
+                                name: 'Main',
+                                state: {
+                                    routes: [
+                                        {
+                                            name: 'Feed',
+                                            state: {
+                                                routes: [{ name: 'FeedScreen' }],
+                                            },
                                         },
-                                    },
-                                ],
-                                index: 0,
+                                    ],
+                                    index: 0,
+                                },
                             },
-                        },
-                    ],
-                })
-            );
+                        ],
+                    })
+                );
+            }
         }
     };
 

@@ -36,9 +36,13 @@ export const TAG_OPTIONS = [
 /**
  * Interest options for feed filtering
  * Backend expects these values for interests filter
+ * 
+ * NOTE: INVENTORY_MATCH temporarily removed due to backend Prisma schema issue
+ * Backend FeedSource enum does not include INVENTORY_MATCH
+ * TODO: Re-enable when backend adds INVENTORY_MATCH to FeedSource enum
  */
 export const INTEREST_OPTIONS = [
-  { value: 'INVENTORY_MATCH', label: 'Inventory Match', count: 57 },
+  // { value: 'INVENTORY_MATCH', label: 'Inventory Match', count: 57 }, // Temporarily disabled - backend enum issue
   { value: 'CATEGORY_MATCH', label: 'Category Match', count: 52 },
   { value: 'MUTUAL_TRUST', label: 'Mutual Trust', count: 17 },
   { value: 'ENGAGEMENT_HIGH', label: 'Trending', count: 13 }, // Displayed as "Trending" instead of "Engagement High"
@@ -74,7 +78,8 @@ interface FilterBarProps {
  * @see docs/FEED_FILTERS_STATUS.md - Detailed filter documentation and backend implementation
  * 
  * Filters:
- * - Interests: Multiple interest type selection (INVENTORY_MATCH, CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH/Trending, NEW_USER, BOOSTED, TRUSTER)
+ * - Interests: Multiple interest type selection (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH/Trending, NEW_USER, BOOSTED, TRUSTER)
+ *   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
  * - Tags: Multiple tag selection, searches in contentPostTags and tags tables
  * - Category: Single category selection, merged with interests in backend
  * - Sort: recent (Boost → Date) or top (Likes → Views → Date)

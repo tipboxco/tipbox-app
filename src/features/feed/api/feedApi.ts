@@ -113,7 +113,17 @@ export const getFeed = async (
     const response = await apiService.getClient().get<FeedApiResponse>(
       `/feed?${params.toString()}`
     );
-    return response.data;
+    
+    // Ensure items is always an array (defensive programming)
+    const safeResponse: FeedApiResponse = {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || {
+        hasMore: false,
+        limit: limit,
+      },
+    };
+    
+    return safeResponse;
   } catch (error: any) {
     console.error('[getFeed] API Error:', {
       url: `/feed?${params.toString()}`,
@@ -210,24 +220,33 @@ export const getFilteredFeed = async (
   try {
     const response = await apiService.getClient().get<FeedApiResponse>(fullUrl);
     
+    // Ensure items is always an array (defensive programming)
+    const safeResponse: FeedApiResponse = {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || {
+        hasMore: false,
+        limit: limit,
+      },
+    };
+    
     // Log response details
     console.log('[getFilteredFeed] ✅ Response:', {
       url: fullUrl,
       status: response.status,
       statusText: response.statusText,
       data: {
-        itemsCount: response.data.items?.length || 0,
-        pagination: response.data.pagination,
-        items: response.data.items?.map((item) => ({
+        itemsCount: safeResponse.items.length,
+        pagination: safeResponse.pagination,
+        items: safeResponse.items.map((item) => ({
           type: item.type,
           id: item.data?.id,
           title: item.data?.title || item.data?.content?.substring(0, 50) || 'N/A',
-        })) || [],
+        })),
       },
-      fullResponse: response.data,
+      fullResponse: safeResponse,
     });
     
-    return response.data;
+    return safeResponse;
   } catch (error: any) {
     console.error('[getFilteredFeed] ❌ API Error:', {
       url: fullUrl,

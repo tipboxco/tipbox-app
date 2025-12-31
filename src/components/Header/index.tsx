@@ -120,7 +120,10 @@ export const Header = ({
       }
 
       return (
-        <Pressable onPress={onPress}>
+        <Pressable 
+          onPress={onPress}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <Feather
             name={iconName as any}
             size={22}

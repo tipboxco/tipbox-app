@@ -51,7 +51,13 @@ export const useFeed = (
       }
       
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
-      return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].data.id : undefined);
+      // Ensure items is an array and has valid data before accessing
+      const items = Array.isArray(lastPage.items) ? lastPage.items : [];
+      if (items.length > 0 && items[items.length - 1]?.data?.id) {
+        return lastPage.pagination.cursor || items[items.length - 1].data.id;
+      }
+      
+      return lastPage.pagination.cursor || undefined;
     },
     staleTime: 0, // Cache yok - veri hemen stale olur
     gcTime: 0, // Cache yok - veri hemen temizlenir
@@ -101,7 +107,13 @@ export const useFeedFiltered = (
       }
       
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
-      return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].data.id : undefined);
+      // Ensure items is an array and has valid data before accessing
+      const items = Array.isArray(lastPage.items) ? lastPage.items : [];
+      if (items.length > 0 && items[items.length - 1]?.data?.id) {
+        return lastPage.pagination.cursor || items[items.length - 1].data.id;
+      }
+      
+      return lastPage.pagination.cursor || undefined;
     },
     staleTime: 0, // Cache yok - veri hemen stale olur
     gcTime: 0, // Cache yok - veri hemen temizlenir

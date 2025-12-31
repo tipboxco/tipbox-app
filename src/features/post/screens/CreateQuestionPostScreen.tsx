@@ -81,13 +81,18 @@ export const CreateQuestionPostScreen = () => {
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
 
   const handleBackPress = () => {
-    // Navigate to Feed screen
-    navigation.navigate('Main', {
-      screen: 'Feed',
-      params: {
-        screen: 'FeedScreen',
-      },
-    });
+    // Go back to previous screen
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      // Fallback: Navigate to Feed screen
+      navigation.navigate('Main', {
+        screen: 'Feed',
+        params: {
+          screen: 'FeedScreen',
+        },
+      });
+    }
   };
 
   const handleImagePicker = async () => {

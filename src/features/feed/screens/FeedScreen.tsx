@@ -62,7 +62,8 @@ export const FeedScreen = () => {
   // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
   // 
   // Filtre Parametreleri:
-  // - interests: Interest type'ları array'i (INVENTORY_MATCH, CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
+  // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
+  //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
   //   Backend'de category ile birleştirilir (OR mantığı)
   // - tags: Post türleri array'i (Review, Benchmark, Tips, Question, Experience, Update)
   //   contentPostTags ve tags tablolarında arama yapılır
@@ -117,14 +118,21 @@ export const FeedScreen = () => {
   const feedItems = useMemo(() => {
     if (!data?.pages) return [];
     
-    const allItems = data.pages.flatMap((page) => page.items);
+    // Safely flatten pages - handle undefined items arrays
+    const allItems = data.pages.flatMap((page) => {
+      // Ensure page.items is an array before flatMap
+      return Array.isArray(page?.items) ? page.items : [];
+    });
     
     // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
     const uniqueItemsMap = new Map<string, FeedApiItem>();
     for (const item of allItems) {
-      const itemId = item.data.id;
-      if (!uniqueItemsMap.has(itemId)) {
-        uniqueItemsMap.set(itemId, item);
+      // Ensure item and item.data exist before accessing id
+      if (item?.data?.id) {
+        const itemId = item.data.id;
+        if (!uniqueItemsMap.has(itemId)) {
+          uniqueItemsMap.set(itemId, item);
+        }
       }
     }
     
