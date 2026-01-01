@@ -25,12 +25,14 @@ export const eventsKeys = {
 /**
  * Get Active Events infinite query hook
  * Aktif eventlerin listesini infinite scroll ile getirir
+ * 
+ * Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useActiveEvents();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useActiveEvents();
  */
 export const useActiveEvents = (limit: number = 20) => {
   return useInfiniteQuery<EventsApiResponse, Error>({
@@ -46,10 +48,11 @@ export const useActiveEvents = (limit: number = 20) => {
       }
       return lastPage.pagination.cursor;
     },
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: true, // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
+    gcTime: 10 * 60 * 1000,     // 10 dakika - cache'de tut
+    refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
   });
 };
@@ -57,12 +60,14 @@ export const useActiveEvents = (limit: number = 20) => {
 /**
  * Get Upcoming Events infinite query hook
  * Yaklaşan eventlerin listesini infinite scroll ile getirir
+ * 
+ * Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUpcomingEvents();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useUpcomingEvents();
  */
 export const useUpcomingEvents = (limit: number = 20) => {
   return useInfiniteQuery<UpcomingEventsApiResponse, Error>({
@@ -78,10 +83,11 @@ export const useUpcomingEvents = (limit: number = 20) => {
       }
       return lastPage.pagination.cursor;
     },
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: true, // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
+    gcTime: 10 * 60 * 1000,     // 10 dakika - cache'de tut
+    refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
   });
 };
@@ -89,22 +95,25 @@ export const useUpcomingEvents = (limit: number = 20) => {
 /**
  * Get Event Detail query hook
  * Belirli bir event'in detaylı bilgilerini getirir
+ * 
+ * Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
  *
  * @param eventId - Event ID
  * @returns React Query hook result
  *
  * @example
- * const { data, isLoading, error } = useEventDetail('eventId123');
+ * const { data, isLoading, error, refetch } = useEventDetail('eventId123');
  */
 export const useEventDetail = (eventId: string) => {
   return useQuery<EventDetailApiResponse, Error>({
     queryKey: eventsKeys.detail(eventId),
     queryFn: () => getEventDetail(eventId),
     enabled: !!eventId, // eventId varsa query çalışır
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: true, // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
+    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -112,13 +121,15 @@ export const useEventDetail = (eventId: string) => {
 /**
  * Get Event Posts infinite query hook
  * Belirli bir event'in postlarını infinite scroll ile getirir
+ * 
+ * Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
  *
  * @param eventId - Event ID
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useEventPosts('eventId123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useEventPosts('eventId123');
  */
 export const useEventPosts = (eventId: string, limit: number = 20) => {
   return useInfiniteQuery<FeedApiResponse, Error>({
@@ -136,10 +147,11 @@ export const useEventPosts = (eventId: string, limit: number = 20) => {
       return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].data.id : undefined);
     },
     enabled: !!eventId, // eventId varsa query çalışır
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: true, // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
+    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -147,20 +159,23 @@ export const useEventPosts = (eventId: string, limit: number = 20) => {
 /**
  * Get Limited Event query hook
  * /events/limited endpoint'inden limited event bilgilerini getirir
+ * 
+ * Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
  *
  * @returns React Query hook result
  *
  * @example
- * const { data, isLoading, error } = useLimitedEvent();
+ * const { data, isLoading, error, refetch } = useLimitedEvent();
  */
 export const useLimitedEvent = () => {
   return useQuery<LimitedEventApiResponse, Error>({
     queryKey: eventsKeys.limited(),
     queryFn: () => getLimitedEvent(),
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
+    // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
+    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
   });
 };
@@ -168,12 +183,14 @@ export const useLimitedEvent = () => {
 /**
  * Get Achievements infinite query hook
  * /events/achievements endpoint'inden achievement listesini infinite scroll ile getirir
+ * 
+ * Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useAchievements();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useAchievements();
  */
 export const useAchievements = (limit: number = 20) => {
   return useInfiniteQuery<AchievementsApiResponse, Error>({
@@ -189,10 +206,11 @@ export const useAchievements = (limit: number = 20) => {
       }
       return lastPage.pagination.cursor;
     },
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
+    // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
+    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
   });
 };
@@ -200,6 +218,8 @@ export const useAchievements = (limit: number = 20) => {
 /**
  * Create Event Post mutation hook
  * Belirli bir event için post oluşturur
+ * 
+ * Cache Invalidation: Mutation sonrası ilgili cache'leri invalidate et
  *
  * @param eventId - Event ID
  * @returns React Query mutation hook result
@@ -218,14 +238,16 @@ export const useCreateEventPost = (eventId: string) => {
   return useMutation<CreateEventPostResponse, Error, CreateEventPostRequest>({
     mutationFn: (data) => createEventPost(eventId, data),
     onSuccess: () => {
-      // Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
+      // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
       queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
-      // Event detail'i de invalidate et (post sayısı değişebilir)
+      // 2. Event detail'i invalidate et (post sayısı değişebilir)
       queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
-      // Ana feed'i invalidate et ki yeni post görünsün
+      // 3. Ana feed'i invalidate et ki yeni post görünsün
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
-      // Profil feed'lerini de invalidate et (kullanıcı kendi gönderisini görebilsin)
+      // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // 5. Active events listesini invalidate et (event post sayısı değişebilir)
+      queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
     },
   });
 };

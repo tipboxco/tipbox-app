@@ -57,6 +57,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   const inputRef = useRef<any>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [shouldRender, setShouldRender] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Debounced search query - API çağrısını optimize et
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -93,15 +94,16 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     debouncedQuery.length > 0 // Sadece query varsa aktif et
   );
 
-  // Debounce effect
+  // Debounce effect - thread safety için optimize edildi
   useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
+    // Debounce'u artır - search sırasında gesture handler'ı rahatsız etmemek için
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedQuery(searchQuery.trim());
-    }, 300); // 300ms debounce
+    }, 500); // 500ms debounce (300ms'den artırıldı)
 
     return () => {
       if (debounceTimerRef.current) {
@@ -118,35 +120,50 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     onClose();
   }, [onClose]);
 
+  // Focus input callback - worklet dışında tanımla
+  const focusInput = useCallback(() => {
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 100);
+  }, []);
+
   // Modal açılma/kapanma animasyonu
   useEffect(() => {
     if (visible) {
       setShouldRender(true);
+      setIsAnimating(true); // Animasyon başladı - gesture handler'ı devre dışı bırak
       // Modal açılıyor - yukarıdan aşağıya
+      // Önce değerleri reset et
       translateY.value = -MODAL_HEIGHT;
       panY.value = 0;
-      opacity.value = withTiming(1, { duration: 200 });
-      translateY.value = withSpring(
-        0,
-        {
-          damping: 20,
-          stiffness: 90,
-          mass: 0.5,
-        },
-        (finished) => {
-          if (finished) {
-            // Input'a focus et
-            runOnJS(() => {
-              setTimeout(() => {
-                if (inputRef.current) {
-                  inputRef.current.focus();
-                }
-              }, 100);
-            })();
+      
+      // Kısa bir delay ile animasyonu başlat (render tamamlansın)
+      const timer = setTimeout(() => {
+        opacity.value = withTiming(1, { duration: 200 });
+        translateY.value = withSpring(
+          0,
+          {
+            damping: 20,
+            stiffness: 90,
+            mass: 0.5,
+          },
+          (finished) => {
+            'worklet';
+            if (finished) {
+              // Animasyon bitti - gesture handler'ı aktif et
+              runOnJS(setIsAnimating)(false);
+              // Input'a focus et - JS thread'ine geç
+              runOnJS(focusInput)();
+            }
           }
-        }
-      );
+        );
+      }, 50);
+
+      return () => clearTimeout(timer);
     } else if (shouldRender) {
+      setIsAnimating(true); // Kapanma animasyonu başladı
       // Modal kapanıyor - aşağıdan yukarıya
       opacity.value = withTiming(0, { duration: 200 });
       translateY.value = withSpring(
@@ -157,73 +174,92 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           mass: 0.5,
         },
         (finished) => {
+          'worklet';
           if (finished) {
-            runOnJS(handleClose)();
-            runOnJS(setShouldRender)(false);
-            runOnJS(() => {
-              translateY.value = -MODAL_HEIGHT;
-              panY.value = 0;
-            })();
+            // JS thread'ine geç - sadece bir kez çağır
+            runOnJS(closeModal)();
           }
         }
       );
     }
-  }, [visible, translateY, opacity, panY, shouldRender, handleClose]);
+  }, [visible, translateY, opacity, panY, shouldRender, focusInput, closeModal]);
+
+  // Close callback - worklet dışında tanımla (thread safety için)
+  const closeModal = useCallback(() => {
+    handleClose();
+    setShouldRender(false);
+    setIsAnimating(false);
+    // Shared value'ları reset et (worklet dışında direkt erişim)
+    translateY.value = -MODAL_HEIGHT;
+    panY.value = 0;
+  }, [handleClose]);
 
   // Gesture handler - sadece handler'dan sürükleme (yeni Gesture API)
-  const panGesture = Gesture.Pan()
-    .onStart(() => {
-      // Gesture başladığında mevcut pozisyonu kaydet
-    })
-    .onUpdate((event) => {
-      // Sadece yukarı doğru sürükleme (kapatma)
-      if (event.translationY < 0) {
-        panY.value = event.translationY;
-      }
-    })
-    .onEnd((event) => {
-      const totalTranslation = translateY.value + panY.value;
-      
-      // Eğer yeterince yukarı çekildiyse kapat
-      if (totalTranslation < -SWIPE_THRESHOLD || event.velocityY < -500) {
-        // Kapat
-        panY.value = 0;
-        translateY.value = withSpring(
-          -MODAL_HEIGHT,
-          {
-            damping: 20,
-            stiffness: 90,
-            mass: 0.5,
-          },
-          (finished) => {
-            if (finished) {
-              runOnJS(handleClose)();
-              runOnJS(setShouldRender)(false);
-            }
+  // useMemo ile memoize et - thread safety için
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .onStart(() => {
+          'worklet';
+          // Gesture başladığında mevcut pozisyonu kaydet
+        })
+        .onUpdate((event) => {
+          'worklet';
+          // Sadece yukarı doğru sürükleme (kapatma)
+          if (event.translationY < 0) {
+            panY.value = event.translationY;
           }
-        );
-        opacity.value = withTiming(0, { duration: 200 });
-      } else {
-        // Geri dön
-        panY.value = withSpring(0, {
-          damping: 20,
-          stiffness: 90,
-        });
-      }
-    });
+        })
+        .onEnd((event) => {
+          'worklet';
+          const totalTranslation = translateY.value + panY.value;
 
-  // Animated styles
+          // Eğer yeterince yukarı çekildiyse kapat
+          if (totalTranslation < -SWIPE_THRESHOLD || event.velocityY < -500) {
+            // Kapat - animasyonları başlat
+            panY.value = 0;
+            translateY.value = withSpring(
+              -MODAL_HEIGHT,
+              {
+                damping: 20,
+                stiffness: 90,
+                mass: 0.5,
+              },
+              (finished) => {
+                'worklet';
+                if (finished) {
+                  // JS thread'ine geç - sadece bir kez çağır
+                  runOnJS(closeModal)();
+                }
+              }
+            );
+            opacity.value = withTiming(0, { duration: 200 });
+          } else {
+            // Geri dön
+            panY.value = withSpring(0, {
+              damping: 20,
+              stiffness: 90,
+            });
+          }
+        })
+        .enabled(visible && shouldRender && !isAnimating), // Sadece modal açık ve animasyon yokken aktif
+    [visible, shouldRender, isAnimating, panY, translateY, opacity, closeModal]
+  );
+
+  // Animated styles - thread safety için optimize edildi
   const modalAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ translateY: translateY.value + panY.value }],
     };
-  });
+  }, [translateY, panY]);
 
   const overlayAnimatedStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       opacity: opacity.value,
     };
-  });
+  }, [opacity]);
 
   // User item'a tıklandığında profile git
   const handleUserPress = useCallback(

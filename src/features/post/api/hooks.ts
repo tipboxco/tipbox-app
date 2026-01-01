@@ -269,8 +269,10 @@ export const usePostDetail = (
     queryKey: postKeys.detail(postId || ''),
     queryFn: () => getPostDetail(postId!),
     enabled: enabled && !!postId,
-    staleTime: forceRefresh ? 0 : 2 * 60 * 1000, // Force refresh ise cache kullanma
-    gcTime: 5 * 60 * 1000, // 5 dakika garbage collection
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    // Force refresh ise cache kullanma (notification'dan geldiğinde)
+    staleTime: forceRefresh ? 0 : 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
+    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
     refetchOnMount: forceRefresh ? 'always' : false, // Force refresh ise her zaman refetch et
     refetchOnWindowFocus: forceRefresh, // Force refresh ise focus'ta da refetch et
     retry: 1,

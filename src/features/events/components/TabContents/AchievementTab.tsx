@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { FlatList, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
+import { FlatList, Dimensions, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import {
   Box,
   VStack,
@@ -41,6 +41,8 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     data: limitedEvent,
     isLoading: isLimitedEventLoading,
     error: limitedEventError,
+    refetch: refetchLimitedEvent, // Pull-to-refresh için
+    isRefetching: isRefetchingLimitedEvent, // Refresh durumu
   } = useLimitedEvent();
 
   // Achievements API hook - 6'lı veri gelecek
@@ -51,6 +53,8 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     isFetchingNextPage: isFetchingNextAchievementsPage,
     isLoading: isAchievementsLoading,
     error: achievementsError,
+    refetch: refetchAchievements, // Pull-to-refresh için
+    isRefetching: isRefetchingAchievements, // Refresh durumu
   } = useAchievements(6);
 
   // Map AchievementApiItem to SeeAllReward format (BadgeCard component'i için)
@@ -106,6 +110,19 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     }
   }, [mappedAchievements, activeFilter]);
 
+  // Pull-to-Refresh handler - Smart refresh pattern
+  // Cache'den anında göster, arka planda fresh data fetch et
+  const isRefetching = isRefetchingLimitedEvent || isRefetchingAchievements;
+  const handleRefresh = useCallback(async () => {
+    // Cache'den göster (zaten gösteriliyor - React Query otomatik yapıyor)
+    // Arka planda fresh data fetch et
+    await Promise.all([
+      refetchLimitedEvent(),   // Limited event refresh
+      refetchAchievements(),   // Achievements refresh
+    ]);
+    // Fresh data geldiğinde React Query otomatik UI'ı günceller
+  }, [refetchLimitedEvent, refetchAchievements]);
+
   // ScrollView için scroll handler - nested scroll durumunda onEndReached düzgün çalışmayabilir
   const handleScrollViewScroll = useCallback(
     (event: any) => {
@@ -129,6 +146,13 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
         showsVerticalScrollIndicator={false}
         onScroll={handleScrollViewScroll}
         scrollEventThrottle={400}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+          />
+        }
       >
         <VStack space="md" px="$4">
           {/* Limited Time Event Card */}

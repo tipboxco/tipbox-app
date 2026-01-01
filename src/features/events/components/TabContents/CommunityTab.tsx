@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef } from 'react';
-import { FlatList, Dimensions, ActivityIndicator } from 'react-native';
+import { FlatList, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import {
   Box,
   VStack,
@@ -85,6 +85,8 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     isFetchingNextPage: isFetchingNextActivePage,
     isLoading: isActiveEventsLoading,
     error: activeEventsError,
+    refetch: refetchActiveEvents, // Pull-to-refresh için
+    isRefetching: isRefetchingActiveEvents, // Refresh durumu
   } = useActiveEvents(20);
 
   // Upcoming Events API hook - 4'erli veri gelecek
@@ -95,6 +97,8 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     isFetchingNextPage: isFetchingNextUpcomingPage,
     isLoading: isUpcomingEventsLoading,
     error: upcomingEventsError,
+    refetch: refetchUpcomingEvents, // Pull-to-refresh için
+    isRefetching: isRefetchingUpcomingEvents, // Refresh durumu
   } = useUpcomingEvents(4);
 
   // Transform events data for display (flatten all pages and remove duplicates)
@@ -180,6 +184,19 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     }, 1000);
   }, [fetchNextUpcomingPageOriginal, hasNextUpcomingPage, isFetchingNextUpcomingPage, upcomingEvents.length]);
 
+  // Pull-to-Refresh handler - Smart refresh pattern
+  // Cache'den anında göster, arka planda fresh data fetch et
+  const isRefetching = isRefetchingActiveEvents || isRefetchingUpcomingEvents;
+  const handleRefresh = useCallback(async () => {
+    // Cache'den göster (zaten gösteriliyor - React Query otomatik yapıyor)
+    // Arka planda fresh data fetch et
+    await Promise.all([
+      refetchActiveEvents(),    // Active events refresh
+      refetchUpcomingEvents(),  // Upcoming events refresh
+    ]);
+    // Fresh data geldiğinde React Query otomatik UI'ı günceller
+  }, [refetchActiveEvents, refetchUpcomingEvents]);
+
   // Upcoming Events için scroll handler - nested scroll durumunda onEndReached düzgün çalışmayabilir
   const handleUpcomingEventsScroll = useCallback(
     (event: any) => {
@@ -225,6 +242,13 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
           </Box>
         )}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+          />
+        }
         ListHeaderComponent={
           <VStack space="md" py="$4">
             {/* Search Bar */}

@@ -23,6 +23,8 @@ export const feedKeys = {
 /**
  * Get Feed infinite query hook
  * Kullanıcının feed akışını infinite scroll ile getirir
+ * 
+ * List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @param contextType - Context type (opsiyonel): 'sub_category' | 'product_group' | 'product'
@@ -30,8 +32,8 @@ export const feedKeys = {
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useFeed();
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useFeed(20, 'product', 'product-123');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useFeed();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useFeed(20, 'product', 'product-123');
  */
 export const useFeed = (
   limit: number = 20,
@@ -70,10 +72,11 @@ export const useFeed = (
       
       return lastPage.pagination.cursor || undefined;
     },
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: true, // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    // List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
+    staleTime: 3 * 60 * 1000,  // 3 dakika - liste scroll'unda anında göster
+    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Liste ekranlarında refetch yapma
     retry: (failureCount, error: any) => {
       // 500 hatası için retry yapma (backend sorunu)
       if (error?.response?.status === 500) {
@@ -89,13 +92,15 @@ export const useFeed = (
 /**
  * Get Filtered Feed infinite query hook
  * Filtrelenmiş feed akışını infinite scroll ile getirir
+ * 
+ * List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @param filters - Filtre parametreleri (interests, tags, category, sort)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useFeedFiltered(20, {
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useFeedFiltered(20, {
  *   interests: ['category-1', 'category-2'],
  *   tags: ['Review', 'Benchmark'],
  *   sort: 'recent'
@@ -137,10 +142,11 @@ export const useFeedFiltered = (
       
       return lastPage.pagination.cursor || undefined;
     },
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: true, // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: true, // Focus'ta yeniden fetch
+    // List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
+    staleTime: 3 * 60 * 1000,  // 3 dakika - liste scroll'unda anında göster
+    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Liste ekranlarında refetch yapma
     retry: (failureCount, error: any) => {
       // 500 hatası için retry yapma (backend sorunu)
       if (error?.response?.status === 500) {

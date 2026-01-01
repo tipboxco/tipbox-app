@@ -310,22 +310,25 @@ export const useUserProfile = (userId: string | undefined) => {
 
 /**
  * Get Inventory query hook
- * Kullanıcının envanter ürünlerini getirir (cache olmadan)
+ * Kullanıcının envanter ürünlerini getirir
+ * 
+ * Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
  * Token'dan user_id otomatik olarak alınır
  * 
  * @returns React Query hook result
  * 
  * @example
- * const { data, isLoading, error } = useInventory();
+ * const { data, isLoading, error, refetch } = useInventory();
  */
 export const useInventory = () => {
   return useQuery<InventoryItem[], Error>({
     queryKey: profileKeys.inventory(),
     queryFn: () => getInventory(),
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
+    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -367,10 +370,11 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3) => {
       return lastPage.pagination.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: true, // Her mount'ta yeniden fetch et
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
+    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
     // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
     // Sadece data, hasNextPage ve error değişiklikleri render tetikler
