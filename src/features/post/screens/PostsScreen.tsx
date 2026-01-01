@@ -32,6 +32,7 @@ import type { QuestionApiItem } from '@/src/types/QuestionCard';
 import type { ReviewApiItem } from '@/src/types/ReviewsCard';
 import type { UpdateApiItem } from '@/src/types/UpdateCard';
 import { toImageSource } from '@/src/utils';
+import { FeedSkeleton } from '@/src/components/Skeletons';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
@@ -304,9 +305,7 @@ export const PostsScreen = () => {
 
         {/* Feed Items */}
         {isLoading && feedItems.length === 0 ? (
-          <Box flex={1} justifyContent="center" alignItems="center">
-            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-          </Box>
+          <FeedSkeleton count={5} />
         ) : error ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4">
             <VStack space="md" alignItems="center">

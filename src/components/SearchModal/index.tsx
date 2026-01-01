@@ -129,6 +129,17 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     }, 100);
   }, []);
 
+  // Close callback - worklet dışında tanımla (thread safety için)
+  // useEffect'ten önce tanımlanmalı (hoisting sorunu için)
+  const closeModal = useCallback(() => {
+    handleClose();
+    setShouldRender(false);
+    setIsAnimating(false);
+    // Shared value'ları reset et (worklet dışında direkt erişim)
+    translateY.value = -MODAL_HEIGHT;
+    panY.value = 0;
+  }, [handleClose]);
+
   // Modal açılma/kapanma animasyonu
   useEffect(() => {
     if (visible) {
@@ -184,16 +195,6 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     }
   }, [visible, translateY, opacity, panY, shouldRender, focusInput, closeModal]);
 
-  // Close callback - worklet dışında tanımla (thread safety için)
-  const closeModal = useCallback(() => {
-    handleClose();
-    setShouldRender(false);
-    setIsAnimating(false);
-    // Shared value'ları reset et (worklet dışında direkt erişim)
-    translateY.value = -MODAL_HEIGHT;
-    panY.value = 0;
-  }, [handleClose]);
-
   // Gesture handler - sadece handler'dan sürükleme (yeni Gesture API)
   // useMemo ile memoize et - thread safety için
   const panGesture = useMemo(
@@ -205,7 +206,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
         })
         .onUpdate((event) => {
           'worklet';
-          // Sadece yukarı doğru sürükleme (kapatma)
+          // Alttan yukarı çekme (kapatma) - translationY negatif olmalı
+          // Modal yukarıdan aşağıya açıldığı için, alttan yukarı çekince kapanır
           if (event.translationY < 0) {
             panY.value = event.translationY;
           }
@@ -214,7 +216,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           'worklet';
           const totalTranslation = translateY.value + panY.value;
 
-          // Eğer yeterince yukarı çekildiyse kapat
+          // Eğer yeterince yukarı çekildiyse kapat (alttan yukarı çekme)
           if (totalTranslation < -SWIPE_THRESHOLD || event.velocityY < -500) {
             // Kapat - animasyonları başlat
             panY.value = 0;
@@ -397,66 +399,78 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       <VStack space="lg" flex={1}>
         {/* Users Results */}
         {selectedFilter === 'users' && searchData?.userData && searchData.userData.length > 0 && (
-          <VStack space="xs">
+          <VStack space="md" mt="$2">
             <Text
               fontSize={12}
               fontWeight="$semibold"
-              color={isDark ? '$textDark50' : '#B9B9B9'}
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
               px="$4"
             >
-              Kullanıcılar ({searchData.userData.length})
+              User
             </Text>
-            <VStack space="xs">
+            <VStack>
               {searchData.userData.map((user: any) => (
                 <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
                   <HStack
                     alignItems="center"
                     space="md"
-                    py="$3"
+                    py="$4"
                     px="$4"
-                    borderBottomWidth={1}
-                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
                   >
-                    {/* Avatar */}
-                    <Box position="relative">
-                      <Box
-                        width={54}
-                        height={54}
-                        borderRadius={100}
-                        bg="#CE4A4A"
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        <Box width={50} height={50} borderRadius={25} overflow="hidden">
-                          <Image
-                            source={toImageSource(user.avatar) || require('@/assets/avatar/ozan.png')}
-                            alt={user.name}
-                            width={50}
-                            height={50}
-                            resizeMode="cover"
-                          />
-                        </Box>
-                      </Box>
+                    {/* Avatar - Circular with red border */}
+                    <Box
+                      width={56}
+                      height={56}
+                      borderRadius={100}
+                      borderWidth={2}
+                      borderColor="#CE4A4A"
+                      alignItems="center"
+                      justifyContent="center"
+                      overflow="hidden"
+                      bg={isDark ? '#1C1C1E' : '#F2F2F7'}
+                    >
+                      <Image
+                        source={toImageSource(user.avatar) || require('@/assets/avatar/ozan.png')}
+                        alt={user.name}
+                        width={52}
+                        height={52}
+                        resizeMode="cover"
+                      />
                     </Box>
 
                     {/* User Info */}
                     <VStack flex={1} space="xs">
                       <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={14}
-                        fontWeight="$semibold"
+                        fontSize={15}
+                        fontWeight="$bold"
                         numberOfLines={1}
                       >
                         {user.name}
                       </Text>
                       {user.cosmetic && (
-                        <Text
-                          color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                          fontSize={12}
-                          numberOfLines={1}
-                        >
-                          {user.cosmetic}
-                        </Text>
+                        <VStack space="xs">
+                          {/* İlk satır */}
+                          <Text
+                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            fontSize={13}
+                            numberOfLines={1}
+                            lineHeight={18}
+                          >
+                            {user.cosmetic.split(' - ')[0] || user.cosmetic}
+                          </Text>
+                          {/* İkinci satır - eğer " - " ile ayrılmışsa */}
+                          {user.cosmetic.includes(' - ') && user.cosmetic.split(' - ').length > 1 && (
+                            <Text
+                              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                              fontSize={13}
+                              numberOfLines={1}
+                              lineHeight={18}
+                            >
+                              {user.cosmetic.split(' - ').slice(1).join(' - ')}
+                            </Text>
+                          )}
+                        </VStack>
                       )}
                     </VStack>
                   </HStack>
@@ -468,25 +482,23 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
         {/* Brands Results */}
         {selectedFilter === 'brands' && searchData?.brandData && searchData.brandData.length > 0 && (
-          <VStack space="xs">
+          <VStack space="md" mt="$2">
             <Text
               fontSize={12}
               fontWeight="$semibold"
-              color={isDark ? '$textDark50' : '#B9B9B9'}
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
               px="$4"
             >
-              Markalar ({searchData.brandData.length})
+              Brand
             </Text>
-            <VStack space="xs">
+            <VStack>
               {searchData.brandData.map((brand: any) => (
                 <Pressable key={brand.id} onPress={() => handleBrandPress(brand.id)}>
                   <HStack
                     alignItems="center"
                     space="md"
-                    py="$3"
+                    py="$4"
                     px="$4"
-                    borderBottomWidth={1}
-                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
                   >
                     {/* Brand Logo */}
                     <Box width={54} height={54} borderRadius={8} overflow="hidden">
@@ -532,23 +544,21 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
         {selectedFilter === 'products' &&
           searchData?.productData &&
           searchData.productData.length > 0 && (
-            <VStack space="xs">
+            <VStack space="md" mt="$2">
               <Text
                 fontSize={12}
                 fontWeight="$semibold"
-                color={isDark ? '$textDark50' : '#B9B9B9'}
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
                 px="$4"
               >
-                Ürünler ({searchData.productData.length})
+                Product
               </Text>
-              <VStack space="xs">
+              <VStack>
                 {searchData.productData.map((product: any) => (
                   <Box
                     key={product.id}
-                    py="$3"
+                    py="$4"
                     px="$4"
-                    borderBottomWidth={1}
-                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
                   >
                     <ProductInfoCard
                       size="big"
@@ -568,9 +578,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   };
 
   const filters: { id: SearchFilter; label: string }[] = [
-    { id: 'users', label: 'Kullanıcılar' },
-    { id: 'brands', label: 'Markalar' },
-    { id: 'products', label: 'Ürünler' },
+    { id: 'users', label: 'Users' },
+    { id: 'brands', label: 'Brands' },
+    { id: 'products', label: 'Products' },
   ];
 
   if (!shouldRender && !visible) {
@@ -622,28 +632,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             ]}
           >
             <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
-              {/* Handler - Sadece buradan sürüklenebilir */}
-              <GestureDetector gesture={panGesture}>
-                <Animated.View
-                  style={{
-                    paddingTop: insets.top + 8,
-                    paddingBottom: 8,
-                    alignItems: 'center',
-                    borderBottomWidth: 1,
-                    borderBottomColor: isDark ? '#2C2C2E' : '#E5E5EA',
-                  }}
-                >
-                  <Box
-                    width={40}
-                    height={4}
-                    borderRadius={2}
-                    bg={isDark ? '#3C3C3E' : '#D1D1D6'}
-                  />
-                </Animated.View>
-              </GestureDetector>
-
-                {/* Header */}
-                <VStack space="md" px="$4" pb="$2">
+              {/* Header */}
+              <VStack space="md" px="$4" pt={insets.top + 8} pb="$2">
                   {/* Search Bar */}
                   <HStack
                     alignItems="center"
@@ -657,7 +647,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     <Input flex={1} borderWidth={0} bg="transparent">
                       <InputField
                         ref={inputRef}
-                        placeholder="Kullanıcı, marka veya ürün ara..."
+                        placeholder="Search..."
                         placeholderTextColor={isDark ? '#8E8E93' : '#8E8E93'}
                         color={isDark ? '#FFFFFF' : '#000000'}
                         fontSize={15}
@@ -683,23 +673,17 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                           onPress={() => setSelectedFilter(filter.id)}
                           bg={
                             selectedFilter === filter.id
-                              ? '#007AFF'
-                              : isDark
-                                ? '#1C1C1E'
-                                : '#F2F2F7'
+                              ? (isDark ? '#2C2C2E' : '#E5E5EA')
+                              : (isDark ? '#1C1C1E' : '#FFFFFF')
                           }
+                          borderWidth={selectedFilter === filter.id ? 0 : 1}
+                          borderColor={isDark ? '#2C2C2E' : '#E5E5EA'}
                           borderRadius={20}
                           px="$4"
                           py="$2"
                         >
                           <Text
-                            color={
-                              selectedFilter === filter.id
-                                ? '#FFFFFF'
-                                : isDark
-                                  ? '#FFFFFF'
-                                  : '#000000'
-                            }
+                            color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize={14}
                             fontWeight={selectedFilter === filter.id ? '$semibold' : '$normal'}
                           >
@@ -715,8 +699,28 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 <ScrollView flex={1} showsVerticalScrollIndicator={false}>
                   {renderSearchResults()}
                 </ScrollView>
-              </VStack>
-            </Animated.View>
+
+              {/* Handler - Altta, sadece buradan sürüklenebilir (alttan yukarı çekme) */}
+              <GestureDetector gesture={panGesture}>
+                <Animated.View
+                  style={{
+                    paddingTop: 0,
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom  : 0,
+                    alignItems: 'center',
+                 
+                    borderTopColor: isDark ? '#2C2C2E' : '#E5E5EA',
+                  }}
+                >
+                  <Box
+                    width={40}
+                    height={4}
+                    borderRadius={2}
+                    bg={isDark ? '#3C3C3E' : '#D1D1D6'}
+                  />
+                </Animated.View>
+              </GestureDetector>
+            </VStack>
+          </Animated.View>
         </Box>
       </GestureHandlerRootView>
     </Modal>

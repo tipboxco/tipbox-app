@@ -27,6 +27,7 @@ import type { FeedFilterParams } from '../api/feedApi';
 import { toImageSource, useBottomOffset } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import type { FeedApiItem } from '../api/feedApi';
+import { FeedSkeleton } from '@/src/components/Skeletons';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { ProfilePost } from '@/src/features/profile/types';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
@@ -644,9 +645,7 @@ export const FeedScreen = () => {
         <FilterBar filters={filters} onFiltersChange={setFilters} />
         <Box flex={1}>
           {isLoading && feedItems.length === 0 ? (
-            <Box flex={1} justifyContent="center" alignItems="center">
-              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
+            <FeedSkeleton count={5} />
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
               <VStack space="md" alignItems="center">

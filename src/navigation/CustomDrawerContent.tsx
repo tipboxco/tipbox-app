@@ -53,8 +53,10 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   // Store'daki user değişikliğini takip et (sonsuz döngüyü önlemek için)
   const previousUserRef = useRef<{ id?: string; fullName?: string; avatar?: string } | null>(null);
   const isUpdatingFromProfileRef = useRef(false);
+  const isRefetchingFromUserChangeRef = useRef(false);
+  const updateUserTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Profile bilgilerini getir (cache olmadan)
+  // Profile bilgilerini getir (screen-based caching ile)
   const { data: userProfile, refetch } = useQuery({
     queryKey: user?.id ? profileKeys.profile(user.id) : ['profile', 'profile', 'disabled'],
     queryFn: () => {
@@ -64,40 +66,55 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       return getUserProfile(user.id);
     },
     enabled: !!user?.id,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
+    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
   
   // Store'daki user değişikliğini dinle ve profile query'sini yeniden fetch et
+  // SADECE user.id değiştiğinde veya profile'dan kaynaklanmayan değişikliklerde
   useEffect(() => {
-    if (user?.id) {
-      const currentUser = {
-        id: user.id,
-        fullName: user.fullName,
-        avatar: user.avatar,
-      };
-      
-      const previousUser = previousUserRef.current;
-      
-      // User değiştiğinde (id, fullName veya avatar) ve bu değişiklik userProfile'dan kaynaklanmadıysa
-      // Profile query'sini yeniden fetch et
-      const userChanged = 
-        previousUser &&
-        previousUser.id === currentUser.id &&
-        (previousUser.fullName !== currentUser.fullName || previousUser.avatar !== currentUser.avatar);
-      
-      // Eğer user değişti ve bu değişiklik profile'dan kaynaklanmadıysa (profil sayfasından gelen güncelleme)
-      if (userChanged && !isUpdatingFromProfileRef.current) {
-        // Store'dan gelen değişiklik - profile query'sini yeniden fetch et
-        refetch();
-      }
-      
-      previousUserRef.current = currentUser;
+    if (!user?.id) {
+      previousUserRef.current = null;
+      return;
     }
-    // refetch React Query tarafından stable bir fonksiyon, dependency'ye gerek yok
+
+    const currentUser = {
+      id: user.id,
+      fullName: user.fullName,
+      avatar: user.avatar,
+    };
+    
+    const previousUser = previousUserRef.current;
+    
+    // İlk render veya user.id değiştiyse - sadece ref'i güncelle, refetch yapma
+    if (!previousUser || previousUser.id !== currentUser.id) {
+      previousUserRef.current = currentUser;
+      return;
+    }
+    
+    // User değiştiğinde (fullName veya avatar) ve bu değişiklik userProfile'dan kaynaklanmadıysa
+    // Profile query'sini yeniden fetch et
+    const userChanged = 
+      previousUser.fullName !== currentUser.fullName || 
+      previousUser.avatar !== currentUser.avatar;
+    
+    // Eğer user değişti ve bu değişiklik profile'dan kaynaklanmadıysa
+    if (userChanged && !isUpdatingFromProfileRef.current && !isRefetchingFromUserChangeRef.current) {
+      // Store'dan gelen değişiklik - profile query'sini yeniden fetch et
+      isRefetchingFromUserChangeRef.current = true;
+      refetch().finally(() => {
+        // Flag'i resetle
+        setTimeout(() => {
+          isRefetchingFromUserChangeRef.current = false;
+        }, 500);
+      });
+    }
+    
+    previousUserRef.current = currentUser;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.fullName, user?.avatar]);
   
@@ -105,46 +122,81 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const previousProfileRef = useRef<{ name?: string; avatar?: string } | null>(null);
   
   useEffect(() => {
-    if (userProfile && user?.id) {
-      const currentProfile = {
-        name: userProfile.name,
-        avatar: userProfile.avatar,
-      };
-      
-      const previousProfile = previousProfileRef.current;
-      
-      // Sadece değerler gerçekten değiştiyse güncelle
-      const hasChanged = 
-        !previousProfile ||
-        previousProfile.name !== currentProfile.name ||
-        previousProfile.avatar !== currentProfile.avatar;
-      
-      if (hasChanged) {
-        // Store'daki mevcut değerlerle karşılaştır - sadece farklıysa güncelle
-        // user.fullName ve user.avatar'ı dependency'den kaldırdık çünkü updateUser() bunları değiştiriyor
-        // ve bu sonsuz döngüye neden oluyor
-        const needsUpdate = 
-          user.fullName !== currentProfile.name ||
-          user.avatar !== currentProfile.avatar;
-        
-        if (needsUpdate) {
-          // Profile'dan gelen güncelleme olduğunu işaretle (sonsuz döngüyü önlemek için)
-          isUpdatingFromProfileRef.current = true;
-          
-          updateUser({
-            fullName: currentProfile.name,
-            avatar: currentProfile.avatar,
-          });
-          
-          // Flag'i resetle
-          setTimeout(() => {
-            isUpdatingFromProfileRef.current = false;
-          }, 100);
-        }
-        
-        previousProfileRef.current = currentProfile;
-      }
+    // Cleanup: Önceki timeout'u temizle
+    if (updateUserTimeoutRef.current) {
+      clearTimeout(updateUserTimeoutRef.current);
+      updateUserTimeoutRef.current = null;
     }
+
+    if (!userProfile || !user?.id) {
+      return;
+    }
+
+    const currentProfile = {
+      name: userProfile.name,
+      avatar: userProfile.avatar,
+    };
+    
+    const previousProfile = previousProfileRef.current;
+    
+    // İlk render - sadece ref'i güncelle ve store'u sync et
+    if (!previousProfile) {
+      previousProfileRef.current = currentProfile;
+      // İlk yüklemede store'u güncelle (sadece farklıysa)
+      const needsUpdate = 
+        user.fullName !== currentProfile.name ||
+        user.avatar !== currentProfile.avatar;
+      
+      if (needsUpdate && !isRefetchingFromUserChangeRef.current) {
+        isUpdatingFromProfileRef.current = true;
+        updateUser({
+          fullName: currentProfile.name,
+          avatar: currentProfile.avatar,
+        });
+        // Flag'i resetle (debounce ile)
+        updateUserTimeoutRef.current = setTimeout(() => {
+          isUpdatingFromProfileRef.current = false;
+        }, 200);
+      }
+      return;
+    }
+    
+    // Sadece değerler gerçekten değiştiyse güncelle
+    const hasChanged = 
+      previousProfile.name !== currentProfile.name ||
+      previousProfile.avatar !== currentProfile.avatar;
+    
+    if (hasChanged) {
+      // Store'daki mevcut değerlerle karşılaştır - sadece farklıysa güncelle
+      const needsUpdate = 
+        user.fullName !== currentProfile.name ||
+        user.avatar !== currentProfile.avatar;
+      
+      if (needsUpdate && !isRefetchingFromUserChangeRef.current) {
+        // Profile'dan gelen güncelleme olduğunu işaretle (sonsuz döngüyü önlemek için)
+        isUpdatingFromProfileRef.current = true;
+        
+        updateUser({
+          fullName: currentProfile.name,
+          avatar: currentProfile.avatar,
+        });
+        
+        // Flag'i resetle (debounce ile)
+        updateUserTimeoutRef.current = setTimeout(() => {
+          isUpdatingFromProfileRef.current = false;
+        }, 200);
+      }
+      
+      previousProfileRef.current = currentProfile;
+    }
+
+    // Cleanup function
+    return () => {
+      if (updateUserTimeoutRef.current) {
+        clearTimeout(updateUserTimeoutRef.current);
+        updateUserTimeoutRef.current = null;
+      }
+    };
     // user?.fullName ve user?.avatar dependency'den kaldırıldı çünkü updateUser() bunları değiştiriyor
     // ve bu sonsuz döngüye neden oluyor. Sadece userProfile değişikliklerini dinliyoruz.
     // eslint-disable-next-line react-hooks/exhaustive-deps

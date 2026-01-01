@@ -18,6 +18,7 @@ import { FilterOption } from '../AchievementFilter';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useLimitedEvent, useAchievements } from '../../api/hooks';
 import type { AchievementApiItem } from '../../types';
+import { LimitedTimeEventSkeleton, BadgeSkeleton } from '@/src/components/Skeletons';
 
 const { width } = Dimensions.get('window');
 
@@ -157,12 +158,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
         <VStack space="md" px="$4">
           {/* Limited Time Event Card */}
           {isLimitedEventLoading ? (
-            <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
-              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-              <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$2" fontSize={12}>
-                Yükleniyor...
-              </Text>
-            </Box>
+            <LimitedTimeEventSkeleton />
           ) : limitedEventError ? (
             <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
               <Text color="#CE4A4A" fontSize={12} textAlign="center">
@@ -213,12 +209,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
 
         {/* Achievement Badges Grid */}
         {isAchievementsLoading && mappedAchievements.length === 0 ? (
-          <Box py="$4" alignItems="center" px={16}>
-            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-            <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$2" fontSize={12}>
-              Yükleniyor...
-            </Text>
-          </Box>
+          <BadgeSkeleton count={6} />
         ) : achievementsError ? (
           <Box py="$4" alignItems="center" px={16}>
             <Text color="#CE4A4A" fontSize={12} textAlign="center">

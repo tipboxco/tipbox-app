@@ -18,6 +18,7 @@ import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useInventory } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
+import { InventorySkeleton } from '@/src/components/Skeletons';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
@@ -157,9 +158,7 @@ const InventoryScreen = () => {
       </Box>
 
       {isLoading ? (
-        <Box flex={1} justifyContent="center" alignItems="center">
-          <Text color={isDark ? '$textDark50' : '$textLight900'}>Yükleniyor...</Text>
-        </Box>
+        <InventorySkeleton count={9} cardWidth={CARD_WIDTH} />
       ) : isError ? (
         <Box flex={1} justifyContent="center" alignItems="center">
           <Text color="#CE4A4A">Hata: Envanter yüklenirken bir sorun oluştu</Text>

@@ -15,6 +15,7 @@ import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogP
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
+import { CategorySkeleton, ProductSkeleton } from '@/src/components/Skeletons';
 
 type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -66,16 +67,16 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   const { prefetchSubCategories, prefetchProductGroups, prefetchProducts } = useCatalogPrefetch();
   
   // API'den kategorileri getir
-  const { data: catalogCategories, isLoading, isError } = useCatalogCategories();
+  const { data: catalogCategories, isLoading: isLoadingCategories, isError } = useCatalogCategories();
   
   // API'den seçili kategoriye ait subcategories'i getir
-  const { data: catalogSubCategories } = useCatalogSubCategories(selectedCategoryId);
+  const { data: catalogSubCategories, isLoading: isLoadingSubCategories } = useCatalogSubCategories(selectedCategoryId);
   
   // API'den seçili alt kategoriye ait product groups'u getir
-  const { data: catalogProductGroups } = useCatalogProductGroups(selectedSubCategoryId);
+  const { data: catalogProductGroups, isLoading: isLoadingProductGroups } = useCatalogProductGroups(selectedSubCategoryId);
   
   // API'den seçili ürün grubuna ait products'ı getir
-  const { data: catalogProducts } = useCatalogProducts(selectedProductGroupId);
+  const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(selectedProductGroupId);
   
   // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
   useEffect(() => {
@@ -629,8 +630,20 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       {/* Dynamic Grid */}
       <ScrollView flex={1} px="$4">
         <VStack space="md" pb={scrollViewPaddingBottom}>
-          {/* currentData'yı 3'lü gruplara böl */}
-          {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
+          {/* Loading skeleton */}
+          {(currentView === 'categories' && isLoadingCategories) ||
+          (currentView === 'subcategories' && isLoadingSubCategories) ||
+          (currentView === 'productgroups' && isLoadingProductGroups) ||
+          (currentView === 'products' && isLoadingProducts) ? (
+            currentView === 'products' ? (
+              <ProductSkeleton count={9} />
+            ) : (
+              <CategorySkeleton count={9} />
+            )
+          ) : (
+            <>
+              {/* currentData'yı 3'lü gruplara böl */}
+              {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
             const startIndex = rowIndex * 3;
             const rowItems = currentData.slice(startIndex, startIndex + 3);
             // İlk 3 satır (9 görsel) için high priority - ilk ekranda görünen tüm görseller
@@ -711,6 +724,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
               </HStack>
             );
           })}
+            </>
+          )}
         </VStack>
       </ScrollView>
     </Box>

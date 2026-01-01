@@ -15,6 +15,7 @@ import { useActiveEvents, useUpcomingEvents } from '../../api/hooks';
 import type { EventApiItem, UpcomingEventApiItem } from '@/src/types/EventCard';
 import type { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard';
 import { useSafeAreaValues } from '@/src/utils';
+import { EventSkeleton } from '@/src/components/Skeletons';
 
 const { width } = Dimensions.get('window');
 // EventCard genişliği: isGrid=false (horizontal) için CARD_WIDTH kullanılıyor
@@ -289,9 +290,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                   Active Events
                 </Text>
                 {isActiveEventsLoading ? (
-                  <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
-                  </Box>
+                  <EventSkeleton count={3} isHorizontal={true} />
                 ) : activeEventsError ? (
                   <Box py="$4" alignItems="center">
                     <Text color="#CE4A4A" fontSize={12}>
@@ -362,8 +361,8 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
 
             {/* Upcoming Events Loading State */}
             {isUpcomingEventsLoading && upcomingEvents.length === 0 && (
-              <Box pt="$4" alignItems="center">
-                <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+              <Box pt="$4">
+                <EventSkeleton count={4} isGrid={true} />
               </Box>
             )}
 

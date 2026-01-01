@@ -1,16 +1,20 @@
-import React from 'react';
-import { ScrollView, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useCallback } from 'react';
+import { ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Tag, Package, Star, Layers } from 'lucide-react-native';
-import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
+import { VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useInventory } from '../api/hooks';
 import { toImageSource, cleanNewlines } from '@/src/utils';
 import { ProfileStackParamList } from '../navigation';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
+import { useAppStore } from '@/src/store/appStore';
 
 const InventoryDetailScreen = () => {
   const { colorMode } = useColorMode();
@@ -18,12 +22,21 @@ const InventoryDetailScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const route = useRoute<RouteProp<ProfileStackParamList, 'InventoryDetail'>>();
   const { itemId } = route.params as { itemId: string };
+  const insets = useSafeAreaInsets();
+  const { user } = useAppStore();
+
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   // API'den inventory listesini al
   const { data: inventoryItems, isLoading, error } = useInventory();
 
   // itemId'ye göre item'ı bul
   const item = inventoryItems?.find((item) => item.id === itemId);
+
+  // Create Button'u sadece kendi envanteri ise göster
+  const currentUserId = user?.id;
+  const showCreateButton = item && currentUserId; // Item varsa ve kullanıcı giriş yapmışsa göster
 
   // Loading state
   if (isLoading) {
@@ -76,6 +89,48 @@ const InventoryDetailScreen = () => {
       />
     ));
   };
+
+  // Handle create press - hızlı açılma için useCallback kullan
+  const handleCreatePress = useCallback(() => {
+    if (!item) return;
+    
+    openBottomSheet(
+      <CreatePostBottomSheet
+        onClose={closeBottomSheet}
+        onPostTypeSelect={(type, experienceOption) => {
+          closeBottomSheet();
+          if (type === 'experience') {
+            navigation.navigate('Post', {
+              screen: 'CreateExperiencePostScreen',
+              params: {
+                product: {
+                  id: item.id,
+                  name: `${item.brand.name} ${item.brand.model}`,
+                  description: item.brand.specs,
+                  image: item.image,
+                },
+                fromInventory: true,
+                experienceOption: experienceOption,
+              },
+            });
+          }
+        }}
+        onViewChange={(view) => {
+          console.log('BottomSheet view changed:', view);
+        }}
+        showExperienceOptionsDirectly={true}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8,
+      }
+    );
+  }, [item, openBottomSheet, closeBottomSheet, navigation, insets.bottom]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -239,6 +294,32 @@ const InventoryDetailScreen = () => {
         )}
       </VStack>
     </ScrollView>
+
+    {/* Create Button - Sağ altta kalem ikonu */}
+    {showCreateButton && (
+      <Pressable
+        onPress={handleCreatePress}
+        position="absolute"
+        bottom={insets.bottom + 8}
+        right={16}
+      >
+        <Box
+          bg="#E8FF6B"
+          borderRadius={30}
+          width={56}
+          height={56}
+          alignItems="center"
+          justifyContent="center"
+          shadowColor="#000"
+          shadowOffset={{ width: 0, height: 4 }}
+          shadowOpacity={0.3}
+          shadowRadius={4.65}
+          elevation={8}
+        >
+          <Feather name="edit-3" size={24} color="#000000" />
+        </Box>
+      </Pressable>
+    )}
     </VStack>
     </SafeAreaView>
   );
