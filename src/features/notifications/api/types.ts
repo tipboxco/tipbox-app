@@ -34,7 +34,11 @@ export type NotificationType =
   | 'EXPERT_REQUEST_ANSWERED'
   | 'SYSTEM_ANNOUNCEMENT'
   | 'TIPS_RECEIVED'
-  | 'TIPS_SENT';
+  | 'TIPS_SENT'
+  | 'EVENT_STARTED'
+  | 'EVENT_ENDING_SOON'
+  | 'EVENT_COMPLETED'
+  | 'EVENT_REWARD_AVAILABLE';
 
 export interface NotificationMetadata {
   userId?: string;
@@ -45,6 +49,19 @@ export interface NotificationMetadata {
   threadId?: string;
   badgeId?: string;
   amount?: number;
+  // Instagram benzeri gruplama için
+  groupedUsers?: Array<{
+    userId: string;
+    userName: string;
+    userAvatar?: string;
+  }>;
+  groupedCount?: number; // Toplam grup sayısı
+  // İçerik önizlemesi için
+  postPreview?: {
+    image?: string;
+    title?: string;
+    type?: string;
+  };
   [key: string]: any;
 }
 

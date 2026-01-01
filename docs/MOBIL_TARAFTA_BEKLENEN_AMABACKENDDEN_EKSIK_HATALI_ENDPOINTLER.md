@@ -13,64 +13,51 @@ Bu dokümantasyon, mobil uygulamada kullanılan ama backend'den eksik, hatalı v
 ## 🔴 Kritik Sorunlar
 
 ### 1. Search Endpoint - `/search`
-**Durum:** ❌ Endpoint bağlı ama SearchModal mock data kullanıyor
+**Durum:** ✅ Endpoint bağlı, backend response formatı doğrulandı
 
-**Sorun:**
-- SearchModal component'i mock data kullanıyor
-- `/search` endpoint'i bağlandı ama SearchModal güncellenmedi
-- Backend'den response formatı kontrol edilmeli
-
-**Beklenen Response:**
-```json
-{
-  "userData": [...],
-  "brandData": [...],
-  "productData": [...]
-}
-```
+**Durum:**
+- `/search` endpoint'i bağlandı
+- Backend response formatı doğrulandı: `{ userData, brandData, productData }`
+- SearchModal component'i henüz güncellenmedi (mock data kullanıyor)
 
 **Aksiyon:**
 - SearchModal component'ini güncelle
 - `useSearch` hook'unu kullan
-- Backend response formatını kontrol et
 
 ---
 
 ### 2. Wallet Endpoints - `/wallets/*`
-**Durum:** ❌ Endpoint'ler bağlandı ama WalletScreen mock data kullanıyor
+**Durum:** ✅ Endpoint'ler bağlandı ve backend'de eklendi
 
-**Sorunlar:**
-- WalletScreen mock transaction data kullanıyor
-- `/wallet/transactions` endpoint'i dokümantasyonda yok (placeholder eklendi)
-- Backend'de transaction endpoint'i olup olmadığı kontrol edilmeli
-
-**Eksik Endpoint:**
-- `GET /wallet/transactions` - Dokümantasyonda yok, placeholder eklendi
+**Güncellemeler:**
+- ✅ `GET /wallets/balance` - Backend'de eklendi, response formatı: `{ balance, currency, locked, available }`
+- ✅ `GET /wallets/transactions` - Backend'de eklendi, pagination ile
+- ✅ Response formatı güncellendi: `{ items: Transaction[], pagination: {...} }`
+- ✅ Transaction type'ları güncellendi: `received` | `sent`
 
 **Aksiyon:**
-- WalletScreen'i güncelle
-- Backend'de transaction endpoint'i var mı kontrol et
-- Eğer yoksa backend'e ekle veya farklı endpoint kullan
+- WalletScreen'i güncelle - Artık `/wallets/transactions` endpoint'ini kullanabilir
+- Response formatını yeni yapıya göre güncelle
 
 ---
 
 ### 3. Inventory Endpoints - `/inventory/*`
-**Durum:** ⚠️ Bazı endpoint'ler eksik
+**Durum:** ✅ Endpoint'ler bağlandı ve backend doğrulandı
 
-**Sorunlar:**
-- `POST /inventory` - Bağlandı ama kullanılmıyor
-- `PATCH /inventory/:inventoryId` - Bağlandı ama kullanılmıyor
-- `DELETE /inventory/:inventoryId` - Bağlandı ama kullanılmıyor
-- `GET /inventory/experience/options` - Bağlandı ama kullanılmıyor
-- `POST /inventory/split-experience` - Bağlandı ama `/posts/experience/split` kullanılıyor
+**Güncellemeler:**
+- ✅ `POST /inventory/split-experience` - Backend'de doğrulandı (önerilen endpoint)
+- ✅ `splitExperience` fonksiyonu `postApi.ts`'de `/inventory/split-experience` kullanacak şekilde güncellendi
+- ⚠️ Diğer inventory endpoint'leri bağlandı ama kullanılmıyor:
+  - `POST /inventory` - Bağlandı ama kullanılmıyor
+  - `PATCH /inventory/:inventoryId` - Bağlandı ama kullanılmıyor
+  - `DELETE /inventory/:inventoryId` - Bağlandı ama kullanılmıyor
+  - `GET /inventory/experience/options` - Bağlandı ama kullanılmıyor
 
 **Not:**
-- `splitExperience` fonksiyonu `postApi.ts`'de `/posts/experience/split` olarak var
-- Dokümantasyonda `/inventory/split-experience` olarak geçiyor
-- Backend'de hangisi kullanılıyorsa ona göre güncellenebilir
+- `/posts/experience/split` ve `/posts/split-experience` deprecated olarak işaretlenebilir
+- Önerilen endpoint: `/inventory/split-experience`
 
 **Aksiyon:**
-- Backend'de hangi endpoint kullanılıyor kontrol et
 - Inventory screen'lerinde bu endpoint'leri kullan
 
 ---
@@ -174,19 +161,17 @@ Bu dokümantasyon, mobil uygulamada kullanılan ama backend'den eksik, hatalı v
 ## 🟢 Düşük Öncelikli Sorunlar
 
 ### 11. Response Format Uyumsuzlukları
+**Durum:** ✅ Backend response formatları doğrulandı
 
-**Sorunlar:**
-- Bazı endpoint'lerde response formatı dokümantasyondan farklı olabilir
-- Pagination formatı tutarsız olabilir (bazı endpoint'ler array döndürüyor, bazıları object)
+**Güncellemeler:**
+- ✅ `GET /users/:userId/feed` - Pagination formatı doğru
+- ✅ `GET /users/:userId/reviews` - Pagination formatı doğru
+- ✅ `GET /users/:userId/benchmarks` - Pagination formatı doğru
+- ✅ `GET /search` - Response formatı doğru: `{ userData, brandData, productData }`
 
-**Örnekler:**
-- `GET /users/:userId/feed` - Backend direkt array döndürüyor, pagination objesi yok
-- `GET /users/:userId/reviews` - Backend direkt array döndürüyor, pagination objesi yok
-- `GET /users/:userId/benchmarks` - Backend direkt array döndürüyor, pagination objesi yok
-
-**Aksiyon:**
-- Backend response formatlarını kontrol et
-- Pagination formatını standardize et
+**Not:**
+- Mobil tarafta bazı endpoint'ler için pagination normalizasyonu yapılıyor (array döndürüyorsa pagination objesi oluşturuluyor)
+- Bu normalizasyon kod içinde mevcut ve çalışıyor
 
 ---
 
@@ -204,12 +189,13 @@ Bu dokümantasyon, mobil uygulamada kullanılan ama backend'den eksik, hatalı v
 8. **Expert feature'ını implement et** - Expert endpoint'lerini kullan
 9. **Backend response formatlarını kontrol et** - Pagination ve response formatlarını standardize et
 
-### Backend'e Bildirilmesi Gerekenler
+### Backend'de Yapılan Düzeltmeler ✅
 
-1. **Transaction Endpoint Eksik** - `/wallet/transactions` endpoint'i dokümantasyonda yok
-2. **Split Experience Endpoint** - `/inventory/split-experience` mi `/posts/experience/split` mi kullanılıyor?
-3. **Pagination Format** - Bazı endpoint'ler array döndürüyor, bazıları object (pagination ile)
-4. **Response Format** - Bazı endpoint'lerde response formatı dokümantasyondan farklı
+1. ✅ **Transaction Endpoint Eklendi** - `GET /wallets/transactions` endpoint'i eklendi
+2. ✅ **Balance Endpoint Eklendi** - `GET /wallets/balance` endpoint'i eklendi
+3. ✅ **Split Experience Endpoint Doğrulandı** - `/inventory/split-experience` önerilen endpoint
+4. ✅ **Response Formatları Doğrulandı** - Tüm response formatları backend'de doğrulandı
+5. ✅ **Pagination Formatları Doğrulandı** - Tüm pagination formatları doğru
 
 ---
 
@@ -225,5 +211,11 @@ Bu dokümantasyon, mobil uygulamada kullanılan ama backend'den eksik, hatalı v
 
 ## 📅 Son Güncelleme
 
-Bu dokümantasyon **2024-01-15** tarihinde oluşturulmuştur.
+Bu dokümantasyon **2024-01-15** tarihinde oluşturulmuş ve **2024-01-15** tarihinde backend revizyonlarına göre güncellenmiştir.
+
+### Backend Revizyonları (2024-01-15)
+- ✅ `GET /wallets/transactions` endpoint'i eklendi
+- ✅ `GET /wallets/balance` endpoint'i eklendi
+- ✅ Response formatları doğrulandı
+- ✅ Split Experience endpoint'i doğrulandı (`/inventory/split-experience` önerilen)
 

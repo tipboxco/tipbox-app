@@ -30,10 +30,82 @@ import {
 import type { Notification, NotificationType } from '../api/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationAssetCache } from '@/src/services/NotificationAssetCache';
+import { NotificationNavigationService } from '@/src/services/NotificationNavigationService';
 
 const { width } = Dimensions.get('window');
 
 type NotificationsScreenNavigationProp = NativeStackNavigationProp<NotificationsStackParamList, 'NotificationsScreen'>;
+
+// Instagram benzeri gruplanmış avatar component
+const GroupedAvatars: React.FC<{
+    users: Array<{ userId: string; userName: string; userAvatar?: string }>;
+    count: number;
+    isDark: boolean;
+}> = ({ users, count, isDark }) => {
+    const maxAvatars = 2; // Instagram'da genellikle 2 avatar gösterilir
+    const avatarsToShow = users.slice(0, maxAvatars);
+    const remainingCount = count - avatarsToShow.length;
+
+    return (
+        <Box position="relative" width={48} height={48}>
+            {avatarsToShow.map((user, index) => {
+                const userAvatar = user.userAvatar 
+                    ? toImageSource(user.userAvatar)
+                    : require('@/assets/avatar/ozan.png');
+                
+                return (
+                    <Box
+                        key={user.userId}
+                        position="absolute"
+                        left={index * 20}
+                        top={0}
+                        width={48}
+                        height={48}
+                        borderRadius={24}
+                        bg="#F400FF"
+                        justifyContent="center"
+                        alignItems="center"
+                        borderWidth={2}
+                        borderColor={isDark ? '#000000' : '#FAFAFA'}
+                        zIndex={maxAvatars - index}
+                    >
+                        <Image
+                            source={userAvatar}
+                            alt={user.userName}
+                            width={42}
+                            height={42}
+                            borderRadius={21}
+                        />
+                    </Box>
+                );
+            })}
+            {remainingCount > 0 && (
+                <Box
+                    position="absolute"
+                    left={20}
+                    top={0}
+                    width={48}
+                    height={48}
+                    borderRadius={24}
+                    bg={isDark ? '#1A1A1A' : '#F1F1F1'}
+                    justifyContent="center"
+                    alignItems="center"
+                    borderWidth={2}
+                    borderColor={isDark ? '#000000' : '#FAFAFA'}
+                    zIndex={0}
+                >
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={12}
+                        fontWeight="$bold"
+                    >
+                        +{remainingCount}
+                    </Text>
+                </Box>
+            )}
+        </Box>
+    );
+};
 
 const NotificationCard: React.FC<{ 
     notification: Notification;
@@ -93,32 +165,49 @@ const NotificationCard: React.FC<{
         }
     };
 
+    // Instagram benzeri gruplama kontrolü
+    const isGrouped = notification.metadata?.groupedUsers && notification.metadata.groupedUsers.length > 0;
+    const groupedUsers = notification.metadata?.groupedUsers || [];
+    const groupedCount = notification.metadata?.groupedCount || groupedUsers.length;
+    
+    // Tek kullanıcı için avatar
     const userAvatar = notification.metadata?.userAvatar 
         ? toImageSource(notification.metadata.userAvatar)
         : require('@/assets/avatar/ozan.png');
     const userName = notification.metadata?.userName || 'Kullanıcı';
 
+    // Post preview kontrolü
+    const hasPostPreview = notification.metadata?.postPreview?.image || notification.metadata?.postId;
+
     return (
         <Pressable onPress={handlePress}>
-            <HStack space="md" alignItems="flex-start" mb="$4" opacity={notification.read ? 0.7 : 1}>
-                {/* Avatar */}
+            <HStack space="md" alignItems="flex-start" mb="$4" px="$4" opacity={notification.read ? 0.7 : 1}>
+                {/* Avatar - Gruplanmış veya tek */}
                 <Box position="relative">
-                    <Box
-                        width={48}
-                        height={48}
-                        borderRadius={24}
-                        bg="#F400FF"
-                        justifyContent="center"
-                        alignItems="center"
-                    >
-                        <Image
-                            source={userAvatar}
-                            alt="User avatar"
-                            width={42}
-                            height={42}
-                            borderRadius={21}
+                    {isGrouped && groupedUsers.length > 0 ? (
+                        <GroupedAvatars 
+                            users={groupedUsers} 
+                            count={groupedCount}
+                            isDark={isDark}
                         />
-                    </Box>
+                    ) : (
+                        <Box
+                            width={48}
+                            height={48}
+                            borderRadius={24}
+                            bg="#F400FF"
+                            justifyContent="center"
+                            alignItems="center"
+                        >
+                            <Image
+                                source={userAvatar}
+                                alt="User avatar"
+                                width={42}
+                                height={42}
+                                borderRadius={21}
+                            />
+                        </Box>
+                    )}
                     {!notification.read && (
                         <Box
                             position="absolute"
@@ -137,18 +226,16 @@ const NotificationCard: React.FC<{
                 {/* Content */}
                 <VStack flex={1} space="xs">
                     {/* Message and Time */}
-                    <HStack justifyContent="space-between" alignItems="flex-start">
-                        <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={11}
-                            fontWeight={notification.read ? '$normal' : '$semibold'}
-                            flex={1}
-                            mr="$2"
-                        >
-                            {notification.message}
-                        </Text>
-
-                        <HStack alignItems="center" space="xs">
+                    <HStack justifyContent="space-between" alignItems="flex-start" flex={1}>
+                        <VStack flex={1} mr="$2" space="xs">
+                            <Text
+                                color={isDark ? '#FFFFFF' : '#000000'}
+                                fontSize={11}
+                                fontWeight={notification.read ? '$normal' : '$semibold'}
+                                lineHeight={16}
+                            >
+                                {notification.message}
+                            </Text>
                             <Text
                                 color="#8C8C8C"
                                 fontSize={9}
@@ -156,12 +243,33 @@ const NotificationCard: React.FC<{
                             >
                                 {formatRelativeTime(notification.createdAt)}
                             </Text>
+                        </VStack>
+
+                        <HStack alignItems="flex-start" space="xs">
+                            {/* Post Preview Image - Instagram benzeri */}
+                            {hasPostPreview && notification.metadata?.postPreview?.image && (
+                                <Box
+                                    width={44}
+                                    height={44}
+                                    borderRadius={4}
+                                    overflow="hidden"
+                                    mr="$2"
+                                >
+                                    <Image
+                                        source={toImageSource(notification.metadata.postPreview.image)}
+                                        alt="Post preview"
+                                        width={44}
+                                        height={44}
+                                        style={{ resizeMode: 'cover' }}
+                                    />
+                                </Box>
+                            )}
                             <Feather
                                 name={getIconName(notification.type) as any}
                                 size={14}
                                 color="#7D7D7D"
                             />
-                            <Pressable onPress={handleDelete} ml="$2">
+                            <Pressable onPress={handleDelete} ml="$1">
                                 <Feather name="x" size={14} color="#7D7D7D" />
                             </Pressable>
                         </HStack>
@@ -195,6 +303,7 @@ const NotificationCard: React.FC<{
     );
 };
 
+// Instagram benzeri filtre butonu
 const FilterButton: React.FC<{
     filter: NotificationFilter;
     onPress: (filter: NotificationFilter) => void;
@@ -205,20 +314,23 @@ const FilterButton: React.FC<{
     return (
         <Pressable onPress={() => onPress(filter)}>
             <Box
-                bg={filter.isActive ? '#F1F1F1' : 'transparent'}
-                borderWidth={1}
-                borderColor="#EFEFEF"
-                borderRadius={10}
-                px="$3"
-                py="$1"
-                minHeight={28}
+                bg={filter.isActive ? (isDark ? '#2A2A2A' : '#F1F1F1') : 'transparent'}
+                borderWidth={filter.isActive ? 0 : 1}
+                borderColor={isDark ? '#3A3A3A' : '#EFEFEF'}
+                borderRadius={20}
+                px="$4"
+                py="$2"
+                minHeight={32}
                 justifyContent="center"
                 alignItems="center"
             >
                 <Text
-                    color="#000000"
-                    fontSize={9}
-                    fontWeight="$semibold"
+                    color={filter.isActive 
+                        ? (isDark ? '#FFFFFF' : '#000000')
+                        : (isDark ? '#8C8C8C' : '#8C8C8C')
+                    }
+                    fontSize={11}
+                    fontWeight={filter.isActive ? '$semibold' : '$normal'}
                     textAlign="center"
                 >
                     {filter.label}
@@ -279,43 +391,18 @@ export const NotificationsScreen: React.FC = () => {
         setRefreshing(false);
     };
 
-    const handleNotificationPress = useCallback((notification: Notification) => {
-        if (notification.navigation) {
-            try {
-                // Screen adını kontrol et ve doğru formatta navigate et
-                const screenName = notification.navigation.screen;
-                if (!screenName) {
-                    console.error('[NotificationsScreen] ❌ Navigation error: Screen name is missing');
-                    return;
-                }
-
-                // TabNavigator'daki screen adlarıyla eşleştir
-                const screenMap: Record<string, string> = {
-                    'Notifications': 'NotificationStack',
-                    'Notification': 'NotificationStack',
-                    'Inbox': 'InboxStack',
-                    'Messages': 'InboxStack',
-                    'MessageDetail': 'InboxStack',
-                    'Feed': 'FeedStack',
-                    'PostDetail': 'Post', // Shared screen
-                    'Profile': 'Profile', // Shared screen
-                    'Explore': 'ExploreStack',
-                    'Catalog': 'CatalogStack',
-                    'Events': 'EventsStack',
-                    'EventDetail': 'EventsStack',
-                    'Wallet': 'Wallet', // Shared screen
-                    'Settings': 'Settings', // Shared screen
-                };
-
-                const mappedScreen = screenMap[screenName] || screenName;
-                
-                // Navigate et
-                navigation.navigate(mappedScreen as any, notification.navigation.params);
-            } catch (error) {
-                console.error('[NotificationsScreen] ❌ Navigation error:', error);
+    const handleNotificationPress = useCallback(async (notification: Notification) => {
+        try {
+            // NotificationNavigationService kullanarak navigate et (async - post data fetch edebilir)
+            const success = await NotificationNavigationService.navigate(notification);
+            
+            if (!success) {
+                console.warn('[NotificationsScreen] ⚠️ Navigation failed for notification:', notification.id);
             }
+        } catch (error) {
+            console.error('[NotificationsScreen] ❌ Navigation error:', error);
         }
-    }, [navigation]);
+    }, []);
 
     const handleMarkAsRead = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
@@ -423,8 +510,8 @@ export const NotificationsScreen: React.FC = () => {
                     </Input>
                 </HStack>
 
-                {/* Filter Buttons */}
-                <HStack space="xs" justifyContent="flex-start">
+                {/* Filter Buttons - Instagram benzeri horizontal scroll */}
+                <HStack space="sm" justifyContent="flex-start" alignItems="center">
                     {filters.map((filter) => (
                         <FilterButton
                             key={filter.id}
@@ -463,7 +550,6 @@ export const NotificationsScreen: React.FC = () => {
                     renderItem={renderNotificationItem}
                     keyExtractor={keyExtractor}
                     contentContainerStyle={{ 
-                        paddingHorizontal: 16,
                         paddingTop: 8,
                         paddingBottom: 20,
                     }}
@@ -482,6 +568,13 @@ export const NotificationsScreen: React.FC = () => {
                     initialNumToRender={10}
                     windowSize={10}
                     style={{ flex: 1 }}
+                    ItemSeparatorComponent={() => (
+                        <Box 
+                            height={1} 
+                            bg={isDark ? '#1A1A1A' : '#F5F5F5'} 
+                            mx="$4"
+                        />
+                    )}
                 />
             )}
         </Box>

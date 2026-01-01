@@ -4,7 +4,9 @@ import { FeedScreen } from './screens';
 //import { ReviewDetail } from '@/src/components/ReviewDetail';
 
 export type FeedStackParamList = {
-  FeedScreen: undefined;
+  FeedScreen: {
+    highlightPostId?: string; // Notification'dan gelen post'u highlight etmek için
+  };
   ReviewDetail: undefined;
   CreatePost: undefined;
 };

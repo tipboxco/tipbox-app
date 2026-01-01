@@ -73,7 +73,8 @@ export const getNotifications = async (
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         metadata,
-        navigation: item.data?.navigation,
+        // Backend'den artık navigation objesi gelmiyor, mobil taraf kendi navigation'ını yönetiyor
+        // navigation: item.data?.navigation, // Kaldırıldı
       };
     });
     

@@ -258,12 +258,15 @@ const MessageDetailScreen: React.FC = () => {
   }, [safeScrollToEnd]);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
-  // Route params'dan recipientUserId'yi al
+  // Route params'dan recipientUserId ve messageId (threadId) al
   const routeParams = (route.params as MessageDetailScreenParams) || {};
-  const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
+  const recipientUserId = routeParams.recipientUserId;
+  // messageId aslında threadId (bildirimden gelen threadId)
+  const routeThreadId = routeParams.messageId;
 
-  // Thread mesajlarını yükle
-  const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(threadId);
+  // Thread mesajlarını yükle - routeThreadId varsa direkt kullan, yoksa threadId state'ini bekle
+  const effectiveThreadId = routeThreadId || threadId;
+  const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(effectiveThreadId);
 
   // Klavye event listener'ları - scroll ve buton pozisyonu için
   useEffect(() => {
@@ -430,6 +433,14 @@ const MessageDetailScreen: React.FC = () => {
 
   // 4️⃣ CHAT EKRANI AÇILDIĞINDA - Thread ID kontrolü, socket bağlantısı, thread join, event listener'lar
   useEffect(() => {
+    // Route'dan threadId (messageId) gelmişse direkt kullan
+    if (routeThreadId) {
+      console.log('[MessageDetail] 📋 ThreadId from route (notification):', routeThreadId);
+      setThreadId(routeThreadId);
+      return; // ThreadId zaten var, thread oluşturmaya gerek yok
+    }
+
+    // ThreadId yoksa ve recipientUserId varsa thread oluştur
     if (!recipientUserId || !user?.id) {
       return;
     }
@@ -492,16 +503,17 @@ const MessageDetailScreen: React.FC = () => {
         leaveThread(currentThreadId);
       }
     };
-  }, [recipientUserId, user?.id, isConnected, joinThread, leaveThread]);
+  }, [routeThreadId, recipientUserId, user?.id, isConnected, joinThread, leaveThread]);
 
   // Socket bağlantısı hazır olduğunda thread'e join et
   useEffect(() => {
-    if (isConnected && threadId && !isSocketReady) {
-      console.log('[MessageDetail] ✅ Socket connected, joining thread:', threadId);
-      joinThread(threadId);
+    const effectiveThreadId = routeThreadId || threadId;
+    if (isConnected && effectiveThreadId && !isSocketReady) {
+      console.log('[MessageDetail] ✅ Socket connected, joining thread:', effectiveThreadId);
+      joinThread(effectiveThreadId);
       setIsSocketReady(true);
     }
-  }, [isConnected, threadId, isSocketReady, joinThread]);
+  }, [isConnected, routeThreadId, threadId, isSocketReady, joinThread]);
 
   // 9️⃣ SOCKET EVENT'LERİ ALINIR - new_message event handler
   const handleNewMessage = useCallback((eventData: any) => {

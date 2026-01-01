@@ -84,15 +84,15 @@ export const useWalletBalance = () => {
 
 /**
  * Get Wallet Transactions query hook
- * Cüzdan işlem geçmişini getirir
+ * Cüzdan işlem geçmişini getirir (pagination ile)
  *
  * @param cursor - Pagination cursor (opsiyonel)
- * @param limit - Sayfa başına item sayısı (default: 50)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns React Query hook result
  */
 export const useWalletTransactions = (
   cursor?: string,
-  limit: number = 50
+  limit: number = 20
 ) => {
   return useQuery<TransactionsResponse, Error>({
     queryKey: walletKeys.transactions(cursor, limit),

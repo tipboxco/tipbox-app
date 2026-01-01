@@ -24,9 +24,24 @@ export const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 /**
  * Navigation helper function
+ * NavigationContainer hazır olana kadar bekler
  */
 export function navigate(name: string, params?: any) {
-  navigationRef.current?.navigate(name as never, params as never);
+  if (!navigationRef.current) {
+    console.warn('[Navigation] ⚠️ Navigation ref is not ready');
+    return;
+  }
+  
+  if (!navigationRef.current.isReady()) {
+    console.warn('[Navigation] ⚠️ NavigationContainer is not ready yet');
+    return;
+  }
+
+  try {
+    navigationRef.current.navigate(name as never, params as never);
+  } catch (error) {
+    console.error('[Navigation] ❌ Navigation error:', error);
+  }
 }
 
 /**
@@ -311,38 +326,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Deep Linking: Gelişmiş deep link parsing
       const route = deepLinkService.parseNotificationData(notification.data || {});
       
-      if (route && route.screen && navigationRef.current) {
-        try {
-          // Navigation ref hazır olana kadar bekle
-          const navigateWithDelay = () => {
-            if (navigationRef.current) {
-              navigate(route.screen, route.params);
-              console.log('[NotificationProvider] ✅ Navigated to:', route.screen, route.params);
-            } else {
-              // Ref hazır değilse 500ms bekle ve tekrar dene
-              setTimeout(navigateWithDelay, 500);
-            }
-          };
-          navigateWithDelay();
-        } catch (error) {
-          console.error('[NotificationProvider] ❌ Navigation error:', error);
-        }
+      if (route && route.screen) {
+        navigate(route.screen, route.params);
+        console.log('[NotificationProvider] ✅ Navigated to:', route.screen, route.params);
       } else {
         // Fallback: Eski navigation data formatı
         const navigationData = notification.data?.navigation as { screen: string; params?: Record<string, any> };
-        if (navigationData?.screen && navigationRef.current) {
-          try {
-            const navigateWithDelay = () => {
-              if (navigationRef.current) {
-                navigate(navigationData.screen, navigationData.params);
-              } else {
-                setTimeout(navigateWithDelay, 500);
-              }
-            };
-            navigateWithDelay();
-          } catch (error) {
-            console.error('[NotificationProvider] Navigation error:', error);
-          }
+        if (navigationData?.screen) {
+          navigate(navigationData.screen, navigationData.params);
         }
       }
 

@@ -549,10 +549,13 @@ export const createExperiencePost = async (
 /**
  * Split Experience Request Body
  * Gemini AI ile deneyim metnini kategorilere ayırmak için
+ * 
+ * Backend endpoint: POST /inventory/split-experience
+ * Request body: { productId: string, experienceText: string }
  */
 export interface SplitExperienceRequest {
   productId: string;
-  content: string;
+  experienceText: string; // Backend'de experienceText bekleniyor
 }
 
 /**
@@ -585,6 +588,9 @@ export interface SplitExperienceResponse {
  * Split Experience endpoint function
  * Gemini AI ile deneyim metnini kategorilere ayırır
  * 
+ * Backend endpoint: POST /inventory/split-experience (önerilen)
+ * Not: /posts/experience/split ve /posts/split-experience deprecated olarak işaretlenebilir
+ * 
  * @param data - Split Experience request data
  * @returns SplitExperienceResponse - AI'dan dönen split edilmiş deneyim bilgileri
  */
@@ -593,11 +599,11 @@ export const splitExperience = async (
 ): Promise<SplitExperienceResponse> => {
   try {
     console.log('[splitExperience] Request data:', JSON.stringify(data, null, 2));
-    console.log('[splitExperience] Request URL: POST /posts/experience/split');
+    console.log('[splitExperience] Request URL: POST /inventory/split-experience');
     
     // AI işlemleri için timeout'u 60 saniyeye çıkar (default: 10 saniye)
     const response = await apiService.getClient().post<SplitExperienceResponse>(
-      '/posts/experience/split',
+      '/inventory/split-experience',
       data,
       {
         timeout: 60000, // 60 saniye - AI işlemleri daha uzun sürebilir
@@ -608,7 +614,7 @@ export const splitExperience = async (
     return response.data;
   } catch (error: any) {
     console.error('[splitExperience] ❌ API Error:', {
-      url: '/posts/experience/split',
+      url: '/inventory/split-experience',
       method: 'POST',
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -631,12 +637,30 @@ export const splitExperience = async (
  */
 export interface PostDetailResponse {
   id: string;
-  type: string;
-  user: any;
+  type?: string; // Backend'den gelmeyebilir, opsiyonel
+  user: {
+    id: string;
+    name: string;
+    title: string;
+    avatar: string;
+  };
   content: string;
-  stats: any;
-  images: any[];
+  stats: {
+    likes: number;
+    comments: number;
+    shares: number;
+    bookmarks: number;
+  };
+  images: string[];
   createdAt: string;
+  contextType?: 'product' | 'product_group' | 'sub_category';
+  contextData?: {
+    id: string;
+    name: string;
+    subName: string;
+    image: string;
+    isOwned?: boolean;
+  };
 }
 
 export const getPostDetail = async (postId: string): Promise<PostDetailResponse> => {

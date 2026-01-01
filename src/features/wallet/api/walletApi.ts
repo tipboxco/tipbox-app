@@ -28,7 +28,18 @@ export interface ConnectWalletRequest {
  */
 export interface WalletBalance {
   balance: number;
-  cached: boolean;
+  currency: string;
+  locked: number;
+  available: number;
+}
+
+/**
+ * Transaction User Info
+ */
+export interface TransactionUser {
+  id: string;
+  name: string;
+  avatar: string | null;
 }
 
 /**
@@ -36,22 +47,25 @@ export interface WalletBalance {
  */
 export interface Transaction {
   id: string;
-  type: 'send' | 'receive' | 'claim' | 'earn';
-  description: string;
-  amount: string;
-  amountColor?: string;
-  date?: string;
-  timestamp: string;
+  type: 'received' | 'sent';
+  amount: number;
+  currency: string;
+  from: TransactionUser | null;
+  to: TransactionUser | null;
+  reason: string | null;
+  createdAt: string;
 }
 
 /**
- * Transactions Response
+ * Transactions Response (with pagination)
  */
 export interface TransactionsResponse {
-  today: Transaction[];
-  yesterday: Transaction[];
-  lastWeek: Transaction[];
-  lastMonth: Transaction[];
+  items: Transaction[];
+  pagination: {
+    cursor: string | null;
+    hasMore: boolean;
+    limit: number;
+  };
 }
 
 /**
@@ -194,18 +208,17 @@ export const deleteWallet = async (walletId: string): Promise<void> => {
  * Get Wallet Balance endpoint function
  * Cüzdan bakiyesini getirir
  * 
- * Note: Bu endpoint dokümantasyonda Expert bölümünde `/expert/balance` olarak geçiyor
- * Ancak Wallet için de bir balance endpoint'i olabilir
+ * Backend endpoint: GET /wallets/balance
  *
  * @returns WalletBalance - Cüzdan bakiyesi
  */
 export const getWalletBalance = async (): Promise<WalletBalance> => {
   try {
-    const response = await apiService.getClient().get<WalletBalance>('/expert/balance');
+    const response = await apiService.getClient().get<WalletBalance>('/wallets/balance');
     return response.data;
   } catch (error: any) {
     console.error('[getWalletBalance] API Error:', {
-      url: '/expert/balance',
+      url: '/wallets/balance',
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
@@ -217,36 +230,32 @@ export const getWalletBalance = async (): Promise<WalletBalance> => {
 
 /**
  * Get Wallet Transactions endpoint function
- * Cüzdan işlem geçmişini getirir
+ * Cüzdan işlem geçmişini getirir (pagination ile)
  * 
- * Note: Bu endpoint dokümantasyonda yok, ancak WalletScreen'de kullanılıyor
- * Backend'de `/wallet/transactions` veya benzeri bir endpoint olmalı
- * Şimdilik placeholder olarak bırakıyoruz
+ * Backend endpoint: GET /wallets/transactions
  *
  * @param cursor - Pagination cursor (opsiyonel)
- * @param limit - Sayfa başına item sayısı (default: 50)
- * @returns TransactionsResponse - İşlem geçmişi
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns TransactionsResponse - İşlem geçmişi ve pagination bilgisi
  */
 export const getWalletTransactions = async (
   cursor?: string,
-  limit: number = 50
+  limit: number = 20
 ): Promise<TransactionsResponse> => {
   try {
     const params = new URLSearchParams();
     if (cursor) {
       params.append('cursor', cursor);
     }
-    params.append('limit', limit.toString());
+    params.append('limit', Math.min(limit, 50).toString());
 
-    // TODO: Backend endpoint'i belirlenince güncellenecek
-    // Şimdilik placeholder
     const response = await apiService.getClient().get<TransactionsResponse>(
-      `/wallet/transactions?${params.toString()}`
+      `/wallets/transactions?${params.toString()}`
     );
     return response.data;
   } catch (error: any) {
     console.error('[getWalletTransactions] API Error:', {
-      url: `/wallet/transactions?${params.toString()}`,
+      url: `/wallets/transactions?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

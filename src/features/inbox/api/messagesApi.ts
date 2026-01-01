@@ -107,11 +107,23 @@ export interface ThreadMessage {
  * Thread ID'sine göre mesaj geçmişini getirir
  * 
  * @param threadId - Thread ID
+ * @param limit - Sayfa başına mesaj sayısı (default: 50)
+ * @param offset - Atlanacak mesaj sayısı (default: 0)
  * @returns Thread mesajları listesi (normalized)
  */
-export const getThreadMessages = async (threadId: string): Promise<ThreadMessage[]> => {
+export const getThreadMessages = async (
+  threadId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<ThreadMessage[]> => {
   try {
-    const response = await apiService.getClient().get<ThreadMessageResponse[]>(`/messages/${threadId}`);
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+    
+    const response = await apiService.getClient().get<ThreadMessageResponse[]>(
+      `/messages/${threadId}?${params.toString()}`
+    );
     
     // Backend response'unu normalize et
     const normalizedMessages: ThreadMessage[] = response.data.map((item) => {
@@ -356,7 +368,7 @@ export const getMessageFeed = async (limit: number = 50): Promise<MessageFeedIte
     return response.data;
   } catch (error: any) {
     console.error('[getMessageFeed] API Error:', {
-      url: `/messages/feed?${params.toString()}`,
+      url: `/messages/feed?limit=${Math.min(limit, 100)}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

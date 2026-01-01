@@ -4,12 +4,17 @@ import { MainNavigator } from './MainNavigator';
 import { CustomDrawerContent } from './CustomDrawerContent';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { RootStackParamList } from './navigation.types';
+import { useNotificationObserver } from '@/src/hooks/useNotificationObserver';
 
 const Drawer = createDrawerNavigator<RootStackParamList>();
 
 export const DrawerNavigator = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    
+    // Merkezi Notification Observer Hook
+    // NavigationContainer içinde olduğu için useNavigation güvenli şekilde çalışır
+    useNotificationObserver();
   
     return (
       <Drawer.Navigator

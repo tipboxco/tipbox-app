@@ -38,18 +38,20 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 
 ---
 
-## 3. Wallet (6 endpoint)
+## 3. Wallet (8 endpoint)
 
 | Endpoint | Method | Durum | Dosya | Not |
 |----------|--------|-------|-------|-----|
-| `/wallets` | GET | ❌ Eksik | - | WalletScreen mock data kullanıyor |
-| `/wallets/active` | GET | ❌ Eksik | - | - |
-| `/wallets/connect` | POST | ❌ Eksik | - | - |
-| `/wallets/:id/disconnect` | PATCH | ❌ Eksik | - | - |
-| `/wallets/:id/activate` | PATCH | ❌ Eksik | - | - |
-| `/wallets/:id` | DELETE | ❌ Eksik | - | - |
+| `/wallets` | GET | ✅ Bağlı | `walletApi.ts` | - |
+| `/wallets/active` | GET | ✅ Bağlı | `walletApi.ts` | - |
+| `/wallets/connect` | POST | ✅ Bağlı | `walletApi.ts` | - |
+| `/wallets/:id/disconnect` | PATCH | ✅ Bağlı | `walletApi.ts` | - |
+| `/wallets/:id/activate` | PATCH | ✅ Bağlı | `walletApi.ts` | - |
+| `/wallets/:id` | DELETE | ✅ Bağlı | `walletApi.ts` | - |
+| `/wallets/balance` | GET | ✅ Bağlı | `walletApi.ts` | Backend'de eklendi |
+| `/wallets/transactions` | GET | ✅ Bağlı | `walletApi.ts` | Backend'de eklendi |
 
-**Not:** WalletScreen mock transaction data kullanıyor. Tüm wallet endpoint'leri eksik.
+**Not:** Tüm wallet endpoint'leri bağlandı. WalletScreen henüz güncellenmedi (mock data kullanıyor).
 
 ---
 
@@ -247,18 +249,16 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 - Inventory (1/6)
 
 ### ❌ Eksik Kategoriler
-- Wallet (0/6) - Tüm endpoint'ler eksik
-- Expert (0/5) - Tüm endpoint'ler eksik
-- Search (0/1) - Endpoint eksik
+- Expert (0/5) - Tüm endpoint'ler bağlandı ama feature kullanılmıyor
 
 ---
 
 ## 🔧 Öncelik Sırası
 
 ### Yüksek Öncelik
-1. **Search** - Temel özellik, SearchModal mock data kullanıyor
-2. **Wallet** - WalletScreen mock data kullanıyor, kritik özellik
-3. **Auth** - verify-email, logout gibi temel özellikler eksik
+1. **Search** - Endpoint bağlı, SearchModal güncellenmeli
+2. **Wallet** - Endpoint'ler bağlı, WalletScreen güncellenmeli
+3. **Auth** - Endpoint'ler bağlı, screen'lerde kullanılmalı
 
 ### Orta Öncelik
 4. **Post** - GET, PUT, DELETE endpoint'leri eksik

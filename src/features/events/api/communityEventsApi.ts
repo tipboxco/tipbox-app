@@ -106,7 +106,7 @@ export const getEventDetail = async (
  *
  * @param eventId - Event ID
  * @param cursor - Pagination cursor (opsiyonel)
- * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns FeedApiResponse - Event posts ve pagination bilgisi
  */
 export const getEventPosts = async (
@@ -118,7 +118,7 @@ export const getEventPosts = async (
   if (cursor) {
     params.append('cursor', cursor);
   }
-  params.append('limit', limit.toString());
+  params.append('limit', Math.min(limit, 50).toString());
 
   try {
     const response = await apiService.getClient().get<FeedApiResponse>(
@@ -126,7 +126,7 @@ export const getEventPosts = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error('Event Posts API Error:', {
+    console.error('[getEventPosts] API Error:', {
       url: `/events/${eventId}/posts?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -276,43 +276,6 @@ export const createEventPost = async (
   } catch (error: any) {
     console.error('Create Event Post API Error:', {
       url: `/events/${eventId}/posts`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
-};
-
-/**
- * Get Event Posts endpoint function
- * Event'e ait post'ları getirir (pagination ile)
- *
- * @param eventId - Event ID
- * @param cursor - Pagination cursor (opsiyonel)
- * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
- * @returns FeedApiResponse - Event posts ve pagination bilgisi
- */
-export const getEventPosts = async (
-  eventId: string,
-  cursor?: string,
-  limit: number = 20
-): Promise<FeedApiResponse> => {
-  const params = new URLSearchParams();
-  if (cursor) {
-    params.append('cursor', cursor);
-  }
-  params.append('limit', Math.min(limit, 50).toString());
-
-  try {
-    const response = await apiService.getClient().get<FeedApiResponse>(
-      `/events/${eventId}/posts?${params.toString()}`
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('[getEventPosts] API Error:', {
-      url: `/events/${eventId}/posts?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

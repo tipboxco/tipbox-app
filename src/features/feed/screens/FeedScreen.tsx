@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { FilterBar } from '../components/FilterBar';
@@ -40,13 +41,21 @@ import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
+type FeedScreenRouteProp = RouteProp<FeedStackParamList, 'FeedScreen'>;
 
 export const FeedScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<FeedScreenRouteProp>();
   const { user } = useAppStore();
+  
+  // Route params'dan highlightPostId'yi al
+  const highlightPostId = route.params?.highlightPostId;
+  
+  // FlatList ref - highlightPostId için scroll yapmak için
+  const flatListRef = useRef<FlatList>(null);
 
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
@@ -228,6 +237,26 @@ export const FeedScreen = () => {
       }
     );
   };
+
+  // highlightPostId varsa o post'a scroll et
+  useEffect(() => {
+    if (highlightPostId && feedItems.length > 0) {
+      const postIndex = feedItems.findIndex((item) => item.data.id === highlightPostId);
+      if (postIndex !== -1) {
+        console.log('[FeedScreen] 📍 Scrolling to highlighted post:', highlightPostId, 'at index:', postIndex);
+        // Kısa bir delay ile scroll yap (FlatList render olana kadar bekle)
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({
+            index: postIndex,
+            animated: true,
+            viewPosition: 0.5, // Ekranın ortasına getir
+          });
+        }, 500);
+      } else {
+        console.log('[FeedScreen] ⚠️ Highlighted post not found in feed:', highlightPostId);
+      }
+    }
+  }, [highlightPostId, feedItems]);
 
   // Map Feed to PostCardData
   const mapFeedToCardData = (item: ProfilePost): PostCardData => {
@@ -691,6 +720,7 @@ export const FeedScreen = () => {
             </Box>
           ) : (
             <FlatList
+              ref={flatListRef}
               data={feedItems}
               renderItem={({ item }) => renderFeedItem(item)}
               keyExtractor={(item) => item.data.id}
@@ -700,6 +730,13 @@ export const FeedScreen = () => {
               contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={false}
+              onScrollToIndexFailed={(info) => {
+                // Index bulunamazsa scrollToOffset kullan
+                const wait = new Promise(resolve => setTimeout(resolve, 500));
+                wait.then(() => {
+                  flatListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+                });
+              }}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}

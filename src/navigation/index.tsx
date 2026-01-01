@@ -3,9 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { DrawerNavigator } from './DrawerNavigator';
 import { navigationRef, navigate } from '@/src/providers/NotificationProvider';
 import { deepLinkService } from '@/src/services/DeepLinkService';
+import { linkingConfig } from './linking.config';
 
 const Navigation = () => {
   // Initial URL handling (killed state)
+  // Not: React Navigation'ın linking config'i zaten initial URL'i handle ediyor,
+  // burada sadece fallback olarak manuel handling yapıyoruz
   useEffect(() => {
     const handleInitialURL = async () => {
       const url = await deepLinkService.getInitialURL();
@@ -43,7 +46,13 @@ const Navigation = () => {
   }, []);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer 
+      ref={navigationRef} 
+      linking={linkingConfig}
+      onReady={() => {
+        console.log('[Navigation] ✅ NavigationContainer is ready');
+      }}
+    >
       <DrawerNavigator />
     </NavigationContainer>
   );

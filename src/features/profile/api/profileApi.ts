@@ -400,53 +400,10 @@ export const getExperienceOptions = async (): Promise<ExperienceOptions> => {
 };
 
 /**
- * Split Experience endpoint function
- * Deneyim metnini AI ile kategorilere ayırır
- * 
- * Note: Bu endpoint postApi.ts'de `/posts/experience/split` olarak var
- * Ancak dokümantasyonda `/inventory/split-experience` olarak geçiyor
- * Backend'de hangisi kullanılıyorsa ona göre güncellenebilir
- * 
- * @param data - Split experience request data
- * @returns Split experience response
+ * Note: Split Experience endpoint'i postApi.ts'de tanımlı
+ * POST /inventory/split-experience endpoint'i postApi.ts'deki splitExperience fonksiyonu kullanılmalı
+ * Duplicate fonksiyon kaldırıldı - postApi.ts'deki kullanılacak
  */
-export interface SplitExperienceRequest {
-  productId: string;
-  experienceText: string;
-}
-
-export interface SplitExperienceResponse {
-  priceAndShopping: {
-    content: string;
-    rating: number;
-  };
-  productAndUsage: {
-    content: string;
-    rating: number;
-  };
-}
-
-export const splitExperience = async (
-  data: SplitExperienceRequest
-): Promise<SplitExperienceResponse> => {
-  try {
-    const response = await apiService.getClient().post<SplitExperienceResponse>(
-      '/inventory/split-experience',
-      data
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('[splitExperience] API Error:', {
-      url: '/inventory/split-experience',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      requestData: data,
-    });
-    throw error;
-  }
-};
 
 /**
  * User Feed API Response - Pagination ile birlikte

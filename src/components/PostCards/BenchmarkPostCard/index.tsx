@@ -138,6 +138,13 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
         });
     };
 
+    const handleUserPress = () => {
+        navigation.navigate('Profile', {
+            screen: 'ProfileMain',
+            params: { userId: data.user.id },
+        });
+    };
+
     return (
         <VStack
             bg={isDark ? '$backgroundDark900' : '$white'}
@@ -147,32 +154,36 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
             <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
                     {toImageSource(data.user.avatar) && (
-                        <Image
-                            source={toImageSource(data.user.avatar)!}
-                            alt={data.user.name}
-                            mr={8}
-                            width={42}
-                            height={42}
-                            borderRadius={100}
-                        />
+                        <Pressable onPress={handleUserPress}>
+                            <Image
+                                source={toImageSource(data.user.avatar)!}
+                                alt={data.user.name}
+                                mr={8}
+                                width={42}
+                                height={42}
+                                borderRadius={100}
+                            />
+                        </Pressable>
                     )}
-                    <VStack flex={1}>
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$xs"
-                            fontWeight="$bold"
-                        >
-                            {data.user.name}
-                        </Text>
-                        <Text
-                            color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={config.tokens.fontSizes['3xs'] as number}
-                            numberOfLines={1}
-                            maxWidth={250}
-                        >
-                            {data.user.title}
-                        </Text>
-                    </VStack>
+                    <Pressable flex={1} onPress={handleUserPress}>
+                        <VStack flex={1}>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$xs"
+                                fontWeight="$bold"
+                            >
+                                {data.user.name}
+                            </Text>
+                            <Text
+                                color={isDark ? '$textDark400' : '#787878'}
+                                fontSize={config.tokens.fontSizes['3xs'] as number}
+                                numberOfLines={1}
+                                maxWidth={250}
+                            >
+                                {data.user.title}
+                            </Text>
+                        </VStack>
+                    </Pressable>
                     <Pressable>
                         <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
                     </Pressable>

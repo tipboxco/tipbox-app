@@ -13,6 +13,7 @@ import { QuestionPostCardDetail } from '../components/QuestionPostCardDetail';
 import { BenchmarkPostCardDetail } from '../components/BenchmarkPostCardDetail';
 import { ExperiencePostCardDetail } from '../components/ExperiencePostCardDetail';
 import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
+import PostCard from '@/src/components/PostCards/PostCard';
 import { Header } from '@/src/components/Header';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CommentsCard from '@/src/components/CommentsCard';
@@ -206,6 +207,11 @@ export const PostDetailScreen = () => {
                         relatedPostData={relatedPostData}
                         onCommentPress={handleCommentInputPress}
                     />
+                ) : type === 'post' ? (
+                    // FeedScreen'deki gibi PostCard kullan
+                    <Box px={0}>
+                        <PostCard data={postData} />
+                    </Box>
                 ) : (
                     <PostDetailCard data={postData} onCommentPress={handleCommentInputPress} />
                 )}

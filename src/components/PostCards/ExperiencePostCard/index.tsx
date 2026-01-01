@@ -89,6 +89,13 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
     });
   };
 
+  const handleUserPress = () => {
+    navigation.navigate('Profile', {
+      screen: 'ProfileMain',
+      params: { userId: data.user.id },
+    });
+  };
+
   return (
     <VStack
       bg={isDark ? '$backgroundDark900' : '$white'}
@@ -108,39 +115,43 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           {toImageSource(data.user.avatar) && (
-            <Image
-              source={toImageSource(data.user.avatar)!}
-              alt={data.user.name}
-              mr={8}
-              width={48}
-              height={48}
-              borderRadius={100}
-            />
+            <Pressable onPress={handleUserPress}>
+              <Image
+                source={toImageSource(data.user.avatar)!}
+                alt={data.user.name}
+                mr={8}
+                width={48}
+                height={48}
+                borderRadius={100}
+              />
+            </Pressable>
           )}
-          <VStack flex={1}>
-            <Text
-              color={isDark ? '$textDark400' : '#C7C7C7'}
-              fontSize={config.tokens.fontSizes['4xs'] as number}
-              fontWeight="$semibold"
-            >
-              {data.user.action}
-            </Text>
-            <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize='$xs'
-              fontWeight="$bold"
-            >
-              {data.user.name}
-            </Text>
-            <Text
-              color={isDark ? '$textDark400' : '#787878'}
-              fontSize={config.tokens.fontSizes['3xs'] as number}
-              numberOfLines={1}
-              maxWidth={250}
-            >
-              {data.user.title}
-            </Text>
-          </VStack>
+          <Pressable flex={1} onPress={handleUserPress}>
+            <VStack flex={1}>
+              <Text
+                color={isDark ? '$textDark400' : '#C7C7C7'}
+                fontSize={config.tokens.fontSizes['4xs'] as number}
+                fontWeight="$semibold"
+              >
+                {data.user.action}
+              </Text>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize='$xs'
+                fontWeight="$bold"
+              >
+                {data.user.name}
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '#787878'}
+                fontSize={config.tokens.fontSizes['3xs'] as number}
+                numberOfLines={1}
+                maxWidth={250}
+              >
+                {data.user.title}
+              </Text>
+            </VStack>
+          </Pressable>
         </HStack>
       </VStack>
 
