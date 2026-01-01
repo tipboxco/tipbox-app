@@ -89,39 +89,17 @@ export interface BrandCatalogPostContextData {
 }
 
 /**
- * Brand Catalog Post Data - /brands/{brandId}/catalog response'undaki post data bilgisi
- */
-export interface BrandCatalogPostData {
-  id: string;
-  type: string;
-  user: BrandCatalogPostUser;
-  stats: BrandCatalogPostStats;
-  createdAt: string;
-  contextType: string;
-  contextData: BrandCatalogPostContextData;
-  content: string;
-  images: string[];
-}
-
-/**
- * Brand Catalog Post - /brands/{brandId}/catalog response'undaki post item
- */
-export interface BrandCatalogPost {
-  type: string;
-  data: BrandCatalogPostData;
-}
-
-/**
  * Brand Catalog Response - /brands/{brandId}/catalog endpoint'inden dönen response
+ * OpenAPI dokümantasyonuna göre: brandId, name, description, bannerImage, followers, isJoined
+ * Not: Posts için ayrı endpoint kullanılır: /brands/{brandId}/feed
  */
 export interface BrandCatalogResponse {
   brandId: string;
   name: string;
-  description: string | null; // Dokümana göre null olabilir
-  bannerImage: string | null; // Dokümana göre null olabilir
+  description: string | null;
+  bannerImage: string | null;
   followers: number;
   isJoined: boolean;
-  posts?: BrandCatalogPost[]; // Opsiyonel - dokümanda belirtilmemiş ama mevcut kodda var
 }
 
 /**

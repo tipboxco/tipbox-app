@@ -49,9 +49,11 @@ export const getBrandsByCategory = async (
 /**
  * Get Brand Catalog endpoint function
  * /brands/{brandId}/catalog API'sinden marka katalog bilgilerini getirir
+ * OpenAPI dokümantasyonuna göre: brandId, name, description, bannerImage, followers, isJoined
+ * Not: Posts için ayrı endpoint kullanılır: /brands/{brandId}/feed
  *
  * @param brandId - Marka ID'si
- * @returns BrandCatalogResponse - Marka katalog bilgileri (banner, description, posts, vb.)
+ * @returns BrandCatalogResponse - Marka katalog bilgileri (banner, description, followers, isJoined)
  */
 export const getBrandCatalog = async (
   brandId: string
