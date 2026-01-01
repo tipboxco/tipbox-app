@@ -150,9 +150,11 @@ class SocketService {
 
   /**
    * Mesaj gönderir
+   * Dokümana göre: send_message event'i recipientId bekliyor
    */
-  public sendMessage(threadId: string, message: string): void {
-    this.socket?.emit('send_message', { threadId, message });
+  public sendMessage(recipientId: string, message: string): void {
+    console.log('[SocketService] 📤 Emitting send_message:', { recipientId, message });
+    this.socket?.emit('send_message', { recipientId, message });
   }
 
   /**

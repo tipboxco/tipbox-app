@@ -9,6 +9,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { toImageSource } from '@/src/utils';
 
 interface MessageDetailHeaderProps {
   senderName: string;
@@ -59,7 +60,10 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
             px="$2"
           >
             <Image
-              source={senderAvatar}
+              source={
+                toImageSource(senderAvatar) ||
+                require('@/assets/avatar/ozan.png')
+              }
               alt={senderName}
               width={48}
               height={48}

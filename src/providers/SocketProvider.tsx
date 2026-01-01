@@ -29,7 +29,7 @@ interface SocketContextType {
   leaveThread: (threadId: string) => void;
   markThreadRead: (threadId: string) => void;
   // Message operations
-  sendMessage: (threadId: string, message: string) => void;
+  sendMessage: (recipientId: string, message: string) => void; // recipientId kullanır (dokümana göre)
   sendSupportMessage: (threadId: string, message: string) => void;
   markMessageAsRead: (messageId: string) => void;
   // Typing operations
@@ -247,8 +247,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   }, []);
 
   // Message operations
-  const sendMessage = useCallback((threadId: string, message: string) => {
-    socketService.sendMessage(threadId, message);
+  // Not: sendMessage recipientId kullanır (dokümana göre)
+  const sendMessage = useCallback((recipientId: string, message: string) => {
+    socketService.sendMessage(recipientId, message);
   }, []);
 
   const markMessageAsRead = useCallback((messageId: string) => {

@@ -48,13 +48,43 @@ export const getOrCreateThread = async (recipientId: string): Promise<ThreadResp
 };
 
 /**
- * Thread Message - Thread mesajı tipi
+ * Backend Response Format - Thread mesajları için
+ */
+export interface ThreadMessageResponse {
+  id: string;
+  type: 'message' | 'support-request' | 'send-tips';
+  data: {
+    id: string;
+    sender: {
+      id: string;
+      senderName: string;
+      senderTitle: string;
+      senderAvatar: string | null;
+    };
+    // For message type
+    lastMessage?: string;
+    message?: string;
+    timestamp: string;
+    isUnread?: boolean;
+    // For support-request type
+    type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
+    amount?: number | string;
+    status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+    threadId?: string | null;
+    requestId?: string;
+    fromUserId?: string;
+    toUserId?: string;
+  };
+}
+
+/**
+ * Thread Message - Normalized thread mesajı tipi (internal use)
  */
 export interface ThreadMessage {
   id: string;
-  threadId: string;
+  threadId: string | null;
   senderId: string;
-  recipientId: string;
+  recipientId?: string;
   message: string;
   messageType: 'message' | 'support-request' | 'send-tips';
   context: 'DM' | 'SUPPORT';
@@ -62,6 +92,14 @@ export interface ThreadMessage {
   sentAt: string; // ISO 8601
   readAt?: string; // ISO 8601 (opsiyonel)
   amount?: number; // For send-tips
+  // Sender info
+  senderName?: string;
+  senderTitle?: string;
+  senderAvatar?: string | null;
+  // Support request specific
+  supportRequestType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
+  supportRequestStatus?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+  requestId?: string;
 }
 
 /**
@@ -69,12 +107,53 @@ export interface ThreadMessage {
  * Thread ID'sine göre mesaj geçmişini getirir
  * 
  * @param threadId - Thread ID
- * @returns Thread mesajları listesi
+ * @returns Thread mesajları listesi (normalized)
  */
 export const getThreadMessages = async (threadId: string): Promise<ThreadMessage[]> => {
   try {
-    const response = await apiService.getClient().get<ThreadMessage[]>(`/messages/${threadId}`);
-    return response.data;
+    const response = await apiService.getClient().get<ThreadMessageResponse[]>(`/messages/${threadId}`);
+    
+    // Backend response'unu normalize et
+    const normalizedMessages: ThreadMessage[] = response.data.map((item) => {
+      const { id, type, data } = item;
+      const { sender, timestamp } = data;
+      
+      // Base message structure
+      const baseMessage: ThreadMessage = {
+        id: data.id || id,
+        threadId: data.threadId || threadId,
+        senderId: sender.id,
+        message: data.message || data.lastMessage || '',
+        messageType: type,
+        context: type === 'support-request' ? 'SUPPORT' : 'DM',
+        isRead: !data.isUnread, // isUnread varsa, isRead = !isUnread
+        sentAt: timestamp,
+        senderName: sender.senderName,
+        senderTitle: sender.senderTitle,
+        senderAvatar: sender.senderAvatar,
+      };
+      
+      // Type-specific fields
+      if (type === 'send-tips' && data.amount) {
+        baseMessage.amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
+      }
+      
+      if (type === 'support-request') {
+        baseMessage.supportRequestType = data.type;
+        baseMessage.supportRequestStatus = data.status;
+        baseMessage.requestId = data.requestId || data.id;
+        if (data.amount) {
+          baseMessage.amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
+        }
+        if (data.fromUserId && data.toUserId) {
+          baseMessage.recipientId = data.toUserId;
+        }
+      }
+      
+      return baseMessage;
+    });
+    
+    return normalizedMessages;
   } catch (error: any) {
     // 404 hatası: Thread messages endpoint backend'de henüz implement edilmemiş olabilir
     if (error?.response?.status === 404) {

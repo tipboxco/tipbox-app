@@ -3,9 +3,16 @@ import { NavigationContainerRef } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/src/services/ExpoNotificationService';
 import { socketService } from '@/src/services/SocketService';
+import { notificationEventService } from '@/src/services/NotificationEventService';
+import { notificationGroupingService } from '@/src/services/NotificationGroupingService';
+import { deepLinkService } from '@/src/services/DeepLinkService';
+import { notificationAnalytics } from '@/src/services/NotificationAnalytics';
+import { notificationStateSync } from '@/src/services/NotificationStateSync';
 import { useAppStore } from '@/src/store/appStore';
+import { useNotificationStore } from '@/src/store/notificationStore';
 import { useAuth } from './AuthProvider';
-import { notificationKeys } from '@/src/features/notifications/api/hooks';
+import { useAppState } from './AppStateProvider';
+import { notificationKeys, useUnreadCount } from '@/src/features/notifications/api/hooks';
 import type { Notification } from '@/src/features/notifications/api/types';
 import type { NotificationPayload } from '@/src/types/notification';
 
@@ -55,16 +62,27 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAppStore();
   const { isAuthReady } = useAuth();
+  const { isForeground } = useAppState();
   const [state, setState] = React.useState<NotificationContextType>({
     isInitialized: false,
     permissionStatus: 'undetermined',
   });
+  
+  // Unread count için query - badge sync için
+  const { data: unreadCountData } = useUnreadCount();
+  const unreadCount = unreadCountData?.data?.count || 0;
 
   // Notification service initialization
   // ⚠️ Auth hazır olmadan başlamaz!
   useEffect(() => {
     if (!isAuthReady) {
       console.log('[NotificationProvider] ⏳ Waiting for auth to be ready...');
+      return;
+    }
+
+    // Authenticated değilse sadece permission iste, token kaydetme
+    if (!isAuthenticated) {
+      console.log('[NotificationProvider] ⏳ User not authenticated, skipping token registration');
       return;
     }
 
@@ -89,6 +107,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         console.log('[NotificationProvider]    - Permission Status:', notificationState.permissionStatus);
         console.log('[NotificationProvider]    - Push Token:', notificationState.expoPushToken ? '✅' : '❌');
         console.log('[NotificationProvider] ========================================');
+
+        // Pending token varsa tekrar dene
+        await notificationService.retryPendingPushToken();
       } catch (error) {
         console.error('[NotificationProvider] ❌ Failed to initialize notification service:', error);
       }
@@ -97,31 +118,122 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     initializeNotifications();
   }, [isAuthReady, isAuthenticated]);
 
-  // Socket.IO notification listener
+  // Token refresh - App foreground'a geldiğinde token'ı kontrol et
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!state.isInitialized || !isAuthenticated || !isForeground) {
       return;
     }
 
-    const handleSocketNotification = (notification: Notification) => {
+    // App foreground'a geldiğinde token'ı refresh et
+    const refreshToken = async () => {
+      try {
+        const newToken = await notificationService.refreshPushToken();
+        if (newToken && newToken !== state.expoPushToken) {
+          setState(prev => ({ ...prev, expoPushToken: newToken }));
+          console.log('[NotificationProvider] 🔄 Push token refreshed');
+        }
+      } catch (error) {
+        console.error('[NotificationProvider] ❌ Error refreshing push token:', error);
+      }
+    };
+
+    // Foreground'a geldikten 2 saniye sonra refresh et (network bağlantısı kurulması için)
+    const timeout = setTimeout(refreshToken, 2000);
+    return () => clearTimeout(timeout);
+  }, [isForeground, state.isInitialized, isAuthenticated, state.expoPushToken]);
+
+  // Notification State Sync initialization
+  useEffect(() => {
+    if (!isAuthenticated || !state.isInitialized) {
+      return;
+    }
+
+    // State sync servisini initialize et
+    notificationStateSync.initialize(queryClient);
+
+    return () => {
+      notificationStateSync.cleanup();
+    };
+  }, [isAuthenticated, state.isInitialized, queryClient]);
+
+  // Socket.IO notification listener with Event-Driven Architecture
+  useEffect(() => {
+    if (!isAuthenticated || !state.isInitialized) {
+      return;
+    }
+
+    const handleSocketNotification = async (notification: Notification) => {
       console.log('[NotificationProvider] 📨 Socket notification received:', notification);
 
-      // Invalidate notification queries to refresh the list
+      // Analytics: Notification received tracking
+      await notificationAnalytics.trackReceived(
+        notification.id,
+        notification.type,
+        { source: 'socket' }
+      );
+
+      // State Sync: Zustand store'a ekle (instant UI update)
+      notificationStateSync.addNotification(notification);
+
+      // Event-driven: Notification event oluştur ve dispatch et
+      const event = notificationEventService.createEvent(notification, 'socket');
+      await notificationEventService.dispatch(event);
+
+      // Grouping: Event'i grupla veya hemen gönder
+      const groupingEvent = {
+        type: notification.type,
+        userId: notification.metadata?.userId || '',
+        priority: event.priority,
+        channels: ['IN_APP', 'PUSH'],
+        metadata: {
+          notificationId: notification.id,
+          navigation: notification.navigation,
+          ...notification.metadata,
+        },
+        timestamp: new Date(notification.createdAt || new Date()),
+      };
+
+      const grouped = await notificationGroupingService.groupOrSend(groupingEvent);
+
+      if (grouped) {
+        // Gruplanmış bildirim göster
+        if (isForeground && grouped.groupedTitle && grouped.groupedBody) {
+          notificationService.sendLocalNotification({
+            title: grouped.groupedTitle,
+            body: grouped.groupedBody,
+            data: {
+              notificationId: notification.id,
+              type: notification.type,
+              navigation: notification.navigation,
+              grouped: true,
+              count: grouped.count,
+            },
+          });
+        }
+      } else {
+        // Tekil bildirim göster (sadece foreground'da ve grouping window dışındaysa)
+        if (isForeground && notification.title && notification.message) {
+          // Eğer grouping window içindeyse gönderme (grouping service zaten yönetiyor)
+          const store = useNotificationStore.getState();
+          const isGrouped = store.isNotificationGrouped(notification.type);
+          
+          if (!isGrouped) {
+            notificationService.sendLocalNotification({
+              title: notification.title,
+              body: notification.message,
+              data: {
+                notificationId: notification.id,
+                type: notification.type,
+                navigation: notification.navigation,
+              },
+            });
+          }
+        }
+      }
+
+      // React Query cache'i invalidate et (notificationStateSync periyodik sync yapıyor)
       queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
       queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
-
-      // Show in-app notification if app is in foreground
-      if (notification.title && notification.message) {
-        notificationService.sendLocalNotification({
-          title: notification.title,
-          body: notification.message,
-          data: {
-            notificationId: notification.id,
-            type: notification.type,
-            navigation: notification.navigation,
-          },
-        });
-      }
     };
 
     // Register socket notification listener
@@ -130,7 +242,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     return () => {
       socketService.off('notification', handleSocketNotification);
     };
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated, state.isInitialized, isForeground, queryClient]);
 
   // Expo Push notification handlers
   useEffect(() => {
@@ -140,24 +252,66 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     const handleNotificationReceived = (notification: NotificationPayload) => {
       console.log('[NotificationProvider] 📱 Push notification received (foreground):', notification);
-      // Notification zaten gösterildi, sadece log
+      
+      // Foreground'da notification geldiğinde query'leri refresh et
+      queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
     };
 
-    const handleNotificationResponse = (notification: NotificationPayload) => {
+    const handleNotificationResponse = async (notification: NotificationPayload) => {
       console.log('[NotificationProvider] 👆 Push notification tapped:', notification);
       
-      // Navigate based on notification data
-      const navigationData = notification.data?.navigation as { screen: string; params?: Record<string, any> };
-      if (navigationData?.screen && navigationRef.current) {
+      const notificationId = notification.data?.notificationId as string;
+      const notificationType = notification.data?.type as string;
+
+      // Analytics: Notification opened tracking
+      if (notificationId && notificationType) {
+        await notificationAnalytics.trackOpened(
+          notificationId,
+          notificationType,
+          { source: 'push' }
+        );
+      }
+
+      // Deep Linking: Gelişmiş deep link parsing
+      const route = deepLinkService.parseNotificationData(notification.data || {});
+      
+      if (route && route.screen && navigationRef.current) {
         try {
-          navigate(navigationData.screen, navigationData.params);
+          // Navigation ref hazır olana kadar bekle
+          const navigateWithDelay = () => {
+            if (navigationRef.current) {
+              navigate(route.screen, route.params);
+              console.log('[NotificationProvider] ✅ Navigated to:', route.screen, route.params);
+            } else {
+              // Ref hazır değilse 500ms bekle ve tekrar dene
+              setTimeout(navigateWithDelay, 500);
+            }
+          };
+          navigateWithDelay();
         } catch (error) {
-          console.error('[NotificationProvider] Navigation error:', error);
+          console.error('[NotificationProvider] ❌ Navigation error:', error);
+        }
+      } else {
+        // Fallback: Eski navigation data formatı
+        const navigationData = notification.data?.navigation as { screen: string; params?: Record<string, any> };
+        if (navigationData?.screen && navigationRef.current) {
+          try {
+            const navigateWithDelay = () => {
+              if (navigationRef.current) {
+                navigate(navigationData.screen, navigationData.params);
+              } else {
+                setTimeout(navigateWithDelay, 500);
+              }
+            };
+            navigateWithDelay();
+          } catch (error) {
+            console.error('[NotificationProvider] Navigation error:', error);
+          }
         }
       }
 
       // Mark notification as read if notificationId is provided
-      const notificationId = notification.data?.notificationId as string;
       if (notificationId) {
         queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
         queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
@@ -174,6 +328,24 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       notificationService.cleanup();
     };
   }, [state.isInitialized, queryClient]);
+
+  // Badge sync - Unread count ile badge count'u sync et
+  useEffect(() => {
+    if (!state.isInitialized || state.permissionStatus !== 'granted') {
+      return;
+    }
+
+    const syncBadge = async () => {
+      try {
+        await notificationService.setBadgeCount(unreadCount);
+        console.log('[NotificationProvider] ✅ Badge count synced:', unreadCount);
+      } catch (error) {
+        console.error('[NotificationProvider] ❌ Error syncing badge count:', error);
+      }
+    };
+
+    syncBadge();
+  }, [unreadCount, state.isInitialized, state.permissionStatus]);
 
   const value: NotificationContextType = {
     isInitialized: state.isInitialized,

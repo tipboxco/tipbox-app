@@ -15,6 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
+import { toImageSource } from '@/src/utils';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -113,6 +114,31 @@ const mockMessageHistory: MessageDetailItem[] = [
   },
 ];
 
+// Güvenli tarih formatlama fonksiyonu
+const formatMessageTime = (dateInput: string | Date | null | undefined): string => {
+  try {
+    if (!dateInput) {
+      return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    
+    // Geçersiz tarih kontrolü
+    if (isNaN(date.getTime())) {
+      console.warn('[MessageDetail] Invalid date:', dateInput);
+      return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    return date.toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch (error) {
+    console.error('[MessageDetail] Date formatting error:', error, 'Input:', dateInput);
+    return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  }
+};
+
 const MessageDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -173,16 +199,63 @@ const MessageDetailScreen: React.FC = () => {
   
   // Klavye yüksekliği state
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const keyboardHeightRef = useRef(0);
 
-  // Güvenli scroll helper - _tracking hatasını önlemek için
+  // FlatList content size ref (scroll logic için)
+  const contentSizeRef = useRef({ width: 0, height: 0 });
+  const layoutSizeRef = useRef({ width: 0, height: 0 });
+
+  // Güvenli scroll helper - Normal FlatList için scrollToEnd kullan
   const safeScrollToEnd = useCallback((animated: boolean = true) => {
     try {
-      flatListRef.current?.scrollToEnd({ animated });
+      // Normal FlatList'te en yeni mesaj en altta, scrollToEnd en alta scroll yapar
+      if (messages.length > 0) {
+        flatListRef.current?.scrollToEnd({ animated });
+      }
     } catch (error) {
-      // _tracking hatasını sessizce yakala
-      // console.warn('[MessageDetail] Scroll error:', error);
+      // Hata durumunda scrollToOffset ile son mesajın offset'ini hesapla
+      try {
+        // Son mesajın yaklaşık offset'ini hesapla (her mesaj ~100px varsayarak)
+        const estimatedOffset = messages.length * 100;
+        flatListRef.current?.scrollToOffset({ offset: estimatedOffset, animated });
+      } catch (offsetError) {
+        // Sessizce yakala
+      }
     }
-  }, []);
+  }, [messages.length]);
+
+  // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth)
+  const scrollByMessageHeight = useCallback((messageText: string) => {
+    try {
+      // Mesaj baloncuğu height'ını tahmin et
+      // Text padding: px="$3" py="$2" = ~12px top/bottom = 24px total
+      // Font size: 11, line height: ~16px
+      // Her satır ~20px, minimum ~40px (padding dahil)
+      // Max width: 80% of screen, average ~30 karakter/satır
+      const lines = Math.ceil(messageText.length / 30); // Ortalama 30 karakter/satır
+      const textHeight = Math.max(20, lines * 20); // Minimum 20px (tek satır)
+      const messageHeight = textHeight + 24; // Padding (12px top + 12px bottom)
+      
+      console.log('[MessageDetail] 📜 Scrolling by message height:', {
+        messageLength: messageText.length,
+        lines,
+        messageHeight,
+      });
+      
+      // Smooth scroll to end (mesaj baloncuğu height'ı kadar yukarı kayar)
+      flatListRef.current?.scrollToEnd({ animated: true });
+      
+      // Ekstra smooth scroll için küçük bir delay ile tekrar scroll
+      // Bu sayede mesaj baloncuğu tam görünür olur
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      console.warn('[MessageDetail] ⚠️ Scroll error, using fallback:', error);
+      // Hata durumunda normal scroll yap
+      safeScrollToEnd(true);
+    }
+  }, [safeScrollToEnd]);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
   // Route params'dan recipientUserId'yi al
@@ -192,26 +265,57 @@ const MessageDetailScreen: React.FC = () => {
   // Thread mesajlarını yükle
   const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(threadId);
 
-  // Klavye event listener'ları - sadece scroll için (KeyboardAvoidingView otomatik yönetir)
+  // Klavye event listener'ları - scroll ve buton pozisyonu için
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => {
+      (event) => {
+        const height = event.endCoordinates.height;
+        setKeyboardHeight(height);
+        keyboardHeightRef.current = height;
         setIsKeyboardVisible(true);
-        console.log('[MessageDetail] ⌨️ Keyboard opened');
+        console.log('[MessageDetail] ⌨️ Keyboard opened, height:', height);
         
-        // Klavye açıldığında en son mesaja scroll yap
+        // Klavye açıldığında en son mesaja scroll yap - KeyboardAvoidingView animasyonu tamamlanana kadar bekle
+        // iOS'ta animasyon daha uzun sürdüğü için daha fazla bekle
         setTimeout(() => {
           safeScrollToEnd(true);
-        }, 100);
+        }, Platform.OS === 'ios' ? 300 : 200);
+        
+        // Ek bir scroll daha yap (bazı durumlarda ilk scroll yeterli olmayabilir)
+        setTimeout(() => {
+          safeScrollToEnd(true);
+        }, Platform.OS === 'ios' ? 500 : 400);
+        
+        // Son bir scroll daha (kesinlik için)
+        setTimeout(() => {
+          safeScrollToEnd(true);
+        }, Platform.OS === 'ios' ? 700 : 600);
       }
     );
 
     const keyboardDidHideListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
+        setKeyboardHeight(0);
+        keyboardHeightRef.current = 0;
         setIsKeyboardVisible(false);
         console.log('[MessageDetail] ⌨️ Keyboard closed');
+        
+        // Klavye kapandığında: Eğer content tüm ekranı kaplıyorsa en alta scroll yap
+        // Yoksa mevcut pozisyonda kalsın
+        setTimeout(() => {
+          const contentHeight = contentSizeRef.current.height;
+          const layoutHeight = layoutSizeRef.current.height;
+          
+          // Eğer content height layout height'tan büyükse (tüm ekranı kaplıyorsa)
+          if (contentHeight > layoutHeight && messages.length > 0) {
+            console.log('[MessageDetail] 📜 Content fills screen, scrolling to end');
+            safeScrollToEnd(true);
+          } else {
+            console.log('[MessageDetail] 📜 Content does not fill screen, keeping position');
+          }
+        }, 100);
       }
     );
 
@@ -226,31 +330,91 @@ const MessageDetailScreen: React.FC = () => {
     if (threadMessages) {
       if (threadMessages.length > 0) {
         console.log('[MessageDetail] 📥 Thread messages loaded:', threadMessages.length);
-        const convertedMessages: MessageDetailItem[] = threadMessages.map((msg) => ({
-          id: msg.id,
-          text: msg.message,
-          timestamp: new Date(msg.sentAt).toLocaleTimeString('tr-TR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          isSent: msg.senderId === user?.id,
-          senderName: msg.senderId === user?.id ? undefined : params.senderName,
-          senderAvatar: msg.senderId === user?.id ? undefined : params.senderAvatar,
-          isRead: msg.isRead,
-          readAt: msg.readAt,
-        }));
-        setMessages(convertedMessages);
+        console.log('[MessageDetail] 📥 Sample message:', JSON.stringify(threadMessages[0], null, 2));
+        console.log('[MessageDetail] 📥 Params:', { senderName: params.senderName, hasAvatar: !!params.senderAvatar });
+        // Normal FlatList için mesajları normal sırada tut (en eski başta, en yeni sonda)
+        const convertedMessages: MessageDetailItem[] = threadMessages
+          .map((msg) => {
+            const isSent = msg.senderId === user?.id;
+            // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
+            const senderName = isSent 
+              ? undefined 
+              : (msg.senderName || params.senderName || 'Unknown');
+            const senderAvatar = isSent 
+              ? undefined 
+              : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : params.senderAvatar);
+            
+            return {
+              id: msg.id,
+              text: msg.message || '', // Boş string fallback
+              timestamp: formatMessageTime(msg.sentAt),
+              isSent,
+              senderName,
+              senderAvatar,
+              isRead: msg.isRead,
+              readAt: msg.readAt,
+              // Support request için özel alanlar
+              type: (msg.messageType === 'support-request' ? 'support_request' : 'message') as 'message' | 'support_request',
+              supportRequest: msg.messageType === 'support-request' ? {
+                supportType: msg.supportRequestType || 'GENERAL',
+                message: msg.message,
+                amount: msg.amount || 0,
+                status: (msg.supportRequestStatus || 'pending') as 'pending' | 'accepted' | 'completed' | 'declined',
+              } : undefined,
+            };
+          });
+          // Normal sırada tut - en eski mesaj index 0'da, en yeni mesaj sonda
         
-        // Scroll to bottom
+        // Optimistic mesajları koru (pending- ile başlayan mesajlar)
+        // Backend'den gelen mesajlarla merge yap
+        setMessages((prev) => {
+          // Pending mesajları al (henüz backend'den gelmemiş olanlar)
+          const pendingMessages = prev.filter(msg => msg.id.startsWith('pending-'));
+          
+          // Backend'den gelen mesajlarla pending mesajları birleştir
+          // Eğer pending mesaj backend'de varsa, backend versiyonunu kullan
+          const pendingMessagesToKeep = pendingMessages.filter(pendingMsg => {
+            // Backend'de bu mesaj var mı kontrol et (içerik ve timestamp'e göre)
+            const existsInBackend = convertedMessages.some(backendMsg => 
+              backendMsg.text === pendingMsg.text && 
+              Math.abs(new Date(backendMsg.timestamp).getTime() - new Date(pendingMsg.timestamp).getTime()) < 5000 // 5 saniye tolerans
+            );
+            return !existsInBackend; // Backend'de yoksa koru
+          });
+          
+          // Backend mesajları + henüz backend'e gitmemiş pending mesajlar
+          const merged = [...convertedMessages, ...pendingMessagesToKeep];
+          
+          // Timestamp'e göre sırala (en eski başta, en yeni sonda - normal FlatList için)
+          merged.sort((a, b) => {
+            const timeA = new Date(a.timestamp).getTime();
+            const timeB = new Date(b.timestamp).getTime();
+            return timeA - timeB; // Ascending (en eski başta, en yeni sonda)
+          });
+          
+          console.log('[MessageDetail] 📥 Merged messages:', {
+            backend: convertedMessages.length,
+            pending: pendingMessages.length,
+            kept: pendingMessagesToKeep.length,
+            total: merged.length,
+          });
+          
+          return merged;
+        });
+        
+        // Normal FlatList'te scroll to end = en alta scroll
         setTimeout(() => {
           safeScrollToEnd(false);
         }, 100);
       } else {
         console.log('[MessageDetail] 📭 No messages in thread yet');
-        setMessages([]);
+        // Pending mesajları koru (henüz backend'e gitmemiş olanlar)
+        setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
       }
     } else if (!isLoadingMessages) {
       console.log('[MessageDetail] ⚠️ Thread messages is null/undefined');
+      // Pending mesajları koru
+      setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
     }
   }, [threadMessages, isLoadingMessages, user?.id, params.senderName, params.senderAvatar]);
 
@@ -344,28 +508,64 @@ const MessageDetailScreen: React.FC = () => {
     // Mesaj tipine göre işle
     if (eventData.messageType === 'message') {
       // Normal mesaj
+      const isSent = eventData.senderId === currentUserId;
+      console.log('[MessageDetail] 📨 New message event data:', {
+        messageId: eventData.messageId,
+        message: eventData.message,
+        senderId: eventData.senderId,
+        currentUserId,
+        isSent,
+        senderName: params.senderName,
+        hasAvatar: !!params.senderAvatar,
+      });
       const newMessage: MessageDetailItem = {
         id: eventData.messageId,
-        text: eventData.message,
-        timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        isSent: eventData.senderId === currentUserId,
-        senderName: eventData.senderId === currentUserId ? undefined : params.senderName,
-        senderAvatar: eventData.senderId === currentUserId ? undefined : params.senderAvatar,
+        text: eventData.message || eventData.text || '', // Fallback için birden fazla field kontrol et
+        timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        isSent,
+        senderName: isSent ? undefined : (params.senderName || 'Unknown'),
+        senderAvatar: isSent ? undefined : params.senderAvatar,
         isRead: false, // Yeni mesaj henüz okunmadı
       };
+      console.log('[MessageDetail] 📨 Created message item:', {
+        id: newMessage.id,
+        text: newMessage.text,
+        isSent: newMessage.isSent,
+        senderName: newMessage.senderName,
+        hasAvatar: !!newMessage.senderAvatar,
+      });
 
       setMessages((prev) => {
-        // Duplicate kontrolü
-        if (prev.some((msg) => msg.id === eventData.messageId)) {
+        // Duplicate kontrolü - eğer mesaj zaten varsa (gerçek ID ile), optimistic mesajı (pending- ile başlayan) gerçek mesajla değiştir
+        const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
+        if (existingMessage) {
+          console.log('[MessageDetail] 📨 Message already exists, skipping duplicate');
           return prev;
         }
+        
+        // Optimistic mesajı (pending- ile başlayan) gerçek mesajla değiştir
+        const optimisticMessageIndex = prev.findIndex(
+          (msg) => msg.id.startsWith('pending-') && 
+                   msg.text === newMessage.text && 
+                   msg.isSent === newMessage.isSent
+        );
+        
+        if (optimisticMessageIndex !== -1) {
+          console.log('[MessageDetail] 📨 Replacing optimistic message with real message:', {
+            optimisticId: prev[optimisticMessageIndex].id,
+            realId: eventData.messageId,
+          });
+          // Optimistic mesajı gerçek mesajla değiştir
+          const updated = [...prev];
+          updated[optimisticMessageIndex] = newMessage;
+          return updated;
+        }
+        
+        // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
         return [...prev, newMessage];
       });
 
-      // Scroll to bottom
+      // Normal FlatList'te scroll to end = en alta scroll
       setTimeout(() => {
         safeScrollToEnd(true);
       }, 100);
@@ -387,25 +587,70 @@ const MessageDetailScreen: React.FC = () => {
   const handleMessageSent = useCallback((eventData: any) => {
     console.log('[MessageDetail] ✅ Message sent confirmation:', eventData);
     
-    // Thread ID kontrolü
-    if (eventData.threadId !== threadId) {
+    // Thread ID kontrolü - eventData'da threadId yoksa recipientId ile kontrol et
+    const eventThreadId = eventData.threadId;
+    if (eventThreadId && eventThreadId !== threadId) {
+      return;
+    }
+
+    const messageText = eventData.message || eventData.text || '';
+    const messageId = eventData.messageId;
+
+    if (!messageId) {
+      console.warn('[MessageDetail] ⚠️ message_sent event missing messageId');
       return;
     }
 
     // Optimistic update'teki mesajı gerçek mesaj ID'si ile güncelle
-    setMessages((prev) =>
-      prev.map((msg) => {
-        // Eğer bu mesaj henüz ID'si yoksa (optimistic update) ve içerik eşleşiyorsa
-        if (msg.text === eventData.message && msg.isSent && msg.id.startsWith('pending-')) {
-          return {
-            ...msg,
-            id: eventData.messageId,
-          };
-        }
-        return msg;
-      })
-    );
-  }, [threadId]);
+    setMessages((prev) => {
+      // Eğer mesaj zaten gerçek ID ile varsa (new_message event'i önce gelmiş), hiçbir şey yapma
+      const alreadyExists = prev.some(msg => msg.id === messageId);
+      if (alreadyExists) {
+        console.log('[MessageDetail] ✅ Message already exists with real ID, skipping update');
+        return prev;
+      }
+
+      // Optimistic mesajı bul (pending- ile başlayan, içerik eşleşen, gönderilen mesaj)
+      const optimisticIndex = prev.findIndex(
+        (msg) => 
+          msg.id.startsWith('pending-') && 
+          msg.text === messageText && 
+          msg.isSent
+      );
+
+      if (optimisticIndex !== -1) {
+        console.log('[MessageDetail] ✅ Updating optimistic message with real ID:', messageId);
+        const updated = [...prev];
+        updated[optimisticIndex] = {
+          ...updated[optimisticIndex],
+          id: messageId,
+        };
+        return updated;
+      }
+
+      // Optimistic mesaj bulunamadı (new_message event'i önce gelmiş olabilir veya başka bir sorun)
+      // Eğer mesaj zaten yoksa, ekle (güvenlik için)
+      const messageExists = prev.some(msg => msg.text === messageText && msg.isSent);
+      if (!messageExists && messageText) {
+        console.log('[MessageDetail] ⚠️ Optimistic message not found, adding new message');
+        const newMessage: MessageDetailItem = {
+          id: messageId,
+          text: messageText,
+          timestamp: formatMessageTime(eventData.timestamp || new Date()),
+          isSent: true,
+          isRead: false,
+        };
+        // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
+        return [...prev, newMessage];
+      }
+
+      return prev;
+    });
+
+    // Inbox listesini invalidate et (mesaj listesini güncelle)
+    // Thread mesajlarını invalidate etme - new_message event'i zaten mesajı ekleyecek
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+  }, [threadId, queryClient]);
 
   // Thread event handlers
   const handleThreadJoined = useCallback((data: { threadId: string }) => {
@@ -476,9 +721,45 @@ const MessageDetailScreen: React.FC = () => {
     }
   }, [threadId]);
 
-  // Mesaj okundu işaretleme - Basit implementasyon (Reanimated kullanmadan)
-  // onViewableItemsChanged kaldırıldı (_tracking hatası nedeniyle)
-  // Mesajlar scroll edildiğinde otomatik olarak okundu sayılacak
+  // Mesaj okundu işaretleme - Mesaj görünür olduğunda otomatik okundu işaretle
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 50, // Mesajın %50'si görünür olduğunda
+    minimumViewTime: 100, // En az 100ms görünür olmalı
+  };
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: any[] }) => {
+      // Görünür olan mesajları okundu olarak işaretle (sadece gönderilen mesajlar için)
+      viewableItems.forEach(({ item }) => {
+        if (item.isSent && !item.isRead && item.id && !item.id.startsWith('pending-')) {
+          console.log('[MessageDetail] 👁️ Marking message as read:', item.id);
+          // Local state'i güncelle
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id === item.id && msg.isSent && !msg.isRead) {
+                return {
+                  ...msg,
+                  isRead: true,
+                  readAt: new Date().toISOString(),
+                };
+              }
+              return msg;
+            })
+          );
+          
+          // Socket ile backend'e bildir (eğer threadId varsa)
+          if (threadId && socketMarkMessageAsRead) {
+            socketMarkMessageAsRead(item.id);
+          }
+        }
+      });
+    },
+    [threadId, socketMarkMessageAsRead]
+  );
+
+  const viewabilityConfigCallbackPairs = useRef([
+    { viewabilityConfig, onViewableItemsChanged },
+  ]);
 
   // Socket event listeners effect
   useEffect(() => {
@@ -622,7 +903,7 @@ const MessageDetailScreen: React.FC = () => {
           const newSupportRequest: MessageDetailItem = {
             id: Date.now().toString(),
             text: '',
-            timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+            timestamp: formatMessageTime(new Date()),
             isSent: true,
             type: 'support_request',
             supportRequest: {
@@ -633,6 +914,7 @@ const MessageDetailScreen: React.FC = () => {
             },
           };
 
+          // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
           setMessages((prev) => [...prev, newSupportRequest]);
 
           setTimeout(() => {
@@ -705,22 +987,32 @@ const MessageDetailScreen: React.FC = () => {
     const newMessage: MessageDetailItem = {
       id: optimisticMessageId,
       text: messageText.trim(),
-      timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: formatMessageTime(new Date()),
       isSent: true,
       isRead: false, // Henüz okunmadı
     };
 
+    // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
     setMessages((prev) => [...prev, newMessage]);
 
-    // Mesaj listesini en alta kaydır
+    // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth animasyon)
+    // State update tamamlandıktan sonra scroll yap
     setTimeout(() => {
-      safeScrollToEnd(true);
-    }, 100);
+      scrollByMessageHeight(messageText.trim());
+    }, 50);
 
     // 3. Socket bağlantısı kontrolü - Socket bağlıysa socket ile gönder
-    if (isConnected && isSocketReady && effectiveThreadId) {
-      console.log('[MessageDetail] 📤 Sending message via socket:', messageText.trim());
-      socketSendMessage(effectiveThreadId, messageText.trim());
+    // Dokümana göre: send_message event'i recipientId bekliyor (threadId değil)
+    if (isConnected && isSocketReady && recipientUserId) {
+      console.log('[MessageDetail] 📤 Sending message via socket:', {
+        message: messageText.trim(),
+        recipientId: recipientUserId,
+        threadId: effectiveThreadId,
+        optimisticId: optimisticMessageId,
+      });
+      socketSendMessage(recipientUserId, messageText.trim());
+      
+      // Inbox listesini invalidate etme - message_sent event'i geldiğinde invalidate edilecek
     } else {
       // Fallback: REST API ile mesaj gönder
       console.warn('[MessageDetail] ⚠️ Socket not ready, using REST API fallback');
@@ -752,7 +1044,7 @@ const MessageDetailScreen: React.FC = () => {
         Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı');
       }
     }
-  }, [user?.id, threadId, recipientUserId, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation, queryClient, refetchMessages]);
+  }, [user?.id, threadId, recipientUserId, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation, queryClient, refetchMessages, scrollByMessageHeight]);
 
   // Typing indicator handlers
   const handleTypingStart = useCallback(() => {
@@ -776,7 +1068,7 @@ const MessageDetailScreen: React.FC = () => {
       [id]: !prev[id]
     }));
 
-    // Eğer açılıyorsa (şu an kapalı), scroll'u aşağı kaydır
+    // Eğer açılıyorsa (şu an kapalı), scroll'u aşağı kaydır (normal FlatList için end)
     if (!isCurrentlyExpanded) {
       setTimeout(() => {
         safeScrollToEnd(true);
@@ -941,21 +1233,22 @@ const MessageDetailScreen: React.FC = () => {
       >
         {!isSent && (
           <HStack space="sm" alignItems="center" mb="$1">
-            {item.senderAvatar && (
-              <Image
-                source={item.senderAvatar}
-                alt={item.senderName || 'User'}
-                width={24}
-                height={24}
-                borderRadius={12}
-              />
-            )}
+            <Image
+              source={
+                toImageSource(item.senderAvatar || params.senderAvatar) ||
+                require('@/assets/avatar/ozan.png')
+              }
+              alt={item.senderName || params.senderName || 'User'}
+              width={24}
+              height={24}
+              borderRadius={12}
+            />
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
               fontSize={9}
               fontWeight="$medium"
             >
-              {item.senderName || params.senderName}
+              {item.senderName || params.senderName || 'Unknown User'}
             </Text>
           </HStack>
         )}
@@ -979,7 +1272,7 @@ const MessageDetailScreen: React.FC = () => {
               fontSize={11}
               fontWeight="$normal"
             >
-              {item.text}
+              {item.text || '(Mesaj içeriği yok)'}
             </Text>
           </Box>
 
@@ -993,30 +1286,32 @@ const MessageDetailScreen: React.FC = () => {
             </Text>
             {/* Read receipt (görüldü) - sadece gönderilen mesajlarda */}
             {isSent && (
-              <HStack space="xs" alignItems="center">
+              <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
                 {item.isRead ? (
+                  // Çift yeşil tik (WhatsApp stili)
                   <>
                     <Feather
                       name="check"
-                      size={12}
-                      color={isDark ? '#4CAF50' : '#4CAF50'}
+                      size={14}
+                      color="#4CAF50"
+                      style={{ position: 'absolute', left: 0, top: 0 }}
                     />
-                    <Text
-                      color={isDark ? '#4CAF50' : '#4CAF50'}
-                      fontSize={7}
-                      fontWeight="$normal"
-                    >
-                      Görüldü
-                    </Text>
+                    <Feather
+                      name="check"
+                      size={14}
+                      color="#4CAF50"
+                      style={{ position: 'absolute', left: 4, top: 0 }}
+                    />
                   </>
                 ) : (
+                  // Tek gri tik (gönderildi ama okunmadı)
                   <Feather
                     name="check"
                     size={12}
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   />
                 )}
-              </HStack>
+              </Box>
             )}
           </VStack>
         </HStack>
@@ -1025,11 +1320,12 @@ const MessageDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+    <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1 }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? -insets.bottom : 0}
+        enabled={true}
       >
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
           {/* Header */}
@@ -1041,21 +1337,56 @@ const MessageDetailScreen: React.FC = () => {
             onMenuPress={() => console.log('Menü tıklandı')}
           />
 
-          {/* Mesaj Geçmişi */}
+          {/* Mesaj Geçmişi - WhatsApp Stili Normal FlatList */}
           <Box flex={1}>
             <FlatList
               ref={flatListRef}
               data={messages}
               renderItem={renderMessageItem}
               keyExtractor={(item) => item.id}
+              inverted={false} // Normal FlatList: En eski mesajlar üstte, en yeni mesajlar altta
               contentContainerStyle={{ 
-                paddingTop: 16, 
-                paddingBottom: 16,
+                paddingTop: 16,
+                paddingBottom: isKeyboardVisible 
+                  ? keyboardHeight + 80 + 20  // Klavye + Input (~80px: height + padding) + extra padding
+                  : 16,
               }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="interactive"
               style={{ flex: 1 }}
+              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+              onContentSizeChange={(width, height) => {
+                // Content size'ı kaydet
+                contentSizeRef.current = { width, height };
+                
+                // İçerik değiştiğinde (yeni mesaj eklendiğinde) en alta scroll
+                // Sadece klavye açıksa scroll yap (gönder butonu zaten scroll yapıyor)
+                if (messages.length > 0 && isKeyboardVisible) {
+                  const delay = Platform.OS === 'ios' ? 200 : 150;
+                  setTimeout(() => {
+                    safeScrollToEnd(true);
+                  }, delay);
+                }
+              }}
+              onLayout={(event) => {
+                // Layout size'ı kaydet
+                const { width, height } = event.nativeEvent.layout;
+                layoutSizeRef.current = { width, height };
+                
+                // İlk render'da en alta scroll yap
+                if (messages.length > 0) {
+                  setTimeout(() => {
+                    safeScrollToEnd(false);
+                  }, 100);
+                }
+              }}
+              onScrollToIndexFailed={(info) => {
+                // Index bulunamazsa scrollToEnd kullan
+                setTimeout(() => {
+                  flatListRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+              }}
             />
           </Box>
 
@@ -1097,24 +1428,32 @@ const MessageDetailScreen: React.FC = () => {
             </Box>
           )}
 
-          {/* Mesaj Input - KeyboardAvoidingView ile otomatik yönetilir */}
-          <MessageInput
-            onSendMessage={handleSendMessage}
-            onAddImage={() => console.log('Görsel eklenecek')}
-            placeholder="Mesajınızı yazın..."
-            threadId={threadId}
-            onTypingStart={handleTypingStart}
-            onTypingStop={handleTypingStop}
-          />
-
-          {/* Action Buttons */}
+          {/* Action Buttons - Klavye ile birlikte yukarı kayar (KeyboardAvoidingView içinde) */}
           <MessageDetailActionButtons
             onSendTipsPress={handleSendTipsPress}
             onRequestSupportPress={handleRequestSupportPress}
-            keyboardHeight={0}
-            isKeyboardVisible={false}
+            keyboardHeight={keyboardHeight}
+            isKeyboardVisible={isKeyboardVisible}
             keyboardAnim={null}
           />
+
+          {/* Mesaj Input - En altta, KeyboardAvoidingView ile otomatik yönetilir */}
+          <Box 
+            pb={Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : Math.max(tabBarHeight, 0)}
+            zIndex={1001}
+            elevation={1001}
+            position="relative"
+            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+          >
+            <MessageInput
+              onSendMessage={handleSendMessage}
+              onAddImage={() => console.log('Görsel eklenecek')}
+              placeholder="Mesajınızı yazın..."
+              threadId={threadId}
+              onTypingStart={handleTypingStart}
+              onTypingStop={handleTypingStop}
+            />
+          </Box>
         </Box>
       </KeyboardAvoidingView>
     </SafeAreaView>

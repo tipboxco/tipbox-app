@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Dimensions, ScrollView, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Dimensions, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -29,6 +30,7 @@ import {
 } from '../api/hooks';
 import type { Notification, NotificationType } from '../api/types';
 import { useQueryClient } from '@tanstack/react-query';
+import { notificationAssetCache } from '@/src/services/NotificationAssetCache';
 
 const { width } = Dimensions.get('window');
 
@@ -316,6 +318,26 @@ export const NotificationsScreen: React.FC = () => {
 
     const filteredNotifications = getFilteredNotifications();
 
+    // Asset pre-caching - notifications yüklendiğinde images'ı cache'le
+    useEffect(() => {
+        if (filteredNotifications.length > 0) {
+            notificationAssetCache.cacheBatchNotifications(filteredNotifications);
+        }
+    }, [filteredNotifications.length]);
+
+    // FlashList için estimatedItemSize
+    const estimatedItemSize = useMemo(() => 100, []);
+
+    // FlashList renderItem
+    const renderNotificationItem = ({ item }: { item: Notification }) => (
+        <NotificationCard
+            notification={item}
+            onPress={() => handleNotificationPress(item)}
+            onMarkAsRead={handleMarkAsRead}
+            onDelete={handleDelete}
+        />
+    );
+
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '#000000' : '#FAFAFA'}>
@@ -390,26 +412,32 @@ export const NotificationsScreen: React.FC = () => {
                     </Text>
                 </Box>
             ) : (
-                <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-                    style={{ flex: 1 }}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-                    }
-                >
-                    <VStack space="md">
-                        {filteredNotifications.map((notification) => (
-                            <NotificationCard
-                                key={notification.id}
-                                notification={notification}
-                                onPress={() => handleNotificationPress(notification)}
-                                onMarkAsRead={handleMarkAsRead}
-                                onDelete={handleDelete}
-                            />
-                        ))}
-                    </VStack>
-                </ScrollView>
+                <Box flex={1}>
+                    <FlashList
+                        data={filteredNotifications}
+                        renderItem={renderNotificationItem}
+                        keyExtractor={(item) => item.id}
+                        estimatedItemSize={estimatedItemSize}
+                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+                        showsVerticalScrollIndicator={false}
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        // Performance optimizations
+                        removeClippedSubviews={true}
+                        maxToRenderPerBatch={10}
+                        updateCellsBatchingPeriod={50}
+                        initialNumToRender={10}
+                        windowSize={10}
+                        // Empty state
+                        ListEmptyComponent={
+                            <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
+                                <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
+                                    {searchQuery ? 'Arama sonucu bulunamadı.' : 'Henüz bildirim yok.'}
+                                </Text>
+                            </Box>
+                        }
+                    />
+                </Box>
             )}
         </Box>
         </SafeAreaView>

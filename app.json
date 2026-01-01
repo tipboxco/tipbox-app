@@ -30,6 +30,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",
         "NSMicrophoneUsageDescription": "Video kaydı için mikrofona ihtiyaç var.",
+        "NSUserNotificationsUsageDescription": "Bildirimleri almak için izin gereklidir.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsArbitraryLoadsInWebContent": true,
@@ -63,7 +64,9 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE"
       ]
     },
     "web": {

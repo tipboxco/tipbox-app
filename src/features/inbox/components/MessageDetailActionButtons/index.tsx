@@ -27,8 +27,11 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
-    // Basit bottom offset - KeyboardAvoidingView ile otomatik yönetilir
-    const bottomOffset = isKeyboardVisible ? 20 : 80;
+    // Bottom offset - MessageInput'un üzerinde olmalı
+    // WhatsApp/Instagram benzeri: KeyboardAvoidingView tüm ekranı yukarı kaydırır
+    // Absolute butonlar da parent container (KeyboardAvoidingView) ile birlikte yukarı kayar
+    // Bu yüzden sabit bir offset yeterli
+    const bottomOffset = 110; // Input'un üstünde sabit mesafe (klavye açık/kapalı fark etmez)
 
     return (
         <Box

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Keyboard } from 'react-native';
 import {
   Box,
   HStack,
@@ -75,8 +76,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         clearTimeout(typingTimeoutRef.current);
       }
 
-      onSendMessage(message.trim());
-      setMessage('');
+      const messageToSend = message.trim();
+      setMessage(''); // Input'u temizle
+      Keyboard.dismiss(); // Klavyeyi kapat
+      
+      // Mesajı gönder
+      onSendMessage(messageToSend);
     }
   };
 
@@ -87,6 +92,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       borderColor={isDark ? '#333' : '#E9E9E9'}
       px="$4"
       py="$3"
+      zIndex={1001}
+      elevation={1001}
+      position="relative"
     >
       <HStack space="sm" alignItems="center">
         {/* Görsel Ekleme Butonu */}

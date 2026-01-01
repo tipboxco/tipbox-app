@@ -19,6 +19,7 @@ class ExpoNotificationService {
   private config: NotificationServiceConfig;
   private handler?: NotificationHandler;
   private notificationListeners: Notifications.Subscription[] = [];
+  private tokenChangeListener?: Notifications.Subscription;
   private state: NotificationServiceState = {
     isInitialized: false,
     permissionStatus: 'undetermined',
@@ -163,11 +164,28 @@ class ExpoNotificationService {
   private async registerForPushNotifications() {
     try {
       if (Platform.OS === 'android') {
+        // Android notification channels - Best practice: farklı öncelik seviyeleri
         await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
+          name: 'Genel Bildirimler',
+          description: 'Genel bildirimler için varsayılan kanal',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+          sound: 'default',
+          enableVibrate: true,
+          showBadge: true,
+        });
+
+        // Yüksek öncelikli bildirimler için ayrı kanal
+        await Notifications.setNotificationChannelAsync('high_priority', {
+          name: 'Önemli Bildirimler',
+          description: 'Mesajlar ve önemli bildirimler',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#FF231F7C',
+          sound: 'default',
+          enableVibrate: true,
+          showBadge: true,
         });
       }
 
@@ -182,9 +200,27 @@ class ExpoNotificationService {
         token.data,
         Platform.OS === 'ios' ? 'ios' : 'android'
       );
+
+      // Token değişikliklerini dinle (iOS'ta token yenilenebilir)
+      this.setupTokenChangeListener();
     } catch (error) {
       console.error('[ExpoNotificationService] Error registering for push notifications:', error);
     }
+  }
+
+  /**
+   * Token değişikliklerini dinle ve backend'e bildir
+   * iOS'ta token yenilenebilir (app update, OS update, etc.)
+   */
+  private setupTokenChangeListener() {
+    // Mevcut listener'ı temizle
+    if (this.tokenChangeListener) {
+      this.tokenChangeListener.remove();
+    }
+
+    // Expo Notifications API'de token change listener yok
+    // Bu yüzden periyodik kontrol yapabiliriz veya app state değişiminde kontrol ederiz
+    // Şimdilik initialize'da bir kez alıyoruz
   }
 
   async sendLocalNotification(payload: NotificationPayload) {
@@ -218,9 +254,87 @@ class ExpoNotificationService {
     this.notificationListeners.push(receivedListener, responseListener);
   }
 
+  /**
+   * Badge count'u güncelle
+   * Unread notification count ile sync et
+   */
+  async setBadgeCount(count: number): Promise<void> {
+    try {
+      if (Platform.OS === 'ios') {
+        await Notifications.setBadgeCountAsync(count);
+        console.log('[ExpoNotificationService] ✅ Badge count updated:', count);
+      } else {
+        // Android'de badge count native olarak desteklenmez
+        // Ancak notification channel'ları üzerinden gösterilebilir
+        console.log('[ExpoNotificationService] ℹ️ Badge count (Android):', count);
+      }
+    } catch (error) {
+      console.error('[ExpoNotificationService] ❌ Error setting badge count:', error);
+    }
+  }
+
+  /**
+   * Badge count'u sıfırla
+   */
+  async clearBadge(): Promise<void> {
+    await this.setBadgeCount(0);
+  }
+
+  /**
+   * Mevcut badge count'u al
+   */
+  async getBadgeCount(): Promise<number> {
+    try {
+      if (Platform.OS === 'ios') {
+        return await Notifications.getBadgeCountAsync();
+      }
+      return 0; // Android'de 0 döndür
+    } catch (error) {
+      console.error('[ExpoNotificationService] ❌ Error getting badge count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Token'ı yeniden al ve backend'e kaydet
+   * App state değişiminde veya token refresh gerektiğinde çağrılabilir
+   */
+  async refreshPushToken(): Promise<string | null> {
+    try {
+      if (this.state.permissionStatus !== 'granted') {
+        console.log('[ExpoNotificationService] ⚠️ Permission not granted, cannot refresh token');
+        return null;
+      }
+
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+
+      // Token değiştiyse backend'e kaydet
+      if (token.data !== this.state.expoPushToken) {
+        console.log('[ExpoNotificationService] 🔄 Token changed, updating backend...');
+        this.state.expoPushToken = token.data;
+        await this.registerPushTokenWithRetry(
+          token.data,
+          Platform.OS === 'ios' ? 'ios' : 'android'
+        );
+      }
+
+      return token.data;
+    } catch (error) {
+      console.error('[ExpoNotificationService] ❌ Error refreshing push token:', error);
+      return null;
+    }
+  }
+
   cleanup() {
     this.notificationListeners.forEach(listener => listener.remove());
     this.notificationListeners = [];
+    
+    if (this.tokenChangeListener) {
+      this.tokenChangeListener.remove();
+      this.tokenChangeListener = undefined;
+    }
   }
 }
 
