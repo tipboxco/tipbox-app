@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
@@ -15,26 +16,48 @@ import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { InboxNavigator } from '@/src/features/inbox/navigation';
-import { buildFeatureStack } from './build-stack';
-
-export type TabParamList = {
-  FeedStack: undefined;
-  ExploreStack: undefined;
-  CatalogStack: undefined;
-  EventsStack: undefined;
-  NotificationStack: undefined;
-  InboxStack: undefined;
-};
+import type { TabParamList } from './types/tab.types';
+import type { MainStackParamList } from './types/main.types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
+const FeatureStack = createNativeStackNavigator<MainStackParamList>();
 
-// Her feature stack'i tek satırda oluşturuyoruz
-const FeedStackNavigator = buildFeatureStack('Feed', FeedNavigator);
-const ExploreStackNavigator = buildFeatureStack('Explore', ExploreNavigator);
-const CatalogStackNavigator = buildFeatureStack('Catalog', CatalogNavigator);
-const EventsStackNavigator = buildFeatureStack('Events', EventsNavigator);
-const NotificationStackNavigator = buildFeatureStack('Notification', NotificationsNavigator);
-const InboxStackNavigator = buildFeatureStack('Inbox', InboxNavigator);
+// Feature Stack Navigators - Shared screens YOK, sadece feature screens
+const FeedStackNavigator = () => (
+  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
+    <FeatureStack.Screen name="Feed" component={FeedNavigator} />
+  </FeatureStack.Navigator>
+);
+
+const ExploreStackNavigator = () => (
+  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
+    <FeatureStack.Screen name="Explore" component={ExploreNavigator} />
+  </FeatureStack.Navigator>
+);
+
+const CatalogStackNavigator = () => (
+  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
+    <FeatureStack.Screen name="Catalog" component={CatalogNavigator} />
+  </FeatureStack.Navigator>
+);
+
+const EventsStackNavigator = () => (
+  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
+    <FeatureStack.Screen name="Events" component={EventsNavigator} />
+  </FeatureStack.Navigator>
+);
+
+const NotificationStackNavigator = () => (
+  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
+    <FeatureStack.Screen name="Notification" component={NotificationsNavigator} />
+  </FeatureStack.Navigator>
+);
+
+const InboxStackNavigator = () => (
+  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
+    <FeatureStack.Screen name="Inbox" component={InboxNavigator} />
+  </FeatureStack.Navigator>
+);
 
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();

@@ -33,10 +33,11 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
     const [isShared, setIsShared] = useState(false);
     
     // Animated counter states
-    const [likesCount, setLikesCount] = useState(data.stats.likes);
-    const [commentsCount, setCommentsCount] = useState(data.stats.comments);
-    const [sharesCount, setSharesCount] = useState(data.stats.shares);
-    const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
+    // Optional chaining ile güvenli erişim (postData sadece ID içeriyorsa stats undefined olabilir)
+    const [likesCount, setLikesCount] = useState(data.stats?.likes || 0);
+    const [commentsCount, setCommentsCount] = useState(data.stats?.comments || 0);
+    const [sharesCount, setSharesCount] = useState(data.stats?.shares || 0);
+    const [bookmarksCount, setBookmarksCount] = useState(data.stats?.bookmarks || 0);
 
     // Interaction hooks
     const likePostMutation = useLikePost();
@@ -57,11 +58,13 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
 
     // Sync stats with data prop changes
     useEffect(() => {
-        setLikesCount(data.stats.likes);
-        setCommentsCount(data.stats.comments);
-        setSharesCount(data.stats.shares);
-        setBookmarksCount(data.stats.bookmarks);
-    }, [data.stats.likes, data.stats.comments, data.stats.shares, data.stats.bookmarks]);
+        if (data.stats) {
+            setLikesCount(data.stats.likes || 0);
+            setCommentsCount(data.stats.comments || 0);
+            setSharesCount(data.stats.shares || 0);
+            setBookmarksCount(data.stats.bookmarks || 0);
+        }
+    }, [data.stats?.likes, data.stats?.comments, data.stats?.shares, data.stats?.bookmarks]);
 
     // Action handlers
     const handleLike = () => {
@@ -105,30 +108,34 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
             {/* Header */}
             <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
-                    <Image
-                        source={toImageSource(data.user.avatar)!}
-                        alt={data.user.name}
-                        mr={8}
-                        width={42}
-                        height={42}
-                        borderRadius={100}
-                    />
+                    {data.user?.avatar && (
+                        <Image
+                            source={toImageSource(data.user.avatar)!}
+                            alt={data.user?.name || 'User'}
+                            mr={8}
+                            width={42}
+                            height={42}
+                            borderRadius={100}
+                        />
+                    )}
                     <VStack flex={1}>
                         <Text
                             color={isDark ? '$textDark50' : '#000'}
                             fontSize="$xs"
                             fontWeight="$bold"
                         >
-                            {data.user.name}
+                            {data.user?.name || 'Kullanıcı'}
                         </Text>
-                        <Text
-                            color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={config.tokens.fontSizes['3xs'] as number}
-                            numberOfLines={1}
-                            maxWidth={250}
-                        >
-                            {data.user.title}
-                        </Text>
+                        {data.user?.title && (
+                            <Text
+                                color={isDark ? '$textDark400' : '#787878'}
+                                fontSize={config.tokens.fontSizes['3xs'] as number}
+                                numberOfLines={1}
+                                maxWidth={250}
+                            >
+                                {data.user.title}
+                            </Text>
+                        )}
                     </VStack>
                     <Pressable>
                         <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
@@ -163,14 +170,16 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
             }
 
             {/* Content */}
-            <VStack px={12} pb={8}>
-                <Text
-                    color={isDark ? '$textDark50' : '#000'}
-                    fontSize={config.tokens.fontSizes['2xs'] as number}
-                >
-                    {data.content}
-                </Text>
-            </VStack>
+            {data.content && (
+                <VStack px={12} pb={8}>
+                    <Text
+                        color={isDark ? '$textDark50' : '#000'}
+                        fontSize={config.tokens.fontSizes['2xs'] as number}
+                    >
+                        {data.content}
+                    </Text>
+                </VStack>
+            )}
 
             {/* Translate Button */}
             <Box pb="$3" px="$3">

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
   Box,
   VStack,
@@ -153,9 +152,11 @@ const MessageDetailScreen: React.FC = () => {
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
-  // Safe area and tab bar insets
+  // Safe area insets
+  // Not: MessageDetail artık GlobalStackGroup'ta (Root seviyesinde), Tab Navigator içinde değil
+  // Bu yüzden useBottomTabBarHeight() kullanılamaz - tab bar yok
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = 0; // GlobalStackGroup ekranlarında tab bar yok
 
   // Route params'dan gelen verileri al
   const params = (route.params as MessageDetailScreenParams) || {

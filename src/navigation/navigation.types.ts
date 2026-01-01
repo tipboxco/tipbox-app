@@ -1,41 +1,18 @@
-import { NavigatorScreenParams } from '@react-navigation/native';
-import { AuthStackParamList } from '@/src/features/auth/navigation';
-import { SettingsStackParamList } from '@/src/features/settings/navigation';
-import { MoreSchoiseStackParamList } from '@/src/features/moreSchoise/navigation';
-import { FeedStackParamList } from '@/src/features/feed/navigation';
-import { ExploreStackParamList } from '@/src/features/explore/navigation';
-import { CatalogStackParamList } from '@/src/features/catalog/navigation';
-import { EventsStackParamList } from '@/src/features/events/navigation';
-import { ProfileStackParamList } from '@/src/features/profile/navigation';
-import { PostStackParamList } from '@/src/features/post/navigation';
-import { NotificationsStackParamList } from '@/src/features/notifications/navigation';
-import { BookmarksStackParamList } from '@/src/features/bookmarks/navigation';
-import { MarketplaceStackParamList } from '@/src/features/marketplace/navigation';
-import { InboxStackParamList } from '@/src/features/inbox/navigation';
-import { WalletStackParamList } from '@/src/features/wallet/navigation';
+/**
+ * Navigation Types - Legacy Export
+ * 
+ * Bu dosya backward compatibility için korunuyor.
+ * Yeni kod için şu dosyaları kullanın:
+ * - src/navigation/types/root.types.ts
+ * - src/navigation/types/main.types.ts
+ * - src/navigation/types/tab.types.ts
+ */
 
-// Main Stack için type tanımlaması (TabNavigator içindeki Stack)
-// Her tab'ın kendi Stack Navigator'ı var ve tüm ekranlar bu Stack'ler içinde
-export type MainStackParamList = {
-  Feed: NavigatorScreenParams<FeedStackParamList>;
-  Explore: NavigatorScreenParams<ExploreStackParamList>;
-  Catalog: NavigatorScreenParams<CatalogStackParamList>;
-  Events: NavigatorScreenParams<EventsStackParamList>;
-  Notification: NavigatorScreenParams<NotificationsStackParamList>;
-  Inbox: NavigatorScreenParams<InboxStackParamList>;
-  Profile: NavigatorScreenParams<ProfileStackParamList>;
-  Post: NavigatorScreenParams<PostStackParamList>;
-  Bookmarks: NavigatorScreenParams<BookmarksStackParamList>;
-  Marketplace: NavigatorScreenParams<MarketplaceStackParamList>;
-  Wallet: NavigatorScreenParams<WalletStackParamList>;
-};
+// Re-export new type definitions
+export type { RootStackParamList } from './types/root.types';
+export type { MainStackParamList } from './types/main.types';
+export type { TabParamList } from './types/tab.types';
 
-// Root Stack için type tanımlaması
-export type RootStackParamList = {
-  Auth: NavigatorScreenParams<AuthStackParamList>;
-  Main: NavigatorScreenParams<MainStackParamList>;
-  Settings: NavigatorScreenParams<SettingsStackParamList>;
-  MoreSchoise: NavigatorScreenParams<MoreSchoiseStackParamList>;
-  Wallet: NavigatorScreenParams<WalletStackParamList>;
-  Profile: NavigatorScreenParams<ProfileStackParamList>;
-};
+// Legacy exports (deprecated - use types/root.types.ts instead)
+export type { RootStackParamList as RootStackParamListLegacy } from './types/root.types';
+export type { MainStackParamList as MainStackParamListLegacy } from './types/main.types';

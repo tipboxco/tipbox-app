@@ -30,6 +30,10 @@ import {
 import type { Notification, NotificationType } from '../api/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationAssetCache } from '@/src/services/NotificationAssetCache';
+import { navigationService } from '@/src/services/NavigationService';
+import { notificationService } from '@/src/services/NotificationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 
 const { width } = Dimensions.get('window');
 
@@ -40,7 +44,8 @@ const NotificationCard: React.FC<{
     onPress?: () => void;
     onMarkAsRead?: () => void;
     onDelete?: () => void;
-}> = ({ notification, onPress, onMarkAsRead, onDelete }) => {
+    hasNavigationAction?: boolean; // Navigation action var mı?
+}> = ({ notification, onPress, onMarkAsRead, onDelete, hasNavigationAction = false }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const markAsReadMutation = useMarkNotificationAsRead();
@@ -167,8 +172,9 @@ const NotificationCard: React.FC<{
                         </HStack>
                     </HStack>
 
-                    {/* Navigation Action */}
-                    {notification.navigation && (
+                    {/* Navigation Action Button */}
+                    {/* Backend'den navigation data varsa veya NotificationService'den action varsa göster */}
+                    {(notification.navigation || hasNavigationAction) && (
                         <Pressable
                             onPress={handlePress}
                             bg="#E8FF6B"
@@ -279,43 +285,72 @@ export const NotificationsScreen: React.FC = () => {
         setRefreshing(false);
     };
 
+    /**
+     * Notification'a tıklandığında navigation action'ı al
+     * NotificationService kullanarak domain logic'i merkezi hale getiriyoruz
+     */
+    const getNavigationAction = useCallback((notification: Notification) => {
+        // NotificationService'den navigation action'ı al
+        // Bu sayede navigation logic tek bir yerde (domain service) tutuluyor
+        return notificationService.getNavigationAction(notification);
+    }, []);
+
+    /**
+     * Notification'a tıklandığında navigation yap
+     * Yeni hibrit mimariye göre NavigationService kullanır
+     * 
+     * Navigation Flow:
+     * 1. NotificationService'den navigation action al
+     * 2. Global screens (Post, Profile, Wallet, vb.) → Root'tan açılır
+     * 3. Tab screens (Feed, Explore, vb.) → Nested navigation ile açılır
+     */
     const handleNotificationPress = useCallback((notification: Notification) => {
-        if (notification.navigation) {
-            try {
-                // Screen adını kontrol et ve doğru formatta navigate et
-                const screenName = notification.navigation.screen;
-                if (!screenName) {
-                    console.error('[NotificationsScreen] ❌ Navigation error: Screen name is missing');
-                    return;
-                }
-
-                // TabNavigator'daki screen adlarıyla eşleştir
-                const screenMap: Record<string, string> = {
-                    'Notifications': 'NotificationStack',
-                    'Notification': 'NotificationStack',
-                    'Inbox': 'InboxStack',
-                    'Messages': 'InboxStack',
-                    'MessageDetail': 'InboxStack',
-                    'Feed': 'FeedStack',
-                    'PostDetail': 'Post', // Shared screen
-                    'Profile': 'Profile', // Shared screen
-                    'Explore': 'ExploreStack',
-                    'Catalog': 'CatalogStack',
-                    'Events': 'EventsStack',
-                    'EventDetail': 'EventsStack',
-                    'Wallet': 'Wallet', // Shared screen
-                    'Settings': 'Settings', // Shared screen
-                };
-
-                const mappedScreen = screenMap[screenName] || screenName;
-                
-                // Navigate et
-                navigation.navigate(mappedScreen as any, notification.navigation.params);
-            } catch (error) {
-                console.error('[NotificationsScreen] ❌ Navigation error:', error);
+        try {
+            const action = getNavigationAction(notification);
+            
+            if (!action) {
+                console.log('[NotificationsScreen] ℹ️ No navigation action for notification:', notification.type);
+                return;
             }
+
+            const { route, params } = action;
+
+            // Global screens (RootStackParamList) → NavigationService.navigate()
+            // Bu ekranlar GlobalStackGroup'ta tanımlı: Post, Profile, Wallet, MessageDetail, vb.
+            const rootRouteValues = Object.values(ROOT_ROUTES) as string[];
+            if (rootRouteValues.includes(route)) {
+                navigationService.navigate(route as any, params, {
+                    priority: 'high', // Kullanıcı tıklaması yüksek öncelikli
+                    force: false, // App State Awareness kontrolü yapılır
+                });
+                console.log('[NotificationsScreen] ✅ Navigated to global screen:', route, params);
+                return;
+            }
+
+            // Tab screens (MainStackParamList) → NavigationService.navigateNested()
+            // Bu ekranlar TabNavigator içinde: Feed, Explore, Catalog, Events, vb.
+            const tabRouteValues = Object.values(TAB_ROUTES) as string[];
+            if (tabRouteValues.includes(route)) {
+                const tabRoute = route as keyof typeof TAB_ROUTES;
+                const screenName = params?.screen || 'FeedScreen';
+                const screenParams = params?.params || {};
+                
+                navigationService.navigateNested(tabRoute as any, screenName as any, screenParams, {
+                    priority: 'high', // Kullanıcı tıklaması yüksek öncelikli
+                    force: false, // App State Awareness kontrolü yapılır
+                });
+                console.log('[NotificationsScreen] ✅ Navigated to tab screen:', tabRoute, screenName, screenParams);
+                return;
+            }
+
+            // Fallback: Bilinmeyen route (backward compatibility)
+            console.warn('[NotificationsScreen] ⚠️ Unknown route, using fallback navigation:', route);
+            navigation.navigate(route as any, params);
+        } catch (error) {
+            console.error('[NotificationsScreen] ❌ Navigation error:', error);
+            console.error('[NotificationsScreen] Notification:', notification);
         }
-    }, [navigation]);
+    }, [getNavigationAction, navigation]);
 
     const handleMarkAsRead = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
@@ -371,15 +406,20 @@ export const NotificationsScreen: React.FC = () => {
 
     // FlatList renderItem - useCallback ile memoize et
     const renderNotificationItem = React.useCallback(({ item }: { item: Notification }) => {
+        // Notification için navigation action var mı kontrol et
+        const navigationAction = getNavigationAction(item);
+        const hasNavigationAction = navigationAction !== null;
+
         return (
             <NotificationCard
                 notification={item}
                 onPress={() => handleNotificationPress(item)}
                 onMarkAsRead={handleMarkAsRead}
                 onDelete={handleDelete}
+                hasNavigationAction={hasNavigationAction}
             />
         );
-    }, [handleNotificationPress, handleMarkAsRead, handleDelete]);
+    }, [handleNotificationPress, handleMarkAsRead, handleDelete, getNavigationAction]);
     
     // Key extractor - unique ID kullan
     const keyExtractor = React.useCallback((item: Notification) => item.id, []);

@@ -1,5 +1,8 @@
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
+import type { RootStackParamList } from '@/src/navigation/types/root.types';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 
 /**
  * Deep Link Service
@@ -8,7 +11,7 @@ import { Platform } from 'react-native';
  * - URL schema parsing (tipboxapp://)
  * - Initial URL handling (killed state)
  * - Notification data parsing
- * - Navigation route mapping
+ * - Navigation route mapping (RootStackParamList uyumlu)
  */
 class DeepLinkService {
   private scheme: string = 'tipboxapp';
@@ -82,74 +85,100 @@ class DeepLinkService {
       // Route mapping - screen name'e göre params parse et
       switch (screen) {
         case 'notifications':
-          if (parts[1]) {
-            params.notificationId = parts[1];
-          }
-          return { screen: 'Notifications', params };
+          // Tab route'a yönlendir (NotificationStack)
+          return { screen: TAB_ROUTES.NOTIFICATION, params };
 
         case 'messages':
         case 'inbox':
           if (parts[1] === 'thread' && parts[2]) {
+            // GlobalStackGroup - MessageDetail
             return {
-              screen: 'MessageDetail',
+              screen: ROOT_ROUTES.MESSAGE_DETAIL,
               params: {
+                messageId: parts[2],
                 threadId: parts[2],
-                recipientUserId: parts[2], // Fallback
+                recipientUserId: parts[2],
               },
             };
           }
-          return { screen: 'Inbox', params };
+          // Tab route'a yönlendir (InboxStack)
+          return { screen: TAB_ROUTES.INBOX, params };
 
         case 'posts':
         case 'post':
           if (parts[1]) {
+            // GlobalStackGroup - Post
             return {
-              screen: 'PostDetail',
+              screen: ROOT_ROUTES.POST,
               params: {
-                postId: parts[1],
+                screen: 'PostDetailScreen',
+                params: {
+                  postData: { id: parts[1] },
+                  type: 'post',
+                },
               },
             };
           }
-          return { screen: 'Feed', params };
+          // Tab route'a yönlendir (FeedStack)
+          return { screen: TAB_ROUTES.FEED, params };
 
         case 'profile':
         case 'user':
+          // GlobalStackGroup - Profile
           if (parts[1] === 'user' && parts[2]) {
             return {
-              screen: 'Profile',
+              screen: ROOT_ROUTES.PROFILE,
               params: {
-                userId: parts[2],
+                screen: 'ProfileMain',
+                params: {
+                  userId: parts[2],
+                },
               },
             };
           } else if (parts[1]) {
             return {
-              screen: 'Profile',
+              screen: ROOT_ROUTES.PROFILE,
               params: {
-                userId: parts[1],
+                screen: 'ProfileMain',
+                params: {
+                  userId: parts[1],
+                },
               },
             };
           }
-          return { screen: 'Profile', params };
+          return {
+            screen: ROOT_ROUTES.PROFILE,
+            params: {
+              screen: 'ProfileMain',
+              params: {},
+            },
+          };
 
         case 'events':
+          // Tab route'a yönlendir (EventsStack)
           if (parts[1]) {
             return {
-              screen: 'EventDetail',
+              screen: TAB_ROUTES.EVENTS,
               params: {
-                eventId: parts[1],
+                screen: 'EventDetail',
+                params: {
+                  eventId: parts[1],
+                },
               },
             };
           }
-          return { screen: 'Events', params };
+          return { screen: TAB_ROUTES.EVENTS, params };
 
         case 'wallet':
-          return { screen: 'Wallet', params };
+          // GlobalStackGroup - Wallet
+          return { screen: ROOT_ROUTES.WALLET, params: { screen: 'WalletScreen' } };
 
         case 'settings':
+          // Root route - Settings
           if (parts[1]) {
             params.tab = parts[1];
           }
-          return { screen: 'Settings', params };
+          return { screen: ROOT_ROUTES.SETTINGS, params };
 
         default:
           // Fallback: screen name olarak kullan
@@ -196,38 +225,51 @@ class DeepLinkService {
       if (data.metadata) {
         const metadata = data.metadata;
         
-        // Post notification
+        // Post notification - GlobalStackGroup
         if (metadata.postId) {
           return {
-            screen: 'PostDetail',
-            params: { postId: metadata.postId },
+            screen: ROOT_ROUTES.POST,
+            params: {
+              screen: 'PostDetailScreen',
+              params: {
+                postData: { id: metadata.postId },
+                type: 'post',
+              },
+            },
           };
         }
 
-        // Message notification
+        // Message notification - GlobalStackGroup
         if (metadata.threadId) {
           return {
-            screen: 'MessageDetail',
+            screen: ROOT_ROUTES.MESSAGE_DETAIL,
             params: {
+              messageId: metadata.threadId,
               threadId: metadata.threadId,
               recipientUserId: metadata.userId || metadata.threadId,
             },
           };
         }
 
-        // Profile notification
+        // Profile notification - GlobalStackGroup
         if (metadata.userId) {
           return {
-            screen: 'Profile',
-            params: { userId: metadata.userId },
+            screen: ROOT_ROUTES.PROFILE,
+            params: {
+              screen: 'ProfileMain',
+              params: { userId: metadata.userId },
+            },
           };
         }
 
-        // Event notification
+        // Event notification - Tab route
         if (metadata.eventId) {
           return {
-            screen: 'EventDetail',
-            params: { eventId: metadata.eventId },
+            screen: TAB_ROUTES.EVENTS,
+            params: {
+              screen: 'EventDetail',
+              params: { eventId: metadata.eventId },
+            },
           };
         }
       }
@@ -237,20 +279,26 @@ class DeepLinkService {
         const type = data.type as string;
         
         if (type.includes('MESSAGE') || type.includes('DM')) {
-          return { screen: 'Inbox' };
+          return { screen: TAB_ROUTES.INBOX };
         }
         
         if (type.includes('POST') || type.includes('COMMENT')) {
-          return { screen: 'Feed' };
+          return { screen: TAB_ROUTES.FEED };
         }
         
         if (type.includes('TRUST') || type.includes('FOLLOW')) {
-          return { screen: 'Profile', params: { userId: data.userId } };
+          return {
+            screen: ROOT_ROUTES.PROFILE,
+            params: {
+              screen: 'ProfileMain',
+              params: { userId: data.userId },
+            },
+          };
         }
       }
 
-      // Default: Notifications screen
-      return { screen: 'Notifications' };
+      // Default: Notifications screen (Tab route)
+      return { screen: TAB_ROUTES.NOTIFICATION };
     } catch (error) {
       console.error('[DeepLinkService] ❌ Error parsing notification data:', error);
       return null;

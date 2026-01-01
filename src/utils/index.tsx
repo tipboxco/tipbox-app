@@ -33,9 +33,19 @@ export function useSafeAreaValues(side?: InsetsKey) {
 
 /**
  * Bottom tab bar yüksekliğini döndürür.
+ * 
+ * Not: Bu hook sadece Tab Navigator içindeki ekranlarda çalışır.
+ * GlobalStackGroup ekranlarında (Post, Profile, Wallet, MessageDetail, vb.) tab bar yok,
+ * bu yüzden bu ekranlarda kullanılırsa 0 döner.
  */
 export const useBottomTabBarHeightValue = () => {
-  return useBottomTabBarHeight();
+  try {
+    return useBottomTabBarHeight();
+  } catch (error) {
+    // GlobalStackGroup ekranlarında tab bar yok, 0 döndür
+    console.warn('[useBottomTabBarHeightValue] Tab bar height not available (not in Tab Navigator), returning 0');
+    return 0;
+  }
 };
 
 /**
@@ -57,8 +67,20 @@ export const useBottomTabBarHeightValue = () => {
  */
 export const useBottomOffset = (options: { includeTabBar?: boolean; extraPadding?: number } = {}): number => {
   const { includeTabBar = false, extraPadding = 16 } = options;
-  const tabBarHeight = includeTabBar ? useBottomTabBarHeight() : 0;
   const safeAreaBottom = useSafeAreaValues('bottom');
+  
+  // Tab bar height'ı güvenli şekilde al
+  let tabBarHeight = 0;
+  if (includeTabBar) {
+    try {
+      tabBarHeight = useBottomTabBarHeight();
+    } catch (error) {
+      // GlobalStackGroup ekranlarında tab bar yok, 0 kullan
+      console.warn('[useBottomOffset] Tab bar height not available (not in Tab Navigator), using 0');
+      tabBarHeight = 0;
+    }
+  }
+  
   return safeAreaBottom + tabBarHeight + extraPadding;
 };
 

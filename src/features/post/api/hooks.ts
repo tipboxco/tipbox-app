@@ -8,6 +8,8 @@ import {
   createExperiencePost,
   splitExperience,
   getBoostOptions,
+  getPostDetail,
+  type PostDetailResponse,
 } from './postApi';
 import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 import type { 
@@ -29,6 +31,7 @@ export const postKeys = {
   all: ['posts'] as const,
   free: () => [...postKeys.all, 'free'] as const,
   boostOptions: () => [...postKeys.all, 'boostOptions'] as const,
+  detail: (postId: string) => [...postKeys.all, 'detail', postId] as const,
 };
 
 /**
@@ -241,6 +244,36 @@ export const useCreateExperiencePost = () => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
+  });
+};
+
+/**
+ * Get Post Detail query hook
+ * Post detayını getirir (notification'dan gelen sadece ID içeren postData için)
+ * 
+ * @param postId - Post ID'si
+ * @param enabled - Query'nin aktif olup olmadığı (default: true)
+ * @param forceRefresh - Her zaman en güncel veriyi fetch et (notification'dan geldiğinde true)
+ * 
+ * @example
+ * const { data: postDetail, isLoading } = usePostDetail('post-123');
+ * // Notification'dan geldiğinde:
+ * const { data: postDetail, isLoading } = usePostDetail('post-123', true, true);
+ */
+export const usePostDetail = (
+  postId: string | undefined,
+  enabled: boolean = true,
+  forceRefresh: boolean = false
+) => {
+  return useQuery<PostDetailResponse, Error>({
+    queryKey: postKeys.detail(postId || ''),
+    queryFn: () => getPostDetail(postId!),
+    enabled: enabled && !!postId,
+    staleTime: forceRefresh ? 0 : 2 * 60 * 1000, // Force refresh ise cache kullanma
+    gcTime: 5 * 60 * 1000, // 5 dakika garbage collection
+    refetchOnMount: forceRefresh ? 'always' : false, // Force refresh ise her zaman refetch et
+    refetchOnWindowFocus: forceRefresh, // Force refresh ise focus'ta da refetch et
+    retry: 1,
   });
 };
 

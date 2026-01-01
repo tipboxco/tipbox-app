@@ -20,6 +20,7 @@ import { useSafeAreaValues, toImageSource, formatRelativeTime } from '@/src/util
 import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { usePostDetail } from '../api/hooks';
 import { CommentBottomSheet } from '../components/CommentBottomSheet';
 
 type PostDetailScreenRouteProp = RouteProp<PostStackParamList, 'PostDetailScreen'>;
@@ -36,6 +37,29 @@ export const PostDetailScreen = () => {
 
     // Get post ID from postData
     const postId = postData.id;
+
+    // Check if postData is complete (has stats, user, etc.) or just an ID
+    // Notification'dan gelen postData sadece { id: "..." } formatında olabilir
+    const isPostDataComplete = postData.stats !== undefined && postData.user !== undefined;
+    
+    // Instagram gibi davranış: Bildirimlerden geldiğinde her zaman en güncel veriyi göster
+    // Notification'dan geldiğinde (postData sadece ID içeriyorsa) forceRefresh = true
+    // Bu sayede eski bildirimlere tıklandığında bile en güncel beğeni/yorum sayısı gösterilir
+    const isFromNotification = !isPostDataComplete;
+    
+    // Fetch post detail - Notification'dan geldiğinde her zaman en güncel veriyi fetch et
+    const { data: fetchedPostData, isLoading: isLoadingPost } = usePostDetail(
+      postId,
+      true, // Her zaman enabled
+      isFromNotification // Notification'dan geldiğinde force refresh
+    );
+
+    // Use fetched post data if available, otherwise use the passed postData
+    // Notification'dan geldiğinde her zaman fetched data kullan (en güncel)
+    const finalPostData = isFromNotification 
+      ? (fetchedPostData || postData) // Notification'dan geldiğinde fetched data öncelikli
+      : (fetchedPostData || postData); // Feed'den geldiğinde de fetched data varsa onu kullan
+    const finalType = type || fetchedPostData?.type || 'post';
 
     // Fetch comments
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
@@ -191,23 +215,34 @@ export const PostDetailScreen = () => {
                 keyboardShouldPersistTaps="handled"
             >
                 {/* Detail Card */}
-                {type === 'tipsAndTricks' ? (
-                    <TipsAndTricksPostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
-                ) : type === 'question' ? (
-                    <QuestionPostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
-                ) : type === 'benchmark' ? (
-                    <BenchmarkPostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
-                ) : type === 'experience' ? (
-                    <ExperiencePostCardDetail data={postData} onCommentPress={handleCommentInputPress} />
-                ) : type === 'update' ? (
-                    <UpdatePostCardDetail 
-                        data={postData} 
-                        showRelatedPost={showRelatedPost}
-                        relatedPostData={relatedPostData}
-                        onCommentPress={handleCommentInputPress}
-                    />
+                {/* Loading state: Post detail fetch ediliyorsa göster */}
+                {isLoadingPost && !isPostDataComplete ? (
+                    <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
+                            Post yükleniyor...
+                        </Text>
+                    </Box>
                 ) : (
-                    <PostDetailCard data={postData} onCommentPress={handleCommentInputPress} />
+                    <>
+                        {finalType === 'tipsAndTricks' ? (
+                            <TipsAndTricksPostCardDetail data={finalPostData} onCommentPress={handleCommentInputPress} />
+                        ) : finalType === 'question' ? (
+                            <QuestionPostCardDetail data={finalPostData} onCommentPress={handleCommentInputPress} />
+                        ) : finalType === 'benchmark' ? (
+                            <BenchmarkPostCardDetail data={finalPostData} onCommentPress={handleCommentInputPress} />
+                        ) : finalType === 'experience' ? (
+                            <ExperiencePostCardDetail data={finalPostData} onCommentPress={handleCommentInputPress} />
+                        ) : finalType === 'update' ? (
+                            <UpdatePostCardDetail 
+                                data={finalPostData} 
+                                showRelatedPost={showRelatedPost}
+                                relatedPostData={relatedPostData}
+                                onCommentPress={handleCommentInputPress}
+                            />
+                        ) : (
+                            <PostDetailCard data={finalPostData} onCommentPress={handleCommentInputPress} />
+                        )}
+                    </>
                 )}
 
                 {/* Comments Header + Filter */}

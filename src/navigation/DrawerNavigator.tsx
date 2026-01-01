@@ -1,11 +1,11 @@
 import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { MainNavigator } from './MainNavigator';
+import { TabNavigator } from './TabNavigator';
 import { CustomDrawerContent } from './CustomDrawerContent';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { RootStackParamList } from './navigation.types';
+import type { MainStackParamList } from './types/main.types';
 
-const Drawer = createDrawerNavigator<RootStackParamList>();
+const Drawer = createDrawerNavigator<{ Main: { screen: keyof MainStackParamList } }>();
 
 export const DrawerNavigator = () => {
     const { colorMode } = useColorMode();
@@ -51,14 +51,14 @@ export const DrawerNavigator = () => {
       >
         <Drawer.Screen
           name="Main"
-          component={MainNavigator}
+          component={TabNavigator}
           options={{
             drawerItemStyle: { display: 'none' },
   
             // 🔑 v7: Drawer.Screen düzeyinde contentStyle kullan
-            // (v6’daki sceneContainerStyle’ın yerini tutar)
+            // (v6'daki sceneContainerStyle'ın yerini tutar)
             // TS destekli:
-            // @ts-expect-error bazı tip sürümlerinde görünmeyebilir ama v7’de çalışır
+            // @ts-expect-error bazı tip sürümlerinde görünmeyebilir ama v7'de çalışır
             contentStyle: { backgroundColor: 'transparent' },
           }}
         />

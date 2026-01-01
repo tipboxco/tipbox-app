@@ -34,6 +34,12 @@ interface NotificationStoreState {
   // Last notification timestamp (for debouncing)
   lastNotificationTime: Date | null;
   
+  // Pending navigation (deferred navigation için)
+  pendingNavigation: {
+    route: string;
+    params?: any;
+  } | null;
+  
   // Actions
   addRealtimeNotification: (notification: Notification) => void;
   removeRealtimeNotification: (notificationId: string) => void;
@@ -60,6 +66,11 @@ interface NotificationStoreState {
   
   // Helper: Check if notification is grouped
   isNotificationGrouped: (type: string) => boolean;
+  
+  // Pending navigation actions
+  setPendingNavigation: (action: { route: string; params?: any }) => void;
+  getPendingNavigation: () => { route: string; params?: any } | null;
+  clearPendingNavigation: () => void;
 }
 
 export const useNotificationStore = create<NotificationStoreState>()(
@@ -70,6 +81,7 @@ export const useNotificationStore = create<NotificationStoreState>()(
       groupedNotifications: new Map(),
       unreadCountCache: null,
       lastNotificationTime: null,
+      pendingNavigation: null,
 
       // Add realtime notification (from Socket.IO)
       addRealtimeNotification: (notification) => {
@@ -194,6 +206,22 @@ export const useNotificationStore = create<NotificationStoreState>()(
       isNotificationGrouped: (type) => {
         const state = get();
         return state.groupedNotifications.has(type);
+      },
+
+      // Set pending navigation
+      setPendingNavigation: (action) => {
+        set({ pendingNavigation: action });
+      },
+
+      // Get pending navigation
+      getPendingNavigation: () => {
+        const state = get();
+        return state.pendingNavigation;
+      },
+
+      // Clear pending navigation
+      clearPendingNavigation: () => {
+        set({ pendingNavigation: null });
       },
     }),
     { name: 'NotificationStore' }

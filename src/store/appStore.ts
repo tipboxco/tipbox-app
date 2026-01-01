@@ -28,6 +28,10 @@ interface AppState {
   // Theme State
   colorMode: ColorMode;
   
+  // App State Awareness - Kritik ekranlarda navigation'ı defer etmek için
+  isUserBusy: boolean;
+  busyReason?: 'form' | 'payment' | 'critical-action' | string;
+  
   // Auth Actions
   login: (userData: {
     id: string;
@@ -46,6 +50,9 @@ interface AppState {
   // Theme Actions
   toggleColorMode: () => void;
   setColorMode: (mode: ColorMode) => void;
+  
+  // App State Actions
+  setUserBusy: (busy: boolean, reason?: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -61,6 +68,10 @@ export const useAppStore = create<AppState>()(
         
         // Initial Theme State
         colorMode: 'light',
+        
+        // Initial App State Awareness
+        isUserBusy: false,
+        busyReason: undefined,
         
         // Auth Actions
         setTempUser: (user: User, accessToken: string) => {
@@ -212,6 +223,15 @@ export const useAppStore = create<AppState>()(
           })),
         
         setColorMode: (mode: ColorMode) => set({ colorMode: mode }),
+        
+        // App State Actions
+        setUserBusy: (busy: boolean, reason?: string) => {
+          set({
+            isUserBusy: busy,
+            busyReason: busy ? reason : undefined,
+          });
+          console.log('[AppStore] 🔒 User busy state:', busy, reason || '');
+        },
       }),
       {
         name: 'app-storage',

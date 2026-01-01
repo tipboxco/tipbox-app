@@ -18,14 +18,31 @@ import type { NotificationPayload } from '@/src/types/notification';
 // Toast kaldırıldı - Expo bildirimleri kullanılıyor
 
 /**
- * Navigation ref - NavigationContainer dışından navigation yapmak için
+ * Navigation ref - DEPRECATED
+ * 
+ * @deprecated Use NavigationService instead
+ * Bu ref backward compatibility için korunuyor.
+ * Yeni kod için: import { navigationService } from '@/src/services/NavigationService';
  */
 export const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 /**
- * Navigation helper function
+ * Navigation helper function - DEPRECATED
+ * 
+ * @deprecated Use NavigationService.navigate() instead
+ * 
+ * Örnek:
+ * ```typescript
+ * import { navigationService } from '@/src/services/NavigationService';
+ * import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+ * 
+ * navigationService.navigate(ROOT_ROUTES.POST, { screen: 'PostDetailScreen', params: { ... } });
+ * ```
  */
 export function navigate(name: string, params?: any) {
+  console.warn(
+    '[NotificationProvider] ⚠️ navigate() is deprecated. Use NavigationService.navigate() instead.'
+  );
   navigationRef.current?.navigate(name as never, params as never);
 }
 
@@ -173,12 +190,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     const handleSocketNotification = async (notification: Notification) => {
       console.log('[NotificationProvider] 📨 Socket notification received:', notification);
-      console.log('[NotificationProvider] 🔍 Debug Info:', {
-        isForeground,
-        hasTitle: !!notification.title,
-        hasMessage: !!notification.message,
-        notificationType: notification.type,
-      });
 
       // Analytics: Notification received tracking
       await notificationAnalytics.trackReceived(
@@ -187,74 +198,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         { source: 'socket' }
       );
 
-      // State Sync: Zustand store'a ekle (instant UI update)
-      notificationStateSync.addNotification(notification);
-
-      // Event-driven: Notification event oluştur ve dispatch et
-      const event = notificationEventService.createEvent(notification, 'socket');
-      await notificationEventService.dispatch(event);
-
-      // Grouping: Event'i grupla veya hemen gönder
-      const groupingEvent = {
-        type: notification.type,
-        userId: notification.metadata?.userId || '',
-        priority: event.priority,
-        channels: ['IN_APP', 'PUSH'],
-        metadata: {
-          notificationId: notification.id,
-          navigation: notification.navigation,
-          ...notification.metadata,
+      // Domain Service'e yönlendir (EventService → NotificationService)
+      // Bu katmanlı mimari: Transport → Domain → State + Navigation
+      const { eventService } = await import('@/src/services/EventService');
+      
+      eventService.handleSocketEvent(
+        {
+          type: 'notification',
+          payload: notification,
         },
-        timestamp: new Date(notification.createdAt || new Date()),
-      };
-
-      const grouped = await notificationGroupingService.groupOrSend(groupingEvent);
-      console.log('[NotificationProvider] 🔍 Grouping result:', { grouped: !!grouped });
-
-      if (grouped) {
-        // Gruplanmış bildirim - Expo push notification gönder (toast kaldırıldı)
-        if (grouped.groupedTitle && grouped.groupedBody) {
-          // Local notification gönder (Expo bildirimleri çalışıyor)
-          notificationService.sendLocalNotification({
-            title: grouped.groupedTitle,
-            body: grouped.groupedBody,
-            data: {
-              notificationId: notification.id,
-              type: notification.type,
-              navigation: notification.navigation,
-              grouped: true,
-              count: grouped.count,
-            },
-          });
-        }
-      } else {
-        // Tekil bildirim göster (sadece foreground'da ve grouping window dışındaysa)
-        console.log('[NotificationProvider] 🔍 Single notification check:', {
+        {
           isForeground,
-          hasTitle: !!notification.title,
-          hasMessage: !!notification.message,
-        });
-        
-        // Tekil bildirim - Expo push notification gönder (toast kaldırıldı)
-        if (notification.title && notification.message) {
-          // Eğer grouping window içindeyse gönderme (grouping service zaten yönetiyor)
-          const store = useNotificationStore.getState();
-          const isGrouped = store.isNotificationGrouped(notification.type);
-          
-          if (!isGrouped) {
-            // Local notification gönder (Expo bildirimleri çalışıyor)
-            notificationService.sendLocalNotification({
-              title: notification.title,
-              body: notification.message,
-              data: {
-                notificationId: notification.id,
-                type: notification.type,
-                navigation: notification.navigation,
-              },
-            });
-          }
+          shouldNavigate: false, // Socket notification'da otomatik navigate yok, kullanıcı tıklayınca olur
         }
-      }
+      );
 
       // React Query cache'i invalidate et (notificationStateSync periyodik sync yapıyor)
       queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
@@ -308,43 +265,28 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         );
       }
 
-      // Deep Linking: Gelişmiş deep link parsing
-      const route = deepLinkService.parseNotificationData(notification.data || {});
+      // Domain Service'e yönlendir (NotificationService)
+      // Push notification → Domain Service → Navigation kararı
+      const { notificationService } = await import('@/src/services/NotificationService');
       
-      if (route && route.screen && navigationRef.current) {
-        try {
-          // Navigation ref hazır olana kadar bekle
-          const navigateWithDelay = () => {
-            if (navigationRef.current) {
-              navigate(route.screen, route.params);
-              console.log('[NotificationProvider] ✅ Navigated to:', route.screen, route.params);
-            } else {
-              // Ref hazır değilse 500ms bekle ve tekrar dene
-              setTimeout(navigateWithDelay, 500);
-            }
-          };
-          navigateWithDelay();
-        } catch (error) {
-          console.error('[NotificationProvider] ❌ Navigation error:', error);
-        }
-      } else {
-        // Fallback: Eski navigation data formatı
-        const navigationData = notification.data?.navigation as { screen: string; params?: Record<string, any> };
-        if (navigationData?.screen && navigationRef.current) {
-          try {
-            const navigateWithDelay = () => {
-              if (navigationRef.current) {
-                navigate(navigationData.screen, navigationData.params);
-              } else {
-                setTimeout(navigateWithDelay, 500);
-              }
-            };
-            navigateWithDelay();
-          } catch (error) {
-            console.error('[NotificationProvider] Navigation error:', error);
-          }
-        }
-      }
+      // Push payload'ını domain modeline map et
+      const domainNotification: Notification = {
+        id: notificationId || `push-${Date.now()}`,
+        type: (notificationType as Notification['type']) || 'SYSTEM_ANNOUNCEMENT',
+        title: notification.data?.title || notification.title || '',
+        message: notification.data?.body || notification.body || '',
+        read: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        metadata: notification.data?.metadata || notification.data || {},
+        navigation: notification.data?.navigation as any,
+      };
+
+      // NotificationService handle et (State + Navigation kararı)
+      notificationService.handleNotification(domainNotification, {
+        isForeground: true, // Push notification'a tıklandığında foreground'dayız
+        shouldNavigate: true, // Push notification'a tıklandığında navigate et
+      });
 
       // Mark notification as read if notificationId is provided
       if (notificationId) {
