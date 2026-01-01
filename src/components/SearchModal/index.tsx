@@ -1,674 +1,690 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Dimensions, Pressable as RNPressable, Modal, StyleSheet, Animated, PanResponder, PanResponderGestureState, Keyboard, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { Platform, Keyboard, ActivityIndicator, Dimensions, Modal, StyleSheet, Pressable as RNPressable } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
-    Box,
-    VStack,
-    HStack,
-    Text,
-    Input,
-    InputField,
-    Pressable,
-    ScrollView,
-    Image,
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Input,
+  InputField,
+  Pressable,
+  ScrollView,
+  Image,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useSearch } from '@/src/features/search/api/hooks';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
+import { toImageSource } from '@/src/utils';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/src/navigation/navigation.types';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 50; // Minimum distance to trigger close
+const MODAL_HEIGHT = SCREEN_HEIGHT * 0.5; // %50
+const SWIPE_THRESHOLD = 100; // Kapatma için minimum kayma mesafesi
+
+type SearchFilter = 'users' | 'brands' | 'products';
 
 interface SearchModalProps {
-    visible: boolean;
-    onClose: () => void;
+  visible: boolean;
+  onClose: () => void;
 }
 
+/**
+ * SearchModal Component
+ * React Native Modal + Reanimated + Gesture Handler kullanarak
+ * yukarıdan aşağıya açılan, handler'dan sürüklenebilen arama modal'ı
+ */
 export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) => {
-    const { colorMode } = useColorMode();
-    const isDark = colorMode === 'dark';
-    const insets = useSafeAreaInsets();
-    
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedFilter, setSelectedFilter] = useState<'users' | 'brands' | 'products'>('users');
-    const [isAnimating, setIsAnimating] = useState(false);
-    const [isModalReady, setIsModalReady] = useState(false);
-    const inputRef = useRef<any>(null);
-    
-    // Animation
-    const modalHeight = SCREEN_HEIGHT * 0.9 + insets.top + 8;
-    const slideAnim = useRef(new Animated.Value(-modalHeight)).current;
-    const panY = useRef(new Animated.Value(0)).current;
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-    useEffect(() => {
-        if (visible) {
-            // Reset states when modal opens - hemen yap
-            panY.setValue(0);
-            slideAnim.setValue(-modalHeight); // Başlangıçta yukarıda (ekranın dışında)
-            setIsAnimating(false);
-            setIsModalReady(false);
-            
-            // Animasyonu hemen başlat - gecikme yok
-            // requestAnimationFrame kaldırıldı - direkt başlat
-            // Yukarıdan aşağı kaydır - hızlı ve smooth
-            Animated.spring(slideAnim, {
-                toValue: 0,
-                useNativeDriver: true,
-                tension: 100, // Daha hızlı
-                friction: 8, // Daha smooth
-                velocity: 0,
-            }).start(({ finished }) => {
-                if (finished) {
-                    // Animation tamamlandıktan sonra modal'ı hazır olarak işaretle
-                    setIsModalReady(true);
-                    // Kısa bir delay sonra klavyeyi aç (modal tamamen görünür olduktan sonra)
-                    setTimeout(() => {
-                        if (inputRef.current) {
-                            inputRef.current.focus();
-                        }
-                    }, 50);
-                }
-            });
-        } else {
-            // Modal kapandığında klavyeyi kapat
-            Keyboard.dismiss();
-            setIsModalReady(false);
-            // Reset animasyon
-            slideAnim.setValue(-modalHeight);
-            panY.setValue(0);
-        }
-    }, [visible, slideAnim, panY, modalHeight]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<SearchFilter>('users');
+  const inputRef = useRef<any>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
 
-    // Handler for closing animation
-    const handleCloseAnimation = useCallback((currentPanY: number, duration: number) => {
-        setIsAnimating(true);
-        // Mevcut pozisyonu al (slideAnim + panY)
-        const currentSlideValue = (slideAnim as any)._value;
-        const currentPanValue = (panY as any)._value;
-        const totalCurrentValue = currentSlideValue + currentPanValue;
-        
-        // panY'yi sıfırla ve slideAnim'i kullanarak kapat
-        panY.setValue(0);
-        slideAnim.setValue(totalCurrentValue);
-        
-        // Yukarıya kaydır (-modalHeight kadar)
-        Animated.timing(slideAnim, {
-            toValue: -modalHeight,
-            duration: Math.max(200, Math.min(400, duration)),
-            useNativeDriver: true,
-        }).start(({ finished }) => {
-            if (finished) {
-                // Reset animations first
-                panY.setValue(0);
-                slideAnim.setValue(-modalHeight);
-                setIsAnimating(false);
-                // Then call onClose
-                onClose();
-            }
-        });
-    }, [panY, slideAnim, onClose, modalHeight]);
+  // Debounced search query - API çağrısını optimize et
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
-    // Pan Responder for swipe up to close
-    const panResponder = useMemo(() =>
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onStartShouldSetPanResponderCapture: () => false,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                // Only respond to vertical swipes with significant movement
-                const isVertical = Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
-                const hasMovement = Math.abs(gestureState.dy) > 10;
-                return isVertical && hasMovement;
-            },
-            onMoveShouldSetPanResponderCapture: (_, gestureState) => {
-                // Capture the gesture only if it's a clear vertical swipe
-                const isVertical = Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
-                const hasMovement = Math.abs(gestureState.dy) > 10;
-                return isVertical && hasMovement;
-            },
-            onPanResponderMove: (_, gestureState) => {
-                // Modal yukarıdan aşağı kayıyor, bu yüzden:
-                // dy > 0: Parmak aşağı gidiyor, modal'ı aşağı kaydır (açık tut, ama sınırlı)
-                // dy < 0: Parmak yukarı gidiyor, modal'ı yukarı kaydır (kapat)
-                
-                if (gestureState.dy < 0) {
-                    // Yukarı doğru sürükleme - modal'ı yukarı kaydır (kapat)
-                    // Negatif değer modal'ı yukarı kaydırır
-                    panY.setValue(gestureState.dy);
-                } else {
-                    // Aşağı doğru sürükleme - hafif bounce efekti (sınırlı)
-                    const maxDownward = 50; // Maksimum aşağı kayma
-                    const bounceValue = Math.min(gestureState.dy * 0.2, maxDownward);
-                    panY.setValue(bounceValue);
-                }
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                const { dy, vy } = gestureState;
-                
-                // Yukarı sürükleme (dy < 0): Modal'ı kapat
-                // Aşağı sürükleme (dy > 0): Modal'ı açık tut
-                const isUpwardSwipe = dy < 0;
-                const hasEnoughDistance = Math.abs(dy) > SWIPE_THRESHOLD;
-                const hasEnoughVelocity = vy < -0.5; // Negatif velocity = yukarı
-                
-                // Sadece yukarı sürükleme ile kapat
-                if (isUpwardSwipe && (hasEnoughDistance || hasEnoughVelocity)) {
-                    // Modal'ı kapat - mevcut pozisyondan devam et
-                    const currentPanValue = (panY as any)._value;
-                    const duration = Math.max(250, Math.min(400, Math.abs(currentPanValue / 2)));
-                    handleCloseAnimation(currentPanValue, duration);
-                } else {
-                    // Orijinal pozisyona geri dön - smooth spring animation
-                    Animated.spring(panY, {
-                        toValue: 0,
-                        useNativeDriver: true,
-                        tension: 120,
-                        friction: 8,
-                        velocity: 0,
-                    }).start();
-                }
-            },
-        }),
-        [panY, handleCloseAnimation]
-    );
+  // Animation values
+  const translateY = useSharedValue(-MODAL_HEIGHT);
+  const opacity = useSharedValue(0);
+  const panY = useSharedValue(0);
 
-    const filters = [
-        { id: 'users' as const, label: 'Users' },
-        { id: 'brands' as const, label: 'Brands' },
-        { id: 'products' as const, label: 'Products' },
-    ];
+  // Search API hook - sadece debounced query varsa çağrılır
+  const searchTypes = useMemo(() => {
+    switch (selectedFilter) {
+      case 'users':
+        return ['user'];
+      case 'brands':
+        return ['brand'];
+      case 'products':
+        return ['product'];
+      default:
+        return ['user', 'brand', 'product'];
+    }
+  }, [selectedFilter]);
 
-    // Mock user data - useMemo ile cache'le (performans için)
-    const mockUsers = useMemo(() => [
-        {
-            id: '1',
-            name: 'John Smith',
-            title: 'Tech Enthusiast & Reviewer',
-            avatar: require('@/assets/avatar/ozan.png'),
-            trustLevel: 4,
-        },
-        {
-            id: '2',
-            name: 'Sarah Johnson',
-            title: 'Product Designer',
-            avatar: require('@/assets/avatar/ozan.png'),
-            trustLevel: 5,
-        },
-        {
-            id: '3',
-            name: 'Mike Chen',
-            title: 'Software Engineer',
-            avatar: require('@/assets/avatar/ozan.png'),
-            trustLevel: 3,
-        },
-        {
-            id: '4',
-            name: 'Emily Davis',
-            title: 'Marketing Specialist',
-            avatar: require('@/assets/avatar/ozan.png'),
-            trustLevel: 4,
-        },
-    ], []);
+  const {
+    data: searchData,
+    isLoading: isSearching,
+    error: searchError,
+  } = useSearch(
+    {
+      keyword: debouncedQuery,
+      types: searchTypes,
+      limit: 20,
+    },
+    debouncedQuery.length > 0 // Sadece query varsa aktif et
+  );
 
-    // Mock brand data - useMemo ile cache'le
-    const mockBrands = useMemo(() => [
-        {
-            id: '1',
-            name: 'Apple',
-            category: 'Technology',
-            logo: require('@/assets/inventory/product_01.png'),
-        },
-        {
-            id: '2',
-            name: 'Samsung',
-            category: 'Technology',
-            logo: require('@/assets/inventory/product_02.png'),
-        },
-        {
-            id: '3',
-            name: 'Maybeline',
-            category: 'Cosmetic',
-            logo: require('@/assets/inventory/product_03.png'),
-        },
-        {
-            id: '4',
-            name: 'Nike',
-            category: 'Sports',
-            logo: require('@/assets/inventory/product_04.png'),
-        },
-    ], []);
+  // Debounce effect
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
-    // Mock product data - useMemo ile cache'le
-    const mockProducts = useMemo(() => [
-        {
-            id: '1',
-            name: 'Dyson V15s',
-            description: 'Detect Submarine™ Wet & Dry Cordl...',
-            image: require('@/assets/inventory/product_01.png'),
-        },
-        {
-            id: '2',
-            name: 'iPhone 15 Pro Max',
-            description: '256GB Titanium Blue',
-            image: require('@/assets/inventory/product_02.png'),
-        },
-        {
-            id: '3',
-            name: 'MacBook Air M3',
-            description: '13-inch, 8GB RAM, 256GB SSD',
-            image: require('@/assets/inventory/product_03.png'),
-        },
-        {
-            id: '4',
-            name: 'Samsung Galaxy S24',
-            description: 'Ultra 512GB Phantom Black',
-            image: require('@/assets/inventory/product_04.png'),
-        },
-    ], []);
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300); // 300ms debounce
 
-    // Get category title - useMemo ile cache'le
-    const categoryTitle = useMemo(() => {
-        switch (selectedFilter) {
-            case 'users':
-                return 'Users';
-            case 'brands':
-                return 'Brands';
-            case 'products':
-                return 'Products';
-            default:
-                return 'Users';
-        }
-    }, [selectedFilter]);
-
-    const handleSearch = (query: string) => {
-        console.log('Searching for:', query);
-        // TODO: Implement actual search
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
+  }, [searchQuery]);
 
-    const handleOverlayClose = useCallback(() => {
-        // Klavyeyi önce kapat
-        Keyboard.dismiss();
-        // Kısa bir delay sonra modal'ı kapat (klavye animasyonu tamamlansın)
-        setTimeout(() => {
-            const currentPosition = (panY as any)._value;
-            handleCloseAnimation(currentPosition, 250);
-        }, Platform.OS === 'ios' ? 100 : 50);
-    }, [panY, handleCloseAnimation]);
+  // Close callback
+  const handleClose = useCallback(() => {
+    Keyboard.dismiss();
+    setSearchQuery('');
+    setDebouncedQuery('');
+    onClose();
+  }, [onClose]);
 
-    // Modal'ı her zaman render et (performans için) ama görünürlüğü kontrol et
-    // Bu sayede modal hemen render edilir ve animasyon gecikmesi olmaz
-    const shouldRenderModal = visible || isAnimating;
+  // Modal açılma/kapanma animasyonu
+  useEffect(() => {
+    if (visible) {
+      setShouldRender(true);
+      // Modal açılıyor - yukarıdan aşağıya
+      translateY.value = -MODAL_HEIGHT;
+      panY.value = 0;
+      opacity.value = withTiming(1, { duration: 200 });
+      translateY.value = withSpring(
+        0,
+        {
+          damping: 20,
+          stiffness: 90,
+          mass: 0.5,
+        },
+        (finished) => {
+          if (finished) {
+            // Input'a focus et
+            runOnJS(() => {
+              setTimeout(() => {
+                if (inputRef.current) {
+                  inputRef.current.focus();
+                }
+              }, 100);
+            })();
+          }
+        }
+      );
+    } else if (shouldRender) {
+      // Modal kapanıyor - aşağıdan yukarıya
+      opacity.value = withTiming(0, { duration: 200 });
+      translateY.value = withSpring(
+        -MODAL_HEIGHT,
+        {
+          damping: 20,
+          stiffness: 90,
+          mass: 0.5,
+        },
+        (finished) => {
+          if (finished) {
+            runOnJS(handleClose)();
+            runOnJS(setShouldRender)(false);
+            runOnJS(() => {
+              translateY.value = -MODAL_HEIGHT;
+              panY.value = 0;
+            })();
+          }
+        }
+      );
+    }
+  }, [visible, translateY, opacity, panY, shouldRender, handleClose]);
 
-    // Modal'ı hemen render et - gecikme olmadan
-    if (!shouldRenderModal) {
-        return null;
+  // Gesture handler - sadece handler'dan sürükleme (yeni Gesture API)
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      // Gesture başladığında mevcut pozisyonu kaydet
+    })
+    .onUpdate((event) => {
+      // Sadece yukarı doğru sürükleme (kapatma)
+      if (event.translationY < 0) {
+        panY.value = event.translationY;
+      }
+    })
+    .onEnd((event) => {
+      const totalTranslation = translateY.value + panY.value;
+      
+      // Eğer yeterince yukarı çekildiyse kapat
+      if (totalTranslation < -SWIPE_THRESHOLD || event.velocityY < -500) {
+        // Kapat
+        panY.value = 0;
+        translateY.value = withSpring(
+          -MODAL_HEIGHT,
+          {
+            damping: 20,
+            stiffness: 90,
+            mass: 0.5,
+          },
+          (finished) => {
+            if (finished) {
+              runOnJS(handleClose)();
+              runOnJS(setShouldRender)(false);
+            }
+          }
+        );
+        opacity.value = withTiming(0, { duration: 200 });
+      } else {
+        // Geri dön
+        panY.value = withSpring(0, {
+          damping: 20,
+          stiffness: 90,
+        });
+      }
+    });
+
+  // Animated styles
+  const modalAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value + panY.value }],
+    };
+  });
+
+  const overlayAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    };
+  });
+
+  // User item'a tıklandığında profile git
+  const handleUserPress = useCallback(
+    (userId: string) => {
+      handleClose();
+      setTimeout(() => {
+        (navigation as any).navigate('Profile', {
+          screen: 'ProfileScreen',
+          params: { userId },
+        });
+      }, 300);
+    },
+    [navigation, handleClose]
+  );
+
+  // Brand item'a tıklandığında brand detail'e git
+  const handleBrandPress = useCallback(
+    (brandId: string) => {
+      handleClose();
+      setTimeout(() => {
+        (navigation as any).navigate('Brand', {
+          screen: 'BrandDetailScreen',
+          params: { brandId },
+        });
+      }, 300);
+    },
+    [navigation, handleClose]
+  );
+
+  // Product item'a tıklandığında product detail'e git
+  const handleProductPress = useCallback(
+    (productId: string) => {
+      handleClose();
+      setTimeout(() => {
+        (navigation as any).navigate('Product', {
+          screen: 'ProductDetailScreen',
+          params: { productId },
+        });
+      }, 300);
+    },
+    [navigation, handleClose]
+  );
+
+  // Render search results
+  const renderSearchResults = () => {
+    if (debouncedQuery.length === 0) {
+      return (
+        <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+          <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
+          <Text
+            mt="$4"
+            fontSize={16}
+            color={isDark ? '#8E8E93' : '#8E8E93'}
+            textAlign="center"
+          >
+            Arama yapmak için yazmaya başlayın
+          </Text>
+        </Box>
+      );
+    }
+
+    if (isSearching) {
+      return (
+        <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+          <Text
+            mt="$4"
+            fontSize={14}
+            color={isDark ? '#8E8E93' : '#8E8E93'}
+            textAlign="center"
+          >
+            Aranıyor...
+          </Text>
+        </Box>
+      );
+    }
+
+    if (searchError) {
+      return (
+        <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$20">
+          <Feather name="alert-circle" size={48} color="#CE4A4A" />
+          <Text
+            mt="$4"
+            fontSize={14}
+            color="#CE4A4A"
+            textAlign="center"
+            fontWeight="$semibold"
+          >
+            Arama sırasında bir hata oluştu
+          </Text>
+          <Text
+            mt="$2"
+            fontSize={12}
+            color={isDark ? '#8E8E93' : '#8E8E93'}
+            textAlign="center"
+          >
+            Lütfen tekrar deneyin
+          </Text>
+        </Box>
+      );
+    }
+
+    // Results render
+    const hasResults =
+      (searchData?.userData && searchData.userData.length > 0) ||
+      (searchData?.brandData && searchData.brandData.length > 0) ||
+      (searchData?.productData && searchData.productData.length > 0);
+
+    if (!hasResults) {
+      return (
+        <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+          <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
+          <Text
+            mt="$4"
+            fontSize={16}
+            color={isDark ? '#8E8E93' : '#8E8E93'}
+            textAlign="center"
+            fontWeight="$medium"
+          >
+            Sonuç bulunamadı
+          </Text>
+          <Text
+            mt="$2"
+            fontSize={14}
+            color={isDark ? '#8E8E93' : '#8E8E93'}
+            textAlign="center"
+          >
+            "{debouncedQuery}" için arama sonucu yok
+          </Text>
+        </Box>
+      );
     }
 
     return (
-        <Modal
-            visible={true}
-            animationType="none"
-            transparent={true}
-            onRequestClose={handleOverlayClose}
-            statusBarTranslucent
-            hardwareAccelerated={true}
-        >
-            <Box style={styles.container}>
-                {/* Overlay Background - z-index düşük */}
-                <RNPressable 
-                    style={[styles.overlay, { zIndex: 1, elevation: 1 }]}
-                    onPress={handleOverlayClose}
-                />
-
-                {/* Search Panel - 90% height from top */}
-                <Animated.View
-                    style={[
-                        {
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: modalHeight,
-                            backgroundColor: isDark ? '#000000' : '#FFFFFF',
-                            borderBottomLeftRadius: 24,
-                            borderBottomRightRadius: 24,
-                            overflow: 'hidden',
-                            zIndex: 10, // Overlay'den yüksek
-                            elevation: 10, // Android için
-                            transform: [
-                                { translateY: Animated.add(slideAnim, panY) }
-                            ],
-                        },
-                    ]}
-                    renderToHardwareTextureAndroid={true}
-                    shouldRasterizeIOS={true}
-                >
-                    <Box flex={1} >
-                        {/* Header */}
-                        <VStack space="md" px="$4" pt={insets.top + 8} pb="$2">
-                        {/* Search Bar */}
-                        <HStack
-                            alignItems="center"
-                            bg={isDark ? '#1C1C1E' : '#F2F2F7'}
-                            borderRadius={12}
-                            px="$3"
-                            space="sm"
-                            h={48}
-                        >
-                            <Feather
-                                name="search"
-                                size={20}
-                                color={isDark ? '#8E8E93' : '#8E8E93'}
-                            />
-                            <Input flex={1} borderWidth={0} bg="transparent">
-                                <InputField
-                                    ref={inputRef}
-                                    placeholder="Search for products, posts, users..."
-                                    placeholderTextColor={isDark ? '#8E8E93' : '#8E8E93'}
-                                    color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize={15}
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    onSubmitEditing={() => handleSearch(searchQuery)}
-                                    returnKeyType="search"
-                                    autoFocus={false}
-                                    editable={isModalReady}
-                                />
-                            </Input>
-                            {searchQuery.length > 0 && (
-                                <Pressable onPress={() => setSearchQuery('')} p="$1">
-                                    <Feather
-                                        name="x-circle"
-                                        size={18}
-                                        color={isDark ? '#8E8E93' : '#8E8E93'}
-                                    />
-                                </Pressable>
-                            )}
-                        </HStack>
-
-                        {/* Filters */}
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <HStack space="sm">
-                                {filters.map((filter) => (
-                                    <Pressable
-                                        key={filter.id}
-                                        onPress={() => setSelectedFilter(filter.id)}
-                                        bg={
-                                            selectedFilter === filter.id
-                                                ? '#007AFF'
-                                                : (isDark ? '#1C1C1E' : '#F2F2F7')
-                                        }
-                                        borderRadius={20}
-                                        px="$4"
-                                        py="$2"
-                                    >
-                                        <Text
-                                            color={
-                                                selectedFilter === filter.id
-                                                    ? '#FFFFFF'
-                                                    : (isDark ? '#FFFFFF' : '#000000')
-                                            }
-                                            fontSize={14}
-                                            fontWeight={selectedFilter === filter.id ? '$semibold' : '$normal'}
-                                        >
-                                            {filter.label}
-                                        </Text>
-                                    </Pressable>
-                                ))}
-                            </HStack>
-                        </ScrollView>
-                    </VStack>
-
-                    {/* Content */}
-                    <ScrollView flex={1} px="$4" showsVerticalScrollIndicator={false}>
-                        <VStack space="xl" pb="$6">
-                            {/* Category Results */}
-                            {searchQuery.length === 0 && selectedFilter === 'users' && (
-                                <VStack space="xs" mt="$2">
-                                    <HStack justifyContent="space-between" alignItems="center">
-                                        <Text
-                                            fontSize={12}
-                                            fontWeight="$semibold"
-                                            color={isDark ? '$textDark50' : '#B9B9B9'}
-                                        >
-                                            {categoryTitle}
-                                        </Text>
-                                    </HStack>
-                                    
-                                    {/* Users List */}
-                                    <VStack space="xs">
-                                        {mockUsers.map((user) => (
-                                            <Pressable
-                                                key={user.id}
-                                                onPress={() => console.log('User pressed:', user.name)}
-                                            >
-                                                <HStack
-                                                    alignItems="center"
-                                                    space="md"
-                                                    py="$3"
-                                                    borderBottomWidth={1}
-                                                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
-                                                >
-                                                    {/* Avatar with Trust Level Ring */}
-                                                    <Box position="relative">
-                                                        <Box
-                                                            width={54}
-                                                            height={54}
-                                                            borderRadius={100}
-                                                            bg='#CE4A4A'
-                                                            alignItems="center"
-                                                            justifyContent="center"
-                                                        >
-                                                            <Box
-                                                                width={50}
-                                                                height={50}
-                                                                borderRadius={25}
-                                                                overflow="hidden"
-                                                            >
-                                                                <Image
-                                                                    source={user.avatar}
-                                                                    alt={user.name}
-                                                                    width={50}
-                                                                    height={50}
-                                                                    resizeMode="cover"
-                                                                />
-                                                            </Box>
-                                                        </Box>
-                                                    </Box>
-
-                                                    {/* User Info */}
-                                                    <VStack flex={1} space="xs">
-                                                        <Text
-                                                            color={isDark ? '#FFFFFF' : '#000000'}
-                                                            fontSize={14}
-                                                            fontWeight="$semibold"
-                                                            numberOfLines={1}
-                                                        >
-                                                            {user.name}
-                                                        </Text>
-                                                        <Text
-                                                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                                            fontSize={12}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {user.title}
-                                                        </Text>
-                                                    </VStack>
-                                                </HStack>
-                                            </Pressable>
-                                        ))}
-                                    </VStack>
-                                </VStack>
-                            )}
-
-                            {/* Brands List */}
-                            {searchQuery.length === 0 && selectedFilter === 'brands' && (
-                                <VStack space="md" mt="$2">
-                                    <HStack justifyContent="space-between" alignItems="center">
-                                        <Text
-                                            fontSize={12}
-                                            fontWeight="$semibold"
-                                            color={isDark ? '$textDark50' : '#B9B9B9'}
-                                        >
-                                            {categoryTitle}
-                                        </Text>
-                                    </HStack>
-                                    
-                                    {/* Brands Cards */}
-                                    <VStack space="xs">
-                                        {mockBrands.map((brand) => (
-                                            <Pressable
-                                                key={brand.id}
-                                                onPress={() => console.log('Brand pressed:', brand.name)}
-                                            >
-                                                <HStack
-                                                    alignItems="center"
-                                                    space="md"
-                                                    py="$3"
-                                                    borderBottomWidth={1}
-                                                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
-                                                >
-                                                    {/* Brand Logo */}
-                                                    <Box
-                                                        width={54}
-                                                        height={54}
-                                                        borderRadius={8}
-                                                        overflow="hidden"
-                                                    >
-                                                        <Image
-                                                            source={brand.logo}
-                                                            alt={brand.name}
-                                                            width={54}
-                                                            height={54}
-                                                            resizeMode="contain"
-                                                        />
-                                                    </Box>
-
-                                                    {/* Brand Info */}
-                                                    <VStack flex={1} space="xs">
-                                                        <Text
-                                                            color={isDark ? '#FFFFFF' : '#000000'}
-                                                            fontSize={14}
-                                                            fontWeight="$bold"
-                                                            numberOfLines={1}
-                                                        >
-                                                            {brand.name}
-                                                        </Text>
-                                                        <Text
-                                                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                                            fontSize={13}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {brand.category}
-                                                        </Text>
-                                                    </VStack>
-                                                </HStack>
-                                            </Pressable>
-                                        ))}
-                                    </VStack>
-                                </VStack>
-                            )}
-
-                            {/* Products List */}
-                            {searchQuery.length === 0 && selectedFilter === 'products' && (
-                                <VStack space="md" mt="$2">
-                                    <HStack justifyContent="space-between" alignItems="center">
-                                        <Text
-                                            fontSize={12}
-                                            fontWeight="$semibold"
-                                            color={isDark ? '$textDark50' : '#B9B9B9'}
-                                        >
-                                            {categoryTitle}
-                                        </Text>
-                                    </HStack>
-                                    
-                                    {/* Products Cards */}
-                                    <VStack space="xs">
-                                        {mockProducts.map((product) => (
-                                            <Box
-                                                key={product.id}
-                                                py="$3"
-                                                borderBottomWidth={1}
-                                                borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
-                                            >
-                                                <ProductInfoCard
-                                                    size="big"
-                                                    type={ProductInfoType.PRODUCT}
-                                                    image={product.image}
-                                                    title={product.name}
-                                                    subName={product.description}
-                                                    onPress={() => console.log('Product pressed:', product.name)}
-                                                />
-                                            </Box>
-                                        ))}
-                                    </VStack>
-                                </VStack>
-                            )}
-
-                            {/* Search Results */}
-                            {searchQuery.length > 0 && (
-                                <VStack space="md" mt="$2">
-                                    <Text
-                                        fontSize={18}
-                                        fontWeight="$semibold"
-                                        color={isDark ? '$textDark50' : '#000000'}
-                                    >
-                                        Results for "{searchQuery}"
-                                    </Text>
-                                    <Box py="$20" alignItems="center">
-                                        <Feather
-                                            name="search"
-                                            size={56}
-                                            color={isDark ? '#48484A' : '#D1D1D6'}
-                                        />
-                                        <Text
-                                            mt="$4"
-                                            fontSize={16}
-                                            color={isDark ? '#8E8E93' : '#8E8E93'}
-                                            textAlign="center"
-                                        >
-                                            Start typing to search
-                                        </Text>
-                                    </Box>
-                                </VStack>
-                            )}
-                        </VStack>
-                    </ScrollView>
-
-                    {/* Swipe Handle at Bottom */}
-                    <Animated.View
-                        {...panResponder.panHandlers}
-                        style={{
-                            paddingTop: 16,
-                            paddingBottom: 16,
-                            alignItems: 'center',
-                            backgroundColor: 'transparent',
-                            width: '100%',
-                        }}
-                    >
-                        <Box
-                            width={40}
-                            height={4}
-                            borderRadius={2}
-                            bg={isDark ? '#3C3C3E' : '#D1D1D6'}
-                        />
-                    </Animated.View>
+      <VStack space="lg" flex={1}>
+        {/* Users Results */}
+        {selectedFilter === 'users' && searchData?.userData && searchData.userData.length > 0 && (
+          <VStack space="xs">
+            <Text
+              fontSize={12}
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '#B9B9B9'}
+              px="$4"
+            >
+              Kullanıcılar ({searchData.userData.length})
+            </Text>
+            <VStack space="xs">
+              {searchData.userData.map((user: any) => (
+                <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
+                  <HStack
+                    alignItems="center"
+                    space="md"
+                    py="$3"
+                    px="$4"
+                    borderBottomWidth={1}
+                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
+                  >
+                    {/* Avatar */}
+                    <Box position="relative">
+                      <Box
+                        width={54}
+                        height={54}
+                        borderRadius={100}
+                        bg="#CE4A4A"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Box width={50} height={50} borderRadius={25} overflow="hidden">
+                          <Image
+                            source={toImageSource(user.avatar) || require('@/assets/avatar/ozan.png')}
+                            alt={user.name}
+                            width={50}
+                            height={50}
+                            resizeMode="cover"
+                          />
+                        </Box>
+                      </Box>
                     </Box>
-                </Animated.View>
-            </Box>
-        </Modal>
+
+                    {/* User Info */}
+                    <VStack flex={1} space="xs">
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={14}
+                        fontWeight="$semibold"
+                        numberOfLines={1}
+                      >
+                        {user.name}
+                      </Text>
+                      {user.cosmetic && (
+                        <Text
+                          color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                          fontSize={12}
+                          numberOfLines={1}
+                        >
+                          {user.cosmetic}
+                        </Text>
+                      )}
+                    </VStack>
+                  </HStack>
+                </Pressable>
+              ))}
+            </VStack>
+          </VStack>
+        )}
+
+        {/* Brands Results */}
+        {selectedFilter === 'brands' && searchData?.brandData && searchData.brandData.length > 0 && (
+          <VStack space="xs">
+            <Text
+              fontSize={12}
+              fontWeight="$semibold"
+              color={isDark ? '$textDark50' : '#B9B9B9'}
+              px="$4"
+            >
+              Markalar ({searchData.brandData.length})
+            </Text>
+            <VStack space="xs">
+              {searchData.brandData.map((brand: any) => (
+                <Pressable key={brand.id} onPress={() => handleBrandPress(brand.id)}>
+                  <HStack
+                    alignItems="center"
+                    space="md"
+                    py="$3"
+                    px="$4"
+                    borderBottomWidth={1}
+                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
+                  >
+                    {/* Brand Logo */}
+                    <Box width={54} height={54} borderRadius={8} overflow="hidden">
+                      <Image
+                        source={
+                          toImageSource(brand.logo) || require('@/assets/inventory/product_01.png')
+                        }
+                        alt={brand.name}
+                        width={54}
+                        height={54}
+                        resizeMode="contain"
+                      />
+                    </Box>
+
+                    {/* Brand Info */}
+                    <VStack flex={1} space="xs">
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={14}
+                        fontWeight="$bold"
+                        numberOfLines={1}
+                      >
+                        {brand.name}
+                      </Text>
+                      {brand.category && (
+                        <Text
+                          color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                          fontSize={13}
+                          numberOfLines={1}
+                        >
+                          {brand.category}
+                        </Text>
+                      )}
+                    </VStack>
+                  </HStack>
+                </Pressable>
+              ))}
+            </VStack>
+          </VStack>
+        )}
+
+        {/* Products Results */}
+        {selectedFilter === 'products' &&
+          searchData?.productData &&
+          searchData.productData.length > 0 && (
+            <VStack space="xs">
+              <Text
+                fontSize={12}
+                fontWeight="$semibold"
+                color={isDark ? '$textDark50' : '#B9B9B9'}
+                px="$4"
+              >
+                Ürünler ({searchData.productData.length})
+              </Text>
+              <VStack space="xs">
+                {searchData.productData.map((product: any) => (
+                  <Box
+                    key={product.id}
+                    py="$3"
+                    px="$4"
+                    borderBottomWidth={1}
+                    borderBottomColor={isDark ? '#2C2C2E' : '#E5E5EA'}
+                  >
+                    <ProductInfoCard
+                      size="big"
+                      type={ProductInfoType.PRODUCT}
+                      image={toImageSource(product.image) || require('@/assets/inventory/product_01.png')}
+                      title={product.name}
+                      subName={product.model || product.specs || ''}
+                      onPress={() => handleProductPress(product.id)}
+                    />
+                  </Box>
+                ))}
+              </VStack>
+            </VStack>
+          )}
+      </VStack>
     );
+  };
+
+  const filters: { id: SearchFilter; label: string }[] = [
+    { id: 'users', label: 'Kullanıcılar' },
+    { id: 'brands', label: 'Markalar' },
+    { id: 'products', label: 'Ürünler' },
+  ];
+
+  if (!shouldRender && !visible) {
+    return null;
+  }
+
+  return (
+    <Modal
+      visible={shouldRender}
+      animationType="none"
+      transparent={true}
+      onRequestClose={handleClose}
+      statusBarTranslucent
+      hardwareAccelerated={true}
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Box style={{ flex: 1 }}>
+          {/* Overlay Background */}
+          <Animated.View
+            style={[
+              {
+                ...StyleSheet.absoluteFillObject,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              },
+              overlayAnimatedStyle,
+            ]}
+          >
+            <RNPressable
+              style={StyleSheet.absoluteFillObject}
+              onPress={handleClose}
+            />
+          </Animated.View>
+
+          {/* Search Panel - Yukarıdan aşağıya */}
+          <Animated.View
+            style={[
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: MODAL_HEIGHT + insets.top,
+                backgroundColor: isDark ? '#000000' : '#FFFFFF',
+                borderBottomLeftRadius: 24,
+                borderBottomRightRadius: 24,
+                overflow: 'hidden',
+              },
+              modalAnimatedStyle,
+            ]}
+          >
+            <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
+              {/* Handler - Sadece buradan sürüklenebilir */}
+              <GestureDetector gesture={panGesture}>
+                <Animated.View
+                  style={{
+                    paddingTop: insets.top + 8,
+                    paddingBottom: 8,
+                    alignItems: 'center',
+                    borderBottomWidth: 1,
+                    borderBottomColor: isDark ? '#2C2C2E' : '#E5E5EA',
+                  }}
+                >
+                  <Box
+                    width={40}
+                    height={4}
+                    borderRadius={2}
+                    bg={isDark ? '#3C3C3E' : '#D1D1D6'}
+                  />
+                </Animated.View>
+              </GestureDetector>
+
+                {/* Header */}
+                <VStack space="md" px="$4" pb="$2">
+                  {/* Search Bar */}
+                  <HStack
+                    alignItems="center"
+                    bg={isDark ? '#1C1C1E' : '#F2F2F7'}
+                    borderRadius={12}
+                    px="$3"
+                    space="sm"
+                    h={48}
+                  >
+                    <Feather name="search" size={20} color={isDark ? '#8E8E93' : '#8E8E93'} />
+                    <Input flex={1} borderWidth={0} bg="transparent">
+                      <InputField
+                        ref={inputRef}
+                        placeholder="Kullanıcı, marka veya ürün ara..."
+                        placeholderTextColor={isDark ? '#8E8E93' : '#8E8E93'}
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={15}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        returnKeyType="search"
+                        autoFocus={false}
+                      />
+                    </Input>
+                    {searchQuery.length > 0 && (
+                      <Pressable onPress={() => setSearchQuery('')} p="$1">
+                        <Feather name="x-circle" size={18} color={isDark ? '#8E8E93' : '#8E8E93'} />
+                      </Pressable>
+                    )}
+                  </HStack>
+
+                  {/* Filters */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <HStack space="sm" px="$4">
+                      {filters.map((filter) => (
+                        <Pressable
+                          key={filter.id}
+                          onPress={() => setSelectedFilter(filter.id)}
+                          bg={
+                            selectedFilter === filter.id
+                              ? '#007AFF'
+                              : isDark
+                                ? '#1C1C1E'
+                                : '#F2F2F7'
+                          }
+                          borderRadius={20}
+                          px="$4"
+                          py="$2"
+                        >
+                          <Text
+                            color={
+                              selectedFilter === filter.id
+                                ? '#FFFFFF'
+                                : isDark
+                                  ? '#FFFFFF'
+                                  : '#000000'
+                            }
+                            fontSize={14}
+                            fontWeight={selectedFilter === filter.id ? '$semibold' : '$normal'}
+                          >
+                            {filter.label}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </HStack>
+                  </ScrollView>
+                </VStack>
+
+                {/* Content */}
+                <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+                  {renderSearchResults()}
+                </ScrollView>
+              </VStack>
+            </Animated.View>
+        </Box>
+      </GestureHandlerRootView>
+    </Modal>
+  );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-});
-
 export default SearchModal;
-

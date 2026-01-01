@@ -10,7 +10,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
-import { ScrollView } from 'react-native';
+import { ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
@@ -97,7 +97,9 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       
       previousUserRef.current = currentUser;
     }
-  }, [user?.id, user?.fullName, user?.avatar, refetch]);
+    // refetch React Query tarafından stable bir fonksiyon, dependency'ye gerek yok
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.fullName, user?.avatar]);
   
   // Profile bilgisi geldiğinde store'daki user'ı güncelle (sadece değişiklik varsa)
   const previousProfileRef = useRef<{ name?: string; avatar?: string } | null>(null);
@@ -119,6 +121,8 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       
       if (hasChanged) {
         // Store'daki mevcut değerlerle karşılaştır - sadece farklıysa güncelle
+        // user.fullName ve user.avatar'ı dependency'den kaldırdık çünkü updateUser() bunları değiştiriyor
+        // ve bu sonsuz döngüye neden oluyor
         const needsUpdate = 
           user.fullName !== currentProfile.name ||
           user.avatar !== currentProfile.avatar;
@@ -141,8 +145,10 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
         previousProfileRef.current = currentProfile;
       }
     }
+    // user?.fullName ve user?.avatar dependency'den kaldırıldı çünkü updateUser() bunları değiştiriyor
+    // ve bu sonsuz döngüye neden oluyor. Sadece userProfile değişikliklerini dinliyoruz.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile?.name, userProfile?.avatar, user?.id, user?.fullName, user?.avatar]);
+  }, [userProfile?.name, userProfile?.avatar, user?.id]);
   
   // Avatar source - profile'dan gelen avatar URL'i veya store'dan veya default avatar
   const avatarSource =
@@ -263,91 +269,116 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           </Box>
           
           {/* Profile Section */}
-          <Box position="absolute" top={70} left={0} right={0} px="$6">
-            <Box alignItems="center">
-              <Box
-                borderWidth={4}
-                borderColor={isDark ? '#000000' : '#FFFFFF'}
-                rounded="$full"
-                overflow="hidden"
-                w={100}
-                h={100}
-                bg="$white"
-              >
-                <Image
-                  source={avatarSource}
-                  alt={displayName}
-                  w="100%"
-                  h="100%"
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{ 
+              opacity: 0.9,
+              position: 'absolute',
+              top: 70,
+              left: 0,
+              right: 0,
+              zIndex: 0,
+            }}
+            onPress={() => {
+              props.navigation.closeDrawer();
+              navigation.navigate('Profile');
+            }}
+          >
+            <Box px="$6">
+              <Box alignItems="center">
+                <Box
+                  borderWidth={4}
+                  borderColor={isDark ? '#000000' : '#FFFFFF'}
                   rounded="$full"
-                />
-              </Box>
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={18}
-                fontWeight="$bold"
-                mt="$2"
-              >
-                {displayName}
-              </Text>
-              {tags.length > 0 && (
-                <Text
-                  mt="$1"
-                  fontSize={9}
-                  fontWeight="$medium"
-                  color="#A3A3A3"
-                  numberOfLines={1}
+                  overflow="hidden"
+                  w={100}
+                  h={100}
+                  bg="$white"
                 >
-                  {tags.join(', ')}
-                  </Text>
-              )}
+                  <Image
+                    source={avatarSource}
+                    alt={displayName}
+                    w="100%"
+                    h="100%"
+                    rounded="$full"
+                  />
+                </Box>
+                <Text
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontSize={18}
+                  fontWeight="$bold"
+                  mt="$2"
+                >
+                  {displayName}
+                </Text>
+                {tags.length > 0 && (
+                  <Text
+                    mt="$1"
+                    fontSize={9}
+                    fontWeight="$medium"
+                    color="#A3A3A3"
+                    numberOfLines={1}
+                  >
+                    {tags.join(', ')}
+                    </Text>
+                )}
+              </Box>
             </Box>
-          </Box>
+          </TouchableOpacity>
         </Box>
 
           {/* Stats Section – FULL BLEED, içte hizalama */}
-          <Box mt={-40} mb="$4">
-            <HStack justifyContent="center" alignItems="center" px="$6">
-            <VStack alignItems="center" space="xs" flex={1}>
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={14}
-                fontWeight="$bold"
-              >
-                {stats.posts}
-              </Text>
-              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
-                Posts
-              </Text>
-            </VStack>
-            <Box w={1} h={30} bg={isDark ? '#DFDFDF' : '#DFDFDF'} />
-            <VStack alignItems="center" space="xs" flex={1}>
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={14}
-                fontWeight="$bold"
-              >
-                {stats.trust}
-              </Text>
-              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
-                Trust
-              </Text>
-            </VStack>
-            <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
-            <VStack alignItems="center" space="xs" flex={1}>
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={14}
-                fontWeight="$bold"
-              >
-                {stats.truster}
-              </Text>
-              <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
-                Truster
-              </Text>
-            </VStack>
-            </HStack>
-          </Box>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{ opacity: 0.9, zIndex: 2 }}
+            onPress={() => {
+              props.navigation.closeDrawer();
+              navigation.navigate('Profile');
+            }}
+          >
+            <Box mt={-40} mb="$4">
+              <HStack justifyContent="center" alignItems="center" px="$6">
+              <VStack alignItems="center" space="xs" flex={1}>
+                <Text
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontSize={14}
+                  fontWeight="$bold"
+                >
+                  {stats.posts}
+                </Text>
+                <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                  Posts
+                </Text>
+              </VStack>
+              <Box w={1} h={30} bg={isDark ? '#DFDFDF' : '#DFDFDF'} />
+              <VStack alignItems="center" space="xs" flex={1}>
+                <Text
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontSize={14}
+                  fontWeight="$bold"
+                >
+                  {stats.trust}
+                </Text>
+                <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                  Trust
+                </Text>
+              </VStack>
+              <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
+              <VStack alignItems="center" space="xs" flex={1}>
+                <Text
+                  color={isDark ? '$textDark50' : '$textLight900'}
+                  fontSize={14}
+                  fontWeight="$bold"
+                >
+                  {stats.truster}
+                </Text>
+                <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                  Truster
+                </Text>
+              </VStack>
+              </HStack>
+            </Box>
+          </TouchableOpacity>
 
           {/* Premium Banner – FULL BLEED, içte padding */}
           <Box w="100%" mb="$3">

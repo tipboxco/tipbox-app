@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { NavigationProvider, useNavigationRef } from '@/src/providers/NavigationProvider';
 import { RootNavigator } from './stacks/RootNavigator';
@@ -11,6 +11,10 @@ import { navigationService } from '@/src/services/NavigationService';
  */
 const NavigationInner = () => {
   const navigationRef = useNavigationRef();
+  
+  // Navigation'ın zaten yapıldığını takip et (sonsuz döngüyü önlemek için)
+  const hasConsumedPendingNavigationRef = useRef(false);
+  const isConsumingRef = useRef(false);
 
   // Initial URL handling (killed state)
   useEffect(() => {
@@ -46,7 +50,17 @@ const NavigationInner = () => {
   // Navigation ready olduğunda pending navigation'ı consume et
   // App State Awareness: Kullanıcı busy değilse pending navigation'ı consume et
   useEffect(() => {
+    // Eğer zaten consume edildiyse tekrar etme
+    if (hasConsumedPendingNavigationRef.current) {
+      return;
+    }
+
     const checkAndConsumePendingNavigation = () => {
+      // Eğer şu anda consume işlemi devam ediyorsa, tekrar başlatma
+      if (isConsumingRef.current) {
+        return;
+      }
+
       if (!navigationRef.current?.isReady()) {
         return;
       }
@@ -60,9 +74,33 @@ const NavigationInner = () => {
         return;
       }
 
-      // Kullanıcı busy değilse pending navigation'ı consume et
-      const { notificationService } = require('@/src/services/NotificationService');
-      notificationService.consumePendingNavigation();
+      // Pending navigation var mı kontrol et
+      const { useNotificationStore } = require('@/src/store/notificationStore');
+      const notificationStore = useNotificationStore.getState();
+      const pending = notificationStore.getPendingNavigation();
+
+      // Eğer pending navigation yoksa, işaretle ve çık
+      if (!pending) {
+        hasConsumedPendingNavigationRef.current = true;
+        return;
+      }
+
+      // Consume işlemini başlat
+      isConsumingRef.current = true;
+
+      try {
+        // Kullanıcı busy değilse pending navigation'ı consume et
+        const { notificationService } = require('@/src/services/NotificationService');
+        notificationService.consumePendingNavigation();
+        
+        // Başarılı olduysa işaretle
+        hasConsumedPendingNavigationRef.current = true;
+      } catch (error) {
+        console.error('[Navigation] ❌ Error consuming pending navigation:', error);
+      } finally {
+        // Consume işlemi bitti
+        isConsumingRef.current = false;
+      }
     };
 
     // İlk kontrol
@@ -92,14 +130,44 @@ const NavigationInner = () => {
         // Navigation ready olduğunda pending navigation'ı consume et
         // App State Awareness kontrolü yapılır (kullanıcı busy ise consume edilmez)
         const checkAndConsume = () => {
+          // Eğer zaten consume edildiyse tekrar etme
+          if (hasConsumedPendingNavigationRef.current || isConsumingRef.current) {
+            return;
+          }
+
           const { useAppStore } = require('@/src/store/appStore');
           const appState = useAppStore.getState();
           
-          if (!appState.isUserBusy) {
+          if (appState.isUserBusy) {
+            console.log('[Navigation] ⏳ User is busy, pending navigation deferred:', appState.busyReason);
+            return;
+          }
+
+          // Pending navigation var mı kontrol et
+          const { useNotificationStore } = require('@/src/store/notificationStore');
+          const notificationStore = useNotificationStore.getState();
+          const pending = notificationStore.getPendingNavigation();
+
+          // Eğer pending navigation yoksa, işaretle ve çık
+          if (!pending) {
+            hasConsumedPendingNavigationRef.current = true;
+            return;
+          }
+
+          // Consume işlemini başlat
+          isConsumingRef.current = true;
+
+          try {
             const { notificationService } = require('@/src/services/NotificationService');
             notificationService.consumePendingNavigation();
-          } else {
-            console.log('[Navigation] ⏳ User is busy, pending navigation deferred:', appState.busyReason);
+            
+            // Başarılı olduysa işaretle
+            hasConsumedPendingNavigationRef.current = true;
+          } catch (error) {
+            console.error('[Navigation] ❌ Error consuming pending navigation:', error);
+          } finally {
+            // Consume işlemi bitti
+            isConsumingRef.current = false;
           }
         };
         

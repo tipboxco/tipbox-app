@@ -255,15 +255,27 @@ class NotificationService {
 
   /**
    * Pending navigation'ı consume et (Navigation ready olduğunda çağrılır)
+   * 
+   * Guard: Eğer navigation başarısız olursa (user busy veya navigation not ready),
+   * navigateToAction() içinde zaten tekrar setPendingNavigation() çağrılıyor.
+   * Bu yüzden burada clearPendingNavigation() çağrılmadan önce navigateToAction() çağrılmalı.
    */
   consumePendingNavigation(): void {
     const store = useNotificationStore.getState();
     const pending = store.getPendingNavigation();
 
-    if (pending) {
-      this.navigateToAction(pending);
-      store.clearPendingNavigation();
+    if (!pending) {
+      return;
     }
+
+    // Önce pending navigation'ı clear et (race condition'ı önlemek için)
+    // Eğer navigation başarısız olursa, navigateToAction() içinde tekrar set edilecek
+    store.clearPendingNavigation();
+
+    // Sonra navigate et
+    // Eğer navigation başarısız olursa (user busy veya navigation not ready),
+    // navigateToAction() içinde zaten tekrar setPendingNavigation() çağrılıyor
+    this.navigateToAction(pending);
   }
 }
 

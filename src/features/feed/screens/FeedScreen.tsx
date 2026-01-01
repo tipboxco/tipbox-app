@@ -44,9 +44,9 @@ type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & R
 export const FeedScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAppStore();
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
