@@ -285,3 +285,96 @@ export const createEventPost = async (
   }
 };
 
+/**
+ * Get Event Posts endpoint function
+ * Event'e ait post'ları getirir (pagination ile)
+ *
+ * @param eventId - Event ID
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns FeedApiResponse - Event posts ve pagination bilgisi
+ */
+export const getEventPosts = async (
+  eventId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<FeedApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', Math.min(limit, 50).toString());
+
+  try {
+    const response = await apiService.getClient().get<FeedApiResponse>(
+      `/events/${eventId}/posts?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getEventPosts] API Error:', {
+      url: `/events/${eventId}/posts?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Event Badge Response
+ */
+export interface EventBadge {
+  id: string;
+  title: string;
+  image: string;
+  description: string;
+}
+
+export interface EventBadgesResponse {
+  items: EventBadge[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * Get Event Badges endpoint function
+ * Event'e ait badge'leri getirir (pagination ile)
+ *
+ * @param eventId - Event ID
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns EventBadgesResponse - Event badges ve pagination bilgisi
+ */
+export const getEventBadges = async (
+  eventId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<EventBadgesResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', Math.min(limit, 50).toString());
+
+  try {
+    const response = await apiService.getClient().get<EventBadgesResponse>(
+      `/events/${eventId}/badges?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getEventBadges] API Error:', {
+      url: `/events/${eventId}/badges?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+

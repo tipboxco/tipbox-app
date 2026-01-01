@@ -313,3 +313,57 @@ export const cancelSupportRequest = async (requestId: string): Promise<void> => 
   await apiService.getClient().post(`/messages/support-requests/${requestId}/cancel`);
 };
 
+/**
+ * Message Feed Response Item
+ */
+export interface MessageFeedItem {
+  id: string;
+  type: 'message' | 'send-tips' | 'support-request';
+  data: {
+    id: string;
+    sender: {
+      id: string;
+      senderName: string;
+      senderTitle: string;
+      senderAvatar: string | null;
+    };
+    lastMessage?: string;
+    message?: string;
+    amount?: number | string;
+    type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
+    status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+    threadId?: string | null;
+    timestamp: string;
+    isUnread?: boolean;
+  };
+}
+
+/**
+ * Get Message Feed endpoint
+ * Mesaj feed'ini getirir (messages, tips, support requests birleşik)
+ *
+ * @param limit - Maksimum feed item sayısı (default: 50, max: 100)
+ * @returns MessageFeedItem[] - Feed item listesi
+ */
+export const getMessageFeed = async (limit: number = 50): Promise<MessageFeedItem[]> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('limit', Math.min(limit, 100).toString());
+
+    const response = await apiService.getClient().get<MessageFeedItem[]>(
+      `/messages/feed?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getMessageFeed] API Error:', {
+      url: `/messages/feed?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      limit,
+    });
+    throw error;
+  }
+};
+

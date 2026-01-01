@@ -622,3 +622,106 @@ export const splitExperience = async (
   }
 };
 
+/**
+ * Get Post Detail endpoint function
+ * Post detayını getirir
+ *
+ * @param postId - Post ID'si
+ * @returns Post detail response
+ */
+export interface PostDetailResponse {
+  id: string;
+  type: string;
+  user: any;
+  content: string;
+  stats: any;
+  images: any[];
+  createdAt: string;
+}
+
+export const getPostDetail = async (postId: string): Promise<PostDetailResponse> => {
+  try {
+    const response = await apiService.getClient().get<PostDetailResponse>(`/posts/${postId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('[getPostDetail] API Error:', {
+      url: `/posts/${postId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Update Post endpoint function
+ * Post'u günceller
+ *
+ * @param postId - Post ID'si
+ * @param data - Update data (content, images, etc.)
+ * @returns Updated post response
+ */
+export interface UpdatePostRequest {
+  content?: string;
+  images?: string[];
+}
+
+export interface UpdatePostResponse {
+  id: string;
+  content: string;
+  updatedAt: string;
+}
+
+export const updatePost = async (
+  postId: string,
+  data: UpdatePostRequest
+): Promise<UpdatePostResponse> => {
+  try {
+    const response = await apiService.getClient().put<UpdatePostResponse>(
+      `/posts/${postId}`,
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[updatePost] API Error:', {
+      url: `/posts/${postId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      requestData: data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Delete Post endpoint function
+ * Post'u siler
+ *
+ * @param postId - Post ID'si
+ * @returns Success response
+ */
+export interface DeletePostResponse {
+  success: boolean;
+  message: string;
+}
+
+export const deletePost = async (postId: string): Promise<DeletePostResponse> => {
+  try {
+    const response = await apiService.getClient().delete<DeletePostResponse>(`/posts/${postId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('[deletePost] API Error:', {
+      url: `/posts/${postId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+

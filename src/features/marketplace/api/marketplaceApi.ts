@@ -117,6 +117,47 @@ export interface DeleteListingResponse {
 }
 
 /**
+ * Update Listing Price endpoint function
+ * Listing fiyatını günceller
+ *
+ * @param listingId - Listing ID'si
+ * @param amount - Yeni fiyat
+ * @returns Updated listing response
+ */
+export interface UpdateListingPriceRequest {
+  amount: number;
+}
+
+export interface UpdateListingPriceResponse {
+  id: string;
+  price: string;
+  updatedAt: string;
+}
+
+export const updateListingPrice = async (
+  listingId: string,
+  amount: number
+): Promise<UpdateListingPriceResponse> => {
+  try {
+    const response = await apiService.getClient().put<UpdateListingPriceResponse>(
+      `/marketplace/listings/${listingId}/price`,
+      { amount }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[updateListingPrice] API Error:', {
+      url: `/marketplace/listings/${listingId}/price`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      amount,
+    });
+    throw error;
+  }
+};
+
+/**
  * Delete Marketplace Listing endpoint function
  * Listing'i satıştan kaldırır (delist)
  *
@@ -130,5 +171,79 @@ export const deleteListing = async (
     `/marketplace/listings/${listingId}`
   );
   return response.data;
+};
+
+/**
+ * Get NFT Sell Info endpoint function
+ * NFT satış bilgilerini getirir
+ *
+ * @param nftId - NFT ID'si
+ * @returns NFT sell info
+ */
+export interface NFTSellInfo {
+  id: string;
+  viewer: number;
+  rarity: string;
+  price: number;
+  suggestedPrice: number;
+  gasFee: number;
+  earningsAfterSales: number;
+}
+
+export const getNFTSellInfo = async (nftId: string): Promise<NFTSellInfo> => {
+  try {
+    const response = await apiService.getClient().get<NFTSellInfo>(
+      `/marketplace/sell/${nftId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getNFTSellInfo] API Error:', {
+      url: `/marketplace/sell/${nftId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get NFT Sell Detail endpoint function
+ * NFT satış detay bilgilerini getirir
+ *
+ * @param nftId - NFT ID'si
+ * @returns NFT sell detail
+ */
+export interface NFTSellDetail {
+  id: string;
+  viewer: number;
+  rarity: string;
+  price: number;
+  suggestedPrice: number;
+  earnDate: string;
+  totalOwner: number;
+  ownerUser: {
+    id: string;
+    name: string;
+  };
+}
+
+export const getNFTSellDetail = async (nftId: string): Promise<NFTSellDetail> => {
+  try {
+    const response = await apiService.getClient().get<NFTSellDetail>(
+      `/marketplace/sell/${nftId}/detail`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getNFTSellDetail] API Error:', {
+      url: `/marketplace/sell/${nftId}/detail`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 

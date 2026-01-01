@@ -103,6 +103,184 @@ export const updateProfile = async (
 };
 
 /**
+ * Upload Avatar endpoint function
+ * Kullanıcının avatar görselini yükler
+ * 
+ * @param avatarUri - Avatar görseli URI'si (local file path)
+ * @returns Avatar URL response
+ */
+export interface UploadAvatarResponse {
+  success: boolean;
+  data: {
+    avatarUrl: string;
+  };
+}
+
+export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarResponse> => {
+  try {
+    const formData = new FormData();
+    
+    // React Native'de FormData için image object formatı
+    let fileExtension = 'jpg';
+    let mimeType = 'image/jpeg';
+    
+    const uriLower = avatarUri.toLowerCase();
+    if (uriLower.includes('.')) {
+      const ext = avatarUri.split('.').pop()?.toLowerCase();
+      if (ext === 'png') {
+        fileExtension = 'png';
+        mimeType = 'image/png';
+      } else if (ext === 'jpg' || ext === 'jpeg') {
+        fileExtension = 'jpg';
+        mimeType = 'image/jpeg';
+      }
+    }
+    
+    formData.append('avatar', {
+      uri: avatarUri,
+      type: mimeType,
+      name: `avatar.${fileExtension}`,
+    } as any);
+    
+    const response = await apiService.getClient().post<UploadAvatarResponse>(
+      '/users/me/avatar',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('[uploadAvatar] API Error:', {
+      url: '/users/me/avatar',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Upload Banner endpoint function
+ * Kullanıcının banner görselini yükler
+ * 
+ * @param bannerUri - Banner görseli URI'si (local file path)
+ * @returns Banner URL response
+ */
+export interface UploadBannerResponse {
+  success: boolean;
+  data: {
+    bannerUrl: string;
+  };
+}
+
+export const uploadBanner = async (bannerUri: string): Promise<UploadBannerResponse> => {
+  try {
+    const formData = new FormData();
+    
+    // React Native'de FormData için image object formatı
+    let fileExtension = 'jpg';
+    let mimeType = 'image/jpeg';
+    
+    const uriLower = bannerUri.toLowerCase();
+    if (uriLower.includes('.')) {
+      const ext = bannerUri.split('.').pop()?.toLowerCase();
+      if (ext === 'png') {
+        fileExtension = 'png';
+        mimeType = 'image/png';
+      } else if (ext === 'jpg' || ext === 'jpeg') {
+        fileExtension = 'jpg';
+        mimeType = 'image/jpeg';
+      }
+    }
+    
+    formData.append('banner', {
+      uri: bannerUri,
+      type: mimeType,
+      name: `banner.${fileExtension}`,
+    } as any);
+    
+    const response = await apiService.getClient().post<UploadBannerResponse>(
+      '/users/me/banner',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('[uploadBanner] API Error:', {
+      url: '/users/me/banner',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Add Inventory Item endpoint function
+ * Inventory'ye ürün ekler
+ * 
+ * @param data - Inventory item data
+ * @returns Created inventory item
+ */
+export interface AddInventoryItemRequest {
+  productId: string;
+  selectedDurationId: string;
+  selectedLocationId: string;
+  selectedPurposeId: string;
+  content: string;
+  experience: Array<{
+    type: 'price_and_shopping' | 'product_and_usage';
+    content: string;
+    rating: number;
+  }>;
+  status: 'own' | 'tested';
+  images?: string[];
+}
+
+export interface AddInventoryItemResponse {
+  id: string;
+  productId: string;
+  userId: string;
+  status: 'own' | 'tested';
+  createdAt: string;
+}
+
+export const addInventoryItem = async (
+  data: AddInventoryItemRequest
+): Promise<AddInventoryItemResponse> => {
+  try {
+    const response = await apiService.getClient().post<AddInventoryItemResponse>(
+      '/inventory',
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[addInventoryItem] API Error:', {
+      url: '/inventory',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      requestData: data,
+    });
+    throw error;
+  }
+};
+
+/**
  * Get Inventory endpoint function
  * Kullanıcının envanter ürünlerini getirir
  * Token'dan user_id otomatik olarak alınır
@@ -114,6 +292,160 @@ export const getInventory = async (): Promise<InventoryItem[]> => {
     '/inventory'
   );
   return response.data;
+};
+
+/**
+ * Update Inventory Item endpoint function
+ * Inventory item'ı günceller
+ * 
+ * @param inventoryId - Inventory item ID'si
+ * @param data - Update data
+ * @returns Updated inventory item
+ */
+export interface UpdateInventoryItemRequest {
+  hasOwned?: boolean;
+  experienceSummary?: string;
+}
+
+export interface UpdateInventoryItemResponse {
+  id: string;
+  hasOwned: boolean;
+  experienceSummary: string;
+  updatedAt: string;
+}
+
+export const updateInventoryItem = async (
+  inventoryId: string,
+  data: UpdateInventoryItemRequest
+): Promise<UpdateInventoryItemResponse> => {
+  try {
+    const response = await apiService.getClient().patch<UpdateInventoryItemResponse>(
+      `/inventory/${inventoryId}`,
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[updateInventoryItem] API Error:', {
+      url: `/inventory/${inventoryId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      requestData: data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Delete Inventory Item endpoint function
+ * Inventory item'ı siler
+ * 
+ * @param inventoryId - Inventory item ID'si
+ * @returns Success response
+ */
+export interface DeleteInventoryItemResponse {
+  success: boolean;
+  message: string;
+}
+
+export const deleteInventoryItem = async (
+  inventoryId: string
+): Promise<DeleteInventoryItemResponse> => {
+  try {
+    const response = await apiService.getClient().delete<DeleteInventoryItemResponse>(
+      `/inventory/${inventoryId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[deleteInventoryItem] API Error:', {
+      url: `/inventory/${inventoryId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Experience Options endpoint function
+ * Deneyim seçeneklerini getirir (durations, locations, purposes)
+ * 
+ * @returns Experience options
+ */
+export interface ExperienceOptions {
+  durations: Array<{ id: string; name: string }>;
+  locations: Array<{ id: string; name: string }>;
+  purposes: Array<{ id: string; name: string }>;
+}
+
+export const getExperienceOptions = async (): Promise<ExperienceOptions> => {
+  try {
+    const response = await apiService.getClient().get<ExperienceOptions>(
+      '/inventory/experience/options'
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getExperienceOptions] API Error:', {
+      url: '/inventory/experience/options',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Split Experience endpoint function
+ * Deneyim metnini AI ile kategorilere ayırır
+ * 
+ * Note: Bu endpoint postApi.ts'de `/posts/experience/split` olarak var
+ * Ancak dokümantasyonda `/inventory/split-experience` olarak geçiyor
+ * Backend'de hangisi kullanılıyorsa ona göre güncellenebilir
+ * 
+ * @param data - Split experience request data
+ * @returns Split experience response
+ */
+export interface SplitExperienceRequest {
+  productId: string;
+  experienceText: string;
+}
+
+export interface SplitExperienceResponse {
+  priceAndShopping: {
+    content: string;
+    rating: number;
+  };
+  productAndUsage: {
+    content: string;
+    rating: number;
+  };
+}
+
+export const splitExperience = async (
+  data: SplitExperienceRequest
+): Promise<SplitExperienceResponse> => {
+  try {
+    const response = await apiService.getClient().post<SplitExperienceResponse>(
+      '/inventory/split-experience',
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[splitExperience] API Error:', {
+      url: '/inventory/split-experience',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      requestData: data,
+    });
+    throw error;
+  }
 };
 
 /**
