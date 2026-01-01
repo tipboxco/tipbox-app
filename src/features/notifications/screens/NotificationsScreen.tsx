@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Dimensions, RefreshControl } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Dimensions, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -248,6 +247,22 @@ export const NotificationsScreen: React.FC = () => {
     });
 
     const notifications = notificationsResponse?.data || [];
+    
+    // Debug: Notification data kontrolü ve API isteği kontrolü
+    useEffect(() => {
+        console.log('[NotificationsScreen] 📋 Notifications API called:', {
+            endpoint: '/notifications',
+            params: { limit: 50, offset: 0, unreadOnly },
+            count: notifications.length,
+            isLoading,
+            error: error?.message,
+            hasData: !!notificationsResponse,
+            responseSuccess: notificationsResponse?.success,
+        });
+        if (notifications.length > 0) {
+            console.log('[NotificationsScreen] 📋 First notification:', JSON.stringify(notifications[0], null, 2));
+        }
+    }, [notifications.length, isLoading, error, notificationsResponse, unreadOnly]);
 
     const handleFilterPress = (selectedFilter: NotificationFilter) => {
         setFilters(prev =>
@@ -264,24 +279,53 @@ export const NotificationsScreen: React.FC = () => {
         setRefreshing(false);
     };
 
-    const handleNotificationPress = (notification: Notification) => {
+    const handleNotificationPress = useCallback((notification: Notification) => {
         if (notification.navigation) {
-            navigation.navigate(
-                notification.navigation.screen as any,
-                notification.navigation.params
-            );
+            try {
+                // Screen adını kontrol et ve doğru formatta navigate et
+                const screenName = notification.navigation.screen;
+                if (!screenName) {
+                    console.error('[NotificationsScreen] ❌ Navigation error: Screen name is missing');
+                    return;
+                }
+
+                // TabNavigator'daki screen adlarıyla eşleştir
+                const screenMap: Record<string, string> = {
+                    'Notifications': 'NotificationStack',
+                    'Notification': 'NotificationStack',
+                    'Inbox': 'InboxStack',
+                    'Messages': 'InboxStack',
+                    'MessageDetail': 'InboxStack',
+                    'Feed': 'FeedStack',
+                    'PostDetail': 'Post', // Shared screen
+                    'Profile': 'Profile', // Shared screen
+                    'Explore': 'ExploreStack',
+                    'Catalog': 'CatalogStack',
+                    'Events': 'EventsStack',
+                    'EventDetail': 'EventsStack',
+                    'Wallet': 'Wallet', // Shared screen
+                    'Settings': 'Settings', // Shared screen
+                };
+
+                const mappedScreen = screenMap[screenName] || screenName;
+                
+                // Navigate et
+                navigation.navigate(mappedScreen as any, notification.navigation.params);
+            } catch (error) {
+                console.error('[NotificationsScreen] ❌ Navigation error:', error);
+            }
         }
-    };
+    }, [navigation]);
 
-    const handleMarkAsRead = () => {
+    const handleMarkAsRead = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
         queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
-    };
+    }, [queryClient]);
 
-    const handleDelete = () => {
+    const handleDelete = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
         queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
-    };
+    }, [queryClient]);
 
     const getFilteredNotifications = (): Notification[] => {
         let filtered = notifications;
@@ -325,21 +369,23 @@ export const NotificationsScreen: React.FC = () => {
         }
     }, [filteredNotifications.length]);
 
-    // FlashList için estimatedItemSize
-    const estimatedItemSize = useMemo(() => 100, []);
-
-    // FlashList renderItem
-    const renderNotificationItem = ({ item }: { item: Notification }) => (
-        <NotificationCard
-            notification={item}
-            onPress={() => handleNotificationPress(item)}
-            onMarkAsRead={handleMarkAsRead}
-            onDelete={handleDelete}
-        />
-    );
+    // FlatList renderItem - useCallback ile memoize et
+    const renderNotificationItem = React.useCallback(({ item }: { item: Notification }) => {
+        return (
+            <NotificationCard
+                notification={item}
+                onPress={() => handleNotificationPress(item)}
+                onMarkAsRead={handleMarkAsRead}
+                onDelete={handleDelete}
+            />
+        );
+    }, [handleNotificationPress, handleMarkAsRead, handleDelete]);
+    
+    // Key extractor - unique ID kullan
+    const keyExtractor = React.useCallback((item: Notification) => item.id, []);
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '#000000' : '#FAFAFA'}>
             {/* Header */}
             <Header 
@@ -349,7 +395,7 @@ export const NotificationsScreen: React.FC = () => {
             />
             
             {/* Search and Filter Section */}
-            <VStack space="md" pb="$4" px="$4">
+            <VStack space="md" pb="$4" px="$4" bg={isDark ? '#000000' : '#FAFAFA'}>
                 {/* Search Bar */}
                 <HStack
                     alignItems="center"
@@ -412,32 +458,31 @@ export const NotificationsScreen: React.FC = () => {
                     </Text>
                 </Box>
             ) : (
-                <Box flex={1}>
-                    <FlashList
-                        data={filteredNotifications}
-                        renderItem={renderNotificationItem}
-                        keyExtractor={(item) => item.id}
-                        estimatedItemSize={estimatedItemSize}
-                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-                        showsVerticalScrollIndicator={false}
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        // Performance optimizations
-                        removeClippedSubviews={true}
-                        maxToRenderPerBatch={10}
-                        updateCellsBatchingPeriod={50}
-                        initialNumToRender={10}
-                        windowSize={10}
-                        // Empty state
-                        ListEmptyComponent={
-                            <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
-                                <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
-                                    {searchQuery ? 'Arama sonucu bulunamadı.' : 'Henüz bildirim yok.'}
-                                </Text>
-                            </Box>
-                        }
-                    />
-                </Box>
+                <FlatList
+                    data={filteredNotifications}
+                    renderItem={renderNotificationItem}
+                    keyExtractor={keyExtractor}
+                    contentContainerStyle={{ 
+                        paddingHorizontal: 16,
+                        paddingTop: 8,
+                        paddingBottom: 20,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+                        />
+                    }
+                    // Performance optimizations
+                    removeClippedSubviews={true}
+                    maxToRenderPerBatch={10}
+                    updateCellsBatchingPeriod={50}
+                    initialNumToRender={10}
+                    windowSize={10}
+                    style={{ flex: 1 }}
+                />
             )}
         </Box>
         </SafeAreaView>

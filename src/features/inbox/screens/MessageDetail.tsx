@@ -375,10 +375,20 @@ const MessageDetailScreen: React.FC = () => {
           // Eğer pending mesaj backend'de varsa, backend versiyonunu kullan
           const pendingMessagesToKeep = pendingMessages.filter(pendingMsg => {
             // Backend'de bu mesaj var mı kontrol et (içerik ve timestamp'e göre)
-            const existsInBackend = convertedMessages.some(backendMsg => 
-              backendMsg.text === pendingMsg.text && 
-              Math.abs(new Date(backendMsg.timestamp).getTime() - new Date(pendingMsg.timestamp).getTime()) < 5000 // 5 saniye tolerans
-            );
+            // Daha geniş tolerans: 30 saniye (mesaj gönderildikten sonra backend'e kaydedilmesi zaman alabilir)
+            const existsInBackend = convertedMessages.some(backendMsg => {
+              const textMatch = backendMsg.text === pendingMsg.text;
+              const timeDiff = Math.abs((new Date(backendMsg.timestamp).getTime() || 0) - (new Date(pendingMsg.timestamp).getTime() || 0));
+              const timeMatch = timeDiff < 30000; // 30 saniye tolerans
+              return textMatch && timeMatch;
+            });
+            
+            if (existsInBackend) {
+              console.log('[MessageDetail] 📥 Pending message found in backend, will use backend version:', pendingMsg.text);
+            } else {
+              console.log('[MessageDetail] 📥 Pending message not found in backend, keeping optimistic:', pendingMsg.text);
+            }
+            
             return !existsInBackend; // Backend'de yoksa koru
           });
           
@@ -581,6 +591,11 @@ const MessageDetailScreen: React.FC = () => {
 
     // Mesaj listesini invalidate et (inbox listesini güncelle)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    
+    // Thread mesajlarını da invalidate et (yeniden yüklensin)
+    if (threadId) {
+      queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(threadId) });
+    }
   }, [user?.id, threadId, params.senderName, params.senderAvatar, queryClient]);
 
   // 9️⃣ SOCKET EVENT'LERİ ALINIR - message_sent event handler (gönderici onayı)
@@ -648,8 +663,13 @@ const MessageDetailScreen: React.FC = () => {
     });
 
     // Inbox listesini invalidate et (mesaj listesini güncelle)
-    // Thread mesajlarını invalidate etme - new_message event'i zaten mesajı ekleyecek
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    
+    // Thread mesajlarını da invalidate et (yeniden yüklensin)
+    // Bu sayede kullanıcı ekrandan çıkıp geri girdiğinde mesajlar görünür
+    if (threadId) {
+      queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(threadId) });
+    }
   }, [threadId, queryClient]);
 
   // Thread event handlers
@@ -1012,7 +1032,15 @@ const MessageDetailScreen: React.FC = () => {
       });
       socketSendMessage(recipientUserId, messageText.trim());
       
-      // Inbox listesini invalidate etme - message_sent event'i geldiğinde invalidate edilecek
+      // Thread mesajlarını invalidate et (mesaj backend'e kaydedildikten sonra refetch yapılsın)
+      // message_sent ve new_message event'leri geldiğinde de invalidate edilecek ama burada da yapıyoruz güvenlik için
+      if (effectiveThreadId) {
+        // Biraz gecikme ile invalidate et (backend'in mesajı kaydetmesi için zaman tanı)
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(effectiveThreadId) });
+          refetchMessages();
+        }, 1000);
+      }
     } else {
       // Fallback: REST API ile mesaj gönder
       console.warn('[MessageDetail] ⚠️ Socket not ready, using REST API fallback');

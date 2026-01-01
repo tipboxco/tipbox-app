@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
+import { NotificationBadge } from '@/src/components/NotificationBadge';
+import { useUnreadCount } from '@/src/features/notifications/api/hooks';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -40,6 +42,10 @@ export const TabNavigator = () => {
   
   // Global navigation UI state'ten tab bar visibility'yi al
   const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
+  
+  // Unread notification count - badge için
+  const { data: unreadCountData } = useUnreadCount();
+  const unreadCount = unreadCountData?.data?.count || 0;
 
   // Debug: Android'de insets.bottom değerini logla (sadece ilk render'da)
   useMemo(() => {
@@ -98,6 +104,16 @@ export const TabNavigator = () => {
             case 'InboxStack':
               iconName = 'inbox';
               break;
+          }
+
+          // Notification icon için badge ekle
+          if (route.name === 'NotificationStack') {
+            return (
+              <View style={{ position: 'relative' }}>
+                <Feather name={iconName} size={size} color={color} />
+                <NotificationBadge count={unreadCount} />
+              </View>
+            );
           }
 
           return <Feather name={iconName} size={size} color={color} />;

@@ -15,6 +15,7 @@ import { useAppState } from './AppStateProvider';
 import { notificationKeys, useUnreadCount } from '@/src/features/notifications/api/hooks';
 import type { Notification } from '@/src/features/notifications/api/types';
 import type { NotificationPayload } from '@/src/types/notification';
+import { NotificationToast } from '@/src/components/NotificationToast';
 
 /**
  * Navigation ref - NavigationContainer dışından navigation yapmak için
@@ -22,10 +23,52 @@ import type { NotificationPayload } from '@/src/types/notification';
 export const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 /**
+ * Screen name mapping - DeepLinkService'den gelen screen adlarını TabNavigator'daki screen adlarıyla eşleştir
+ */
+function mapScreenName(screen: string): string | null {
+  const screenMap: Record<string, string> = {
+    'Notifications': 'NotificationStack',
+    'Notification': 'NotificationStack',
+    'Inbox': 'InboxStack',
+    'Messages': 'InboxStack',
+    'MessageDetail': 'InboxStack', // InboxStack içinde MessageDetail screen'i var
+    'Feed': 'FeedStack',
+    'PostDetail': 'Post', // Shared screen
+    'Profile': 'Profile', // Shared screen
+    'Explore': 'ExploreStack',
+    'Catalog': 'CatalogStack',
+    'Events': 'EventsStack',
+    'EventDetail': 'EventsStack',
+    'Wallet': 'Wallet', // Shared screen
+    'Settings': 'Settings', // Shared screen
+  };
+
+  return screenMap[screen] || null;
+}
+
+/**
  * Navigation helper function
  */
 export function navigate(name: string, params?: any) {
-  navigationRef.current?.navigate(name as never, params as never);
+  if (!name) {
+    console.error('[NotificationProvider] ❌ Navigation error: Screen name is required');
+    return;
+  }
+
+  if (!navigationRef.current) {
+    console.error('[NotificationProvider] ❌ Navigation error: Navigation ref is not ready');
+    return;
+  }
+
+  try {
+    navigationRef.current.navigate(name as never, params as never);
+  } catch (error) {
+    console.error('[NotificationProvider] ❌ Navigation error:', {
+      screen: name,
+      params,
+      error,
+    });
+  }
 }
 
 /**
@@ -71,6 +114,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Unread count için query - badge sync için
   const { data: unreadCountData } = useUnreadCount();
   const unreadCount = unreadCountData?.data?.count || 0;
+  
+  // Toast state - WhatsApp/Instagram tarzı in-app notification
+  const [toastVisible, setToastVisible] = React.useState(false);
+  const [toastData, setToastData] = React.useState<{
+    title: string;
+    message: string;
+    avatar?: string | number;
+    onPress?: () => void;
+  } | null>(null);
 
   // Notification service initialization
   // ⚠️ Auth hazır olmadan başlamaz!
@@ -179,6 +231,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       const event = notificationEventService.createEvent(notification, 'socket');
       await notificationEventService.dispatch(event);
 
+      // Notification içeriğini hazırla (notification item ile aynı format)
+      const notificationTitle = notification.title || notification.metadata?.userName || 'Bildirim';
+      const notificationMessage = notification.message || '';
+      const notificationAvatar = notification.metadata?.userAvatar;
+
       // Grouping: Event'i grupla veya hemen gönder
       const groupingEvent = {
         type: notification.type,
@@ -197,36 +254,98 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
       if (grouped) {
         // Gruplanmış bildirim göster
-        if (isForeground && grouped.groupedTitle && grouped.groupedBody) {
-          notificationService.sendLocalNotification({
-            title: grouped.groupedTitle,
-            body: grouped.groupedBody,
+        const groupedTitle = grouped.groupedTitle || notificationTitle;
+        const groupedBody = grouped.groupedBody || notificationMessage;
+
+        // Foreground'da toast göster
+        if (isForeground) {
+          setToastData({
+            title: groupedTitle,
+            message: groupedBody,
+            avatar: notificationAvatar,
+            onPress: () => {
+              // Notifications screen'e git
+              try {
+                navigate('NotificationStack', { screen: 'NotificationsScreen' });
+              } catch (error) {
+                console.error('[NotificationProvider] ❌ Navigation error:', error);
+              }
+              setToastVisible(false);
+            },
+          });
+          setToastVisible(true);
+        }
+
+        // Her zaman push notification gönder (foreground/background/app closed)
+        try {
+          await notificationService.sendLocalNotification({
+            title: groupedTitle,
+            body: groupedBody,
             data: {
               notificationId: notification.id,
               type: notification.type,
               navigation: notification.navigation,
               grouped: true,
               count: grouped.count,
+              metadata: notification.metadata,
             },
           });
+          console.log('[NotificationProvider] ✅ Grouped push notification sent');
+        } catch (error) {
+          console.error('[NotificationProvider] ❌ Error sending grouped push notification:', error);
         }
       } else {
-        // Tekil bildirim göster (sadece foreground'da ve grouping window dışındaysa)
-        if (isForeground && notification.title && notification.message) {
-          // Eğer grouping window içindeyse gönderme (grouping service zaten yönetiyor)
-          const store = useNotificationStore.getState();
-          const isGrouped = store.isNotificationGrouped(notification.type);
-          
-          if (!isGrouped) {
-            notificationService.sendLocalNotification({
-              title: notification.title,
-              body: notification.message,
+        // Tekil bildirim göster
+        const store = useNotificationStore.getState();
+        const isGrouped = store.isNotificationGrouped(notification.type);
+        
+        if (!isGrouped) {
+          // Foreground'da toast göster
+          if (isForeground && notificationTitle && notificationMessage) {
+            setToastData({
+              title: notificationTitle,
+              message: notificationMessage,
+              avatar: notificationAvatar,
+              onPress: () => {
+                // Deep link ile navigation
+                const route = deepLinkService.parseNotificationData({
+                  navigation: notification.navigation,
+                  metadata: notification.metadata,
+                });
+                if (route?.screen) {
+                  // Screen adını TabNavigator'daki screen adlarıyla eşleştir
+                  const mappedScreen = mapScreenName(route.screen);
+                  if (mappedScreen) {
+                    navigate(mappedScreen, route.params);
+                  } else {
+                    // Fallback: NotificationStack'a git
+                    navigate('NotificationStack', { screen: 'NotificationsScreen' });
+                  }
+                } else {
+                  // Fallback: NotificationStack'a git
+                  navigate('NotificationStack', { screen: 'NotificationsScreen' });
+                }
+                setToastVisible(false);
+              },
+            });
+            setToastVisible(true);
+          }
+
+          // Her zaman push notification gönder (foreground/background/app closed)
+          try {
+            await notificationService.sendLocalNotification({
+              title: notificationTitle,
+              body: notificationMessage,
               data: {
                 notificationId: notification.id,
                 type: notification.type,
                 navigation: notification.navigation,
+                metadata: notification.metadata,
               },
             });
+            console.log('[NotificationProvider] ✅ Push notification sent');
+          } catch (error) {
+            console.error('[NotificationProvider] ❌ Error sending push notification:', error);
           }
         }
       }
@@ -356,6 +475,22 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   return (
     <NotificationContext.Provider value={value}>
       {children}
+      
+      {/* WhatsApp/Instagram tarzı in-app notification toast */}
+      {toastData && (
+        <NotificationToast
+          visible={toastVisible}
+          title={toastData.title}
+          message={toastData.message}
+          avatar={toastData.avatar}
+          onPress={toastData.onPress}
+          onDismiss={() => {
+            setToastVisible(false);
+            setToastData(null);
+          }}
+          duration={3000} // 3 saniye
+        />
+      )}
     </NotificationContext.Provider>
   );
 };

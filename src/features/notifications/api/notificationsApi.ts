@@ -19,16 +19,68 @@ import type {
 /**
  * Get Notifications endpoint function
  * Kullanıcının bildirimlerini getirir
+ * 
+ * API Response Mapping:
+ * Backend'den gelen response'da `data` field'ı var, bunu `metadata`'ya map ediyoruz
  */
 export const getNotifications = async (
   params?: GetNotificationsParams
 ): Promise<GetNotificationsResponse> => {
   try {
-    const response = await apiService.getClient().get<GetNotificationsResponse>(
-      '/notifications',
-      { params }
-    );
-    return response.data;
+    const response = await apiService.getClient().get<{
+      success: boolean;
+      data: Array<{
+        id: string;
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        data?: {
+          senderId?: string;
+          threadId?: string;
+          navigation?: any;
+          senderName?: string;
+          messagePreview?: string;
+          userAvatar?: string;
+          userName?: string;
+          [key: string]: any;
+        };
+        read: boolean;
+        readAt?: string;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+    }>('/notifications', { params });
+    
+    // API response'u type'a map et
+    const mappedData = response.data.data.map((item) => {
+      // Backend'den gelen `data` field'ını `metadata`'ya map et
+      const metadata = item.data ? {
+        userId: item.data.senderId,
+        userName: item.data.senderName || item.data.userName,
+        userAvatar: item.data.userAvatar,
+        threadId: item.data.threadId,
+        ...item.data,
+      } : undefined;
+      
+      return {
+        id: item.id,
+        type: item.type as any,
+        title: item.title,
+        message: item.message,
+        read: item.read,
+        readAt: item.readAt,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        metadata,
+        navigation: item.data?.navigation,
+      };
+    });
+    
+    return {
+      success: response.data.success,
+      data: mappedData,
+    };
   } catch (error: any) {
     console.error('[getNotifications] API Error:', {
       url: '/notifications',
