@@ -395,30 +395,51 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Deep Linking: Gelişmiş deep link parsing
       const route = deepLinkService.parseNotificationData(notification.data || {});
       
-      if (route && route.screen && navigationRef.current) {
+      if (route && route.screen) {
         try {
-          // Navigation ref hazır olana kadar bekle
-          const navigateWithDelay = () => {
-            if (navigationRef.current) {
-              navigate(route.screen, route.params);
-              console.log('[NotificationProvider] ✅ Navigated to:', route.screen, route.params);
-            } else {
-              // Ref hazır değilse 500ms bekle ve tekrar dene
-              setTimeout(navigateWithDelay, 500);
-            }
-          };
-          navigateWithDelay();
+          // Screen adını TabNavigator'daki screen adlarıyla eşleştir
+          const mappedScreen = mapScreenName(route.screen);
+          if (mappedScreen) {
+            // Navigation ref hazır olana kadar bekle
+            const navigateWithDelay = () => {
+              if (navigationRef.current) {
+                navigate(mappedScreen, route.params);
+                console.log('[NotificationProvider] ✅ Navigated to:', mappedScreen, route.params);
+              } else {
+                // Ref hazır değilse 500ms bekle ve tekrar dene
+                setTimeout(navigateWithDelay, 500);
+              }
+            };
+            navigateWithDelay();
+          } else {
+            // Fallback: NotificationStack'a git
+            const navigateWithDelay = () => {
+              if (navigationRef.current) {
+                navigate('NotificationStack', { screen: 'NotificationsScreen' });
+                console.log('[NotificationProvider] ✅ Navigated to NotificationStack (fallback)');
+              } else {
+                setTimeout(navigateWithDelay, 500);
+              }
+            };
+            navigateWithDelay();
+          }
         } catch (error) {
           console.error('[NotificationProvider] ❌ Navigation error:', error);
         }
       } else {
         // Fallback: Eski navigation data formatı
         const navigationData = notification.data?.navigation as { screen: string; params?: Record<string, any> };
-        if (navigationData?.screen && navigationRef.current) {
+        if (navigationData?.screen) {
           try {
+            const mappedScreen = mapScreenName(navigationData.screen);
             const navigateWithDelay = () => {
               if (navigationRef.current) {
-                navigate(navigationData.screen, navigationData.params);
+                if (mappedScreen) {
+                  navigate(mappedScreen, navigationData.params);
+                } else {
+                  // Fallback: NotificationStack'a git
+                  navigate('NotificationStack', { screen: 'NotificationsScreen' });
+                }
               } else {
                 setTimeout(navigateWithDelay, 500);
               }
@@ -427,6 +448,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           } catch (error) {
             console.error('[NotificationProvider] Navigation error:', error);
           }
+        } else {
+          // Final fallback: NotificationStack'a git
+          const navigateWithDelay = () => {
+            if (navigationRef.current) {
+              navigate('NotificationStack', { screen: 'NotificationsScreen' });
+            } else {
+              setTimeout(navigateWithDelay, 500);
+            }
+          };
+          navigateWithDelay();
         }
       }
 
