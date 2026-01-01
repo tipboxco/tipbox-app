@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
-import { Box, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
-import { toImageSource } from '@/src/utils';
+import React from 'react';
+import { Box, VStack, Text, Pressable } from '@gluestack-ui/themed';
+import { CachedImage } from '@/src/components/CachedImage';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export interface CategoryCardCategory {
@@ -12,18 +12,15 @@ export interface CategoryCardCategory {
 interface CategoryCardProps {
   category: CategoryCardCategory;
   onPress: (category: CategoryCardCategory) => void;
+  priority?: 'low' | 'normal' | 'high';
 }
 
-const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress }) => {
+const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority = 'normal' }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
-  // Image source'u memoize et - aynı image için aynı referansı kullan
-  const imageSource = useMemo(() => {
-    const source = toImageSource(category.image);
-    // Eğer toImageSource undefined döndürürse fallback kullan
-    return source || require('@/assets/inventory/product_01.png');
-  }, [category.image, category.id]);
+  // Placeholder görseli
+  const placeholder = require('@/assets/inventory/product_01.png');
 
   return (
     <Pressable
@@ -52,16 +49,20 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress }) => {
           alignItems="center"
           py="$1"
         >
-          <Image
-            key={category.id}
+          <CachedImage
+            source={category.image}
             style={{
               width: '100%',
               height: '100%',
             }}
-            source={imageSource}
             alt={category.name}
-            borderRadius={5}
             resizeMode="contain"
+            placeholder={placeholder}
+            priority={priority}
+            // İlk yükleme için memory cache (daha hızlı), sonra disk cache
+            cachePolicy={priority === 'high' ? 'memory' : 'memory-disk'}
+            // Her görsel için unique recycling key (category.id + image URL)
+            recyclingKey={`${category.id}-${typeof category.image === 'string' ? category.image : 'img'}`}
           />
         </Box>
 

@@ -95,6 +95,9 @@ class NotificationStateSync {
 
   /**
    * Notification'ı store'a ekle ve cache'i sync et
+   * 
+   * ÖNEMLİ: Optimistic update yapmıyoruz, sadece cache'i invalidate ediyoruz.
+   * Bu sayede API'den gelen gerçek count kullanılır ve yanlış sayı gösterilmez.
    */
   addNotification(notification: Notification): void {
     const store = useNotificationStore.getState();
@@ -102,12 +105,10 @@ class NotificationStateSync {
     // Store'a ekle
     store.addRealtimeNotification(notification);
     
-    // Unread count'u increment et (optimistic)
-    if (!notification.read) {
-      store.incrementUnreadCount();
-    }
-
-    // Cache'i invalidate et (React Query otomatik refetch yapacak)
+    // Optimistic update YAPMA - API'den gelen gerçek count kullanılacak
+    // Bu sayede yanlış sayı gösterilmez (14 yerine 1 gibi)
+    
+    // Cache'i invalidate et (React Query otomatik refetch yapacak ve gerçek count'u getirecek)
     if (this.queryClient) {
       this.queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
       this.queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });

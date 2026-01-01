@@ -1,4 +1,5 @@
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse } from '../types';
@@ -27,6 +28,43 @@ export const catalogKeys = {
 };
 
 /**
+ * Prefetch helper functions - Catalog verilerini önceden yüklemek için
+ */
+export const useCatalogPrefetch = () => {
+  const queryClient = useQueryClient();
+
+  const prefetchSubCategories = useCallback((categoryId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: catalogKeys.subCategories(categoryId),
+      queryFn: () => getCatalogSubCategories(categoryId),
+      staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
+    });
+  }, [queryClient]);
+
+  const prefetchProductGroups = useCallback((subCategoryId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: catalogKeys.productGroups(subCategoryId),
+      queryFn: () => getCatalogProductGroups(subCategoryId),
+      staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
+    });
+  }, [queryClient]);
+
+  const prefetchProducts = useCallback((productGroupId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: catalogKeys.products(productGroupId),
+      queryFn: () => getCatalogProducts(productGroupId),
+      staleTime: 60 * 60 * 1000, // 1 saat - dokümana göre backend cache TTL
+    });
+  }, [queryClient]);
+
+  return {
+    prefetchSubCategories,
+    prefetchProductGroups,
+    prefetchProducts,
+  };
+};
+
+/**
  * Get Catalog Categories query hook
  * Tüm katalog kategorilerini getirir ve cache'ler
  * 
@@ -39,11 +77,12 @@ export const useCatalogCategories = () => {
   return useQuery<CatalogCategory[], Error>({
     queryKey: catalogKeys.categories(),
     queryFn: () => getCatalogCategories(),
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always',
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat - dokümana göre backend cache TTL
+    gcTime: 7 * 24 * 60 * 60 * 1000, // 7 gün - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3, // Dokümana göre retry mekanizması
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 
@@ -60,11 +99,12 @@ export const useBrandCategories = () => {
   return useQuery<BrandCategory[], Error>({
     queryKey: catalogKeys.brandCategories(),
     queryFn: () => getBrandCategories(),
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat - kategoriler nadiren değişir
+    gcTime: 7 * 24 * 60 * 60 * 1000, // 7 gün - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3, // Dokümana göre retry mekanizması
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 
@@ -85,11 +125,12 @@ export const useBrandsByCategory = (categoryId: string | undefined) => {
       return getBrandsByCategory(categoryId);
     },
     enabled: !!categoryId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - brand listeleri nadiren değişir
+    gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3, // Dokümana göre retry mekanizması
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 
@@ -113,11 +154,12 @@ export const useCatalogSubCategories = (categoryId: string | undefined) => {
       return getCatalogSubCategories(categoryId);
     },
     enabled: !!categoryId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
+    gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3, // Dokümana göre retry mekanizması
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 
@@ -141,11 +183,12 @@ export const useCatalogProductGroups = (subCategoryId: string | undefined) => {
       return getCatalogProductGroups(subCategoryId);
     },
     enabled: !!subCategoryId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always',
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
+    gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3, // Dokümana göre retry mekanizması
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 
@@ -169,11 +212,12 @@ export const useCatalogProducts = (productGroupId: string | undefined) => {
       return getCatalogProducts(productGroupId);
     },
     enabled: !!productGroupId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always',
+    staleTime: 60 * 60 * 1000, // 1 saat - dokümana göre backend cache TTL
+    gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3, // Dokümana göre retry mekanizması
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 
@@ -197,11 +241,12 @@ export const useBrandCatalog = (brandId: string | undefined) => {
       return getBrandCatalog(brandId);
     },
     enabled: !!brandId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 5 * 60 * 1000, // 5 dakika - isJoined gibi kullanıcıya özel bilgiler var
+    gcTime: 30 * 60 * 1000, // 30 dakika - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: 3, // Dokümana göre retry mekanizması
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 

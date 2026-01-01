@@ -4,7 +4,7 @@
 export interface CatalogCategory {
   categoryId: string;
   name: string;
-  image: string;
+  image: string | null; // Dokümana göre null olabilir
 }
 
 /**
@@ -33,7 +33,7 @@ export interface BrandListItem {
 export interface CatalogSubCategory {
   subCategoryId: string;
   name: string;
-  image: string;
+  image: string | null; // Dokümana göre null olabilir
   categoryId: string;
 }
 
@@ -43,7 +43,7 @@ export interface CatalogSubCategory {
 export interface CatalogProductGroup {
   productGroupId: string;
   name: string;
-  image: string;
+  image: string | null; // Dokümana göre null olabilir
   subCategoryId: string;
 }
 
@@ -53,7 +53,7 @@ export interface CatalogProductGroup {
 export interface CatalogProduct {
   productId: string;
   name: string;
-  image: string;
+  image: string | null; // Dokümana göre null olabilir
   productGroupId: string;
   subCategoryId: string;
 }
@@ -117,11 +117,11 @@ export interface BrandCatalogPost {
 export interface BrandCatalogResponse {
   brandId: string;
   name: string;
-  description: string;
-  bannerImage: string;
+  description: string | null; // Dokümana göre null olabilir
+  bannerImage: string | null; // Dokümana göre null olabilir
   followers: number;
   isJoined: boolean;
-  posts: BrandCatalogPost[];
+  posts?: BrandCatalogPost[]; // Opsiyonel - dokümanda belirtilmemiş ama mevcut kodda var
 }
 
 /**

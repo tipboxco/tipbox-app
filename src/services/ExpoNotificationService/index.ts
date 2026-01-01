@@ -53,11 +53,10 @@ class ExpoNotificationService {
   private async configureForegroundNotifications() {
     await Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldShowAlert: true,
         shouldPlaySound: this.config.defaultSound ?? true,
         shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
+        shouldShowBanner: true, // iOS/Android: Banner göster
+        shouldShowList: true, // iOS: Notification Center'da göster
       }),
     });
   }

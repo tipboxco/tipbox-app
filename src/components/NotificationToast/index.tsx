@@ -48,7 +48,14 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    console.log('[NotificationToast] 🔍 Visibility changed:', { visible, title, message });
+    
     if (visible) {
+      console.log('[NotificationToast] ✅ Showing toast');
+      // Animasyon değerlerini başlangıç pozisyonuna getir
+      slideAnim.setValue(-200);
+      opacityAnim.setValue(0);
+      
       // Göster: Aşağı kay (slide down)
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -61,18 +68,22 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        console.log('[NotificationToast] ✅ Toast animation completed');
+      });
 
       // 3 saniye sonra gizle
       const timer = setTimeout(() => {
+        console.log('[NotificationToast] ⏰ Auto-hiding toast after', duration, 'ms');
         hideToast();
       }, duration);
 
       return () => clearTimeout(timer);
     } else {
+      // Visible false olduğunda hemen gizle
       hideToast();
     }
-  }, [visible, duration]);
+  }, [visible, duration, title, message]);
 
   const hideToast = () => {
     // Gizle: Yukarı kay (slide up)
@@ -92,9 +103,8 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
     });
   };
 
-  if (!visible) {
-    return null;
-  }
+  // Toast'u her zaman render et, sadece animasyon ile göster/gizle
+  // Bu sayede animasyon sorunsuz çalışır
 
   return (
     <Animated.View
@@ -103,9 +113,11 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
         top: insets.top + 10,
         left: 16,
         right: 16,
-        zIndex: 9999,
+        zIndex: 99999, // Çok yüksek z-index - her şeyin üstünde
+        elevation: 10, // Android için
         transform: [{ translateY: slideAnim }],
         opacity: opacityAnim,
+        pointerEvents: visible ? 'auto' : 'none', // Görünmezken tıklamaları engelle
       }}
     >
       <Pressable onPress={onPress}>

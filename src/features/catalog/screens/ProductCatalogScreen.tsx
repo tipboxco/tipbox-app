@@ -10,9 +10,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
-import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts } from '../api/hooks';
+import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts, useCatalogPrefetch } from '../api/hooks';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
-import { toImageSource } from '@/src/utils';
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
@@ -63,6 +62,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // Current view - Store'dan oku
   const currentView = useCatalogUIStore((state) => state.currentView);
   
+  // Prefetch helper
+  const { prefetchSubCategories, prefetchProductGroups, prefetchProducts } = useCatalogPrefetch();
+  
   // API'den kategorileri getir
   const { data: catalogCategories, isLoading, isError } = useCatalogCategories();
   
@@ -75,24 +77,36 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den seçili ürün grubuna ait products'ı getir
   const { data: catalogProducts } = useCatalogProducts(selectedProductGroupId);
   
-  // Görsel verisini normalize eden yardımcı fonksiyon - useCallback ile memoize et
-  const normalizeImage = useCallback((image: any) => {
-    return toImageSource(image) as any;
-  }, []);
-
+  // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
+  useEffect(() => {
+    if (catalogCategories && catalogCategories.length > 0) {
+      const firstThreeCategories = catalogCategories.slice(0, 3);
+      firstThreeCategories.forEach(category => {
+        prefetchSubCategories(category.categoryId);
+      });
+    }
+  }, [catalogCategories, prefetchSubCategories]);
+  
   // API'den gelen kategorileri Category formatına dönüştür - useMemo ile cache'le
+  // CachedImage zaten toImageSource'u çağırıyor, bu yüzden image'ı direkt geçirebiliriz
   const currentCategories = useMemo(() => {
     if (!catalogCategories) return [];
     
-    return catalogCategories.map(cat => ({
-      id: cat.categoryId,
-      name: cat.name,
-      icon: 'folder',
-      // API'den gelen görsel string, require ya da { uri } olabilir – hepsini normalize et
-      image: normalizeImage(cat.image),
-      subCategories: [], // API'den subCategories gelmiyor, boş array
-    }));
-  }, [catalogCategories, normalizeImage]);
+    return catalogCategories.map(cat => {
+      // Debug: API'den gelen görseli kontrol et
+      if (!cat.image || cat.image.trim() === '') {
+        console.warn(`[ProductCatalogScreen] ⚠️ Category "${cat.name}" has no image URL`);
+      }
+      
+      return {
+        id: cat.categoryId,
+        name: cat.name,
+        icon: 'folder',
+        image: cat.image || undefined, // Boş string ise undefined yap
+        subCategories: [], // API'den subCategories gelmiyor, boş array
+      };
+    });
+  }, [catalogCategories]);
 
   // API'den gelen subcategories'i formatla - useMemo ile cache'le
   const currentSubCategories = useMemo(() => {
@@ -101,11 +115,11 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     return catalogSubCategories.map(subCat => ({
       id: subCat.subCategoryId,
       name: subCat.name,
-      image: normalizeImage(subCat.image),
+      image: subCat.image || undefined, // Boş string ise undefined yap
       categoryId: subCat.categoryId,
       productGroups: [], // API'den productGroups gelmiyor, boş array
     }));
-  }, [catalogSubCategories, normalizeImage]);
+  }, [catalogSubCategories]);
 
   // API'den gelen product groups'u formatla - useMemo ile cache'le
   const currentProductGroups = useMemo(() => {
@@ -114,11 +128,11 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     return catalogProductGroups.map(productGroup => ({
       id: productGroup.productGroupId,
       name: productGroup.name,
-      image: normalizeImage(productGroup.image),
+      image: productGroup.image || undefined, // Boş string ise undefined yap
       subCategoryId: productGroup.subCategoryId,
       products: [], // API'den products gelmiyor, boş array
     }));
-  }, [catalogProductGroups, normalizeImage]);
+  }, [catalogProductGroups]);
 
   // API'den gelen products'ı formatla - useMemo ile cache'le
   const currentProducts = useMemo(() => {
@@ -127,12 +141,12 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     return catalogProducts.map(product => ({
       id: product.productId,
       name: product.name,
-      image: normalizeImage(product.image),
-      productGroupId: product.productGroupId,
+      image: product.image || undefined, // Boş string ise undefined yap
+      productGroupId: product.productId,
       subCategoryId: product.subCategoryId,
       description: '', // API'den description gelmiyor
     }));
-  }, [catalogProducts, normalizeImage]);
+  }, [catalogProducts]);
   // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
@@ -205,6 +219,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     setSelectedSubCategoryId(subCategory.id);
     setSelectedProductGroupId(undefined); // ProductGroup'u temizle
     setSelectedProductLocal(null);
+    
+    // Product groups'u prefetch et (hızlı yükleme için)
+    prefetchProductGroups(subCategory.id);
 
     setBreadcrumbItems(
       [
@@ -230,6 +247,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     // Seçili ürün grubu ID'sini set et (products API çağrısı için)
     setSelectedProductGroupId(productGroup.id);
     setSelectedProductLocal(null);
+    
+    // Products'ı prefetch et (hızlı yükleme için)
+    prefetchProducts(productGroup.id);
 
     const currentCategory = breadcrumbItems.find(item => item.type === 'category');
     const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
@@ -613,6 +633,9 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
           {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
             const startIndex = rowIndex * 3;
             const rowItems = currentData.slice(startIndex, startIndex + 3);
+            // İlk 3 satır (9 görsel) için high priority - ilk ekranda görünen tüm görseller
+            // Diğerleri için low priority - scroll edildiğinde yüklenecek
+            const priority = rowIndex < 3 ? 'high' : 'low';
             
             return (
               <HStack key={`row-${rowIndex}`} space="md" justifyContent="space-between">
@@ -630,6 +653,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
                         key={currentItem.id}
                         category={currentItem as any}
                         onPress={handleCategoryPress}
+                        priority={priority}
                       />
                     );
                   } else if (currentView === 'subcategories') {
@@ -645,6 +669,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
                           subCategories: []
                         } as any}
                         onPress={() => handleSubCategoryPress(subCategoryItem)}
+                        priority={priority}
                       />
                     );
                   } else if (currentView === 'productgroups') {
@@ -660,6 +685,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
                           subCategories: []
                         } as any}
                         onPress={() => handleProductGroupPress(productGroupItem)}
+                        priority={priority}
                       />
                     );
                   } else if (currentView === 'products') {
@@ -675,6 +701,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
                           subCategories: []
                         } as any}
                         onPress={() => handleProductPress(productItem)}
+                        priority={priority}
                       />
                     );
                   }

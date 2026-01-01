@@ -1,5 +1,5 @@
-import React, { useRef, useCallback, useEffect } from 'react';
-import { Platform, View } from 'react-native';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
+import { Platform, View, Keyboard } from 'react-native';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
@@ -23,12 +23,35 @@ export const GlobalBottomSheet: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheet>(null);
   const isExpandingRef = useRef(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   
   const context = useContext(GlobalBottomSheetContext);
   if (!context) {
     throw new Error('GlobalBottomSheet must be used within GlobalBottomSheetProvider');
   }
   const { isOpen, content, options, closeBottomSheet } = context;
+
+  // Klavye yüksekliğini takip et
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      }
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
 
   // Options'ı merge et (default + custom)
   const mergedOptions: Required<Omit<BottomSheetOptions, 'snapPoints' | 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom' | 'keyboardBehavior' | 'keyboardBlurBehavior' | 'android_keyboardInputMode'>> & {

@@ -30,7 +30,7 @@ export interface CachedImageProps {
  * - Otomatik disk cache (default: 'memory-disk')
  * - Progressive loading
  * - Placeholder support
- * - URL normalizasyonu (localhost düzeltmesi)
+ * - URL düzeltmesi (localhost için)
  * 
  * @example
  * ```tsx
@@ -56,11 +56,11 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   resizeMode,
   ...props
 }) => {
-  // toImageSource ile URL normalizasyonu yap
-  const normalizedSource = toImageSource(source);
+  // toImageSource ile URL'i düzelt
+  const imageSource = toImageSource(source);
 
   // Eğer source yoksa veya geçersizse, placeholder göster
-  if (!normalizedSource) {
+  if (!imageSource) {
     if (placeholder) {
       return (
         <Image
@@ -91,7 +91,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
 
   return (
     <Image
-      source={normalizedSource}
+      source={imageSource}
       style={style}
       contentFit={finalContentFit}
       placeholder={placeholder}

@@ -6,7 +6,8 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import { NotificationBadge } from '@/src/components/NotificationBadge';
-import { useUnreadCount } from '@/src/features/notifications/api/hooks';
+import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/notifications/api/hooks';
+import { useNavigation } from '@react-navigation/native';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -39,6 +40,7 @@ export const TabNavigator = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   
   // Global navigation UI state'ten tab bar visibility'yi al
   const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
@@ -46,6 +48,9 @@ export const TabNavigator = () => {
   // Unread notification count - badge için
   const { data: unreadCountData } = useUnreadCount();
   const unreadCount = unreadCountData?.data?.count || 0;
+  
+  // Mark all as read mutation - bildirim ikonuna tıklandığında
+  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
 
   // Debug: Android'de insets.bottom değerini logla (sadece ilk render'da)
   useMemo(() => {
@@ -143,6 +148,18 @@ export const TabNavigator = () => {
       <Tab.Screen
         name="NotificationStack"
         component={NotificationStackNavigator}
+        listeners={{
+          tabPress: () => {
+            // Bildirim ikonuna tıklandığında tüm bildirimleri read olarak işaretle
+            if (unreadCount > 0) {
+              markAllAsReadMutation.mutate(undefined, {
+                onSuccess: () => {
+                  console.log('[TabNavigator] ✅ All notifications marked as read');
+                },
+              });
+            }
+          },
+        }}
       />
       <Tab.Screen
         name="InboxStack"

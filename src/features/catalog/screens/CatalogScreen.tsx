@@ -450,7 +450,7 @@ export const CatalogScreen = () => {
       {/* Floating Action Button */}
       <Pressable
         position="absolute"
-        bottom={Platform.OS === 'ios' ? 34 + 8 : 45 + 8}
+        bottom={Platform.OS === 'ios' ? 34 + 28 : 45 + 28}
         right={16}
         width={60}
         height={60}

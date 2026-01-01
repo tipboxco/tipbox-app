@@ -74,30 +74,48 @@ export const useFloatingButtonBottomOffset = (extraPadding: number = 16): number
 const imageSourceCache = new Map<string, ImageSourcePropType>();
 
 /**
- * Image URL'lerindeki localhost'u gerçek IP adresi ile değiştirir
- * Mobil cihazlarda localhost çalışmadığı için gerekli
+ * Image URL'lerini MEDIA_URL'e göre düzeltir
+ * Tüm görsel URL'leri API_CONFIG.MEDIA_URL ile yüklenir
  */
-const normalizeImageUrl = (url: string): string => {
+const fixImageUrl = (url: string): string => {
   try {
-    // localhost veya 127.0.0.1 içeren URL'leri düzelt
-    if (url.includes('localhost') || url.includes('127.0.0.1')) {
-      // Media base URL'i al (varsa MEDIA_BASE_URL, yoksa BASE_URL'den port'u değiştir)
-      const mediaBaseUrl = API_CONFIG.MEDIA_BASE_URL || API_CONFIG.BASE_URL.replace(':3000', ':9000');
-      
-      // URL'i parse et ve host'u değiştir
-      const urlObj = new URL(url);
-      const mediaUrlObj = new URL(mediaBaseUrl);
-      
-      // Host ve port'u değiştir
-      urlObj.hostname = mediaUrlObj.hostname;
-      urlObj.port = mediaUrlObj.port;
-      
-      const normalizedUrl = urlObj.toString();
-      return normalizedUrl;
+    // Boş string kontrolü
+    if (!url || url.trim() === '') {
+      return url;
     }
-    return url;
+
+    // API_CONFIG'den MEDIA_URL'i al
+    const mediaUrl = API_CONFIG.MEDIA_URL;
+    if (!mediaUrl) {
+      return url;
+    }
+
+    // MEDIA_URL'i parse et
+    const mediaUrlObj = new URL(mediaUrl);
+    const mediaOrigin = mediaUrlObj.origin; // protocol + hostname + port
+
+    // Relative path kontrolü (örn: /tipbox-media/...)
+    if (url.startsWith('/')) {
+      // Relative path ise, MEDIA_URL'i ekle
+      return `${mediaOrigin}${url}`;
+    }
+
+    // Absolute URL ise
+    try {
+      const urlObj = new URL(url);
+      
+      // Eğer origin zaten MEDIA_URL ile aynıysa, değiştirme
+      if (urlObj.origin === mediaOrigin) {
+        return urlObj.toString();
+      }
+      
+      // Origin'i MEDIA_URL ile değiştir
+      return url.replace(urlObj.origin, mediaOrigin);
+    } catch {
+      // URL parse edilemezse, relative path olarak dene
+      return `${mediaOrigin}${url.startsWith('/') ? url : '/' + url}`;
+    }
   } catch (error) {
-    console.warn('[normalizeImageUrl] URL parse error:', error, 'Original URL:', url);
     return url;
   }
 };
@@ -105,20 +123,28 @@ const normalizeImageUrl = (url: string): string => {
 export const toImageSource = (
   value: string | ImageSourcePropType | null | undefined,
 ): ImageSourcePropType | undefined => {
-  if (!value) return undefined;
+  if (!value) {
+    console.warn('[toImageSource] ⚠️ Empty or null value provided');
+    return undefined;
+  }
 
   if (typeof value === 'string') {
-    // localhost içeren URL'leri normalize et
-    const normalizedUrl = normalizeImageUrl(value);
+    // Boş string kontrolü
+    if (value.trim() === '') {
+      console.warn('[toImageSource] ⚠️ Empty string provided');
+      return undefined;
+    }
+
+    // localhost içeren URL'leri düzelt
+    const fixedUrl = fixImageUrl(value);
     
-    // Cache'den kontrol et - aynı URL için aynı referansı döndür
-    if (imageSourceCache.has(normalizedUrl)) {
-      return imageSourceCache.get(normalizedUrl);
+    // URL'in geçerli olduğunu kontrol et
+    if (!fixedUrl || fixedUrl.trim() === '') {
+      return undefined;
     }
     
-    // Yeni source oluştur ve cache'e ekle
-    const imageSource: ImageSourcePropType = { uri: normalizedUrl };
-    imageSourceCache.set(normalizedUrl, imageSource);
+    // Her seferinde yeni source oluştur - cache sorunlarını önlemek için
+    const imageSource: ImageSourcePropType = { uri: fixedUrl };
     
     return imageSource;
   }
