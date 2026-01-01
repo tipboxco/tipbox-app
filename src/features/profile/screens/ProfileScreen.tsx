@@ -461,16 +461,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           onChangeTab={(tab) => {
             setActiveTab(tab);
             // Tab değişince tab satırına scroll et
-            // Liste yeterli item'a sahip olduğunda scroll et
-            if (listData.length > 1 && listRef.current) {
-              try {
-                listRef.current.scrollToIndex({ index: 1, animated: false });
-              } catch (error) {
-                // scrollToIndex hatası olursa, scrollToOffset kullan
-                console.warn('[ProfileScreen] scrollToIndex failed, using scrollToOffset:', error);
-                listRef.current.scrollToOffset({ offset: 0, animated: false });
-              }
-            }
+            listRef.current?.scrollToIndex({ index: 1, animated: false });
           }}
           isDark={isDark}
         />
@@ -1096,22 +1087,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           maxToRenderPerBatch={5}
           windowSize={10}
           onScrollToIndexFailed={(info) => {
-            // Tab değişince scroll hatası olursa, scrollToOffset kullan
-            console.warn('[ProfileScreen] scrollToIndex failed:', info);
-            if (listRef.current && listData.length > info.index) {
-              // Liste yeterli item'a sahipse, biraz gecikmeyle tekrar dene
-              setTimeout(() => {
-                try {
-                  listRef.current?.scrollToIndex({ index: info.index, animated: false });
-                } catch (error) {
-                  // Hala hata varsa, scrollToOffset kullan
-                  listRef.current?.scrollToOffset({ offset: 0, animated: false });
-                }
-              }, 100);
-            } else {
-              // Liste yeterli item'a sahip değilse, scrollToOffset kullan
-              listRef.current?.scrollToOffset({ offset: 0, animated: false });
-            }
+            // Tab değişince scroll hatası olursa, biraz gecikmeyle tekrar dene
+            setTimeout(() => {
+              listRef.current?.scrollToIndex({ index: info.index, animated: false });
+            }, 100);
           }}
         />
       </Box>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FlatList } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FlatList, RefreshControl } from 'react-native';
 import {
     Box,
     VStack,
@@ -17,8 +17,10 @@ import MessageCard from '../components/MessageCard/index';
 import MessagesFilterGroup from '../components/MessagesFilterGroup/index';
 import type { InboxStackParamList } from '../navigation';
 import { useSafeAreaValues } from '@/src/utils';
-import { useMessages } from '../api/hooks';
+import { useMessages, inboxKeys } from '../api/hooks';
 import type { InboxMessage } from '../types';
+import { useSocket } from '@/src/providers/SocketProvider';
+import { useQueryClient } from '@tanstack/react-query';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -30,7 +32,27 @@ const MessagesScreen: React.FC = () => {
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
 
-    const { data: messages, isLoading, error } = useMessages();
+    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages();
+    const queryClient = useQueryClient();
+    const { isConnected, on, off } = useSocket();
+
+    // Socket event handler - new_message event
+    const handleNewMessage = useCallback((eventData: any) => {
+        console.log('[MessagesScreen] New message received:', eventData);
+        // Invalidate messages query to refresh the list
+        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    }, [queryClient]);
+
+    // Socket event listeners
+    useEffect(() => {
+        if (!isConnected) return;
+
+        on('new_message', handleNewMessage);
+
+        return () => {
+            off('new_message', handleNewMessage);
+        };
+    }, [isConnected, on, off, handleNewMessage]);
 
     const handleMessagePress = (messageId: string) => {
         const message = (messages || []).find(m => m.id === messageId);
@@ -38,7 +60,7 @@ const MessagesScreen: React.FC = () => {
             navigation.navigate('MessageDetailScreen', {
                 messageId: message.id,
                 senderName: message.senderName,
-                senderTitle: message.senderTitle,
+                senderTitle: message.senderTitle || '',
                 senderAvatar: message.senderAvatar,
             });
         }
@@ -121,6 +143,13 @@ const MessagesScreen: React.FC = () => {
                     )}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomInset }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefetching}
+                            onRefresh={() => refetch()}
+                            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+                        />
+                    }
                 />
             )}
         </VStack>

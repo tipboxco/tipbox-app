@@ -4,6 +4,7 @@
 export interface InboxMessage {
   id: string;
   senderName: string;
+  senderTitle?: string;
   senderAvatar: string | null;
   lastMessage: string;
   timestamp: string; // ISO string

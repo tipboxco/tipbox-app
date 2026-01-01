@@ -1,7 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMessages, sendGift, createSupportRequest, sendDirectMessage } from './messagesApi';
+import {
+  getMessages,
+  sendGift,
+  createSupportRequest,
+  sendDirectMessage,
+  getThreadMessages,
+  getSupportRequests,
+  acceptSupportRequest,
+  rejectSupportRequest,
+  cancelSupportRequest,
+} from './messagesApi';
 import type { InboxMessage } from '../types';
-import type { SendGiftRequest, SupportRequestCreate, DirectMessageRequest } from './messagesApi';
+import type {
+  SendGiftRequest,
+  SupportRequestCreate,
+  DirectMessageRequest,
+  ThreadMessage,
+  SupportRequest,
+  GetSupportRequestsParams,
+  AcceptSupportRequestResponse,
+} from './messagesApi';
 
 /**
  * Query Keys - Inbox feature için cache key pattern'leri
@@ -9,6 +27,9 @@ import type { SendGiftRequest, SupportRequestCreate, DirectMessageRequest } from
 export const inboxKeys = {
   all: ['inbox'] as const,
   messages: () => [...inboxKeys.all, 'messages'] as const,
+  threadMessages: (threadId: string) => [...inboxKeys.all, 'thread-messages', threadId] as const,
+  supportRequests: (params?: GetSupportRequestsParams) =>
+    [...inboxKeys.all, 'support-requests', params] as const,
 };
 
 /**
@@ -110,6 +131,125 @@ export const useSendDirectMessage = () => {
     mutationFn: sendDirectMessage,
     onSuccess: () => {
       // Mesaj listesini invalidate et (socket event'ten sonra güncellenecek)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Get Thread Messages query hook
+ * Thread ID'sine göre mesaj geçmişini getirir ve cache'ler
+ *
+ * @param threadId - Thread ID
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useThreadMessages('thread-123');
+ */
+export const useThreadMessages = (threadId: string | null) => {
+  return useQuery<ThreadMessage[], Error>({
+    queryKey: inboxKeys.threadMessages(threadId || ''),
+    queryFn: () => {
+      if (!threadId) {
+        throw new Error('Thread ID is required');
+      }
+      return getThreadMessages(threadId);
+    },
+    enabled: !!threadId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Support Requests query hook
+ * Kullanıcının birebir destek sohbetlerini getirir ve cache'ler
+ *
+ * @param params - Query parameters (status, search, limit)
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useSupportRequests({ status: 'pending' });
+ */
+export const useSupportRequests = (params?: GetSupportRequestsParams) => {
+  return useQuery<SupportRequest[], Error>({
+    queryKey: inboxKeys.supportRequests(params),
+    queryFn: () => getSupportRequests(params),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Accept Support Request mutation hook
+ * Expert, support request'i accept eder ve yeni bir support thread oluşturulur
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const acceptMutation = useAcceptSupportRequest();
+ * acceptMutation.mutate('request-123');
+ */
+export const useAcceptSupportRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<AcceptSupportRequestResponse, Error, string>({
+    mutationFn: acceptSupportRequest,
+    onSuccess: () => {
+      // Support request listesini invalidate et (socket event'ten sonra güncellenecek)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Reject Support Request mutation hook
+ * Expert, support request'i reject eder
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const rejectMutation = useRejectSupportRequest();
+ * rejectMutation.mutate('request-123');
+ */
+export const useRejectSupportRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: rejectSupportRequest,
+    onSuccess: () => {
+      // Support request listesini invalidate et (socket event'ten sonra güncellenecek)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Cancel Support Request mutation hook
+ * Destek talebini gönderen kullanıcı, talep kabul edilmeden önce iptal edebilir
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const cancelMutation = useCancelSupportRequest();
+ * cancelMutation.mutate('request-123');
+ */
+export const useCancelSupportRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: cancelSupportRequest,
+    onSuccess: () => {
+      // Support request listesini invalidate et (socket event'ten sonra güncellenecek)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     },
   });

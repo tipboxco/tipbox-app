@@ -131,7 +131,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     };
     
     // Process main categories first
-    if (catalogCategories) {
+    if (catalogCategories && Array.isArray(catalogCategories)) {
       catalogCategories.forEach((cat: CatalogCategory) => {
         const normalizedName = normalizeName(cat.name);
         
@@ -157,7 +157,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     }
     
     // Process sub categories - check against both main and other sub categories
-    if (catalogSubCategories) {
+    if (catalogSubCategories && Array.isArray(catalogSubCategories)) {
       catalogSubCategories.forEach((subCat: CatalogSubCategory) => {
         const normalizedName = normalizeName(subCat.name);
         

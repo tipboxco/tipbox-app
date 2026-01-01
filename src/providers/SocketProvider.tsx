@@ -1,0 +1,376 @@
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { socketService } from '@/src/services/SocketService';
+import { useAppStore } from '@/src/store/appStore';
+import { useAuth } from './AuthProvider';
+import { useAppState } from './AppStateProvider';
+import type { Socket } from 'socket.io-client';
+import type {
+  ThreadJoinedEvent,
+  ThreadLeftEvent,
+  ThreadJoinErrorEvent,
+  MessageSendErrorEvent,
+  MessageSentEvent,
+  MessageReadEvent,
+} from '@/src/services/SocketService/types';
+
+/**
+ * Socket Context Type
+ */
+interface SocketContextType {
+  socket: Socket | null;
+  isConnected: boolean;
+  isConnecting: boolean;
+  // Socket event listeners
+  on: (event: string, callback: (data: any) => void) => void;
+  off: (event: string, callback?: (data: any) => void) => void;
+  emit: (event: string, data: any) => void;
+  // Thread operations
+  joinThread: (threadId: string) => void;
+  leaveThread: (threadId: string) => void;
+  markThreadRead: (threadId: string) => void;
+  // Message operations
+  sendMessage: (threadId: string, message: string) => void;
+  sendSupportMessage: (threadId: string, message: string) => void;
+  markMessageAsRead: (messageId: string) => void;
+  // Typing operations
+  startTyping: (threadId: string) => void;
+  stopTyping: (threadId: string) => void;
+  // Support request operations
+  acceptSupportRequest: (requestId: string) => void;
+  rejectSupportRequest: (requestId: string) => void;
+  cancelSupportRequest: (requestId: string) => void;
+  // Connection operations
+  connect: () => Promise<void>;
+  disconnect: () => void;
+}
+
+/**
+ * Socket Context
+ */
+const SocketContext = createContext<SocketContextType | null>(null);
+
+/**
+ * Socket Provider Props
+ */
+interface SocketProviderProps {
+  children: React.ReactNode;
+}
+
+/**
+ * Socket Provider Component
+ * Tüm uygulamada socket bağlantısını yönetir
+ * 
+ * Kritik Bağlantı Kuralları:
+ * - Auth hazır olmadan bağlanmaz
+ * - Authenticated olmadan bağlanmaz
+ * - AppState foreground olmadan bağlanmaz
+ * - Background'a geçince disconnect eder
+ * - Foreground'a dönünce tekrar bağlanır
+ * 
+ * @example
+ * ```tsx
+ * <SocketProvider>
+ *   <App />
+ * </SocketProvider>
+ * ```
+ */
+export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { isAuthenticated } = useAppStore();
+  const { isAuthReady } = useAuth();
+  const { isForeground } = useAppState();
+  const connectionAttemptRef = useRef(false);
+  const connectionErrorRef = useRef(false);
+  const maxRetriesRef = useRef(0);
+  const lastAttemptTimeRef = useRef(0);
+  const MAX_RETRIES = 3;
+  const RETRY_COOLDOWN = 10000; // 10 saniye bekle
+
+  // Socket instance'ını al ve state'i güncelle
+  useEffect(() => {
+    const updateSocketState = () => {
+      const socketInstance = socketService.getSocket();
+      setSocket(socketInstance);
+      setIsConnected(socketService.isConnected());
+    };
+
+    // İlk state güncellemesi
+    updateSocketState();
+
+    // Socket bağlantı durumunu periyodik olarak kontrol et
+    const interval = setInterval(() => {
+      updateSocketState();
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Socket bağlantı yönetimi: Auth + AppState kontrolü
+  useEffect(() => {
+    // Log spam'i azalt - sadece önemli durumlarda log
+
+    // Auth hazır değilse bekle
+    if (!isAuthReady) {
+      console.log('[SocketProvider] ⏳ Waiting for auth to be ready...');
+      return;
+    }
+
+    // Authenticated değilse bağlanma
+    if (!isAuthenticated) {
+      console.log('[SocketProvider] ⏳ User not authenticated, socket will not connect');
+      // Eğer bağlıysa disconnect et
+      if (isConnected) {
+        console.log('[SocketProvider] 🔌 Disconnecting socket (user logged out)');
+        disconnect();
+      }
+      return;
+    }
+
+    // AppState foreground değilse bağlanma
+    if (!isForeground) {
+      console.log('[SocketProvider] ⏳ App in background, socket will not connect');
+      // Eğer bağlıysa disconnect et
+      if (isConnected) {
+        console.log('[SocketProvider] 🔌 Disconnecting socket (app in background)');
+        disconnect();
+      }
+      return;
+    }
+
+    // Tüm koşullar sağlandı: Auth ready + Authenticated + Foreground
+    // Bağlantı zaten varsa tekrar bağlanma
+    if (isConnected) {
+      console.log('[SocketProvider] ✅ Already connected, skipping connection attempt');
+      return;
+    }
+
+    if (isConnecting) {
+      console.log('[SocketProvider] ⏳ Already connecting, skipping duplicate attempt');
+      return;
+    }
+
+    if (connectionAttemptRef.current) {
+      return; // Sessizce çık, log spam'i önle
+    }
+
+    // Max retry kontrolü - sonsuz döngüyü önle
+    if (maxRetriesRef.current >= MAX_RETRIES) {
+      const timeSinceLastAttempt = Date.now() - lastAttemptTimeRef.current;
+      if (timeSinceLastAttempt < RETRY_COOLDOWN) {
+        // Cooldown süresi dolmadı, sessizce bekle (log spam'i önle)
+        return;
+      }
+      // Cooldown doldu, retry sayacını sıfırla
+      maxRetriesRef.current = 0;
+      connectionErrorRef.current = false;
+    }
+
+    console.log('[SocketProvider] 🔌 Starting connection attempt', maxRetriesRef.current + 1, '/', MAX_RETRIES);
+
+    connectionAttemptRef.current = true;
+    maxRetriesRef.current += 1;
+    lastAttemptTimeRef.current = Date.now();
+    
+    connect()
+      .then(() => {
+        // connect() başarılı, socket event'i state'i güncelleyecek
+        // isConnected kontrolü socket event'inden gelecek
+      })
+      .catch((error) => {
+        console.error('[SocketProvider] ❌ Connection failed:', error.message);
+        connectionErrorRef.current = true;
+        
+        if (maxRetriesRef.current >= MAX_RETRIES) {
+          console.log('[SocketProvider] ⛔ Max retries reached, will retry after', RETRY_COOLDOWN / 1000, 'seconds');
+        }
+      })
+      .finally(() => {
+        connectionAttemptRef.current = false;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthReady, isAuthenticated, isForeground, isConnected, isConnecting]);
+
+  // Socket event listener'ları - socketService'den dinle
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleConnect = () => {
+      console.log('[SocketProvider] ✅ Socket connected');
+      setIsConnected(true);
+      setIsConnecting(false);
+      // Bağlantı başarılı olunca retry sayacını sıfırla
+      maxRetriesRef.current = 0;
+      connectionErrorRef.current = false;
+    };
+
+    const handleDisconnect = () => {
+      console.log('[SocketProvider] ❌ Socket disconnected');
+      setIsConnected(false);
+      setIsConnecting(false);
+    };
+
+    socketService.on('connect', handleConnect);
+    socketService.on('disconnect', handleDisconnect);
+
+    return () => {
+      socketService.off('connect', handleConnect);
+      socketService.off('disconnect', handleDisconnect);
+    };
+  }, [isAuthenticated]);
+
+  // Socket event listener ekleme
+  const on = useCallback((event: string, callback: (data: any) => void) => {
+    socketService.on(event, callback);
+  }, []);
+
+  // Socket event listener kaldırma
+  const off = useCallback((event: string, callback?: (data: any) => void) => {
+    socketService.off(event, callback);
+  }, []);
+
+  // Socket event emit
+  const emit = useCallback((event: string, data: any) => {
+    socketService.emit(event, data);
+  }, []);
+
+  // Thread operations
+  const joinThread = useCallback((threadId: string) => {
+    socketService.joinThread(threadId);
+  }, []);
+
+  const leaveThread = useCallback((threadId: string) => {
+    socketService.leaveThread(threadId);
+  }, []);
+
+  // Message operations
+  const sendMessage = useCallback((threadId: string, message: string) => {
+    socketService.sendMessage(threadId, message);
+  }, []);
+
+  const markMessageAsRead = useCallback((messageId: string) => {
+    socketService.markMessageAsRead(messageId);
+  }, []);
+
+  // Typing operations
+  const startTyping = useCallback((threadId: string) => {
+    socketService.startTyping(threadId);
+  }, []);
+
+  const stopTyping = useCallback((threadId: string) => {
+    socketService.stopTyping(threadId);
+  }, []);
+
+  // Thread read operation
+  const markThreadRead = useCallback((threadId: string) => {
+    socketService.markThreadRead(threadId);
+  }, []);
+
+  // Support message operation
+  const sendSupportMessage = useCallback((threadId: string, message: string) => {
+    socketService.sendSupportMessage(threadId, message);
+  }, []);
+
+  // Support request operations
+  const acceptSupportRequest = useCallback((requestId: string) => {
+    socketService.acceptSupportRequest(requestId);
+  }, []);
+
+  const rejectSupportRequest = useCallback((requestId: string) => {
+    socketService.rejectSupportRequest(requestId);
+  }, []);
+
+  const cancelSupportRequest = useCallback((requestId: string) => {
+    socketService.cancelSupportRequest(requestId);
+  }, []);
+
+  // Connection operations
+  const connect = useCallback(async () => {
+    setIsConnecting(true);
+    try {
+      await socketService.connect();
+      const socketInstance = socketService.getSocket();
+      setSocket(socketInstance);
+      
+      // Socket bağlantısını bekle (max 5 saniye)
+      let attempts = 0;
+      const maxAttempts = 50; // 5 saniye (100ms * 50)
+      
+      while (!socketService.isConnected() && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      setIsConnected(socketService.isConnected());
+      
+      if (!socketService.isConnected()) {
+        throw new Error('Socket connection timeout');
+      }
+    } catch (error) {
+      console.error('[SocketProvider] Connection error:', error);
+      setIsConnected(false);
+      throw error; // Hata fırlat ki retry mekanizması çalışsın
+    } finally {
+      setIsConnecting(false);
+    }
+  }, []);
+
+  const disconnect = useCallback(() => {
+    socketService.disconnect();
+    setSocket(null);
+    setIsConnected(false);
+    setIsConnecting(false);
+  }, []);
+
+  // Context value
+  const value: SocketContextType = {
+    socket,
+    isConnected,
+    isConnecting,
+    on,
+    off,
+    emit,
+    joinThread,
+    leaveThread,
+    markThreadRead,
+    sendMessage,
+    sendSupportMessage,
+    markMessageAsRead,
+    startTyping,
+    stopTyping,
+    acceptSupportRequest,
+    rejectSupportRequest,
+    cancelSupportRequest,
+    connect,
+    disconnect,
+  };
+
+  return (
+    <SocketContext.Provider value={value}>
+      {children}
+    </SocketContext.Provider>
+  );
+};
+
+/**
+ * useSocket Hook
+ * Socket context'ini kullanmak için hook
+ * 
+ * @example
+ * ```tsx
+ * const { socket, isConnected, sendMessage } = useSocket();
+ * ```
+ */
+export const useSocket = (): SocketContextType => {
+  const context = useContext(SocketContext);
+  
+  if (!context) {
+    throw new Error('useSocket hook must be used within SocketProvider');
+  }
+  
+  return context;
+};
+

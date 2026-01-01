@@ -14,11 +14,19 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryProvider } from '@/src/providers/QueryProvider';
+import { AuthProvider } from '@/src/providers/AuthProvider';
+import { AppStateProvider } from '@/src/providers/AppStateProvider';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
+import { NotificationProvider } from '@/src/providers/NotificationProvider';
+import { SocketProvider } from '@/src/providers/SocketProvider';
+import { useAppStore } from '@/src/store/appStore';
 
 export default function App() {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+
+  // AppState yönetimi artık AppStateProvider'da yapılıyor
+  // Token kontrolü artık AuthProvider'da yapılıyor
 
   // Android navigation bar'ı theme'e göre ayarla
   useEffect(() => {
@@ -35,24 +43,32 @@ export default function App() {
 
   return (
     <QueryProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <PortalProvider>
-            <BottomSheetModalProvider>
-              <GlobalBottomSheetProvider>
-              <GluestackProvider>
-                <StatusBar
-                  translucent
-                  backgroundColor={isDark ? '#000000' : '#ffffff'}
-                  barStyle={isDark ? 'light-content' : 'dark-content'}
-                />
-                <Navigation />
-              </GluestackProvider>
-              </GlobalBottomSheetProvider>
-            </BottomSheetModalProvider>
-          </PortalProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
+      <AuthProvider>
+        <AppStateProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+              <PortalProvider>
+                <BottomSheetModalProvider>
+                  <GlobalBottomSheetProvider>
+                    <NotificationProvider>
+                      <SocketProvider>
+                        <GluestackProvider>
+                          <StatusBar
+                            translucent
+                            backgroundColor={isDark ? '#000000' : '#ffffff'}
+                            barStyle={isDark ? 'light-content' : 'dark-content'}
+                          />
+                          <Navigation />
+                        </GluestackProvider>
+                      </SocketProvider>
+                    </NotificationProvider>
+                  </GlobalBottomSheetProvider>
+                </BottomSheetModalProvider>
+              </PortalProvider>
+            </SafeAreaProvider>
+          </GestureHandlerRootView>
+        </AppStateProvider>
+      </AuthProvider>
     </QueryProvider>
   );
 }

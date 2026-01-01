@@ -48,6 +48,47 @@ export const getOrCreateThread = async (recipientId: string): Promise<ThreadResp
 };
 
 /**
+ * Thread Message - Thread mesajı tipi
+ */
+export interface ThreadMessage {
+  id: string;
+  threadId: string;
+  senderId: string;
+  recipientId: string;
+  message: string;
+  messageType: 'message' | 'support-request' | 'send-tips';
+  context: 'DM' | 'SUPPORT';
+  isRead: boolean;
+  sentAt: string; // ISO 8601
+  readAt?: string; // ISO 8601 (opsiyonel)
+  amount?: number; // For send-tips
+}
+
+/**
+ * Get Thread Messages endpoint
+ * Thread ID'sine göre mesaj geçmişini getirir
+ * 
+ * @param threadId - Thread ID
+ * @returns Thread mesajları listesi
+ */
+export const getThreadMessages = async (threadId: string): Promise<ThreadMessage[]> => {
+  try {
+    const response = await apiService.getClient().get<ThreadMessage[]>(`/messages/${threadId}`);
+    return response.data;
+  } catch (error: any) {
+    // 404 hatası: Thread messages endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      const notFoundError = new Error('Thread messages endpoint not found (404). Backend may not have implemented this endpoint yet.');
+      (notFoundError as any).response = { status: 404 };
+      (notFoundError as any).isThreadMessagesEndpointNotFound = true;
+      throw notFoundError;
+    }
+    // Diğer hataları olduğu gibi fırlat
+    throw error;
+  }
+};
+
+/**
  * Send Gift (TIPS) Request Interface
  */
 export interface SendGiftRequest {
@@ -110,5 +151,86 @@ export interface DirectMessageRequest {
  */
 export const sendDirectMessage = async (data: DirectMessageRequest): Promise<void> => {
   await apiService.getClient().post('/messages', data);
+};
+
+/**
+ * Support Request Response Interface
+ */
+export interface SupportRequest {
+  id: string;
+  userName: string;
+  userTitle: string;
+  userAvatar: string | null;
+  requestDescription: string;
+  status: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+  threadId: string | null;
+  type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
+  message?: string;
+  amount?: string;
+  timestamp?: string;
+}
+
+/**
+ * Get Support Requests endpoint
+ * Kullanıcının birebir destek sohbetlerini getirir
+ *
+ * @param params - Query parameters (status, search, limit)
+ * @returns Support request listesi
+ */
+export interface GetSupportRequestsParams {
+  status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+  search?: string;
+  limit?: number;
+}
+
+export const getSupportRequests = async (params?: GetSupportRequestsParams): Promise<SupportRequest[]> => {
+  const response = await apiService.getClient().get<SupportRequest[]>('/messages/support-requests', {
+    params,
+  });
+  return response.data;
+};
+
+/**
+ * Accept Support Request Response Interface
+ */
+export interface AcceptSupportRequestResponse {
+  requestId: string;
+  threadId: string;
+}
+
+/**
+ * Accept Support Request endpoint
+ * Expert, support request'i accept eder ve yeni bir support thread oluşturulur
+ *
+ * @param requestId - Support request ID
+ * @returns Accept response (requestId, threadId)
+ */
+export const acceptSupportRequest = async (requestId: string): Promise<AcceptSupportRequestResponse> => {
+  const response = await apiService.getClient().post<AcceptSupportRequestResponse>(
+    `/messages/support-requests/${requestId}/accept`
+  );
+  return response.data;
+};
+
+/**
+ * Reject Support Request endpoint
+ * Expert, support request'i reject eder
+ *
+ * @param requestId - Support request ID
+ * @returns Promise<void> - 200 OK
+ */
+export const rejectSupportRequest = async (requestId: string): Promise<void> => {
+  await apiService.getClient().post(`/messages/support-requests/${requestId}/reject`);
+};
+
+/**
+ * Cancel Support Request endpoint
+ * Destek talebini gönderen kullanıcı, talep kabul edilmeden önce iptal edebilir
+ *
+ * @param requestId - Support request ID
+ * @returns Promise<void> - 200 OK
+ */
+export const cancelSupportRequest = async (requestId: string): Promise<void> => {
+  await apiService.getClient().post(`/messages/support-requests/${requestId}/cancel`);
 };
 

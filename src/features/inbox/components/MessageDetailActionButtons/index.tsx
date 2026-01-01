@@ -12,24 +12,35 @@ import { Feather } from '@expo/vector-icons';
 interface MessageDetailActionButtonsProps {
     onSendTipsPress?: () => void;
     onRequestSupportPress?: () => void;
+    keyboardHeight?: number; // Klavye yüksekliği (kullanılmıyor, KeyboardAvoidingView ile otomatik)
+    isKeyboardVisible?: boolean; // Klavye görünür mü?
+    keyboardAnim?: any; // Kullanılmıyor (basitleştirme)
 }
 
 export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProps> = ({
     onSendTipsPress,
     onRequestSupportPress,
+    keyboardHeight = 0,
+    isKeyboardVisible = false,
+    keyboardAnim,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
+    // Basit bottom offset - KeyboardAvoidingView ile otomatik yönetilir
+    const bottomOffset = isKeyboardVisible ? 20 : 80;
+
     return (
-        <VStack
+        <Box
             position="absolute"
-            bottom={80}
+            bottom={bottomOffset}
             right={16}
-            space="sm"
             zIndex={10}
-            alignItems="flex-end"
         >
+            <VStack
+                space="sm"
+                alignItems="flex-end"
+            >
             {/* Send TIPS Button */}
             <Pressable
                 onPress={onRequestSupportPress}
@@ -91,7 +102,8 @@ export const MessageDetailActionButtons: React.FC<MessageDetailActionButtonsProp
                     </Text>
                 </HStack>
             </Pressable>
-        </VStack>
+            </VStack>
+        </Box>
     );
 };
 

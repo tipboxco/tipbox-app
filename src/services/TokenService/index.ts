@@ -13,9 +13,16 @@ export const TokenService = {
    */
   async getAccessToken(): Promise<string | null> {
     try {
-      return await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+      const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+      if (token) {
+        console.log('[TokenService] ✅ Access Token retrieved from SecureStore');
+        console.log('[TokenService]    - Length:', token.length, 'characters');
+      } else {
+        console.log('[TokenService] ⚠️ No access token found in SecureStore');
+      }
+      return token;
     } catch (error) {
-      console.error('Error getting access token:', error);
+      console.error('[TokenService] ❌ Error getting access token:', error);
       return null;
     }
   },
@@ -37,10 +44,16 @@ export const TokenService = {
    */
   async setTokens(accessToken: string, refreshToken: string): Promise<void> {
     try {
+      console.log('[TokenService] 📋 Saving tokens to SecureStore...');
+      console.log('[TokenService]    - Access Token Length:', accessToken.length);
+      console.log('[TokenService]    - Refresh Token Length:', refreshToken.length);
+      
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      
+      console.log('[TokenService] ✅ Tokens saved to SecureStore');
     } catch (error) {
-      console.error('Error setting tokens:', error);
+      console.error('[TokenService] ❌ Error setting tokens:', error);
       throw error;
     }
   },
@@ -62,10 +75,12 @@ export const TokenService = {
    */
   async clearTokens(): Promise<void> {
     try {
+      console.log('[TokenService] 📋 Clearing tokens from SecureStore...');
       await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      console.log('[TokenService] ✅ Tokens cleared from SecureStore');
     } catch (error) {
-      console.error('Error clearing tokens:', error);
+      console.error('[TokenService] ❌ Error clearing tokens:', error);
     }
   },
 };

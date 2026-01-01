@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
@@ -15,15 +15,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
-import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '../api/hooks';
-import { socketService } from '@/src/services/SocketService';
-import type {
-  SocketMessageEvent,
-  ThreadJoinedEvent,
-  ThreadLeftEvent,
-  ThreadJoinErrorEvent,
-  MessageSendErrorEvent,
-} from '@/src/services/SocketService/types';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages } from '../api/hooks';
+import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
 import MessageDetailHeader from '../components/MessageDetailHeader';
@@ -126,8 +119,10 @@ const MessageDetailScreen: React.FC = () => {
   const navigation = useNavigation<MessageDetailScreenNavigationProp>();
   const route = useRoute();
   const flatListRef = useRef<FlatList>(null);
-  const [messages, setMessages] = useState<MessageDetailItem[]>(mockMessageHistory);
+  const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
+  // Mesaj görünürlüğü takibi için (okundu işaretleme)
+  const visibleMessageIdsRef = useRef<Set<string>>(new Set());
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -150,165 +145,258 @@ const MessageDetailScreen: React.FC = () => {
   const createSupportRequestMutation = useCreateSupportRequest();
   const sendDirectMessageMutation = useSendDirectMessage();
   const queryClient = useQueryClient();
+  
+  // Socket context
+  const {
+    isConnected,
+    joinThread,
+    leaveThread,
+    sendMessage: socketSendMessage,
+    sendSupportMessage: socketSendSupportMessage,
+    startTyping: socketStartTyping,
+    stopTyping: socketStopTyping,
+    markMessageAsRead: socketMarkMessageAsRead,
+    markThreadRead: socketMarkThreadRead,
+    on,
+    off,
+  } = useSocket();
 
   // Thread ID state
   const [threadId, setThreadId] = useState<string | null>(null);
+  // Socket bağlantı durumu state
+  const [isSocketReady, setIsSocketReady] = useState(false);
   // Typing indicator state
   const [isTyping, setIsTyping] = useState(false);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   // Typing timeout ref
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Klavye yüksekliği state
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // Thread initialization effect - sadece user ve route params değiştiğinde çalışır
+  // Güvenli scroll helper - _tracking hatasını önlemek için
+  const safeScrollToEnd = useCallback((animated: boolean = true) => {
+    try {
+      flatListRef.current?.scrollToEnd({ animated });
+    } catch (error) {
+      // _tracking hatasını sessizce yakala
+      // console.warn('[MessageDetail] Scroll error:', error);
+    }
+  }, []);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  
+  // Route params'dan recipientUserId'yi al
+  const routeParams = (route.params as MessageDetailScreenParams) || {};
+  const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
+
+  // Thread mesajlarını yükle
+  const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(threadId);
+
+  // Klavye event listener'ları - sadece scroll için (KeyboardAvoidingView otomatik yönetir)
   useEffect(() => {
-    // Socket bağlantısını kur
-    const connectSocket = async () => {
-      try {
-        if (!socketService.isConnected()) {
-          await socketService.connect();
-        }
-      } catch (error) {
-        console.error('[MessageDetail] Socket connection error:', error);
-        // Socket bağlantısı başarısız olsa bile devam et (REST API kullanılacak)
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setIsKeyboardVisible(true);
+        console.log('[MessageDetail] ⌨️ Keyboard opened');
+        
+        // Klavye açıldığında en son mesaja scroll yap
+        setTimeout(() => {
+          safeScrollToEnd(true);
+        }, 100);
       }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+        console.log('[MessageDetail] ⌨️ Keyboard closed');
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
     };
+  }, [safeScrollToEnd]);
 
-    // Thread oluştur veya al ve socket'e katıl
-    const initializeThread = async () => {
-      const routeParams = (route.params as MessageDetailScreenParams) || {};
-      const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
-
-      if (!recipientUserId || !user?.id) {
-        return;
-      }
-
-      try {
-        // Önce socket bağlantısını kur
-        await connectSocket();
-
-        // Thread API'sini import et (getOrCreateThread)
-        const { getOrCreateThread } = await import('../api/messagesApi');
-        const thread = await getOrCreateThread(recipientUserId);
-        setThreadId(thread.id);
-
-        // Socket bağlantısı başarılı olduktan sonra thread room'una katıl
-        // Socket bağlantısı biraz zaman alabilir, bu yüzden birkaç kez deneyelim
-        let attempts = 0;
-        const maxAttempts = 5;
-        const joinThreadWithRetry = () => {
-          if (socketService.isConnected()) {
-            socketService.joinThread(
-              thread.id,
-              (data) => {
-                console.log('[MessageDetail] Thread joined:', data.threadId);
-              },
-              (error) => {
-                console.warn('[MessageDetail] Thread join error:', error.reason);
-              }
-            );
-          } else if (attempts < maxAttempts) {
-            attempts++;
-            setTimeout(joinThreadWithRetry, 500);
-          } else {
-            console.warn('[MessageDetail] Socket connection timeout, thread join skipped');
-          }
-        };
-
-        // Socket bağlantısını bekle ve thread'e katıl
-        joinThreadWithRetry();
-      } catch (error: any) {
-        // 404 hatası: Thread endpoint backend'de henüz implement edilmemiş
-        // Bu beklenen bir durum olabilir, fallback olarak recipientUserId'yi threadId olarak kullan
-        if (error?.response?.status === 404 || error?.isThreadEndpointNotFound) {
-          // Log'u daha az gürültülü hale getir - bu beklenen bir durum
-          console.info('[MessageDetail] Thread endpoint not available, using recipientUserId as threadId (fallback mode)');
-          setThreadId(recipientUserId);
-          
-          // Fallback modda socket thread sistemi çalışmayabilir
-          // Ama mesaj gönderme REST API üzerinden çalışmaya devam eder
-        } else {
-          // Diğer hatalar için de fallback ama daha fazla log
-          console.warn('[MessageDetail] Thread initialization failed:', error?.message || error);
-          console.warn('[MessageDetail] Using recipientUserId as fallback threadId');
-          setThreadId(recipientUserId);
-        }
-      }
-    };
-
-    initializeThread();
-  }, [user?.id, route.params]);
-
-  // Socket event handler'ları - useCallback ile wrap edilmiş handler'lar
-  const handleNewMessage = useCallback((eventData: SocketMessageEvent) => {
-    console.log('[MessageDetail] New message received:', eventData);
-
-    const routeParams = (route.params as MessageDetailScreenParams) || {};
-    const currentUserId = user?.id;
-    const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
-
-    // Bu mesaj bu thread'e ait mi kontrol et
-    if (
-      eventData.recipientId === currentUserId ||
-      eventData.senderId === recipientUserId ||
-      eventData.recipientId === recipientUserId
-    ) {
-      // Mesaj tipine göre işle
-      if (eventData.messageType === 'message') {
-        // Normal mesaj
-        const newMessage: MessageDetailItem = {
-          id: eventData.messageId,
-          text: eventData.message,
-          timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
+  // Thread mesajlarını local state'e dönüştür
+  useEffect(() => {
+    if (threadMessages) {
+      if (threadMessages.length > 0) {
+        console.log('[MessageDetail] 📥 Thread messages loaded:', threadMessages.length);
+        const convertedMessages: MessageDetailItem[] = threadMessages.map((msg) => ({
+          id: msg.id,
+          text: msg.message,
+          timestamp: new Date(msg.sentAt).toLocaleTimeString('tr-TR', {
             hour: '2-digit',
             minute: '2-digit',
           }),
-          isSent: eventData.senderId === currentUserId,
-          senderName: eventData.senderId === currentUserId ? undefined : routeParams.senderName,
-          senderAvatar: eventData.senderId === currentUserId ? undefined : routeParams.senderAvatar,
-          isRead: false, // Yeni mesaj henüz okunmadı
-        };
-
-        // Eğer mesaj bizim gönderdiğimizse ve görüldüyse, görüldü işaretini ekle
-        if (eventData.senderId === currentUserId) {
-          // Mesaj gönderildiğinde henüz okunmadı
-          newMessage.isRead = false;
-        }
-
-        setMessages((prev) => {
-          // Duplicate kontrolü
-          if (prev.some((msg) => msg.id === eventData.messageId)) {
-            return prev;
-          }
-          return [...prev, newMessage];
-        });
-
+          isSent: msg.senderId === user?.id,
+          senderName: msg.senderId === user?.id ? undefined : params.senderName,
+          senderAvatar: msg.senderId === user?.id ? undefined : params.senderAvatar,
+          isRead: msg.isRead,
+          readAt: msg.readAt,
+        }));
+        setMessages(convertedMessages);
+        
         // Scroll to bottom
         setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
+          safeScrollToEnd(false);
         }, 100);
-      } else if (eventData.messageType === 'send-tips') {
-        // TIPS mesajı - şu an için sadece log
-        console.log('[MessageDetail] TIPS message received:', eventData);
-        // TODO: TIPS mesajını UI'da göster
-      } else if (eventData.messageType === 'support-request') {
-        // Support request mesajı - şu an için sadece log
-        console.log('[MessageDetail] Support request received:', eventData);
-        // TODO: Support request mesajını UI'da göster
+      } else {
+        console.log('[MessageDetail] 📭 No messages in thread yet');
+        setMessages([]);
       }
-
-      // Mesaj listesini invalidate et (inbox listesini güncelle)
-      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    } else if (!isLoadingMessages) {
+      console.log('[MessageDetail] ⚠️ Thread messages is null/undefined');
     }
-  }, [user?.id, route.params, queryClient]);
+  }, [threadMessages, isLoadingMessages, user?.id, params.senderName, params.senderAvatar]);
 
-  const handleMessageSent = useCallback((eventData: SocketMessageEvent) => {
-    console.log('[MessageDetail] Message sent confirmation:', eventData);
+  // 4️⃣ CHAT EKRANI AÇILDIĞINDA - Thread ID kontrolü, socket bağlantısı, thread join, event listener'lar
+  useEffect(() => {
+    if (!recipientUserId || !user?.id) {
+      return;
+    }
+
+    let currentThreadId: string | null = null;
+
+    const initializeChat = async () => {
+      try {
+        // 1. Thread ID kontrolü
+        // Thread ID yoksa → REST API: POST /messages/threads
+        const { getOrCreateThread } = await import('../api/messagesApi');
+        let thread;
+        try {
+          thread = await getOrCreateThread(recipientUserId);
+          currentThreadId = thread.id;
+          setThreadId(thread.id);
+        } catch (error: any) {
+          // 404 hatası: Thread endpoint backend'de henüz implement edilmemiş
+          if (error?.response?.status === 404 || error?.isThreadEndpointNotFound) {
+            console.info('[MessageDetail] Thread endpoint not available, using recipientUserId as threadId (fallback mode)');
+            currentThreadId = recipientUserId;
+            setThreadId(recipientUserId);
+          } else {
+            throw error;
+          }
+        }
+
+        // 2. Socket bağlantısı kontrolü ve thread join
+        if (isConnected && currentThreadId) {
+          console.log('[MessageDetail] ✅ Socket connected, joining thread:', currentThreadId);
+          joinThread(currentThreadId);
+          setIsSocketReady(true);
+          
+          // Thread'e katıldıktan sonra mesajları okundu işaretle
+          // thread_joined event'inde yapılacak
+        } else {
+          console.log('[MessageDetail] ⚠️ Socket not connected, will join when connected');
+          setIsSocketReady(false);
+        }
+
+        // 5. Mesaj geçmişini yükle (REST API)
+        // useThreadMessages hook'u otomatik olarak yükleyecek
+        if (currentThreadId) {
+          console.log('[MessageDetail] 🔄 Refetching thread messages for thread:', currentThreadId);
+          refetchMessages();
+        }
+      } catch (error: any) {
+        console.error('[MessageDetail] Chat initialization error:', error);
+        // Fallback: recipientUserId'yi threadId olarak kullan
+        setThreadId(recipientUserId);
+      }
+    };
+
+    initializeChat();
+
+    // Cleanup (unmount):
+    return () => {
+      if (currentThreadId && isConnected) {
+        console.log('[MessageDetail] 🔌 Leaving thread on unmount:', currentThreadId);
+        leaveThread(currentThreadId);
+      }
+    };
+  }, [recipientUserId, user?.id, isConnected, joinThread, leaveThread]);
+
+  // Socket bağlantısı hazır olduğunda thread'e join et
+  useEffect(() => {
+    if (isConnected && threadId && !isSocketReady) {
+      console.log('[MessageDetail] ✅ Socket connected, joining thread:', threadId);
+      joinThread(threadId);
+      setIsSocketReady(true);
+    }
+  }, [isConnected, threadId, isSocketReady, joinThread]);
+
+  // 9️⃣ SOCKET EVENT'LERİ ALINIR - new_message event handler
+  const handleNewMessage = useCallback((eventData: any) => {
+    console.log('[MessageDetail] 📨 New message received:', eventData);
+
+    const currentUserId = user?.id;
+    const currentThreadId = threadId;
+
+    // Bu mesaj bu thread'e ait mi kontrol et
+    if (!currentThreadId || eventData.threadId !== currentThreadId) {
+      return;
+    }
+
+    // Mesaj tipine göre işle
+    if (eventData.messageType === 'message') {
+      // Normal mesaj
+      const newMessage: MessageDetailItem = {
+        id: eventData.messageId,
+        text: eventData.message,
+        timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        isSent: eventData.senderId === currentUserId,
+        senderName: eventData.senderId === currentUserId ? undefined : params.senderName,
+        senderAvatar: eventData.senderId === currentUserId ? undefined : params.senderAvatar,
+        isRead: false, // Yeni mesaj henüz okunmadı
+      };
+
+      setMessages((prev) => {
+        // Duplicate kontrolü
+        if (prev.some((msg) => msg.id === eventData.messageId)) {
+          return prev;
+        }
+        return [...prev, newMessage];
+      });
+
+      // Scroll to bottom
+      setTimeout(() => {
+        safeScrollToEnd(true);
+      }, 100);
+    } else if (eventData.messageType === 'send-tips') {
+      // TIPS mesajı - şu an için sadece log
+      console.log('[MessageDetail] TIPS message received:', eventData);
+      // TODO: TIPS mesajını UI'da göster
+    } else if (eventData.messageType === 'support-request') {
+      // Support request mesajı - şu an için sadece log
+      console.log('[MessageDetail] Support request received:', eventData);
+      // TODO: Support request mesajını UI'da göster
+    }
+
+    // Mesaj listesini invalidate et (inbox listesini güncelle)
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+  }, [user?.id, threadId, params.senderName, params.senderAvatar, queryClient]);
+
+  // 9️⃣ SOCKET EVENT'LERİ ALINIR - message_sent event handler (gönderici onayı)
+  const handleMessageSent = useCallback((eventData: any) => {
+    console.log('[MessageDetail] ✅ Message sent confirmation:', eventData);
     
+    // Thread ID kontrolü
+    if (eventData.threadId !== threadId) {
+      return;
+    }
+
     // Optimistic update'teki mesajı gerçek mesaj ID'si ile güncelle
     setMessages((prev) =>
       prev.map((msg) => {
         // Eğer bu mesaj henüz ID'si yoksa (optimistic update) ve içerik eşleşiyorsa
-        if (msg.text === eventData.message && msg.isSent && !msg.id.startsWith(eventData.messageId)) {
+        if (msg.text === eventData.message && msg.isSent && msg.id.startsWith('pending-')) {
           return {
             ...msg,
             id: eventData.messageId,
@@ -317,12 +405,23 @@ const MessageDetailScreen: React.FC = () => {
         return msg;
       })
     );
-  }, []);
+  }, [threadId]);
 
   // Thread event handlers
   const handleThreadJoined = useCallback((data: { threadId: string }) => {
-    console.log('[MessageDetail] Thread joined:', data.threadId);
-  }, []);
+    console.log('[MessageDetail] ========================================');
+    console.log('[MessageDetail] ✅ THREAD JOINED EVENT RECEIVED');
+    console.log('[MessageDetail] ========================================');
+    console.log('[MessageDetail]    - Thread ID:', data.threadId);
+    console.log('[MessageDetail]    - Current Thread ID:', threadId);
+    console.log('[MessageDetail]    - Match:', data.threadId === threadId ? '✅' : '❌');
+    
+    // Thread'e katıldıktan sonra tüm mesajları okundu işaretle
+    if (data.threadId === threadId && isConnected) {
+      console.log('[MessageDetail] 📖 Marking thread as read:', threadId);
+      socketMarkThreadRead(threadId);
+    }
+  }, [threadId, isConnected, socketMarkThreadRead]);
 
   const handleThreadLeft = useCallback((data: { threadId: string }) => {
     console.log('[MessageDetail] Thread left:', data.threadId);
@@ -377,49 +476,52 @@ const MessageDetailScreen: React.FC = () => {
     }
   }, [threadId]);
 
-  // Socket event listeners effect - sadece threadId ve handler'lar değiştiğinde çalışır
+  // Mesaj okundu işaretleme - Basit implementasyon (Reanimated kullanmadan)
+  // onViewableItemsChanged kaldırıldı (_tracking hatası nedeniyle)
+  // Mesajlar scroll edildiğinde otomatik olarak okundu sayılacak
+
+  // Socket event listeners effect
   useEffect(() => {
-    if (!threadId) {
+    if (!isSocketReady || !threadId || !isConnected) {
       return;
     }
 
+    console.log('[MessageDetail] 📡 Adding socket event listeners for thread:', threadId);
+
     // Event listener'ları ekle
-    socketService.on('new_message', handleNewMessage);
-    socketService.on('message_sent', handleMessageSent);
-    socketService.on('thread_joined', handleThreadJoined);
-    socketService.on('thread_left', handleThreadLeft);
-    socketService.on('thread_join_error', handleThreadJoinError);
-    socketService.on('message_send_error', handleMessageSendError);
-    socketService.on('user_typing', handleUserTyping);
-    socketService.on('message_read', handleMessageRead);
+    on('new_message', handleNewMessage);
+    on('message_sent', handleMessageSent);
+    on('thread_joined', handleThreadJoined);
+    on('thread_left', handleThreadLeft);
+    on('thread_join_error', handleThreadJoinError);
+    on('message_send_error', handleMessageSendError);
+    on('user_typing', handleUserTyping);
+    on('message_read', handleMessageRead);
 
-    // Cleanup: threadId değiştiğinde veya component unmount olduğunda listener'ları kaldır ve thread'den ayrıl
     return () => {
-      socketService.off('new_message', handleNewMessage);
-      socketService.off('message_sent', handleMessageSent);
-      socketService.off('thread_joined', handleThreadJoined);
-      socketService.off('thread_left', handleThreadLeft);
-      socketService.off('thread_join_error', handleThreadJoinError);
-      socketService.off('message_send_error', handleMessageSendError);
-      socketService.off('user_typing', handleUserTyping);
-      socketService.off('message_read', handleMessageRead);
+      console.log('[MessageDetail] 🧹 Removing socket event listeners');
+      off('new_message', handleNewMessage);
+      off('message_sent', handleMessageSent);
+      off('thread_joined', handleThreadJoined);
+      off('thread_left', handleThreadLeft);
+      off('thread_join_error', handleThreadJoinError);
+      off('message_send_error', handleMessageSendError);
+      off('user_typing', handleUserTyping);
+      off('message_read', handleMessageRead);
 
-      // Typing timeout'u temizle
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
 
-      // Typing'i durdur
-      if (threadId) {
-        socketService.stopTyping(threadId);
+      if (threadId && isConnected) {
+        socketStopTyping(threadId);
       }
 
-      // Thread'den ayrıl
-      if (threadId) {
-        socketService.leaveThread(threadId);
+      if (threadId && isConnected) {
+        leaveThread(threadId);
       }
     };
-  }, [threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead]);
+  }, [isSocketReady, threadId, isConnected, on, off, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, socketStopTyping, leaveThread]);
 
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number, message?: string) => {
@@ -534,7 +636,7 @@ const MessageDetailScreen: React.FC = () => {
           setMessages((prev) => [...prev, newSupportRequest]);
 
           setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
+            safeScrollToEnd(true);
           }, 100);
 
           Alert.alert('Başarılı', 'Destek talebi başarıyla gönderildi');
@@ -578,9 +680,12 @@ const MessageDetailScreen: React.FC = () => {
 
 
 
-  // Yeni mesaj gönderme
-  const handleSendMessage = (messageText: string) => {
-    if (!messageText.trim()) return;
+  // 6️⃣ KULLANICI MESAJ GÖNDERİR - Socket üzerinden mesaj gönder
+  const handleSendMessage = useCallback((messageText: string) => {
+    // 1. Validasyon
+    if (!messageText.trim()) {
+      return;
+    }
 
     if (!user?.id) {
       Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
@@ -588,8 +693,6 @@ const MessageDetailScreen: React.FC = () => {
     }
 
     // Thread ID yoksa recipientUserId'yi kullan (fallback)
-    const routeParams = (route.params as MessageDetailScreenParams) || {};
-    const recipientUserId = routeParams.recipientUserId || routeParams.messageId;
     const effectiveThreadId = threadId || recipientUserId;
     
     if (!effectiveThreadId) {
@@ -597,64 +700,72 @@ const MessageDetailScreen: React.FC = () => {
       return;
     }
 
-    // Optimistic update - local state'e ekle
+    // 2. Optimistic UI Update - local state'e ekle (pending durumu)
+    const optimisticMessageId = `pending-${Date.now()}`;
     const newMessage: MessageDetailItem = {
-      id: Date.now().toString(),
-      text: messageText,
+      id: optimisticMessageId,
+      text: messageText.trim(),
       timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
       isSent: true,
+      isRead: false, // Henüz okunmadı
     };
 
     setMessages((prev) => [...prev, newMessage]);
 
     // Mesaj listesini en alta kaydır
     setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
+      safeScrollToEnd(true);
     }, 100);
 
-    // Socket üzerinden mesaj gönder (önerilen yöntem)
-    // Not: Thread endpoint yoksa socket thread sistemi çalışmayabilir
-    if (socketService.isConnected() && threadId) {
-      try {
-        socketService.sendMessage(effectiveThreadId, messageText);
-      } catch (error) {
-        console.error('[MessageDetail] Socket send error:', error);
-        // Fallback: REST API kullan
-        if (recipientUserId) {
-          sendDirectMessageMutation.mutate(
-            {
-              recipientUserId: recipientUserId,
-              message: messageText,
-            },
-            {
-              onError: (error) => {
-                // Hata durumunda mesajı geri al
-                setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id));
-                Alert.alert('Hata', error.message || 'Mesaj gönderilirken bir hata oluştu');
-              },
-            }
-          );
-        }
-      }
+    // 3. Socket bağlantısı kontrolü - Socket bağlıysa socket ile gönder
+    if (isConnected && isSocketReady && effectiveThreadId) {
+      console.log('[MessageDetail] 📤 Sending message via socket:', messageText.trim());
+      socketSendMessage(effectiveThreadId, messageText.trim());
     } else {
-      // Socket bağlı değilse veya threadId yoksa REST API kullan
+      // Fallback: REST API ile mesaj gönder
+      console.warn('[MessageDetail] ⚠️ Socket not ready, using REST API fallback');
       if (recipientUserId) {
         sendDirectMessageMutation.mutate(
           {
             recipientUserId: recipientUserId,
-            message: messageText,
+            message: messageText.trim(),
           },
           {
+            onSuccess: () => {
+              console.log('[MessageDetail] ✅ Message sent via REST API, refetching...');
+              // Mesaj listesini invalidate et ve refetch yap
+              queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+              queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(effectiveThreadId) });
+              refetchMessages();
+            },
             onError: (error) => {
+              console.error('[MessageDetail] ❌ Message send error:', error);
               // Hata durumunda mesajı geri al
-              setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id));
+              setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
               Alert.alert('Hata', error.message || 'Mesaj gönderilirken bir hata oluştu');
             },
           }
         );
+      } else {
+        // recipientUserId yoksa optimistic mesajı geri al
+        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
+        Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı');
       }
     }
-  };
+  }, [user?.id, threadId, recipientUserId, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation, queryClient, refetchMessages]);
+
+  // Typing indicator handlers
+  const handleTypingStart = useCallback(() => {
+    if (threadId && isConnected && isSocketReady) {
+      socketStartTyping(threadId);
+    }
+  }, [threadId, isConnected, isSocketReady, socketStartTyping]);
+
+  const handleTypingStop = useCallback(() => {
+    if (threadId && isConnected && isSocketReady) {
+      socketStopTyping(threadId);
+    }
+  }, [threadId, isConnected, isSocketReady, socketStopTyping]);
 
   // Toggle support request expansion
   const toggleSupportRequest = (id: string) => {
@@ -668,7 +779,7 @@ const MessageDetailScreen: React.FC = () => {
     // Eğer açılıyorsa (şu an kapalı), scroll'u aşağı kaydır
     if (!isCurrentlyExpanded) {
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        safeScrollToEnd(true);
       }, 100);
     }
   };
@@ -914,105 +1025,98 @@ const MessageDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      {/* Header */}
-      <MessageDetailHeader
-        senderName={params.senderName}
-        senderTitle={params.senderTitle}
-        senderAvatar={params.senderAvatar}
-        onBackPress={() => navigation.goBack()}
-        onMenuPress={() => console.log('Menü tıklandı')}
-      />
-
-      {/* Mesaj Geçmişi */}
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessageItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingTop: 16, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }}
-        />
-      </KeyboardAvoidingView>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+          {/* Header */}
+          <MessageDetailHeader
+            senderName={params.senderName}
+            senderTitle={params.senderTitle}
+            senderAvatar={params.senderAvatar}
+            onBackPress={() => navigation.goBack()}
+            onMenuPress={() => console.log('Menü tıklandı')}
+          />
 
-      {/* Mesaj Gönderme Alanı */}
-      <Box
-        style={{
-          paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
-        }}
-      >
-        {/* Typing Indicator */}
-        {isTyping && typingUserId && typingUserId !== user?.id && (
-          <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
-            <HStack space="xs" alignItems="center">
-              <Text
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize={10}
-                fontStyle="italic"
-              >
-                {params.senderName || 'Kullanıcı'} yazıyor
-              </Text>
-              <HStack space="xs" alignItems="center">
-                <Box
-                  width={6}
-                  height={6}
-                  borderRadius={3}
-                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  style={{ opacity: 0.4 }}
-                />
-                <Box
-                  width={6}
-                  height={6}
-                  borderRadius={3}
-                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  style={{ opacity: 0.6 }}
-                />
-                <Box
-                  width={6}
-                  height={6}
-                  borderRadius={3}
-                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  style={{ opacity: 0.8 }}
-                />
-              </HStack>
-            </HStack>
+          {/* Mesaj Geçmişi */}
+          <Box flex={1}>
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessageItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ 
+                paddingTop: 16, 
+                paddingBottom: 16,
+              }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              style={{ flex: 1 }}
+            />
           </Box>
-        )}
 
-        <MessageInput
-          onSendMessage={handleSendMessage}
-          onAddImage={() => console.log('Görsel eklenecek')}
-          placeholder="Mesajınızı yazın..."
-          threadId={threadId}
-          onTypingStart={() => {
-            if (threadId && socketService.isConnected()) {
-              socketService.startTyping(threadId);
-            }
-          }}
-          onTypingStop={() => {
-            if (threadId && socketService.isConnected()) {
-              socketService.stopTyping(threadId);
-            }
-          }}
-        />
-      </Box>
+          {/* Typing Indicator */}
+          {isTyping && typingUserId && typingUserId !== user?.id && (
+            <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+              <HStack space="xs" alignItems="center">
+                <Text
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  fontSize={10}
+                  fontStyle="italic"
+                >
+                  {params.senderName || 'Kullanıcı'} yazıyor
+                </Text>
+                <HStack space="xs" alignItems="center">
+                  <Box
+                    width={6}
+                    height={6}
+                    borderRadius={3}
+                    bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    style={{ opacity: 0.4 }}
+                  />
+                  <Box
+                    width={6}
+                    height={6}
+                    borderRadius={3}
+                    bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    style={{ opacity: 0.6 }}
+                  />
+                  <Box
+                    width={6}
+                    height={6}
+                    borderRadius={3}
+                    bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    style={{ opacity: 0.8 }}
+                  />
+                </HStack>
+              </HStack>
+            </Box>
+          )}
 
-      {/* Action Buttons */}
-      <MessageDetailActionButtons
-        onSendTipsPress={handleSendTipsPress}
-        onRequestSupportPress={handleRequestSupportPress}
-      />
+          {/* Mesaj Input - KeyboardAvoidingView ile otomatik yönetilir */}
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            onAddImage={() => console.log('Görsel eklenecek')}
+            placeholder="Mesajınızı yazın..."
+            threadId={threadId}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+          />
 
-    </Box>
+          {/* Action Buttons */}
+          <MessageDetailActionButtons
+            onSendTipsPress={handleSendTipsPress}
+            onRequestSupportPress={handleRequestSupportPress}
+            keyboardHeight={0}
+            isKeyboardVisible={false}
+            keyboardAnim={null}
+          />
+        </Box>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

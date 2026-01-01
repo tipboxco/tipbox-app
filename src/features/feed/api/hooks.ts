@@ -46,6 +46,11 @@ export const useFeed = (
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
+      // Kalıcı çözüm: lastPage ve pagination kontrolü
+      if (!lastPage || !lastPage.pagination) {
+        return undefined;
+      }
+      
       if (!lastPage.pagination.hasMore) {
         return undefined;
       }
@@ -53,8 +58,14 @@ export const useFeed = (
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
       // Ensure items is an array and has valid data before accessing
       const items = Array.isArray(lastPage.items) ? lastPage.items : [];
-      if (items.length > 0 && items[items.length - 1]?.data?.id) {
-        return lastPage.pagination.cursor || items[items.length - 1].data.id;
+      if (items.length > 0) {
+        const lastItem = items[items.length - 1];
+        if (lastItem && typeof lastItem === 'object' && 'data' in lastItem) {
+          const itemData = lastItem.data;
+          if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
+            return lastPage.pagination.cursor || String(itemData.id);
+          }
+        }
       }
       
       return lastPage.pagination.cursor || undefined;
@@ -102,6 +113,11 @@ export const useFeedFiltered = (
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
+      // Kalıcı çözüm: lastPage ve pagination kontrolü
+      if (!lastPage || !lastPage.pagination) {
+        return undefined;
+      }
+      
       if (!lastPage.pagination.hasMore) {
         return undefined;
       }
@@ -109,8 +125,14 @@ export const useFeedFiltered = (
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
       // Ensure items is an array and has valid data before accessing
       const items = Array.isArray(lastPage.items) ? lastPage.items : [];
-      if (items.length > 0 && items[items.length - 1]?.data?.id) {
-        return lastPage.pagination.cursor || items[items.length - 1].data.id;
+      if (items.length > 0) {
+        const lastItem = items[items.length - 1];
+        if (lastItem && typeof lastItem === 'object' && 'data' in lastItem) {
+          const itemData = lastItem.data;
+          if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
+            return lastPage.pagination.cursor || String(itemData.id);
+          }
+        }
       }
       
       return lastPage.pagination.cursor || undefined;

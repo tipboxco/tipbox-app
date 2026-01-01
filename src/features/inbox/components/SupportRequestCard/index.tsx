@@ -9,18 +9,63 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource } from '@/src/utils';
-import { SupportRequest } from '@/src/mock/inbox/SupportRequests/types';
+import type { SupportRequest } from '@/src/features/inbox/api/messagesApi';
 
 interface SupportRequestCardProps {
   data: SupportRequest;
   onPress?: (requestId: string) => void;
 }
 
+// Status mapping helper
+const getStatusInfo = (status: SupportRequest['status']) => {
+  switch (status) {
+    case 'pending':
+      return { text: 'Beklemede', color: '#FFA500' };
+    case 'active':
+      return { text: 'Aktif', color: '#4CAF50' };
+    case 'awaiting_completion':
+      return { text: 'Tamamlanma Bekliyor', color: '#2196F3' };
+    case 'completed':
+      return { text: 'Tamamlandı', color: '#4CAF50' };
+    case 'finalized':
+      return { text: 'Sonuçlandırıldı', color: '#9E9E9E' };
+    case 'reported':
+      return { text: 'Rapor Edildi', color: '#F44336' };
+    default:
+      return { text: 'Bilinmeyen', color: '#9E9E9E' };
+  }
+};
+
+// Button text helper
+const getButtonText = (status: SupportRequest['status']) => {
+  switch (status) {
+    case 'pending':
+      return 'Kabul Et';
+    case 'active':
+      return 'Mesajlaş';
+    case 'awaiting_completion':
+      return 'Tamamla';
+    case 'completed':
+      return 'Görüntüle';
+    default:
+      return 'Detay';
+  }
+};
+
 export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, onPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const statusInfo = getStatusInfo(data.status);
+  const buttonText = getButtonText(data.status);
 
   const handlePress = () => {
+    if (onPress) {
+      onPress(data.id);
+    }
+  };
+
+  const handleButtonPress = (e: any) => {
+    e.stopPropagation();
     if (onPress) {
       onPress(data.id);
     }
@@ -88,14 +133,14 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
             borderRadius={20}
             px="$2"
             py="$1.5"
-            onPress={() => data.onButtonPress?.()}
+            onPress={handleButtonPress}
           >
             <Text
               color="#000000"
               fontSize={9}
               fontWeight="$semibold"
             >
-              {data.buttonText}
+              {buttonText}
             </Text>
           </Pressable>
         </HStack>
@@ -118,14 +163,14 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
               width={10}
               height={10}
               borderRadius={5}
-              bg={data.statusColor}
+              bg={statusInfo.color}
             />
             <Text
-              color={data.statusColor}
+              color={statusInfo.color}
               fontSize={9}
               fontWeight="$semibold"
             >
-              {data.statusText}
+              {statusInfo.text}
             </Text>
           </HStack>
         </VStack>

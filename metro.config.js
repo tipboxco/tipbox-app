@@ -3,13 +3,13 @@ const { withNativeWind } = require('nativewind/metro');
 
 const config = getDefaultConfig(__dirname);
 
-// socket.io-client için source extensions ekle
+// Socket.IO client için gerekli: mjs, cjs extension'ları ekle
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs', 'cjs'];
 
-// Node.js modüllerini exclude et (React Native'de çalışmaz)
+// Node.js spesifik dosyaları block et (React Native'de çalışmaz)
+// Regex düzeltildi: sadece .node.js ile biten dosyaları block et
 config.resolver.blockList = [
-  /node_modules\/xmlhttprequest-ssl\/lib\/XMLHttpRequest\.js$/,
-  /node_modules\/engine\.io-client\/build\/esm\/transports\/polling-xhr\.node\.js$/,
+  /\.node\.js$/, // .node.js uzantılı dosyalar Node.js'e özgü
 ];
 
 // react-native-reanimated plugin'ini ekle
@@ -18,8 +18,7 @@ config.resolver.plugins = [
   'react-native-reanimated/plugin',
 ];
 
-// web-streams-polyfill için resolver ayarları
-// web-streams-polyfill 4.x versiyonunda ponyfill/es6 yolu yok, dist/ponyfill.js kullanılıyor
+// web-streams-polyfill ve socket.io-client için resolver ayarları
 const defaultResolver = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   // xmlhttprequest-ssl yerine browser fetch kullan (Node.js modülü)
@@ -42,7 +41,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     }
   }
 
-  // web-streams-polyfill/ponyfill/es6 için özel çözümleme (yeni versiyon için)
+  // web-streams-polyfill/ponyfill/es6 için özel çözümleme
   if (moduleName === 'web-streams-polyfill/ponyfill/es6') {
     try {
       // Yeni versiyonda dist/ponyfill.js kullanılıyor

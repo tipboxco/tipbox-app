@@ -1,5 +1,5 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -17,6 +17,11 @@ import MessageInput from '../components/MessageInput';
 import SupportMessageDetailActionButtons from '../components/SupportMessageDetailActionButtons';
 import SupportChatParticipants from '../components/SupportChatParticipants';
 import CloseSupportRequestModal from '../components/CloseSupportRequestModal';
+import { useSocket } from '@/src/providers/SocketProvider';
+import { useAppStore } from '@/src/store/appStore';
+import { useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, inboxKeys } from '../api/hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import type { ThreadMessage } from '../api/messagesApi';
 
 interface MessageDetailItem {
   id: string;
@@ -44,6 +49,8 @@ interface SupportMessageDetailParams {
   userTitle?: string;
   userAvatar?: any;
   requestId?: string;
+  status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+  threadId?: string | null;
 }
 
 // Mock mesaj geçmişi verisi
@@ -111,9 +118,30 @@ const SupportMessageDetailScreen: React.FC = () => {
   const navigation = useNavigation<SupportMessageDetailScreenNavigationProp>();
   const route = useRoute();
   const flatListRef = useRef<FlatList>(null);
-  const [messages, setMessages] = useState<MessageDetailItem[]>(mockMessageHistory);
+  const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
   const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
+  const { user } = useAppStore();
+  const queryClient = useQueryClient();
+  const acceptMutation = useAcceptSupportRequest();
+  const rejectMutation = useRejectSupportRequest();
+  const cancelMutation = useCancelSupportRequest();
+
+  // Socket context
+  const {
+    isConnected,
+    joinThread,
+    leaveThread,
+    sendSupportMessage: socketSendSupportMessage,
+    startTyping: socketStartTyping,
+    stopTyping: socketStopTyping,
+    markThreadRead: socketMarkThreadRead,
+    acceptSupportRequest: socketAcceptSupportRequest,
+    rejectSupportRequest: socketRejectSupportRequest,
+    cancelSupportRequest: socketCancelSupportRequest,
+    on,
+    off,
+  } = useSocket();
 
   // Route params'dan gelen verileri al
   const params = (route.params as SupportMessageDetailParams) || {
@@ -123,25 +151,289 @@ const SupportMessageDetailScreen: React.FC = () => {
     userName: 'Trevor Nace',
     userTitle: 'Technology Enthusiast',
     userAvatar: require('@/assets/avatar/ozan.png'),
+    requestId: undefined,
+    status: 'pending',
+    threadId: null,
   };
+
+  const requestId = params.requestId;
+  const threadId = params.threadId;
+  const [isSocketReady, setIsSocketReady] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUserId, setTypingUserId] = useState<string | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Thread mesajlarını yükle (eğer threadId varsa)
+  const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(threadId || null);
+
+  // Thread mesajlarını local state'e dönüştür
+  useEffect(() => {
+    if (threadMessages && threadId) {
+      const convertedMessages: MessageDetailItem[] = threadMessages.map((msg) => ({
+        id: msg.id,
+        text: msg.message,
+        timestamp: new Date(msg.sentAt).toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        isSent: msg.senderId === user?.id,
+        senderName: msg.senderId === user?.id ? undefined : params.expertName,
+        senderAvatar: msg.senderId === user?.id ? undefined : params.expertAvatar,
+      }));
+      setMessages(convertedMessages);
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    }
+  }, [threadMessages, threadId, user?.id, params.expertName, params.expertAvatar]);
+
+  // Socket bağlantısı ve thread join
+  useEffect(() => {
+    if (!threadId || !isConnected) return;
+
+    console.log('[SupportMessageDetail] ✅ Socket connected, joining thread:', threadId);
+    joinThread(threadId);
+    setIsSocketReady(true);
+
+    return () => {
+      if (threadId && isConnected) {
+        leaveThread(threadId);
+      }
+    };
+  }, [threadId, isConnected, joinThread, leaveThread]);
+
+  // Thread joined handler - mesajları okundu işaretle
+  const handleThreadJoined = useCallback((data: { threadId: string }) => {
+    if (data.threadId === threadId && isConnected) {
+      console.log('[SupportMessageDetail] 📖 Marking thread as read:', threadId);
+      socketMarkThreadRead(threadId);
+    }
+  }, [threadId, isConnected, socketMarkThreadRead]);
+
+  // New message handler
+  const handleNewMessage = useCallback((eventData: any) => {
+    if (eventData.threadId !== threadId) return;
+
+    if (eventData.messageType === 'message' && eventData.context === 'SUPPORT') {
+      const newMessage: MessageDetailItem = {
+        id: eventData.messageId,
+        text: eventData.message,
+        timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        isSent: eventData.senderId === user?.id,
+        senderName: eventData.senderId === user?.id ? undefined : params.expertName,
+        senderAvatar: eventData.senderId === user?.id ? undefined : params.expertAvatar,
+      };
+
+      setMessages((prev) => {
+        if (prev.some((msg) => msg.id === eventData.messageId)) {
+          return prev;
+        }
+        return [...prev, newMessage];
+      });
+
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [threadId, user?.id, params.expertName, params.expertAvatar]);
+
+  // User typing handler
+  const handleUserTyping = useCallback((data: { userId: string; threadId: string; isTyping: boolean }) => {
+    if (data.threadId === threadId) {
+      setIsTyping(data.isTyping);
+      setTypingUserId(data.isTyping ? data.userId : null);
+
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      if (data.isTyping) {
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false);
+          setTypingUserId(null);
+        }, 3000);
+      }
+    }
+  }, [threadId]);
+
+  // Support request accepted handler
+  const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string; timestamp: string }) => {
+    if (data.requestId === requestId) {
+      console.log('[SupportMessageDetail] Support request accepted, threadId:', data.threadId);
+      // Navigate to support chat with threadId
+      navigation.setParams({ threadId: data.threadId, status: 'active' });
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    }
+  }, [requestId, navigation, queryClient]);
+
+  // Socket event listeners
+  useEffect(() => {
+    if (!isSocketReady || !threadId || !isConnected) return;
+
+    on('thread_joined', handleThreadJoined);
+    on('new_message', handleNewMessage);
+    on('user_typing', handleUserTyping);
+    on('support_request_accepted', handleSupportRequestAccepted);
+
+    return () => {
+      off('thread_joined', handleThreadJoined);
+      off('new_message', handleNewMessage);
+      off('user_typing', handleUserTyping);
+      off('support_request_accepted', handleSupportRequestAccepted);
+
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      if (threadId && isConnected) {
+        socketStopTyping(threadId);
+      }
+    };
+  }, [isSocketReady, threadId, isConnected, on, off, handleThreadJoined, handleNewMessage, handleUserTyping, handleSupportRequestAccepted, socketStopTyping]);
 
   // Yeni mesaj gönderme
   const handleSendMessage = (messageText: string) => {
     if (!messageText.trim()) return;
+    if (!threadId) {
+      Alert.alert('Hata', 'Thread ID bulunamadı');
+      return;
+    }
 
+    // Optimistic update
+    const optimisticMessageId = `pending-${Date.now()}`;
     const newMessage: MessageDetailItem = {
-      id: Date.now().toString(),
-      text: messageText,
+      id: optimisticMessageId,
+      text: messageText.trim(),
       timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
       isSent: true,
     };
 
     setMessages((prev) => [...prev, newMessage]);
 
-    // Mesaj listesini en alta kaydır
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
+
+    // Socket ile mesaj gönder
+    if (isConnected && isSocketReady) {
+      socketSendSupportMessage(threadId, messageText.trim());
+    } else {
+      Alert.alert('Hata', 'Socket bağlantısı yok');
+      // Optimistic mesajı geri al
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
+    }
+  };
+
+  // Typing handlers
+  const handleTypingStart = useCallback(() => {
+    if (threadId && isConnected && isSocketReady) {
+      socketStartTyping(threadId);
+    }
+  }, [threadId, isConnected, isSocketReady, socketStartTyping]);
+
+  const handleTypingStop = useCallback(() => {
+    if (threadId && isConnected && isSocketReady) {
+      socketStopTyping(threadId);
+    }
+  }, [threadId, isConnected, isSocketReady, socketStopTyping]);
+
+  // Accept support request
+  const handleAcceptRequest = () => {
+    if (!requestId) {
+      Alert.alert('Hata', 'Request ID bulunamadı');
+      return;
+    }
+
+    if (isConnected) {
+      // Socket ile accept et
+      socketAcceptSupportRequest(requestId);
+    } else {
+      // REST API ile accept et
+      acceptMutation.mutate(requestId, {
+        onSuccess: (data) => {
+          Alert.alert('Başarılı', 'Destek talebi kabul edildi');
+          navigation.setParams({ threadId: data.threadId, status: 'active' });
+        },
+        onError: (error) => {
+          Alert.alert('Hata', error.message || 'Destek talebi kabul edilemedi');
+        },
+      });
+    }
+  };
+
+  // Reject support request
+  const handleRejectRequest = () => {
+    if (!requestId) {
+      Alert.alert('Hata', 'Request ID bulunamadı');
+      return;
+    }
+
+    Alert.alert(
+      'Destek Talebini Reddet',
+      'Bu destek talebini reddetmek istediğinizden emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Reddet',
+          style: 'destructive',
+          onPress: () => {
+            if (isConnected) {
+              socketRejectSupportRequest(requestId);
+            } else {
+              rejectMutation.mutate(requestId, {
+                onSuccess: () => {
+                  Alert.alert('Başarılı', 'Destek talebi reddedildi');
+                  navigation.goBack();
+                },
+                onError: (error) => {
+                  Alert.alert('Hata', error.message || 'Destek talebi reddedilemedi');
+                },
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Cancel support request (sadece sender yapabilir)
+  const handleCancelRequest = () => {
+    if (!requestId) {
+      Alert.alert('Hata', 'Request ID bulunamadı');
+      return;
+    }
+
+    Alert.alert(
+      'Destek Talebini İptal Et',
+      'Bu destek talebini iptal etmek istediğinizden emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'İptal Et',
+          style: 'destructive',
+          onPress: () => {
+            if (isConnected) {
+              socketCancelSupportRequest(requestId);
+            } else {
+              cancelMutation.mutate(requestId, {
+                onSuccess: () => {
+                  Alert.alert('Başarılı', 'Destek talebi iptal edildi');
+                  navigation.goBack();
+                },
+                onError: (error) => {
+                  Alert.alert('Hata', error.message || 'Destek talebi iptal edilemedi');
+                },
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Toggle support request expansion
@@ -421,34 +713,162 @@ const SupportMessageDetailScreen: React.FC = () => {
           renderItem={renderMessageItem}
           keyExtractor={(item) => item.id}
           ListHeaderComponent={
-            <SupportChatParticipants
-              user1Name={params.expertName}
-              user1Title={params.expertTitle}
-              user1Avatar={params.expertAvatar}
-              user2Name={params.userName || 'Trevor Nace'}
-              user2Title={params.userTitle || 'Technology Enthusiast'}
-              user2Avatar={params.userAvatar || require('@/assets/avatar/ozan.png')}
-              supportTitle="Smartwatches"
-              tipsAmount={50}
-            />
+            params.status === 'active' && threadId ? (
+              <SupportChatParticipants
+                user1Name={params.expertName}
+                user1Title={params.expertTitle}
+                user1Avatar={params.expertAvatar}
+                user2Name={params.userName || 'Trevor Nace'}
+                user2Title={params.userTitle || 'Technology Enthusiast'}
+                user2Avatar={params.userAvatar || require('@/assets/avatar/ozan.png')}
+                supportTitle="Support Chat"
+                tipsAmount={50}
+              />
+            ) : null
+          }
+          ListEmptyComponent={
+            isLoadingMessages ? (
+              <Box py={20} alignItems="center">
+                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Yükleniyor...</Text>
+              </Box>
+            ) : (
+              <Box py={20} alignItems="center">
+                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz mesaj yok</Text>
+              </Box>
+            )
           }
           contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         />
       </KeyboardAvoidingView>
 
-      {/* Mesaj Gönderme Alanı */}
-      <MessageInput
-        onSendMessage={handleSendMessage}
-        onAddImage={() => console.log('Görsel eklenecek')}
-        placeholder="Mesajınızı yazın..."
-      />
+      {/* Typing Indicator */}
+      {isTyping && typingUserId && typingUserId !== user?.id && (
+        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <HStack space="xs" alignItems="center">
+            <Text
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              fontSize={10}
+              fontStyle="italic"
+            >
+              {params.expertName || 'Kullanıcı'} yazıyor
+            </Text>
+            <HStack space="xs" alignItems="center">
+              <Box
+                width={6}
+                height={6}
+                borderRadius={3}
+                bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                style={{ opacity: 0.4 }}
+              />
+              <Box
+                width={6}
+                height={6}
+                borderRadius={3}
+                bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                style={{ opacity: 0.6 }}
+              />
+              <Box
+                width={6}
+                height={6}
+                borderRadius={3}
+                bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                style={{ opacity: 0.8 }}
+              />
+            </HStack>
+          </HStack>
+        </Box>
+      )}
 
-      {/* Action Buttons - Close Support Request & Report */}
-      <SupportMessageDetailActionButtons
-        onCloseRequestPress={handleCloseRequest}
-        onReportPress={handleReport}
-      />
+      {/* Mesaj Gönderme Alanı - Sadece active status'ta göster */}
+      {params.status === 'active' && threadId && (
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          onAddImage={() => console.log('Görsel eklenecek')}
+          placeholder="Mesajınızı yazın..."
+          threadId={threadId}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
+        />
+      )}
+
+      {/* Action Buttons - Status'a göre farklı butonlar göster */}
+      {params.status === 'pending' && (
+        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <HStack space="sm" justifyContent="space-between">
+            <Pressable
+              flex={1}
+              bg="#E8FF6B"
+              borderWidth={1}
+              borderColor="#D8FF08"
+              borderRadius={20}
+              px="$4"
+              py="$3"
+              onPress={handleAcceptRequest}
+            >
+              <Text
+                color="#000000"
+                fontSize={12}
+                fontWeight="$semibold"
+                textAlign="center"
+              >
+                Kabul Et
+              </Text>
+            </Pressable>
+            <Pressable
+              flex={1}
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor={isDark ? '#3A3A3A' : '#E5E5E5'}
+              borderRadius={20}
+              px="$4"
+              py="$3"
+              onPress={handleRejectRequest}
+            >
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize={12}
+                fontWeight="$semibold"
+                textAlign="center"
+              >
+                Reddet
+              </Text>
+            </Pressable>
+          </HStack>
+        </Box>
+      )}
+
+      {/* Active status'ta Close & Report butonları */}
+      {params.status === 'active' && (
+        <SupportMessageDetailActionButtons
+          onCloseRequestPress={handleCloseRequest}
+          onReportPress={handleReport}
+        />
+      )}
+
+      {/* Pending status'ta sender için Cancel butonu */}
+      {params.status === 'pending' && user?.id && (
+        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <Pressable
+            bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+            borderWidth={1}
+            borderColor={isDark ? '#3A3A3A' : '#E5E5E5'}
+            borderRadius={20}
+            px="$4"
+            py="$3"
+            onPress={handleCancelRequest}
+          >
+            <Text
+              color={isDark ? '#FFFFFF' : '#000000'}
+              fontSize={12}
+              fontWeight="$semibold"
+              textAlign="center"
+            >
+              Talebi İptal Et
+            </Text>
+          </Pressable>
+        </Box>
+      )}
 
       {/* Close Support Request Modal */}
       <CloseSupportRequestModal

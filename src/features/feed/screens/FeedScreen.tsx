@@ -74,7 +74,7 @@ export const FeedScreen = () => {
 
   // Log filter changes (especially for interests)
   useEffect(() => {
-    if (filters.interests && filters.interests.length > 0) {
+    if (filters.interests && Array.isArray(filters.interests) && filters.interests.length > 0) {
       console.log('[FeedScreen] 🔍 Interests filter changed:', {
         interests: filters.interests,
         allFilters: filters,
@@ -86,8 +86,8 @@ export const FeedScreen = () => {
   // Herhangi bir filtre seçilmişse filtered feed API'sini kullan
   const hasActiveFilters = useMemo(() => {
     return !!(
-      (filters.interests && filters.interests.length > 0) ||
-      (filters.tags && filters.tags.length > 0) ||
+      (filters.interests && Array.isArray(filters.interests) && filters.interests.length > 0) ||
+      (filters.tags && Array.isArray(filters.tags) && filters.tags.length > 0) ||
       filters.category ||
       filters.sort
     );
@@ -115,27 +115,60 @@ export const FeedScreen = () => {
   } = feedQuery;
 
   // Flatten all pages into a single array and remove duplicates by ID
+  // Kalıcı çözüm: Tüm undefined/null kontrollerini yap, güvenli array işlemleri kullan
   const feedItems = useMemo(() => {
-    if (!data?.pages) return [];
+    // 1. data ve data.pages kontrolü - en üst seviye güvenlik
+    if (!data || !data.pages) {
+      return [];
+    }
     
-    // Safely flatten pages - handle undefined items arrays
-    const allItems = data.pages.flatMap((page) => {
-      // Ensure page.items is an array before flatMap
-      return Array.isArray(page?.items) ? page.items : [];
+    // 2. data.pages'in array olduğundan emin ol
+    if (!Array.isArray(data.pages)) {
+      console.warn('[FeedScreen] data.pages is not an array:', typeof data.pages, data.pages);
+      return [];
+    }
+    
+    // 3. Undefined/null sayfaları filtrele - flatMap'ten önce güvenli hale getir
+    const validPages = data.pages.filter((page) => {
+      // Sayfa null/undefined değil ve items property'si var mı kontrol et
+      return page != null && typeof page === 'object' && 'items' in page;
     });
     
-    // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
-    const uniqueItemsMap = new Map<string, FeedApiItem>();
-    for (const item of allItems) {
-      // Ensure item and item.data exist before accessing id
-      if (item?.data?.id) {
-        const itemId = item.data.id;
-        if (!uniqueItemsMap.has(itemId)) {
-          uniqueItemsMap.set(itemId, item);
+    // 4. Her sayfanın items array'ini güvenli şekilde al ve birleştir
+    const allItems: FeedApiItem[] = [];
+    for (const page of validPages) {
+      // Her sayfa için items kontrolü
+      if (page && typeof page === 'object' && 'items' in page) {
+        const pageItems = page.items;
+        // items array mi kontrol et
+        if (Array.isArray(pageItems)) {
+          // Her item'ı güvenli şekilde ekle
+          for (const item of pageItems) {
+            if (item != null && typeof item === 'object') {
+              allItems.push(item);
+            }
+          }
         }
       }
     }
     
+    // 5. Duplicate'leri ID'ye göre kaldır (cursor pagination'da aynı item tekrar gelebilir)
+    const uniqueItemsMap = new Map<string, FeedApiItem>();
+    for (const item of allItems) {
+      // Her item için data ve id kontrolü
+      if (item && typeof item === 'object' && 'data' in item) {
+        const itemData = item.data;
+        if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
+          const itemId = String(itemData.id);
+          // Sadece daha önce eklenmemişse ekle
+          if (!uniqueItemsMap.has(itemId)) {
+            uniqueItemsMap.set(itemId, item);
+          }
+        }
+      }
+    }
+    
+    // 6. Map'ten array'e çevir ve döndür
     return Array.from(uniqueItemsMap.values());
   }, [data?.pages]);
 
@@ -200,7 +233,10 @@ export const FeedScreen = () => {
   const mapFeedToCardData = (item: ProfilePost): PostCardData => {
     // content array ise string'e çevir, değilse direkt kullan
     const contentString = Array.isArray(item.content)
-      ? item.content.map((contentItem) => contentItem.content || '').join(' ')
+      ? item.content
+          .filter((contentItem) => contentItem != null) // Filter out null/undefined items
+          .map((contentItem) => contentItem?.content || '')
+          .join(' ')
       : (item.content || '');
 
     return {
@@ -212,7 +248,9 @@ export const FeedScreen = () => {
         avatar: toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png'),
       },
       content: contentString,
-      images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+      images: Array.isArray(item.images) 
+        ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+        : [],
       stats: item.stats,
       createdAt: item.createdAt,
       contextType: item.contextType,
@@ -228,16 +266,18 @@ export const FeedScreen = () => {
       : undefined;
 
     const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
-      ? item.content.map((contentItem) => ({
-          tag: {
-            icon: 'tag',
-            title: contentItem.title,
-          },
-          text: contentItem.content,
-          rating: Array(5)
-            .fill(false)
-            .map((_, index) => index < (contentItem.rating || 0)),
-        }))
+      ? item.content
+          .filter((contentItem) => contentItem != null) // Filter out null/undefined items
+          .map((contentItem) => ({
+            tag: {
+              icon: 'tag',
+              title: contentItem?.title || '',
+            },
+            text: contentItem?.content || '',
+            rating: Array(5)
+              .fill(false)
+              .map((_, index) => index < (contentItem?.rating || 0)),
+          }))
       : [];
 
     return {
@@ -258,9 +298,11 @@ export const FeedScreen = () => {
       },
       content,
       tags: item.tags,
-      images: item.images
-        ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+      images: Array.isArray(item.images)
+        ? item.images
+            .map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+        : [],
       stats: item.stats,
       createdAt: item.createdAt,
     };
@@ -271,14 +313,16 @@ export const FeedScreen = () => {
     const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
 
     const products: BenchmarkProduct[] = (item.products && Array.isArray(item.products))
-      ? item.products.map((p) => ({
-          id: p.id,
-          name: p.name,
-          subName: p.subName,
-          image: toImageSource(p?.image) || require('@/assets/inventory/product_01.png'),
-          isOwned: p.isOwned,
-          choice: p.choice,
-        }))
+      ? item.products
+          .filter((p) => p != null) // Filter out null/undefined products
+          .map((p) => ({
+            id: p?.id || '',
+            name: p?.name || '',
+            subName: p?.subName || '',
+            image: toImageSource(p?.image) || require('@/assets/inventory/product_01.png'),
+            isOwned: p?.isOwned || false,
+            choice: p?.choice || false,
+          }))
       : [];
 
     return {
@@ -329,9 +373,11 @@ export const FeedScreen = () => {
       },
       category,
       content: item.content,
-      images: item.images
-        ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+      images: Array.isArray(item.images)
+        ? item.images
+            .map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+        : [],
       stats: item.stats,
       tag: item.tag,
       createdAt: item.createdAt,
@@ -373,9 +419,11 @@ export const FeedScreen = () => {
       category,
       content: item.content,
       isBoosted: item.isBoosted,
-      images: item.images
-        ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+      images: Array.isArray(item.images)
+        ? item.images
+            .map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+        : [],
       stats: item.stats,
       createdAt: item.createdAt,
     };
@@ -393,25 +441,69 @@ export const FeedScreen = () => {
       productInfoType = ProductInfoType.SUB_CATEGORY;
     }
 
+    // relatedPost null check - eğer yoksa default değerler kullan
+    if (!item.relatedPost) {
+      console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
+      // Return a safe default structure
+      return {
+        id: item.id,
+        user: {
+          id: item.user.id,
+          name: item.user.name,
+          title: item.user.title,
+          avatar: avatarSource,
+        },
+        stats: item.stats,
+        createdAt: item.createdAt,
+        contextType: productInfoType,
+        product: {
+          id: '',
+          name: '',
+          subName: '',
+          image: require('@/assets/inventory/product_01.png'),
+          isOwned: false,
+        },
+        content: item.content || '',
+        images: Array.isArray(item.images)
+          ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+          : [],
+        relatedPost: {
+          id: '',
+          product: {
+            id: '',
+            name: '',
+            subName: '',
+            image: require('@/assets/inventory/product_01.png'),
+            isOwned: false,
+          },
+          content: [],
+          tags: [],
+          images: [],
+        },
+      };
+    }
+
     // relatedPost.content formatını component'in beklediği formata çevir
     const relatedPostContent = (item.relatedPost?.content && Array.isArray(item.relatedPost.content))
-      ? item.relatedPost.content.map((contentItem) => {
-          // Rating'i number'dan number[]'e çevir (5 yıldız için)
-          const ratingArray: number[] = Array(5).fill(0);
-          const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5); // 0-100'den 0-5'e çevir
-          for (let i = 0; i < ratingValue; i++) {
-            ratingArray[i] = 1;
-          }
+      ? item.relatedPost.content
+          .filter((contentItem) => contentItem != null) // Filter out null/undefined items
+          .map((contentItem) => {
+            // Rating'i number'dan number[]'e çevir (5 yıldız için)
+            const ratingArray: number[] = Array(5).fill(0);
+            const ratingValue = Math.min(Math.max(Math.round((contentItem?.rating || 0) / 20), 0), 5); // 0-100'den 0-5'e çevir
+            for (let i = 0; i < ratingValue; i++) {
+              ratingArray[i] = 1;
+            }
 
-          return {
-            tag: {
-              icon: 'tag',
-              title: contentItem.title,
-            },
-            text: contentItem.content,
-            rating: ratingArray,
-          };
-        })
+            return {
+              tag: {
+                icon: 'tag',
+                title: contentItem?.title || '',
+              },
+              text: contentItem?.content || '',
+              rating: ratingArray,
+            };
+          })
       : [];
 
     return {
@@ -426,31 +518,41 @@ export const FeedScreen = () => {
       createdAt: item.createdAt,
       contextType: productInfoType,
       product: {
-        id: item.relatedPost.product.id,
-        name: item.relatedPost.product.name,
-        subName: item.relatedPost.product.subName,
-        image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
-        isOwned: item.relatedPost.product.isOwned,
+        id: item.relatedPost?.product?.id || '',
+        name: item.relatedPost?.product?.name || '',
+        subName: item.relatedPost?.product?.subName || '',
+        image: toImageSource(item.relatedPost?.product?.image) || require('@/assets/inventory/product_01.png'),
+        isOwned: item.relatedPost?.product?.isOwned || false,
       },
-      content: item.content,
-      images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+      content: item.content || '',
+      images: Array.isArray(item.images)
+        ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+        : [],
       relatedPost: {
-        id: item.relatedPost.id,
+        id: item.relatedPost?.id || '',
         product: {
-          id: item.relatedPost.product.id,
-          name: item.relatedPost.product.name,
-          subName: item.relatedPost.product.subName,
-          image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
-          isOwned: item.relatedPost.product.isOwned,
+          id: item.relatedPost?.product?.id || '',
+          name: item.relatedPost?.product?.name || '',
+          subName: item.relatedPost?.product?.subName || '',
+          image: toImageSource(item.relatedPost?.product?.image) || require('@/assets/inventory/product_01.png'),
+          isOwned: item.relatedPost?.product?.isOwned || false,
         },
         content: relatedPostContent,
-        tags: item.relatedPost.tags,
-        images: item.relatedPost.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+        tags: (item.relatedPost?.tags && Array.isArray(item.relatedPost.tags)) ? item.relatedPost.tags : [],
+        images: (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
+          ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+          : [],
       },
     };
   };
 
   const renderFeedItem = (item: FeedApiItem) => {
+    // Safety check: ensure item and item.data exist
+    if (!item || !item.data || !item.data.id) {
+      console.warn('[FeedScreen] Invalid feed item:', item);
+      return null;
+    }
+
     switch (item.type) {
       case CardType.EXPERIENCE:
         // Experience type için ReviewApiItem kullan ve ExperiencePostCard render et

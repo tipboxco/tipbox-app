@@ -172,18 +172,22 @@ export const getFilteredFeed = async (
   // İlgi Alanı (Interests) - Array olarak gönderilir
   // Backend'de category ile birleştirilir (OR mantığı)
   // Query: interests[]=category-id-1&interests[]=category-id-2
-  if (filters?.interests && filters.interests.length > 0) {
+  if (filters?.interests && Array.isArray(filters.interests) && filters.interests.length > 0) {
     filters.interests.forEach((interest) => {
-      params.append('interests[]', interest);
+      if (interest) {
+        params.append('interests[]', interest);
+      }
     });
   }
   
   // Etiket (Tags) - Array olarak gönderilir
   // Desteklenen: Review, Benchmark, Tips, Question, Experience, Update
   // Query: tags[]=Review&tags[]=Benchmark
-  if (filters?.tags && filters.tags.length > 0) {
+  if (filters?.tags && Array.isArray(filters.tags) && filters.tags.length > 0) {
     filters.tags.forEach((tag) => {
-      params.append('tags[]', tag);
+      if (tag) {
+        params.append('tags[]', tag);
+      }
     });
   }
   
@@ -237,11 +241,13 @@ export const getFilteredFeed = async (
       data: {
         itemsCount: safeResponse.items.length,
         pagination: safeResponse.pagination,
-        items: safeResponse.items.map((item) => ({
-          type: item.type,
-          id: item.data?.id,
-          title: item.data?.title || item.data?.content?.substring(0, 50) || 'N/A',
-        })),
+        items: Array.isArray(safeResponse.items) 
+          ? safeResponse.items.map((item) => ({
+              type: item?.type || 'unknown',
+              id: item?.data?.id || 'unknown',
+              title: item?.data?.title || item?.data?.content?.substring(0, 50) || 'N/A',
+            }))
+          : [],
       },
       fullResponse: safeResponse,
     });
