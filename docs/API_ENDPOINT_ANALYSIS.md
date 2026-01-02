@@ -5,8 +5,8 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 ## 📊 Genel Durum
 
 - **Toplam Endpoint:** ~100+
-- **Bağlı Endpoint:** ~60+
-- **Eksik Endpoint:** ~40+
+- **Bağlı Endpoint:** ~95+
+- **Eksik Endpoint:** ~5 (çoğunlukla opsiyonel veya admin endpoint'leri)
 
 ---
 
@@ -16,12 +16,12 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 |----------|--------|-------|-------|-----|
 | `/auth/login` | POST | ✅ Bağlı | `authApi.ts` | - |
 | `/auth/register` | POST | ✅ Bağlı | `authApi.ts` | - |
-| `/auth/verify-email` | POST | ❌ Eksik | - | - |
-| `/auth/me` | GET | ❌ Eksik | - | - |
-| `/auth/forgot-password` | POST | ❌ Eksik | - | - |
-| `/auth/verify-reset-code` | POST | ❌ Eksik | - | - |
-| `/auth/reset-password` | POST | ❌ Eksik | - | - |
-| `/auth/logout` | POST | ❌ Eksik | - | - |
+| `/auth/verify-email` | POST | ✅ Bağlı | `authApi.ts` | - |
+| `/auth/me` | GET | ✅ Bağlı | `authApi.ts` | getCurrentUser |
+| `/auth/forgot-password` | POST | ✅ Bağlı | `authApi.ts` | - |
+| `/auth/verify-reset-code` | POST | ✅ Bağlı | `authApi.ts` | - |
+| `/auth/reset-password` | POST | ✅ Bağlı | `authApi.ts` | - |
+| `/auth/logout` | POST | ✅ Bağlı | `authApi.ts` | - |
 
 ---
 
@@ -31,8 +31,8 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 |----------|--------|-------|-------|-----|
 | `/users/me/profile` | GET | ✅ Bağlı | `profileApi.ts` | - |
 | `/users/me/profile` | PUT | ✅ Bağlı | `profileApi.ts` | - |
-| `/users/me/avatar` | POST | ❌ Eksik | - | - |
-| `/users/me/banner` | POST | ❌ Eksik | - | - |
+| `/users/me/avatar` | POST | ✅ Bağlı | `profileApi.ts` | uploadAvatar |
+| `/users/me/banner` | POST | ✅ Bağlı | `profileApi.ts` | uploadBanner |
 | `/users/:userId/profile` | GET | ✅ Bağlı | `profileApi.ts` | - |
 | `/users/:userId/feed` | GET | ✅ Bağlı | `profileApi.ts` | - |
 
@@ -42,14 +42,14 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 
 | Endpoint | Method | Durum | Dosya | Not |
 |----------|--------|-------|-------|-----|
-| `/wallets` | GET | ❌ Eksik | - | WalletScreen mock data kullanıyor |
-| `/wallets/active` | GET | ❌ Eksik | - | - |
-| `/wallets/connect` | POST | ❌ Eksik | - | - |
-| `/wallets/:id/disconnect` | PATCH | ❌ Eksik | - | - |
-| `/wallets/:id/activate` | PATCH | ❌ Eksik | - | - |
-| `/wallets/:id` | DELETE | ❌ Eksik | - | - |
+| `/wallets` | GET | ✅ Bağlı | `walletApi.ts` | getWallets |
+| `/wallets/active` | GET | ✅ Bağlı | `walletApi.ts` | getActiveWallet |
+| `/wallets/connect` | POST | ✅ Bağlı | `walletApi.ts` | connectWallet |
+| `/wallets/:id/disconnect` | PATCH | ✅ Bağlı | `walletApi.ts` | disconnectWallet |
+| `/wallets/:id/activate` | PATCH | ✅ Bağlı | `walletApi.ts` | activateWallet |
+| `/wallets/:id` | DELETE | ✅ Bağlı | `walletApi.ts` | deleteWallet |
 
-**Not:** WalletScreen mock transaction data kullanıyor. Tüm wallet endpoint'leri eksik.
+**Not:** Tüm wallet endpoint'leri entegre edildi. Transaction endpoint'i backend'de henüz tanımlı değil.
 
 ---
 
@@ -70,9 +70,9 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 | `/posts/question` | POST | ✅ Bağlı | `postApi.ts` | - |
 | `/posts/tips-and-tricks` | POST | ✅ Bağlı | `postApi.ts` | - |
 | `/posts/experience` | POST | ✅ Bağlı | `postApi.ts` | - |
-| `/posts/:postId` | GET | ❌ Eksik | - | - |
-| `/posts/:postId` | PUT | ❌ Eksik | - | - |
-| `/posts/:postId` | DELETE | ❌ Eksik | - | - |
+| `/posts/:postId` | GET | ✅ Bağlı | `postApi.ts` | getPostDetail |
+| `/posts/:postId` | PUT | ✅ Bağlı | `postApi.ts` | updatePost |
+| `/posts/:postId` | DELETE | ✅ Bağlı | `postApi.ts` | deletePost |
 
 ---
 
@@ -100,7 +100,7 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 | Endpoint | Method | Durum | Dosya | Not |
 |----------|--------|-------|-------|-----|
 | `/messages` | GET | ✅ Bağlı | `messagesApi.ts` | - |
-| `/messages/feed` | GET | ❌ Eksik | - | - |
+| `/messages/feed` | GET | ✅ Bağlı | `messagesApi.ts` | getMessageFeed |
 | `/messages` | POST | ✅ Bağlı | `messagesApi.ts` | sendDirectMessage |
 | `/messages/threads` | POST | ✅ Bağlı | `messagesApi.ts` | - |
 | `/messages/:threadId` | GET | ✅ Bağlı | `messagesApi.ts` | - |
@@ -117,14 +117,14 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 
 | Endpoint | Method | Durum | Dosya | Not |
 |----------|--------|-------|-------|-----|
-| `/inventory` | POST | ❌ Eksik | - | - |
+| `/inventory` | POST | ✅ Bağlı | `profileApi.ts` | addInventoryItem |
 | `/inventory` | GET | ✅ Bağlı | `profileApi.ts` | getInventory |
-| `/inventory/:inventoryId` | PATCH | ❌ Eksik | - | - |
-| `/inventory/:inventoryId` | DELETE | ❌ Eksik | - | - |
-| `/inventory/experience/options` | GET | ❌ Eksik | - | - |
-| `/inventory/split-experience` | POST | ❌ Eksik | - | - |
+| `/inventory/:inventoryId` | PATCH | ✅ Bağlı | `profileApi.ts` | updateInventoryItem |
+| `/inventory/:inventoryId` | DELETE | ✅ Bağlı | `profileApi.ts` | deleteInventoryItem |
+| `/inventory/experience/options` | GET | ✅ Bağlı | `profileApi.ts` | getExperienceOptions |
+| `/inventory/split-experience` | POST | ✅ Bağlı | `profileApi.ts` | splitExperience |
 
-**Not:** `splitExperience` postApi.ts'de var ama `/inventory/split-experience` değil `/posts/experience/split` olarak bağlı.
+**Not:** Tüm inventory endpoint'leri entegre edildi. `splitExperience` hem `profileApi.ts` hem de `postApi.ts`'de mevcut (farklı endpoint'ler).
 
 ---
 
@@ -135,10 +135,10 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 | `/marketplace/listings` | GET | ✅ Bağlı | `marketplaceApi.ts` | - |
 | `/marketplace/my-nfts` | GET | ✅ Bağlı | `marketplaceApi.ts` | - |
 | `/marketplace/listings` | POST | ✅ Bağlı | `marketplaceApi.ts` | - |
-| `/marketplace/listings/:listingId/price` | PUT | ❌ Eksik | - | - |
-| `/marketplace/listings/:listingId` | DELETE | ❌ Eksik | - | - |
-| `/marketplace/sell/:nftId` | GET | ❌ Eksik | - | - |
-| `/marketplace/sell/:nftId/detail` | GET | ❌ Eksik | - | - |
+| `/marketplace/listings/:listingId/price` | PUT | ✅ Bağlı | `marketplaceApi.ts` | updateListingPrice |
+| `/marketplace/listings/:listingId` | DELETE | ✅ Bağlı | `marketplaceApi.ts` | deleteListing |
+| `/marketplace/sell/:nftId` | GET | ✅ Bağlı | `marketplaceApi.ts` | getNFTSellInfo |
+| `/marketplace/sell/:nftId/detail` | GET | ✅ Bağlı | `marketplaceApi.ts` | getNFTSellDetail |
 
 ---
 
@@ -158,11 +158,11 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 
 | Endpoint | Method | Durum | Dosya | Not |
 |----------|--------|-------|-------|-----|
-| `/expert/balance` | GET | ❌ Eksik | - | - |
-| `/expert/request` | POST | ❌ Eksik | - | - |
-| `/expert/requests` | GET | ❌ Eksik | - | - |
-| `/expert/requests/:requestId` | GET | ❌ Eksik | - | - |
-| `/expert/requests/:requestId/answer` | POST | ❌ Eksik | - | - |
+| `/expert/balance` | GET | ✅ Bağlı | `expertApi.ts` | getExpertBalance |
+| `/expert/request` | POST | ✅ Bağlı | `expertApi.ts` | createExpertRequest |
+| `/expert/requests` | GET | ✅ Bağlı | `expertApi.ts` | getExpertRequests |
+| `/expert/requests/:requestId` | GET | ✅ Bağlı | `expertApi.ts` | getExpertRequestDetail |
+| `/expert/requests/:requestId/answer` | POST | ✅ Bağlı | `expertApi.ts` | answerExpertRequest |
 
 ---
 
@@ -175,8 +175,8 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 | `/events/active` | GET | ✅ Bağlı | `communityEventsApi.ts` | - |
 | `/events/upcoming` | GET | ✅ Bağlı | `communityEventsApi.ts` | - |
 | `/events/:eventId` | GET | ✅ Bağlı | `communityEventsApi.ts` | - |
-| `/events/:eventId/posts` | GET | ❌ Eksik | - | - |
-| `/events/:eventId/badges` | GET | ❌ Eksik | - | - |
+| `/events/:eventId/posts` | GET | ✅ Bağlı | `communityEventsApi.ts` | getEventPosts |
+| `/events/:eventId/badges` | GET | ✅ Bağlı | `communityEventsApi.ts` | getEventBadges |
 
 ---
 
@@ -184,9 +184,9 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 
 | Endpoint | Method | Durum | Dosya | Not |
 |----------|--------|-------|-------|-----|
-| `/search` | GET | ❌ Eksik | - | SearchModal mock data kullanıyor |
+| `/search` | GET | ✅ Bağlı | `searchApi.ts` | search |
 
-**Not:** SearchModal mock data kullanıyor, endpoint bağlı değil.
+**Not:** Search endpoint entegre edildi. React Query hook'u (`useSearch`) mevcut.
 
 ---
 
@@ -229,44 +229,41 @@ Bu dosya, COMPLETE_API_DOCUMENTATION.md'deki tüm endpoint'lerin mevcut durumunu
 
 ## 📝 Özet
 
-### ✅ Bağlı Kategoriler
-- Feed (1/1)
-- Interaction (12/12)
-- Notification (9/9)
-- Catalog (4/4)
-- Brand (3/3)
-- Explore (5/5)
-
-### ⚠️ Kısmen Bağlı Kategoriler
-- Authentication (2/8)
-- User Management (3/6)
-- Post (5/8)
-- Messaging (10/11)
-- Event (5/7)
-- Marketplace (3/7)
-- Inventory (1/6)
-
-### ❌ Eksik Kategoriler
-- Wallet (0/6) - Tüm endpoint'ler eksik
-- Expert (0/5) - Tüm endpoint'ler eksik
-- Search (0/1) - Endpoint eksik
+### ✅ Tamamen Bağlı Kategoriler
+- Feed (1/1) ✅
+- Interaction (12/12) ✅
+- Notification (9/9) ✅
+- Catalog (4/4) ✅
+- Brand (3/3) ✅
+- Explore (5/5) ✅
+- Authentication (8/8) ✅
+- User Management (6/6) ✅
+- Post (8/8) ✅
+- Messaging (11/11) ✅
+- Event (7/7) ✅
+- Marketplace (7/7) ✅
+- Inventory (6/6) ✅
+- Wallet (6/6) ✅
+- Expert (5/5) ✅
+- Search (1/1) ✅
 
 ---
 
-## 🔧 Öncelik Sırası
+## ✅ Entegrasyon Durumu
 
-### Yüksek Öncelik
-1. **Search** - Temel özellik, SearchModal mock data kullanıyor
-2. **Wallet** - WalletScreen mock data kullanıyor, kritik özellik
-3. **Auth** - verify-email, logout gibi temel özellikler eksik
+Tüm endpoint'ler başarıyla entegre edildi! API dokümantasyonundaki tüm endpoint'ler için:
+- ✅ API fonksiyonları (`*Api.ts` dosyalarında)
+- ✅ React Query hooks (`hooks.ts` dosyalarında)
+- ✅ TypeScript type tanımları
+- ✅ Error handling
+- ✅ Cache invalidation stratejileri
 
-### Orta Öncelik
-4. **Post** - GET, PUT, DELETE endpoint'leri eksik
-5. **Inventory** - POST, PATCH, DELETE endpoint'leri eksik
-6. **User Management** - Avatar/Banner upload eksik
+## 📝 Notlar
 
-### Düşük Öncelik
-7. **Expert** - Expert özelliği
-8. **Marketplace** - Listing güncelleme/silme endpoint'leri
-9. **Event** - Event posts/badges endpoint'leri
+1. **Wallet Transactions**: Backend'de henüz tanımlı değil, placeholder olarak bırakıldı.
+2. **Split Experience**: İki farklı endpoint var:
+   - `/inventory/split-experience` (profileApi.ts)
+   - `/posts/experience/split` (postApi.ts)
+3. **Message Feed**: `/messages/feed` endpoint'i entegre edildi.
+4. **Event Posts & Badges**: Her iki endpoint de entegre edildi ve React Query hooks'ları mevcut.
 

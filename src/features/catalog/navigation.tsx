@@ -22,10 +22,10 @@ export type CatalogStackParamList = {
   NewsDetailScreen: { newsId: string };
   SurveyScreen: { brandId: string };
   BrandEventsDetailScreen: undefined;
-  BrandHistoryScreen: undefined;
-  BrandSurveyListScreen: undefined;
-  BrandPostListScreen: undefined;
-  BrandEventsScreen: undefined;
+  BrandHistoryScreen: { brandId: string };
+  BrandSurveyListScreen: { brandId: string };
+  BrandPostListScreen: { brandId: string };
+  BrandEventsScreen: { brandId: string };
 };
 
 const CatalogStack = createNativeStackNavigator<CatalogStackParamList>();

@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getLimitedEvent, getAchievements, createEventPost, type CreateEventPostRequest, type CreateEventPostResponse } from './communityEventsApi';
+import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getEventBadges, getLimitedEvent, getAchievements, createEventPost, joinEvent, getEventRequirements, type CreateEventPostRequest, type CreateEventPostResponse, type EventBadgesResponse, type EventRequirementsResponse } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
@@ -8,7 +8,7 @@ import { feedKeys } from '@/src/features/feed/api/hooks';
 /**
  * Query Keys - Events feature için cache key pattern'leri
  */
-export const eventsKeys = {
+export const   eventsKeys = {
   all: ['events'] as const,
   active: (cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'active', cursor, limit] as const,
@@ -17,9 +17,12 @@ export const eventsKeys = {
   detail: (eventId: string) => [...eventsKeys.all, 'detail', eventId] as const,
   posts: (eventId: string, cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'posts', eventId, cursor, limit] as const,
+  badges: (eventId: string, cursor?: string, limit?: number) =>
+    [...eventsKeys.all, 'badges', eventId, cursor, limit] as const,
   limited: () => [...eventsKeys.all, 'limited'] as const,
   achievements: (cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'achievements', cursor, limit] as const,
+  requirements: (eventId: string) => [...eventsKeys.all, 'requirements', eventId] as const,
 };
 
 /**
@@ -157,6 +160,43 @@ export const useEventPosts = (eventId: string, limit: number = 20) => {
 };
 
 /**
+ * Get Event Badges infinite query hook
+ * Belirli bir event'in badge'lerini infinite scroll ile getirir
+ * 
+ * Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+ *
+ * @param eventId - Event ID
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useEventBadges('eventId123');
+ */
+export const useEventBadges = (eventId: string, limit: number = 20) => {
+  return useInfiniteQuery<EventBadgesResponse, Error>({
+    queryKey: eventsKeys.badges(eventId, undefined, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getEventBadges(eventId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination.cursor;
+    },
+    enabled: !!eventId, // eventId varsa query çalışır
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
+    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    retry: 1,
+  });
+};
+
+/**
  * Get Limited Event query hook
  * /events/limited endpoint'inden limited event bilgilerini getirir
  * 
@@ -249,6 +289,59 @@ export const useCreateEventPost = (eventId: string) => {
       // 5. Active events listesini invalidate et (event post sayısı değişebilir)
       queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
     },
+  });
+};
+
+/**
+ * Join Event mutation hook
+ * Etkinliğe katılır
+ *
+ * @returns React Query mutation hook
+ *
+ * @example
+ * const joinEventMutation = useJoinEvent();
+ * joinEventMutation.mutate('event-123');
+ */
+export const useJoinEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<EventDetailApiResponse, Error, string>({
+    mutationFn: joinEvent,
+    onSuccess: (data, eventId) => {
+      // Event detail query'sini invalidate et
+      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      // Active ve upcoming events query'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
+      queryClient.invalidateQueries({ queryKey: eventsKeys.upcoming() });
+    },
+  });
+};
+
+/**
+ * Get Event Requirements query hook
+ * Etkinlik gereksinimleri ve ilerleme bilgilerini getirir
+ *
+ * @param eventId - Event ID
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useEventRequirements('event-123');
+ */
+export const useEventRequirements = (eventId: string | undefined) => {
+  return useQuery<EventRequirementsResponse, Error>({
+    queryKey: eventId ? eventsKeys.requirements(eventId) : ['events', 'requirements', 'disabled'],
+    queryFn: () => {
+      if (!eventId) {
+        throw new Error('Event ID is required');
+      }
+      return getEventRequirements(eventId);
+    },
+    enabled: !!eventId,
+    staleTime: 1 * 60 * 1000, // 1 dakika - ilerleme sık değişebilir
+    gcTime: 5 * 60 * 1000, // 5 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 };
 

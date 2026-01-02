@@ -1,5 +1,16 @@
 import { apiService } from '../../../services/ApiService';
-import type { BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse } from '../types';
+import type { 
+  BrandCategory, 
+  BrandListItem, 
+  BrandCatalogResponse, 
+  BrandFeedResponse, 
+  BrandProductBookResponse, 
+  BrandSurveysResponse, 
+  BrandTrendsResponse, 
+  BrandEventsResponse,
+  BrandHistory,
+  BrandStats
+} from '../types';
 
 /**
  * Get Brand Categories endpoint function
@@ -339,6 +350,60 @@ export const getBrandEvents = async (
   } catch (error: any) {
     console.error('[getBrandEvents] API Error:', {
       url: `/brands/${brandId}/events?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand History endpoint function
+ * /brands/{brandId}/history API'sinden marka geçmişi, istatistikler, rozetler, puan geçmişi getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns BrandHistory - Marka geçmişi bilgileri
+ */
+export const getBrandHistory = async (
+  brandId: string
+): Promise<BrandHistory> => {
+  try {
+    const response = await apiService.getClient().get<BrandHistory>(
+      `/brands/${brandId}/history`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandHistory] API Error:', {
+      url: `/brands/${brandId}/history`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Stats endpoint function
+ * /brands/{brandId}/stats API'sinden marka istatistiklerini getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns BrandStats - Marka istatistikleri (surveys, shares, events, totalPoints)
+ */
+export const getBrandStats = async (
+  brandId: string
+): Promise<BrandStats> => {
+  try {
+    const response = await apiService.getClient().get<BrandStats>(
+      `/brands/${brandId}/stats`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandStats] API Error:', {
+      url: `/brands/${brandId}/stats`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

@@ -1,8 +1,8 @@
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse } from '../types';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail } from './catalogApi';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -22,9 +22,17 @@ export const catalogKeys = {
     [...catalogKeys.all, 'brandTrends', brandId, limit] as const,
   brandEvents: (brandId: string, limit?: number) => 
     [...catalogKeys.all, 'brandEvents', brandId, limit] as const,
+  brandHistory: (brandId: string) => [...catalogKeys.all, 'brandHistory', brandId] as const,
+  brandStats: (brandId: string) => [...catalogKeys.all, 'brandStats', brandId] as const,
   subCategories: (categoryId: string) => [...catalogKeys.all, 'subCategories', categoryId] as const,
   productGroups: (subCategoryId: string) => [...catalogKeys.all, 'productGroups', subCategoryId] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
+  productDetail: (productId: string) => [...catalogKeys.all, 'productDetail', productId] as const,
+  productPosts: (productId: string, type?: string, cursor?: string, limit?: number) => 
+    [...catalogKeys.all, 'productPosts', productId, type, cursor, limit] as const,
+  productNews: (productId: string, cursor?: string, limit?: number) => 
+    [...catalogKeys.all, 'productNews', productId, cursor, limit] as const,
+  newsDetail: (newsId: string) => [...catalogKeys.all, 'newsDetail', newsId] as const,
 };
 
 /**
@@ -430,6 +438,200 @@ export const useBrandEvents = (brandId: string | undefined, limit: number = 20) 
     staleTime: 0, // Cache yok - veri hemen stale olur
     gcTime: 0, // Cache yok - veri hemen temizlenir
     refetchOnMount: 'always', // Her mount'ta yeniden fetch
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Product Detail query hook
+ * /products/{productId} endpoint'inden product detay bilgilerini getirir
+ *
+ * @param productId - Product ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useProductDetail('product-123');
+ */
+export const useProductDetail = (productId: string | undefined) => {
+  return useQuery<ProductDetail, Error>({
+    queryKey: productId ? catalogKeys.productDetail(productId) : ['catalog', 'productDetail', 'disabled'],
+    queryFn: () => {
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+      return getProductDetail(productId);
+    },
+    enabled: !!productId,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 30 * 60 * 1000, // 30 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Product Posts infinite query hook
+ * /products/{productId}/posts endpoint'inden product postlarını infinite scroll ile getirir
+ *
+ * @param productId - Product ID'si
+ * @param type - Post type (experience, comments, benchmark) - opsiyonel
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductPosts('product-123', 'experience');
+ */
+export const useProductPosts = (
+  productId: string | undefined,
+  type?: 'experience' | 'comments' | 'benchmark',
+  limit: number = 20
+) => {
+  return useInfiniteQuery<ProductPostsResponse, Error>({
+    queryKey: productId ? catalogKeys.productPosts(productId, type, undefined, limit) : ['catalog', 'productPosts', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getProductPosts(productId, type, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: !!productId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Product News infinite query hook
+ * /products/{productId}/news endpoint'inden product haberlerini infinite scroll ile getirir
+ *
+ * @param productId - Product ID'si
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductNews('product-123');
+ */
+export const useProductNews = (
+  productId: string | undefined,
+  limit: number = 20
+) => {
+  return useInfiniteQuery<ProductNewsResponse, Error>({
+    queryKey: productId ? catalogKeys.productNews(productId, undefined, limit) : ['catalog', 'productNews', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getProductNews(productId, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: !!productId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get News Detail query hook
+ * /news/{newsId} endpoint'inden news detay bilgilerini getirir
+ *
+ * @param newsId - News ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useNewsDetail('news-123');
+ */
+export const useNewsDetail = (newsId: string | undefined) => {
+  return useQuery<NewsDetail, Error>({
+    queryKey: newsId ? catalogKeys.newsDetail(newsId) : ['catalog', 'newsDetail', 'disabled'],
+    queryFn: () => {
+      if (!newsId) {
+        throw new Error('News ID is required');
+      }
+      return getNewsDetail(newsId);
+    },
+    enabled: !!newsId,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 30 * 60 * 1000, // 30 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand History query hook
+ * /brands/{brandId}/history endpoint'inden marka geçmişi bilgilerini getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useBrandHistory('brand-123');
+ */
+export const useBrandHistory = (brandId: string | undefined) => {
+  return useQuery<BrandHistory, Error>({
+    queryKey: brandId ? catalogKeys.brandHistory(brandId) : ['catalog', 'brandHistory', 'disabled'],
+    queryFn: () => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      return getBrandHistory(brandId);
+    },
+    enabled: !!brandId,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 30 * 60 * 1000, // 30 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Brand Stats query hook
+ * /brands/{brandId}/stats endpoint'inden marka istatistiklerini getirir
+ *
+ * @param brandId - Marka ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useBrandStats('brand-123');
+ */
+export const useBrandStats = (brandId: string | undefined) => {
+  return useQuery<BrandStats, Error>({
+    queryKey: brandId ? catalogKeys.brandStats(brandId) : ['catalog', 'brandStats', 'disabled'],
+    queryFn: () => {
+      if (!brandId) {
+        throw new Error('Brand ID is required');
+      }
+      return getBrandStats(brandId);
+    },
+    enabled: !!brandId,
+    staleTime: 5 * 60 * 1000, // 5 dakika
+    gcTime: 30 * 60 * 1000, // 30 dakika
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
   });

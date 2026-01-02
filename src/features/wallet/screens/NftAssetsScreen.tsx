@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, VStack, HStack, Text, Pressable, Image } from '@gluestack-ui/themed';
+import { Box, VStack, HStack, Text, Pressable, Image, ActivityIndicator } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
 import { WalletCardInfo } from '../components/WalletCardInfo';
+import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
+import { toImageSource } from '@/src/utils';
 
 interface NftItem {
   id: string;
@@ -23,58 +25,32 @@ export const NftAssetsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  // Mock NFT data
-  const nfts: NftItem[] = [
-    {
-      id: '1',
-      name: 'Everyday Consumer',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_01.png'),
-    },
-    {
-      id: '2',
-      name: 'Premium Shopper',
-      rarity: 'Rare',
-      rarityColor: 'rgba(255, 8, 152, 0.4)',
-      rarityBorderColor: '#EF4F75',
-      rarityTextColor: '#AB2847',
-      image: require('@/assets/badges/badge_02.png'),
-    },
-    {
-      id: '3',
-      name: 'Collector',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_03.png'),
-    },
-    {
-      id: '4',
-      name: 'Wishmaker',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_04.png'),
-    },
-    {
-      id: '5',
-      name: 'Hardware Expert',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_01.png'),
-    },
-    {
-      id: '6',
-      name: 'Early Tech Adopter',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_02.png'),
-    },
-  ];
+  // API hook
+  const { data: nftsData, isLoading: isLoadingNFTs, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyNFTs(12);
+
+  // Transform API NFTs data
+  const nfts: NftItem[] = useMemo(() => {
+    if (!nftsData?.pages) {
+      return [];
+    }
+    // Flatten all pages
+    const allNFTs = nftsData.pages.flat();
+    return allNFTs.map((nft: any) => ({
+      id: nft.id || nft.nftId || String(Math.random()),
+      name: nft.title || nft.name || 'Unnamed NFT',
+      rarity: (nft.rarity === 'Rare' || nft.rarity === 'EPIC' ? 'Rare' : 'Usual') as 'Usual' | 'Rare',
+      rarityColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
+        ? 'rgba(255, 8, 152, 0.4)' 
+        : 'rgba(211, 211, 211, 0.4)',
+      rarityBorderColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
+        ? '#EF4F75' 
+        : '#D4D4D4',
+      rarityTextColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
+        ? '#AB2847' 
+        : undefined,
+      image: nft.image ? toImageSource(nft.image) : require('@/assets/badges/badge_01.png'),
+    }));
+  }, [nftsData]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -158,85 +134,117 @@ export const NftAssetsScreen: React.FC = () => {
             </HStack>
 
             {/* NFT Grid */}
-            <VStack space="md">
-              {nfts.reduce((rows: NftItem[][], nft, index) => {
-                if (index % 2 === 0) {
-                  rows.push([nft]);
-                } else {
-                  rows[rows.length - 1].push(nft);
-                }
-                return rows;
-              }, []).map((row, rowIndex) => (
-                <HStack key={rowIndex} space="md" justifyContent="space-between">
-                  {row.map((nft) => (
-                    <Box key={nft.id} flex={1}>
-                      <Pressable onPress={() => navigation.navigate('NftAssetDetailScreen', { nft })}>
-                        <Box
-                          bg="$backgroundLight0"
-                          $dark-bg="$backgroundDark800"
-                          borderWidth={1}
-                          borderColor="#E9E9E9"
-                          $dark-borderColor="$borderDark600"
-                          rounded={5}
-                          overflow="hidden"
-                        >
-                          {/* NFT Image */}
+            {isLoadingNFTs ? (
+              <VStack alignItems="center" py="$8">
+                <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                  Loading NFTs...
+                </Text>
+              </VStack>
+            ) : nfts.length === 0 ? (
+              <VStack alignItems="center" py="$8">
+                <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                  No NFTs found
+                </Text>
+              </VStack>
+            ) : (
+              <VStack space="md">
+                {nfts.reduce((rows: NftItem[][], nft, index) => {
+                  if (index % 2 === 0) {
+                    rows.push([nft]);
+                  } else {
+                    rows[rows.length - 1].push(nft);
+                  }
+                  return rows;
+                }, []).map((row, rowIndex) => (
+                  <HStack key={rowIndex} space="md" justifyContent="space-between">
+                    {row.map((nft) => (
+                      <Box key={nft.id} flex={1}>
+                        <Pressable onPress={() => navigation.navigate('NftAssetDetailScreen', { nft })}>
                           <Box
-                            w="100%"
-                            h={190}
                             bg="$backgroundLight0"
                             $dark-bg="$backgroundDark800"
-                            alignItems="center"
-                            justifyContent="center"
-                            p="$4"
+                            borderWidth={1}
+                            borderColor="#E9E9E9"
+                            $dark-borderColor="$borderDark600"
+                            rounded={5}
+                            overflow="hidden"
                           >
-                            <Image
-                              source={nft.image}
-                              alt={nft.name}
-                              w={135}
-                              h={135}
-                              resizeMode="contain"
-                            />
-                          </Box>
-                          
-                          {/* NFT Info */}
-                          <VStack p="$4" space="sm" alignItems="center">
-                            {/* NFT Name - Above Badge */}
-                            <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
-                              {nft.name}
-                            </Text>
-                            {/* Rarity Badge */}
-                            <HStack
-                              bg={nft.rarityColor}
-                              $dark-bg={nft.rarityColor}
-                              borderWidth={1}
-                              borderColor={nft.rarityBorderColor}
-                              rounded={10}
-                              px="$4"
-                              py="$1"
+                            {/* NFT Image */}
+                            <Box
+                              w="100%"
+                              h={190}
+                              bg="$backgroundLight0"
+                              $dark-bg="$backgroundDark800"
                               alignItems="center"
-                              space="xs"
+                              justifyContent="center"
+                              p="$4"
                             >
-                              <Feather name="award" size={10} color={isDark ? '#FFFFFF' : '#000000'} />
-                              <Text 
-                                fontSize={9} 
-                                fontWeight="$medium" 
-                                color={nft.rarityTextColor || "$textLight900"} 
-                                $dark-color={nft.rarityTextColor || "$textDark50"}
-                              >
-                                {nft.rarity}
+                              <Image
+                                source={nft.image}
+                                alt={nft.name}
+                                w={135}
+                                h={135}
+                                resizeMode="contain"
+                              />
+                            </Box>
+                            
+                            {/* NFT Info */}
+                            <VStack p="$4" space="sm" alignItems="center">
+                              {/* NFT Name - Above Badge */}
+                              <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
+                                {nft.name}
                               </Text>
-                            </HStack>
-                          </VStack>
-                        </Box>
-                      </Pressable>
-                    </Box>
-                  ))}
-                  {/* Fill empty space if odd number of items */}
-                  {row.length === 1 && <Box flex={1} />}
-                </HStack>
-              ))}
-            </VStack>
+                              {/* Rarity Badge */}
+                              <HStack
+                                bg={nft.rarityColor}
+                                $dark-bg={nft.rarityColor}
+                                borderWidth={1}
+                                borderColor={nft.rarityBorderColor}
+                                rounded={10}
+                                px="$4"
+                                py="$1"
+                                alignItems="center"
+                                space="xs"
+                              >
+                                <Feather name="award" size={10} color={isDark ? '#FFFFFF' : '#000000'} />
+                                <Text 
+                                  fontSize={9} 
+                                  fontWeight="$medium" 
+                                  color={nft.rarityTextColor || "$textLight900"} 
+                                  $dark-color={nft.rarityTextColor || "$textDark50"}
+                                >
+                                  {nft.rarity}
+                                </Text>
+                              </HStack>
+                            </VStack>
+                          </Box>
+                        </Pressable>
+                      </Box>
+                    ))}
+                    {/* Fill empty space if odd number of items */}
+                    {row.length === 1 && <Box flex={1} />}
+                  </HStack>
+                ))}
+                {/* Load More Button */}
+                {hasNextPage && (
+                  <Pressable
+                    onPress={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    mt="$4"
+                    alignItems="center"
+                  >
+                    {isFetchingNextPage ? (
+                      <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                    ) : (
+                      <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        Load More
+                      </Text>
+                    )}
+                  </Pressable>
+                )}
+              </VStack>
+            )}
           </VStack>
         </VStack>
       </ScrollView>

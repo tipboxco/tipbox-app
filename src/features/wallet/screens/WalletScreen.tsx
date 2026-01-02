@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator } from 'react-native';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +14,8 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
 import { useSafeAreaValues } from '@/src/utils';
+import { useWalletBalance, useWalletTransactions } from '../api/hooks';
+import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
 
 export const WalletScreen: React.FC = () => {
       const navigation = useNavigation<any>();
@@ -24,6 +27,11 @@ export const WalletScreen: React.FC = () => {
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // API hooks
+  const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
+  const { data: transactionsData, isLoading: isLoadingTransactions } = useWalletTransactions();
+  const { data: nftsData, isLoading: isLoadingNFTs } = useMyNFTs();
   
   const [sendSheetView, setSendSheetView] = React.useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>('options');
   const [successTransactionDetails, setSuccessTransactionDetails] = React.useState<{
@@ -72,6 +80,13 @@ export const WalletScreen: React.FC = () => {
       );
     }, 300);
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
+
+  const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => {
+    console.log('[WalletScreen] View changing to:', view);
+    setSendSheetView(view);
+    // enableDynamicSizing kullanıldığında içerik otomatik olarak boyutlanır,
+    // bu yüzden snapToIndex çağrılarına gerek yok
+  }, []);
 
   const handleSendPress = useCallback(() => {
     console.log('[WalletScreen] Send button pressed');
@@ -133,42 +148,16 @@ export const WalletScreen: React.FC = () => {
     );
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
-  const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => {
-    console.log('[WalletScreen] View changing to:', view);
-    setSendSheetView(view);
-    // enableDynamicSizing kullanıldığında içerik otomatik olarak boyutlanır,
-    // bu yüzden snapToIndex çağrılarına gerek yok
-  }, []);
 
+  // Transform API transactions data to match component format
+  const transactions = useMemo(() => {
+    if (!transactionsData) {
+      return { today: [], yesterday: [], lastWeek: [], lastMonth: [] };
+    }
+    return transactionsData;
+  }, [transactionsData]);
 
-  // Mock transaction data grouped by date
-  const transactions = {
-    today: [
-      {
-        type: 'Bahşiş Gönderimi',
-        description: 'Ömer Faruk Demiral',
-        amount: '-50 TIPS',
-        amountColor: '#A23C3C',
-      },
-      {
-        type: 'TIPS Claim',
-        description: 'Toplu TIPS Claim Edildi.',
-        amount: '370 TIPS',
-        amountColor: '#3CA241',
-      },
-    ],
-    yesterday: [
-      {
-        type: 'Bahşiş Alındı',
-        description: 'Mehmet Koç',
-        amount: '80 TIPS',
-        amountColor: '#3CA241',
-        date: '11 July 2025',
-      },
-    ],
-  };
-
-  // Mock NFT data
+  // NFT Item interface
   interface NftItem {
     id: string;
     name: string;
@@ -179,57 +168,29 @@ export const WalletScreen: React.FC = () => {
     image: any;
   }
 
-  const nfts: NftItem[] = [
-    {
-      id: '1',
-      name: 'Everyday Consumer',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_01.png'),
-    },
-    {
-      id: '2',
-      name: 'Premium Shopper',
-      rarity: 'Rare',
-      rarityColor: 'rgba(255, 8, 152, 0.4)',
-      rarityBorderColor: '#EF4F75',
-      rarityTextColor: '#AB2847',
-      image: require('@/assets/badges/badge_02.png'),
-    },
-    {
-      id: '3',
-      name: 'Collector',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_03.png'),
-    },
-    {
-      id: '4',
-      name: 'Wishmaker',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_04.png'),
-    },
-    {
-      id: '5',
-      name: 'Hardware Expert',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_01.png'),
-    },
-    {
-      id: '6',
-      name: 'Early Tech Adopter',
-      rarity: 'Usual',
-      rarityColor: 'rgba(211, 211, 211, 0.4)',
-      rarityBorderColor: '#D4D4D4',
-      image: require('@/assets/badges/badge_02.png'),
-    },
-  ];
+  // Transform API NFTs data
+  const nfts: NftItem[] = useMemo(() => {
+    if (!nftsData?.pages) {
+      return [];
+    }
+    // Flatten all pages
+    const allNFTs = nftsData.pages.flat();
+    return allNFTs.map((nft: any) => ({
+      id: nft.id || nft.nftId || String(Math.random()),
+      name: nft.title || nft.name || 'Unnamed NFT',
+      rarity: (nft.rarity === 'Rare' || nft.rarity === 'EPIC' ? 'Rare' : 'Usual') as 'Usual' | 'Rare',
+      rarityColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
+        ? 'rgba(255, 8, 152, 0.4)' 
+        : 'rgba(211, 211, 211, 0.4)',
+      rarityBorderColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
+        ? '#EF4F75' 
+        : '#D4D4D4',
+      rarityTextColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
+        ? '#AB2847' 
+        : undefined,
+      image: nft.image || require('@/assets/badges/badge_01.png'),
+    }));
+  }, [nftsData]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -303,7 +264,13 @@ export const WalletScreen: React.FC = () => {
               <Box bg="$backgroundLight0" $dark-bg="$backgroundDark900" borderWidth={1} borderColor="$borderLight200" $dark-borderColor="$borderDark600" rounded={5} p="$4">
                 <VStack space="sm" alignItems="center">
                   <Text fontSize={14} color="#B9B9B9" fontWeight={'$bold'}>Current Balance</Text>
-                  <Text fontSize={38} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">20.000</Text>
+                  {isLoadingBalance ? (
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                  ) : (
+                    <Text fontSize={38} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+                      {walletBalance?.balance?.toFixed(2) || '0.00'}
+                    </Text>
+                  )}
                   <HStack space="sm" alignItems="center">
                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">-$0.24</Text>
                     <Box bg="$backgroundLight200" rounded={3} px="$1" h={16} justifyContent="center">
@@ -361,39 +328,101 @@ export const WalletScreen: React.FC = () => {
                 </HStack>
               </HStack>
 
-              {/* Today Section */}
-              <VStack space="md">
-                <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                  Today
-                </Text>
-                {transactions.today.map((transaction, index) => (
-                  <HistoryCard
-                    key={`today-${index}`}
-                    type={transaction.type}
-                    description={transaction.description}
-                    amount={transaction.amount}
-                    amountColor={transaction.amountColor}
-                  />
-                ))}
-              </VStack>
+              {/* Transaction History */}
+              {isLoadingTransactions ? (
+                <VStack alignItems="center" py="$8">
+                  <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                  <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                    Loading transactions...
+                  </Text>
+                </VStack>
+              ) : (
+                <>
+                  {/* Today Section */}
+                  {transactions.today && transactions.today.length > 0 && (
+                    <VStack space="md">
+                      <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
+                        Today
+                      </Text>
+                      {transactions.today.map((transaction: any, index: number) => (
+                        <HistoryCard
+                          key={`today-${index}`}
+                          type={transaction.type || transaction.description || 'Transaction'}
+                          description={transaction.description || transaction.message || ''}
+                          amount={transaction.amount || '0 TIPS'}
+                          amountColor={transaction.amountColor || '#000000'}
+                        />
+                      ))}
+                    </VStack>
+                  )}
 
-              {/* Yesterday Section */}
-              <VStack space="md">
-                <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
-                  Yesterday
-                </Text>
-                {transactions.yesterday.map((transaction, index) => (
-                  <HistoryCard
-                    key={`yesterday-${index}`}
-                    type={transaction.type}
-                    description={transaction.description}
-                    amount={transaction.amount}
-                    amountColor={transaction.amountColor}
-                    date={transaction.date}
-                    onCopyPress={() => {}}
-                  />
-                ))}
-              </VStack>
+                  {/* Yesterday Section */}
+                  {transactions.yesterday && transactions.yesterday.length > 0 && (
+                    <VStack space="md" mt="$4">
+                      <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
+                        Yesterday
+                      </Text>
+                      {transactions.yesterday.map((transaction: any, index: number) => (
+                        <HistoryCard
+                          key={`yesterday-${index}`}
+                          type={transaction.type || transaction.description || 'Transaction'}
+                          description={transaction.description || transaction.message || ''}
+                          amount={transaction.amount || '0 TIPS'}
+                          amountColor={transaction.amountColor || '#000000'}
+                        />
+                      ))}
+                    </VStack>
+                  )}
+
+                  {/* Last Week Section */}
+                  {transactions.lastWeek && transactions.lastWeek.length > 0 && (
+                    <VStack space="md" mt="$4">
+                      <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
+                        Last Week
+                      </Text>
+                      {transactions.lastWeek.map((transaction: any, index: number) => (
+                        <HistoryCard
+                          key={`lastWeek-${index}`}
+                          type={transaction.type || transaction.description || 'Transaction'}
+                          description={transaction.description || transaction.message || ''}
+                          amount={transaction.amount || '0 TIPS'}
+                          amountColor={transaction.amountColor || '#000000'}
+                        />
+                      ))}
+                    </VStack>
+                  )}
+
+                  {/* Last Month Section */}
+                  {transactions.lastMonth && transactions.lastMonth.length > 0 && (
+                    <VStack space="md" mt="$4">
+                      <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
+                        Last Month
+                      </Text>
+                      {transactions.lastMonth.map((transaction: any, index: number) => (
+                        <HistoryCard
+                          key={`lastMonth-${index}`}
+                          type={transaction.type || transaction.description || 'Transaction'}
+                          description={transaction.description || transaction.message || ''}
+                          amount={transaction.amount || '0 TIPS'}
+                          amountColor={transaction.amountColor || '#000000'}
+                        />
+                      ))}
+                    </VStack>
+                  )}
+
+                  {/* Empty State */}
+                  {(!transactions.today || transactions.today.length === 0) &&
+                   (!transactions.yesterday || transactions.yesterday.length === 0) &&
+                   (!transactions.lastWeek || transactions.lastWeek.length === 0) &&
+                   (!transactions.lastMonth || transactions.lastMonth.length === 0) && (
+                    <VStack alignItems="center" py="$8">
+                      <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        No transactions found
+                      </Text>
+                    </VStack>
+                  )}
+                </>
+              )}
             </VStack>
           </ScrollView>
         )}

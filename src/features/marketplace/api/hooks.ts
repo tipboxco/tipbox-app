@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMarketplaceListings, getMyNFTs, createListing, deleteListing } from './marketplaceApi';
+import { getMarketplaceListings, getMyNFTs, createListing, deleteListing, updateListingPrice, getNFTSellInfo, getNFTSellDetail } from './marketplaceApi';
 import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTsApiResponse } from '../types';
-import type { CreateListingRequest, CreateListingResponse, DeleteListingResponse } from './marketplaceApi';
+import type { CreateListingRequest, CreateListingResponse, DeleteListingResponse, UpdateListingPriceResponse, NFTSellInfo, NFTSellDetail } from './marketplaceApi';
 
 /**
  * Query Keys - Marketplace feature için cache key pattern'leri
@@ -140,6 +140,83 @@ export const useDeleteListing = () => {
     onError: (error) => {
       console.error('[useDeleteListing] Mutation error:', error);
     },
+  });
+};
+
+/**
+ * Update Listing Price mutation hook
+ * Listing fiyatını günceller
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: updatePrice, isPending } = useUpdateListingPrice();
+ * updatePrice({ listingId: 'listing-123', amount: 150.00 });
+ */
+export const useUpdateListingPrice = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<UpdateListingPriceResponse, Error, { listingId: string; amount: number }>({
+    mutationFn: ({ listingId, amount }) => updateListingPrice(listingId, amount),
+    onSuccess: () => {
+      // Listings ve myNFTs query'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
+    },
+    onError: (error) => {
+      console.error('[useUpdateListingPrice] Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Get NFT Sell Info query hook
+ * NFT satış bilgilerini getirir
+ *
+ * @param nftId - NFT ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useNFTSellInfo('nft-123');
+ */
+export const useNFTSellInfo = (nftId: string | undefined) => {
+  return useQuery<NFTSellInfo, Error>({
+    queryKey: [...marketplaceKeys.all, 'sell-info', nftId],
+    queryFn: () => {
+      if (!nftId) {
+        throw new Error('NFT ID is required');
+      }
+      return getNFTSellInfo(nftId);
+    },
+    enabled: !!nftId,
+    staleTime: 2 * 60 * 1000, // 2 dakika
+    gcTime: 5 * 60 * 1000, // 5 dakika
+    retry: 1,
+  });
+};
+
+/**
+ * Get NFT Sell Detail query hook
+ * NFT satış detay bilgilerini getirir
+ *
+ * @param nftId - NFT ID'si
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useNFTSellDetail('nft-123');
+ */
+export const useNFTSellDetail = (nftId: string | undefined) => {
+  return useQuery<NFTSellDetail, Error>({
+    queryKey: [...marketplaceKeys.all, 'sell-detail', nftId],
+    queryFn: () => {
+      if (!nftId) {
+        throw new Error('NFT ID is required');
+      }
+      return getNFTSellDetail(nftId);
+    },
+    enabled: !!nftId,
+    staleTime: 2 * 60 * 1000, // 2 dakika
+    gcTime: 5 * 60 * 1000, // 5 dakika
+    retry: 1,
   });
 };
 

@@ -341,3 +341,80 @@ export const getEventBadges = async (
   }
 };
 
+/**
+ * Event Requirements Response - /events/{eventId}/requirements endpoint'inden dönen response
+ */
+export interface EventRequirementsResponse {
+  eventId: string;
+  requirements: Array<{
+    id: string;
+    title: string;
+    description: string;
+    type: 'survey' | 'post' | 'share' | 'other';
+    completed: boolean;
+    progress?: {
+      current: number;
+      total: number;
+    };
+  }>;
+  overallProgress: {
+    completed: number;
+    total: number;
+    percentage: number;
+  };
+}
+
+/**
+ * Join Event endpoint function
+ * /events/{eventId}/join endpoint'ine POST request göndererek etkinliğe katılır
+ *
+ * @param eventId - Event ID'si
+ * @returns EventDetailApiResponse - Güncellenmiş event detay bilgileri
+ */
+export const joinEvent = async (
+  eventId: string
+): Promise<EventDetailApiResponse> => {
+  try {
+    const response = await apiService.getClient().post<EventDetailApiResponse>(
+      `/events/${eventId}/join`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[joinEvent] API Error:', {
+      url: `/events/${eventId}/join`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Event Requirements endpoint function
+ * /events/{eventId}/requirements endpoint'inden etkinlik gereksinimleri ve ilerleme bilgilerini getirir
+ *
+ * @param eventId - Event ID'si
+ * @returns EventRequirementsResponse - Etkinlik gereksinimleri ve ilerleme bilgisi
+ */
+export const getEventRequirements = async (
+  eventId: string
+): Promise<EventRequirementsResponse> => {
+  try {
+    const response = await apiService.getClient().get<EventRequirementsResponse>(
+      `/events/${eventId}/requirements`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getEventRequirements] API Error:', {
+      url: `/events/${eventId}/requirements`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+

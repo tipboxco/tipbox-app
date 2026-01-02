@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Platform, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -28,6 +28,7 @@ export const CatalogScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CatalogScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
   const [currentMode, setCurrentMode] = useState<'product' | 'brand-catalog' | 'brand-selection'>('product');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -358,16 +359,18 @@ export const CatalogScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box
         flex={1}
         bg={isDark ? '#1A1A1A' : '#FAFAFA'}
+        pt={insets.top}
       >
       {/* Görünmez Header - Yükseklik ölçümü için */}
       <Box
         position="absolute"
         opacity={0}
         pointerEvents="none"
+        top={insets.top}
         onLayout={(event) => {
           const { height } = event.nativeEvent.layout;
           setHeaderHeight(height);
@@ -384,7 +387,7 @@ export const CatalogScreen = () => {
       <Animated.View
         style={{
           position: 'absolute',
-          top: 0,
+          top: insets.top,
           left: 0,
           right: 0,
           zIndex: 9999,

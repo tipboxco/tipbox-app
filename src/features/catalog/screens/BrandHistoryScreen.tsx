@@ -2,8 +2,9 @@ import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
@@ -12,12 +13,16 @@ import PointsHistoryCard from '../components/PointsHistoryCard';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 
 type BrandHistoryScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandHistoryScreen'>;
+type BrandHistoryScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandHistoryScreen'>;
 
 const BrandHistoryScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandHistoryScreenNavigationProp>();
+  const route = useRoute<BrandHistoryScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
+  
+  const { brandId } = route.params;
 
   // Mock data for brand history
   const brandData = {
@@ -74,7 +79,7 @@ const BrandHistoryScreen: React.FC = () => {
           <HStack space="md">
             {/* Surveys */}
             <Pressable
-              onPress={() => navigation.navigate('BrandSurveyListScreen')}
+              onPress={() => navigation.navigate('BrandSurveyListScreen', { brandId })}
               flex={1}
             >
               <Box
@@ -109,7 +114,7 @@ const BrandHistoryScreen: React.FC = () => {
 
             {/* Shares */}
             <Pressable
-              onPress={() => navigation.navigate('BrandPostListScreen')}
+              onPress={() => navigation.navigate('BrandPostListScreen', { brandId })}
               flex={1}
             >
               <Box
@@ -144,7 +149,7 @@ const BrandHistoryScreen: React.FC = () => {
 
             {/* Events */}
             <Pressable
-              onPress={() => navigation.navigate('BrandEventsScreen')}
+              onPress={() => navigation.navigate('BrandEventsScreen', { brandId })}
               flex={1}
             >
               <Box

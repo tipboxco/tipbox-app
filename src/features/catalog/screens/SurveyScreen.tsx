@@ -859,7 +859,12 @@ const SurveyScreen: React.FC = () => {
             {/* Top Cards */}
             <BrandInfoCard
               onNotificationPress={() => console.log('Notification pressed')}
-              onHistoryPress={() => navigation.navigate('BrandHistoryScreen')}
+              onHistoryPress={() => {
+                const brandId = route.params?.brandId;
+                if (brandId) {
+                  navigation.navigate('BrandHistoryScreen', { brandId });
+                }
+              }}
             />
           </VStack>
           <Box flex={1} px="$4">

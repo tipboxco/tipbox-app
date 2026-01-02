@@ -273,3 +273,107 @@ export interface BrandEventsResponse {
     limit: number;
   };
 }
+
+/**
+ * Product Detail - /products/{productId} endpoint'inden gelen product detay bilgisi
+ */
+export interface ProductDetail {
+  productId: string;
+  name: string;
+  subName?: string;
+  description?: string;
+  image: string | null;
+  brand?: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+  specs?: string[];
+  price?: number;
+  currency?: string;
+}
+
+/**
+ * Product Posts Response - /products/{productId}/posts endpoint'inden dönen response
+ */
+export interface ProductPostsResponse {
+  items: BrandFeedPost[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * News Item - /products/{productId}/news endpoint'inden gelen news bilgisi
+ */
+export interface NewsItem {
+  id: string;
+  title: string;
+  description: string;
+  source: string;
+  date: string;
+  image: string | null;
+}
+
+/**
+ * Product News Response - /products/{productId}/news endpoint'inden dönen response
+ */
+export interface ProductNewsResponse {
+  items: NewsItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * News Detail - /news/{newsId} endpoint'inden gelen news detay bilgisi
+ */
+export interface NewsDetail {
+  id: string;
+  title: string;
+  content: string;
+  source: string;
+  date: string;
+  image: string | null;
+  author?: string;
+  tags?: string[];
+}
+
+/**
+ * Brand History - /brands/{brandId}/history endpoint'inden gelen brand history bilgisi
+ */
+export interface BrandHistory {
+  brandId: string;
+  name: string;
+  totalPoints: number;
+  stats: {
+    surveys: number;
+    shares: number;
+    events: number;
+  };
+  badges: Array<{
+    id: string;
+    title: string;
+    image: string;
+  }>;
+  pointsHistory: Array<{
+    id: string;
+    title: string;
+    points: number;
+    date: string;
+  }>;
+}
+
+/**
+ * Brand Stats - /brands/{brandId}/stats endpoint'inden gelen brand stats bilgisi
+ */
+export interface BrandStats {
+  surveys: number;
+  shares: number;
+  events: number;
+  totalPoints: number;
+}
