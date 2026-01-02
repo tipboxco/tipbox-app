@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { Box, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { FeedSkeleton } from '@/src/components/Skeletons';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
@@ -382,11 +383,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
   }, []);
 
   if (isLoading && hottestItems.length === 0) {
-    return (
-      <Box py="$8" alignItems="center">
-        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-      </Box>
-    );
+    return <FeedSkeleton count={5} />;
   }
 
   if (error) {

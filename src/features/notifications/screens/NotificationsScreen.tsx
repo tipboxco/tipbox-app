@@ -335,7 +335,8 @@ export const NotificationsScreen: React.FC = () => {
                 const screenName = params?.screen || 'FeedScreen';
                 const screenParams = params?.params || {};
                 
-                navigationService.navigateNested(tabRoute as any, screenName as any, screenParams, {
+                navigationService.navigateNested(tabRoute as any, screenName as any, {
+                    params: screenParams,
                     priority: 'high', // Kullanıcı tıklaması yüksek öncelikli
                     force: false, // App State Awareness kontrolü yapılır
                 });

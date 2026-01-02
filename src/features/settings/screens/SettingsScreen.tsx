@@ -17,7 +17,6 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
-import ChangePasswordBottomSheet from '../components/ChangePasswordBottomSheet';
 import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -53,38 +52,13 @@ export const SettingsScreen = () => {
           id: 'change-password',
           icon: 'user',
           title: 'Change Password',
-          onPress: () => {
-            openBottomSheet(
-              <ChangePasswordBottomSheet onClose={closeBottomSheet} />,
-              {
-                enablePanDownToClose: true,
-                enableOverDrag: false,
-                enableDynamicSizing: true,
-                backgroundStyle: {
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-                  borderTopLeftRadius: 30,
-                  borderTopRightRadius: 30,
-                },
-                handleStyle: {
-                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-                  borderTopLeftRadius: 30,
-                  borderTopRightRadius: 30,
-                },
-                handleIndicatorStyle: {
-                  backgroundColor: isDark ? '#333333' : '#CCCCCC',
-                  width: 40,
-                  height: 4,
-                },
-                paddingBottom: bottomOffset,
-              }
-            );
-          },
+          onPress: () => navigation.navigate('ChangePassword'),
         },
         {
           id: 'two-factor',
           icon: 'user',
           title: 'Two-Factor Authentication',
-          onPress: () => console.log('Two-Factor Authentication'),
+          onPress: () => navigation.navigate('TwoFactorAuth'),
         },
       ],
     },
@@ -95,19 +69,19 @@ export const SettingsScreen = () => {
           id: 'notification-settings',
           icon: 'bell',
           title: 'Notification Settings',
-          onPress: () => navigation.navigate('NotificationSettings' as never),
+          onPress: () => navigation.navigate('NotificationSettings'),
         },
         {
           id: 'privacy-settings',
           icon: 'shield',
           title: 'Privacy Settings',
-          onPress: () => navigation.navigate('PrivacySettings' as never),
+          onPress: () => navigation.navigate('PrivacySettings'),
         },
         {
           id: 'support-settings',
           icon: 'headphones',
           title: '1-on-1 Support Settings',
-          onPress: () => navigation.navigate('SupportSettings' as never),
+          onPress: () => navigation.navigate('SupportSettings'),
         },
         {
           id: 'your-devices',

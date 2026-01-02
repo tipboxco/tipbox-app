@@ -97,7 +97,7 @@ const BrandEventsScreen: React.FC = () => {
                   <EventCard
                     key={event.id}
                     event={event}
-                    onPress={() => navigation.navigate('BrandEventsDetailScreen')}
+                    onPress={() => navigation.navigate('BrandEventsDetailScreen', { eventId: event.id })}
                   />
                 ))}
                 {isFetchingNextPage && (

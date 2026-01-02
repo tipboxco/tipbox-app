@@ -148,7 +148,7 @@ export const toImageSource = (
   if (!value) {
     // Sadece development modunda uyarı göster
     if (__DEV__) {
-      console.warn('[toImageSource] ⚠️ Empty or null value provided');
+    console.warn('[toImageSource] ⚠️ Empty or null value provided');
     }
     return undefined;
   }
@@ -158,7 +158,7 @@ export const toImageSource = (
     if (value.trim() === '') {
       // Sadece development modunda uyarı göster
       if (__DEV__) {
-        console.warn('[toImageSource] ⚠️ Empty string provided');
+      console.warn('[toImageSource] ⚠️ Empty string provided');
       }
       return undefined;
     }

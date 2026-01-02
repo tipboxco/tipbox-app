@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
 import {
   Box,
   VStack,
   HStack,
   Text,
   ScrollView,
-  Pressable,
   Input,
   InputField,
-  ActivityIndicator,
   Button,
   ButtonText,
   useToast,
@@ -58,17 +57,6 @@ export const SupportSettingsScreen = () => {
     // TIPS'i USD'ye çevir
     const usdValue = Math.round(parseInt(numericValue || '0') / TIPS_TO_USD_RATIO);
     setUsdAmount(usdValue.toString());
-    setHasChanges(true);
-  };
-
-  const handleUsdChange = (value: string) => {
-    // Sadece sayısal değerleri kabul et
-    const numericValue = value.replace(/[^0-9]/g, '');
-    setUsdAmount(numericValue);
-    
-    // USD'yi TIPS'e çevir
-    const tipsValue = parseInt(numericValue || '0') * TIPS_TO_USD_RATIO;
-    setTipsAmount(tipsValue.toString());
     setHasChanges(true);
   };
 
@@ -128,7 +116,7 @@ export const SupportSettingsScreen = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box
         flex={1}
-        bg={isDark ? '$backgroundDark950' : '#FFF'}
+        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
           title="1-on-1 Support Settings"
@@ -136,7 +124,7 @@ export const SupportSettingsScreen = () => {
           onBackPress={() => navigation.goBack()}
         />
 
-        <ScrollView flex={1} px="$4">
+        <ScrollView flex={1} px="$4" py="$6">
           {isLoading ? (
             <Box flex={1} justifyContent="center" alignItems="center" py="$10">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
@@ -148,16 +136,10 @@ export const SupportSettingsScreen = () => {
               </Text>
             </Box>
           ) : (
-          <VStack space="lg">
-            {/* Set TIPS Amount Section */}
-            <VStack space="sm">
-            {/* Main Setting Card */}
-            <Box
-              bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-              borderRadius={10}
-              py="$3"
-            >
-              <VStack space="xs">
+            <VStack space="lg">
+              {/* Set TIPS Amount Section */}
+              <VStack space="md">
+                {/* Title */}
                 <Text
                   fontSize={11}
                   fontWeight="$bold"
@@ -165,138 +147,124 @@ export const SupportSettingsScreen = () => {
                 >
                   Set TIPS Amount
                 </Text>
+
+                {/* Description */}
+                <VStack space="xs">
+                  <Text
+                    fontSize={10}
+                    fontWeight="$normal"
+                    color="#B9B9B9"
+                    lineHeight={14}
+                  >
+                    Set the minimum TIPS amount users must pay to open a 1-on-1
+                  </Text>
+                  <Text
+                    fontSize={10}
+                    fontWeight="$normal"
+                    color="#B9B9B9"
+                    lineHeight={14}
+                  >
+                    Support Request.
+                  </Text>
+                  <Text
+                    fontSize={10}
+                    fontWeight="$normal"
+                    color="#B9B9B9"
+                    lineHeight={14}
+                    mt="$1"
+                  >
+                    This amount is only required to open the request.
+                  </Text>
+                </VStack>
+
+                {/* Input Field - TIPS Amount on left, USD on right */}
+                <Box
+                  bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                  borderRadius={10}
+                  borderWidth={1}
+                  borderColor="#B9B9B9"
+                  flexDirection="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  px="$4"
+                  py="$3"
+                >
+                  {/* Left side - TIPS Amount (large, gray) */}
+                  <Box flex={1}>
+                    <Input borderWidth={0} bg="transparent">
+                      <InputField
+                        value={tipsAmount}
+                        onChangeText={handleTipsChange}
+                        keyboardType="numeric"
+                        color="#B9B9B9"
+                        fontSize={32}
+                        fontWeight="$bold"
+                        textAlign="left"
+                        placeholder="50"
+                        placeholderTextColor="#B9B9B9"
+                      />
+                    </Input>
+                  </Box>
+
+                  {/* Right side - USD Amount (small box) */}
+                  <Box
+                    bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                    borderRadius={8}
+                    px="$3"
+                    py="$2"
+                    ml="$3"
+                  >
+                    <Text
+                      fontSize={14}
+                      fontWeight="$medium"
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                    >
+                      ${usdAmount}
+                    </Text>
+                  </Box>
+                </Box>
+              </VStack>
+
+              {/* Information Notes */}
+              <VStack space="xs" mt="$2">
                 <Text
                   fontSize={10}
-                  fontWeight="$medium"
+                  fontWeight="$normal"
                   color="#B9B9B9"
-                  lineHeight={12}
+                  lineHeight={14}
                 >
-                  Set the minimum TIPS amount users must pay to open a 1-on-1 Support Request.
+                  * Minimum of {MIN_PRICE} TIPS can be set.
                 </Text>
                 <Text
                   fontSize={10}
-                  fontWeight="$medium"
+                  fontWeight="$normal"
                   color="#B9B9B9"
-                  lineHeight={12}
+                  lineHeight={14}
                 >
-                  This amount is only required to open the request.
+                  * The amount can be changed once every 10 days.
                 </Text>
               </VStack>
-            </Box>
 
-            {/* TIPS Amount Input */}
-            <Box
-              bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-              borderRadius={10}
-              borderWidth={1}
-              borderColor="#B9B9B9"
-              height={47}
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="space-between"
-              px="$4"
-            >
-              {/* Left side - TIPS Amount */}
-              <HStack alignItems="center" space="xs">
-                <Input
-                  borderWidth={0}
-                  bg="transparent"
-                  w={280}
+              {/* Save Button */}
+              {hasChanges && (
+                <Button
+                  bg="#E2FF46"
+                  borderRadius={8}
+                  onPress={handleSave}
+                  disabled={updateMutation.isPending}
+                  opacity={updateMutation.isPending ? 0.5 : 1}
+                  mt="$4"
                 >
-                  <InputField
-                    value={tipsAmount}
-                    onChangeText={handleTipsChange}
-                    keyboardType="numeric"
-                    color="#B9B9B9"
-                    fontSize={20}
-                    fontWeight="$bold"
-                    textAlign="left"
-                    placeholder="50"
-                    placeholderTextColor="#B9B9B9"
-                  />
-                </Input>
-              </HStack>
-
-              {/* Vertical Divider */}
-              <Box
-                width={1}
-                height={46}
-                bg="#B9B9B9"
-                position="absolute"
-                left={301}
-                top={0.5}
-              />
-
-              {/* Right side - USD Amount */}
-              <HStack alignItems="center" space="xs">
-                <Text
-                  fontSize={14}
-                  fontWeight="$medium"
-                  color="#B9B9B9"
-                >
-                  $5
-                </Text>
-                <Input
-                  borderWidth={0}
-                  bg="transparent"
-                  w={20}
-                >
-                  <InputField
-                    value={usdAmount}
-                    onChangeText={handleUsdChange}
-                    keyboardType="numeric"
-                    color="#B9B9B9"
+                  <ButtonText
+                    color="#000000"
                     fontSize={14}
-                    fontWeight="$medium"
-                    textAlign="left"
-                    placeholder="5"
-                    placeholderTextColor="#B9B9B9"
-                  />
-                </Input>
-              </HStack>
-            </Box>
-          </VStack>
-
-          {/* Information Text */}
-          <VStack space="xs">
-            <Text
-              fontSize={10}
-              fontWeight="$medium"
-              color="#B9B9B9"
-              lineHeight={12}
-            >
-              * Minimum of {MIN_PRICE} TIPS can be set.
-            </Text>
-            <Text
-              fontSize={10}
-              fontWeight="$medium"
-              color="#B9B9B9"
-              lineHeight={12}
-            >
-              * The amount can be changed once every 10 days.
-            </Text>
-          </VStack>
-
-          {/* Save Button */}
-          {hasChanges && (
-            <Button
-              bg="#E2FF46"
-              borderRadius={8}
-              onPress={handleSave}
-              disabled={updateMutation.isPending}
-              opacity={updateMutation.isPending ? 0.5 : 1}
-              mt="$4"
-            >
-              <ButtonText
-                color="#000000"
-                fontSize={14}
-                fontWeight="$bold"
-              >
-                {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
-              </ButtonText>
-            </Button>
-          )}
-          </VStack>
+                    fontWeight="$bold"
+                  >
+                    {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </ButtonText>
+                </Button>
+              )}
+            </VStack>
           )}
         </ScrollView>
       </Box>

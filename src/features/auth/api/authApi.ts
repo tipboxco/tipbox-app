@@ -271,3 +271,113 @@ export const logout = async (): Promise<LogoutResponse> => {
   }
 };
 
+/**
+ * Setup Profile endpoint function
+ * Kullanıcı profil bilgilerini kaydeder (kayıt sonrası setup)
+ * 
+ * @param data - Profil bilgileri (fullName, username, profileImage)
+ * @returns Success response
+ */
+export interface SetupProfileRequest {
+  fullName: string;
+  username: string;
+  profileImage?: string; // Base64 veya URI
+}
+
+export interface SetupProfileResponse {
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    fullName: string;
+    username: string;
+    avatar?: string;
+  };
+}
+
+export const setupProfile = async (
+  data: SetupProfileRequest
+): Promise<SetupProfileResponse> => {
+  try {
+    // FormData oluştur (React Native için)
+    const formData = new FormData();
+    formData.append('fullName', data.fullName);
+    formData.append('username', data.username);
+    
+    // Profile image varsa ekle
+    if (data.profileImage) {
+      // React Native'de FormData için image objesi
+      const imageUri = data.profileImage;
+      const filename = imageUri.split('/').pop() || 'profile.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      
+      formData.append('profileImage', {
+        uri: imageUri,
+        type: type,
+        name: filename,
+      } as any);
+    }
+    
+    const response = await apiService.getClient().put<SetupProfileResponse>(
+      '/users/profile',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('[setupProfile] API Error:', {
+      url: '/users/profile',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Update User Interests endpoint function
+ * Kullanıcının ilgi alanlarını (kategoriler) günceller
+ * 
+ * @param subCategoryIds - Seçilen sub category ID'leri
+ * @returns Success response
+ */
+export interface UpdateUserInterestsRequest {
+  subCategoryIds: string[];
+}
+
+export interface UpdateUserInterestsResponse {
+  success: boolean;
+  message: string;
+  interests?: string[];
+}
+
+export const updateUserInterests = async (
+  subCategoryIds: string[]
+): Promise<UpdateUserInterestsResponse> => {
+  try {
+    const response = await apiService.getClient().post<UpdateUserInterestsResponse>(
+      '/users/interests',
+      { subCategoryIds }
+    );
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('[updateUserInterests] API Error:', {
+      url: '/users/interests',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+

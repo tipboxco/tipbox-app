@@ -2,6 +2,12 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SettingsScreen, PaymentAndSubscriptionScreen } from './screens';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import ChangePasswordScreen from './screens/ChangePasswordScreen';
+import TwoFactorAuthScreen from './screens/TwoFactorAuthScreen';
+import GoogleAuthenticatorSetupScreen from './screens/GoogleAuthenticatorSetupScreen';
+import GoogleAuthenticatorVerifyScreen from './screens/GoogleAuthenticatorVerifyScreen';
+import SMSVerificationScreen from './screens/SMSVerificationScreen';
+import SMSVerifyCodeScreen from './screens/SMSVerifyCodeScreen';
 import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
 import PrivacySettingsScreen from './screens/PrivacySettingsScreen';
 import SupportSettingsScreen from './screens/SupportSettingsScreen';
@@ -10,6 +16,12 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 export type SettingsStackParamList = {
   SettingsScreen: undefined;
   ForgotPassword: undefined;
+  ChangePassword: undefined;
+  TwoFactorAuth: undefined;
+  GoogleAuthenticatorSetup: undefined;
+  GoogleAuthenticatorVerify: undefined;
+  SMSVerification: undefined;
+  SMSVerifyCode: { phoneNumber: string };
   NotificationSettings: undefined;
   PrivacySettings: undefined;
   SupportSettings: undefined;
@@ -50,6 +62,48 @@ export const SettingsNavigator = () => {
         component={ForgotPasswordScreen}
         options={{
           title: 'Forgot Password',
+        }}
+      />
+      <SettingsStack.Screen
+        name='ChangePassword'
+        component={ChangePasswordScreen}
+        options={{
+          title: 'Change Password',
+        }}
+      />
+      <SettingsStack.Screen
+        name='TwoFactorAuth'
+        component={TwoFactorAuthScreen}
+        options={{
+          title: 'Two-Factor Authentication',
+        }}
+      />
+      <SettingsStack.Screen
+        name='GoogleAuthenticatorSetup'
+        component={GoogleAuthenticatorSetupScreen}
+        options={{
+          title: 'Google Authenticator Setup',
+        }}
+      />
+      <SettingsStack.Screen
+        name='GoogleAuthenticatorVerify'
+        component={GoogleAuthenticatorVerifyScreen}
+        options={{
+          title: 'Google Authenticator Verify',
+        }}
+      />
+      <SettingsStack.Screen
+        name='SMSVerification'
+        component={SMSVerificationScreen}
+        options={{
+          title: 'SMS Verification',
+        }}
+      />
+      <SettingsStack.Screen
+        name='SMSVerifyCode'
+        component={SMSVerifyCodeScreen}
+        options={{
+          title: 'SMS Verify Code',
         }}
       />
       <SettingsStack.Screen

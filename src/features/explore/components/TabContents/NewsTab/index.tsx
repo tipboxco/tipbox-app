@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { Box, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { EventSkeleton } from '@/src/components/Skeletons';
 import EventCard from '@/src/components/EventCard';
 import BrandCard from '../../BrandCard';
 import ProductCard from '../../ProductCard';
@@ -298,8 +299,8 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
             </Pressable>
           </HStack>
           {isLoadingEvents ? (
-            <Box py="$4" alignItems="center">
-              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+            <Box pl="$4">
+              <EventSkeleton count={3} isHorizontal={true} />
             </Box>
           ) : events.length === 0 ? (
             <Box py="$4" alignItems="center">
@@ -360,8 +361,46 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
             </Pressable>
           </HStack>
           {isLoadingBrands ? (
-            <Box py="$4" alignItems="center">
-              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+            <Box pl="$4">
+              <HStack space={12}>
+                {Array.from({ length: 3 }).map((_, index) => {
+                  const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
+                  const shimmerColor = isDark ? '#404040' : '#E9E9E9';
+                  return (
+                    <Box
+                      key={index}
+                      width={120}
+                      height={150}
+                      bg={skeletonColor}
+                      borderWidth={1}
+                      borderColor={isDark ? '#404040' : '#E9E9E9'}
+                      borderRadius={10}
+                      p="$2"
+                    >
+                      <VStack space="sm" alignItems="center">
+                        <Box
+                          width={80}
+                          height={80}
+                          borderRadius={40}
+                          bg={shimmerColor}
+                        />
+                        <Box
+                          width={90}
+                          height={12}
+                          borderRadius={3}
+                          bg={shimmerColor}
+                        />
+                        <Box
+                          width={70}
+                          height={10}
+                          borderRadius={3}
+                          bg={shimmerColor}
+                        />
+                      </VStack>
+                    </Box>
+                  );
+                })}
+              </HStack>
             </Box>
           ) : brands.length === 0 ? (
             <Box py="$4" alignItems="center">
@@ -421,8 +460,46 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
             </Pressable>
           </HStack>
           {isLoadingProducts ? (
-            <Box py="$4" alignItems="center">
-              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+            <Box pl="$4">
+              <HStack space={12}>
+                {Array.from({ length: 3 }).map((_, index) => {
+                  const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
+                  const shimmerColor = isDark ? '#404040' : '#E9E9E9';
+                  return (
+                    <Box
+                      key={index}
+                      width={120}
+                      height={150}
+                      bg={skeletonColor}
+                      borderWidth={1}
+                      borderColor={isDark ? '#404040' : '#E9E9E9'}
+                      borderRadius={10}
+                      p="$2"
+                    >
+                      <VStack space="sm" alignItems="center">
+                        <Box
+                          width={86}
+                          height={86}
+                          borderRadius={5}
+                          bg={shimmerColor}
+                        />
+                        <Box
+                          width={90}
+                          height={12}
+                          borderRadius={3}
+                          bg={shimmerColor}
+                        />
+                        <Box
+                          width={70}
+                          height={10}
+                          borderRadius={3}
+                          bg={shimmerColor}
+                        />
+                      </VStack>
+                    </Box>
+                  );
+                })}
+              </HStack>
             </Box>
           ) : products.length === 0 ? (
             <Box py="$4" alignItems="center">

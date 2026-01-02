@@ -1,6 +1,6 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
+import { ScrollView, VStack, HStack, Text, Image, Box, Pressable, ActivityIndicator } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,6 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import BrandInfoCard from '../components/BrandInfoCard';
 import PointsHistoryCard from '../components/PointsHistoryCard';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useBrandHistory } from '../api/hooks';
 
 type BrandHistoryScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandHistoryScreen'>;
 type BrandHistoryScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandHistoryScreen'>;
@@ -24,32 +25,8 @@ const BrandHistoryScreen: React.FC = () => {
   
   const { brandId } = route.params;
 
-  // Mock data for brand history
-  const brandData = {
-    name: 'Apple',
-    category: 'Technology',
-    totalPoints: 2405,
-    stats: {
-      surveys: 27,
-      shares: 127,
-      events: 12,
-    },
-    badges: [
-      { id: '1', title: 'Apple Expert', image: require('@/assets/badges/badge_01.png') },
-      { id: '2', title: 'Tech Enthusiast', image: require('@/assets/badges/badge_02.png') },
-      { id: '3', title: 'Product Reviewer', image: require('@/assets/badges/badge_03.png') },
-      { id: '4', title: 'Community Leader', image: require('@/assets/badges/badge_04.png') },
-    ],
-    pointsHistory: [
-      { id: '1', title: 'Puan Kazanılan Anket Adı', points: 250 },
-      { id: '2', title: 'Puan Kazanılan Anket Adı', points: 250 },
-      { id: '3', title: 'Puan Kazanılan Anket Adı', points: 250 },
-      { id: '4', title: 'Puan Kazanılan Anket Adı', points: 250 },
-      { id: '5', title: 'Puan Kazanılan Anket Adı', points: 250 },
-      { id: '6', title: 'Puan Kazanılan Anket Adı', points: 250 },
-      { id: '7', title: 'Puan Kazanılan Anket Adı', points: 250 },
-    ],
-  };
+  // API hook
+  const { data: brandHistory, isLoading, error } = useBrandHistory(brandId);
 
 
   return (
@@ -66,14 +43,28 @@ const BrandHistoryScreen: React.FC = () => {
           flex={1}
           contentContainerStyle={{ paddingBottom: bottomInset }}
         >
-          <VStack space="md" p="$4">
-          {/* Brand Info Card */}
-          <BrandInfoCard
-            onNotificationPress={() => console.log('Notification pressed')}
-            onHistoryPress={() => navigation.navigate('BrandHistoryScreen')}
-            showPoints={true}
-            points={brandData.totalPoints}
-          />
+          {isLoading ? (
+            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+              <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                Loading brand history...
+              </Text>
+            </VStack>
+          ) : error || !brandHistory ? (
+            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+              <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                Error loading brand history
+              </Text>
+            </VStack>
+          ) : (
+            <VStack space="md" p="$4">
+            {/* Brand Info Card */}
+            <BrandInfoCard
+              onNotificationPress={() => console.log('Notification pressed')}
+              onHistoryPress={() => navigation.navigate('BrandHistoryScreen', { brandId })}
+              showPoints={true}
+              points={brandHistory.totalPoints || 0}
+            />
 
           {/* Stats Row */}
           <HStack space="md">
@@ -98,7 +89,7 @@ const BrandHistoryScreen: React.FC = () => {
                   fontWeight="$bold"
                   textAlign="center"
                 >
-                  {brandData.stats.surveys}
+                  {brandHistory.stats?.surveys || 0}
                 </Text>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
@@ -133,7 +124,7 @@ const BrandHistoryScreen: React.FC = () => {
                   fontWeight="$bold"
                   textAlign="center"
                 >
-                  {brandData.stats.shares}
+                  {brandHistory.stats?.shares || 0}
                 </Text>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
@@ -168,7 +159,7 @@ const BrandHistoryScreen: React.FC = () => {
                   fontWeight="$bold"
                   textAlign="center"
                 >
-                  {brandData.stats.events}
+                  {brandHistory.stats?.events || 0}
                 </Text>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
@@ -184,7 +175,7 @@ const BrandHistoryScreen: React.FC = () => {
           </HStack>
 
           {/* Badges Section */}
-          {brandData.badges && brandData.badges.length > 0 && (
+          {brandHistory.badges && brandHistory.badges.length > 0 && (
             <Box
               bg={isDark ? '#1A1A1A' : '#FDFDFD'}
               borderWidth={1}
@@ -198,7 +189,7 @@ const BrandHistoryScreen: React.FC = () => {
                 h={130}
               >
                 <HStack space="md" justifyContent="space-between">
-                  {brandData.badges.slice(0, 4).map((badge) => (
+                  {brandHistory.badges.slice(0, 4).map((badge) => (
                     <VStack key={badge.id} space="xs" alignItems="center" flex={1}>
                       <Box
                         w={70}
@@ -210,7 +201,7 @@ const BrandHistoryScreen: React.FC = () => {
                         alignItems="center"
                       >
                         <Image
-                          source={typeof badge.image === 'string' ? toImageSource(badge.image) || require('@/assets/badges/badge_01.png') : badge.image}
+                          source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
                           alt={badge.title}
                           w={60}
                           h={60}
@@ -252,11 +243,18 @@ const BrandHistoryScreen: React.FC = () => {
               >
                 Puan Geçmişi
               </Text>
-              {brandData.pointsHistory.map((item) => (
-                <PointsHistoryCard key={item.id} item={item} />
-              ))}
+              {brandHistory.pointsHistory && brandHistory.pointsHistory.length > 0 ? (
+                brandHistory.pointsHistory.map((item) => (
+                  <PointsHistoryCard key={item.id} item={item} />
+                ))
+              ) : (
+                <Text fontSize={12} color="$textLight500" $dark-color="$textDark400" textAlign="center" py="$4">
+                  No points history found
+                </Text>
+              )}
             </VStack>
           </VStack>
+          )}
         </ScrollView>
       </VStack>
     </SafeAreaView>

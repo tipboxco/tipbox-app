@@ -7,8 +7,8 @@ import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import Navigation from '@/src/navigation';
 import { GluestackProvider } from '@/src/components/ui';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { PortalProvider } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -53,10 +53,23 @@ export default function App() {
                     <NotificationProvider>
                       <SocketProvider>
                         <GluestackProvider>
-                          <StatusBar
-                            translucent
-                            backgroundColor={isDark ? '#000000' : '#ffffff'}
-                            barStyle={isDark ? 'light-content' : 'dark-content'}
+                          {/* Root SafeAreaView - Status bar'ın arkasındaki rengi belirler (iOS) */}
+                          {/* Position absolute ile sadece status bar alanını kaplar, ekranların SafeAreaView'ları ile çakışmaz */}
+                          <SafeAreaView 
+                            edges={['top']} 
+                            style={{ 
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              zIndex: 9999,
+                              backgroundColor: isDark ? '#000000' : '#FFFFFF' 
+                            }} 
+                          />
+                          {/* StatusBar sadece style kontrol eder (iOS'ta backgroundColor çalışmaz) */}
+                          <StatusBar 
+                            style={isDark ? 'light' : 'dark'} 
+                            backgroundColor={isDark ? '#000000' : '#FFFFFF'} 
                           />
                           <Navigation />
                         </GluestackProvider>

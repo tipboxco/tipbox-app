@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -9,11 +10,7 @@ import {
     Switch,
     Input,
     InputField,
-    Spinner,
-    useToast,
-    Toast,
-    ToastTitle,
-    ToastDescription,
+    Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +18,13 @@ import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../api/hooks';
 import { NotificationCode } from '../types';
+import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+
+interface NotificationItem {
+    id: string;
+    code: NotificationCode;
+    title: string;
+}
 
 export const NotificationSettingsScreen = () => {
     const { colorMode } = useColorMode();
@@ -34,6 +38,7 @@ export const NotificationSettingsScreen = () => {
 
     // Local state for UI
     const [localSettings, setLocalSettings] = useState<Record<number, boolean>>({});
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Initialize local state from API data
     useEffect(() => {
@@ -71,17 +76,6 @@ export const NotificationSettingsScreen = () => {
 
         try {
             await updateMutation.mutateAsync({ settings: allSettings });
-            toast.show({
-                placement: 'top',
-                render: ({ id }) => (
-                    <Box maxWidth="90%" alignSelf="center" px="$4">
-                        <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                            <ToastTitle>Başarılı</ToastTitle>
-                            <ToastDescription>Bildirim ayarları güncellendi</ToastDescription>
-                        </Toast>
-                    </Box>
-                ),
-            });
         } catch (error: any) {
             // Revert optimistic update on error
             setLocalSettings((prev) => ({ ...prev, [code]: !value }));
@@ -100,136 +94,170 @@ export const NotificationSettingsScreen = () => {
         }
     };
 
-    // Calculate "All Notifications" state
+    // Calculate "All Notifications" state - All individual notifications should be enabled
     const allNotifications = useMemo(() => {
-        return (
-            getSettingValue(NotificationCode.EMAIL) &&
-            getSettingValue(NotificationCode.PUSH) &&
-            getSettingValue(NotificationCode.IN_APP)
-        );
+        return notificationItems.every((item) => getSettingValue(item.code));
     }, [localSettings]);
 
     // Toggle all notifications
     const handleAllNotificationsToggle = async (enabled: boolean) => {
-        await Promise.all([
-            updateSetting(NotificationCode.EMAIL, enabled),
-            updateSetting(NotificationCode.PUSH, enabled),
-            updateSetting(NotificationCode.IN_APP, enabled),
-        ]);
+        await Promise.all(
+            notificationItems.map((item) => updateSetting(item.code, enabled))
+        );
     };
 
-    // Notification setting items for display
-    const notificationItems = [
+    // Notification items based on the design
+    const notificationItems: NotificationItem[] = [
         {
-            id: 'email',
-            code: NotificationCode.EMAIL,
-            title: 'Email Notifications',
-            subtitle: 'Receive notifications via email',
+            id: 'trust',
+            code: NotificationCode.PUSH, // Using PUSH as placeholder - adjust based on actual API codes
+            title: 'Trust - Truster Notifications',
         },
         {
-            id: 'push',
-            code: NotificationCode.PUSH,
-            title: 'Push Notifications',
-            subtitle: 'Receive push notifications on your device',
+            id: 'support',
+            code: NotificationCode.IN_APP, // Using IN_APP as placeholder
+            title: '1-on-1 Support Notifications',
         },
         {
-            id: 'in-app',
-            code: NotificationCode.IN_APP,
-            title: 'In-App Notifications',
-            subtitle: 'Receive notifications within the app',
+            id: 'message',
+            code: NotificationCode.EMAIL, // Using EMAIL as placeholder
+            title: 'Message Notifications',
+        },
+        {
+            id: 'collection',
+            code: NotificationCode.PUSH, // Using PUSH as placeholder
+            title: 'Collection Notifications',
+        },
+        {
+            id: 'post',
+            code: NotificationCode.IN_APP, // Using IN_APP as placeholder
+            title: 'Post Notifications',
         },
     ];
+
+    // Filter notification items based on search query
+    const filteredItems = useMemo(() => {
+        if (!searchQuery.trim()) return notificationItems;
+        const query = searchQuery.toLowerCase();
+        return notificationItems.filter((item) =>
+            item.title.toLowerCase().includes(query)
+        );
+    }, [searchQuery, notificationItems]);
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
             <Box
                 flex={1}
-                bg={isDark ? '$backgroundDark950' : '#FFF'}
-        >
-            <Header
-                title="Notification Settings"
-                showBackButton
-                onBackPress={() => navigation.goBack()}
-            />
+                bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+            >
+                <Header
+                    title="Notification Settings"
+                    showBackButton
+                    onBackPress={() => navigation.goBack()}
+                />
 
-            <ScrollView flex={1} px="$4" py="$2">
-                {isLoading ? (
-                    <Box flex={1} justifyContent="center" alignItems="center" py="$10">
-                        <Spinner size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                    </Box>
-                ) : error ? (
-                    <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
-                        <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                            {error.message || 'Bildirim ayarları yüklenirken bir hata oluştu'}
-                        </Text>
-                    </Box>
-                ) : (
-                <VStack space="lg">
-
-                    {/* Push Notifications Section */}
-                    <VStack space="sm">
-                        <Text
-                            fontSize={11}
-                            fontWeight="$medium"
-                            color="#B9B9B9"
-                            px="$2"
-                        >
-                            Push Notifications
-                        </Text>
-
-                        <Box
-                            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-                            borderRadius={10}
-                            px="$2"
-                        >
-                            <HStack justifyContent="space-between" alignItems="center">
-                                <VStack space="xs">
-                                    <Text
-                                        fontSize={11}
-                                        fontWeight="$bold"
-                                        color={isDark ? '#FFFFFF' : '#000000'}
-                                    >
-                                        All Notifications
-                                    </Text>
-                                    <Text
-                                        fontSize={10}
-                                        fontWeight="$medium"
-                                        color="#B9B9B9"
-                                    >
-                                        Pause Notifications Temporarily
-                                    </Text>
-                                </VStack>
-
-                                <Switch
-                                    value={allNotifications}
-                                    onValueChange={handleAllNotificationsToggle}
-                                    size="sm"
-                                    trackColor={{ false: '#d4d4d4', true: '#525252' }}
-                                    thumbColor="#fafafa"
-                                    ios_backgroundColor="#d4d4d4"
-                                />
-                            </HStack>
-                        </Box>
-                    </VStack>
-
-                    {/* Divider */}
+                {/* Search Bar */}
+                <Box px="$4" pt="$4" pb="$2">
                     <Box
-                        height={1}
-                        bg="#D9D9D9"
-                    />
+                        borderWidth={1}
+                        borderColor="#B9B9B9"
+                        borderRadius={10}
+                        px="$4"
+                        py="$2"
+                        bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                    >
+                        <HStack alignItems="center" space="sm">
+                            <Feather 
+                                name="search" 
+                                size={18} 
+                                color={isDark ? '#CCCCCC' : '#666666'} 
+                            />
+                            <Input borderWidth={0} bg="transparent" flex={1}>
+                                <InputField
+                                    placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                                    placeholderTextColor="#B9B9B9"
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                    fontSize={11}
+                                />
+                            </Input>
+                        </HStack>
+                    </Box>
+                </Box>
 
-                    {/* Individual Notification Settings */}
-                    <VStack space="xs">
-                        {notificationItems.map((item) => (
+                <ScrollView flex={1} px="$4" py="$2">
+                    {isLoading ? (
+                        <Box flex={1} justifyContent="center" alignItems="center" py="$10">
+                            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                        </Box>
+                    ) : error ? (
+                        <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
+                            <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+                                {error.message || 'Bildirim ayarları yüklenirken bir hata oluştu'}
+                            </Text>
+                        </Box>
+                    ) : (
+                        <VStack space="md">
+                            {/* Push Notifications Section Header */}
+                            <Text
+                                fontSize={11}
+                                fontWeight="$medium"
+                                color="#B9B9B9"
+                                px="$2"
+                                pt="$2"
+                            >
+                                Push Notifications
+                            </Text>
+
+                            {/* All Notifications */}
                             <Box
-                                key={item.id}
                                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                                 borderRadius={10}
-                                px="$2"
-                                py="$1"
+                                px="$4"
+                                py="$3"
                             >
                                 <HStack justifyContent="space-between" alignItems="center">
-                                    <VStack flex={1} space="xs">
+                                    <VStack space="xs" flex={1}>
+                                        <Text
+                                            fontSize={11}
+                                            fontWeight="$bold"
+                                            color={isDark ? '#FFFFFF' : '#000000'}
+                                        >
+                                            All Notifications
+                                        </Text>
+                                        <Text
+                                            fontSize={10}
+                                            fontWeight="$normal"
+                                            color="#B9B9B9"
+                                        >
+                                            Pause Notifications Temporarily
+                                        </Text>
+                                    </VStack>
+
+                                    <Switch
+                                        value={allNotifications}
+                                        onValueChange={handleAllNotificationsToggle}
+                                        disabled={updateMutation.isPending}
+                                        trackColor={{
+                                            false: isDark ? '#333333' : '#E5E5E5',
+                                            true: '#34C759',
+                                        }}
+                                        thumbColor="#FFFFFF"
+                                    />
+                                </HStack>
+                            </Box>
+
+                            {/* Individual Notification Items */}
+                            {filteredItems.map((item) => (
+                                <Box
+                                    key={item.id}
+                                    bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                                    borderRadius={10}
+                                    px="$4"
+                                    py="$3"
+                                >
+                                    <HStack justifyContent="space-between" alignItems="center">
                                         <Text
                                             fontSize={11}
                                             fontWeight="$semibold"
@@ -237,37 +265,23 @@ export const NotificationSettingsScreen = () => {
                                         >
                                             {item.title}
                                         </Text>
-                                        {item.subtitle && (
-                                            <Text
-                                                fontSize={9}
-                                                fontWeight="$normal"
-                                                color="#B9B9B9"
-                                            >
-                                                {item.subtitle}
-                                            </Text>
-                                        )}
-                                    </VStack>
 
-                                    <Switch
-                                        value={getSettingValue(item.code)}
-                                        onValueChange={(value) => updateSetting(item.code, value)}
-                                        disabled={updateMutation.isPending}
-                                        trackColor={{
-                                            false: isDark ? '#333333' : '#E5E5E5',
-                                            true: '#34C759',
-                                        }}
-                                        thumbColor={getSettingValue(item.code) ? '#FFFFFF' : '#FFFFFF'}
-                                        style={{
-                                            transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }],
-                                        }}
-                                    />
-                                </HStack>
-                            </Box>
-                        ))}
-                    </VStack>
-                </VStack>
-                )}
-            </ScrollView>
+                                        <Switch
+                                            value={getSettingValue(item.code)}
+                                            onValueChange={(value) => updateSetting(item.code, value)}
+                                            disabled={updateMutation.isPending}
+                                            trackColor={{
+                                                false: isDark ? '#333333' : '#E5E5E5',
+                                                true: '#34C759',
+                                            }}
+                                            thumbColor="#FFFFFF"
+                                        />
+                                    </HStack>
+                                </Box>
+                            ))}
+                        </VStack>
+                    )}
+                </ScrollView>
             </Box>
         </SafeAreaView>
     );

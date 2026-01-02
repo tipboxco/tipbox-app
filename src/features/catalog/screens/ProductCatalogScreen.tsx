@@ -642,8 +642,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
             )
           ) : (
             <>
-              {/* currentData'yı 3'lü gruplara böl */}
-              {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
+          {/* currentData'yı 3'lü gruplara böl */}
+          {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
             const startIndex = rowIndex * 3;
             const rowItems = currentData.slice(startIndex, startIndex + 3);
             // İlk 3 satır (9 görsel) için high priority - ilk ekranda görünen tüm görseller

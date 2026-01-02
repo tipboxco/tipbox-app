@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
+import { ActivityIndicator } from 'react-native';
 import {
   Box,
   VStack,
   HStack,
   Text,
-  Button,
-  ButtonText,
   Pressable,
-  ActivityIndicator,
+  ScrollView,
   useToast,
   Toast,
   ToastTitle,
@@ -19,6 +18,8 @@ import {
   AlertDialogCloseButton,
   AlertDialogBody,
   AlertDialogFooter,
+  Button,
+  ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
@@ -106,17 +107,18 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
       borderColor="#C0C0C0"
       borderStyle="dashed"
       borderRadius={10}
-      height={70}
       px="$4"
       py="$3"
+      mb="$3"
       flexDirection="row"
       alignItems="center"
+      bg={isDark ? '#1A1A1A' : '#FFFFFF'}
     >
-      {/* Device Icon */}
+      {/* Device Icon - Left side */}
       <Box
-        width={30}
-        height={30}
-        borderRadius={15}
+        width={40}
+        height={40}
+        borderRadius={20}
         bg="#D9D9D9"
         alignItems="center"
         justifyContent="center"
@@ -124,60 +126,71 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
       >
         <Feather
           name="smartphone"
-          size={16}
-          color={isDark ? '#FFFFFF' : '#000000'}
+          size={20}
+          color={isDark ? '#666666' : '#999999'}
         />
       </Box>
 
-      {/* Device Info */}
+      {/* Device Info - Center */}
       <VStack flex={1} space="xs">
         <Text
-          fontSize={12}
-          fontWeight="$medium"
-          color={isDark ? '#FFFFFF' : '#313131'}
+          fontSize={11}
+          fontWeight="$bold"
+          color={isDark ? '#FFFFFF' : '#000000'}
         >
           {device.name}
         </Text>
-        {device.location && (
+        <HStack alignItems="center" space="xs">
+          {device.location && (
+            <>
+              <Text
+                fontSize={10}
+                fontWeight="$normal"
+                color="#B9B9B9"
+              >
+                {device.location}
+              </Text>
+              <Text
+                fontSize={10}
+                fontWeight="$normal"
+                color="#B9B9B9"
+              >
+                ,
+              </Text>
+            </>
+          )}
           <Text
             fontSize={10}
-            fontWeight="$medium"
-            color="#C1BEBF"
+            fontWeight="$normal"
+            color="#B9B9B9"
           >
-            {device.location}
+            {formatDate(device.date)}
           </Text>
-        )}
-        <Text
-          fontSize={10}
-          fontWeight="$medium"
-          color="#C1BEBF"
-        >
-          {formatDate(device.date)}
-        </Text>
+        </HStack>
       </VStack>
 
-      {/* Active Badge or More Options */}
+      {/* Active Badge or More Options - Right side */}
       {device.isActive ? (
-        <HStack alignItems="center" space="sm">
-          <Box
-            bg="#EFEFEF"
-            borderRadius={5}
-            px="$5"
-            py="$1"
+        <Box
+          bg="#EFEFEF"
+          borderRadius={5}
+          px="$3"
+          py="$1"
+          ml="$2"
+        >
+          <Text
+            fontSize={9}
+            fontWeight="$medium"
+            color="#000000"
           >
-            <Text
-              fontSize={9}
-              fontWeight="$medium"
-              color="#000000"
-            >
-              Active
-            </Text>
-          </Box>
-        </HStack>
+            Active
+          </Text>
+        </Box>
       ) : (
         <Pressable
           onPress={() => openDeleteDialog(device)}
           disabled={deleteMutation.isPending}
+          ml="$2"
         >
           <Box
             width={24}
@@ -191,7 +204,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
             <Feather
               name="more-horizontal"
               size={16}
-              color={isDark ? '#FFFFFF' : '#000000'}
+              color={isDark ? '#666666' : '#999999'}
             />
           </Box>
         </Pressable>
@@ -202,7 +215,14 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
   return (
     <VStack flex={1} px="$4" py="$4">
       {/* Header */}
-      <HStack justifyContent="center" alignItems="center" mb="$4">
+      <HStack justifyContent="space-between" alignItems="center" mb="$4">
+        <Pressable onPress={onClose}>
+          <Feather
+            name="chevron-left"
+            size={24}
+            color={isDark ? '#FFFFFF' : '#000000'}
+          />
+        </Pressable>
         <Text
           fontSize={16}
           fontWeight="$bold"
@@ -212,44 +232,49 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
         >
           Linked Devices
         </Text>
+        <Box width={24} />
       </HStack>
 
       {/* Device List */}
-      {isLoading ? (
-        <Box py="$10" alignItems="center">
-          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-        </Box>
-      ) : error ? (
-        <Box py="$10" px="$4" alignItems="center">
-          <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-            {error.message || 'Cihazlar yüklenirken bir hata oluştu'}
-          </Text>
-        </Box>
-      ) : !devices || devices.length === 0 ? (
-        <Box py="$10" px="$4" alignItems="center">
-          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm" textAlign="center">
-            Bağlı cihaz bulunmuyor
-          </Text>
-        </Box>
-      ) : (
-        <VStack space="sm" mb="$6">
-          {devices.map((device) => renderDeviceCard(device))}
-        </VStack>
-      )}
+      <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+        {isLoading ? (
+          <Box py="$10" alignItems="center">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        ) : error ? (
+          <Box py="$10" px="$4" alignItems="center">
+            <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+              {error.message || 'Cihazlar yüklenirken bir hata oluştu'}
+            </Text>
+          </Box>
+        ) : !devices || devices.length === 0 ? (
+          <Box py="$10" px="$4" alignItems="center">
+            <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm" textAlign="center">
+              Bağlı cihaz bulunmuyor
+            </Text>
+          </Box>
+        ) : (
+          <VStack space="xs" mb="$4">
+            {devices.map((device) => renderDeviceCard(device))}
+          </VStack>
+        )}
+      </ScrollView>
 
       {/* Log Out Text */}
       <Pressable
         onPress={() => {
           console.log('Log out from all devices except this one');
-          onClose();
+          // TODO: Implement log out from all devices except current
         }}
         py="$2"
+        mt="auto"
       >
         <Text
           color={isDark ? '#FFFFFF' : '#000000'}
           fontSize={9}
           fontWeight="$medium"
           textAlign="center"
+          underline
         >
           Log Out from All Devices Except This One
         </Text>

@@ -16,16 +16,20 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { SettingsStackParamList } from '../../navigation';
 import { useChangePassword } from '../../api/hooks';
 
 interface ChangePasswordBottomSheetProps {
   onClose: () => void;
 }
 
+type ChangePasswordBottomSheetNavigationProp = NativeStackNavigationProp<SettingsStackParamList>;
+
 export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheetProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation();
+  const navigation = useNavigation<ChangePasswordBottomSheetNavigationProp>();
   const toast = useToast();
   const changePasswordMutation = useChangePassword();
 
@@ -102,7 +106,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           <Pressable
             onPress={() => {
               onClose();
-              navigation.navigate('ForgotPassword' as never);
+              navigation.navigate('ForgotPassword');
             }}
           >
             <Text

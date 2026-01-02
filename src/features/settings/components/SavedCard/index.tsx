@@ -9,6 +9,14 @@ import {
   PopoverBackdrop,
   PopoverContent,
   PopoverBody,
+  AlertDialog,
+  AlertDialogBackdrop,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
+  Button,
+  ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
@@ -34,6 +42,7 @@ export const SavedCard: React.FC<SavedCardProps> = ({ data, onPress, onDelete, o
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handlePopoverOpen = () => {
     setIsPopoverOpen(true);
@@ -43,17 +52,17 @@ export const SavedCard: React.FC<SavedCardProps> = ({ data, onPress, onDelete, o
   };
 
   const handlePopoverClose = () => {
-    console.log('handlePopoverClose called');
     setIsPopoverOpen(false);
     if (onPopoverOpenChange) {
       onPopoverOpenChange(false);
     }
   };
 
-  // Extract last 4 digits from card number
-  const getLastFourDigits = (cardNumber: string) => {
+  // Format card number: 5209 - 3984 - **** - **39
+  const formatCardNumber = (cardNumber: string) => {
     const cleaned = cardNumber.replace(/\s/g, '');
-    return cleaned.slice(-4);
+    const last4 = cleaned.slice(-4);
+    return `5209 - 3984 - **** - **${last4}`;
   };
 
   const handlePress = () => {
@@ -69,159 +78,201 @@ export const SavedCard: React.FC<SavedCardProps> = ({ data, onPress, onDelete, o
     }
   };
 
-  const handleDelete = () => {
+  const handleDeleteClick = () => {
     handlePopoverClose();
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    setShowDeleteDialog(false);
     if (onDelete) {
       onDelete(data.id);
     }
   };
 
   return (
-    <Pressable onPress={handlePress}>
-      <Box
-        bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
-        borderWidth={1}
-        borderColor={isDark ? '$borderDark600' : '$borderLight200'}
-        borderRadius={12}
-        p="$4"
-      >
-        <HStack alignItems="center" justifyContent="space-between">
-          <HStack alignItems="center" space="md" flex={1}>
-            {/* Card Icon */}
-            <Box
-              w={40}
-              h={40}
-              bg={isDark ? '$backgroundDark700' : '$backgroundLight50'}
-              borderRadius={8}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Feather
-                name="credit-card"
-                size={20}
-                color={isDark ? '#FFFFFF' : '#000000'}
-              />
-            </Box>
-
-            {/* Card Info */}
+    <>
+      <Pressable onPress={handlePress}>
+        <Box
+          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+          borderWidth={1}
+          borderColor="#B9B9B9"
+          borderRadius={10}
+          p="$4"
+          mb="$3"
+        >
+          <HStack alignItems="center" justifyContent="space-between">
             <VStack flex={1} space="xs">
+              {data.cardName && (
+                <Text
+                  fontSize={11}
+                  fontWeight="$bold"
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                >
+                  {data.cardName}
+                </Text>
+              )}
               <Text
-                fontSize={12}
-                fontWeight="$semibold"
-                color={isDark ? '$textDark50' : '$textLight900'}
+                fontSize={11}
+                fontWeight="$normal"
+                color={isDark ? '#FFFFFF' : '#000000'}
               >
-                {data.cardName || 'Card'}
+                {data.nameOnCard}
               </Text>
               <Text
                 fontSize={10}
-                color={isDark ? '$textDark400' : '$textLight500'}
+                fontWeight="$normal"
+                color="#B9B9B9"
               >
-                •••• •••• •••• {getLastFourDigits(data.cardNumber)}
-              </Text>
-              <Text
-                fontSize={9}
-                color={isDark ? '$textDark400' : '$textLight500'}
-              >
-                {data.nameOnCard} • Expires {data.expirationDate}
+                {formatCardNumber(data.cardNumber)}
               </Text>
             </VStack>
-          </HStack>
 
-          {/* Menu Button with Popover */}
-          <Popover
-            isOpen={isPopoverOpen}
-            onClose={handlePopoverClose}
-            placement="bottom right"
-            trigger={(triggerProps) => (
-              <Pressable
-                {...triggerProps}
-                ml="$2"
-                onPress={(e) => {
-                  e.stopPropagation();
-                  (triggerProps as any)?.onPress?.(e);
-                  handlePopoverOpen();
-                }}
-              >
-                <Box
-                  w={32}
-                  h={32}
-                  alignItems="center"
-                  justifyContent="center"
+            {/* Menu Button with Popover */}
+            <Popover
+              isOpen={isPopoverOpen}
+              onClose={handlePopoverClose}
+              placement="bottom right"
+              trigger={(triggerProps) => (
+                <Pressable
+                  {...triggerProps}
+                  ml="$2"
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    (triggerProps as any)?.onPress?.(e);
+                    handlePopoverOpen();
+                  }}
                 >
-                  <Feather
-                    name="more-vertical"
-                    size={18}
-                    color={isDark ? '#8C8C8C' : '#9CA3AF'}
-                  />
-                </Box>
-              </Pressable>
-            )}
-          >
-            <PopoverBackdrop onPress={handlePopoverClose} />
-            <PopoverContent
-              width={180}
-              bg={isDark ? '#1F1F1F' : '#FFFFFF'}
-              borderWidth={1}
-              borderColor={isDark ? '$borderDark600' : '$borderLight200'}
-              borderRadius={8}
-              pointerEvents="box-none"
+                  <Box
+                    w={24}
+                    h={24}
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Feather
+                      name="more-vertical"
+                      size={18}
+                      color={isDark ? '#666666' : '#999999'}
+                    />
+                  </Box>
+                </Pressable>
+              )}
             >
-              <PopoverBody p={0} pointerEvents="auto">
-                <VStack>
-                  {/* Edit Card Name Option */}
-                  <Pressable
-                    onPress={handleEditCardName}
-                    px={16}
-                    py={14}
-                    borderBottomWidth={1}
-                    borderBottomColor={isDark ? '$borderDark600' : '$borderLight200'}
-                  >
-                    <HStack space="md" alignItems="center">
-                      <Feather
-                        name="edit-2"
-                        size={16}
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                      />
-                      <Text
-                        fontSize={12}
-                        fontWeight="$medium"
-                        color={isDark ? '$textDark50' : '$textLight900'}
-                      >
-                        Edit Card Name
-                      </Text>
-                    </HStack>
-                  </Pressable>
+              <PopoverBackdrop onPress={handlePopoverClose} />
+              <PopoverContent
+                width={180}
+                bg={isDark ? '#1F1F1F' : '#FFFFFF'}
+                borderWidth={1}
+                borderColor={isDark ? '#333333' : '#E5E5E5'}
+                borderRadius={8}
+                pointerEvents="box-none"
+              >
+                <PopoverBody p={0} pointerEvents="auto">
+                  <VStack>
+                    {/* Edit Card Name Option */}
+                    <Pressable
+                      onPress={handleEditCardName}
+                      px={16}
+                      py={14}
+                      borderBottomWidth={1}
+                      borderBottomColor={isDark ? '#333333' : '#E5E5E5'}
+                    >
+                      <HStack space="md" alignItems="center">
+                        <Feather
+                          name="edit-2"
+                          size={16}
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                        />
+                        <Text
+                          fontSize={11}
+                          fontWeight="$medium"
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                        >
+                          Edit Card Name
+                        </Text>
+                      </HStack>
+                    </Pressable>
 
-                  {/* Delete Card Option */}
-                  <Pressable
-                    onPress={handleDelete}
-                    px={16}
-                    py={14}
-                  >
-                    <HStack space="md" alignItems="center">
-                      <Feather
-                        name="trash-2"
-                        size={16}
-                        color={isDark ? '#EF4444' : '#DC2626'}
-                      />
-                      <Text
-                        fontSize={12}
-                        fontWeight="$medium"
-                        color={isDark ? '#EF4444' : '#DC2626'}
-                      >
-                        Delete Card
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                </VStack>
-              </PopoverBody>
-            </PopoverContent>
-          </Popover>
-        </HStack>
-      </Box>
-    </Pressable>
+                    {/* Delete Card Option */}
+                    <Pressable
+                      onPress={handleDeleteClick}
+                      px={16}
+                      py={14}
+                    >
+                      <HStack space="md" alignItems="center">
+                        <Feather
+                          name="trash-2"
+                          size={16}
+                          color={isDark ? '#EF4444' : '#DC2626'}
+                        />
+                        <Text
+                          fontSize={11}
+                          fontWeight="$medium"
+                          color={isDark ? '#EF4444' : '#DC2626'}
+                        >
+                          Delete Card
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                  </VStack>
+                </PopoverBody>
+              </PopoverContent>
+            </Popover>
+          </HStack>
+        </Box>
+      </Pressable>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog isOpen={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
+        <AlertDialogBackdrop />
+        <AlertDialogContent bg={isDark ? '#1A1A1A' : '#FFFFFF'} borderRadius={10} p="$4">
+          <AlertDialogHeader mb="$4">
+            <Text
+              fontSize={16}
+              fontWeight="$bold"
+              color={isDark ? '#FFFFFF' : '#000000'}
+              textAlign="center"
+            >
+              Are you sure you want to delete this saved card?
+            </Text>
+          </AlertDialogHeader>
+          <AlertDialogBody mb="$4">
+            <Text
+              fontSize={11}
+              color={isDark ? '#FFFFFF' : '#000000'}
+              textAlign="center"
+            >
+              Your card named "{data.cardName || 'Card'}" will be deleted. This action cannot be undone.
+            </Text>
+          </AlertDialogBody>
+          <AlertDialogFooter>
+            <HStack space="md" flex={1}>
+              <Button
+                flex={1}
+                variant="outline"
+                onPress={() => setShowDeleteDialog(false)}
+                borderColor={isDark ? '#333333' : '#E5E5E5'}
+                bg="transparent"
+              >
+                <ButtonText color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} fontWeight="$medium">
+                  Cancel
+                </ButtonText>
+              </Button>
+              <Button
+                flex={1}
+                onPress={handleDeleteConfirm}
+                bg="transparent"
+              >
+                <ButtonText color="#CE4A4A" fontSize={14} fontWeight="$bold">
+                  Delete
+                </ButtonText>
+              </Button>
+            </HStack>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
 export default SavedCard;
-

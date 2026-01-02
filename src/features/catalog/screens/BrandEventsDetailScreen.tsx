@@ -1,25 +1,51 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
-import { mockEventDetail } from '@/src/mock/catalog/brandSurveys';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useEventDetail, useJoinEvent, useEventRequirements } from '@/src/features/events/api/hooks';
 
 type BrandEventsDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandEventsDetailScreen'>;
+type BrandEventsDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandEventsDetailScreen'>;
 
 const BrandEventsDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandEventsDetailScreenNavigationProp>();
+  const route = useRoute<BrandEventsDetailScreenRouteProp>();
   const bottomInset = useSafeAreaValues('bottom');
 
-  const getButtonStyle = (status: string) => {
-    if (status === 'joined') {
+  const eventId = route.params?.eventId;
+
+  // API hooks - eventId yoksa query'ler disabled olacak
+  const { data: eventDetail, isLoading: isLoadingEvent, refetch: refetchEvent } = useEventDetail(eventId || '');
+  const { data: requirements, isLoading: isLoadingRequirements } = useEventRequirements(eventId || undefined);
+  const joinEventMutation = useJoinEvent();
+
+  const [isJoining, setIsJoining] = useState(false);
+
+  const handleJoinEvent = useCallback(async () => {
+    if (isJoining || eventDetail?.isJoined) return;
+    setIsJoining(true);
+    try {
+      await joinEventMutation.mutateAsync(eventId);
+      await refetchEvent();
+    } catch (error) {
+      console.error('[BrandEventsDetailScreen] Error joining event:', error);
+    } finally {
+      setIsJoining(false);
+    }
+  }, [joinEventMutation, eventId, refetchEvent, eventDetail?.isJoined, isJoining]);
+
+  const getButtonStyle = (isJoined: boolean) => {
+    if (isJoined) {
       return {
         bg: 'rgba(215, 215, 215, 0.8)',
         borderColor: '#ADADAD',
@@ -37,10 +63,12 @@ const BrandEventsDetailScreen: React.FC = () => {
     };
   };
 
-  const buttonStyle = getButtonStyle(mockEventDetail.status);
+  const buttonStyle = getButtonStyle(eventDetail?.isJoined || false);
 
   const renderRequirementItem = (requirement: any) => {
-    const progressPercentage = (requirement.progress / requirement.total) * 100;
+    const hasProgress = requirement.progress && requirement.total;
+    const progressPercentage = hasProgress ? (requirement.progress.current / requirement.progress.total) * 100 : 0;
+    const isCompleted = requirement.completed || false;
     
     return (
       <Box
@@ -96,7 +124,7 @@ const BrandEventsDetailScreen: React.FC = () => {
           <Box
             width={14}
             height={14}
-            bg="#686868"
+            bg={isCompleted ? '#4CAF50' : '#686868'}
             borderRadius={7}
           />
         </HStack>
@@ -118,102 +146,126 @@ const BrandEventsDetailScreen: React.FC = () => {
           flex={1}
           contentContainerStyle={{ paddingBottom: bottomInset }}
         >
-          <VStack space="md" p="$4">
-          {/* Event Header Card */}
-          <Box
-            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-            borderWidth={1}
-            borderColor="#E9E9E9"
-            borderRadius={10}
-            overflow="hidden"
-          >
-            {/* Event Info */}
-            <HStack p="$3" alignItems="center" space="md">
-              {/* Event Image */}
-              <Box
-                width={52}
-                height={52}
-                borderRadius={5}
-                bg="rgba(0, 0, 0, 0.2)"
-                alignItems="center"
-                justifyContent="center"
-                overflow="hidden"
-              >
-                <Image
-                  source={mockEventDetail.image}
-                  alt={mockEventDetail.title}
-                  style={{ width: 52, height: 52 }}
-                  resizeMode="cover"
-                />
-              </Box>
-
-              {/* Event Title */}
-              <VStack flex={1}>
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
-                  fontWeight="$bold"
-                >
-                  {mockEventDetail.title}
-                </Text>
-              </VStack>
-
-              {/* Action Button */}
-              <Pressable
-                onPress={() => console.log('Event action:', mockEventDetail.status)}
-                bg={buttonStyle.bg}
-                borderWidth={1}
-                borderColor={buttonStyle.borderColor}
-                borderRadius={5}
-                px="$5"
-                py="$1.5"
-                alignItems="center"
-                justifyContent="center"
-                minWidth={74}
-                height={24}
-              >
-                <HStack alignItems="center" space="xs">
-                  {buttonStyle.icon && (
-                    <Feather name={buttonStyle.icon} size={12} color={buttonStyle.textColor} />
-                  )}
-                  <Text
-                    color={buttonStyle.textColor}
-                    fontSize={10}
-                    fontWeight="$bold"
-                  >
-                    {buttonStyle.text}
-                  </Text>
-                </HStack>
-              </Pressable>
-            </HStack>
-
-            {/* Description */}
+          {isLoadingEvent ? (
+            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+              <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                Loading event...
+              </Text>
+            </VStack>
+          ) : !eventDetail ? (
+            <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
+              <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                Event not found
+              </Text>
+            </VStack>
+          ) : (
+            <VStack space="md" p="$4">
+            {/* Event Header Card */}
             <Box
               bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-              borderTopWidth={1}
+              borderWidth={1}
               borderColor="#E9E9E9"
-              p="$3"
+              borderRadius={10}
+              overflow="hidden"
             >
-              <Text
-                color="#838383"
-                fontSize={10}
-                fontWeight="$bold"
-                mb="$1"
-              >
-                Description
-              </Text>
-              <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={9}
-                lineHeight={11}
-              >
-                {mockEventDetail.fullDescription}
-              </Text>
-            </Box>
-          </Box>
+              {/* Event Info */}
+              <HStack p="$3" alignItems="center" space="md">
+                {/* Event Image */}
+                {eventDetail.bannerImage && (
+                  <Box
+                    width={52}
+                    height={52}
+                    borderRadius={5}
+                    bg="rgba(0, 0, 0, 0.2)"
+                    alignItems="center"
+                    justifyContent="center"
+                    overflow="hidden"
+                  >
+                    <Image
+                      source={toImageSource(eventDetail.bannerImage)}
+                      alt={eventDetail.title}
+                      style={{ width: 52, height: 52 }}
+                      resizeMode="cover"
+                    />
+                  </Box>
+                )}
 
-          {/* Statistics and Rewards Row */}
-          <HStack space="md">
+                {/* Event Title */}
+                <VStack flex={1}>
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize={12}
+                    fontWeight="$bold"
+                  >
+                    {eventDetail.title}
+                  </Text>
+                </VStack>
+
+                {/* Action Button */}
+                <Pressable
+                  onPress={handleJoinEvent}
+                  disabled={isJoining || eventDetail.isJoined}
+                  bg={buttonStyle.bg}
+                  borderWidth={1}
+                  borderColor={buttonStyle.borderColor}
+                  borderRadius={5}
+                  px="$5"
+                  py="$1.5"
+                  alignItems="center"
+                  justifyContent="center"
+                  minWidth={74}
+                  height={24}
+                  opacity={isJoining ? 0.6 : 1}
+                >
+                  {isJoining ? (
+                    <ActivityIndicator size="small" color={buttonStyle.textColor} />
+                  ) : (
+                    <HStack alignItems="center" space="xs">
+                      {buttonStyle.icon && (
+                        <Feather name={buttonStyle.icon} size={12} color={buttonStyle.textColor} />
+                      )}
+                      <Text
+                        color={buttonStyle.textColor}
+                        fontSize={10}
+                        fontWeight="$bold"
+                      >
+                        {buttonStyle.text}
+                      </Text>
+                    </HStack>
+                  )}
+                </Pressable>
+              </HStack>
+
+              {/* Description */}
+              {eventDetail.description && (
+                <Box
+                  bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                  borderTopWidth={1}
+                  borderColor="#E9E9E9"
+                  p="$3"
+                >
+                  <Text
+                    color="#838383"
+                    fontSize={10}
+                    fontWeight="$bold"
+                    mb="$1"
+                  >
+                    Description
+                  </Text>
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize={9}
+                    lineHeight={11}
+                  >
+                    {eventDetail.description}
+                  </Text>
+                </Box>
+              )}
+            </Box>
+
+            {/* Statistics and Rewards Row */}
+            <HStack space="md">
             {/* Statistics Card */}
             <Box
               flex={1}
@@ -241,7 +293,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                   fontSize={11}
                   fontWeight="$bold"
                 >
-                  {mockEventDetail.statistics.title}
+                  Statistics
                 </Text>
               </HStack>
 
@@ -259,80 +311,114 @@ const BrandEventsDetailScreen: React.FC = () => {
                     fontSize={16}
                     fontWeight="$bold"
                   >
-                    %{mockEventDetail.statistics.percentage}
+                    {typeof eventDetail.participants === 'number' 
+                      ? eventDetail.participants 
+                      : Array.isArray(eventDetail.participants) 
+                        ? eventDetail.participants.length 
+                        : 0}
                   </Text>
                   <Text
                     color="#B9B9B9"
                     fontSize={10}
                     fontWeight="$medium"
                   >
-                    {mockEventDetail.statistics.description}
+                    Participants
                   </Text>
                 </HStack>
               </VStack>
             </Box>
 
             {/* Rewards Card */}
-            <Box
-              flex={1}
-              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              borderRadius={10}
-              p="$3"
-            >
-              <HStack alignItems="center" space="sm" mb="$2">
-                <Box
-                  width={28}
-                  height={28}
-                  bg="#FFFFFF"
-                  borderWidth={1}
-                  borderColor="#B9B9B9"
-                  borderRadius={20}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Feather name="gift" size={16} color="#B9B9B9" />
-                </Box>
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={11}
-                  fontWeight="$bold"
-                >
-                  {mockEventDetail.rewards.title}
-                </Text>
-              </HStack>
-
+            {eventDetail.rewards && eventDetail.rewards.length > 0 && (
               <Box
-                width="100%"
-                height={1}
-                bg="#E9E9E9"
-                mb="$2"
-              />
+                flex={1}
+                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                borderWidth={1}
+                borderColor="#E9E9E9"
+                borderRadius={10}
+                p="$3"
+              >
+                <HStack alignItems="center" space="sm" mb="$2">
+                  <Box
+                    width={28}
+                    height={28}
+                    bg="#FFFFFF"
+                    borderWidth={1}
+                    borderColor="#B9B9B9"
+                    borderRadius={20}
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Feather name="gift" size={16} color="#B9B9B9" />
+                  </Box>
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize={11}
+                    fontWeight="$bold"
+                  >
+                    Rewards
+                  </Text>
+                </HStack>
 
-              <HStack space="xs" alignItems="center">
-                <Image
-                  source={mockEventDetail.rewards.badgeImage}
-                  alt="Badge"
-                  style={{ width: 26, height: 20 }}
-                  resizeMode="cover"
+                <Box
+                  width="100%"
+                  height={1}
+                  bg="#E9E9E9"
+                  mb="$2"
                 />
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={10}
-                  fontWeight="$bold"
-                >
-                  {mockEventDetail.rewards.badgeName}
-                </Text>
-              </HStack>
-            </Box>
-          </HStack>
+
+                <HStack space="xs" alignItems="center">
+                  {eventDetail.rewards[0].image && (
+                    <Image
+                      source={toImageSource(eventDetail.rewards[0].image)}
+                      alt="Badge"
+                      style={{ width: 26, height: 20 }}
+                      resizeMode="cover"
+                    />
+                  )}
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize={10}
+                    fontWeight="$bold"
+                  >
+                    {eventDetail.rewards[0].title}
+                  </Text>
+                </HStack>
+              </Box>
+            )}
+            </HStack>
 
             {/* Requirements Section */}
-            <VStack space="sm">
-              {mockEventDetail.requirements.map(renderRequirementItem)}
+            {isLoadingRequirements ? (
+              <VStack alignItems="center" py="$4">
+                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                <Text mt="$2" fontSize={12} color="$textLight500" $dark-color="$textDark400">
+                  Loading requirements...
+                </Text>
+              </VStack>
+            ) : requirements && requirements.requirements && requirements.requirements.length > 0 ? (
+              <VStack space="sm">
+                {requirements.requirements.map((req) => {
+                  const requirementWithIcon = {
+                    id: req.id,
+                    title: req.title || req.description || 'Requirement',
+                    description: req.description,
+                    completed: req.completed || false,
+                    progress: req.progress ? { current: req.progress.current, total: req.progress.total } : { current: 0, total: 1 },
+                    icon: (req.completed ? 'check' : 'circle') as any,
+                  };
+                  return renderRequirementItem(requirementWithIcon);
+                })}
+              </VStack>
+            ) : (
+              <VStack alignItems="center" py="$4">
+                <Text fontSize={12} color="$textLight500" $dark-color="$textDark400">
+                  No requirements found
+                </Text>
+              </VStack>
+            )}
             </VStack>
-          </VStack>
+          )}
         </ScrollView>
       </VStack>
     </SafeAreaView>

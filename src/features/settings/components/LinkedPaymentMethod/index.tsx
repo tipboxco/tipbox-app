@@ -27,10 +27,10 @@ export const LinkedPaymentMethod: React.FC<LinkedPaymentMethodProps> = ({ data, 
 
     return (
         <Box
-            bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
+            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
             borderWidth={1}
-            borderColor={isDark ? '$borderDark600' : '$borderLight200'}
-            borderRadius={12}
+            borderColor="#B9B9B9"
+            borderRadius={10}
             p="$4"
         >
             <HStack alignItems="center" justifyContent="space-between">
@@ -38,7 +38,7 @@ export const LinkedPaymentMethod: React.FC<LinkedPaymentMethodProps> = ({ data, 
                     <Box
                         w={40}
                         h={40}
-                        bg={isDark ? '$backgroundDark700' : '$backgroundLight50'}
+                        bg={isDark ? '#2A2A2A' : '#F5F5F5'}
                         borderRadius={8}
                         alignItems="center"
                         justifyContent="center"
@@ -51,15 +51,16 @@ export const LinkedPaymentMethod: React.FC<LinkedPaymentMethodProps> = ({ data, 
                     </Box>
                     <VStack flex={1} space="xs">
                         <Text
-                            fontSize={12}
-                            fontWeight="$semibold"
-                            color={isDark ? '$textDark50' : '$textLight900'}
+                            fontSize={11}
+                            fontWeight="$bold"
+                            color={isDark ? '#FFFFFF' : '#000000'}
                         >
                             {data.cardType}
                         </Text>
                         <Text
                             fontSize={10}
-                            color={isDark ? '$textDark400' : '$textLight500'}
+                            fontWeight="$normal"
+                            color="#B9B9B9"
                         >
                             {data.cardNumber}
                         </Text>
@@ -67,14 +68,16 @@ export const LinkedPaymentMethod: React.FC<LinkedPaymentMethodProps> = ({ data, 
                 </HStack>
                 <Button
                     px="$4"
+                    py="$2"
                     variant="outline"
                     onPress={onViewPress}
-                    borderColor={isDark ? '$borderDark600' : '$borderLight200'}
+                    borderColor="#B9B9B9"
+                    bg="transparent"
                 >
                     <ButtonText
                         fontSize={10}
                         fontWeight="$medium"
-                        color={isDark ? '$textDark50' : '$textLight900'}
+                        color={isDark ? '#FFFFFF' : '#000000'}
                     >
                         View
                     </ButtonText>
@@ -85,4 +88,3 @@ export const LinkedPaymentMethod: React.FC<LinkedPaymentMethodProps> = ({ data, 
 };
 
 export default LinkedPaymentMethod;
-

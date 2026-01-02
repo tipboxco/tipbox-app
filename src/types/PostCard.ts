@@ -59,4 +59,67 @@ export interface PostCardData {
   isShared?: boolean;
 }
 
+/**
+ * Animated counter configuration for PostCard stats
+ * Count artış/azalış animasyonu için yapılandırma
+ */
+export type AnimatedCounterConfig = {
+  /**
+   * Animasyon tipi: 'spring' | 'timing'
+   * Default: 'spring'
+   */
+  animationType?: 'spring' | 'timing';
+  /**
+   * Spring animasyon ayarları (animationType === 'spring' için)
+   */
+  springConfig?: {
+    damping?: number; // Default: 20
+    stiffness?: number; // Default: 250
+    mass?: number; // Default: 1
+  };
+  /**
+   * Timing animasyon ayarları (animationType === 'timing' için)
+   */
+  timingConfig?: {
+    duration?: number; // Default: 120ms
+  };
+  /**
+   * Animasyon yönü: 'up' | 'down' | 'both'
+   * Default: 'both' (artış ve azalış için)
+   */
+  direction?: 'up' | 'down' | 'both';
+  /**
+   * Scale animasyonu aktif mi?
+   * Default: true
+   */
+  enableScale?: boolean;
+  /**
+   * Scale animasyon ayarları
+   */
+  scaleConfig?: {
+    min?: number; // Default: 0.8
+    max?: number; // Default: 1.2
+    duration?: number; // Default: 150ms
+  };
+};
+
+/**
+ * PostCard animasyon state'leri
+ * Count değişikliklerini takip etmek için
+ */
+export type PostCardAnimationState = {
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  bookmarksCount: number;
+  /**
+   * Animasyon aktif mi?
+   */
+  isAnimating: boolean;
+  /**
+   * Son animasyon zamanı (timestamp)
+   */
+  lastAnimationTime?: number;
+};
+
 

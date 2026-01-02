@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
@@ -8,6 +8,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import categories from '@/src/mock/auth/categorys';
 import type { Category, SubCategory } from '@/src/mock/auth/categorys';
+import { useUpdateUserInterests } from '../api/hooks';
+import { Alert } from 'react-native';
 
 type SelectCategoriesScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectCategories'>;
 
@@ -62,6 +64,7 @@ export const SelectCategoriesScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
   const { completeRegistration } = useAppStore();
+  const updateInterestsMutation = useUpdateUserInterests();
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
 
   const handleSelectSubCategory = (subCategoryId: string) => {
@@ -73,24 +76,31 @@ export const SelectCategoriesScreen = () => {
     });
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (selectedSubCategories.length > 0) {
-      console.log('Selected categories:', selectedSubCategories);
-      // TODO: API entegrasyonu yapılacak
-      
-      // Kullanıcıyı giriş yapmış olarak işaretle
-      completeRegistration();
-      
-      // Ana ekrana yönlendir
-      navigation.reset({
-        index: 0,
-        routes: [{ 
-          name: 'Main' as never,
-          params: {
-            screen: 'Feed'
-          }
-        }],
-      });
+      try {
+        // API'ye seçilen kategorileri gönder
+        await updateInterestsMutation.mutateAsync(selectedSubCategories);
+        
+        // Başarılı olursa kullanıcıyı giriş yapmış olarak işaretle
+        completeRegistration();
+        
+        // Kullanıcıyı giriş yapmış olarak işaretle
+        // completeRegistration() çağrıldığında RootNavigator otomatik olarak
+        // isAuthenticated kontrolü yapacak ve MainDrawer'ı render edecek
+        // Auth stack'ten çıkmak için navigation'ı sıfırlamaya gerek yok,
+        // çünkü RootNavigator zaten conditional rendering yapıyor
+        completeRegistration();
+        
+        // Not: RootNavigator otomatik olarak MainDrawer'a geçecek
+        // Navigation reset gerekmez çünkü RootNavigator seviyesinde
+        // isAuthenticated değişikliği otomatik olarak yeni stack'i render eder
+      } catch (error: any) {
+        // Hata durumunda kullanıcıya bilgi ver
+        const errorMessage = error.response?.data?.message || error.message || 'Kategoriler kaydedilirken bir hata oluştu.';
+        Alert.alert('Hata', errorMessage, [{ text: 'Tamam' }]);
+        console.error('[SelectCategoriesScreen] Update interests error:', error);
+      }
     }
   };
 
@@ -138,12 +148,16 @@ export const SelectCategoriesScreen = () => {
           rounded="$lg"
           mt="$4"
           onPress={handleNext}
-          opacity={selectedSubCategories.length > 0 ? 1 : 0.5}
-          disabled={selectedSubCategories.length === 0}
+          opacity={selectedSubCategories.length > 0 && !updateInterestsMutation.isPending ? 1 : 0.5}
+          disabled={selectedSubCategories.length === 0 || updateInterestsMutation.isPending}
         >
-          <ButtonText color="$textLight900">
-            {`Devam Et (${selectedSubCategories.length} seçili)`}
-          </ButtonText>
+          {updateInterestsMutation.isPending ? (
+            <Spinner size="small" color="$textLight900" />
+          ) : (
+            <ButtonText color="$textLight900">
+              {`Devam Et (${selectedSubCategories.length} seçili)`}
+            </ButtonText>
+          )}
         </Button>
       </VStack>
       </Box>

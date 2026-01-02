@@ -576,7 +576,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             <Pressable
               onPress={() => {
                 if (isOwnProfile) {
-                  navigation.navigate('ProfileEdit');
+                  rootNavigation.navigate('Settings' as never);
                 } else {
                   setShowMenu(!showMenu);
                 }

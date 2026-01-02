@@ -11,10 +11,23 @@ import type { ChangePasswordRequest, ChangePasswordResponse } from '../types';
 export const changePassword = async (
   credentials: ChangePasswordRequest
 ): Promise<ChangePasswordResponse> => {
-  const response = await apiService.getClient().post<ChangePasswordResponse>(
-    '/users/settings/change-password',
-    credentials
-  );
-  return response.data;
+  try {
+    const response = await apiService.getClient().post<ChangePasswordResponse>(
+      '/users/settings/change-password',
+      credentials
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[changePassword] API Error:', {
+      url: '/users/settings/change-password',
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: { currentPassword: '***', newPassword: '***' }, // Şifreleri loglamıyoruz
+      responseData: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 

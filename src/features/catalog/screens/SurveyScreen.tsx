@@ -731,7 +731,7 @@ const SurveyScreen: React.FC = () => {
             renderItem={({ item }) => (
               <EventCard
                 event={item}
-                onPress={() => navigation.navigate('BrandEventsDetailScreen')}
+                onPress={() => navigation.navigate('BrandEventsDetailScreen', { eventId: item.id })}
               />
             )}
             keyExtractor={(item) => item.id}

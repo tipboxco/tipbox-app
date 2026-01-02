@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { register, login } from './authApi';
+import { register, login, setupProfile, updateUserInterests } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
 import type { RegisterResponse, ApiLoginResponse } from '../types';
+import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse } from './authApi';
 import { useAppStore } from '../../../store/appStore';
 import { notificationService } from '@/src/services/ExpoNotificationService';
 // Socket bağlantısı adım adım test edilecek
@@ -98,6 +99,72 @@ export const useLogin = () => {
     onError: (error) => {
       // Hata durumunda işlemler burada yapılabilir
       console.error('Login error:', error);
+    },
+  });
+};
+
+/**
+ * Setup Profile mutation hook
+ * Kullanıcı profil bilgilerini kaydetmek için React Query mutation hook'u
+ * 
+ * @example
+ * const setupProfileMutation = useSetupProfile();
+ * setupProfileMutation.mutate({ fullName, username, profileImage });
+ */
+export const useSetupProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<SetupProfileResponse, Error, SetupProfileRequest>({
+    mutationFn: setupProfile,
+    onSuccess: (data) => {
+      // Başarılı profil setup sonrası store'u güncelle
+      if (data.user) {
+        const { updateUser } = useAppStore.getState();
+        updateUser({
+          fullName: data.user.fullName,
+          avatar: data.user.avatar,
+        });
+      }
+
+      // Current user query'sini invalidate et
+      queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      
+      console.log('[useSetupProfile] ✅ Profile setup successful:', {
+        fullName: data.user?.fullName,
+        username: data.user?.username,
+      });
+    },
+    onError: (error) => {
+      console.error('[useSetupProfile] ❌ Profile setup error:', error);
+    },
+  });
+};
+
+/**
+ * Update User Interests mutation hook
+ * Kullanıcının ilgi alanlarını güncellemek için React Query mutation hook'u
+ * 
+ * @example
+ * const updateInterestsMutation = useUpdateUserInterests();
+ * updateInterestsMutation.mutate(['category-1', 'category-2']);
+ */
+export const useUpdateUserInterests = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<UpdateUserInterestsResponse, Error, string[]>({
+    mutationFn: updateUserInterests,
+    onSuccess: (data) => {
+      // Başarılı interests update sonrası
+      console.log('[useUpdateUserInterests] ✅ Interests updated:', {
+        interests: data.interests,
+        count: data.interests?.length || 0,
+      });
+
+      // User interests query'sini invalidate et (varsa)
+      queryClient.invalidateQueries({ queryKey: ['user', 'interests'] });
+    },
+    onError: (error) => {
+      console.error('[useUpdateUserInterests] ❌ Update interests error:', error);
     },
   });
 };

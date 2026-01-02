@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
 import {
   Box,
   VStack,
@@ -6,7 +7,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  ActivityIndicator,
   useToast,
   Toast,
   ToastTitle,
@@ -76,17 +76,6 @@ export const PrivacySettingsScreen = () => {
 
     try {
       await updateMutation.mutateAsync({ settings: allSettings });
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => (
-          <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>Başarılı</ToastTitle>
-              <ToastDescription>Gizlilik ayarları güncellendi</ToastDescription>
-            </Toast>
-          </Box>
-        ),
-      });
     } catch (error: any) {
       // Revert optimistic update on error
       setLocalSettings((prev) => {
@@ -109,7 +98,7 @@ export const PrivacySettingsScreen = () => {
   };
 
   const privacyOptions: PrivacyOption[] = [
-    { id: 'trust-only', label: 'Trust Only' },
+    { id: 'trust-only', label: 'Trusters Only' },
     { id: 'everyone', label: 'Everyone' },
   ];
 
@@ -144,33 +133,25 @@ export const PrivacySettingsScreen = () => {
     const selectedOption = privacyOptions.find(opt => opt.id === selectedValue);
 
     return (
-      <VStack key={item.id} space="xs">
-        {/* Main Setting Card */}
-        <Box
-          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-          borderRadius={10}
-          mb={'$1'}
-          px="$4"
-          py="$3"
-        >
-          <VStack space="xs">
-            <Text
-              fontSize={11}
-              fontWeight="$bold"
-              color={isDark ? '#FFFFFF' : '#000000'}
-            >
-              {item.title}
-            </Text>
-            <Text
-              fontSize={10}
-              fontWeight="$medium"
-              color="#B9B9B9"
-              lineHeight={12}
-            >
-              {item.description}
-            </Text>
-          </VStack>
-        </Box>
+      <VStack key={item.id} space="md" mb="$4">
+        {/* Title and Description */}
+        <VStack space="xs">
+          <Text
+            fontSize={11}
+            fontWeight="$bold"
+            color={isDark ? '#FFFFFF' : '#000000'}
+          >
+            {item.title}
+          </Text>
+          <Text
+            fontSize={10}
+            fontWeight="$normal"
+            color="#B9B9B9"
+            lineHeight={14}
+          >
+            {item.description}
+          </Text>
+        </VStack>
 
         {/* Dropdown Selector */}
         <Pressable
@@ -206,7 +187,7 @@ export const PrivacySettingsScreen = () => {
 
         {/* Dropdown Options */}
         {isDropdownOpen && (
-          <VStack space="xs">
+          <VStack space="xs" mt="$1">
             {privacyOptions.map((option) => (
               <Pressable
                 key={option.id}
@@ -219,7 +200,7 @@ export const PrivacySettingsScreen = () => {
                   borderWidth={1}
                   borderColor={selectedValue === option.id ? '#34C759' : '#B9B9B9'}
                   px="$4"
-                  py="$2"
+                  py="$3"
                   opacity={updateMutation.isPending ? 0.5 : 1}
                 >
                   <Text

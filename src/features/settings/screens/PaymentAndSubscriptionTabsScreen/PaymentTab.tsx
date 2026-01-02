@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Box, VStack, Text, ScrollView, HStack, Pressable } from '@gluestack-ui/themed';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Pressable,
+  ScrollView,
+} from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
-import { SavedCard, SavedCardData } from '../../components/SavedCard';
-import { BillingHistoryEntry, BillingHistoryEntryData } from '../../components/BillingHistoryEntry';
-import { LinkedPaymentMethod, LinkedPaymentMethodData } from '../../components/LinkedPaymentMethod';
+import { SavedCard, SavedCardData } from '@/src/features/settings/components/SavedCard';
+import { BillingHistoryEntry, BillingHistoryEntryData } from '@/src/features/settings/components/BillingHistoryEntry';
+import { LinkedPaymentMethod, LinkedPaymentMethodData } from '@/src/features/settings/components/LinkedPaymentMethod';
 
 interface PaymentTabProps {
   onAddPaymentMethod?: () => void;
@@ -15,13 +21,19 @@ interface PaymentTabProps {
 const mockSavedCards: SavedCardData[] = [
   {
     id: '1',
-    nameOnCard: 'Ozan Mutluoğlu',
+    nameOnCard: 'Ozan Mutluoglu',
     cardNumber: '520939843945',
     expirationDate: '12/25',
     cardName: 'Work Card',
     cardType: 'mastercard',
   },
-  // Add more cards as needed
+  {
+    id: '2',
+    nameOnCard: 'Ozan Mutluoglu',
+    cardNumber: '520939843945',
+    expirationDate: '12/25',
+    cardType: 'mastercard',
+  },
 ];
 
 // Mock billing history data
@@ -96,10 +108,18 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
       contentContainerStyle={{ paddingHorizontal: 0 }}
       scrollEnabled={!isPopoverOpen}
     >
-      <VStack space="md">
-        {/* Saved Cards List */}
+      <VStack space="lg" pt="$4">
+        {/* Saved Cards Section */}
         {savedCards.length > 0 && (
           <VStack space="md">
+            <Text
+              fontSize={11}
+              fontWeight="$bold"
+              color={isDark ? '#FFFFFF' : '#000000'}
+              px="$2"
+            >
+              Saved Cards
+            </Text>
             {savedCards.map((card) => (
               <SavedCard
                 key={card.id}
@@ -122,117 +142,103 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
           }}
         >
           <Box
-            borderWidth={1}
-            borderColor={isDark ? '#8C8C8C' : '#D1D5DB'}
-            borderStyle="dashed"
-            borderRadius={12}
-            p="$4"
-            bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
+            bg={isDark ? '#1A1A1A' : '#F5F5F5'}
+            borderRadius={10}
+            px="$4"
+            py="$4"
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
           >
-            <HStack alignItems="center" justifyContent="space-between">
-              <HStack alignItems="center" space="md" flex={1}>
-                <Box
-                  w={24}
-                  h={24}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Feather
-                    name="credit-card"
-                    size={20}
-                    color={isDark ? '#8C8C8C' : '#9CA3AF'}
-                  />
-                </Box>
-                <Text
-                  color={isDark ? '#8C8C8C' : '#9CA3AF'}
-                  fontSize={14}
-                  fontWeight="$normal"
-                >
-                  Add Payment Method
-                </Text>
-              </HStack>
-              <Box
-                w={32}
-                h={32}
-                alignItems="center"
-                justifyContent="center"
+            <HStack alignItems="center" space="md" flex={1}>
+              <Feather
+                name="credit-card"
+                size={24}
+                color={isDark ? '#FFFFFF' : '#000000'}
+              />
+              <Text
+                fontSize={11}
+                fontWeight="$bold"
+                color={isDark ? '#FFFFFF' : '#000000'}
               >
-                <Feather
-                  name="plus"
-                  size={24}
-                  color={isDark ? '#8C8C8C' : '#9CA3AF'}
-                />
-              </Box>
+                Add Payment Method
+              </Text>
             </HStack>
+            <Feather
+              name="plus"
+              size={24}
+              color={isDark ? '#FFFFFF' : '#000000'}
+            />
           </Box>
         </Pressable>
 
         {/* Billing History Section */}
         <VStack space="md" mt="$4">
           {/* Billing History Header */}
-          <HStack alignItems="center" justifyContent="space-between" mb="$2">
-            <Text
-              fontSize={16}
-              fontWeight="$bold"
-              color={isDark ? '#FFFFFF' : '#000000'}
-            >
-              Billing History
-            </Text>
-            <HStack space="sm" alignItems="center">
-              {/* Date Range Button */}
-              <Pressable onPress={handleDateRangePress}>
-                <Box
-                  bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
-                  borderWidth={1}
-                  borderColor={isDark ? '$borderDark600' : '$borderLight200'}
-                  borderRadius={20}
-                  px="$3"
-                  py="$2"
-                >
-                  <HStack alignItems="center" space="xs">
-                    <Text
-                      fontSize={10}
-                      fontWeight="$medium"
-                      color={isDark ? '$textDark50' : '$textLight900'}
-                    >
-                      {dateRange}
-                    </Text>
-                    <Feather
-                      name="chevron-down"
-                      size={14}
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </HStack>
-                </Box>
-              </Pressable>
+          <Text
+            fontSize={11}
+            fontWeight="$bold"
+            color={isDark ? '#FFFFFF' : '#000000'}
+            px="$2"
+            mb="$2"
+          >
+            Billing History
+          </Text>
 
-              {/* Sort Button */}
-              <Pressable onPress={handleSortPress}>
-                <Box
-                  bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
-                  borderWidth={1}
-                  borderColor={isDark ? '$borderDark600' : '$borderLight200'}
-                  borderRadius={20}
-                  px="$3"
-                  py="$2"
-                >
-                  <HStack alignItems="center" space="xs">
-                    <Text
-                      fontSize={10}
-                      fontWeight="$medium"
-                      color={isDark ? '$textDark50' : '$textLight900'}
-                    >
-                      Sort
-                    </Text>
-                    <Feather
-                      name="chevron-down"
-                      size={14}
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                  </HStack>
-                </Box>
-              </Pressable>
-            </HStack>
+          <HStack alignItems="center" justifyContent="space-between" mb="$3" px="$2">
+            {/* Date Range Button */}
+            <Pressable onPress={handleDateRangePress}>
+              <Box
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                borderWidth={1}
+                borderColor="#B9B9B9"
+                borderRadius={20}
+                px="$3"
+                py="$2"
+              >
+                <HStack alignItems="center" space="xs">
+                  <Text
+                    fontSize={10}
+                    fontWeight="$medium"
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  >
+                    {dateRange}
+                  </Text>
+                  <Feather
+                    name="chevron-down"
+                    size={14}
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  />
+                </HStack>
+              </Box>
+            </Pressable>
+
+            {/* Sort Button */}
+            <Pressable onPress={handleSortPress}>
+              <Box
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                borderWidth={1}
+                borderColor="#B9B9B9"
+                borderRadius={20}
+                px="$3"
+                py="$2"
+              >
+                <HStack alignItems="center" space="xs">
+                  <Text
+                    fontSize={10}
+                    fontWeight="$medium"
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  >
+                    Sort
+                  </Text>
+                  <Feather
+                    name="chevron-down"
+                    size={14}
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  />
+                </HStack>
+              </Box>
+            </Pressable>
           </HStack>
 
           {/* Billing History Entries */}
@@ -260,4 +266,3 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
 };
 
 export default PaymentTab;
-

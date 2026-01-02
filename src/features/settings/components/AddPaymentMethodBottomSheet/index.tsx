@@ -68,6 +68,16 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
         setExpirationDate(formatted);
     };
 
+    // Mask card number for display (show first 8 and last 4 digits)
+    const maskCardNumber = (number: string) => {
+        if (number.length <= 8) return number;
+        const cleaned = number.replace(/\s/g, '');
+        if (cleaned.length <= 8) return number;
+        const first8 = cleaned.slice(0, 8);
+        const last4 = cleaned.slice(-4);
+        return `${first8}***${last4}`;
+    };
+
     // Payment method selection view
     if (!selectedPaymentMethod) {
         return (
@@ -76,7 +86,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                 <HStack justifyContent="space-between" alignItems="center" mb="$4">
                     <Pressable onPress={onClose}>
                         <Feather
-                            name="x"
+                            name="chevron-left"
                             size={24}
                             color={isDark ? '#FFFFFF' : '#000000'}
                         />
@@ -98,44 +108,31 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                     {/* Apple Pay Option */}
                     <Pressable onPress={() => handlePaymentMethodSelect('apple-pay')}>
                         <Box
-                            bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
+                            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                             borderWidth={1}
-                            borderColor={isDark ? '$borderDark600' : '$borderLight200'}
+                            borderColor="#B9B9B9"
                             borderRadius={10}
                             p="$4"
                         >
                             <HStack space="md" alignItems="center">
                                 <Box
-                                    w={24}
-                                    h={24}
-                                    bg={isDark ? '$backgroundDark700' : '$backgroundLight50'}
-                                    borderRadius={6}
+                                    w={40}
+                                    h={40}
+                                    bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                                    borderRadius={20}
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Feather name="smartphone" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+                                    <Feather name="smartphone" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
                                 </Box>
-                                <VStack flex={1} space="xs">
-                                    <Text
-                                        fontSize={12}
-                                        fontWeight="$semibold"
-                                        color={isDark ? '$textDark50' : '$textLight900'}
-                                    >
-                                        Apple Pay
-                                    </Text>
-                                    <Text
-                                        fontSize={9}
-                                        color={isDark ? '$textDark400' : '$textLight500'}
-                                        lineHeight={14}
-                                    >
-                                        Add Apple Pay as your payment method
-                                    </Text>
-                                </VStack>
-                                <Feather
-                                    name="chevron-right"
-                                    size={18}
+                                <Text
+                                    fontSize={11}
+                                    fontWeight="$bold"
                                     color={isDark ? '#FFFFFF' : '#000000'}
-                                />
+                                    flex={1}
+                                >
+                                    Apple Pay
+                                </Text>
                             </HStack>
                         </Box>
                     </Pressable>
@@ -143,39 +140,32 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                     {/* Credit Card Option */}
                     <Pressable onPress={() => handlePaymentMethodSelect('credit-card')}>
                         <Box
-                            bg={isDark ? '$backgroundDark0' : '$backgroundLight0'}
+                            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                             borderWidth={1}
-                            borderColor={isDark ? '$borderDark600' : '$borderLight200'}
+                            borderColor="#B9B9B9"
                             borderRadius={10}
                             p="$4"
                         >
-                            <HStack space="md" alignItems="center">
-                                <Box
-                                    w={24}
-                                    h={24}
-                                    bg={isDark ? '$backgroundDark700' : '$backgroundLight50'}
-                                    borderRadius={6}
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <Feather name="credit-card" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
-                                </Box>
-                                <VStack flex={1} space="xs">
+                            <HStack space="md" alignItems="center" justifyContent="space-between">
+                                <HStack space="md" alignItems="center" flex={1}>
+                                    <Box
+                                        w={40}
+                                        h={40}
+                                        bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                                        borderRadius={20}
+                                        alignItems="center"
+                                        justifyContent="center"
+                                    >
+                                        <Feather name="credit-card" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                    </Box>
                                     <Text
-                                        fontSize={12}
-                                        fontWeight="$semibold"
-                                        color={isDark ? '$textDark50' : '$textLight900'}
+                                        fontSize={11}
+                                        fontWeight="$bold"
+                                        color={isDark ? '#FFFFFF' : '#000000'}
                                     >
                                         Credit Card
                                     </Text>
-                                    <Text
-                                        fontSize={9}
-                                        color={isDark ? '$textDark400' : '$textLight500'}
-                                        lineHeight={14}
-                                    >
-                                        Add a credit or debit card
-                                    </Text>
-                                </VStack>
+                                </HStack>
                                 <Feather
                                     name="chevron-right"
                                     size={18}
@@ -196,7 +186,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
             <HStack justifyContent="space-between" alignItems="center" mb="$4">
                 <Pressable onPress={() => setSelectedPaymentMethod(null)}>
                     <Feather
-                        name="arrow-left"
+                        name="chevron-left"
                         size={24}
                         color={isDark ? '#FFFFFF' : '#000000'}
                     />
@@ -220,7 +210,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
             </HStack>
 
             <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                <VStack space="md">
+                <VStack space="md" pb="$4">
                     {/* Name on Card Section */}
                     <VStack space="xs">
                         <Text
@@ -235,6 +225,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             borderColor="#B9B9B9"
                             borderRadius={10}
                             px="$4"
+                            py="$2"
                             mt="$1"
                         >
                             <Input borderWidth={0} bg="transparent">
@@ -264,27 +255,21 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             borderColor="#B9B9B9"
                             borderRadius={10}
                             px="$4"
+                            py="$2"
                             mt="$1"
                         >
-                            <HStack alignItems="center" space="sm">
-                                <Input flex={1} borderWidth={0} bg="transparent">
-                                    <InputField
-                                        placeholder="1234 5678 9012 3456"
-                                        placeholderTextColor="#B9B9B9"
-                                        value={cardNumber}
-                                        onChangeText={handleCardNumberChange}
-                                        color={isDark ? '#FFFFFF' : '#000000'}
-                                        fontSize={11}
-                                        keyboardType="numeric"
-                                        maxLength={19}
-                                    />
-                                </Input>
-                                <Feather
-                                    name="credit-card"
-                                    size={20}
-                                    color={isDark ? '#8C8C8C' : '#9CA3AF'}
+                            <Input borderWidth={0} bg="transparent">
+                                <InputField
+                                    placeholder="52093984***3945"
+                                    placeholderTextColor="#B9B9B9"
+                                    value={cardNumber ? maskCardNumber(cardNumber) : ''}
+                                    onChangeText={handleCardNumberChange}
+                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                    fontSize={11}
+                                    keyboardType="numeric"
+                                    maxLength={19}
                                 />
-                            </HStack>
+                            </Input>
                         </Box>
                     </VStack>
 
@@ -303,6 +288,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                 borderColor="#B9B9B9"
                                 borderRadius={10}
                                 px="$4"
+                                py="$2"
                                 mt="$1"
                             >
                                 <Input borderWidth={0} bg="transparent">
@@ -333,6 +319,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                 borderColor="#B9B9B9"
                                 borderRadius={10}
                                 px="$4"
+                                py="$2"
                                 mt="$1"
                             >
                                 <Input borderWidth={0} bg="transparent">
@@ -366,6 +353,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             borderColor="#B9B9B9"
                             borderRadius={10}
                             px="$4"
+                            py="$2"
                             mt="$1"
                         >
                             <Input borderWidth={0} bg="transparent">
@@ -380,6 +368,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             </Input>
                         </Box>
                     </VStack>
+
                     {/* Save Card Button */}
                     <Button
                         bg="#E2FF46"
@@ -388,6 +377,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                             console.log('Save card requested');
                             onClose();
                         }}
+                        mt="$2"
                     >
                         <ButtonText
                             color="#000000"
@@ -405,4 +395,3 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
 };
 
 export default AddPaymentMethodBottomSheet;
-

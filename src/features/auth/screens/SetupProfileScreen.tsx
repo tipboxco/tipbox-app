@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Image, Pressable } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Image, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle, Camera, User } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +8,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { toImageSource } from '@/src/utils';
+import { useSetupProfile } from '../api/hooks';
+import { Alert } from 'react-native';
 
 type SetupProfileScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SetupProfile'>;
 
@@ -15,6 +17,7 @@ export const SetupProfileScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SetupProfileScreenNavigationProp>();
+  const setupProfileMutation = useSetupProfile();
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -42,11 +45,24 @@ export const SetupProfileScreen = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (fullName && isUsernameValid) {
-      console.log('Profile setup:', { fullName, username, profileImage });
-      // TODO: API entegrasyonu yapılacak
-      navigation.navigate('SelectCategories');
+      try {
+        // API'ye profil bilgilerini gönder
+        await setupProfileMutation.mutateAsync({
+          fullName,
+          username,
+          profileImage: profileImage || undefined,
+        });
+
+        // Başarılı olursa SelectCategories ekranına yönlendir
+        navigation.navigate('SelectCategories');
+      } catch (error: any) {
+        // Hata durumunda kullanıcıya bilgi ver
+        const errorMessage = error.response?.data?.message || error.message || 'Profil bilgileri kaydedilirken bir hata oluştu.';
+        Alert.alert('Hata', errorMessage, [{ text: 'Tamam' }]);
+        console.error('[SetupProfileScreen] Profile setup error:', error);
+      }
     }
   };
 
@@ -163,10 +179,14 @@ export const SetupProfileScreen = () => {
           mt="auto"
           mb="$4"
           onPress={handleNext}
-          opacity={fullName && isUsernameValid ? 1 : 0.5}
-          disabled={!fullName || !isUsernameValid}
+          opacity={fullName && isUsernameValid && !setupProfileMutation.isPending ? 1 : 0.5}
+          disabled={!fullName || !isUsernameValid || setupProfileMutation.isPending}
         >
-          <ButtonText color="$textLight900">Devam Et</ButtonText>
+          {setupProfileMutation.isPending ? (
+            <Spinner size="small" color="$textLight900" />
+          ) : (
+            <ButtonText color="$textLight900">Devam Et</ButtonText>
+          )}
         </Button>
       </VStack>
       </Box>

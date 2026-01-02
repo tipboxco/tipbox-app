@@ -1,5 +1,11 @@
 export * from './SettingsScreen';
 export { default as ForgotPasswordScreen } from './ForgotPasswordScreen';
+export { default as ChangePasswordScreen } from './ChangePasswordScreen';
+export { default as TwoFactorAuthScreen } from './TwoFactorAuthScreen';
+export { default as GoogleAuthenticatorSetupScreen } from './GoogleAuthenticatorSetupScreen';
+export { default as GoogleAuthenticatorVerifyScreen } from './GoogleAuthenticatorVerifyScreen';
+export { default as SMSVerificationScreen } from './SMSVerificationScreen';
+export { default as SMSVerifyCodeScreen } from './SMSVerifyCodeScreen';
 export { default as NotificationSettingsScreen } from './NotificationSettingsScreen';
 export { default as PrivacySettingsScreen } from './PrivacySettingsScreen';
 export { default as SupportSettingsScreen } from './SupportSettingsScreen';

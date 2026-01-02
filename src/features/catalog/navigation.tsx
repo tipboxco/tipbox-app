@@ -21,7 +21,7 @@ export type CatalogStackParamList = {
   BrandProductDetailScreen: { productId: string };
   NewsDetailScreen: { newsId: string };
   SurveyScreen: { brandId: string };
-  BrandEventsDetailScreen: undefined;
+  BrandEventsDetailScreen: { eventId: string };
   BrandHistoryScreen: { brandId: string };
   BrandSurveyListScreen: { brandId: string };
   BrandPostListScreen: { brandId: string };

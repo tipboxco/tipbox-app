@@ -634,7 +634,7 @@ export const FeedScreen = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box
         flex={1}
-        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
           title="Akış"
