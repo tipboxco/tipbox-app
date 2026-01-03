@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "tipbox-app",
-    "slug": "tipbox-app",
+    "slug": "tipbox-test-app",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "sdkVersion"
@@ -10,13 +10,13 @@
       "enabled": true,
       "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD",
-      "url": "https://u.expo.dev/098fbee5-88e4-49ba-bb37-80601a5d47af"
+      "url": "https://u.expo.dev/e736a2de-dfd6-47a8-925c-d8c1ddbcaddb"
     },
     "orientation": "portrait",
-    "icon": "./assets/tipbox_logo.png", 
+    "icon": "./assets/tipbox_logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/tipbox_logo.png",  
+      "image": "./assets/tipbox_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -26,7 +26,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.devkocmehmet.tipboxapp",
+      "bundleIdentifier": "co.tipbox.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",
         "NSMicrophoneUsageDescription": "Video kaydı için mikrofona ihtiyaç var.",
@@ -56,7 +56,7 @@
       }
     },
     "android": {
-      "package": "com.devkocmehmet.tipboxapp",
+      "package": "co.tipbox.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/tipbox_logo.png",
@@ -92,8 +92,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "098fbee5-88e4-49ba-bb37-80601a5d47af"
+        "projectId": "e736a2de-dfd6-47a8-925c-d8c1ddbcaddb"
       }
-    }
+    },
+    "owner": "tipboxco"
   }
 }
