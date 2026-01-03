@@ -16,11 +16,14 @@ import { Feather } from '@expo/vector-icons';
 import SupportRequestCard from '../components/SupportRequestCard/index';
 import SupportRequestFilterGroup from '../components/SupportRequestFilterGroup/index';
 import { useSafeAreaValues } from '@/src/utils';
-import { useSupportRequests } from '../api/hooks';
+import { useSupportRequests, useAcceptSupportRequest } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
 import type { SupportRequest } from '../api/messagesApi';
+import { Alert } from 'react-native';
+import { useAppStore } from '@/src/store/appStore';
+import { toImageSource } from '@/src/utils';
 
 type SupportRequestsScreenNavigationProp = NativeStackNavigationProp<any, 'SupportRequestsScreen'>;
 
@@ -34,6 +37,8 @@ const SupportRequestsScreen: React.FC = () => {
   const bottomInset = useSafeAreaValues('bottom');
   const queryClient = useQueryClient();
   const { isConnected, on, off } = useSocket();
+  const acceptMutation = useAcceptSupportRequest();
+  const { user } = useAppStore();
 
   // Filter mapping: UI filter ID -> API status
   const filterStatusMap: Record<string, 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported' | undefined> = {
@@ -103,17 +108,75 @@ const SupportRequestsScreen: React.FC = () => {
     // Find the request data
     const request = supportRequests?.find(r => r.id === requestId);
     
-    if (request) {
-      // Navigate to SupportMessageDetail
-      navigation.navigate('SupportMessageDetail', {
-        expertName: request.userName,
-        expertTitle: request.userTitle,
-        expertAvatar: request.userAvatar,
-        requestId: requestId,
-        status: request.status,
-        threadId: request.threadId,
-      });
+    if (!request) return;
+    
+    // Tüm durumlar için SupportMessageDetail ekranını kullan
+    // Request'i oluşturan kullanıcının bilgileri (user olarak)
+    const userName = request.userName;
+    const userTitle = request.userTitle;
+    const userAvatar = request.userAvatar ? toImageSource(request.userAvatar) : require('@/assets/avatar/ozan.png');
+    
+    // Mevcut kullanıcının bilgileri (expert olarak - request'i kabul eden/edebilecek kişi)
+    const expertName = user?.fullName || 'Expert';
+    const expertTitle = ''; // User interface'inde title yok
+    const expertAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
+    
+    // SupportMessageDetail'e yönlendir (tüm durumlar için)
+    navigation.navigate('SupportMessageDetail', {
+      expertName: expertName,
+      expertTitle: expertTitle,
+      expertAvatar: expertAvatar,
+      userName: userName,
+      userTitle: userTitle,
+      userAvatar: userAvatar,
+      requestId: requestId,
+      status: request.status,
+      threadId: request.threadId || null, // Thread oluşmamışsa null
+    });
+  };
+
+  const handleAccept = (requestId: string) => {
+    // Find the request data
+    const request = supportRequests?.find(r => r.id === requestId);
+    
+    if (!request) {
+      Alert.alert('Hata', 'Destek talebi bulunamadı');
+      return;
     }
+
+    // Accept support request mutation
+    acceptMutation.mutate(requestId, {
+      onSuccess: (data) => {
+        console.log('[SupportRequestsScreen] ✅ Support request accepted, threadId:', data.threadId);
+        
+        // Mevcut kullanıcının bilgileri (expert olarak)
+        const expertName = user?.fullName || 'Expert';
+        const expertTitle = '';
+        const expertAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
+        
+        // Request'i oluşturan kullanıcının bilgileri (user olarak)
+        const userName = request.userName;
+        const userTitle = request.userTitle;
+        const userAvatar = request.userAvatar ? toImageSource(request.userAvatar) : require('@/assets/avatar/ozan.png');
+        
+        // Yeni oluşturulan thread ile SupportMessageDetail ekranına yönlendir
+        navigation.navigate('SupportMessageDetail', {
+          expertName: expertName,
+          expertTitle: expertTitle,
+          expertAvatar: expertAvatar,
+          userName: userName,
+          userTitle: userTitle,
+          userAvatar: userAvatar,
+          requestId: requestId,
+          status: 'active',
+          threadId: data.threadId,
+        });
+      },
+      onError: (error: any) => {
+        console.error('[SupportRequestsScreen] ❌ Support request accept error:', error);
+        Alert.alert('Hata', error.message || 'Destek talebi kabul edilemedi');
+      },
+    });
   };
 
   const handleFilterPress = (filterId: string) => {
@@ -165,7 +228,7 @@ const SupportRequestsScreen: React.FC = () => {
 
       {/* Filter Buttons */}
       <SupportRequestFilterGroup
-        filters={filterOptions.map(f => ({ id: f.id, name: f.name }))}
+        filters={filterOptions.map(f => ({ id: f.id, name: f.name, isActive: activeFilter === f.id }))}
         activeFilter={activeFilter}
         onFilterPress={handleFilterPress}
       />
@@ -187,6 +250,7 @@ const SupportRequestsScreen: React.FC = () => {
             <SupportRequestCard
               data={item}
               onPress={handleRequestPress}
+              onAccept={handleAccept}
             />
           )}
           keyExtractor={(item) => item.id}

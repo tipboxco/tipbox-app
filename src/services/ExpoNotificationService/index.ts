@@ -53,6 +53,7 @@ class ExpoNotificationService {
   private async configureForegroundNotifications() {
     await Notifications.setNotificationHandler({
       handleNotification: async () => ({
+        shouldShowAlert: true, // Expo Go'da foreground notification'lar için gerekli
         shouldPlaySound: this.config.defaultSound ?? true,
         shouldSetBadge: true,
         shouldShowBanner: true, // iOS/Android: Banner göster
@@ -85,9 +86,10 @@ class ExpoNotificationService {
     token: string,
     deviceType: 'ios' | 'android',
     maxRetries: number = 3,
-    initialDelay: number = 1000
+    initialDelay: number = 2000 // 500 hatası için daha uzun initial delay
   ): Promise<void> {
     let lastError: any = null;
+    let firstError: any = null;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -100,30 +102,49 @@ class ExpoNotificationService {
         await SecureStore.deleteItemAsync(PENDING_PUSH_TOKEN_KEY);
         await SecureStore.deleteItemAsync(PENDING_DEVICE_TYPE_KEY);
         
-        console.log('[ExpoNotificationService] ✅ Push token registered to backend');
+        // Başarılı olduysa ve önceki hata varsa, başarı mesajı göster
+        if (firstError) {
+          console.log('[ExpoNotificationService] ✅ Push token registered to backend (after retry)');
+        } else {
+          console.log('[ExpoNotificationService] ✅ Push token registered to backend');
+        }
         return;
       } catch (error: any) {
         lastError = error;
+        if (!firstError) {
+          firstError = error; // İlk hatayı sakla
+        }
+        
         const status = error?.response?.status;
         const isServerError = status >= 500 && status < 600;
         const isClientError = status >= 400 && status < 500;
         
         // 4xx hataları (client error) için retry yapma
         if (isClientError && status !== 429) {
-          console.error('[ExpoNotificationService] ❌ Client error, skipping retry:', {
-            status,
-            message: error?.response?.data?.message || error?.message,
-          });
+          // Sadece ilk hatada detaylı log göster
+          if (attempt === 0) {
+            console.error('[ExpoNotificationService] ❌ Client error, skipping retry:', {
+              status,
+              message: error?.response?.data?.message || error?.message,
+            });
+          }
           throw error;
         }
         
         // 5xx hataları (server error) veya network hataları için retry yap
         if (attempt < maxRetries - 1) {
-          const delay = initialDelay * Math.pow(2, attempt); // Exponential backoff
-          console.warn(`[ExpoNotificationService] ⚠️ Retry ${attempt + 1}/${maxRetries} in ${delay}ms...`, {
-            status,
-            message: error?.response?.data?.message || error?.message,
-          });
+          // Exponential backoff: 500 hatası için daha uzun delay
+          const delay = isServerError 
+            ? initialDelay * Math.pow(2, attempt) * 2 // Server error için 2x daha uzun
+            : initialDelay * Math.pow(2, attempt);
+          
+          // Sadece ilk retry'da ve son retry'da log göster (log spam'ı azalt)
+          if (attempt === 0 || attempt === maxRetries - 2) {
+            console.warn(`[ExpoNotificationService] ⚠️ Retry ${attempt + 1}/${maxRetries} in ${delay}ms...`, {
+              status,
+              message: error?.response?.data?.message || error?.message,
+            });
+          }
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -133,13 +154,24 @@ class ExpoNotificationService {
     try {
       await SecureStore.setItemAsync(PENDING_PUSH_TOKEN_KEY, token);
       await SecureStore.setItemAsync(PENDING_DEVICE_TYPE_KEY, deviceType);
-      console.warn('[ExpoNotificationService] ⚠️ All retries failed, token saved for later retry');
+      // Sadece bir kez log göster (log spam'ı azalt)
+      console.warn('[ExpoNotificationService] ⚠️ All retries failed, token saved for later retry', {
+        status: lastError?.response?.status,
+        message: lastError?.response?.data?.message || lastError?.message,
+      });
     } catch (storeError) {
       console.error('[ExpoNotificationService] ❌ Failed to save pending token:', storeError);
     }
     
-    // Hata fırlat ama uygulama çalışmaya devam etsin
-    console.error('[ExpoNotificationService] ❌ Failed to register push token after all retries:', lastError);
+    // Hata fırlatma - uygulama çalışmaya devam etsin (push notification kritik değil)
+    // Sadece bir kez log göster
+    if (firstError === lastError) {
+      // İlk ve son hata aynıysa sadece bir kez log göster
+      console.error('[ExpoNotificationService] ❌ Failed to register push token after all retries:', {
+        status: lastError?.response?.status,
+        message: lastError?.response?.data?.message || lastError?.message,
+      });
+    }
   }
 
   /**
@@ -327,8 +359,18 @@ class ExpoNotificationService {
   }
 
   cleanup() {
-    this.notificationListeners.forEach(listener => listener.remove());
-    this.notificationListeners = [];
+    // Güvenli cleanup: notificationListeners undefined olabilir
+    if (this.notificationListeners && Array.isArray(this.notificationListeners)) {
+      this.notificationListeners.forEach(listener => {
+        if (listener && typeof listener.remove === 'function') {
+          listener.remove();
+        }
+      });
+      this.notificationListeners = [];
+    } else {
+      // Eğer undefined ise, boş array olarak initialize et
+      this.notificationListeners = [];
+    }
     
     if (this.tokenChangeListener) {
       this.tokenChangeListener.remove();

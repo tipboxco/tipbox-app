@@ -15,6 +15,13 @@ let failedQueue: Array<{
  * Bekleyen request'leri işler (başarılı veya hatalı)
  */
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
+  // failedQueue undefined olabilir, kontrol et
+  if (!failedQueue || !Array.isArray(failedQueue)) {
+    console.warn('[ApiInterceptor] ⚠️ failedQueue is not an array, initializing...');
+    failedQueue = [];
+    return;
+  }
+  
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -50,17 +57,58 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
         }
       }
 
+      // Log request details for /messages/tips endpoint
+      if (config.url?.includes('/messages/tips')) {
+        console.log('[ApiInterceptor] 📤 Request Interceptor - /messages/tips:', {
+          url: config.url,
+          method: config.method,
+          baseURL: config.baseURL,
+          fullURL: `${config.baseURL}${config.url}`,
+          data: config.data,
+          headers: {
+            'Content-Type': config.headers['Content-Type'],
+            'Authorization': config.headers.Authorization ? 'Bearer ***' : undefined,
+          },
+        });
+      }
+
       return config;
     },
     (error) => {
+      console.error('[ApiInterceptor] ❌ Request Error:', error);
       return Promise.reject(error);
     }
   );
 
   // Response Interceptor - Token refresh
   client.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      // Log response details for /messages/tips endpoint
+      if (response.config.url?.includes('/messages/tips')) {
+        console.log('[ApiInterceptor] ✅ Response Interceptor - /messages/tips:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data,
+          headers: response.headers,
+        });
+      }
+      return response;
+    },
     async (error: AxiosError) => {
+      // Log error response details for /messages/tips endpoint
+      if (error.config?.url?.includes('/messages/tips')) {
+        console.error('[ApiInterceptor] ❌ Response Error - /messages/tips:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          request: {
+            url: error.config.url,
+            method: error.config.method,
+            data: error.config.data,
+          },
+        });
+      }
       const originalRequest = error.config as InternalAxiosRequestConfig & {
         _retry?: boolean;
       };
@@ -91,6 +139,12 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
 
         // Zaten refresh işlemi devam ediyorsa, queue'ya ekle
         if (isRefreshing) {
+          // failedQueue undefined olabilir, kontrol et
+          if (!failedQueue || !Array.isArray(failedQueue)) {
+            console.warn('[ApiInterceptor] ⚠️ failedQueue is not an array during refresh, initializing...');
+            failedQueue = [];
+          }
+          
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject });
           })

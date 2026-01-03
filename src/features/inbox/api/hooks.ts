@@ -9,6 +9,8 @@ import {
   acceptSupportRequest,
   rejectSupportRequest,
   cancelSupportRequest,
+  closeSupportRequest,
+  reportSupportRequest,
 } from './messagesApi';
 import type { InboxMessage } from '../types';
 import type {
@@ -19,6 +21,8 @@ import type {
   SupportRequest,
   GetSupportRequestsParams,
   AcceptSupportRequestResponse,
+  CloseSupportRequestRequest,
+  ReportSupportRequestRequest,
 } from './messagesApi';
 
 /**
@@ -249,6 +253,52 @@ export const useCancelSupportRequest = () => {
     mutationFn: cancelSupportRequest,
     onSuccess: () => {
       // Support request listesini invalidate et (socket event'ten sonra güncellenecek)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Close Support Request mutation hook
+ * Support request'i rating ile kapatır (completed durumuna geçer)
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const closeMutation = useCloseSupportRequest();
+ * closeMutation.mutate({ requestId: 'req-123', data: { rating: 5, comment: 'Great!' } });
+ */
+export const useCloseSupportRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { requestId: string; data: CloseSupportRequestRequest }>({
+    mutationFn: ({ requestId, data }) => closeSupportRequest(requestId, data),
+    onSuccess: () => {
+      // Support request listesini invalidate et
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Report Support Request mutation hook
+ * Support request'i raporlar (reported durumuna geçer)
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const reportMutation = useReportSupportRequest();
+ * reportMutation.mutate({ requestId: 'req-123', data: { reason: 'Spam', description: '...' } });
+ */
+export const useReportSupportRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { requestId: string; data: ReportSupportRequestRequest }>({
+    mutationFn: ({ requestId, data }) => reportSupportRequest(requestId, data),
+    onSuccess: () => {
+      // Support request listesini invalidate et
       queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     },

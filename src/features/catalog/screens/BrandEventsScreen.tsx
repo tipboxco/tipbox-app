@@ -12,6 +12,8 @@ import { useSafeAreaValues } from '@/src/utils';
 import { useBrandEvents } from '../api/hooks';
 import type { Event } from '../types';
 import type { EventCardData } from '../components/EventCard';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 
 type BrandEventsScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandEventsScreen'>;
 type BrandEventsScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandEventsScreen'>;
@@ -97,7 +99,10 @@ const BrandEventsScreen: React.FC = () => {
                   <EventCard
                     key={event.id}
                     event={event}
-                    onPress={() => navigation.navigate('BrandEventsDetailScreen', { eventId: event.id })}
+                    onPress={() => {
+                      // EventDetailScreen'e yönlendir (Events tab'ı içinde)
+                      navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail', { eventId: event.id });
+                    }}
                   />
                 ))}
                 {isFetchingNextPage && (

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { Platform, FlatList, ActivityIndicator } from 'react-native';
+import { Platform, FlatList, ActivityIndicator, Share } from 'react-native';
 import { ScrollView, Dimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -54,7 +54,27 @@ const EventDetailScreen: React.FC = () => {
     const route = useRoute<EventDetailScreenRouteProp>();
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const { eventId } = route.params;
+    const { eventId } = route.params || {};
+
+    // Validate eventId
+    if (!eventId) {
+        return (
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+                    <Header
+                        title="Event Not Found"
+                        showBackButton={true}
+                        onBackPress={() => navigation.goBack()}
+                    />
+                    <Box flex={1} alignItems="center" justifyContent="center">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'}>
+                            Event ID bulunamadı
+                        </Text>
+                    </Box>
+                </Box>
+            </SafeAreaView>
+        );
+    }
 
     // Fetch event detail from API
     const { data: event, isLoading, error } = useEventDetail(eventId);
@@ -442,6 +462,19 @@ const EventDetailScreen: React.FC = () => {
         }
     }, [hasNextPostsPage, isFetchingNextPostsPage, fetchNextPostsPage]);
 
+    // Handle share
+    const handleShare = useCallback(async () => {
+        if (!event) return;
+        try {
+            await Share.share({
+                message: `Check out ${event.title} event on Tipbox!`,
+                url: `tipboxapp://events/event/${eventId}`,
+            });
+        } catch (error) {
+            console.error('[EventDetailScreen] Share error:', error);
+        }
+    }, [event, eventId]);
+
     // Banner yüksekliği ve içerik başlangıç noktası
     const BANNER_HEIGHT = 250;
     const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
@@ -521,7 +554,7 @@ const EventDetailScreen: React.FC = () => {
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                     showShare={true}
-                    onSharePress={() => console.log('Share pressed')}
+                    onSharePress={handleShare}
                 />
             </Animated.View>
 
@@ -585,6 +618,7 @@ const EventDetailScreen: React.FC = () => {
                         </Pressable>
 
                         <Pressable
+                            onPress={handleShare}
                             width={36}
                             height={36}
                             borderRadius={18}
@@ -782,7 +816,7 @@ const EventDetailScreen: React.FC = () => {
                                 ItemSeparatorComponent={() => <Box width={6} />}
                                 contentContainerStyle={{ paddingRight: 16 }}
                                 renderItem={({ item }) => {
-                                    const imageSource = toImageSource(item.image);
+                                    const imageSource = item.image ? toImageSource(item.image) : undefined;
                                     return (
                                         <Box
                                             width={108}

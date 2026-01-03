@@ -87,8 +87,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   });
   
   // Unread count için query - badge sync için
-  const { data: unreadCountData } = useUnreadCount();
+  // Sadece authenticated ve auth ready ise çalıştır
+  const { data: unreadCountData, error: unreadCountError } = useUnreadCount(
+    isAuthenticated && isAuthReady
+  );
   const unreadCount = unreadCountData?.data?.count || 0;
+  
+  // Hata durumunda log (ama uygulamayı durdurma)
+  if (unreadCountError && isAuthenticated) {
+    // Sadece bir kez log göster (log spam'ı önle)
+    console.warn('[NotificationProvider] ⚠️ Unread count error (using default 0):', {
+      status: (unreadCountError as any)?.response?.status,
+      message: (unreadCountError as any)?.response?.data?.message || (unreadCountError as any)?.message,
+    });
+  }
   
   // Toast kaldırıldı - Expo bildirimleri kullanılıyor
 
@@ -186,7 +198,24 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
-    console.log('[NotificationProvider] ✅ Registering socket notification listener');
+    // Socket bağlantı durumunu kontrol et
+    const socket = socketService.getSocket();
+    const isSocketConnected = socketService.isConnected();
+    
+    if (!isSocketConnected || !socket) {
+      console.warn('[NotificationProvider] ⚠️ Socket not connected, listener will not work:', {
+        isSocketConnected,
+        socketExists: !!socket,
+        socketId: socket?.id,
+      });
+      // Socket bağlı değilse listener ekleme (socket bağlandığında tekrar denenecek)
+      return;
+    }
+
+    console.log('[NotificationProvider] ✅ Registering socket notification listener', {
+      socketId: socket.id,
+      isConnected: isSocketConnected,
+    });
 
     const handleSocketNotification = async (notification: Notification) => {
       console.log('[NotificationProvider] 📨 Socket notification received:', notification);
@@ -197,6 +226,64 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         notification.type,
         { source: 'socket' }
       );
+
+      // Mesaj bildirimleri için özel kontrol: Eğer kullanıcı MessageDetail ekranındaysa ve aynı thread'deyse notification gösterilmemeli
+      const isMessageNotification = ['NEW_MESSAGE', 'DM_REQUEST_RECEIVED', 'DM_REQUEST_ACCEPTED'].includes(notification.type);
+      let shouldShowNotification = true;
+
+      if (isMessageNotification && isForeground) {
+        try {
+          // AppStore'dan aktif thread ID'sini kontrol et (MessageDetail ekranında set edilir)
+          const { useAppStore } = await import('@/src/store/appStore');
+          const activeThreadId = useAppStore.getState().activeThreadId;
+          
+          // Notification'dan thread ID'sini al
+          const notificationThreadId = notification.metadata?.threadId || notification.metadata?.messageId || notification.metadata?.requestId;
+          
+          // Eğer aktif thread ID varsa ve notification thread ID ile eşleşiyorsa notification gösterilmemeli
+          if (activeThreadId && notificationThreadId && activeThreadId === notificationThreadId) {
+            console.log('[NotificationProvider] ⏭️ Skipping notification - user is viewing this thread:', notificationThreadId);
+            shouldShowNotification = false;
+          } else {
+            // Fallback: NavigationService'den aktif route'u kontrol et (eski yöntem)
+            const { navigationService } = await import('@/src/services/NavigationService');
+            const currentRoute = navigationService.getCurrentRoute();
+            
+            // Eğer MessageDetail ekranındaysa ve threadId eşleşiyorsa notification gösterilmemeli
+            if (currentRoute?.name === 'MessageDetail' || currentRoute?.params?.screen === 'MessageDetailScreen') {
+              const currentThreadId = currentRoute?.params?.threadId || currentRoute?.params?.messageId;
+              
+              if (notificationThreadId && currentThreadId && notificationThreadId === currentThreadId) {
+                console.log('[NotificationProvider] ⏭️ Skipping notification - user is viewing this thread (route check):', notificationThreadId);
+                shouldShowNotification = false;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('[NotificationProvider] ⚠️ Error checking active thread:', error);
+        }
+      }
+
+      // Foreground'da local notification göster (sadece gerekirse)
+      if (shouldShowNotification && isForeground && state.permissionStatus === 'granted') {
+        try {
+          await notificationService.sendLocalNotification({
+            title: notification.title || 'Yeni Bildirim',
+            body: notification.message || '',
+            data: {
+              notificationId: notification.id,
+              type: notification.type,
+              metadata: notification.metadata || {},
+              navigation: notification.navigation,
+            },
+          });
+          console.log('[NotificationProvider] ✅ Local notification sent for socket event');
+        } catch (error) {
+          console.error('[NotificationProvider] ❌ Error sending local notification:', error);
+        }
+      } else if (!shouldShowNotification) {
+        console.log('[NotificationProvider] ⏭️ Notification suppressed - user is viewing the thread');
+      }
 
       // Domain Service'e yönlendir (EventService → NotificationService)
       // Bu katmanlı mimari: Transport → Domain → State + Navigation
@@ -223,12 +310,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     socketService.onNotification(handleSocketNotification);
     console.log('[NotificationProvider] ✅ Socket notification listener registered');
 
-    // Test: Socket bağlantısını kontrol et
-    const socket = socketService.getSocket();
-    console.log('[NotificationProvider] 🔍 Socket connection status:', {
-      isConnected: socket?.connected,
-      socketId: socket?.id,
-    });
+    // DEBUG: Tüm socket event'lerini dinle (sadece development için)
+    if (__DEV__ && socket) {
+      // Bilinen event'leri log'la (Socket.IO'da onAny yok, bu yüzden manuel dinliyoruz)
+      const debugEvents = ['notification', 'new_notification', 'notifications', 'message', 'new_message'];
+      debugEvents.forEach((eventName) => {
+        socket.on(eventName, (data: any) => {
+          console.log(`[NotificationProvider] 🔍 Socket event received: ${eventName}`, {
+            data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data,
+          });
+        });
+      });
+    }
 
     return () => {
       console.log('[NotificationProvider] 🧹 Cleaning up socket notification listener');
@@ -242,8 +335,51 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
-    const handleNotificationReceived = (notification: NotificationPayload) => {
+    const handleNotificationReceived = async (notification: NotificationPayload) => {
       console.log('[NotificationProvider] 📱 Push notification received (foreground):', notification);
+      
+      // Mesaj bildirimleri için özel kontrol: Eğer kullanıcı MessageDetail ekranındaysa ve aynı thread'deyse notification gösterilmemeli
+      const notificationType = notification.data?.type as string;
+      const isMessageNotification = ['NEW_MESSAGE', 'DM_REQUEST_RECEIVED', 'DM_REQUEST_ACCEPTED'].includes(notificationType);
+      
+      if (isMessageNotification && isForeground) {
+        try {
+          // AppStore'dan aktif thread ID'sini kontrol et (MessageDetail ekranında set edilir)
+          const { useAppStore } = await import('@/src/store/appStore');
+          const activeThreadId = useAppStore.getState().activeThreadId;
+          
+          // Notification'dan thread ID'sini al
+          const notificationThreadId = notification.data?.metadata?.threadId || notification.data?.metadata?.messageId || notification.data?.metadata?.requestId;
+          
+          // Eğer aktif thread ID varsa ve notification thread ID ile eşleşiyorsa notification gösterilmemeli
+          if (activeThreadId && notificationThreadId && activeThreadId === notificationThreadId) {
+            console.log('[NotificationProvider] ⏭️ Skipping push notification - user is viewing this thread:', notificationThreadId);
+            // Query'leri yine de refresh et (state update için)
+            queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+            return;
+          } else {
+            // Fallback: NavigationService'den aktif route'u kontrol et (eski yöntem)
+            const { navigationService } = await import('@/src/services/NavigationService');
+            const currentRoute = navigationService.getCurrentRoute();
+            
+            // Eğer MessageDetail ekranındaysa ve threadId eşleşiyorsa notification gösterilmemeli
+            if (currentRoute?.name === 'MessageDetail' || currentRoute?.params?.screen === 'MessageDetailScreen') {
+              const currentThreadId = currentRoute?.params?.threadId || currentRoute?.params?.messageId;
+              
+              if (notificationThreadId && currentThreadId && notificationThreadId === currentThreadId) {
+                console.log('[NotificationProvider] ⏭️ Skipping push notification - user is viewing this thread (route check):', notificationThreadId);
+                // Query'leri yine de refresh et (state update için)
+                queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+                queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('[NotificationProvider] ⚠️ Error checking active thread for push notification:', error);
+        }
+      }
       
       // Foreground'da notification geldiğinde query'leri refresh et
       queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });

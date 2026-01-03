@@ -153,6 +153,18 @@ class NotificationService {
           },
         };
 
+      // Event bildirimleri → Events (Tab)
+      case 'EVENT_STARTED':
+      case 'EVENT_ENDING_SOON':
+      case 'EVENT_REWARD_AVAILABLE':
+        return {
+          route: TAB_ROUTES.EVENTS,
+          params: {
+            screen: 'EventsScreen',
+            params: metadata?.eventId ? { eventId: metadata.eventId } : undefined,
+          },
+        };
+
       default:
         return null;
     }

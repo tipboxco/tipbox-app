@@ -6,6 +6,8 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
@@ -18,6 +20,7 @@ import {
   useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
+import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 
 interface PostCardProps {
@@ -33,6 +36,12 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
+  
+  // Animated counter states
+  const [likesCount, setLikesCount] = useState(data.stats.likes);
+  const [commentsCount, setCommentsCount] = useState(data.stats.comments);
+  const [sharesCount, setSharesCount] = useState(data.stats.shares);
+  const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
 
   // Interaction hooks
   const likePostMutation = useLikePost();
@@ -51,13 +60,23 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
     }
   }, [postStatus]);
 
+  // Sync stats with data prop changes
+  useEffect(() => {
+    setLikesCount(data.stats.likes);
+    setCommentsCount(data.stats.comments);
+    setSharesCount(data.stats.shares);
+    setBookmarksCount(data.stats.bookmarks);
+  }, [data.stats.likes, data.stats.comments, data.stats.shares, data.stats.bookmarks]);
+
   // Action handlers
   const handleLike = () => {
     if (isLiked) {
       setIsLiked(false);
+      setLikesCount(prev => Math.max(0, prev - 1));
       unlikePostMutation.mutate(data.id);
     } else {
       setIsLiked(true);
+      setLikesCount(prev => prev + 1);
       likePostMutation.mutate(data.id);
     }
   };
@@ -65,9 +84,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   const handleBookmark = () => {
     if (isBookmarked) {
       setIsBookmarked(false);
+      setBookmarksCount(prev => Math.max(0, prev - 1));
       unbookmarkPostMutation.mutate(data.id);
     } else {
       setIsBookmarked(true);
+      setBookmarksCount(prev => prev + 1);
       bookmarkPostMutation.mutate(data.id);
     }
   };
@@ -76,6 +97,8 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
     // Zaten paylaşılmışsa tekrar paylaşma
     if (isShared) return;
     
+    setIsShared(true);
+    setSharesCount(prev => prev + 1);
     sharePostMutation.mutate({
       postId: data.id,
       shareType: 'INTERNAL_REPOST',
@@ -155,10 +178,12 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               title={data.contextData.name}
               subName={data.contextData.subName}
               onPress={() => {
-                navigation.navigate('Post', {
-                  screen: 'PostDetailScreen',
-                  params: { postData: data, type: 'experience' }
-                });
+                // Product için BrandProductDetailScreen'e navigate et
+                if (data.contextData?.id) {
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { 
+                    productId: data.contextData.id 
+                  });
+                }
               }}
             />
           </Box>
@@ -279,25 +304,34 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
               fill={isLiked ? '#FF3040' : 'none'}
             />
-            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-              {data.stats.likes}
-            </Text>
+            <AnimatedCounter
+              value={likesCount}
+              color={isDark ? '$textDark50' : '#000'}
+              fontSize="$2xs"
+              ml={4}
+            />
         </HStack>
         </Pressable>
         <Pressable onPress={handleComment}>
         <HStack mr={10} alignItems="center">
           <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
-            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-              {data.stats.comments}
-            </Text>
+            <AnimatedCounter
+              value={commentsCount}
+              color={isDark ? '$textDark50' : '#000'}
+              fontSize="$2xs"
+              ml={4}
+            />
         </HStack>
         </Pressable>
         <Pressable onPress={handleShare}>
         <HStack mr={10} alignItems="center">
           <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
-            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-              {data.stats.shares}
-            </Text>
+            <AnimatedCounter
+              value={sharesCount}
+              color={isDark ? '$textDark50' : '#000'}
+              fontSize="$2xs"
+              ml={4}
+            />
         </HStack>
         </Pressable>
         <Pressable onPress={handleBookmark}>
@@ -308,9 +342,12 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
               fill={isBookmarked ? '#829905' : 'none'}
             />
-            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-              {data.stats.bookmarks}
-            </Text>
+            <AnimatedCounter
+              value={bookmarksCount}
+              color={isDark ? '$textDark50' : '#000'}
+              fontSize="$2xs"
+              ml={4}
+            />
         </HStack>
         </Pressable>
       </HStack>

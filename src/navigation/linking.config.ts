@@ -156,3 +156,5 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
   // initialRouteName: 'Main',
 };
 
+
+

@@ -230,6 +230,27 @@ class NavigationService {
       return undefined;
     }
   }
+
+  /**
+   * Get current route (name + params)
+   */
+  getCurrentRoute(): { name?: string; params?: any } | undefined {
+    if (!this.isReady()) {
+      return undefined;
+    }
+
+    try {
+      const state = this.navigationRef!.current!.getState();
+      const route = state?.routes[state.index];
+      return {
+        name: route?.name,
+        params: (route as any)?.params,
+      };
+    } catch (error) {
+      console.error('[NavigationService] ❌ Get current route error:', error);
+      return undefined;
+    }
+  }
 }
 
 // Singleton instance

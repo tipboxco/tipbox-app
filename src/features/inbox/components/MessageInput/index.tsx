@@ -96,7 +96,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       elevation={1001}
       position="relative"
     >
-      <HStack space="sm" alignItems="center">
+      <HStack space="sm" alignItems="center" justifyContent="center">
         {/* Görsel Ekleme Butonu */}
         <Pressable
           onPress={onAddImage}
@@ -121,6 +121,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           borderWidth={0}
           borderRadius={20}
           height={40}
+          alignItems="center"
+          justifyContent="center"
         >
           <InputField
             placeholder={placeholder}
@@ -130,6 +132,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             value={message}
             onChangeText={setMessage}
             multiline={false}
+            style={{ textAlignVertical: 'center' }}
           />
         </Input>
 

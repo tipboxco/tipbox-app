@@ -7,7 +7,16 @@ import {
   HStack,
   Text,
   Image,
+  Button,
+  ButtonText,
+  Modal,
+  ModalBackdrop,
+  ModalContent,
+  ModalBody,
+  Input,
+  InputField,
 } from '@gluestack-ui/themed';
+import { toImageSource } from '@/src/utils';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -19,7 +28,7 @@ import SupportChatParticipants from '../components/SupportChatParticipants';
 import CloseSupportRequestModal from '../components/CloseSupportRequestModal';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useAppStore } from '@/src/store/appStore';
-import { useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, inboxKeys } from '../api/hooks';
+import { useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useCloseSupportRequest, useReportSupportRequest, inboxKeys } from '../api/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ThreadMessage } from '../api/messagesApi';
 
@@ -35,22 +44,30 @@ interface MessageDetailItem {
     supportType: string;
     message: string;
     amount: number;
-    status: 'pending' | 'accepted' | 'completed' | 'declined';
+    status: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
+    requestId?: string; // Support request ID (backend'den gelir)
+    threadId?: string | null; // Support thread ID (accepted ise)
+    fromUserId?: string; // Request'i oluşturan kullanıcı ID'si
+    toUserId?: string; // Request'in gönderildiği kullanıcı ID'si (expert)
   };
+  // Message status indicators
+  isRead?: boolean; // Mesaj okundu mu?
+  readAt?: string; // Okunma zamanı
 }
 
 type SupportMessageDetailScreenNavigationProp = NativeStackNavigationProp<any, 'SupportMessageDetail'>;
 
 interface SupportMessageDetailParams {
-  expertName: string;
-  expertTitle: string;
-  expertAvatar: any;
+  expertName?: string;
+  expertTitle?: string;
+  expertAvatar?: any;
   userName?: string;
   userTitle?: string;
   userAvatar?: any;
   requestId?: string;
   status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
   threadId?: string | null;
+  recipientUserId?: string;
 }
 
 // Mock mesaj geçmişi verisi
@@ -121,11 +138,15 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
   const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
+  const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+  const [reportReason, setReportReason] = useState('');
   const { user } = useAppStore();
   const queryClient = useQueryClient();
   const acceptMutation = useAcceptSupportRequest();
   const rejectMutation = useRejectSupportRequest();
   const cancelMutation = useCancelSupportRequest();
+  const closeMutation = useCloseSupportRequest();
+  const reportMutation = useReportSupportRequest();
 
   // Socket context
   const {
@@ -162,6 +183,14 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Support request bilgilerini thread mesajlarından al
+  const [supportRequestInfo, setSupportRequestInfo] = useState<{
+    supportType?: string;
+    message?: string;
+    amount?: number;
+    status?: string;
+  } | null>(null);
 
   // Thread mesajlarını yükle (eğer threadId varsa)
   const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(threadId || null);
@@ -169,17 +198,45 @@ const SupportMessageDetailScreen: React.FC = () => {
   // Thread mesajlarını local state'e dönüştür
   useEffect(() => {
     if (threadMessages && threadId) {
-      const convertedMessages: MessageDetailItem[] = threadMessages.map((msg) => ({
-        id: msg.id,
-        text: msg.message,
-        timestamp: new Date(msg.sentAt).toLocaleTimeString('tr-TR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        isSent: msg.senderId === user?.id,
-        senderName: msg.senderId === user?.id ? undefined : params.expertName,
-        senderAvatar: msg.senderId === user?.id ? undefined : params.expertAvatar,
-      }));
+      // Support request bilgisini bul (ilk support-request mesajından)
+      const supportRequestMsg = threadMessages.find(msg => msg.messageType === 'support-request');
+      if (supportRequestMsg) {
+        setSupportRequestInfo({
+          supportType: supportRequestMsg.supportRequestType || 'GENERAL',
+          message: supportRequestMsg.message,
+          amount: supportRequestMsg.amount || 0,
+          status: supportRequestMsg.supportRequestStatus || 'pending',
+        });
+      }
+      
+      const convertedMessages: MessageDetailItem[] = threadMessages
+        .filter(msg => msg.messageType === 'message') // Support thread'de sadece mesajlar gösterilir
+        .map((msg) => {
+          const isSent = msg.senderId === user?.id;
+          // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
+          const senderName = isSent 
+            ? undefined 
+            : (msg.senderName || params.expertName || 'Unknown');
+          const senderAvatar = isSent 
+            ? undefined 
+            : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : params.expertAvatar);
+          
+          // Normal mesaj (support thread'de sadece mesajlar var)
+          return {
+            id: msg.id,
+            text: msg.message || '',
+            timestamp: new Date(msg.sentAt).toLocaleTimeString('tr-TR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            isSent,
+            senderName,
+            senderAvatar,
+            isRead: msg.isRead,
+            readAt: msg.readAt,
+          };
+        });
+      
       setMessages(convertedMessages);
       
       // Scroll to bottom
@@ -262,29 +319,106 @@ const SupportMessageDetailScreen: React.FC = () => {
   }, [threadId]);
 
   // Support request accepted handler
-  const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string; timestamp: string }) => {
+  const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string; timestamp?: string }) => {
+    console.log('[SupportMessageDetail] ✅ Support request accepted event:', data);
+    
+    // Local state'te support request'i accepted olarak güncelle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.type === 'support_request' && msg.supportRequest?.requestId === data.requestId) {
+          return {
+            ...msg,
+            supportRequest: {
+              ...msg.supportRequest,
+              status: 'accepted',
+              threadId: data.threadId,
+            },
+          };
+        }
+        return msg;
+      })
+    );
+    
+    // Inbox listesini invalidate et
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    
+    // Eğer bu ekrandaki request ise, threadId'yi güncelle
     if (data.requestId === requestId) {
       console.log('[SupportMessageDetail] Support request accepted, threadId:', data.threadId);
       // Navigate to support chat with threadId
       navigation.setParams({ threadId: data.threadId, status: 'active' });
-      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
     }
   }, [requestId, navigation, queryClient]);
 
+  // Support request rejected handler
+  const handleSupportRequestRejected = useCallback((data: { requestId: string }) => {
+    console.log('[SupportMessageDetail] ❌ Support request rejected event:', data);
+    
+    // Local state'te support request'i rejected olarak güncelle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.type === 'support_request' && msg.supportRequest?.requestId === data.requestId) {
+          return {
+            ...msg,
+            supportRequest: {
+              ...msg.supportRequest,
+              status: 'rejected',
+            },
+          };
+        }
+        return msg;
+      })
+    );
+    
+    // Inbox listesini invalidate et
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+  }, [queryClient]);
+
+  // Support request cancelled handler
+  const handleSupportRequestCancelled = useCallback((data: { requestId: string }) => {
+    console.log('[SupportMessageDetail] 🚫 Support request cancelled event:', data);
+    
+    // Local state'te support request'i canceled olarak güncelle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.type === 'support_request' && msg.supportRequest?.requestId === data.requestId) {
+          return {
+            ...msg,
+            supportRequest: {
+              ...msg.supportRequest,
+              status: 'canceled',
+            },
+          };
+        }
+        return msg;
+      })
+    );
+    
+    // Inbox listesini invalidate et
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+  }, [queryClient]);
+
   // Socket event listeners
   useEffect(() => {
-    if (!isSocketReady || !threadId || !isConnected) return;
+    if (!isConnected) return;
 
     on('thread_joined', handleThreadJoined);
     on('new_message', handleNewMessage);
     on('user_typing', handleUserTyping);
     on('support_request_accepted', handleSupportRequestAccepted);
+    on('support_request_rejected', handleSupportRequestRejected);
+    on('support_request_cancelled', handleSupportRequestCancelled);
 
     return () => {
       off('thread_joined', handleThreadJoined);
       off('new_message', handleNewMessage);
       off('user_typing', handleUserTyping);
       off('support_request_accepted', handleSupportRequestAccepted);
+      off('support_request_rejected', handleSupportRequestRejected);
+      off('support_request_cancelled', handleSupportRequestCancelled);
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -294,7 +428,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         socketStopTyping(threadId);
       }
     };
-  }, [isSocketReady, threadId, isConnected, on, off, handleThreadJoined, handleNewMessage, handleUserTyping, handleSupportRequestAccepted, socketStopTyping]);
+  }, [isConnected, threadId, on, off, handleThreadJoined, handleNewMessage, handleUserTyping, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, socketStopTyping]);
 
   // Yeni mesaj gönderme
   const handleSendMessage = (messageText: string) => {
@@ -343,23 +477,34 @@ const SupportMessageDetailScreen: React.FC = () => {
   }, [threadId, isConnected, isSocketReady, socketStopTyping]);
 
   // Accept support request
-  const handleAcceptRequest = () => {
-    if (!requestId) {
+  const handleAcceptRequest = (acceptRequestId?: string) => {
+    const targetRequestId = acceptRequestId || requestId;
+    if (!targetRequestId) {
       Alert.alert('Hata', 'Request ID bulunamadı');
       return;
     }
 
-    if (isConnected) {
+    if (isConnected && isSocketReady) {
       // Socket ile accept et
-      socketAcceptSupportRequest(requestId);
+      console.log('[SupportMessageDetail] ✅ Accepting support request via socket:', targetRequestId);
+      socketAcceptSupportRequest(targetRequestId);
     } else {
       // REST API ile accept et
-      acceptMutation.mutate(requestId, {
+      console.log('[SupportMessageDetail] ✅ Accepting support request via REST API:', targetRequestId);
+      acceptMutation.mutate(targetRequestId, {
         onSuccess: (data) => {
+          console.log('[SupportMessageDetail] ✅ Support request accepted, threadId:', data.threadId);
           Alert.alert('Başarılı', 'Destek talebi kabul edildi');
-          navigation.setParams({ threadId: data.threadId, status: 'active' });
+          // Inbox listesini invalidate et
+          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+          // Eğer bu ekrandaki request ise, threadId'yi güncelle
+          if (targetRequestId === requestId) {
+            navigation.setParams({ threadId: data.threadId, status: 'active' });
+          }
         },
-        onError: (error) => {
+        onError: (error: any) => {
+          console.error('[SupportMessageDetail] ❌ Support request accept error:', error);
           Alert.alert('Hata', error.message || 'Destek talebi kabul edilemedi');
         },
       });
@@ -367,8 +512,9 @@ const SupportMessageDetailScreen: React.FC = () => {
   };
 
   // Reject support request
-  const handleRejectRequest = () => {
-    if (!requestId) {
+  const handleRejectRequest = (rejectRequestId?: string) => {
+    const targetRequestId = rejectRequestId || requestId;
+    if (!targetRequestId) {
       Alert.alert('Hata', 'Request ID bulunamadı');
       return;
     }
@@ -382,15 +528,27 @@ const SupportMessageDetailScreen: React.FC = () => {
           text: 'Reddet',
           style: 'destructive',
           onPress: () => {
-            if (isConnected) {
-              socketRejectSupportRequest(requestId);
+            if (isConnected && isSocketReady) {
+              // Socket ile reject et
+              console.log('[SupportMessageDetail] ❌ Rejecting support request via socket:', targetRequestId);
+              socketRejectSupportRequest(targetRequestId);
             } else {
-              rejectMutation.mutate(requestId, {
+              // REST API ile reject et
+              console.log('[SupportMessageDetail] ❌ Rejecting support request via REST API:', targetRequestId);
+              rejectMutation.mutate(targetRequestId, {
                 onSuccess: () => {
+                  console.log('[SupportMessageDetail] ✅ Support request rejected');
                   Alert.alert('Başarılı', 'Destek talebi reddedildi');
-                  navigation.goBack();
+                  // Inbox listesini invalidate et
+                  queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+                  queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+                  // Eğer bu ekrandaki request ise, geri dön
+                  if (targetRequestId === requestId) {
+                    navigation.goBack();
+                  }
                 },
-                onError: (error) => {
+                onError: (error: any) => {
+                  console.error('[SupportMessageDetail] ❌ Support request reject error:', error);
                   Alert.alert('Hata', error.message || 'Destek talebi reddedilemedi');
                 },
               });
@@ -402,8 +560,9 @@ const SupportMessageDetailScreen: React.FC = () => {
   };
 
   // Cancel support request (sadece sender yapabilir)
-  const handleCancelRequest = () => {
-    if (!requestId) {
+  const handleCancelRequest = (cancelRequestId?: string) => {
+    const targetRequestId = cancelRequestId || requestId;
+    if (!targetRequestId) {
       Alert.alert('Hata', 'Request ID bulunamadı');
       return;
     }
@@ -417,15 +576,25 @@ const SupportMessageDetailScreen: React.FC = () => {
           text: 'İptal Et',
           style: 'destructive',
           onPress: () => {
-            if (isConnected) {
-              socketCancelSupportRequest(requestId);
+            if (isConnected && isSocketReady) {
+              console.log('[SupportMessageDetail] 🚫 Canceling support request via socket:', targetRequestId);
+              socketCancelSupportRequest(targetRequestId);
             } else {
-              cancelMutation.mutate(requestId, {
+              console.log('[SupportMessageDetail] 🚫 Canceling support request via REST API:', targetRequestId);
+              cancelMutation.mutate(targetRequestId, {
                 onSuccess: () => {
+                  console.log('[SupportMessageDetail] ✅ Support request canceled');
                   Alert.alert('Başarılı', 'Destek talebi iptal edildi');
-                  navigation.goBack();
+                  // Inbox listesini invalidate et
+                  queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+                  queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+                  // Eğer bu ekrandaki request ise, geri dön
+                  if (targetRequestId === requestId) {
+                    navigation.goBack();
+                  }
                 },
-                onError: (error) => {
+                onError: (error: any) => {
+                  console.error('[SupportMessageDetail] ❌ Support request cancel error:', error);
                   Alert.alert('Hata', error.message || 'Destek talebi iptal edilemedi');
                 },
               });
@@ -460,10 +629,40 @@ const SupportMessageDetailScreen: React.FC = () => {
 
   // Handle confirm close request
   const handleConfirmClose = (rating: number) => {
-    console.log('Support Request Closed with rating:', rating);
-    setIsCloseModalVisible(false);
-    // TODO: Implement close request logic with rating and navigate back
-    navigation.goBack();
+    if (!requestId) {
+      Alert.alert('Hata', 'Request ID bulunamadı');
+      return;
+    }
+
+    console.log('[SupportMessageDetail] Closing support request with rating:', rating);
+    
+    closeMutation.mutate(
+      {
+        requestId: requestId,
+        data: {
+          rating: rating,
+          comment: undefined, // Opsiyonel yorum eklenebilir
+        },
+      },
+      {
+        onSuccess: () => {
+          console.log('[SupportMessageDetail] ✅ Support request closed successfully');
+          Alert.alert('Başarılı', 'Destek talebi başarıyla kapatıldı');
+          setIsCloseModalVisible(false);
+          
+          // Inbox listesini invalidate et
+          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+          
+          // Geri dön
+          navigation.goBack();
+        },
+        onError: (error: any) => {
+          console.error('[SupportMessageDetail] ❌ Close support request error:', error);
+          Alert.alert('Hata', error.message || 'Destek talebi kapatılırken bir hata oluştu');
+        },
+      }
+    );
   };
 
   // Handle cancel close request
@@ -471,10 +670,59 @@ const SupportMessageDetailScreen: React.FC = () => {
     setIsCloseModalVisible(false);
   };
 
-  // Handle report
+  // Handle report button press
   const handleReport = () => {
-    console.log('Report');
-    // TODO: Implement report logic
+    setIsReportModalVisible(true);
+  };
+
+  // Handle confirm report
+  const handleConfirmReport = () => {
+    if (!requestId) {
+      Alert.alert('Hata', 'Request ID bulunamadı');
+      return;
+    }
+
+    if (!reportReason || reportReason.trim().length === 0) {
+      Alert.alert('Hata', 'Lütfen bir neden belirtin');
+      return;
+    }
+
+    console.log('[SupportMessageDetail] Reporting support request:', reportReason);
+    
+    reportMutation.mutate(
+      {
+        requestId: requestId,
+        data: {
+          reason: reportReason.trim(),
+          description: undefined, // Opsiyonel açıklama eklenebilir
+        },
+      },
+      {
+        onSuccess: () => {
+          console.log('[SupportMessageDetail] ✅ Support request reported successfully');
+          Alert.alert('Başarılı', 'Destek talebi başarıyla raporlandı');
+          setIsReportModalVisible(false);
+          setReportReason('');
+          
+          // Inbox listesini invalidate et
+          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+          
+          // Geri dön
+          navigation.goBack();
+        },
+        onError: (error: any) => {
+          console.error('[SupportMessageDetail] ❌ Report support request error:', error);
+          Alert.alert('Hata', error.message || 'Destek talebi raporlanırken bir hata oluştu');
+        },
+      }
+    );
+  };
+
+  // Handle cancel report
+  const handleCancelReport = () => {
+    setIsReportModalVisible(false);
+    setReportReason('');
   };
 
   // Mesaj öğesi render fonksiyonu
@@ -483,6 +731,15 @@ const SupportMessageDetailScreen: React.FC = () => {
     if (item.type === 'support_request' && item.supportRequest) {
       const isExpanded = expandedSupportRequests[item.id];
       const isSent = item.isSent;
+      const requestStatus = item.supportRequest.status;
+      const requestId = item.supportRequest.requestId || item.id;
+      const supportThreadId = item.supportRequest.threadId;
+      const fromUserId = item.supportRequest.fromUserId;
+      const toUserId = item.supportRequest.toUserId;
+      
+      // Kullanıcı rolleri: Sender (fromUserId) veya Recipient (toUserId/expert)
+      const isSender = fromUserId === user?.id;
+      const isRecipient = toUserId === user?.id;
 
       return (
         <VStack
@@ -592,6 +849,105 @@ const SupportMessageDetailScreen: React.FC = () => {
                       {item.supportRequest.amount} TIPS
                     </Text>
                   </HStack>
+
+                  {/* Status Badge */}
+                  <VStack space="xs" mt="$2">
+                    <Text
+                      fontSize={9}
+                      fontWeight="$medium"
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    >
+                      Status
+                    </Text>
+                    <Box
+                      bg={
+                        requestStatus === 'pending' ? (isDark ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.1)') :
+                        requestStatus === 'accepted' ? (isDark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)') :
+                        requestStatus === 'rejected' ? (isDark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)') :
+                        requestStatus === 'canceled' ? (isDark ? 'rgba(158, 158, 158, 0.2)' : 'rgba(158, 158, 158, 0.1)') :
+                        (isDark ? '#2A2A2A' : '#E5E5E5')
+                      }
+                      borderRadius={8}
+                      px="$2"
+                      py="$1"
+                      alignSelf="flex-start"
+                    >
+                      <Text
+                        fontSize={10}
+                        fontWeight="$semibold"
+                        color={
+                          requestStatus === 'pending' ? '#FFC107' :
+                          requestStatus === 'accepted' ? '#4CAF50' :
+                          requestStatus === 'rejected' ? '#F44336' :
+                          requestStatus === 'canceled' ? '#9E9E9E' :
+                          (isDark ? '#FFFFFF' : '#000000')
+                        }
+                        textTransform="capitalize"
+                      >
+                        {requestStatus}
+                      </Text>
+                    </Box>
+                  </VStack>
+
+                  {/* Action Buttons - Durum ve kullanıcı rolüne göre */}
+                  {requestStatus === 'pending' && (
+                    <VStack space="sm" mt="$3">
+                      {isSender && (
+                        // Sender: Cancel butonu
+                          <Button
+                            onPress={() => handleCancelRequest(requestId)}
+                            bg={isDark ? '#F44336' : '#F44336'}
+                            borderRadius={8}
+                            py="$2"
+                          >
+                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                              Cancel Request
+                            </ButtonText>
+                          </Button>
+                      )}
+                      {isRecipient && (
+                        // Recipient (Expert): Accept ve Reject butonları
+                        <HStack space="sm">
+                          <Button
+                            onPress={() => handleAcceptRequest(requestId)}
+                            bg={isDark ? '#4CAF50' : '#4CAF50'}
+                            borderRadius={8}
+                            py="$2"
+                            flex={1}
+                          >
+                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                              Accept
+                            </ButtonText>
+                          </Button>
+                          <Button
+                            onPress={() => handleRejectRequest(requestId)}
+                            bg={isDark ? '#F44336' : '#F44336'}
+                            borderRadius={8}
+                            py="$2"
+                            flex={1}
+                          >
+                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                              Reject
+                            </ButtonText>
+                          </Button>
+                        </HStack>
+                      )}
+                    </VStack>
+                  )}
+                  
+                  {requestStatus === 'accepted' && supportThreadId && (
+                    // Accepted: Support thread'e yönlendirme zaten ekranda (status='active' olduğunda)
+                    <VStack space="sm" mt="$3">
+                      <Text
+                        fontSize={10}
+                        fontWeight="$normal"
+                        color={isDark ? '#4CAF50' : '#4CAF50'}
+                        fontStyle="italic"
+                      >
+                        Support request has been accepted. Support chat is now active.
+                      </Text>
+                    </VStack>
+                  )}
                 </VStack>
               )}
               </Box>
@@ -614,7 +970,16 @@ const SupportMessageDetailScreen: React.FC = () => {
                 color={isDark ? '#8C8C8C' : '#999999'}
                 flex={1}
               >
-                Support request will close automatically in 24 hours if unanswered.
+                {requestStatus === 'pending' 
+                  ? 'Support request will close automatically in 24 hours if unanswered.'
+                  : requestStatus === 'accepted'
+                  ? 'Support request has been accepted. Support chat is now active.'
+                  : requestStatus === 'rejected'
+                  ? 'This support request has been rejected.'
+                  : requestStatus === 'canceled'
+                  ? 'This support request has been canceled.'
+                  : 'Support request status: ' + requestStatus
+                }
               </Text>
             </HStack>
           </Box>
@@ -721,8 +1086,9 @@ const SupportMessageDetailScreen: React.FC = () => {
                 user2Name={params.userName || 'Trevor Nace'}
                 user2Title={params.userTitle || 'Technology Enthusiast'}
                 user2Avatar={params.userAvatar || require('@/assets/avatar/ozan.png')}
-                supportTitle="Support Chat"
-                tipsAmount={50}
+                supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
+                tipsAmount={supportRequestInfo?.amount || 50}
+                requestDetails={supportRequestInfo?.message || ''}
               />
             ) : null
           }
@@ -785,7 +1151,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         <MessageInput
           onSendMessage={handleSendMessage}
           onAddImage={() => console.log('Görsel eklenecek')}
-          placeholder="Mesajınızı yazın..."
+          placeholder="Bir mesaj yaz..."
           threadId={threadId}
           onTypingStart={handleTypingStart}
           onTypingStop={handleTypingStop}
@@ -838,13 +1204,6 @@ const SupportMessageDetailScreen: React.FC = () => {
         </Box>
       )}
 
-      {/* Active status'ta Close & Report butonları */}
-      {params.status === 'active' && (
-        <SupportMessageDetailActionButtons
-          onCloseRequestPress={handleCloseRequest}
-          onReportPress={handleReport}
-        />
-      )}
 
       {/* Pending status'ta sender için Cancel butonu */}
       {params.status === 'pending' && user?.id && (
@@ -875,10 +1234,85 @@ const SupportMessageDetailScreen: React.FC = () => {
         isVisible={isCloseModalVisible}
         onClose={handleCancelClose}
         onConfirm={handleConfirmClose}
+        onReport={handleReport}
         userName={params.expertName}
         userTitle={params.expertTitle}
         userAvatar={params.expertAvatar}
       />
+
+      {/* Report Support Request Modal */}
+      <Modal isOpen={isReportModalVisible} onClose={handleCancelReport} flex={1}>
+        <ModalBackdrop bg="rgba(0, 0, 0, 0.5)" />
+        <ModalContent
+          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+          borderRadius={24}
+          maxWidth="90%"
+          width="90%"
+          mx="$4"
+        >
+          <ModalBody p="$5">
+            <VStack space="md">
+              <Text
+                fontSize={18}
+                fontWeight="$bold"
+                color={isDark ? '#FFFFFF' : '#000000'}
+                textAlign="center"
+              >
+                Raporla
+              </Text>
+
+              <Text
+                fontSize={14}
+                fontWeight="$normal"
+                color={isDark ? '#CCCCCC' : '#4B5563'}
+                textAlign="center"
+                lineHeight={20}
+              >
+                Bu destek talebini raporlamak için bir neden belirtin:
+              </Text>
+
+              <Input
+                variant="outline"
+                size="md"
+                isDisabled={false}
+                isInvalid={false}
+                isReadOnly={false}
+              >
+                <InputField
+                  placeholder="Raporlama nedeni..."
+                  value={reportReason}
+                  onChangeText={setReportReason}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  placeholderTextColor={isDark ? '#8C8C8C' : '#9CA3AF'}
+                />
+              </Input>
+
+              <HStack space="sm" mt="$2">
+                <Button
+                  flex={1}
+                  variant="outline"
+                  onPress={handleCancelReport}
+                  bg={isDark ? '#2A2A2A' : '#F3F4F6'}
+                  borderColor={isDark ? '#3A3A3A' : '#E5E7EB'}
+                >
+                  <ButtonText color={isDark ? '#FFFFFF' : '#000000'}>İptal</ButtonText>
+                </Button>
+                <Button
+                  flex={1}
+                  onPress={handleConfirmReport}
+                  bg="#BC6BFF"
+                  isDisabled={!reportReason || reportReason.trim().length === 0}
+                >
+                  <ButtonText color="#FFFFFF">Raporla</ButtonText>
+                </Button>
+              </HStack>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
     </SafeAreaView>
   );

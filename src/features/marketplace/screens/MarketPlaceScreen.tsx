@@ -70,7 +70,7 @@ const MarketPlaceScreen = () => {
     );
   };
 
-  const renderRow = (info: { item: NFTCardData[] }) => {
+  const renderRow = (info: { item: NFTCardData[]; index: number }) => {
     const { item } = info;
     return (
       <HStack space="sm" justifyContent="space-between" mb="$3">
@@ -122,7 +122,11 @@ const MarketPlaceScreen = () => {
             <FlatList<NFTCardData[]>
               data={groupedNFTs}
               renderItem={renderRow}
-              keyExtractor={(item, index) => `row-${index}`}
+              keyExtractor={(item, index) => {
+                // Her row için unique key oluştur - row içindeki NFT ID'lerini kullan
+                const ids = item.map(nft => nft.id).join('-');
+                return `row-${index}-${ids}`;
+              }}
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}

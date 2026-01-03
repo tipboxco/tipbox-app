@@ -82,6 +82,22 @@ class SocketService {
         console.error('[SocketService] ❌ Connection error:', error.message);
       });
 
+      // DEBUG: Tüm socket event'lerini log'la (sadece development için)
+      if (__DEV__) {
+        // Socket.IO'da onAny metodu yok, bu yüzden manuel olarak dinleyeceğiz
+        // Önemli event'leri log'la
+        const logEvent = (eventName: string) => {
+          this.socket?.on(eventName, (data: any) => {
+            console.log(`[SocketService] 📨 Event received: ${eventName}`, {
+              data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data,
+            });
+          });
+        };
+
+        // Bilinen event'leri log'la
+        ['notification', 'new_notification', 'notifications', 'message', 'new_message'].forEach(logEvent);
+      }
+
     } catch (error) {
       console.error('[SocketService] ❌ Connect failed:', error);
       throw error;

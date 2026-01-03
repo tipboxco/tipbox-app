@@ -7,6 +7,10 @@ import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-naviga
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList } from '../api/hooks';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { Share } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { ProfileStackParamList } from '../navigation';
 import { toImageSource, useSafeAreaValues, useBottomOffset } from '@/src/utils';
@@ -348,6 +352,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
   
+  // Inbox mutations
+  const sendGiftMutation = useSendGift();
+  const createSupportRequestMutation = useCreateSupportRequest();
+  const sendDirectMessageMutation = useSendDirectMessage();
+  
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === targetUserId;
   
@@ -460,8 +469,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           activeTab={activeTab}
           onChangeTab={(tab) => {
             setActiveTab(tab);
-            // Tab değişince tab satırına scroll et
-            listRef.current?.scrollToIndex({ index: 1, animated: false });
+            // TAB_BAR zaten sticky olduğu için scroll yapmaya gerek yok
           }}
           isDark={isDark}
         />
@@ -499,7 +507,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         {renderPostCard()}
       </Box>
     );
-  }, [activeTab, isDark]);
+  }, [activeTab, isDark, listData]);
   
   // Key extractor
   const keyExtractor = useCallback((item: ListItem, index: number) => {
@@ -511,6 +519,49 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
     return item.id || `post-${index}`;
   }, []);
+  
+  // Action button handlers
+  const handleSendTIPS = useCallback(() => {
+    if (!user?.id || !targetUserId) return;
+    // MessageDetail screen'ine navigate et (TIPS gönderme için)
+    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+      messageId: targetUserId,
+      threadId: targetUserId,
+      recipientUserId: targetUserId,
+    });
+  }, [user?.id, targetUserId]);
+
+  const handle1on1Request = useCallback(() => {
+    if (!user?.id || !targetUserId) return;
+    // MessageDetail screen'ine navigate et (1-on-1 request için)
+    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+      messageId: targetUserId,
+      threadId: targetUserId,
+      recipientUserId: targetUserId,
+    });
+  }, [user?.id, targetUserId]);
+
+  const handleDM = useCallback(() => {
+    if (!user?.id || !targetUserId) return;
+    // MessageDetail screen'ine navigate et
+    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+      messageId: targetUserId,
+      threadId: targetUserId,
+      recipientUserId: targetUserId,
+    });
+  }, [user?.id, targetUserId]);
+
+  const handleShare = useCallback(async () => {
+    if (!userProfile) return;
+    try {
+      await Share.share({
+        message: `Check out ${userProfile.name}'s profile on Tipbox!`,
+        url: `tipboxapp://profile/user/${targetUserId}`,
+      });
+    } catch (error) {
+      console.error('[ProfileScreen] Share error:', error);
+    }
+  }, [userProfile, targetUserId]);
   
   // Handle load more
   const handleLoadMore = useCallback(() => {
@@ -618,7 +669,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 <VStack>
                   <Pressable
                     onPress={() => {
-                      console.log('[ProfileScreen] Paylaş pressed');
+                      handleShare();
                       setShowMenu(false);
                     }}
                     px={16}
@@ -737,9 +788,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     borderColor="#E9E9E9"
                     justifyContent="center"
                     alignItems="center"
-                    onPress={() => {
-                      console.log('[ProfileScreen] SendTIPS pressed');
-                    }}
+                    onPress={handleSendTIPS}
                   >
                     <Feather name="gift" size={14} color="#000" />
                   </Pressable>
@@ -753,9 +802,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     borderColor="#E9E9E9"
                     justifyContent="center"
                     alignItems="center"
-                    onPress={() => {
-                      console.log('[ProfileScreen] 1-on-1 Request pressed');
-                    }}
+                    onPress={handle1on1Request}
                   >
                     <Feather name="headphones" size={14} color="#000" />
                   </Pressable>
@@ -769,9 +816,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     borderColor="#E9E9E9"
                     justifyContent="center"
                     alignItems="center"
-                    onPress={() => {
-                      console.log('[ProfileScreen] DM pressed');
-                    }}
+                    onPress={handleDM}
                   >
                     <Feather name="message-circle" size={14} color="#000" />
                   </Pressable>
@@ -1037,7 +1082,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, safeAreaTop]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, safeAreaTop, handleShare, setShowMenu]);
   
   if (isProfileLoading) {
     return (
@@ -1087,10 +1132,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           maxToRenderPerBatch={5}
           windowSize={10}
           onScrollToIndexFailed={(info) => {
-            // Tab değişince scroll hatası olursa, biraz gecikmeyle tekrar dene
-            setTimeout(() => {
-              listRef.current?.scrollToIndex({ index: info.index, animated: false });
-            }, 100);
+            // Scroll hatası durumunda sessizce devam et
+            // TAB_BAR zaten sticky olduğu için scroll yapmaya gerek yok
+            console.warn('[ProfileScreen] scrollToIndex failed (non-critical):', {
+              index: info.index,
+              highestMeasuredFrameIndex: info.highestMeasuredFrameIndex,
+              averageItemLength: info.averageItemLength,
+            });
+            // Scroll işlemini yapmaya çalışma, sticky header zaten var
           }}
         />
       </Box>

@@ -31,7 +31,7 @@ export const getNotifications = async (
       success: boolean;
       data: Array<{
         id: string;
-        userId: string;
+        userId?: string;
         type: string;
         title: string;
         message: string;
@@ -43,38 +43,79 @@ export const getNotifications = async (
           messagePreview?: string;
           userAvatar?: string;
           userName?: string;
+          postId?: string;
+          commentId?: string;
           [key: string]: any;
         };
-        read: boolean;
+        metadata?: {
+          userId?: string;
+          userName?: string;
+          userAvatar?: string;
+          postId?: string;
+          commentId?: string;
+          threadId?: string;
+          [key: string]: any;
+        };
+        read?: boolean;
+        isRead?: boolean; // Backend'den isRead de gelebilir
         readAt?: string;
         createdAt: string;
-        updatedAt: string;
+        updatedAt?: string;
       }>;
     }>('/notifications', { params });
     
+    console.log('[getNotifications] 📥 Raw API response:', {
+      success: response.data.success,
+      dataLength: response.data.data?.length || 0,
+      firstItem: response.data.data?.[0] ? JSON.stringify(response.data.data[0], null, 2) : 'no items',
+    });
+    
+    // Response data kontrolü
+    if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+      console.warn('[getNotifications] ⚠️ Invalid response format:', response.data);
+      return {
+        success: response.data?.success ?? false,
+        data: [],
+      };
+    }
+    
     // API response'u type'a map et
     const mappedData = response.data.data.map((item) => {
-      // Backend'den gelen `data` field'ını `metadata`'ya map et
-      const metadata = item.data ? {
-        userId: item.data.senderId,
-        userName: item.data.senderName || item.data.userName,
-        userAvatar: item.data.userAvatar,
-        threadId: item.data.threadId,
-        ...item.data,
+      // Backend'den gelen `data` veya `metadata` field'ını `metadata`'ya map et
+      const rawMetadata = item.metadata || item.data;
+      const metadata = rawMetadata ? {
+        userId: rawMetadata.senderId || rawMetadata.userId,
+        userName: rawMetadata.senderName || rawMetadata.userName,
+        userAvatar: rawMetadata.userAvatar,
+        threadId: rawMetadata.threadId,
+        postId: rawMetadata.postId,
+        commentId: rawMetadata.commentId,
+        eventId: rawMetadata.eventId,
+        eventName: rawMetadata.eventName,
+        rewardAmount: rawMetadata.rewardAmount,
+        ...rawMetadata,
       } : undefined;
+      
+      // read/isRead field'ını normalize et
+      const read = item.read ?? item.isRead ?? false;
       
       return {
         id: item.id,
         type: item.type as any,
-        title: item.title,
-        message: item.message,
-        read: item.read,
+        title: item.title || '',
+        message: item.message || '',
+        read,
         readAt: item.readAt,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         metadata,
-        navigation: item.data?.navigation,
+        navigation: item.data?.navigation || item.metadata?.navigation,
       };
+    });
+    
+    console.log('[getNotifications] ✅ Mapped data:', {
+      count: mappedData.length,
+      firstMapped: mappedData[0] ? JSON.stringify(mappedData[0], null, 2) : 'no items',
     });
     
     return {
@@ -82,11 +123,12 @@ export const getNotifications = async (
       data: mappedData,
     };
   } catch (error: any) {
-    console.error('[getNotifications] API Error:', {
+    console.error('[getNotifications] ❌ API Error:', {
       url: '/notifications',
+      params,
       status: error.response?.status,
       statusText: error.response?.statusText,
-      data: error.response?.data,
+      responseData: error.response?.data,
       message: error.message,
     });
     throw error;
@@ -104,13 +146,24 @@ export const getUnreadCount = async (): Promise<UnreadCountResponse> => {
     );
     return response.data;
   } catch (error: any) {
-    console.error('[getUnreadCount] API Error:', {
-      url: '/notifications/unread-count',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
+    // 500 hatası için daha az detaylı log (backend hatası, log spam'ı azalt)
+    const status = error.response?.status;
+    if (status >= 500) {
+      // Server error için sadece kısa log
+      console.error('[getUnreadCount] API Error (500):', {
+        status,
+        message: error.response?.data?.message || error.message,
+      });
+    } else {
+      // Client error için detaylı log
+      console.error('[getUnreadCount] API Error:', {
+        url: '/notifications/unread-count',
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+      });
+    }
     throw error;
   }
 };
@@ -248,15 +301,26 @@ export const registerPushToken = async (
     );
     return response.data;
   } catch (error: any) {
-    console.error('[registerPushToken] API Error:', {
-      url: '/notifications/push-token',
-      method: 'POST',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      requestData: data,
-      responseData: error.response?.data,
-      message: error.message,
-    });
+    // 500 hatası için daha az detaylı log (backend hatası, log spam'ı azalt)
+    const status = error.response?.status;
+    if (status >= 500) {
+      // Server error için sadece kısa log
+      console.error('[registerPushToken] API Error (500):', {
+        status,
+        message: error.response?.data?.message || error.message,
+      });
+    } else {
+      // Client error için detaylı log
+      console.error('[registerPushToken] API Error:', {
+        url: '/notifications/push-token',
+        method: 'POST',
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        requestData: data,
+        responseData: error.response?.data,
+        message: error.message,
+      });
+    }
     throw error;
   }
 };

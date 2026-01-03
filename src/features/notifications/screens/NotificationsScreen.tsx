@@ -70,6 +70,10 @@ const NotificationCard: React.FC<{
             case 'NEW_BADGE':
             case 'ACHIEVEMENT_UNLOCKED':
                 return 'award';
+            case 'EVENT_STARTED':
+            case 'EVENT_ENDING_SOON':
+            case 'EVENT_REWARD_AVAILABLE':
+                return 'calendar';
             default:
                 return 'bell';
         }
@@ -105,7 +109,7 @@ const NotificationCard: React.FC<{
 
     return (
         <Pressable onPress={handlePress}>
-            <HStack space="md" alignItems="flex-start" mb="$4" opacity={notification.read ? 0.7 : 1}>
+            <HStack space="md" alignItems="flex-start" mb="$4">
                 {/* Avatar */}
                 <Box position="relative">
                     <Box
@@ -146,7 +150,7 @@ const NotificationCard: React.FC<{
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize={11}
-                            fontWeight={notification.read ? '$normal' : '$semibold'}
+                            fontWeight="$normal"
                             flex={1}
                             mr="$2"
                         >
@@ -256,17 +260,36 @@ export const NotificationsScreen: React.FC = () => {
     
     // Debug: Notification data kontrolü ve API isteği kontrolü
     useEffect(() => {
-        console.log('[NotificationsScreen] 📋 Notifications API called:', {
+        console.log('[NotificationsScreen] 📋 Notifications API Status:', {
             endpoint: '/notifications',
             params: { limit: 50, offset: 0, unreadOnly },
-            count: notifications.length,
             isLoading,
-            error: error?.message,
-            hasData: !!notificationsResponse,
+            hasResponse: !!notificationsResponse,
             responseSuccess: notificationsResponse?.success,
+            dataCount: notifications.length,
+            error: error ? {
+                message: error.message,
+                status: (error as any)?.response?.status,
+                data: (error as any)?.response?.data,
+            } : null,
         });
+        
         if (notifications.length > 0) {
-            console.log('[NotificationsScreen] 📋 First notification:', JSON.stringify(notifications[0], null, 2));
+            console.log('[NotificationsScreen] ✅ Notifications loaded:', {
+                count: notifications.length,
+                firstNotification: {
+                    id: notifications[0].id,
+                    type: notifications[0].type,
+                    title: notifications[0].title,
+                    message: notifications[0].message,
+                    read: notifications[0].read,
+                },
+            });
+        } else if (!isLoading && notificationsResponse) {
+            console.log('[NotificationsScreen] ⚠️ No notifications found:', {
+                responseSuccess: notificationsResponse.success,
+                dataArray: notificationsResponse.data,
+            });
         }
     }, [notifications.length, isLoading, error, notificationsResponse, unreadOnly]);
 

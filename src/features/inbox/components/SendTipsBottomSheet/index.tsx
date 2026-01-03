@@ -55,7 +55,10 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
 
     const handleSend = () => {
         const numericAmount = parseFloat(amount) || 0;
-        if (numericAmount > 0) {
+        const finalDescription = description?.trim() || '';
+        
+        // Validation
+        if (numericAmount >= 0.01 && finalDescription.length > 0) {
             // Onay modalını aç
             setIsSuccessModalVisible(true);
         }
@@ -63,8 +66,21 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
 
     const handleConfirm = () => {
         const numericAmount = parseFloat(amount) || 0;
-        console.log('Send TIPS:', { amount: numericAmount, description });
-        onSend?.(numericAmount, description);
+        
+        // Validation
+        if (numericAmount <= 0 || numericAmount < 0.01) {
+            // Validation error will be handled by parent component
+            return;
+        }
+        
+        const finalDescription = description?.trim() || '';
+        if (finalDescription.length === 0) {
+            // Validation error will be handled by parent component
+            return;
+        }
+        
+        console.log('Send TIPS:', { amount: numericAmount, description: finalDescription });
+        onSend?.(numericAmount, finalDescription);
         // Modal'ı kapat
         setIsSuccessModalVisible(false);
         // BottomSheet'i kapat
@@ -85,7 +101,15 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
 
     const isValidAmount = () => {
         const numericAmount = parseFloat(amount) || 0;
-        return numericAmount > 0;
+        return numericAmount >= 0.01; // Minimum 0.01 TIPS
+    };
+    
+    const isValidDescription = () => {
+        return description?.trim().length > 0;
+    };
+    
+    const isValidForm = () => {
+        return isValidAmount() && isValidDescription();
     };
 
     return (
@@ -359,8 +383,8 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                             bg={'#E2FF46'}
                             borderRadius={12}
                             py="$3"
-                            disabled={!isValidAmount()}
-                            opacity={isValidAmount() ? 1 : 0.5}
+                            disabled={!isValidForm()}
+                            opacity={isValidForm() ? 1 : 0.5}
                         >
                             <Text
                                 color={"#000000"}

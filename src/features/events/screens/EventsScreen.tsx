@@ -25,7 +25,16 @@ const EventsScreen: React.FC = () => {
 
 
   const handleEventPress = (eventId: string) => {
-    navigation.navigate('EventDetail', { eventId });
+    if (!eventId) {
+      console.error('[EventsScreen] handleEventPress: eventId is missing');
+      return;
+    }
+    console.log('[EventsScreen] Navigating to EventDetail with eventId:', eventId);
+    try {
+      navigation.navigate('EventDetail', { eventId });
+    } catch (error) {
+      console.error('[EventsScreen] Navigation error:', error);
+    }
   };
 
   const handleRewardPress = (reward: SeeAllReward) => {

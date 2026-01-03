@@ -180,6 +180,70 @@ class DeepLinkService {
           }
           return { screen: ROOT_ROUTES.SETTINGS, params };
 
+        case 'catalog':
+          // Tab route'a yönlendir (CatalogStack)
+          if (parts[1] === 'brands') {
+            // CatalogScreen'e brand view ile navigate et
+            return {
+              screen: TAB_ROUTES.CATALOG,
+              params: {
+                screen: 'CatalogScreen',
+                params: { view: 'brands' },
+              },
+            };
+          } else if (parts[1] === 'products') {
+            // CatalogScreen'e product view ile navigate et
+            return {
+              screen: TAB_ROUTES.CATALOG,
+              params: {
+                screen: 'CatalogScreen',
+                params: { view: 'products' },
+              },
+            };
+          }
+          // Default: CatalogScreen
+          return { screen: TAB_ROUTES.CATALOG, params };
+
+        case 'brands':
+          // Catalog stack içinde BrandDetailScreen
+          if (parts[1]) {
+            return {
+              screen: TAB_ROUTES.CATALOG,
+              params: {
+                screen: 'BrandDetailScreen',
+                params: { brandId: parts[1] },
+              },
+            };
+          }
+          // Brand list view
+          return {
+            screen: TAB_ROUTES.CATALOG,
+            params: {
+              screen: 'CatalogScreen',
+              params: { view: 'brands' },
+            },
+          };
+
+        case 'products':
+          // Catalog stack içinde BrandProductDetailScreen
+          if (parts[1]) {
+            return {
+              screen: TAB_ROUTES.CATALOG,
+              params: {
+                screen: 'BrandProductDetailScreen',
+                params: { productId: parts[1] },
+              },
+            };
+          }
+          // Product list view
+          return {
+            screen: TAB_ROUTES.CATALOG,
+            params: {
+              screen: 'CatalogScreen',
+              params: { view: 'products' },
+            },
+          };
+
         default:
           // Fallback: screen name olarak kullan
           return { screen: screen.charAt(0).toUpperCase() + screen.slice(1), params };

@@ -217,3 +217,5 @@ Bu dokümantasyon, backend'de yapılan revizyonlar ve mobil tarafta yapılan gü
 
 Bu dokümantasyon **2024-01-15** tarihinde oluşturulmuştur.
 
+
+

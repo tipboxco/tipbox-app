@@ -241,12 +241,12 @@ export const FeedScreen = () => {
       : (item.content || '');
 
     return {
-      id: item.id,
+      id: item.id || '',
       user: {
-        id: item.user.id,
-        name: item.user.name,
-        title: item.user.title,
-        avatar: toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png'),
+        id: item.user?.id || '',
+        name: item.user?.name || '',
+        title: item.user?.title || '',
+        avatar: toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png'),
       },
       content: contentString,
       images: Array.isArray(item.images) 
@@ -261,7 +261,7 @@ export const FeedScreen = () => {
 
   // Map Experience (ReviewApiItem) to ReviewCardData
   const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
-    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
     const productImage = item.contextData?.image
       ? toImageSource(item.contextData.image)
       : undefined;
@@ -282,11 +282,11 @@ export const FeedScreen = () => {
       : [];
 
     return {
-      id: item.id,
+      id: item.id || '',
       user: {
-        id: item.user.id,
-        name: item.user.name,
-        title: item.user.title,
+        id: item.user?.id || '',
+        name: item.user?.name || '',
+        title: item.user?.title || '',
         avatar: avatarSource,
         action: 'wrote a review',
       },
@@ -295,10 +295,10 @@ export const FeedScreen = () => {
         name: item.contextData?.name || '',
         subName: item.contextData?.subName || '',
         image: productImage,
-        isOwned: item.contextData?.isOwned,
+        isOwned: item.contextData?.isOwned || false,
       },
       content,
-      tags: item.tags,
+      tags: Array.isArray(item.tags) ? item.tags : [],
       images: Array.isArray(item.images)
         ? item.images
             .map((img) => toImageSource(img))
@@ -311,7 +311,7 @@ export const FeedScreen = () => {
 
   // Map Benchmark to BenchmarkCardData
   const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
-    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
 
     const products: BenchmarkProduct[] = (item.products && Array.isArray(item.products))
       ? item.products
@@ -327,15 +327,15 @@ export const FeedScreen = () => {
       : [];
 
     return {
-      id: item.id,
+      id: item.id || '',
       user: {
-        id: item.user.id,
-        name: item.user.name,
-        title: item.user.title,
+        id: item.user?.id || '',
+        name: item.user?.name || '',
+        title: item.user?.title || '',
         avatar: avatarSource,
       },
       products,
-      content: item.content,
+      content: item.content || '',
       stats: item.stats,
       createdAt: item.createdAt,
     };
@@ -343,37 +343,73 @@ export const FeedScreen = () => {
 
   // Map Tips to TipsCardData
   const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
-    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
 
-    const productImage = toImageSource(item.contextData?.image);
+    // contextData undefined kontrolü
+    if (!item.contextData) {
+      console.warn('[mapTipsToCardData] Missing contextData for item:', item.id);
+      // Güvenli default değerler döndür
+      return {
+        id: item.id || '',
+        user: {
+          id: item.user?.id || '',
+          name: item.user?.name || '',
+          title: item.user?.title || '',
+          avatar: avatarSource,
+        },
+        category: {
+          id: '',
+          name: '',
+          subCategory: '',
+          image: require('@/assets/inventory/product_01.png'),
+          product: {
+            id: '',
+            name: '',
+            subName: '',
+            image: require('@/assets/inventory/product_01.png'),
+          },
+        },
+        content: item.content || '',
+        images: Array.isArray(item.images)
+          ? item.images
+              .map((img) => toImageSource(img))
+              .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+          : [],
+        stats: item.stats,
+        tag: item.tag,
+        createdAt: item.createdAt,
+      };
+    }
+
+    const productImage = toImageSource(item.contextData.image);
     if (!productImage) {
       console.warn('[mapTipsToCardData] Missing product image for item:', item.id);
     }
     const product: TipsProduct = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subName: item.contextData.subName,
+      id: item.contextData.id || '',
+      name: item.contextData.name || '',
+      subName: item.contextData.subName || '',
       image: productImage || require('@/assets/inventory/product_01.png'),
     };
 
     const category: TipsCategory = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subCategory: item.contextData.subName,
+      id: item.contextData.id || '',
+      name: item.contextData.name || '',
+      subCategory: item.contextData.subName || '',
       image: productImage || require('@/assets/inventory/product_01.png'),
       product,
     };
 
     return {
-      id: item.id,
+      id: item.id || '',
       user: {
-        id: item.user.id,
-        name: item.user.name,
-        title: item.user.title,
+        id: item.user?.id || '',
+        name: item.user?.name || '',
+        title: item.user?.title || '',
         avatar: avatarSource,
       },
       category,
-      content: item.content,
+      content: item.content || '',
       images: Array.isArray(item.images)
         ? item.images
             .map((img) => toImageSource(img))
@@ -387,39 +423,75 @@ export const FeedScreen = () => {
 
   // Map Question to QuestionCardData
   const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
 
-    const productImage = toImageSource(item.contextData?.image);
+    // contextData undefined kontrolü
+    if (!item.contextData) {
+      console.warn('[mapQuestionToCardData] Missing contextData for item:', item.id);
+      // Güvenli default değerler döndür
+      return {
+        id: item.id || '',
+        user: {
+          id: item.user?.id || '',
+          name: item.user?.name || '',
+          title: item.user?.title || '',
+          avatar: avatarSource,
+        },
+        category: {
+          id: '',
+          name: '',
+          subCategory: '',
+          image: require('@/assets/inventory/product_01.png'),
+          product: {
+            id: '',
+            name: '',
+            subName: '',
+            image: require('@/assets/inventory/product_01.png'),
+          },
+        },
+        content: item.content || '',
+        isBoosted: item.isBoosted || false,
+        images: Array.isArray(item.images)
+          ? item.images
+              .map((img) => toImageSource(img))
+              .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+          : [],
+        stats: item.stats,
+        createdAt: item.createdAt,
+      };
+    }
+
+    const productImage = toImageSource(item.contextData.image);
     if (!productImage) {
       console.warn('[mapQuestionToCardData] Missing product image for item:', item.id);
     }
 
     const product: QuestionCardProduct = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subName: item.contextData.subName,
+      id: item.contextData.id || '',
+      name: item.contextData.name || '',
+      subName: item.contextData.subName || '',
       image: productImage || require('@/assets/inventory/product_01.png'),
     };
 
     const category: QuestionCardCategory = {
-      id: item.contextData.id,
-      name: item.contextData.name,
-      subCategory: item.contextData.subName,
+      id: item.contextData.id || '',
+      name: item.contextData.name || '',
+      subCategory: item.contextData.subName || '',
       image: productImage || require('@/assets/inventory/product_01.png'),
       product,
     };
 
     return {
-      id: item.id,
+      id: item.id || '',
       user: {
-        id: item.user.id,
-        name: item.user.name,
-        title: item.user.title,
+        id: item.user?.id || '',
+        name: item.user?.name || '',
+        title: item.user?.title || '',
         avatar: avatarSource,
       },
       category,
-      content: item.content,
-      isBoosted: item.isBoosted,
+      content: item.content || '',
+      isBoosted: item.isBoosted || false,
       images: Array.isArray(item.images)
         ? item.images
             .map((img) => toImageSource(img))
@@ -508,11 +580,11 @@ export const FeedScreen = () => {
       : [];
 
     return {
-      id: item.id,
+      id: item.id || '',
       user: {
-        id: item.user.id,
-        name: item.user.name,
-        title: item.user.title,
+        id: item.user?.id || '',
+        name: item.user?.name || '',
+        title: item.user?.title || '',
         avatar: avatarSource,
       },
       stats: item.stats,
@@ -692,7 +764,13 @@ export const FeedScreen = () => {
             <FlatList
               data={feedItems}
               renderItem={({ item }) => renderFeedItem(item)}
-              keyExtractor={(item) => item.data.id}
+              keyExtractor={(item, index) => {
+                // Güvenli key extraction: item.data.id varsa kullan, yoksa index kullan
+                if (item?.data?.id) {
+                  return String(item.data.id);
+                }
+                return `feed-item-${index}`;
+              }}
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}

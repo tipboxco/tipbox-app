@@ -169,8 +169,10 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             <LimitedTimeEventCard
               data={limitedEvent}
               onPress={() => {
-                // Handle limited time event press
-                console.log('Limited time event pressed:', limitedEvent.id);
+                // Limited time event için EventDetailScreen'e navigate et
+                if (onRewardPress) {
+                  onRewardPress(limitedEvent.id);
+                }
               }}
             />
           ) : null}

@@ -6,6 +6,8 @@ import { QuestionPost } from '@/src/mock/profile/questions/types';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
@@ -160,10 +162,12 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
               title={data.category.product.name}
               subName={data.category.product.subName}
               onPress={() => {
-                navigation.navigate('Post', {
-                  screen: 'PostDetailScreen',
-                  params: { postData: data, type: 'question' }
-                });
+                // Product için BrandProductDetailScreen'e navigate et
+                if (data.category?.product?.id) {
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { 
+                    productId: data.category.product.id 
+                  });
+                }
               }}
             />
           </Box>
@@ -175,7 +179,10 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
               image={toImageSource(data.category.image)}
               title={data.category.name}
               subName={data.category.subCategory}
-              onPress={() => { console.log('Category sayfasına yönlendir'); }}
+              onPress={() => {
+                // Category için CatalogScreen'e navigate et
+                navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+              }}
             />
           </Box>
         ) : null

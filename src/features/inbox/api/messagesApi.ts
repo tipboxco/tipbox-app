@@ -25,6 +25,7 @@ export interface ThreadResponse {
   userTwoId: string;
   isActive: boolean;
   startedAt: string;
+  isSupportThread?: boolean; // ✅ Backend'den gelen: Support thread mi?
 }
 
 export const getOrCreateThread = async (recipientId: string): Promise<ThreadResponse> => {
@@ -40,6 +41,30 @@ export const getOrCreateThread = async (recipientId: string): Promise<ThreadResp
       const notFoundError = new Error('Thread endpoint not found (404). Backend may not have implemented this endpoint yet.');
       (notFoundError as any).response = { status: 404 };
       (notFoundError as any).isThreadEndpointNotFound = true;
+      throw notFoundError;
+    }
+    // Diğer hataları olduğu gibi fırlat
+    throw error;
+  }
+};
+
+/**
+ * Get Thread Detail endpoint
+ * Thread detay bilgisini getirir (userOneId, userTwoId, isSupportThread)
+ * 
+ * @param threadId - Thread ID
+ * @returns Thread detay bilgisi
+ */
+export const getThreadDetail = async (threadId: string): Promise<ThreadResponse> => {
+  try {
+    const response = await apiService.getClient().get<ThreadResponse>(`/messages/threads/${threadId}`);
+    return response.data;
+  } catch (error: any) {
+    // 404 hatası: Thread detail endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      const notFoundError = new Error('Thread detail endpoint not found (404). Backend may not have implemented this endpoint yet.');
+      (notFoundError as any).response = { status: 404 };
+      (notFoundError as any).isThreadDetailEndpointNotFound = true;
       throw notFoundError;
     }
     // Diğer hataları olduğu gibi fırlat
@@ -69,7 +94,7 @@ export interface ThreadMessageResponse {
     // For support-request type
     type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
     amount?: number | string;
-    status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+    status?: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
     threadId?: string | null;
     requestId?: string;
     fromUserId?: string;
@@ -87,7 +112,7 @@ export interface ThreadMessage {
   recipientId?: string;
   message: string;
   messageType: 'message' | 'support-request' | 'send-tips';
-  context: 'DM' | 'SUPPORT';
+  context?: 'DM' | 'SUPPORT'; // Sadece mesajlar için geçerli (type: "message")
   isRead: boolean;
   sentAt: string; // ISO 8601
   readAt?: string; // ISO 8601 (opsiyonel)
@@ -96,10 +121,12 @@ export interface ThreadMessage {
   senderName?: string;
   senderTitle?: string;
   senderAvatar?: string | null;
-  // Support request specific
+  // Support request specific (DM_THREAD.md'ye göre)
   supportRequestType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
-  supportRequestStatus?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
+  supportRequestStatus?: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
   requestId?: string;
+  fromUserId?: string; // Support request için: Request'i oluşturan kullanıcı ID'si (required)
+  toUserId?: string; // Support request için: Request'in gönderildiği kullanıcı ID'si (required)
 }
 
 /**
@@ -125,7 +152,10 @@ export const getThreadMessages = async (threadId: string): Promise<ThreadMessage
         senderId: sender.id,
         message: data.message || data.lastMessage || '',
         messageType: type,
-        context: type === 'support-request' ? 'SUPPORT' : 'DM',
+        // Context sadece mesajlar için geçerli (DM_THREAD.md'ye göre)
+        // Support request ve send-tips için context yok
+        // Backend'de context filtreleme yapılıyor olmalı
+        context: type === 'message' ? 'DM' : undefined,
         isRead: !data.isUnread, // isUnread varsa, isRead = !isUnread
         sentAt: timestamp,
         senderName: sender.senderName,
@@ -145,8 +175,13 @@ export const getThreadMessages = async (threadId: string): Promise<ThreadMessage
         if (data.amount) {
           baseMessage.amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
         }
+        // Support request için fromUserId ve toUserId bilgilerini kaydet (DM_THREAD.md'ye göre - required)
         if (data.fromUserId && data.toUserId) {
-          baseMessage.recipientId = data.toUserId;
+          baseMessage.fromUserId = data.fromUserId;
+          baseMessage.toUserId = data.toUserId;
+          baseMessage.recipientId = data.toUserId; // Backward compatibility
+        } else {
+          console.warn('[getThreadMessages] Support request missing fromUserId or toUserId:', { id: data.id || id, fromUserId: data.fromUserId, toUserId: data.toUserId });
         }
       }
       
@@ -186,7 +221,57 @@ export interface SendGiftRequest {
  * @returns Promise<void> - 201 Created (no body)
  */
 export const sendGift = async (data: SendGiftRequest): Promise<void> => {
-  await apiService.getClient().post('/messages/tips', data);
+  try {
+    console.log('[sendGift] 📤 Request Details:', {
+      url: '/messages/tips',
+      method: 'POST',
+      data: {
+        senderUserId: data.senderUserId,
+        recipientUserId: data.recipientUserId,
+        message: data.message,
+        amount: data.amount,
+        timestamp: data.timestamp,
+      },
+      dataType: typeof data.amount,
+      amountIsNumber: typeof data.amount === 'number',
+      amountValue: data.amount,
+    });
+
+    const response = await apiService.getClient().post('/messages/tips', data);
+
+    console.log('[sendGift] ✅ Response Details:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      data: response.data,
+    });
+
+    return;
+  } catch (error: any) {
+    console.error('[sendGift] ❌ Error Details:', {
+      message: error.message,
+      response: {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      },
+      request: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data,
+        headers: error.config?.headers,
+      },
+      requestData: data,
+    });
+
+    // Hata mesajını daha detaylı logla
+    if (error.response?.data) {
+      console.error('[sendGift] ❌ Backend Error Response:', JSON.stringify(error.response.data, null, 2));
+    }
+
+    throw error;
+  }
 };
 
 /**
@@ -311,6 +396,46 @@ export const rejectSupportRequest = async (requestId: string): Promise<void> => 
  */
 export const cancelSupportRequest = async (requestId: string): Promise<void> => {
   await apiService.getClient().post(`/messages/support-requests/${requestId}/cancel`);
+};
+
+/**
+ * Close Support Request Request Interface
+ */
+export interface CloseSupportRequestRequest {
+  rating: number; // 1-5 arası rating
+  comment?: string; // Opsiyonel yorum
+}
+
+/**
+ * Close Support Request endpoint
+ * Support request'i rating ile kapatır (completed durumuna geçer)
+ *
+ * @param requestId - Support request ID
+ * @param data - Close request data (rating, comment)
+ * @returns Promise<void> - 200 OK
+ */
+export const closeSupportRequest = async (requestId: string, data: CloseSupportRequestRequest): Promise<void> => {
+  await apiService.getClient().post(`/messages/support-requests/${requestId}/close`, data);
+};
+
+/**
+ * Report Support Request Request Interface
+ */
+export interface ReportSupportRequestRequest {
+  reason: string; // Raporlama nedeni
+  description?: string; // Opsiyonel açıklama
+}
+
+/**
+ * Report Support Request endpoint
+ * Support request'i raporlar (reported durumuna geçer)
+ *
+ * @param requestId - Support request ID
+ * @param data - Report request data (reason, description)
+ * @returns Promise<void> - 200 OK
+ */
+export const reportSupportRequest = async (requestId: string, data: ReportSupportRequestRequest): Promise<void> => {
+  await apiService.getClient().post(`/messages/support-requests/${requestId}/report`, data);
 };
 
 /**

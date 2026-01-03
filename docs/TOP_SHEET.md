@@ -499,3 +499,5 @@ src/components/SearchModal/
 
 *Son güncelleme: SearchModal implementasyonu baz alınarak oluşturulmuştur.*
 
+
+

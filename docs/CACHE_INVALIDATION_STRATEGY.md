@@ -334,3 +334,5 @@ const {
 *Son Güncelleme: 2026-01-01*
 *Strateji: Smart Cache Invalidation + Optimistic Refresh*
 
+
+

@@ -7,6 +7,8 @@ interface StarRatingProps {
   onRatingChange: (rating: number) => void;
   size?: number;
   color?: string;
+  outlineColor?: string;
+  showOutline?: boolean;
 }
 
 export const StarRating: React.FC<StarRatingProps> = ({
@@ -14,20 +16,28 @@ export const StarRating: React.FC<StarRatingProps> = ({
   onRatingChange,
   size = 32,
   color = '#FFD700',
+  outlineColor = '#D1D5DB',
+  showOutline = false,
 }) => {
   return (
     <HStack space="sm" justifyContent="center">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Pressable key={star} onPress={() => onRatingChange(star)}>
-          <Feather
-            name={star <= rating ? 'star' : 'star'}
-            size={size}
-            color={star <= rating ? color : '#D1D5DB'}
-            fill={star <= rating ? color : 'transparent'}
-            style={{ marginHorizontal: 4 }}
-          />
-        </Pressable>
-      ))}
+      {[1, 2, 3, 4, 5].map((star) => {
+        const isFilled = star <= rating;
+        const starColor = isFilled ? color : (showOutline ? outlineColor : '#D1D5DB');
+        const starFill = isFilled ? color : 'transparent';
+        
+        return (
+          <Pressable key={star} onPress={() => onRatingChange(star)}>
+            <Feather
+              name={showOutline && !isFilled ? 'star' : 'star'}
+              size={size}
+              color={starColor}
+              fill={starFill}
+              style={{ marginHorizontal: 4 }}
+            />
+          </Pressable>
+        );
+      })}
     </HStack>
   );
 };

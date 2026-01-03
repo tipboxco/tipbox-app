@@ -9,7 +9,7 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import { Header } from '@/src/components/Header';
 import { Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useUserBookmarks } from '../api/hooks';
+import { useUserBookmarks, useUserBookmarksWithFallback } from '../api/hooks';
 import { CardType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
 import type { BookmarkApiItem } from '../api/bookmarksApi';
@@ -27,7 +27,11 @@ const BookMarksScreen = () => {
   const isDark = colorMode === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const navigation = useNavigation();
-  const { data: bookmarks, isLoading, error } = useUserBookmarks();
+  // Eski endpoint'i dene, hata durumunda yeni endpoint'e geç
+  const { data: bookmarksData, isLoading, error } = useUserBookmarksWithFallback();
+  
+  // Extract bookmarks array from response
+  const bookmarks = bookmarksData || [];
 
   // Map Post bookmark to PostCardData
   const mapPostToCardData = (item: ProfilePost & { type: 'post' }): PostCardData => {

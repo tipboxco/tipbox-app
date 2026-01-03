@@ -15,10 +15,11 @@ export const bookmarkKeys = {
 };
 
 /**
- * Get User Bookmarks query hook (Legacy - Deprecated)
- * Eski endpoint'i kullanır
+ * Get User Bookmarks query hook
+ * /users/{userId}/bookmarks endpoint'ini kullanır
+ * Kullanıcının bookmark'larını tam post verileri ile getirir
  *
- * @deprecated Use useUserBookmarksNew instead
+ * @deprecated Bu endpoint deprecated. useUserBookmarksWithDetails kullanın.
  * @returns React Query hook result
  *
  * @example
@@ -36,10 +37,53 @@ export const useUserBookmarks = () => {
       return getUserBookmarks(userId);
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
+    staleTime: 0, // Cache yok - her seferinde fresh data
     gcTime: 0, // Cache yok
     refetchOnMount: 'always', // Her mount'ta yeniden fetch et
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Focus olduğunda refetch et
+    retry: 1,
+  });
+};
+
+/**
+ * Get User Bookmarks with improved error handling
+ * Eski endpoint'i kullanır, hata durumunda detaylı log yazar
+ *
+ * @returns React Query hook result
+ */
+export const useUserBookmarksWithFallback = () => {
+  const userId = useCurrentUserIdOrLogout();
+
+  return useQuery<BookmarkApiItem[], Error>({
+    queryKey: userId ? bookmarkKeys.userBookmarks(userId) : ['bookmarks', 'disabled'],
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+      try {
+        const data = await getUserBookmarks(userId);
+        console.log('[useUserBookmarks] ✅ Success:', {
+          userId,
+          bookmarksCount: data?.length || 0,
+          bookmarks: data?.map((b) => ({ id: b.id, type: b.type })),
+        });
+        return data;
+      } catch (error: any) {
+        console.error('[useUserBookmarks] ❌ Error:', {
+          userId,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+        });
+        throw error;
+      }
+    },
+    enabled: !!userId,
+    staleTime: 0, // Cache yok - her seferinde fresh data
+    gcTime: 0, // Cache yok
+    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
+    refetchOnWindowFocus: true, // Focus olduğunda refetch et
     retry: 1,
   });
 };

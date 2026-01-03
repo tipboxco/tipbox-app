@@ -32,6 +32,9 @@ interface AppState {
   isUserBusy: boolean;
   busyReason?: 'form' | 'payment' | 'critical-action' | string;
   
+  // Active Thread ID - MessageDetail ekranındayken aktif thread ID'si (notification kontrolü için)
+  activeThreadId: string | null;
+  
   // Auth Actions
   login: (userData: {
     id: string;
@@ -53,6 +56,9 @@ interface AppState {
   
   // App State Actions
   setUserBusy: (busy: boolean, reason?: string) => void;
+  
+  // Active Thread Actions
+  setActiveThreadId: (threadId: string | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -72,6 +78,9 @@ export const useAppStore = create<AppState>()(
         // Initial App State Awareness
         isUserBusy: false,
         busyReason: undefined,
+        
+        // Initial Active Thread ID
+        activeThreadId: null,
         
         // Auth Actions
         setTempUser: (user: User, accessToken: string) => {
@@ -231,6 +240,12 @@ export const useAppStore = create<AppState>()(
             busyReason: busy ? reason : undefined,
           });
           console.log('[AppStore] 🔒 User busy state:', busy, reason || '');
+        },
+        
+        // Active Thread Actions
+        setActiveThreadId: (threadId: string | null) => {
+          set({ activeThreadId: threadId });
+          console.log('[AppStore] 💬 Active thread ID set:', threadId);
         },
       }),
       {

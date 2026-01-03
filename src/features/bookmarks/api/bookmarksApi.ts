@@ -27,10 +27,48 @@ export type BookmarkApiItem =
 export const getUserBookmarks = async (
   userId: string
 ): Promise<BookmarkApiItem[]> => {
-  const response = await apiService.getClient().get<BookmarkApiItem[]>(
-    `/users/${userId}/bookmarks`
-  );
-  return response.data;
+  try {
+    const response = await apiService.getClient().get<any>(
+      `/users/${userId}/bookmarks`
+    );
+    
+    // API response formatını kontrol et
+    // Eğer { success: true, data: [...] } formatındaysa data'yı al
+    // Eğer direkt array ise direkt kullan
+    if (response.data && typeof response.data === 'object') {
+      // Eğer data property'si varsa ve array ise
+      if ('data' in response.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      // Eğer direkt array ise
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      // Eğer items property'si varsa (feed formatı gibi)
+      if ('items' in response.data && Array.isArray(response.data.items)) {
+        return response.data.items;
+      }
+    }
+    
+    // Hiçbiri değilse boş array döndür
+    console.warn('[getUserBookmarks] Unexpected response format:', {
+      userId,
+      responseDataType: typeof response.data,
+      responseDataKeys: response.data ? Object.keys(response.data) : null,
+      responseData: response.data,
+    });
+    
+    return [];
+  } catch (error: any) {
+    console.error('[getUserBookmarks] API Error:', {
+      userId,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**

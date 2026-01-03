@@ -126,12 +126,24 @@ const fixImageUrl = (url: string): string => {
     try {
       const urlObj = new URL(url);
       
+      // localhost veya 127.0.0.1 içeren URL'leri MEDIA_URL ile değiştir
+      const isLocalhost = urlObj.hostname === 'localhost' || 
+                          urlObj.hostname === '127.0.0.1' ||
+                          urlObj.hostname.startsWith('192.168.') ||
+                          urlObj.hostname.startsWith('10.') ||
+                          urlObj.hostname.startsWith('172.');
+      
       // Eğer origin zaten MEDIA_URL ile aynıysa, değiştirme
       if (urlObj.origin === mediaOrigin) {
         return urlObj.toString();
       }
       
-      // Origin'i MEDIA_URL ile değiştir
+      // localhost veya local network IP ise, origin'i MEDIA_URL ile değiştir
+      if (isLocalhost) {
+        return url.replace(urlObj.origin, mediaOrigin);
+      }
+      
+      // Diğer durumlarda da origin'i MEDIA_URL ile değiştir (production için)
       return url.replace(urlObj.origin, mediaOrigin);
     } catch {
       // URL parse edilemezse, relative path olarak dene

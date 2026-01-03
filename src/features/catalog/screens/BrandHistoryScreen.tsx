@@ -6,6 +6,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import BrandInfoCard from '../components/BrandInfoCard';
@@ -219,7 +221,10 @@ const BrandHistoryScreen: React.FC = () => {
                     </VStack>
                   ))}
                 </HStack>
-                <Pressable onPress={() => console.log('See More Badges')}>
+                <Pressable onPress={() => {
+                  // RewardsBadgesScreen'e navigate et (Events stack içinde)
+                  navigationService.navigateNested(TAB_ROUTES.EVENTS, 'RewardsBadges', undefined);
+                }}>
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
                     fontSize={8}

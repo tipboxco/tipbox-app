@@ -53,21 +53,27 @@ class NotificationStateSync {
 
     if (cachedData) {
       // Realtime notifications'ı cache'e merge et
-      mergedNotifications = [...cachedData.data];
+      // Güvenli array kontrolü: cachedData.data undefined olabilir
+      mergedNotifications = Array.isArray(cachedData.data) 
+        ? [...cachedData.data]
+        : [];
       
-      realtimeNotifications.forEach((realtime) => {
-        const existingIndex = mergedNotifications.findIndex(
-          (n) => n.id === realtime.id
-        );
+      // Güvenli forEach: realtimeNotifications her zaman array döndürür ama yine de kontrol edelim
+      if (Array.isArray(realtimeNotifications)) {
+        realtimeNotifications.forEach((realtime) => {
+          const existingIndex = mergedNotifications.findIndex(
+            (n) => n.id === realtime.id
+          );
 
-        if (existingIndex >= 0) {
-          // Update existing
-          mergedNotifications[existingIndex] = realtime;
-        } else {
-          // Add new (prepend - en yeni başta)
-          mergedNotifications.unshift(realtime);
-        }
-      });
+          if (existingIndex >= 0) {
+            // Update existing
+            mergedNotifications[existingIndex] = realtime;
+          } else {
+            // Add new (prepend - en yeni başta)
+            mergedNotifications.unshift(realtime);
+          }
+        });
+      }
 
       // Cache'i güncelle
       this.queryClient.setQueryData(notificationKeys.lists(), {

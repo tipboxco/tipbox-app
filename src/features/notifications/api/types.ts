@@ -34,7 +34,10 @@ export type NotificationType =
   | 'EXPERT_REQUEST_ANSWERED'
   | 'SYSTEM_ANNOUNCEMENT'
   | 'TIPS_RECEIVED'
-  | 'TIPS_SENT';
+  | 'TIPS_SENT'
+  | 'EVENT_STARTED'
+  | 'EVENT_ENDING_SOON'
+  | 'EVENT_REWARD_AVAILABLE';
 
 export interface NotificationMetadata {
   userId?: string;
@@ -45,6 +48,9 @@ export interface NotificationMetadata {
   threadId?: string;
   badgeId?: string;
   amount?: number;
+  eventId?: string;
+  eventName?: string;
+  rewardAmount?: number;
   [key: string]: any;
 }
 

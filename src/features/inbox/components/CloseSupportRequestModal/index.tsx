@@ -19,6 +19,7 @@ interface CloseSupportRequestModalProps {
   isVisible: boolean;
   onClose: () => void;
   onConfirm: (rating: number) => void;
+  onReport?: () => void; // Report butonu için callback
   userName: string;
   userTitle: string;
   userAvatar: any;
@@ -28,6 +29,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
   isVisible,
   onClose,
   onConfirm,
+  onReport,
   userName,
   userTitle,
   userAvatar,
@@ -57,21 +59,42 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
         maxWidth="90%"
         width="90%"
         mx="$4"
+        position="relative"
       >
         <ModalBody p="$0">
           <VStack px="$5" py="$5" space="md">
+            {/* Report Button - Sağ üst köşede */}
+            {onReport && (
+              <Box position="absolute" top="$4" right="$4" zIndex={10}>
+                <Pressable
+                  onPress={onReport}
+                  bg={isDark ? '#2A2A2A' : '#F3F4F6'}
+                  borderRadius={8}
+                  p="$2"
+                  borderWidth={1}
+                  borderColor={isDark ? '#3A3A3A' : '#E5E7EB'}
+                >
+                  <Feather
+                    name="flag"
+                    size={18}
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                  />
+                </Pressable>
+              </Box>
+            )}
+
             {/* User Profile Section */}
             <VStack space="sm" alignItems="center">
-              {/* User Avatar */}
+              {/* User Avatar - Görseldeki gibi pembe border */}
               <Image
                 source={userAvatar}
                 alt={userName}
                 style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  borderWidth: 3,
-                  borderColor: isDark ? '#2A2A2A' : '#E5E7EB',
+                  width: 100,
+                  height: 100,
+                  borderRadius: 50,
+                  borderWidth: 4,
+                  borderColor: '#FF69B4', // Pembe border (görseldeki gibi)
                 }}
               />
 
@@ -85,12 +108,13 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                 {userName}
               </Text>
 
-              {/* User Title */}
+              {/* User Title - Görseldeki gibi uzun title */}
               <Text
                 fontSize={13}
                 fontWeight="$normal"
                 color={isDark ? '#8C8C8C' : '#6B7280'}
                 textAlign="center"
+                numberOfLines={2}
               >
                 {userTitle}
               </Text>
@@ -121,42 +145,46 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
               </Text>
             </VStack>
 
-            {/* Star Rating */}
-            <Box py="$2">
+            {/* Star Rating - Görseldeki gibi outline stars */}
+            <Box py="$2" alignItems="center">
               <StarRating
                 rating={rating}
                 onRatingChange={setRating}
-                size={36}
+                size={32}
                 color="#FFD700"
+                outlineColor={isDark ? '#8C8C8C' : '#9CA3AF'}
+                showOutline={true}
               />
             </Box>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Görseldeki gibi */}
             <VStack space="sm" mt="$2">
-              {/* Close Support Request Button */}
+              {/* Close Support Request Button - Rating yapıldığında sarı-yeşil, yoksa gri */}
               <Pressable onPress={handleConfirm} disabled={rating === 0}>
                 <Box
-                  bg={rating > 0 ? '#E8FF6B' : (isDark ? '#2A2A2A' : '#E5E7EB')}
-                  borderRadius="$xl"
+                  bg={rating > 0 ? '#E8FF6B' : (isDark ? '#2A2A2A' : '#F3F4F6')}
+                  borderRadius={16}
                   py="$3"
                   alignItems="center"
-                  opacity={rating === 0 ? 0.5 : 1}
+                  borderWidth={1}
+                  borderColor={rating > 0 ? '#D8FF08' : (isDark ? '#3A3A3A' : '#E5E7EB')}
+                  opacity={rating === 0 ? 0.6 : 1}
                 >
                   <Text
                     fontSize={15}
                     fontWeight="$semibold"
-                    color={rating > 0 ? '#000000' : (isDark ? '#6B7280' : '#9CA3AF')}
+                    color={rating > 0 ? '#000000' : (isDark ? '#FFFFFF' : '#000000')}
                   >
                     Close Support Request
                   </Text>
                 </Box>
               </Pressable>
 
-              {/* Cancel Button */}
+              {/* Cancel Button - Görseldeki gibi gri */}
               <Pressable onPress={handleClose}>
                 <Box
                   bg={isDark ? '#2A2A2A' : '#F3F4F6'}
-                  borderRadius="$xl"
+                  borderRadius={16}
                   py="$3"
                   alignItems="center"
                   borderWidth={1}

@@ -29,6 +29,12 @@ class EventService {
     // Event normalize
     const normalizedEvent = this.normalizeEvent(event);
 
+    console.log('[EventService] 📥 Socket event received:', {
+      originalType: event.type,
+      normalizedType: normalizedEvent.type,
+      payload: normalizedEvent.payload,
+    });
+
     // Domain routing
     switch (normalizedEvent.type) {
       case 'NEW_MESSAGE':
@@ -40,11 +46,31 @@ class EventService {
 
       case 'NOTIFICATION':
         // NotificationService'e yönlendir
+        // Payload zaten Notification objesi olmalı
         notificationService.handleNotification(normalizedEvent.payload, context);
         break;
 
       default:
-        console.log('[EventService] ℹ️ Unknown event type:', normalizedEvent.type);
+        // Backend'den direkt notification type'ları gelebilir (POST_LIKED, NEW_TRUSTER, vb.)
+        // Bu durumda payload'ın kendisi notification objesi olabilir
+        const notificationTypes = [
+          'POST_LIKED', 'POST_COMMENTED', 'POST_SHARED', 'POST_FAVORITED',
+          'COMMENT_LIKED', 'COMMENT_REPLIED',
+          'NEW_TRUSTER', 'NEW_TRUSTED_BY',
+          'NEW_MESSAGE', 'DM_REQUEST_RECEIVED', 'DM_REQUEST_ACCEPTED',
+          'NEW_BADGE', 'ACHIEVEMENT_UNLOCKED', 'REWARD_EARNED',
+          'EXPERT_REQUEST_AVAILABLE', 'EXPERT_REQUEST_ANSWERED',
+          'SYSTEM_ANNOUNCEMENT', 'TIPS_RECEIVED', 'TIPS_SENT',
+          'EVENT_STARTED', 'EVENT_ENDING_SOON', 'EVENT_REWARD_AVAILABLE',
+        ];
+        
+        if (notificationTypes.includes(normalizedEvent.type)) {
+          // Bu bir notification type'ı, payload'ı direkt notification olarak handle et
+          console.log('[EventService] ✅ Treating as notification type:', normalizedEvent.type);
+          notificationService.handleNotification(normalizedEvent.payload, context);
+        } else {
+          console.log('[EventService] ℹ️ Unknown event type:', normalizedEvent.type, 'Payload:', normalizedEvent.payload);
+        }
     }
   }
 

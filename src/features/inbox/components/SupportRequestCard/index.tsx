@@ -14,6 +14,7 @@ import type { SupportRequest } from '@/src/features/inbox/api/messagesApi';
 interface SupportRequestCardProps {
   data: SupportRequest;
   onPress?: (requestId: string) => void;
+  onAccept?: (requestId: string) => void;
 }
 
 // Status mapping helper
@@ -52,13 +53,19 @@ const getButtonText = (status: SupportRequest['status']) => {
   }
 };
 
-export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, onPress }) => {
+export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, onPress, onAccept }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const statusInfo = getStatusInfo(data.status);
   const buttonText = getButtonText(data.status);
 
   const handlePress = () => {
+    // Pending durumunda card'a tıklandığında hiçbir şey yapma
+    // Sadece "Kabul Et" butonuna tıklandığında işlem yapılacak
+    if (data.status === 'pending') {
+      return;
+    }
+    
     if (onPress) {
       onPress(data.id);
     }
@@ -66,7 +73,11 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
 
   const handleButtonPress = (e: any) => {
     e.stopPropagation();
-    if (onPress) {
+    // Eğer status 'pending' ise ve onAccept varsa, onAccept çağrılır
+    // Aksi halde onPress çağrılır
+    if (data.status === 'pending' && onAccept) {
+      onAccept(data.id);
+    } else if (onPress) {
       onPress(data.id);
     }
   };

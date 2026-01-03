@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface AddProductFromCatalogProps {
     onProductSelect: (product: Product) => void;
-    onClose?: () => void;
+    onClose: () => void;
 }
 
 export const AddProductFromCatalog: React.FC<AddProductFromCatalogProps> = ({
@@ -185,7 +185,7 @@ export const AddProductFromCatalog: React.FC<AddProductFromCatalogProps> = ({
             {/* Header */}
             <Header
                 title="Add Product from Catalog"
-                leftAction="back"
+                leftAction="cancel"
                 onLeftActionPress={onClose}
             />
 

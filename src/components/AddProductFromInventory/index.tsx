@@ -25,7 +25,7 @@ const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - (CARD_GAP * (CARDS_PER_RO
 
 interface AddProductFromInventoryProps {
     onProductSelect: (product: InventoryItem) => void;
-    onClose?: () => void;
+    onClose: () => void;
 }
 
 export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = ({
@@ -105,7 +105,7 @@ export const AddProductFromInventory: React.FC<AddProductFromInventoryProps> = (
             {/* Header */}
             <Header
                 title="Add Product from Inventory"
-                leftAction="back"
+                leftAction="cancel"
                 onLeftActionPress={onClose}
             />
 

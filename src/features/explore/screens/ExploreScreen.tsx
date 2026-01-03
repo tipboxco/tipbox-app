@@ -25,14 +25,19 @@ import { HottestTab, NewsTab } from '../components';
 import { useMarketplaceBanners } from '../api/hooks';
 import type { MarketplaceBanner } from '../types';
 import type { ExploreStackParamList } from '../navigation';
+import { deepLinkService } from '@/src/services/DeepLinkService';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
+import * as Linking from 'expo-linking';
 
 // Banner Carousel Component (CardImageCarousel style)
 interface BannerCarouselProps {
   banners: MarketplaceBanner[];
   isDark: boolean;
+  onBannerPress?: (linkUrl: string) => void;
 }
 
-const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDark }) => {
+const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDark, onBannerPress }) => {
   const carouselRef = useRef<ICarouselInstance>(null);
   const carouselPadding = 16; // Sağdan soldan padding
   const itemSpacing = 12; // Görseller arası boşluk
@@ -58,7 +63,9 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
         {imageSource && (
           <Pressable
             onPress={() => {
-              console.log('Banner pressed:', banners[0].linkUrl);
+              if (onBannerPress && banners[0].linkUrl) {
+                onBannerPress(banners[0].linkUrl);
+              }
             }}
             style={{
               position: 'relative',
@@ -156,7 +163,9 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
             >
               <Pressable
                 onPress={() => {
-                  console.log('Banner pressed:', item.linkUrl);
+                  if (onBannerPress && item.linkUrl) {
+                    onBannerPress(item.linkUrl);
+                  }
                 }}
                 style={{
                   width: itemWidth - itemSpacing,
@@ -237,9 +246,13 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
 
 // React.memo ile sarmalayarak gereksiz re-render'ları önle
 const BannerCarousel = React.memo(BannerCarouselComponent, (prevProps, nextProps) => {
-  // Sadece banners array'inin uzunluğu veya isDark değiştiğinde re-render
+  // Sadece banners array'inin uzunluğu, isDark veya onBannerPress değiştiğinde re-render
   // banners array referansı aynıysa re-render yapma
-  if (prevProps.banners === nextProps.banners && prevProps.isDark === nextProps.isDark) {
+  if (
+    prevProps.banners === nextProps.banners && 
+    prevProps.isDark === nextProps.isDark &&
+    prevProps.onBannerPress === nextProps.onBannerPress
+  ) {
     return true; // Re-render yapma
   }
   return false; // Re-render yap
@@ -272,34 +285,72 @@ const ExploreScreen: React.FC = () => {
 
   // Callback fonksiyonlarını useCallback ile sarmalayarak referanslarını stabilize et
   const handleEventPress = useCallback((eventId: string) => {
-    // Events stack'ine navigate et - FeedScreen'deki gibi Main üzerinden
-    navigation.navigate('Main', {
-      screen: 'Events',
-      params: {
-        screen: 'EventDetail',
-        params: { eventId },
-      },
-    });
-  }, [navigation]);
-
-  const handleSeeAllEvents = useCallback(() => {
-    console.log('See All Event Catalog pressed');
+    // Events stack'ine navigate et
+    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail', { eventId });
   }, []);
 
-  const handleBrandPress = useCallback((brandId: string) => {
-    console.log('Brand pressed:', brandId);
+  // Banner navigation handler
+  const handleBannerPress = useCallback(async (linkUrl: string) => {
+    try {
+      // Internal deep link kontrolü (tipboxapp://)
+      if (linkUrl.startsWith('tipboxapp://')) {
+        const route = deepLinkService.parseURL(linkUrl);
+        if (route) {
+          // Tab route ise navigateNested kullan
+          const tabRouteValues = Object.values(TAB_ROUTES) as string[];
+          if (tabRouteValues.includes(route.screen)) {
+            const tabRoute = route.screen as keyof typeof TAB_ROUTES;
+            const screenName = route.params?.screen || 'CatalogScreen';
+            const screenParams = route.params?.params || route.params || {};
+            navigationService.navigateNested(tabRoute as any, screenName as any, screenParams);
+          } else {
+            // Root route ise navigate kullan
+            navigationService.navigate(route.screen as any, route.params);
+          }
+        } else {
+          console.warn('[ExploreScreen] ⚠️ Could not parse banner URL:', linkUrl);
+        }
+      } else if (linkUrl.startsWith('http://') || linkUrl.startsWith('https://')) {
+        // External URL - browser'da aç
+        const canOpen = await Linking.canOpenURL(linkUrl);
+        if (canOpen) {
+          await Linking.openURL(linkUrl);
+        } else {
+          console.warn('[ExploreScreen] ⚠️ Cannot open external URL:', linkUrl);
+        }
+      } else {
+        console.warn('[ExploreScreen] ⚠️ Invalid banner URL format:', linkUrl);
+      }
+    } catch (error) {
+      console.error('[ExploreScreen] ❌ Error handling banner press:', error);
+    }
+  }, []);
+
+  // See All Buttons - Navigation handlers
+  const handleSeeAllEvents = useCallback(() => {
+    // Events tab'ına navigate et
+    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen', undefined);
   }, []);
 
   const handleSeeAllBrands = useCallback(() => {
-    console.log('See Brand Catalog pressed');
-  }, []);
-
-  const handleProductPress = useCallback((productId: string) => {
-    console.log('Product pressed:', productId);
+    // Catalog tab'ına navigate et
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
   }, []);
 
   const handleSeeAllProducts = useCallback(() => {
-    console.log('See Product Catalog pressed');
+    // Catalog tab'ına navigate et
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+  }, []);
+
+  // Item Press Handlers - Navigation
+  const handleBrandPress = useCallback((brandId: string) => {
+    // BrandDetailScreen'e navigate et (Catalog stack içinde)
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandDetailScreen', { brandId });
+  }, []);
+
+  const handleProductPress = useCallback((productId: string) => {
+    // BrandProductDetailScreen'e navigate et (Catalog stack içinde)
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { productId });
   }, []);
 
 
@@ -366,7 +417,7 @@ const ExploreScreen: React.FC = () => {
                   }
                 }}
               >
-                <BannerCarousel banners={banners} isDark={isDark} />
+                <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
               </Box>
             )}
 

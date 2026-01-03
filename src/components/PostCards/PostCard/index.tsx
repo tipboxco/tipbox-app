@@ -5,6 +5,9 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource } from '@/src/utils';
@@ -117,6 +120,15 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
     });
   };
 
+  const handleAvatarPress = () => {
+    if (data.user.id) {
+      navigationService.navigate(ROOT_ROUTES.PROFILE, {
+        screen: 'ProfileMain',
+        params: { userId: data.user.id },
+      });
+    }
+  };
+
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
   const isGroupOrSubCategoryContext =
@@ -133,14 +145,16 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           {avatarSource && (
-            <Image
-              source={avatarSource}
-              alt={data.user.name}
-              mr={8}
-              width={42}
-              height={42}
-              borderRadius={100}
-            />
+            <Pressable onPress={handleAvatarPress}>
+              <Image
+                source={avatarSource}
+                alt={data.user.name}
+                mr={8}
+                width={42}
+                height={42}
+                borderRadius={100}
+              />
+            </Pressable>
           )}
           <VStack flex={1}>
             <Text
@@ -206,27 +220,8 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                 title={context.name}
                 subName={context.subName}
                 onPress={() => {
-                  navigation.navigate('Post', {
-                    screen: 'PostsScreen',
-                    params: {
-                      stage: data.contextType === ProductInfoType.PRODUCT_GROUP
-                        ? 'ProductGroup'
-                        : 'SubCategories',
-                      name: context.name,
-                      productInfo: {
-                        image: imageSource,
-                        title: context.name,
-                        subName: context.subName,
-                      },
-                      // Yönlendirme için contextData.id kullanımı
-                      selectedProduct: {
-                        id: context.id,
-                        name: context.name,
-                        description: '',
-                        image: imageSource,
-                      },
-                    },
-                  });
+                  // ProductGroup veya SubCategory için CatalogScreen'e navigate et
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
                 }}
               />
             </Box>
@@ -248,10 +243,12 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                   title={category.product.name}
                   subName={category.product.subName}
                   onPress={() => {
-                    navigation.navigate('Post', {
-                      screen: 'PostDetailScreen',
-                      params: { postData: data, type: 'post' }
-                    });
+                    // Product için BrandProductDetailScreen'e navigate et
+                    if (category.product?.id) {
+                      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { 
+                        productId: category.product.id 
+                      });
+                    }
                   }}
                 />
               </Box>
@@ -268,18 +265,8 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                 title={category.name}
                 subName={category.subCategory}
                 onPress={() => {
-                  navigation.navigate('Post', {
-                    screen: 'PostsScreen',
-                    params: {
-                      stage: 'SubCategories',
-                      name: category.name,
-                      productInfo: {
-                        image: categoryImageSource,
-                        title: category.name,
-                        subName: category.subCategory,
-                      }
-                    }
-                  });
+                  // Category için CatalogScreen'e navigate et
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
                 }}
               />
             </Box>

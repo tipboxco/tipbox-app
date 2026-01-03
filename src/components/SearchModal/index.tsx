@@ -89,7 +89,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     {
       keyword: debouncedQuery,
       types: searchTypes,
-      limit: 20,
+      limit: 4, // Default: 4'er veri
     },
     debouncedQuery.length > 0 // Sadece query varsa aktif et
   );

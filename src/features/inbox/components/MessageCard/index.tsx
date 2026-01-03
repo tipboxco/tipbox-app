@@ -7,6 +7,7 @@ import {
   Pressable,
   Image,
 } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { formatRelativeTime, toImageSource } from '@/src/utils';
 import type { InboxMessage } from '../../types';
@@ -14,9 +15,11 @@ import type { InboxMessage } from '../../types';
 interface MessageCardProps {
   data: InboxMessage;
   onPress?: (messageId: string) => void;
+  isTyping?: boolean; // Kullanıcı typing yapıyor mu?
+  typingUserName?: string; // Typing yapan kullanıcının adı (opsiyonel)
 }
 
-export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress }) => {
+export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTyping = false, typingUserName }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -59,14 +62,50 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress }) => {
             {data.senderName}
           </Text>
           
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize={9}
-            fontWeight={data.isUnread ? '$semibold' : '$normal'}
-            numberOfLines={2}
-          >
-            {data.lastMessage}
-          </Text>
+          {isTyping ? (
+            <HStack space="xs" alignItems="center">
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize={9}
+                fontWeight="$normal"
+                fontStyle="italic"
+              >
+                {typingUserName || data.senderName} yazıyor
+              </Text>
+              <HStack space="xs" alignItems="center">
+                <Box
+                  width={4}
+                  height={4}
+                  borderRadius={2}
+                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  style={{ opacity: 0.4 }}
+                />
+                <Box
+                  width={4}
+                  height={4}
+                  borderRadius={2}
+                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  style={{ opacity: 0.6 }}
+                />
+                <Box
+                  width={4}
+                  height={4}
+                  borderRadius={2}
+                  bg={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  style={{ opacity: 0.8 }}
+                />
+              </HStack>
+            </HStack>
+          ) : (
+            <Text
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              fontSize={9}
+              fontWeight={data.isUnread ? '$semibold' : '$normal'}
+              numberOfLines={2}
+            >
+              {data.lastMessage}
+            </Text>
+          )}
         </VStack>
       </HStack>
 

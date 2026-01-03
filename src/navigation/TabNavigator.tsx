@@ -7,8 +7,12 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import { NotificationBadge } from '@/src/components/NotificationBadge';
+import { MessageBadge } from '@/src/components/MessageBadge';
 import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/notifications/api/hooks';
+import { useMessages } from '@/src/features/inbox/api/hooks';
 import { useNavigation } from '@react-navigation/native';
+import { useAppStore } from '@/src/store/appStore';
+import { useAuth } from '@/src/providers/AuthProvider';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -64,13 +68,25 @@ export const TabNavigator = () => {
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { isAuthenticated } = useAppStore();
+  const { isAuthReady } = useAuth();
   
   // Global navigation UI state'ten tab bar visibility'yi al
   const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
   
   // Unread notification count - badge için
-  const { data: unreadCountData } = useUnreadCount();
+  // Sadece authenticated ve auth ready ise çalıştır
+  const { data: unreadCountData } = useUnreadCount(
+    isAuthenticated && isAuthReady
+  );
   const unreadCount = unreadCountData?.data?.count || 0;
+  
+  // Unread messages - inbox badge için
+  const { data: messages } = useMessages();
+  const hasUnreadMessages = useMemo(() => {
+    if (!messages || messages.length === 0) return false;
+    return messages.some((message) => message.isUnread || message.unreadCount > 0);
+  }, [messages]);
   
   // Mark all as read mutation - bildirim ikonuna tıklandığında
   const markAllAsReadMutation = useMarkAllNotificationsAsRead();
@@ -140,6 +156,16 @@ export const TabNavigator = () => {
               <View style={{ position: 'relative' }}>
                 <Feather name={iconName} size={size} color={color} />
                 <NotificationBadge count={unreadCount} />
+              </View>
+            );
+          }
+
+          // Inbox icon için badge ekle (sadece nokta, count yok)
+          if (route.name === 'InboxStack') {
+            return (
+              <View style={{ position: 'relative' }}>
+                <Feather name={iconName} size={size} color={color} />
+                <MessageBadge hasUnread={hasUnreadMessages} />
               </View>
             );
           }

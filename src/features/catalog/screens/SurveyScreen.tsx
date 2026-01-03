@@ -29,6 +29,8 @@ import type { UpdatePost } from '@/src/mock/feed/types';
 import type { UpdateCardData } from '@/src/types/UpdateCard';
 import { ProductInfoType } from '@/src/types/common';
 import { CardType } from '@/src/types/common';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 
 type SurveyScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'SurveyScreen'>;
 type SurveyScreenRouteProp = {
@@ -731,7 +733,10 @@ const SurveyScreen: React.FC = () => {
             renderItem={({ item }) => (
               <EventCard
                 event={item}
-                onPress={() => navigation.navigate('BrandEventsDetailScreen', { eventId: item.id })}
+                onPress={() => {
+                  // EventDetailScreen'e yönlendir (Events tab'ı içinde)
+                  navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail', { eventId: item.id });
+                }}
               />
             )}
             keyExtractor={(item) => item.id}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
 import {
     Box,
@@ -10,7 +10,7 @@ import {
     InputField,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import MessageCard from '../components/MessageCard/index';
@@ -21,6 +21,9 @@ import { useMessages, inboxKeys } from '../api/hooks';
 import type { InboxMessage } from '../types';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { useAppStore } from '@/src/store/appStore';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -34,36 +37,251 @@ const MessagesScreen: React.FC = () => {
 
     const { data: messages, isLoading, error, refetch, isRefetching } = useMessages();
     const queryClient = useQueryClient();
-    const { isConnected, on, off } = useSocket();
+    const { isConnected, on, off, markThreadRead } = useSocket();
+    const { user } = useAppStore();
+    
+    // Typing state: Hangi thread'de hangi kullanıcı typing yapıyor?
+    // Format: { [threadId]: { userId: string, userName?: string } }
+    const [typingUsers, setTypingUsers] = useState<{ [threadId: string]: { userId: string; userName?: string } }>({});
+    // Typing timeout'ları için ref (cleanup için)
+    const typingTimeoutsRef = useRef<{ [threadId: string]: NodeJS.Timeout }>({});
 
     // Socket event handler - new_message event
     const handleNewMessage = useCallback((eventData: any) => {
-        console.log('[MessagesScreen] New message received:', eventData);
-        // Invalidate messages query to refresh the list
+        console.log('[MessagesScreen] 📨 New message received:', {
+            threadId: eventData.threadId,
+            messageId: eventData.messageId,
+            senderId: eventData.senderId,
+            message: eventData.message || eventData.text,
+        });
+        
+        // Yeni mesaj geldiğinde, eğer kullanıcı inbox listesindeyse (MessageDetail ekranında değilse),
+        // thread'i okunmamış olarak işaretle (optimistic update)
+        // Not: Eğer kullanıcı MessageDetail ekranındaysa, MessageDetail'deki handleNewMessage mesajı okundu olarak işaretleyecek
+        if (eventData.threadId) {
+            queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+                if (!oldData) {
+                    // Eğer data yoksa, backend'den çekilecek (invalidate ile)
+                    return oldData;
+                }
+                
+                const currentUserId = user?.id;
+                const isReceivedMessage = eventData.senderId && eventData.senderId !== currentUserId;
+                const threadIndex = oldData.findIndex((msg) => msg.id === eventData.threadId);
+                
+                if (threadIndex !== -1) {
+                    // Thread bulundu: Güncelle ve en üste taşı
+                    const thread = oldData[threadIndex];
+                    let updated: InboxMessage;
+                    
+                    if (isReceivedMessage) {
+                        // Alınan mesaj: Okunmamış olarak işaretle
+                        updated = {
+                            ...thread,
+                            isUnread: true,
+                            unreadCount: (thread.unreadCount || 0) + 1,
+                            lastMessage: eventData.message || eventData.text || thread.lastMessage,
+                            timestamp: eventData.timestamp || new Date().toISOString(),
+                        };
+                    } else {
+                        // Gönderilen mesaj: Sadece lastMessage ve timestamp'i güncelle
+                        updated = {
+                            ...thread,
+                            lastMessage: eventData.message || eventData.text || thread.lastMessage,
+                            timestamp: eventData.timestamp || new Date().toISOString(),
+                        };
+                    }
+                    
+                    // Thread'i en üste taşı (yeni mesaj geldiği/gönderildiği için)
+                    const newData = [...oldData];
+                    newData.splice(threadIndex, 1);
+                    newData.unshift(updated);
+                    return newData;
+                } else {
+                    // Thread bulunamadı: Yeni thread olabilir, backend'den çekilecek (invalidate ile)
+                    console.log('[MessagesScreen] ⚠️ Thread not found in cache, will fetch from backend:', eventData.threadId);
+                }
+                
+                return oldData;
+            });
+        }
+        
+        // Backend'den güncel veri çek (invalidate + refetch)
+        // Not: Optimistic update zaten yapıldı, bu sadece backend'den güncel veriyi çekmek için
         queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+        // Refetch yap (invalidate yeterli olmayabilir, özellikle yeni thread'ler için)
+        setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
+        }, 300);
+    }, [queryClient, user?.id]);
+
+    // Socket event handler - thread_read event (thread okundu olarak işaretlendiğinde)
+    const handleThreadRead = useCallback((eventData: { threadId: string; readBy: string; timestamp: string }) => {
+        console.log('[MessagesScreen] 📖 Thread read event received:', eventData);
+        
+        // Optimistic update: Local state'te thread'i okundu olarak işaretle (hemen UI'da göster)
+        queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+            if (!oldData) return oldData;
+            return oldData.map((msg) => 
+                msg.id === eventData.threadId 
+                    ? { ...msg, isUnread: false, unreadCount: 0 }
+                    : msg
+            );
+        });
+        
+        // Invalidate messages query to refresh the list (backend'den güncel veri çek)
+        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+        // Refetch yap (invalidate yeterli olmayabilir)
+        setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
+        }, 100);
     }, [queryClient]);
+
+    // Socket event handler - user_typing event (kullanıcı typing yapıyor)
+    const handleUserTyping = useCallback((eventData: { userId: string; threadId: string; isTyping: boolean }) => {
+        console.log('[MessagesScreen] 👤 User typing event received:', {
+            userId: eventData.userId,
+            threadId: eventData.threadId,
+            isTyping: eventData.isTyping,
+            currentUserId: user?.id,
+        });
+        
+        // Kendi typing durumumuzu gösterme (sadece karşı kullanıcının typing durumunu göster)
+        if (eventData.userId === user?.id) {
+            return;
+        }
+        
+        // Typing state'i güncelle
+        setTypingUsers((prev) => {
+            if (eventData.isTyping) {
+                // Typing başladı: Mevcut timeout'u temizle
+                if (typingTimeoutsRef.current[eventData.threadId]) {
+                    clearTimeout(typingTimeoutsRef.current[eventData.threadId]);
+                    delete typingTimeoutsRef.current[eventData.threadId];
+                }
+                
+                // Thread'deki kullanıcıyı bul ve typing state'e ekle
+                const thread = messages?.find((msg) => msg.id === eventData.threadId);
+                const typingUserName = thread?.senderName;
+                
+                // 3 saniye sonra otomatik olarak typing'i durdur (güvenlik için)
+                const timeout = setTimeout(() => {
+                    setTypingUsers((prevState) => {
+                        const newState = { ...prevState };
+                        delete newState[eventData.threadId];
+                        return newState;
+                    });
+                    delete typingTimeoutsRef.current[eventData.threadId];
+                }, 3000);
+                typingTimeoutsRef.current[eventData.threadId] = timeout;
+                
+                return {
+                    ...prev,
+                    [eventData.threadId]: {
+                        userId: eventData.userId,
+                        userName: typingUserName,
+                    },
+                };
+            } else {
+                // Typing durdu: Mevcut timeout'u temizle ve typing state'i kaldır
+                if (typingTimeoutsRef.current[eventData.threadId]) {
+                    clearTimeout(typingTimeoutsRef.current[eventData.threadId]);
+                    delete typingTimeoutsRef.current[eventData.threadId];
+                }
+                
+                const newState = { ...prev };
+                delete newState[eventData.threadId];
+                return newState;
+            }
+        });
+    }, [user?.id, messages]);
 
     // Socket event listeners
     useEffect(() => {
         if (!isConnected) return;
 
         on('new_message', handleNewMessage);
+        on('thread_read', handleThreadRead);
+        on('user_typing', handleUserTyping);
 
         return () => {
             off('new_message', handleNewMessage);
+            off('thread_read', handleThreadRead);
+            off('user_typing', handleUserTyping);
+            
+            // Typing timeout'larını temizle
+            Object.values(typingTimeoutsRef.current).forEach((timeout) => {
+                clearTimeout(timeout);
+            });
+            typingTimeoutsRef.current = {};
         };
-    }, [isConnected, on, off, handleNewMessage]);
+    }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping]);
 
+    // Ekran focus olduğunda mesajları refetch et (MessageDetail'den geri dönüldüğünde)
+    useFocusEffect(
+        useCallback(() => {
+            console.log('[MessagesScreen] 🔄 Screen focused, refetching messages...');
+            // Query'yi refetch et (thread okundu durumu güncellenmiş olabilir)
+            queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
+        }, [queryClient])
+    );
+    
     const handleMessagePress = (messageId: string) => {
         const message = (messages || []).find(m => m.id === messageId);
-        if (message) {
-            navigation.navigate('MessageDetailScreen', {
-                messageId: message.id,
-                senderName: message.senderName,
-                senderTitle: message.senderTitle || '',
-                senderAvatar: message.senderAvatar,
-            });
+        if (!message) return;
+
+        const threadId = message.id; // message.id = thread ID (DM_THREAD.md'ye göre)
+        
+        // ✅ Backend'den gelen recipientUserId direkt kullanılıyor (geçici çözüm kaldırıldı)
+        const recipientUserId = message.recipientUserId;
+        
+        if (!recipientUserId) {
+            console.warn('[MessagesScreen] ⚠️ recipientUserId is missing in message response:', message);
+            // Fallback: MessageDetail ekranında thread'den alınacak
         }
+        
+        // Okunmamış mesaj ise thread'i okundu olarak işaretle
+        if (message.isUnread || message.unreadCount > 0) {
+            console.log('[MessagesScreen] 📖 Marking thread as read:', threadId);
+            
+            // Optimistic update: Local state'i güncelle (hemen UI'da göster)
+            queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+                if (!oldData) return oldData;
+                return oldData.map((msg) => 
+                    msg.id === messageId 
+                        ? { ...msg, isUnread: false, unreadCount: 0 }
+                        : msg
+                );
+            });
+            
+            // Backend'e bildir: Socket bağlıysa socket ile, değilse API ile
+            if (isConnected) {
+                // Socket ile bildir
+                markThreadRead(threadId);
+            } else {
+                // Socket bağlı değilse API ile bildir (eğer endpoint varsa)
+                // Not: Backend'de thread okundu işaretleme için API endpoint'i olmayabilir
+                // Bu durumda socket bağlantısı kurulduğunda otomatik olarak işaretlenecek
+                console.warn('[MessagesScreen] ⚠️ Socket not connected, thread read status will be updated when socket connects');
+            }
+            
+            // Query'i invalidate et ve refetch yap ki backend'den güncel veri çekilsin
+            // thread_read event'i geldiğinde de invalidate edilecek ama burada da yapıyoruz
+            setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+                queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
+            }, 500);
+        }
+        
+        // MessageDetail ekranına git (backend'den gelen recipientUserId ile)
+        navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+            messageId: threadId,
+            threadId: threadId,
+            recipientUserId: recipientUserId, // ✅ Backend'den direkt gelen recipientUserId
+            senderName: message.senderName,
+            senderTitle: message.senderTitle || '',
+            senderAvatar: message.senderAvatar,
+        });
     };
 
     const handleCategoryPress = (categoryId: string) => {
@@ -135,12 +353,20 @@ const MessagesScreen: React.FC = () => {
                 <FlatList
                     data={getFilteredMessages()}
                     showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
-                        <MessageCard
-                            data={item}
-                            onPress={handleMessagePress}
-                        />
-                    )}
+                    renderItem={({ item }) => {
+                        const typingInfo = typingUsers[item.id];
+                        const isTyping = !!typingInfo;
+                        const typingUserName = typingInfo?.userName;
+                        
+                        return (
+                            <MessageCard
+                                data={item}
+                                onPress={handleMessagePress}
+                                isTyping={isTyping}
+                                typingUserName={typingUserName}
+                            />
+                        );
+                    }}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomInset }}
                     refreshControl={

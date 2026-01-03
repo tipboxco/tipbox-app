@@ -252,3 +252,5 @@ export const updateUserInterests = async (subCategoryIds: string[]): Promise<voi
 **Kontrol Eden:** AI Assistant  
 **Durum:** 🔴 Eksik Endpoint Entegrasyonları
 
+
+

@@ -239,3 +239,5 @@ if (navigationAction) {
 
 4. **Error Handling**: Navigation hatalarında kullanıcıya bilgi gösterilebilir.
 
+
+

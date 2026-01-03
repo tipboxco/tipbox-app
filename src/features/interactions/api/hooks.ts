@@ -196,7 +196,7 @@ export const useBookmarks = (limit: number = 50) => {
 export const useLikePost = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<void>, Error, string>({
+  return useMutation<ApiResponse<void>, Error, string, { previousFeedPages?: FeedApiResponse[] }>({
     mutationFn: likePost,
     onMutate: async (postId) => {
       // Tüm ilgili query'leri cancel et
@@ -223,7 +223,7 @@ export const useLikePost = () => {
 
       // Infinite query pages için de güncelle
       queryClient.setQueriesData(
-        { queryKey: feedKeys.all, type: 'infinite' },
+        { queryKey: feedKeys.all },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -240,7 +240,7 @@ export const useLikePost = () => {
       // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
       // Infinite query pages için güncelle
       queryClient.setQueriesData(
-        { queryKey: profileKeys.posts(), type: 'infinite' },
+        { queryKey: profileKeys.posts() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -255,7 +255,7 @@ export const useLikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        { queryKey: profileKeys.reviews() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -270,7 +270,7 @@ export const useLikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        { queryKey: profileKeys.benchmarks() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -285,7 +285,7 @@ export const useLikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.tips(), type: 'infinite' },
+        { queryKey: profileKeys.tips() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -300,7 +300,7 @@ export const useLikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.replies(), type: 'infinite' },
+        { queryKey: profileKeys.replies() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -341,7 +341,7 @@ export const useLikePost = () => {
 export const useUnlikePost = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<void>, Error, string>({
+  return useMutation<ApiResponse<void>, Error, string, { previousFeedPages?: FeedApiResponse[] }>({
     mutationFn: unlikePost,
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: feedKeys.all });
@@ -365,7 +365,7 @@ export const useUnlikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: feedKeys.all, type: 'infinite' },
+        { queryKey: feedKeys.all },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -382,7 +382,7 @@ export const useUnlikePost = () => {
       // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
       // Infinite query pages için güncelle
       queryClient.setQueriesData(
-        { queryKey: profileKeys.posts(), type: 'infinite' },
+        { queryKey: profileKeys.posts() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -397,7 +397,7 @@ export const useUnlikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        { queryKey: profileKeys.reviews() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -412,7 +412,7 @@ export const useUnlikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        { queryKey: profileKeys.benchmarks() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -427,7 +427,7 @@ export const useUnlikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.tips(), type: 'infinite' },
+        { queryKey: profileKeys.tips() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -442,7 +442,7 @@ export const useUnlikePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.replies(), type: 'infinite' },
+        { queryKey: profileKeys.replies() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -481,7 +481,7 @@ export const useUnlikePost = () => {
 export const useBookmarkPost = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<Bookmark>, Error, string>({
+  return useMutation<ApiResponse<Bookmark>, Error, string, { previousFeedPages?: FeedApiResponse[] }>({
     mutationFn: bookmarkPost,
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: feedKeys.all });
@@ -506,7 +506,7 @@ export const useBookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: feedKeys.all, type: 'infinite' },
+        { queryKey: feedKeys.all },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -523,7 +523,7 @@ export const useBookmarkPost = () => {
       // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
       // Infinite query pages için güncelle
       queryClient.setQueriesData(
-        { queryKey: profileKeys.posts(), type: 'infinite' },
+        { queryKey: profileKeys.posts() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -538,7 +538,7 @@ export const useBookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        { queryKey: profileKeys.reviews() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -553,7 +553,7 @@ export const useBookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        { queryKey: profileKeys.benchmarks() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -568,7 +568,7 @@ export const useBookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.tips(), type: 'infinite' },
+        { queryKey: profileKeys.tips() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -583,7 +583,7 @@ export const useBookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.replies(), type: 'infinite' },
+        { queryKey: profileKeys.replies() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -609,6 +609,8 @@ export const useBookmarkPost = () => {
     onSuccess: (data, postId) => {
       // Bookmarks listesini invalidate et
       queryClient.invalidateQueries({ queryKey: interactionKeys.bookmarks() });
+      // /users/{userId}/bookmarks endpoint'ini de invalidate et
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
       // Post status'u invalidate et (feed zaten optimistic update ile güncellendi)
       queryClient.invalidateQueries({ queryKey: interactionKeys.postStatus(postId) });
     },
@@ -624,7 +626,7 @@ export const useBookmarkPost = () => {
 export const useUnbookmarkPost = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<void>, Error, string>({
+  return useMutation<ApiResponse<void>, Error, string, { previousFeedPages?: FeedApiResponse[] }>({
     mutationFn: unbookmarkPost,
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: feedKeys.all });
@@ -649,7 +651,7 @@ export const useUnbookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: feedKeys.all, type: 'infinite' },
+        { queryKey: feedKeys.all },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -666,7 +668,7 @@ export const useUnbookmarkPost = () => {
       // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
       // Infinite query pages için güncelle
       queryClient.setQueriesData(
-        { queryKey: profileKeys.posts(), type: 'infinite' },
+        { queryKey: profileKeys.posts() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -681,7 +683,7 @@ export const useUnbookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        { queryKey: profileKeys.reviews() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -696,7 +698,7 @@ export const useUnbookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        { queryKey: profileKeys.benchmarks() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -711,7 +713,7 @@ export const useUnbookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.tips(), type: 'infinite' },
+        { queryKey: profileKeys.tips() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -726,7 +728,7 @@ export const useUnbookmarkPost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.replies(), type: 'infinite' },
+        { queryKey: profileKeys.replies() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -752,6 +754,8 @@ export const useUnbookmarkPost = () => {
     onSuccess: (data, postId) => {
       // Bookmarks listesini invalidate et
       queryClient.invalidateQueries({ queryKey: interactionKeys.bookmarks() });
+      // /users/{userId}/bookmarks endpoint'ini de invalidate et
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
       // Post status'u invalidate et (feed zaten optimistic update ile güncellendi)
       queryClient.invalidateQueries({ queryKey: interactionKeys.postStatus(postId) });
     },
@@ -770,7 +774,8 @@ export const useCreateComment = () => {
   return useMutation<
     ApiResponse<Comment>,
     Error,
-    { postId: string; comment: string; parentId?: string }
+    { postId: string; comment: string; parentId?: string },
+    { previousComments?: CommentsResponse }
   >({
     mutationFn: ({ postId, comment, parentId }) => createComment(postId, comment, parentId),
     onMutate: async ({ postId }) => {
@@ -796,7 +801,7 @@ export const useCreateComment = () => {
       // Profile feed'lerindeki comment sayısını da artır (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
       // Infinite query pages için güncelle
       queryClient.setQueriesData(
-        { queryKey: profileKeys.posts(), type: 'infinite' },
+        { queryKey: profileKeys.posts() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -810,7 +815,7 @@ export const useCreateComment = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        { queryKey: profileKeys.reviews() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -824,7 +829,7 @@ export const useCreateComment = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        { queryKey: profileKeys.benchmarks() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -838,7 +843,7 @@ export const useCreateComment = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.tips(), type: 'infinite' },
+        { queryKey: profileKeys.tips() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -852,7 +857,7 @@ export const useCreateComment = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.replies(), type: 'infinite' },
+        { queryKey: profileKeys.replies() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -894,7 +899,7 @@ export const useCreateComment = () => {
 export const useDeleteComment = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<void>, Error, { commentId: string; postId: string }>({
+  return useMutation<ApiResponse<void>, Error, { commentId: string; postId: string }, { previousComments?: CommentsResponse }>({
     mutationFn: ({ commentId }) => deleteComment(commentId),
     onMutate: async ({ postId }) => {
       await queryClient.cancelQueries({ queryKey: interactionKeys.comments(postId) });
@@ -1001,7 +1006,7 @@ export const useSharePost = () => {
 
       // Infinite query pages için de güncelle
       queryClient.setQueriesData(
-        { queryKey: feedKeys.all, type: 'infinite' },
+        { queryKey: feedKeys.all },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -1018,7 +1023,7 @@ export const useSharePost = () => {
       // Profile feed'leri için de güncelle (tüm profile feed query'leri: posts, reviews, benchmarks, tips, replies)
       // Infinite query pages için güncelle
       queryClient.setQueriesData(
-        { queryKey: profileKeys.posts(), type: 'infinite' },
+        { queryKey: profileKeys.posts() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -1033,7 +1038,7 @@ export const useSharePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.reviews(), type: 'infinite' },
+        { queryKey: profileKeys.reviews() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -1048,7 +1053,7 @@ export const useSharePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.benchmarks(), type: 'infinite' },
+        { queryKey: profileKeys.benchmarks() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -1063,7 +1068,7 @@ export const useSharePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.tips(), type: 'infinite' },
+        { queryKey: profileKeys.tips() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {
@@ -1078,7 +1083,7 @@ export const useSharePost = () => {
       );
 
       queryClient.setQueriesData(
-        { queryKey: profileKeys.replies(), type: 'infinite' },
+        { queryKey: profileKeys.replies() },
         (old: any) => {
           if (!old || !old.pages || !Array.isArray(old.pages)) return old;
           return {

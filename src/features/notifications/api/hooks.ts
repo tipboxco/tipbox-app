@@ -41,14 +41,32 @@ export const useNotifications = (params?: GetNotificationsParams) => {
 
 /**
  * Get Unread Count Query Hook
+ * 
+ * @param enabled - Query'nin aktif olup olmayacağını kontrol eder (default: true)
+ *                  Authenticated değilse false olmalı
  */
-export const useUnreadCount = () => {
+export const useUnreadCount = (enabled: boolean = true) => {
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => getUnreadCount(),
+    enabled, // Authenticated kontrolü için
     staleTime: 10 * 1000, // 10 saniye
-    refetchInterval: 30 * 1000, // Her 30 saniyede bir otomatik refetch
-    refetchOnWindowFocus: true,
+    refetchInterval: enabled ? 30 * 1000 : false, // Sadece enabled ise refetch yap
+    refetchOnWindowFocus: enabled, // Sadece enabled ise refetch yap
+    retry: (failureCount, error: any) => {
+      // 500 hatası için retry yapma (backend sorunu)
+      if (error?.response?.status === 500) {
+        console.warn('[useUnreadCount] Server error (500), skipping retry');
+        return false;
+      }
+      // 401 hatası için retry yapma (authentication sorunu)
+      if (error?.response?.status === 401) {
+        console.warn('[useUnreadCount] Authentication error (401), skipping retry');
+        return false;
+      }
+      // Diğer hatalar için 1 kez retry yap
+      return failureCount < 1;
+    },
   });
 };
 
@@ -143,6 +161,8 @@ export const useDeletePushToken = () => {
     mutationFn: () => deletePushToken(),
   });
 };
+
+
 
 
 

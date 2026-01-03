@@ -101,14 +101,8 @@ export const Header = ({
           break;
         case 'cancel':
           iconName = 'x';
-          // Cancel için fallback: navigation.goBack()
-          if (!onPress) {
-            onPress = () => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              }
-            };
-          }
+          // Cancel için onPress zorunlu (modal/conditional render içinde kullanılıyor)
+          // Fallback yok, çünkü modal içinde navigation.goBack() çalışmaz
           break;
         default:
           return null;

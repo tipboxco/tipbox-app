@@ -38,10 +38,11 @@ export const getMarketplaceListings = async (
     queryParams.append('orderBy', params.orderBy);
   }
 
-  const response = await apiService.getClient().get<MarketplaceListingsApiResponse>(
+  const response = await apiService.getClient().get<{ items: MarketplaceListingsApiResponse }>(
     `/marketplace/listings?${queryParams.toString()}`
   );
-  return response.data;
+  // Backend { items: [...] } formatında döndürüyor, direkt array'e çevir
+  return response.data.items;
 };
 
 /**
