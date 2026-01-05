@@ -12,9 +12,9 @@ export const getPrivacySettings = async (): Promise<PrivacySetting[]> => {
     const response = await apiService.getClient().get<PrivacySetting[]>(
       '/users/settings/privacy'
     );
-    // Güvenlik kontrolü: Response array değilse boş array döndür
+    // Ensure response.data is an array, otherwise return an empty array
     if (!Array.isArray(response.data)) {
-      console.warn('[getPrivacySettings] API response is not an array:', response.data);
+      console.warn('[getPrivacySettings] API returned non-array data, returning empty array.');
       return [];
     }
     return response.data;
@@ -59,7 +59,6 @@ export const updatePrivacySettings = async (
     throw error;
   }
 };
-
 
 
 

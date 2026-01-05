@@ -4,7 +4,7 @@ import { getNotificationSettings, updateNotificationSettings } from './notificat
 import { getPrivacySettings, updatePrivacySettings } from './privacyApi';
 import { getSupportSessionPrice, updateSupportSessionPrice } from './supportSessionPriceApi';
 import { getDevices, deleteDevice } from './devicesApi';
-import { useAppStore } from '@/src/store/appStore';
+import { useAppStore } from '../../../store/appStore';
 import type { ChangePasswordRequest, ChangePasswordResponse } from '../types';
 import type { 
   NotificationSetting, 
@@ -64,11 +64,10 @@ export const useChangePassword = () => {
  */
 export const useNotificationSettings = () => {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
-  
   return useQuery<NotificationSetting[], Error>({
     queryKey: settingsKeys.notifications(),
     queryFn: getNotificationSettings,
-    enabled: isAuthenticated, // Sadece login olunduğunda çalış
+    enabled: isAuthenticated,
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
@@ -105,11 +104,10 @@ export const useUpdateNotificationSettings = () => {
  */
 export const usePrivacySettings = () => {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
-  
   return useQuery<PrivacySetting[], Error>({
     queryKey: settingsKeys.privacy(),
     queryFn: getPrivacySettings,
-    enabled: isAuthenticated, // Sadece login olunduğunda çalış
+    enabled: isAuthenticated,
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
