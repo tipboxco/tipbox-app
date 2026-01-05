@@ -22,6 +22,9 @@ class SocketService {
 
   /**
    * Socket bağlantısını kurar
+   * Sunucuya bağlanırken farklı configler gerekebilir (HTTPS/WSS, polling fallback, vb.)
+   * 
+   * ÖNEMLİ: Token yoksa sessizce return eder (login ekranında hata göstermez)
    */
   public async connect(): Promise<void> {
     if (this.socket?.connected) {
@@ -32,11 +35,20 @@ class SocketService {
     try {
       const accessToken = await TokenService.getAccessToken();
       if (!accessToken) {
-        throw new Error('No access token available');
+        // Token yoksa sessizce return et - login ekranında hata gösterme
+        // Bu normal bir durum: kullanıcı henüz login olmamış
+        return;
       }
 
+      // Socket BASE_URL üzerinden çalışır (tüm servisler aynı URL'i kullanır)
       const socketUrl = API_CONFIG.BASE_URL;
-      console.log('[SocketService] 🔌 Connecting to:', socketUrl);
+      const isHttps = socketUrl.startsWith('https://');
+      const isWss = socketUrl.startsWith('wss://');
+      
+      console.log('[SocketService] 🔌 Connecting to:', socketUrl, {
+        isHttps,
+        isWss,
+      });
       
       const extraHeaders: Record<string, string> = {
         Authorization: `Bearer ${accessToken}`,
@@ -54,7 +66,13 @@ class SocketService {
         this.socket = null;
       }
 
-      // Socket.IO bağlantısı - Docker + Expo için optimize edilmiş
+      // Transport ayarları: Sunucuya bağlanırken polling fallback ekle
+      // HTTPS/WSS üzerinden bağlanırken bazen WebSocket başarısız olabilir
+      const transports = isHttps || isWss 
+        ? ['websocket', 'polling'] // HTTPS/WSS için polling fallback ekle
+        : ['websocket']; // HTTP için sadece websocket
+
+      // Socket.IO bağlantısı - Docker + Sunucu için optimize edilmiş
       // Reference: https://socket.io/how-to/use-with-react-native
       this.socket = io(socketUrl, {
         auth: {
@@ -62,16 +80,25 @@ class SocketService {
         },
         extraHeaders,
         path: '/socket.io/',
-        transports: ['websocket'], // WebSocket transport - polling yerine
+        transports, // WebSocket öncelikli, polling fallback (HTTPS için)
         forceNew: true, // Yeni bağlantı zorla (Docker için önemli)
         reconnection: false, // Manuel reconnection yönetimi
         timeout: 20000,
-        upgrade: false, // WebSocket upgrade'i kapat (zaten websocket kullanıyoruz)
+        // HTTPS/WSS için upgrade'i açık bırak (polling'den websocket'e upgrade olabilir)
+        upgrade: isHttps || isWss ? true : false,
+        // Sunucuya bağlanırken CORS ve SSL ayarları
+        withCredentials: false,
+        // React Native için ek ayarlar
+        reconnectionAttempts: 0, // Manuel reconnection yönetimi
+        reconnectionDelay: 1000,
       });
 
       // Event handlers - sadece bir kez ekle
       this.socket.once('connect', () => {
-        console.log('[SocketService] ✅ Connected:', this.socket?.id);
+        console.log('[SocketService] ✅ Connected:', {
+          socketId: this.socket?.id,
+          transport: this.socket?.io?.engine?.transport?.name,
+        });
       });
 
       this.socket.on('disconnect', (reason) => {
@@ -79,7 +106,16 @@ class SocketService {
       });
 
       this.socket.once('connect_error', (error) => {
-        console.error('[SocketService] ❌ Connection error:', error.message);
+        // Sadece development modunda detaylı log (login ekranında hata göstermemek için)
+        if (__DEV__) {
+          console.error('[SocketService] ❌ Connection error:', {
+            message: error.message,
+            type: (error as any).type,
+            description: (error as any).description,
+            context: (error as any).context,
+            url: socketUrl,
+          });
+        }
       });
 
       // DEBUG: Tüm socket event'lerini log'la (sadece development için)

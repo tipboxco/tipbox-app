@@ -181,10 +181,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         // isConnected kontrolü socket event'inden gelecek
       })
       .catch((error) => {
-        console.error('[SocketProvider] ❌ Connection failed:', error.message);
+        // Sadece authenticated olduğunda hata logla (login ekranında hata göstermemek için)
+        if (isAuthenticated) {
+          console.error('[SocketProvider] ❌ Connection failed:', error.message);
+        }
         connectionErrorRef.current = true;
         
-        if (maxRetriesRef.current >= MAX_RETRIES) {
+        if (maxRetriesRef.current >= MAX_RETRIES && isAuthenticated) {
           console.log('[SocketProvider] ⛔ Max retries reached, will retry after', RETRY_COOLDOWN / 1000, 'seconds');
         }
       })

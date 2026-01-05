@@ -13,7 +13,7 @@ import { useNotificationStore } from '@/src/store/notificationStore';
 import { useAuth } from './AuthProvider';
 import { useAppState } from './AppStateProvider';
 import { notificationKeys, useUnreadCount } from '@/src/features/notifications/api/hooks';
-import type { Notification } from '@/src/features/notifications/api/types';
+import type { Notification, NotificationMetadata } from '@/src/features/notifications/api/types';
 import type { NotificationPayload } from '@/src/types/notification';
 // Toast kaldırıldı - Expo bildirimleri kullanılıyor
 
@@ -24,6 +24,7 @@ import type { NotificationPayload } from '@/src/types/notification';
  * Bu ref backward compatibility için korunuyor.
  * Yeni kod için: import { navigationService } from '@/src/services/NavigationService';
  */
+// eslint-disable-next-line @typescript-eslint/no-deprecated
 export const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
 /**
@@ -39,11 +40,14 @@ export const navigationRef = React.createRef<NavigationContainerRef<any>>();
  * navigationService.navigate(ROOT_ROUTES.POST, { screen: 'PostDetailScreen', params: { ... } });
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-deprecated
 export function navigate(name: string, params?: any) {
   console.warn(
     '[NotificationProvider] ⚠️ navigate() is deprecated. Use NavigationService.navigate() instead.'
   );
-  navigationRef.current?.navigate(name as never, params as never);
+  // Deprecated function - using any to bypass type checking
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  (navigationRef.current as any)?.navigate(name, params);
 }
 
 /**
@@ -191,10 +195,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Socket.IO notification listener with Event-Driven Architecture
   useEffect(() => {
     if (!isAuthenticated || !state.isInitialized) {
-      console.log('[NotificationProvider] ⏳ Socket listener not ready:', {
-        isAuthenticated,
-        isInitialized: state.isInitialized,
-      });
+      // Login ekranında hata göstermemek için sessizce return et
+      // Sadece development modunda log göster
+      if (__DEV__) {
+        console.log('[NotificationProvider] ⏳ Socket listener not ready:', {
+          isAuthenticated,
+          isInitialized: state.isInitialized,
+        });
+      }
       return;
     }
 
@@ -349,7 +357,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           const activeThreadId = useAppStore.getState().activeThreadId;
           
           // Notification'dan thread ID'sini al
-          const notificationThreadId = notification.data?.metadata?.threadId || notification.data?.metadata?.messageId || notification.data?.metadata?.requestId;
+          const metadata = notification.data?.metadata as NotificationMetadata | undefined;
+          const notificationThreadId = metadata?.threadId || metadata?.messageId || metadata?.requestId;
           
           // Eğer aktif thread ID varsa ve notification thread ID ile eşleşiyorsa notification gösterilmemeli
           if (activeThreadId && notificationThreadId && activeThreadId === notificationThreadId) {
@@ -409,8 +418,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       const domainNotification: Notification = {
         id: notificationId || `push-${Date.now()}`,
         type: (notificationType as Notification['type']) || 'SYSTEM_ANNOUNCEMENT',
-        title: notification.data?.title || notification.title || '',
-        message: notification.data?.body || notification.body || '',
+        title: (notification.data?.title as string) || (notification.title as string) || '',
+        message: (notification.data?.body as string) || (notification.body as string) || '',
         read: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
