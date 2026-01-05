@@ -71,19 +71,8 @@ export const LoginScreen = () => {
           },
         });
 
-        // Başarılı login sonrası ana sayfaya yönlendir
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'Main' as never,
-              params: {
-                screen: 'Feed',
-                params: {},
-              },
-            },
-          ],
-        });
+        // RootNavigator otomatik olarak isAuthenticated=true olduğunda
+        // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
       } catch (error: any) {
         // Console'da tam error'u göster
         console.error('=== LOGIN API ERROR ===');

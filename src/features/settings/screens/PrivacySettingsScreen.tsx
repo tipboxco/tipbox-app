@@ -41,7 +41,7 @@ export const PrivacySettingsScreen = () => {
 
   // Initialize local state from API data
   useEffect(() => {
-    if (privacySettings) {
+    if (privacySettings && Array.isArray(privacySettings)) {
       const settingsMap: Record<number, 'trust-only' | 'everyone'> = {};
       privacySettings.forEach((setting) => {
         settingsMap[setting.privacyCode] = setting.selectedValue;

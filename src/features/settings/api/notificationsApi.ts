@@ -12,6 +12,11 @@ export const getNotificationSettings = async (): Promise<NotificationSetting[]> 
     const response = await apiService.getClient().get<NotificationSetting[]>(
       '/users/settings/notifications'
     );
+    // Ensure response.data is an array, otherwise return an empty array
+    if (!Array.isArray(response.data)) {
+      console.warn('[getNotificationSettings] API returned non-array data, returning empty array.');
+      return [];
+    }
     return response.data;
   } catch (error: any) {
     console.error('[getNotificationSettings] API Error:', {

@@ -42,7 +42,7 @@ export const NotificationSettingsScreen = () => {
 
     // Initialize local state from API data
     useEffect(() => {
-        if (notificationSettings) {
+        if (notificationSettings && Array.isArray(notificationSettings)) {
             const settingsMap: Record<number, boolean> = {};
             notificationSettings.forEach((setting) => {
                 settingsMap[setting.notificationCode] = setting.value;
