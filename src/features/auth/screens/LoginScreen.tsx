@@ -168,6 +168,7 @@ export const LoginScreen = () => {
               size="md"
               bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
+              alignItems="center"
             >
               <InputField 
                 placeholder="E-posta adresiniz"
@@ -178,7 +179,8 @@ export const LoginScreen = () => {
                 as={CheckCircle} 
                 color={isEmailValid ? "$success500" : "$gray400"} 
                 size="md" 
-                mr="$2" 
+                mr="$2"
+                alignSelf="center"
               />
             </Input>
           </FormControl>
@@ -192,6 +194,7 @@ export const LoginScreen = () => {
               size="md"
               bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
+              alignItems="center"
             >
               <InputField 
                 placeholder="Şifreniz" 
@@ -203,7 +206,8 @@ export const LoginScreen = () => {
                 as={CheckCircle} 
                 color={isPasswordValid ? "$success500" : "$gray400"} 
                 size="md" 
-                mr="$2" 
+                mr="$2"
+                alignSelf="center"
               />
             </Input>
             <Box flexDirection="row" justifyContent="flex-end" mt="$1">
