@@ -163,21 +163,7 @@ export const config = createConfig({
     align: 'alignItems',
     flex: 'flex',
   },
-  components: {
-    ...(defaultConfig.components || {}),
-    ToastTitle: {
-      baseStyle: {
-        fontSize: '$sm',
-        fontWeight: '$semibold',
-        lineHeight: '$sm',
-      },
-    },
-    ToastDescription: {
-      baseStyle: {
-        fontSize: '$xs',
-        fontWeight: '$normal',
-        lineHeight: '$xs',
-      },
-    },
-  },
+  // components objesi kaldırıldı - defaultConfig.components undefined olabilir
+  // ve Gluestack UI'nin beklediği formatta olmayabilir, bu da forEach hatasına neden oluyor
+  // ToastTitle ve ToastDescription defaultConfig'den gelecek
 });
