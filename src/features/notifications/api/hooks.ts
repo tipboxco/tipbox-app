@@ -29,44 +29,30 @@ export const notificationKeys = {
 
 /**
  * Get Notifications Query Hook
+ * Sadece kullanıcı authenticated olduğunda çalışır
  */
-export const useNotifications = (params?: GetNotificationsParams) => {
+export const useNotifications = (params?: GetNotificationsParams, enabled: boolean = true) => {
   return useQuery({
     queryKey: notificationKeys.list(params),
     queryFn: () => getNotifications(params),
+    enabled, // Sadece enabled=true olduğunda çalışır
     staleTime: 30 * 1000, // 30 saniye
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: enabled, // Sadece enabled olduğunda window focus'ta refetch
   });
 };
 
 /**
  * Get Unread Count Query Hook
- * 
- * @param enabled - Query'nin aktif olup olmayacağını kontrol eder (default: true)
- *                  Authenticated değilse false olmalı
+ * Sadece kullanıcı authenticated olduğunda çalışır
  */
 export const useUnreadCount = (enabled: boolean = true) => {
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => getUnreadCount(),
-    enabled, // Authenticated kontrolü için
+    enabled, // Sadece enabled=true olduğunda çalışır
     staleTime: 10 * 1000, // 10 saniye
-    refetchInterval: enabled ? 30 * 1000 : false, // Sadece enabled ise refetch yap
-    refetchOnWindowFocus: enabled, // Sadece enabled ise refetch yap
-    retry: (failureCount, error: any) => {
-      // 500 hatası için retry yapma (backend sorunu)
-      if (error?.response?.status === 500) {
-        console.warn('[useUnreadCount] Server error (500), skipping retry');
-        return false;
-      }
-      // 401 hatası için retry yapma (authentication sorunu)
-      if (error?.response?.status === 401) {
-        console.warn('[useUnreadCount] Authentication error (401), skipping retry');
-        return false;
-      }
-      // Diğer hatalar için 1 kez retry yap
-      return failureCount < 1;
-    },
+    refetchInterval: enabled ? 30 * 1000 : false, // Sadece enabled olduğunda otomatik refetch
+    refetchOnWindowFocus: enabled, // Sadece enabled olduğunda window focus'ta refetch
   });
 };
 

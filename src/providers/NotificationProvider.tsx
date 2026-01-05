@@ -87,10 +87,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   });
   
   // Unread count için query - badge sync için
-  // Sadece authenticated ve auth ready ise çalıştır
-  const { data: unreadCountData, error: unreadCountError } = useUnreadCount(
-    isAuthenticated && isAuthReady
-  );
+  // Sadece authenticated olduğunda çalışır (logout durumunda API isteği yapılmaz)
+  const { data: unreadCountData, error: unreadCountError } = useUnreadCount(isAuthenticated && isAuthReady);
   const unreadCount = unreadCountData?.data?.count || 0;
   
   // Hata durumunda log (ama uygulamayı durdurma)
@@ -187,6 +185,24 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       notificationStateSync.cleanup();
     };
   }, [isAuthenticated, state.isInitialized, queryClient]);
+
+  // Logout durumunda notification query'lerini temizle
+  useEffect(() => {
+    if (!isAuthReady) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      // Logout durumunda tüm notification query'lerini temizle
+      console.log('[NotificationProvider] 🧹 Clearing notification queries on logout');
+      queryClient.removeQueries({ queryKey: notificationKeys.all });
+      // Notification store'u da temizle
+      const notificationStore = useNotificationStore.getState();
+      notificationStore.clearRealtimeNotifications();
+      notificationStore.clearAllGroupedNotifications();
+      notificationStore.clearUnreadCountCache();
+    }
+  }, [isAuthenticated, isAuthReady, queryClient]);
 
   // Socket.IO notification listener with Event-Driven Architecture
   useEffect(() => {

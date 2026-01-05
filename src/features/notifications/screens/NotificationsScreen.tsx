@@ -30,10 +30,8 @@ import {
 import type { Notification, NotificationType } from '../api/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationAssetCache } from '@/src/services/NotificationAssetCache';
-import { navigationService } from '@/src/services/NavigationService';
-import { notificationService } from '@/src/services/NotificationService';
-import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
-import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
+import { NotificationNavigationService } from '@/src/services/NotificationNavigationService';
+import { useAppStore } from '@/src/store/appStore';
 
 const { width } = Dimensions.get('window');
 
@@ -243,18 +241,19 @@ export const NotificationsScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const queryClient = useQueryClient();
+    const { isAuthenticated } = useAppStore();
     const [filters, setFilters] = useState<NotificationFilter[]>(notification_filters);
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
 
-    // API hooks
+    // API hooks - sadece authenticated olduğunda çalışır
     const activeFilter = filters.find(f => f.isActive);
     const unreadOnly = activeFilter?.id === 'unread';
     const { data: notificationsResponse, isLoading, error, refetch } = useNotifications({
         limit: 50,
         offset: 0,
         unreadOnly: unreadOnly,
-    });
+    }, isAuthenticated);
 
     const notifications = notificationsResponse?.data || [];
     

@@ -5,7 +5,7 @@ import type { RegisterResponse, ApiLoginResponse } from '../types';
 import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse } from './authApi';
 import { useAppStore } from '../../../store/appStore';
 import { notificationService } from '@/src/services/ExpoNotificationService';
-// Socket bağlantısı adım adım test edilecek
+import { notificationKeys } from '@/src/features/notifications/api/hooks';
 
 /**
  * Query Keys - Auth feature için cache key pattern'leri
@@ -93,6 +93,15 @@ export const useLogin = () => {
         console.warn('[useLogin] Failed to retry pending push token:', error);
         // Hata olsa bile login devam etsin
       });
+      
+      // Notification query'lerini invalidate et - login sonrası bildirimler yüklensin
+      console.log('📋 Step 4: Notification query\'leri invalidate ediliyor...');
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      console.log('✅ Notification query\'leri invalidate edildi');
+      
+      // Socket sistemi SocketProvider tarafından otomatik olarak yönetiliyor
+      // isAuthenticated=true olduğunda SocketProvider otomatik olarak bağlanacak
+      console.log('📋 Step 5: Socket bağlantısı SocketProvider tarafından otomatik yönetiliyor');
       
       console.log('========================================');
     },
