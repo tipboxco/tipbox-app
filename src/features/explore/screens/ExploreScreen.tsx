@@ -286,7 +286,7 @@ const ExploreScreen: React.FC = () => {
   // Callback fonksiyonlarını useCallback ile sarmalayarak referanslarını stabilize et
   const handleEventPress = useCallback((eventId: string) => {
     // Events stack'ine navigate et
-    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail', { eventId });
+    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail' as any, { eventId });
   }, []);
 
   // Banner navigation handler
@@ -329,28 +329,28 @@ const ExploreScreen: React.FC = () => {
   // See All Buttons - Navigation handlers
   const handleSeeAllEvents = useCallback(() => {
     // Events tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen', undefined);
+    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen' as any, undefined);
   }, []);
 
   const handleSeeAllBrands = useCallback(() => {
     // Catalog tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
   }, []);
 
   const handleSeeAllProducts = useCallback(() => {
     // Catalog tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
   }, []);
 
   // Item Press Handlers - Navigation
   const handleBrandPress = useCallback((brandId: string) => {
     // BrandDetailScreen'e navigate et (Catalog stack içinde)
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandDetailScreen', { brandId });
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandDetailScreen' as any, { brandId });
   }, []);
 
   const handleProductPress = useCallback((productId: string) => {
     // BrandProductDetailScreen'e navigate et (Catalog stack içinde)
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { productId });
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen' as any, { productId });
   }, []);
 
 

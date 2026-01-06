@@ -1,6 +1,7 @@
-import React, { memo, useState, useEffect } from 'react';
-import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import React, { memo, useState, useEffect, useCallback } from 'react';
+import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { Alert } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 import CardImageCarousel from '../../CardImageCarousel';
@@ -21,6 +22,14 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useAppStore } from '@/src/store/appStore';
+import {
+  useAddToTrustList,
+  useRemoveFromTrustList,
+  useReportUser,
+  useUserProfile,
+} from '@/src/features/profile/api/hooks';
 
 interface PostCardProps {
   data: PostCardData;
@@ -31,6 +40,8 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
+  const { user } = useAppStore();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   const [isTranslated, setIsTranslated] = useState(false);
   const [isLiked, setIsLiked] = useState(data.isLiked ?? false);
   const [isBookmarked, setIsBookmarked] = useState(data.isBookmarked ?? false);
@@ -42,6 +53,13 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const [sharesCount, setSharesCount] = useState(data.stats.shares);
   const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
 
+  // User profile check
+  const targetUserId = data.user.id;
+  const isOwnProfile = user?.id === targetUserId;
+  
+  // User profile query (for trust status)
+  const { data: userProfile } = useUserProfile(isOwnProfile ? undefined : targetUserId);
+  
   // Interaction hooks
   const likePostMutation = useLikePost();
   const unlikePostMutation = useUnlikePost();
@@ -49,6 +67,11 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const unbookmarkPostMutation = useUnbookmarkPost();
   const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
+  
+  // User action hooks
+  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
+  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
+  const { mutate: reportUser, isPending: isReporting } = useReportUser();
 
   // Sync with post status from API
   useEffect(() => {
@@ -129,6 +152,186 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
     }
   };
 
+  // User actions menu handlers
+  const handleViewProfile = useCallback(() => {
+    closeBottomSheet();
+    if (data.user.id) {
+      navigationService.navigate(ROOT_ROUTES.PROFILE, {
+        screen: 'ProfileMain',
+        params: { userId: data.user.id },
+      });
+    }
+  }, [closeBottomSheet, data.user.id]);
+
+  const handleTrust = useCallback(() => {
+    if (!targetUserId) return;
+    closeBottomSheet();
+    
+    if (userProfile?.isTrusted) {
+      untrustUser(targetUserId);
+    } else {
+      trustUser(targetUserId);
+    }
+  }, [targetUserId, userProfile?.isTrusted, trustUser, untrustUser, closeBottomSheet]);
+
+  const handleReport = useCallback(() => {
+    if (!user?.id || !targetUserId) return;
+    closeBottomSheet();
+    
+    Alert.alert(
+      'Kullanıcıyı Raporla',
+      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Raporla',
+          style: 'destructive',
+          onPress: () => {
+            reportUser({
+              userId: user.id,
+              targetUserId,
+              data: {
+                category: 'OTHER',
+                description: 'Kullanıcı raporlandı',
+              },
+            });
+          },
+        },
+      ]
+    );
+  }, [user?.id, targetUserId, reportUser, closeBottomSheet]);
+
+  const handleBlock = useCallback(() => {
+    if (!targetUserId) return;
+    closeBottomSheet();
+    
+    Alert.alert(
+      'Kullanıcıyı Engelle',
+      'Bu kullanıcıyı engellemek istediğinizden emin misiniz? Engellediğiniz kullanıcı sizinle etkileşime geçemez.',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Engelle',
+          style: 'destructive',
+          onPress: () => {
+            // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
+            console.log('[PostCard] Block user:', targetUserId);
+          },
+        },
+      ]
+    );
+  }, [targetUserId, closeBottomSheet]);
+
+  const handleMenuPress = useCallback(() => {
+    if (!targetUserId) return;
+
+    const menuContent = (
+      <VStack bg={isDark ? '$backgroundDark900' : '$white'} pb={20}>
+        {/* Profili Görüntüle */}
+        <Pressable
+          onPress={handleViewProfile}
+          px={20}
+          py={16}
+        >
+          <HStack alignItems="center" space="md">
+            <Feather name="user" size={20} color={isDark ? '#fff' : '#000'} />
+            <Text
+              color={isDark ? '$textDark50' : '#000'}
+              fontSize="$md"
+              fontWeight="$medium"
+            >
+              Profili Görüntüle
+            </Text>
+          </HStack>
+        </Pressable>
+
+        {/* Kendi profili değilse diğer seçenekleri göster */}
+        {!isOwnProfile && (
+          <>
+            <Divider bg={isDark ? '$backgroundDark800' : '#E9E9E9'} />
+            
+            {/* Trust/UnTrust */}
+            <Pressable
+              onPress={handleTrust}
+              px={20}
+              py={16}
+              disabled={isTrusting || isUntrusting}
+              opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
+            >
+              <HStack alignItems="center" space="md">
+                <Feather
+                  name={userProfile?.isTrusted ? 'user-minus' : 'user-plus'}
+                  size={20}
+                  color={isDark ? '#fff' : '#000'}
+                />
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize="$md"
+                  fontWeight="$medium"
+                >
+                  {isTrusting ? 'Ekleniyor...' : isUntrusting ? 'Kaldırılıyor...' : (userProfile?.isTrusted ? 'Un Trust' : 'Trust')}
+                </Text>
+              </HStack>
+            </Pressable>
+
+            <Divider bg={isDark ? '$backgroundDark800' : '#E9E9E9'} />
+            
+            {/* Raporla */}
+            <Pressable
+              onPress={handleReport}
+              px={20}
+              py={16}
+              disabled={isReporting}
+              opacity={isReporting ? 0.6 : 1}
+            >
+              <HStack alignItems="center" space="md">
+                <Feather name="flag" size={20} color={isDark ? '#fff' : '#000'} />
+                <Text
+                  color={isDark ? '$textDark50' : '#000'}
+                  fontSize="$md"
+                  fontWeight="$medium"
+                >
+                  {isReporting ? 'Raporlanıyor...' : 'Raporla'}
+                </Text>
+              </HStack>
+            </Pressable>
+
+            <Divider bg={isDark ? '$backgroundDark800' : '#E9E9E9'} />
+            
+            {/* Engelle */}
+            <Pressable
+              onPress={handleBlock}
+              px={20}
+              py={16}
+            >
+              <HStack alignItems="center" space="md">
+                <Feather name="slash" size={20} color="#FF3040" />
+                <Text
+                  color="#FF3040"
+                  fontSize="$md"
+                  fontWeight="$medium"
+                >
+                  Engelle
+                </Text>
+              </HStack>
+            </Pressable>
+          </>
+        )}
+      </VStack>
+    );
+
+    openBottomSheet(menuContent, {
+      enablePanDownToClose: true,
+      enableDynamicSizing: true,
+    });
+  }, [targetUserId, isOwnProfile, isDark, userProfile, isTrusting, isUntrusting, isReporting, handleViewProfile, handleTrust, handleReport, handleBlock, openBottomSheet]);
+
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
   const isGroupOrSubCategoryContext =
@@ -156,24 +359,26 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               />
             </Pressable>
           )}
-          <VStack flex={1}>
-            <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize="$xs"
-              fontWeight="$bold"
-            >
-              {data.user.name}
-            </Text>
-            <Text
-              color={isDark ? '$textDark400' : '#787878'}
-              fontSize={config.tokens.fontSizes['3xs'] as number}
-              numberOfLines={1}
-              maxWidth={250}
-            >
-              {data.user.title}
-            </Text>
-          </VStack>
-          <Pressable>
+          <Pressable flex={1} onPress={handleAvatarPress}>
+            <VStack flex={1}>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize="$xs"
+                fontWeight="$bold"
+              >
+                {data.user.name}
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '#787878'}
+                fontSize={config.tokens.fontSizes['3xs'] as number}
+                numberOfLines={1}
+                maxWidth={250}
+              >
+                {data.user.title}
+              </Text>
+            </VStack>
+          </Pressable>
+          <Pressable onPress={handleMenuPress}>
             <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
           </Pressable>
         </HStack>

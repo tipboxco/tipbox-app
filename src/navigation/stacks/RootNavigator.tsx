@@ -48,14 +48,12 @@ export const RootNavigator = () => {
         <>
           {/* Main Application - TabNavigator + Drawer */}
           <RootStack.Screen name="MainDrawer" component={DrawerNavigator} />
-          
-          {/* Settings & MoreSchoise */}
-          <RootStack.Screen name="Settings" component={SettingsNavigator} />
-          <RootStack.Screen name="MoreSchoise" component={MoreSchoiseNavigator} />
+         
           
           {/* GlobalStackGroup - Deep-Dive Screens */}
           {/* Bu ekranlar hangi tab açık olursa olsun Root'tan açılır */}
           <RootStack.Group>
+            
             <RootStack.Screen
               name="Post"
               component={PostNavigator}
