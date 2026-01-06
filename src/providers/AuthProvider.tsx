@@ -44,11 +44,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('[AuthProvider] 🔐 Initializing auth state...');
+        
+        // SecureStore'dan token'ları oku
         const accessToken = await TokenService.getAccessToken();
+        const refreshToken = await TokenService.getRefreshToken();
+        
+        // AppStore'dan mevcut state'i al
+        const appState = useAppStore.getState();
+        
+        // Token varsa ve user bilgileri de varsa, authenticated olarak işaretle
+        if (accessToken && refreshToken) {
+          console.log('[AuthProvider] ✅ Tokens found in SecureStore');
+          console.log('[AuthProvider]    - Access Token Length:', accessToken.length);
+          console.log('[AuthProvider]    - Refresh Token Length:', refreshToken.length);
+          
+          // Eğer user bilgileri AsyncStorage'da varsa (persist'ten gelmiş), authenticated yap
+          if (appState.user && appState.user.id) {
+            console.log('[AuthProvider] ✅ User info found in store, setting authenticated state');
+            useAppStore.setState({
+              isAuthenticated: true,
+              accessToken: accessToken,
+            });
+          } else {
+            console.log('[AuthProvider] ⚠️ Tokens found but no user info in store');
+            console.log('[AuthProvider]    - User:', appState.user);
+            console.log('[AuthProvider]    - This might happen after app update or storage clear');
+            // Token var ama user yok - token'ları temizle (güvenlik için)
+            await TokenService.clearTokens();
+            useAppStore.setState({
+              isAuthenticated: false,
+              accessToken: null,
+              user: null,
+            });
+          }
+        } else {
+          console.log('[AuthProvider] ⚠️ No tokens found in SecureStore');
+          // Token yoksa authenticated değil
+          useAppStore.setState({
+            isAuthenticated: false,
+            accessToken: null,
+          });
+        }
+        
         setIsAuthReady(true);
         setIsLoading(false);
+        console.log('[AuthProvider] ✅ Auth initialization completed');
+        console.log('[AuthProvider]    - isAuthenticated:', useAppStore.getState().isAuthenticated);
       } catch (error) {
-        console.error('[AuthProvider] Auth initialization error:', error);
+        console.error('[AuthProvider] ❌ Auth initialization error:', error);
         setIsAuthReady(true);
         setIsLoading(false);
       }

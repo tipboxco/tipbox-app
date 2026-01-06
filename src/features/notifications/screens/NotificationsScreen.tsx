@@ -30,7 +30,10 @@ import {
 import type { Notification, NotificationType } from '../api/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationAssetCache } from '@/src/services/NotificationAssetCache';
-import { NotificationNavigationService } from '@/src/services/NotificationNavigationService';
+import { navigationService } from '@/src/services/NavigationService';
+import { notificationService } from '@/src/services/NotificationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { useAppStore } from '@/src/store/appStore';
 
 const { width } = Dimensions.get('window');
@@ -246,14 +249,14 @@ export const NotificationsScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
 
-    // API hooks - sadece authenticated olduğunda çalışır
+    // API hooks
     const activeFilter = filters.find(f => f.isActive);
     const unreadOnly = activeFilter?.id === 'unread';
     const { data: notificationsResponse, isLoading, error, refetch } = useNotifications({
         limit: 50,
         offset: 0,
         unreadOnly: unreadOnly,
-    }, isAuthenticated);
+    });
 
     const notifications = notificationsResponse?.data || [];
     

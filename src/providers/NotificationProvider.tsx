@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { NavigationContainerRef } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/src/services/ExpoNotificationService';
+import { notificationService as domainNotificationService } from '@/src/services/NotificationService';
 import { socketService } from '@/src/services/SocketService';
 import { notificationEventService } from '@/src/services/NotificationEventService';
 import { notificationGroupingService } from '@/src/services/NotificationGroupingService';
@@ -428,8 +429,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
       // Domain Service'e yönlendir (NotificationService)
       // Push notification → Domain Service → Navigation kararı
-      const { notificationService } = await import('@/src/services/NotificationService');
-      
       // Push payload'ını domain modeline map et
       const domainNotification: Notification = {
         id: notificationId || `push-${Date.now()}`,
@@ -444,7 +443,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       };
 
       // NotificationService handle et (State + Navigation kararı)
-      notificationService.handleNotification(domainNotification, {
+      domainNotificationService.handleNotification(domainNotification, {
         isForeground: true, // Push notification'a tıklandığında foreground'dayız
         shouldNavigate: true, // Push notification'a tıklandığında navigate et
       });
