@@ -60,13 +60,17 @@ export const getCatalogProductGroups = async (
  * Belirli bir ürün grubuna ait ürünleri getirir
  * 
  * @param productGroupId - Ürün grubu ID'si
+ * @param search - Product adı, marka veya açıklamasında arama (opsiyonel)
  * @returns CatalogProduct[] - Ürün listesi
  */
 export const getCatalogProducts = async (
-  productGroupId: string
+  productGroupId: string,
+  search?: string
 ): Promise<CatalogProduct[]> => {
+  const params = search ? { search } : undefined;
   const response = await apiService.getClient().get<CatalogProduct[]>(
-    `/catalog/product-groups/${productGroupId}/products`
+    `/catalog/product-groups/${productGroupId}/products`,
+    { params }
   );
   return response.data;
 };

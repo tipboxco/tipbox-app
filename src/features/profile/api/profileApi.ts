@@ -1478,21 +1478,40 @@ export const getTrustList = async (
 };
 
 /**
+ * Truster List Sort Options
+ */
+export type TrusterListSort = 
+  | 'name_asc'      // İsme göre A-Z
+  | 'name_desc'     // İsme göre Z-A
+  | 'date_asc'      // Trust tarihine göre eski-yeni
+  | 'date_desc'     // Trust tarihine göre yeni-eski (default)
+  | 'trusted_first'; // Önce trust edilenler (mutual trust)
+
+/**
  * Get Truster List endpoint function
  * Kullanıcının truster listesini getirir
  *
  * @param userId - Kullanıcı ID'si
  * @param searchQuery - İsim veya kullanıcı adına göre arama (opsiyonel)
+ * @param sort - Sıralama kriteri (default: 'date_desc')
  * @returns TrusterUser[] - Truster listesi
  */
 export const getTrusterList = async (
   userId: string,
-  searchQuery?: string
+  searchQuery?: string,
+  sort?: TrusterListSort
 ): Promise<TrusterUser[]> => {
-  const params = searchQuery ? { q: searchQuery } : {};
+  const params: Record<string, string> = {};
+  if (searchQuery) {
+    params.q = searchQuery;
+  }
+  if (sort) {
+    params.sort = sort;
+  }
+  
   const response = await apiService.getClient().get<TrusterUser[]>(
     `/users/${userId}/trusters`,
-    { params }
+    { params: Object.keys(params).length > 0 ? params : undefined }
   );
   return response.data;
 };
@@ -1550,6 +1569,68 @@ export const removeFromTrustList = async (
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * User Report Category Types
+ */
+export type UserReportCategory = 
+  | 'SPAM'
+  | 'HARASSMENT'
+  | 'SCAM'
+  | 'INAPPROPRIATE_CONTENT'
+  | 'FAKE_ACCOUNT'
+  | 'OTHER';
+
+/**
+ * Report User Request
+ */
+export interface ReportUserRequest {
+  category: UserReportCategory;
+  description?: string; // Opsiyonel, maksimum 500 karakter
+}
+
+/**
+ * Report User Response
+ */
+export interface ReportUserResponse {
+  message: string;
+}
+
+/**
+ * Report User endpoint function
+ * Kullanıcıyı raporlar
+ * 
+ * API Endpoint: POST /users/:id/report/:targetUserId
+ * 
+ * @param userId - Raporlayan kullanıcı ID'si (JWT token'daki userId ile eşleşmeli)
+ * @param targetUserId - Raporlanacak kullanıcı ID'si
+ * @param data - Rapor kategorisi ve açıklama
+ * @returns ReportUserResponse - Başarı mesajı
+ */
+export const reportUser = async (
+  userId: string,
+  targetUserId: string,
+  data: ReportUserRequest
+): Promise<ReportUserResponse> => {
+  try {
+    const response = await apiService.getClient().post<ReportUserResponse>(
+      `/users/${userId}/report/${targetUserId}`,
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[reportUser] API Error:', {
+      url: `/users/${userId}/report/${targetUserId}`,
+      method: 'POST',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      requestData: data,
+      responseData: error.response?.data,
       message: error.message,
     });
     throw error;

@@ -303,14 +303,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
                       >
                         {interest.label}
                       </Text>
-                      {interest.count !== undefined && (
-                        <Text
-                          fontSize={11}
-                          color={isSelected ? '#666666' : isDark ? '#999999' : '#666666'}
-                        >
-                          ({interest.count})
-                        </Text>
-                      )}
                     </HStack>
                     {isSelected && (
                       <Feather name="check" size={18} color="#000000" />

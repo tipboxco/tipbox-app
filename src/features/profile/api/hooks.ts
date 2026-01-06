@@ -16,9 +16,12 @@ import {
   addToTrustList,
   removeFromTrustList,
   updateProfile,
+  reportUser,
   type UserFeedApiResponse,
   type UpdateProfileRequest,
   type UpdateProfileResponse,
+  type ReportUserRequest,
+  type ReportUserResponse,
 } from './profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import type {
@@ -52,8 +55,8 @@ export const profileKeys = {
   trustList: (userId: string, searchQuery?: string) => 
     [...profileKeys.trusts(), userId, ...(searchQuery ? ['search', searchQuery] : [])] as const,
   trusters: () => [...profileKeys.all, 'trusters'] as const,
-  trusterList: (userId: string, searchQuery?: string) =>
-    [...profileKeys.trusters(), userId, ...(searchQuery ? ['search', searchQuery] : [])] as const,
+  trusterList: (userId: string, searchQuery?: string, sort?: string) =>
+    [...profileKeys.trusters(), userId, ...(searchQuery ? ['search', searchQuery] : []), ...(sort ? ['sort', sort] : [])] as const,
   inventory: () => [...profileKeys.all, 'inventory'] as const,
   posts: () => [...profileKeys.all, 'posts'] as const,
   userPosts: (userId: string) =>
@@ -186,11 +189,13 @@ export const useTrustList = (
  *
  * @param userId - Kullanıcı ID'si
  * @param searchQuery - İsim veya kullanıcı adına göre arama (opsiyonel)
+ * @param sort - Sıralama kriteri (opsiyonel, default: 'date_desc')
  * @returns React Query hook result
  */
 export const useTrusterList = (
   userId: string | undefined,
-  searchQuery?: string
+  searchQuery?: string,
+  sort?: import('./profileApi').TrusterListSort
 ) => {
   const queryClient = useQueryClient();
 
@@ -200,13 +205,13 @@ export const useTrusterList = (
 
   const queryResult = useQuery<TrusterUser[], Error>({
     queryKey: userId
-      ? profileKeys.trusterList(userId, searchQuery)
+      ? profileKeys.trusterList(userId, searchQuery, sort)
       : ['profile', 'trusters', 'disabled'],
     queryFn: () => {
       if (!userId) {
         throw new Error('User ID is required');
       }
-      return getTrusterList(userId, searchQuery);
+      return getTrusterList(userId, searchQuery, sort);
     },
     enabled: !!userId,
     staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000,
@@ -240,11 +245,11 @@ export const useTrusterList = (
       console.log('📊 [React Query Cache] Data count:', queryResult.data.length);
       console.log('🔍 [React Query Cache] Search query:', searchQuery || '(empty)');
       console.log('🚫 [React Query Cache] Cache disabled for search:', hasSearch);
-      console.log('🔑 [React Query Cache] Query Key:', profileKeys.trusterList(userId, searchQuery));
+      console.log('🔑 [React Query Cache] Query Key:', profileKeys.trusterList(userId, searchQuery, sort));
 
       if (!hasSearch) {
         const cachedData = queryClient.getQueryData<TrusterUser[]>(
-          profileKeys.trusterList(userId, searchQuery)
+          profileKeys.trusterList(userId, searchQuery, sort)
         );
         console.log('💾 [React Query Cache] Cached data exists:', !!cachedData);
         console.log('💾 [React Query Cache] Cached data count:', cachedData?.length || 0);
@@ -767,6 +772,36 @@ export const useUpdateProfile = () => {
     },
     onError: (error) => {
       console.error('[useUpdateProfile] Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Report User mutation hook
+ * Kullanıcıyı raporlar
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: reportUser, isPending } = useReportUser();
+ * reportUser({
+ *   userId: 'current-user-id',
+ *   targetUserId: 'target-user-id',
+ *   data: { category: 'SPAM', description: 'Spam mesajlar gönderiyor' }
+ * });
+ */
+export const useReportUser = () => {
+  return useMutation<
+    ReportUserResponse,
+    Error,
+    { userId: string; targetUserId: string; data: ReportUserRequest }
+  >({
+    mutationFn: ({ userId, targetUserId, data }) => reportUser(userId, targetUserId, data),
+    onSuccess: () => {
+      console.log('[useReportUser] ✅ User reported successfully');
+    },
+    onError: (error) => {
+      console.error('[useReportUser] ❌ Mutation error:', error);
     },
   });
 };

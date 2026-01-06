@@ -2,13 +2,25 @@ import { apiService } from '../../../services/ApiService';
 import type { InboxMessage } from '../types';
 
 /**
+ * Get Messages Parameters
+ */
+export interface GetMessagesParams {
+  search?: string; // Karşı tarafın adı, unvanı veya son mesaj içeriğinde arama
+  unreadOnly?: boolean; // Sadece okunmamış mesajı olan thread'ler
+  threadType?: 'DM' | 'SUPPORT' | 'ALL'; // Thread tipi filtresi (default: 'ALL')
+  limit?: number; // Maksimum thread sayısı (1-100, default: 50)
+}
+
+/**
  * Get Messages endpoint
  * Kullanıcının mesaj listesini getirir
  *
  * Kullanıcı ID'si backend tarafında Authorization header'indaki token'dan bulunur.
+ * 
+ * @param params - Query parameters (search, unreadOnly, threadType, limit)
  */
-export const getMessages = async (): Promise<InboxMessage[]> => {
-  const response = await apiService.getClient().get<InboxMessage[]>('/messages');
+export const getMessages = async (params?: GetMessagesParams): Promise<InboxMessage[]> => {
+  const response = await apiService.getClient().get<InboxMessage[]>('/messages', { params });
   return response.data;
 };
 

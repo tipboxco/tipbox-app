@@ -9,13 +9,13 @@ import type { EventsApiResponse } from '@/src/types/EventCard';
  */
 export const exploreKeys = {
   all: ['explore'] as const,
-  hottest: (cursor?: string, limit?: number) =>
-    [...exploreKeys.all, 'hottest', cursor, limit] as const,
+  hottest: (cursor?: string, limit?: number, search?: string) =>
+    [...exploreKeys.all, 'hottest', cursor, limit, search] as const,
   marketplaceBanners: () => [...exploreKeys.all, 'marketplace-banners'] as const,
-  events: (cursor?: string, limit?: number) =>
-    [...exploreKeys.all, 'events', cursor, limit] as const,
-  newBrands: (cursor?: string, limit?: number) =>
-    [...exploreKeys.all, 'brands', 'new', cursor, limit] as const,
+  events: (cursor?: string, limit?: number, search?: string) =>
+    [...exploreKeys.all, 'events', cursor, limit, search] as const,
+  newBrands: (cursor?: string, limit?: number, search?: string) =>
+    [...exploreKeys.all, 'brands', 'new', cursor, limit, search] as const,
   newProducts: (cursor?: string, limit?: number) =>
     [...exploreKeys.all, 'products', 'new', cursor, limit] as const,
 };
@@ -25,17 +25,18 @@ export const exploreKeys = {
  * Explore sayfasındaki hottest içeriğini infinite scroll ile getirir
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Post başlığı veya içeriğinde arama (opsiyonel)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useHottest();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useHottest(20, 'iphone');
  */
-export const useHottest = (limit: number = 20) => {
+export const useHottest = (limit: number = 20, search?: string) => {
   return useInfiniteQuery<FeedApiResponse, Error>({
-    queryKey: exploreKeys.hottest(undefined, limit),
+    queryKey: exploreKeys.hottest(undefined, limit, search),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getHottest(cursor, limit);
+      return getHottest(cursor, limit, search);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -81,17 +82,18 @@ export const useMarketplaceBanners = () => {
  * Explore sayfasındaki "What's New" sekmesindeki yeni event'leri infinite scroll ile getirir
  *
  * @param limit - Sayfa başına event sayısı (default: 10, max: 10)
+ * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExploreEvents(10);
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExploreEvents(10, 'survey');
  */
-export const useExploreEvents = (limit: number = 10) => {
+export const useExploreEvents = (limit: number = 10, search?: string) => {
   return useInfiniteQuery<EventsApiResponse, Error>({
-    queryKey: exploreKeys.events(undefined, limit),
+    queryKey: exploreKeys.events(undefined, limit, search),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getExploreEvents(cursor, limit);
+      return getExploreEvents(cursor, limit, search);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -116,17 +118,18 @@ export const useExploreEvents = (limit: number = 10) => {
  * Explore sayfasındaki "What's New" sekmesindeki yeni brand'leri infinite scroll ile getirir
  *
  * @param limit - Sayfa başına brand sayısı (default: 10)
+ * @param search - Marka adında arama (opsiyonel)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useNewBrands(10);
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useNewBrands(10, 'apple');
  */
-export const useNewBrands = (limit: number = 10) => {
+export const useNewBrands = (limit: number = 10, search?: string) => {
   return useInfiniteQuery<NewBrandsApiResponse, Error>({
-    queryKey: exploreKeys.newBrands(undefined, limit),
+    queryKey: exploreKeys.newBrands(undefined, limit, search),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getNewBrands(cursor, limit);
+      return getNewBrands(cursor, limit, search);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

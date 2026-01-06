@@ -9,17 +9,22 @@ import type { EventsApiResponse } from '@/src/types/EventCard';
  *
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @param search - Post başlığı veya içeriğinde arama (opsiyonel)
  * @returns FeedApiResponse - Hottest items ve pagination bilgisi
  */
 export const getHottest = async (
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  search?: string
 ): Promise<FeedApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (search) {
+    params.append('search', search);
+  }
 
   const response = await apiService.getClient().get<FeedApiResponse>(
     `/explore/hottest?${params.toString()}`
@@ -72,17 +77,22 @@ export const getMarketplaceBanners = async (): Promise<MarketplaceBanner[]> => {
  *
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına event sayısı (default: 10, max: 10)
+ * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
  * @returns EventsApiResponse - Event listesi ve pagination bilgisi
  */
 export const getExploreEvents = async (
   cursor?: string,
-  limit: number = 10
+  limit: number = 10,
+  search?: string
 ): Promise<EventsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', Math.min(limit, 10).toString()); // Max 10
+  if (search) {
+    params.append('search', search);
+  }
 
   const response = await apiService.getClient().get<EventsApiResponse>(
     `/explore/events?${params.toString()}`
@@ -121,17 +131,22 @@ export const getExploreEvents = async (
  *
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına brand sayısı (default: 10)
+ * @param search - Marka adında arama (opsiyonel)
  * @returns NewBrandsApiResponse - Brand listesi ve pagination bilgisi
  */
 export const getNewBrands = async (
   cursor?: string,
-  limit: number = 10
+  limit: number = 10,
+  search?: string
 ): Promise<NewBrandsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (search) {
+    params.append('search', search);
+  }
 
   const response = await apiService.getClient().get<NewBrandsApiResponse>(
     `/explore/brands/new?${params.toString()}`

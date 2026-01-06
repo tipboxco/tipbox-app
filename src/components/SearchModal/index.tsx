@@ -29,6 +29,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.5; // %50
@@ -266,10 +269,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   // User item'a tıklandığında profile git
   const handleUserPress = useCallback(
     (userId: string) => {
+      if (!userId) {
+        console.warn('[SearchModal] handleUserPress: userId is missing');
+        return;
+      }
       handleClose();
       setTimeout(() => {
         (navigation as any).navigate('Profile', {
-          screen: 'ProfileScreen',
+          screen: 'ProfileMain',
           params: { userId },
         });
       }, 300);
@@ -277,32 +284,56 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     [navigation, handleClose]
   );
 
-  // Brand item'a tıklandığında brand detail'e git
+  // Brand item'a tıklandığında brand post list screen'e git
   const handleBrandPress = useCallback(
     (brandId: string) => {
+      if (!brandId) {
+        console.warn('[SearchModal] handleBrandPress: brandId is missing');
+        return;
+      }
       handleClose();
       setTimeout(() => {
-        (navigation as any).navigate('Brand', {
-          screen: 'BrandDetailScreen',
-          params: { brandId },
+        // Catalog tab'ına nested navigation → BrandPostListScreen
+        navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandPostListScreen' as any, {
+          brandId,
         });
       }, 300);
     },
-    [navigation, handleClose]
+    [handleClose]
   );
 
-  // Product item'a tıklandığında product detail'e git
+  // Product item'a tıklandığında product post list screen'e git
   const handleProductPress = useCallback(
     (productId: string) => {
+      if (!productId) {
+        console.warn('[SearchModal] handleProductPress: productId is missing');
+        return;
+      }
       handleClose();
       setTimeout(() => {
-        (navigation as any).navigate('Product', {
-          screen: 'ProductDetailScreen',
-          params: { productId },
+        // Post stack'ine navigate → PostsScreen (productId contextId olarak)
+        navigationService.navigate(ROOT_ROUTES.POST, {
+          screen: 'PostsScreen',
+          params: {
+            stage: 'Product',
+            name: '', // Product name API'den gelecek veya PostsScreen'de gösterilmeyecek
+            productInfo: {
+              image: require('@/assets/inventory/product_01.png'), // Placeholder, API'den gelecek
+              title: '', // Placeholder, API'den gelecek
+            },
+            selectedProduct: {
+              id: productId,
+              name: '', // Placeholder, API'den gelecek
+              description: '',
+              image: require('@/assets/inventory/product_01.png'), // Placeholder
+            },
+            contextType: ProductInfoType.PRODUCT,
+            contextId: productId, // Product ID'yi contextId olarak gönder
+          },
         });
       }, 300);
     },
-    [navigation, handleClose]
+    [handleClose]
   );
 
   // Render search results

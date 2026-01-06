@@ -59,11 +59,23 @@ export interface NotificationNavigation {
   params?: Record<string, any>;
 }
 
+export type NotificationCategory = 
+  | 'POST'
+  | 'TRUST'
+  | 'MESSAGE'
+  | 'SUPPORT'
+  | 'COLLECTION'
+  | 'GAMIFICATION'
+  | 'EXPERT'
+  | 'EVENT'
+  | 'SYSTEM';
+
 export interface GetNotificationsParams {
   limit?: number;
   offset?: number;
   unreadOnly?: boolean;
   type?: NotificationType;
+  category?: NotificationCategory;
 }
 
 export interface GetNotificationsResponse {

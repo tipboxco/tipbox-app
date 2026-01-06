@@ -11,6 +11,7 @@ import {
   cancelSupportRequest,
   closeSupportRequest,
   reportSupportRequest,
+  type GetMessagesParams,
 } from './messagesApi';
 import type { InboxMessage } from '../types';
 import type {
@@ -40,15 +41,16 @@ export const inboxKeys = {
  * Get Messages query hook
  * Kullanıcının mesaj listesini getirir ve cache'ler
  *
+ * @param params - Query parameters (search, unreadOnly, threadType, limit)
  * @returns React Query hook result
  *
  * @example
- * const { data, isLoading, error } = useMessages();
+ * const { data, isLoading, error } = useMessages({ threadType: 'DM', search: 'ahmet' });
  */
-export const useMessages = () => {
+export const useMessages = (params?: GetMessagesParams) => {
   return useQuery<InboxMessage[], Error>({
-    queryKey: inboxKeys.messages(),
-    queryFn: () => getMessages(),
+    queryKey: [...inboxKeys.messages(), params],
+    queryFn: () => getMessages(params),
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
