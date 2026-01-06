@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useAppStore } from '@/src/store/appStore';
+import { useAuthStatus } from '@/src/hooks/useAuthStatus';
 import { AuthNavigator } from '@/src/features/auth/navigation';
 import { DrawerNavigator } from '../DrawerNavigator';
 import { SettingsNavigator } from '@/src/features/settings/navigation';
@@ -21,6 +21,10 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
  * 
  * Uygulamanın en üst seviye navigator'ı.
  * 
+ * Optimizasyonlar:
+ * - useAuthStatus: Memoized selector ile re-render minimize edildi
+ * - RootNavigator en az render edilen component olmalı
+ * 
  * Yapı:
  * - Auth: Authentication flow (if !isAuthenticated)
  * - MainDrawer: Ana uygulama (TabNavigator + Drawer) (if isAuthenticated)
@@ -32,9 +36,18 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
  * - Hangi tab açık olursa olsun Root'tan açılır
  * - Tek instance (memory efficient)
  * - Tab state'inden bağımsız
+ * 
+ * Not: MessageDetail ve SupportMessageDetail şu an tek screen olarak root'ta.
+ * İleride InboxNavigator pattern'ine çekilebilir:
+ * InboxNavigator
+ *   ├── InboxList
+ *   ├── MessageDetail
+ *   └── SupportMessageDetail
  */
 export const RootNavigator = () => {
-  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  // Memoized selector ile re-render minimize et
+  // Socket, Notification, Token refresh gibi durumlarda gereksiz re-render'ları önler
+  const isAuthenticated = useAuthStatus();
 
   return (
     <RootStack.Navigator
@@ -60,6 +73,7 @@ export const RootNavigator = () => {
               options={{
                 presentation: 'card',
                 animation: 'slide_from_right',
+                gestureEnabled: true, // Android back behavior için
               }}
             />
             <RootStack.Screen
@@ -68,6 +82,7 @@ export const RootNavigator = () => {
               options={{
                 presentation: 'card',
                 animation: 'slide_from_right',
+                gestureEnabled: true, // Android back behavior için
               }}
             />
             <RootStack.Screen
@@ -76,6 +91,7 @@ export const RootNavigator = () => {
               options={{
                 presentation: 'modal',
                 animation: 'slide_from_bottom',
+                gestureEnabled: true, // Android back behavior için
               }}
             />
             <RootStack.Screen
@@ -84,6 +100,7 @@ export const RootNavigator = () => {
               options={{
                 presentation: 'card',
                 animation: 'slide_from_right',
+                gestureEnabled: true, // Android back behavior için
               }}
             />
             <RootStack.Screen
@@ -92,6 +109,7 @@ export const RootNavigator = () => {
               options={{
                 presentation: 'card',
                 animation: 'slide_from_right',
+                gestureEnabled: true, // Android back behavior için
               }}
             />
             <RootStack.Screen
@@ -100,6 +118,7 @@ export const RootNavigator = () => {
               options={{
                 presentation: 'card',
                 animation: 'slide_from_right',
+                gestureEnabled: true, // Android back behavior için
               }}
             />
             <RootStack.Screen
@@ -108,6 +127,7 @@ export const RootNavigator = () => {
               options={{
                 presentation: 'card',
                 animation: 'slide_from_right',
+                gestureEnabled: true, // Android back behavior için
               }}
             />
           </RootStack.Group>
