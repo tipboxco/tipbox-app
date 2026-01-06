@@ -9,12 +9,6 @@ import {
   Image,
   Button,
   ButtonText,
-  Modal,
-  ModalBackdrop,
-  ModalContent,
-  ModalBody,
-  Input,
-  InputField,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -23,7 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
 import { toImageSource } from '@/src/utils';
-import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useCloseSupportRequest, useReportSupportRequest } from '../api/hooks';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
@@ -34,7 +28,6 @@ import MessageInput from '../components/MessageInput';
 import MessageDetailActionButtons from '../components/MessageDetailActionButtons';
 import SendTipsBottomSheet from '../components/SendTipsBottomSheet';
 import OneOnOneSupportBottomSheet from '../components/OneOnOneSupportBottomSheet';
-import CloseSupportRequestModal from '../components/CloseSupportRequestModal';
 
 interface MessageDetailItem {
   id: string;
@@ -162,9 +155,6 @@ const MessageDetailScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
-  const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
-  const [isReportModalVisible, setIsReportModalVisible] = useState(false);
-  const [reportReason, setReportReason] = useState('');
   // Mesaj görünürlüğü takibi için (okundu işaretleme)
   const visibleMessageIdsRef = useRef<Set<string>>(new Set());
   // Component mount durumunu takip et (unmount olduktan sonra okundu işaretleme yapılmasın)
@@ -210,8 +200,6 @@ const MessageDetailScreen: React.FC = () => {
   const acceptSupportRequestMutation = useAcceptSupportRequest();
   const rejectSupportRequestMutation = useRejectSupportRequest();
   const cancelSupportRequestMutation = useCancelSupportRequest();
-  const closeSupportRequestMutation = useCloseSupportRequest();
-  const reportSupportRequestMutation = useReportSupportRequest();
   const queryClient = useQueryClient();
   
   // Socket context
@@ -1288,6 +1276,9 @@ const MessageDetailScreen: React.FC = () => {
         enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
+        keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar
+        keyboardBlurBehavior: 'restore',
+        android_keyboardInputMode: 'adjustResize',
       }
     );
   };
@@ -1409,6 +1400,9 @@ const MessageDetailScreen: React.FC = () => {
         enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
+        keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar
+        keyboardBlurBehavior: 'restore',
+        android_keyboardInputMode: 'adjustResize',
       }
     );
   };
@@ -1656,114 +1650,6 @@ const MessageDetailScreen: React.FC = () => {
     );
   }, [isConnected, isSocketReady, socketCancelSupportRequest, cancelSupportRequestMutation]);
 
-  // Handle Close Support Request
-  const handleCloseSupportRequest = useCallback(() => {
-    setIsCloseModalVisible(true);
-  }, []);
-
-  // Handle Confirm Close Support Request
-  const handleConfirmCloseSupportRequest = useCallback((rating: number) => {
-    // Support request ID'yi bul (mesajlardan veya params'dan)
-    const supportRequest = messages.find(msg => msg.type === 'support_request' && msg.supportRequest?.requestId);
-    const requestId = supportRequest?.supportRequest?.requestId;
-    
-    if (!requestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
-      return;
-    }
-
-    console.log('[MessageDetail] Closing support request with rating:', rating);
-    
-    closeSupportRequestMutation.mutate(
-      {
-        requestId: requestId,
-        data: {
-          rating: rating,
-          comment: undefined, // Opsiyonel yorum eklenebilir
-        },
-      },
-      {
-        onSuccess: () => {
-          console.log('[MessageDetail] ✅ Support request closed successfully');
-          Alert.alert('Başarılı', 'Destek talebi başarıyla kapatıldı');
-          setIsCloseModalVisible(false);
-          
-          // Inbox listesini invalidate et
-          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-          
-          // Geri dön
-          navigation.goBack();
-        },
-        onError: (error: any) => {
-          console.error('[MessageDetail] ❌ Close support request error:', error);
-          Alert.alert('Hata', error.message || 'Destek talebi kapatılırken bir hata oluştu');
-        },
-      }
-    );
-  }, [messages, closeSupportRequestMutation, queryClient, navigation]);
-
-  // Handle Cancel Close Support Request
-  const handleCancelCloseSupportRequest = useCallback(() => {
-    setIsCloseModalVisible(false);
-  }, []);
-
-  // Handle Report Support Request
-  const handleReportSupportRequest = useCallback(() => {
-    setIsReportModalVisible(true);
-  }, []);
-
-  // Handle Confirm Report
-  const handleConfirmReportSupportRequest = useCallback(() => {
-    // Support request ID'yi bul (mesajlardan veya params'dan)
-    const supportRequest = messages.find(msg => msg.type === 'support_request' && msg.supportRequest?.requestId);
-    const requestId = supportRequest?.supportRequest?.requestId;
-    
-    if (!requestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
-      return;
-    }
-
-    if (!reportReason || reportReason.trim().length === 0) {
-      Alert.alert('Hata', 'Lütfen bir neden belirtin');
-      return;
-    }
-
-    console.log('[MessageDetail] Reporting support request:', reportReason);
-    
-    reportSupportRequestMutation.mutate(
-      {
-        requestId: requestId,
-        data: {
-          reason: reportReason.trim(),
-          description: undefined, // Opsiyonel açıklama eklenebilir
-        },
-      },
-      {
-        onSuccess: () => {
-          console.log('[MessageDetail] ✅ Support request reported successfully');
-          Alert.alert('Başarılı', 'Destek talebi başarıyla raporlandı');
-          setIsReportModalVisible(false);
-          setReportReason('');
-          
-          // Inbox listesini invalidate et
-          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-          
-          // Geri dön
-          navigation.goBack();
-        },
-        onError: (error: any) => {
-          console.error('[MessageDetail] ❌ Report support request error:', error);
-          Alert.alert('Hata', error.message || 'Destek talebi raporlanırken bir hata oluştu');
-        },
-      }
-    );
-  }, [messages, reportReason, reportSupportRequestMutation, queryClient, navigation]);
-
-  // Handle Cancel Report
-  const handleCancelReportSupportRequest = useCallback(() => {
-    setIsReportModalVisible(false);
-    setReportReason('');
-  }, []);
 
   // Handle Go to Support Chat (accepted request'ler için)
   const handleGoToSupportChat = useCallback((supportThreadId: string, requestId: string) => {
@@ -2310,151 +2196,9 @@ const MessageDetailScreen: React.FC = () => {
             />
           </Box>
 
-          {/* Action Buttons - Close Support Request ve Report (sadece accepted support request'ler için) */}
-          {(() => {
-            // Accepted support request var mı kontrol et
-            const acceptedSupportRequest = messages.find(
-              msg => msg.type === 'support_request' && 
-                     msg.supportRequest?.status === 'accepted' &&
-                     msg.supportRequest?.threadId
-            );
-            
-            if (acceptedSupportRequest) {
-              return (
-                <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
-                  <VStack space="sm">
-                    {/* Close Support Request Button */}
-                    <Pressable
-                      bg="#E8FF6B"
-                      borderWidth={1}
-                      borderColor="#D8FF08"
-                      borderRadius={20}
-                      px="$4"
-                      py="$3"
-                      onPress={handleCloseSupportRequest}
-                    >
-                      <Text
-                        color="#000000"
-                        fontSize={12}
-                        fontWeight="$semibold"
-                        textAlign="center"
-                      >
-                        Close Support Request
-                      </Text>
-                    </Pressable>
-
-                    {/* Report Button */}
-                    <Pressable
-                      bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-                      borderWidth={1}
-                      borderColor={isDark ? '#3A3A3A' : '#E5E5E5'}
-                      borderRadius={20}
-                      px="$4"
-                      py="$3"
-                      onPress={handleReportSupportRequest}
-                    >
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={12}
-                        fontWeight="$semibold"
-                        textAlign="center"
-                      >
-                        Report
-                      </Text>
-                    </Pressable>
-                  </VStack>
-                </Box>
-              );
-            }
-            return null;
-          })()}
         </Box>
       </KeyboardAvoidingView>
 
-      {/* Close Support Request Modal */}
-      <CloseSupportRequestModal
-        isVisible={isCloseModalVisible}
-        onClose={handleCancelCloseSupportRequest}
-        onConfirm={handleConfirmCloseSupportRequest}
-        onReport={handleReportSupportRequest}
-        userName={params.senderName}
-        userTitle={params.senderTitle}
-        userAvatar={params.senderAvatar}
-      />
-
-      {/* Report Support Request Modal */}
-      <Modal isOpen={isReportModalVisible} onClose={handleCancelReportSupportRequest} flex={1}>
-        <ModalBackdrop bg="rgba(0, 0, 0, 0.5)" />
-        <ModalContent
-          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-          borderRadius={24}
-          maxWidth="90%"
-          width="90%"
-          mx="$4"
-        >
-          <ModalBody p="$5">
-            <VStack space="md">
-              <Text
-                fontSize={18}
-                fontWeight="$bold"
-                color={isDark ? '#FFFFFF' : '#000000'}
-                textAlign="center"
-              >
-                Raporla
-              </Text>
-
-              <Text
-                fontSize={14}
-                fontWeight="$normal"
-                color={isDark ? '#CCCCCC' : '#4B5563'}
-                textAlign="center"
-                lineHeight={20}
-              >
-                Bu destek talebini raporlamak için bir neden belirtin:
-              </Text>
-
-              <Input
-                variant="outline"
-                size="md"
-                isDisabled={false}
-                isInvalid={false}
-                isReadOnly={false}
-              >
-                <InputField
-                  placeholder="Raporlama nedeni..."
-                  value={reportReason}
-                  onChangeText={setReportReason}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  placeholderTextColor={isDark ? '#8C8C8C' : '#9CA3AF'}
-                />
-              </Input>
-
-              <HStack space="sm" mt="$2">
-                <Button
-                  flex={1}
-                  variant="outline"
-                  onPress={handleCancelReportSupportRequest}
-                  bg={isDark ? '#2A2A2A' : '#F3F4F6'}
-                  borderColor={isDark ? '#3A3A3A' : '#E5E7EB'}
-                >
-                  <ButtonText color={isDark ? '#FFFFFF' : '#000000'}>İptal</ButtonText>
-                </Button>
-                <Button
-                  flex={1}
-                  onPress={handleConfirmReportSupportRequest}
-                  bg="#BC6BFF"
-                  isDisabled={!reportReason || reportReason.trim().length === 0}
-                >
-                  <ButtonText color="#FFFFFF">Raporla</ButtonText>
-                </Button>
-              </HStack>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </SafeAreaView>
   );
 };

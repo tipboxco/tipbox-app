@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -183,6 +183,8 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
   // Support request bilgilerini thread mesajlarından al
   const [supportRequestInfo, setSupportRequestInfo] = useState<{
@@ -400,6 +402,33 @@ const SupportMessageDetailScreen: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
   }, [queryClient]);
+
+  // Klavye event listener'ları
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        const height = event.endCoordinates.height;
+        setKeyboardHeight(height);
+        setIsKeyboardVisible(true);
+        console.log('[SupportMessageDetail] ⌨️ Keyboard opened, height:', height);
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+        setIsKeyboardVisible(false);
+        console.log('[SupportMessageDetail] ⌨️ Keyboard closed');
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   // Socket event listeners
   useEffect(() => {
@@ -1144,6 +1173,16 @@ const SupportMessageDetailScreen: React.FC = () => {
             </HStack>
           </HStack>
         </Box>
+      )}
+
+      {/* Action Buttons - Görseldeki gibi sohbet içinde, sadece active status'ta göster */}
+      {params.status === 'active' && threadId && (
+        <SupportMessageDetailActionButtons
+          onCloseRequestPress={handleCloseRequest}
+          onReportPress={handleReport}
+          keyboardHeight={keyboardHeight}
+          isKeyboardVisible={isKeyboardVisible}
+        />
       )}
 
       {/* Mesaj Gönderme Alanı - Sadece active status'ta göster */}

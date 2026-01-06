@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     VStack,
     HStack,
@@ -13,7 +13,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ScrollView } from 'react-native';
+import { ScrollView, Keyboard, Platform } from 'react-native';
 import TipsSuccessModal from '../TipsSuccessModal';
 
 interface SendTipsBottomSheetProps {
@@ -36,6 +36,13 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+    
+    // Refs for scroll and input focus handling
+    const scrollViewRef = useRef<ScrollView>(null);
+    const descriptionInputRef = useRef<any>(null);
+    const amountInputRef = useRef<any>(null);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const [focusedInput, setFocusedInput] = useState<'description' | 'amount' | null>(null);
 
     // Kullanıcının mevcut bakiyesi (normalde prop veya store'dan gelecek)
     const currentBalance = 500;
@@ -112,11 +119,94 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         return isValidAmount() && isValidDescription();
     };
 
+    // Klavye event listener'ları - klavye açıldığında scroll yap
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (event) => {
+                const height = event.endCoordinates.height;
+                setKeyboardHeight(height);
+                
+                // Klavye açıldığında input'u görünür yapmak için scroll yap
+                // Biraz gecikme ile (klavye animasyonu tamamlanana kadar bekle)
+                setTimeout(() => {
+                    if (scrollViewRef.current) {
+                        // Focus edilen input'a göre scroll yap
+                        if (focusedInput === 'description') {
+                            scrollViewRef.current.scrollToEnd({ animated: true });
+                        } else if (focusedInput === 'amount') {
+                            // Amount input focus ise, amount input'a scroll yap
+                            // Yaklaşık offset: banner (160) + description section (~200) = ~360
+                            scrollViewRef.current.scrollTo({ y: 360, animated: true });
+                        }
+                    }
+                }, Platform.OS === 'ios' ? 300 : 200);
+            }
+        );
+
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                setKeyboardHeight(0);
+                setFocusedInput(null);
+            }
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, [focusedInput]);
+
+    // Input focus handler'ları
+    const handleDescriptionFocus = () => {
+        setFocusedInput('description');
+        // Description input focus olduğunda scroll yap
+        setTimeout(() => {
+            if (scrollViewRef.current) {
+                scrollViewRef.current.scrollToEnd({ animated: true });
+            }
+        }, 100);
+    };
+
+    const handleDescriptionBlur = () => {
+        // Blur olduğunda focus state'i temizle (eğer başka input focus değilse)
+        setTimeout(() => {
+            if (focusedInput === 'description') {
+                setFocusedInput(null);
+            }
+        }, 100);
+    };
+
+    const handleAmountFocus = () => {
+        setFocusedInput('amount');
+        // Amount input focus olduğunda scroll yap
+        setTimeout(() => {
+            if (scrollViewRef.current) {
+                // Yaklaşık offset: banner (160) + description section (~200) = ~360
+                scrollViewRef.current.scrollTo({ y: 360, animated: true });
+            }
+        }, 100);
+    };
+
+    const handleAmountBlur = () => {
+        // Blur olduğunda focus state'i temizle (eğer başka input focus değilse)
+        setTimeout(() => {
+            if (focusedInput === 'amount') {
+                setFocusedInput(null);
+            }
+        }, 100);
+    };
+
     return (
         <ScrollView
+            ref={scrollViewRef}
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ 
+                paddingBottom: keyboardHeight > 0 ? keyboardHeight + 20 : 20 
+            }}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
         >
             <VStack flex={1}>
                 {/* Başlık */}
@@ -227,6 +317,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 minHeight={100}
                             >
                                 <TextareaInput
+                                    ref={descriptionInputRef}
                                     placeholder="Örn: Harika bir içerik için teşekkürler!"
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
@@ -234,6 +325,8 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     fontWeight="$normal"
                                     value={description}
                                     onChangeText={setDescription}
+                                    onFocus={handleDescriptionFocus}
+                                    onBlur={handleDescriptionBlur}
                                     numberOfLines={4}
                                     maxLength={200}
                                     style={{ paddingBottom: 28 }}
@@ -290,6 +383,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     height={60}
                                 >
                                     <InputField
+                                        ref={amountInputRef}
                                         placeholder="50"
                                         placeholderTextColor="#B8B8B8"
                                         color={isDark ? '#FFFFFF' : '#000000'}
@@ -297,6 +391,8 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                         fontWeight="$bold"
                                         value={amount}
                                         onChangeText={handleAmountChange}
+                                        onFocus={handleAmountFocus}
+                                        onBlur={handleAmountBlur}
                                         keyboardType="numeric"
                                     />
                                 </Input>

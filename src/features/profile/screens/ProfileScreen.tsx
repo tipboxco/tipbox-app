@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { FlatList, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import { FlatList, ActivityIndicator, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList } from '../api/hooks';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser } from '../api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -31,6 +31,8 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { LadderTab } from '../components/TabContents';
 import { Feather } from '@expo/vector-icons';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -337,6 +339,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const rootNavigation = useNavigation<any>();
   const safeAreaTop = useSafeAreaValues('top');
+  const safeAreaBottom = useSafeAreaValues('bottom');
+  const insets = useSafeAreaInsets();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: true, extraPadding: 16 });
@@ -357,12 +362,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const createSupportRequestMutation = useCreateSupportRequest();
   const sendDirectMessageMutation = useSendDirectMessage();
   
+  // Report mutation
+  const { mutate: reportUser, isPending: isReporting } = useReportUser();
+  
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === targetUserId;
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const [showMenu, setShowMenu] = useState(false);
   const listRef = useRef<FlatList<ListItem>>(null);
   
   // API hooks for each tab
@@ -558,10 +565,67 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         message: `Check out ${userProfile.name}'s profile on Tipbox!`,
         url: `tipboxapp://profile/user/${targetUserId}`,
       });
+      setShowActionSheet(false);
     } catch (error) {
       console.error('[ProfileScreen] Share error:', error);
     }
   }, [userProfile, targetUserId]);
+
+  const handleReport = useCallback(() => {
+    if (!user?.id || !targetUserId) return;
+    
+    Alert.alert(
+      'Kullanıcıyı Raporla',
+      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Raporla',
+          style: 'destructive',
+          onPress: () => {
+            reportUser({
+              userId: user.id,
+              targetUserId,
+              data: {
+                category: 'OTHER',
+                description: 'Kullanıcı raporlandı',
+              },
+            });
+            setShowActionSheet(false);
+          },
+        },
+      ]
+    );
+  }, [user?.id, targetUserId, reportUser]);
+
+  const handleBlock = useCallback(() => {
+    Alert.alert(
+      'Kullanıcıyı Engelle',
+      'Bu kullanıcıyı engellemek istediğinizden emin misiniz? Engellediğiniz kullanıcı sizinle etkileşime geçemez.',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Engelle',
+          style: 'destructive',
+          onPress: () => {
+            // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
+            console.log('[ProfileScreen] Block user:', targetUserId);
+            setShowActionSheet(false);
+            // Navigate back after blocking
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            }
+          },
+        },
+      ]
+    );
+  }, [targetUserId, navigation]);
   
   // Handle load more
   const handleLoadMore = useCallback(() => {
@@ -629,104 +693,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 if (isOwnProfile) {
                   rootNavigation.navigate('Settings' as never);
                 } else {
-                  setShowMenu(!showMenu);
+                  handleOpenActionSheet();
                 }
               }}
               style={{ zIndex: 2000 }}
             >
               <Feather name="more-vertical" size={24} color="#fff" />
             </Pressable>
-            
-            {/* Dropdown Menu Overlay */}
-            {!isOwnProfile && showMenu && (
-              <Pressable
-                position="absolute"
-                top={0}
-                left={0}
-                right={0}
-                bottom={0}
-                onPress={() => setShowMenu(false)}
-                style={{ zIndex: 2500 }}
-              />
-            )}
-            
-            {/* Dropdown Menu */}
-            {!isOwnProfile && showMenu && (
-              <Box
-                position="absolute"
-                top={72}
-                right={16}
-                width={189}
-                bg="#FAFAFA"
-                borderRadius={5}
-                zIndex={3000}
-                shadowColor="#000"
-                shadowOffset={{ width: 0, height: 2 }}
-                shadowOpacity={0.1}
-                shadowRadius={4}
-                elevation={5}
-              >
-                <VStack>
-                  <Pressable
-                    onPress={() => {
-                      handleShare();
-                      setShowMenu(false);
-                    }}
-                    px={16}
-                    py={12}
-                    borderTopLeftRadius={5}
-                    borderTopRightRadius={5}
-                    $hover={{ bg: '#F0F0F0' }}
-                    $pressed={{ bg: '#F0F0F0' }}
-                  >
-                    <HStack alignItems="center" space="sm">
-                      <Feather name="share-2" size={16} color="#000" />
-                      <Text color="#000" fontSize={14} fontWeight="$normal">
-                        Paylaş
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                  
-                  <Pressable
-                    onPress={() => {
-                      console.log('[ProfileScreen] Şikayet Et pressed');
-                      setShowMenu(false);
-                    }}
-                    px={16}
-                    py={12}
-                    $hover={{ bg: '#F0F0F0' }}
-                    $pressed={{ bg: '#F0F0F0' }}
-                  >
-                    <HStack alignItems="center" space="sm">
-                      <Feather name="flag" size={16} color="#000" />
-                      <Text color="#000" fontSize={14} fontWeight="$normal">
-                        Şikayet Et
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                  
-                  <Pressable
-                    onPress={() => {
-                      console.log('[ProfileScreen] Engelle pressed');
-                      setShowMenu(false);
-                    }}
-                    px={16}
-                    py={12}
-                    borderBottomLeftRadius={5}
-                    borderBottomRightRadius={5}
-                    $hover={{ bg: '#F0F0F0' }}
-                    $pressed={{ bg: '#F0F0F0' }}
-                  >
-                    <HStack alignItems="center" space="sm">
-                      <Feather name="x-circle" size={16} color="#000" />
-                      <Text color="#000" fontSize={14} fontWeight="$normal">
-                        Engelle
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                </VStack>
-              </Box>
-            )}
           </Box>
         </Box>
 
@@ -1082,7 +1055,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, safeAreaTop, handleShare, setShowMenu]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, safeAreaTop, handleShare]);
   
   if (isProfileLoading) {
     return (

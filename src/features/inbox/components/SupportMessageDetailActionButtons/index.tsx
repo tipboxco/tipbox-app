@@ -1,31 +1,38 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import {
-    Box,
     VStack,
-    HStack,
     Pressable,
     Text,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
-import { Platform } from 'react-native';
 
 interface SupportMessageDetailActionButtonsProps {
     onCloseRequestPress?: () => void;
     onReportPress?: () => void;
+    keyboardHeight?: number;
+    isKeyboardVisible?: boolean;
 }
 
 export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailActionButtonsProps> = ({
     onCloseRequestPress,
     onReportPress,
+    keyboardHeight = 0,
+    isKeyboardVisible = false,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
+    // Klavye açıkken butonları klavyenin üstünde göster
+    // Input field yüksekliği yaklaşık 60px, butonlar input'un üstünde 100px mesafede
+    // Klavye açıkken: bottom = keyboardHeight + 100 (input'un üstünde)
+    // Klavye kapalıyken: bottom = 100 (input'un üstünde)
+    const bottomOffset = isKeyboardVisible ? keyboardHeight + 100 : 100;
+
     return (
         <VStack
             position="absolute"
-            bottom={80}
+            bottom={bottomOffset}
             right={16}
             space="sm"
             zIndex={100}
@@ -46,20 +53,13 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                 shadowRadius={4}
                 elevation={4}
             >
-                <HStack space="xs" alignItems="center" justifyContent="center">
-                    <Feather
-                        name="message-circle"
-                        size={16}
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                    />
-                    <Text
-                        color="#000000"
-                        fontSize={11}
-                        fontWeight="$semibold"
-                    >
-                        Close Support Request
-                    </Text>
-                </HStack>
+                <Text
+                    color="#000000"
+                    fontSize={11}
+                    fontWeight="$semibold"
+                >
+                    Close Support Request
+                </Text>
             </Pressable>
 
             {/* Report Button */}
@@ -69,7 +69,6 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                 borderWidth={1}
                 borderColor="#AD08FF"
                 borderRadius={12}
-                maxWidth={100}
                 px="$3"
                 py="$2"
                 shadowColor="#000"
@@ -78,20 +77,13 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                 shadowRadius={4}
                 elevation={3}
             >
-                <HStack space="xs" alignItems="center" justifyContent="center">
-                    <Feather
-                        name="gift"
-                        size={16}
-                        color="#000000"
-                    />
-                    <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={11}
-                        fontWeight="$medium"
-                    >
-                        Report
-                    </Text>
-                </HStack>
+                <Text
+                    color="#FFFFFF"
+                    fontSize={11}
+                    fontWeight="$medium"
+                >
+                    Report
+                </Text>
             </Pressable>
         </VStack>
     );
