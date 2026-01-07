@@ -355,5 +355,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   );
 };
 
-export default ExperiencePostCard;
+// PERFORMANCE FIX: Memoize component to prevent unnecessary re-renders in feed lists
+export default React.memo(ExperiencePostCard);
 

@@ -5,6 +5,51 @@ import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
 import { ImageCacheService } from '../services/ImageCacheService';
 import { updateTokenCache, clearTokenCache } from '../services/ApiService/interceptors';
+
+// PERFORMANCE FIX: Debounced AsyncStorage wrapper to reduce I/O overhead
+// Batches multiple writes into single AsyncStorage operation
+class DebouncedAsyncStorage {
+  private writeQueue: Map<string, string> = new Map();
+  private writeTimeout: NodeJS.Timeout | null = null;
+  private readonly DEBOUNCE_MS = 300; // 300ms debounce window
+
+  async getItem(key: string): Promise<string | null> {
+    return await AsyncStorage.getItem(key);
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    // Add to queue
+    this.writeQueue.set(key, value);
+
+    // Clear existing timeout
+    if (this.writeTimeout) {
+      clearTimeout(this.writeTimeout);
+    }
+
+    // Set new timeout
+    this.writeTimeout = setTimeout(async () => {
+      // Batch write all queued items
+      const items = Array.from(this.writeQueue.entries());
+      this.writeQueue.clear();
+
+      // Use multiSet for better performance (single I/O operation)
+      if (items.length > 0) {
+        await AsyncStorage.multiSet(items);
+      }
+
+      this.writeTimeout = null;
+    }, this.DEBOUNCE_MS);
+  }
+
+  async removeItem(key: string): Promise<void> {
+    // Remove from queue if pending
+    this.writeQueue.delete(key);
+    return await AsyncStorage.removeItem(key);
+  }
+}
+
+const debouncedStorage = new DebouncedAsyncStorage();
+
 // Socket bağlantısı adım adım test edilecek
 
 // Types
@@ -255,7 +300,9 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: 'app-storage',
-        storage: createJSONStorage(() => AsyncStorage),
+        // PERFORMANCE FIX: Use debounced storage to reduce AsyncStorage I/O
+        // Multiple state changes within 300ms are batched into single write
+        storage: createJSONStorage(() => debouncedStorage as any),
         partialize: (state) => ({
           isAuthenticated: state.isAuthenticated,
           user: state.user,

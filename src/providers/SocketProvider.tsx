@@ -88,7 +88,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const MAX_RETRIES = 3;
   const RETRY_COOLDOWN = 10000; // 10 saniye bekle
 
-  // Socket instance'ını al ve state'i güncelle
+  // PERFORMANCE FIX: Socket state updates via event listeners instead of polling
+  // Polling every 1 second is wasteful - use event-driven approach
   useEffect(() => {
     const updateSocketState = () => {
       const socketInstance = socketService.getSocket();
@@ -99,14 +100,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     // İlk state güncellemesi
     updateSocketState();
 
-    // Socket bağlantı durumunu periyodik olarak kontrol et
-    const interval = setInterval(() => {
-      updateSocketState();
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-    };
+    // PERFORMANCE FIX: Use event listeners instead of polling interval
+    // Socket service already emits connect/disconnect events
+    // We'll rely on those events in the connection management effect below
+    // This eliminates unnecessary 1-second polling overhead
   }, []);
 
   // Socket bağlantı yönetimi: Auth + AppState kontrolü

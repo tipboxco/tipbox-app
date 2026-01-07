@@ -377,5 +377,6 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
   );
 };
 
-export default QuestionPostCard;
+// PERFORMANCE FIX: Memoize component to prevent unnecessary re-renders in feed lists
+export default React.memo(QuestionPostCard);
 

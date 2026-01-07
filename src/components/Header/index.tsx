@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Box, HStack, Text, Pressable, VStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -21,6 +21,8 @@ interface RightButtonProps {
 
 interface HeaderProps {
   title: string;
+  backgroundColor?: string;
+  textColor?: string;
   // Sol kısım için props
   leftAction?: 'back' | 'menu' | 'cancel';
   onLeftActionPress?: () => void;
@@ -40,8 +42,10 @@ interface HeaderProps {
   onSearchPress?: () => void;
 }
 
-export const Header = ({
+const HeaderComponent = ({
   title,
+  backgroundColor,
+  textColor,
   leftAction,
   onLeftActionPress,
   showThreeDots,
@@ -277,7 +281,7 @@ export const Header = ({
   return (
     <VStack>
       <Box
-        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+        bg={backgroundColor || (isDark ? '#000000' : '#FFFFFF')}
         px="$4"
         justifyContent="center"
       >
@@ -291,7 +295,7 @@ export const Header = ({
             {/* Orta kısım - Flex3, center */}
             <Box flex={3} alignItems="center" justifyContent="center">
               <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
+                color={textColor || (isDark ? '#FFFFFF' : '#000000')}
                 fontSize="$md"
                 fontWeight="$bold"
                 textAlign="center"
@@ -310,3 +314,29 @@ export const Header = ({
     </VStack>
   );
 };
+
+// PERFORMANCE FIX: Memoize Header component to prevent unnecessary re-renders
+// Header is used in many screens and should only re-render when props actually change
+export const Header = memo(HeaderComponent, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return (
+    prevProps.title === nextProps.title &&
+    prevProps.backgroundColor === nextProps.backgroundColor &&
+    prevProps.textColor === nextProps.textColor &&
+    prevProps.leftAction === nextProps.leftAction &&
+    prevProps.showThreeDots === nextProps.showThreeDots &&
+    prevProps.showFilter === nextProps.showFilter &&
+    prevProps.showShare === nextProps.showShare &&
+    prevProps.showBackButton === nextProps.showBackButton &&
+    prevProps.rightButton === nextProps.rightButton &&
+    prevProps.onLeftActionPress === nextProps.onLeftActionPress &&
+    prevProps.onThreeDotsPress === nextProps.onThreeDotsPress &&
+    prevProps.onFilterPress === nextProps.onFilterPress &&
+    prevProps.onSharePress === nextProps.onSharePress &&
+    prevProps.onBackPress === nextProps.onBackPress &&
+    prevProps.onMenuPress === nextProps.onMenuPress &&
+    prevProps.onSearchPress === nextProps.onSearchPress &&
+    prevProps.rightAction === nextProps.rightAction
+  );
+});
+Header.displayName = 'Header';
