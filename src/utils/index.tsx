@@ -178,20 +178,15 @@ export const toImageSource = (
   value: string | ImageSourcePropType | null | undefined,
 ): ImageSourcePropType | undefined => {
   if (!value) {
-    // Sadece development modunda uyarı göster
-    if (__DEV__) {
-    console.warn('[toImageSource] ⚠️ Empty or null value provided');
-    }
+    // Null/undefined değerler normal bir durum olabilir (avatar yoksa, image yoksa vs)
+    // Bu yüzden uyarı basmıyoruz - gereksiz spam önlenir
     return undefined;
   }
 
   if (typeof value === 'string') {
     // Boş string kontrolü
     if (value.trim() === '') {
-      // Sadece development modunda uyarı göster
-      if (__DEV__) {
-      console.warn('[toImageSource] ⚠️ Empty string provided');
-      }
+      // Boş string de normal bir durum olabilir
       return undefined;
     }
 

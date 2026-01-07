@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -12,6 +12,7 @@ import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/no
 import { useMessages } from '@/src/features/inbox/api/hooks';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
@@ -26,62 +27,71 @@ import type { MainStackParamList } from './types/main.types';
 const Tab = createBottomTabNavigator<TabParamList>();
 const FeatureStack = createNativeStackNavigator<MainStackParamList>();
 
-// Feature Stack Navigators - Shared screens YOK, sadece feature screens
-const FeedStackNavigator = () => (
+// PERFORMANCE FIX: Stack Navigator'ları React.memo ile memoize et
+// Her TabNavigator render'ında yeni instance oluşturulmasını önler
+const FeedStackNavigator = React.memo(() => (
   <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
     <FeatureStack.Screen name="Feed" component={FeedNavigator} />
   </FeatureStack.Navigator>
-);
+));
+FeedStackNavigator.displayName = 'FeedStackNavigator';
 
-const ExploreStackNavigator = () => (
+const ExploreStackNavigator = React.memo(() => (
   <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
     <FeatureStack.Screen name="Explore" component={ExploreNavigator} />
   </FeatureStack.Navigator>
-);
+));
+ExploreStackNavigator.displayName = 'ExploreStackNavigator';
 
-const CatalogStackNavigator = () => (
+const CatalogStackNavigator = React.memo(() => (
   <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
     <FeatureStack.Screen name="Catalog" component={CatalogNavigator} />
   </FeatureStack.Navigator>
-);
+));
+CatalogStackNavigator.displayName = 'CatalogStackNavigator';
 
-const EventsStackNavigator = () => (
+const EventsStackNavigator = React.memo(() => (
   <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
     <FeatureStack.Screen name="Events" component={EventsNavigator} />
   </FeatureStack.Navigator>
-);
+));
+EventsStackNavigator.displayName = 'EventsStackNavigator';
 
-const NotificationStackNavigator = () => (
+const NotificationStackNavigator = React.memo(() => (
   <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
     <FeatureStack.Screen name="Notification" component={NotificationsNavigator} />
   </FeatureStack.Navigator>
-);
+));
+NotificationStackNavigator.displayName = 'NotificationStackNavigator';
 
-const InboxStackNavigator = () => (
+const InboxStackNavigator = React.memo(() => (
   <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
     <FeatureStack.Screen name="Inbox" component={InboxNavigator} />
   </FeatureStack.Navigator>
-);
+));
+InboxStackNavigator.displayName = 'InboxStackNavigator';
 
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { isAuthenticated } = useAppStore();
+  
+  // PERFORMANCE FIX: Zustand selector'ını shallow ile memoize et
+  const isAuthenticated = useAppStore(useShallow((state) => state.isAuthenticated));
   const { isAuthReady } = useAuth();
   
   // Global navigation UI state'ten tab bar visibility'yi al
   const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
   
-  // Unread notification count - badge için
+  // PERFORMANCE FIX: Unread notification count - badge için
   // Sadece authenticated ve auth ready ise çalıştır
-  const { data: unreadCountData } = useUnreadCount(
-    isAuthenticated && isAuthReady
-  );
-  const unreadCount = unreadCountData?.data?.count || 0;
+  const shouldFetchNotifications = isAuthenticated && isAuthReady;
+  const { data: unreadCountData } = useUnreadCount(shouldFetchNotifications);
+  const unreadCount = useMemo(() => unreadCountData?.data?.count || 0, [unreadCountData?.data?.count]);
   
-  // Unread messages - inbox badge için
+  // PERFORMANCE FIX: Unread messages - inbox badge için
+  // Sadece authenticated ve auth ready ise çalıştır
   const { data: messages } = useMessages();
   const hasUnreadMessages = useMemo(() => {
     if (!messages || messages.length === 0) return false;
@@ -122,6 +132,72 @@ export const TabNavigator = () => {
     };
   }, [insets.bottom, isTabBarVisible]);
 
+  // PERFORMANCE FIX: Tab bar icon render fonksiyonunu useCallback ile memoize et
+  // Her tab değişiminde tüm tab'lar için çalışmasını önler
+  const renderTabBarIcon = useCallback(({ route, focused, color, size }: {
+    route: { name: keyof TabParamList };
+    focused: boolean;
+    color: string;
+    size: number;
+  }) => {
+    let iconName: keyof typeof Feather.glyphMap = 'home';
+
+    switch (route.name) {
+      case 'FeedStack':
+        iconName = 'home';
+        break;
+      case 'ExploreStack':
+        iconName = 'search';
+        break;
+      case 'CatalogStack':
+        iconName = 'grid';
+        break;
+      case 'EventsStack':
+        iconName = 'calendar';
+        break;
+      case 'NotificationStack':
+        iconName = 'bell';
+        break;
+      case 'InboxStack':
+        iconName = 'inbox';
+        break;
+    }
+
+    // Notification icon için badge ekle
+    if (route.name === 'NotificationStack') {
+      return (
+        <View style={{ position: 'relative' }}>
+          <Feather name={iconName} size={size} color={color} />
+          <NotificationBadge count={unreadCount} />
+        </View>
+      );
+    }
+
+    // Inbox icon için badge ekle (sadece nokta, count yok)
+    if (route.name === 'InboxStack') {
+      return (
+        <View style={{ position: 'relative' }}>
+          <Feather name={iconName} size={size} color={color} />
+          <MessageBadge hasUnread={hasUnreadMessages} />
+        </View>
+      );
+    }
+
+    return <Feather name={iconName} size={size} color={color} />;
+  }, [unreadCount, hasUnreadMessages]);
+
+  // PERFORMANCE FIX: Tab press handler'ını useCallback ile memoize et
+  const handleNotificationTabPress = useCallback(() => {
+    // Bildirim ikonuna tıklandığında tüm bildirimleri read olarak işaretle
+    if (unreadCount > 0) {
+      markAllAsReadMutation.mutate(undefined, {
+        onSuccess: () => {
+          console.log('[TabNavigator] ✅ All notifications marked as read');
+        },
+      });
+    }
+  }, [unreadCount, markAllAsReadMutation]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -129,52 +205,7 @@ export const TabNavigator = () => {
         // Prevent tabs from unmounting on blur to preserve scroll position and state
         unmountOnBlur: false,
         headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Feather.glyphMap = 'home';
-
-          switch (route.name) {
-            case 'FeedStack':
-              iconName = 'home';
-              break;
-            case 'ExploreStack':
-              iconName = 'search';
-              break;
-            case 'CatalogStack':
-              iconName = 'grid';
-              break;
-            case 'EventsStack':
-              iconName = 'calendar';
-              break;
-            case 'NotificationStack':
-              iconName = 'bell';
-              break;
-            case 'InboxStack':
-              iconName = 'inbox';
-              break;
-          }
-
-          // Notification icon için badge ekle
-          if (route.name === 'NotificationStack') {
-            return (
-              <View style={{ position: 'relative' }}>
-                <Feather name={iconName} size={size} color={color} />
-                <NotificationBadge count={unreadCount} />
-              </View>
-            );
-          }
-
-          // Inbox icon için badge ekle (sadece nokta, count yok)
-          if (route.name === 'InboxStack') {
-            return (
-              <View style={{ position: 'relative' }}>
-                <Feather name={iconName} size={size} color={color} />
-                <MessageBadge hasUnread={hasUnreadMessages} />
-              </View>
-            );
-          }
-
-          return <Feather name={iconName} size={size} color={color} />;
-        },
+        tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
         tabBarActiveTintColor: '#758600',
         tabBarInactiveTintColor: '#000000',
         tabBarShowLabel: false,
@@ -201,16 +232,7 @@ export const TabNavigator = () => {
         name="NotificationStack"
         component={NotificationStackNavigator}
         listeners={{
-          tabPress: () => {
-            // Bildirim ikonuna tıklandığında tüm bildirimleri read olarak işaretle
-            if (unreadCount > 0) {
-              markAllAsReadMutation.mutate(undefined, {
-                onSuccess: () => {
-                  console.log('[TabNavigator] ✅ All notifications marked as read');
-                },
-              });
-            }
-          },
+          tabPress: handleNotificationTabPress,
         }}
       />
       <Tab.Screen

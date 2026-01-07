@@ -17,16 +17,22 @@ export const DrawerNavigator = () => {
         screenOptions={({ route, navigation }) => {
           // ARCHITECTURE FIX: Dynamic drawer gesture control based on nested stack depth
           // Drawer gesture should be disabled when:
-          // 1. Nested stack depth > 0 (detail screens)
-          // 2. Modal is open (checked via navigation state)
+          // 1. Tab stack içinde nested screen'lerde (index > 0)
+          // 2. Root stack'te detail screen'lerde (Post, Profile, MessageDetail, etc.)
           const state = navigation.getState();
           const currentRoute = state?.routes[state.index];
-          const nestedState = currentRoute?.state;
-          const isNested = nestedState && 'index' in nestedState && nestedState.index > 0;
+          const mainState = currentRoute?.state;
           
-          // Check if we're in a detail screen (Post, Profile, MessageDetail, etc.)
-          // These screens should disable drawer gesture to prevent conflict with back navigation
-          const isDetailScreen = nestedState && 'routes' in nestedState && nestedState.routes && nestedState.routes.length > 0;
+          // TabNavigator içindeyse, tab stack'in state'ini kontrol et
+          let isNestedInTabStack = false;
+          if (mainState && 'routes' in mainState && mainState.routes) {
+            const tabRoute = mainState.routes[mainState.index || 0];
+            const tabStackState = tabRoute?.state;
+            // Tab stack içinde nested screen'de miyiz? (index > 0)
+            if (tabStackState && 'index' in tabStackState && tabStackState.index !== undefined) {
+              isNestedInTabStack = tabStackState.index > 0;
+            }
+          }
           
           return {
             headerShown: false,
@@ -59,9 +65,10 @@ export const DrawerNavigator = () => {
             },
             drawerActiveTintColor: '#829905',
             drawerInactiveTintColor: isDark ? '#FFFFFF' : '#000000',
-            // ARCHITECTURE FIX: Disable drawer gesture on nested screens
+            // ARCHITECTURE FIX: Disable drawer gesture only on nested screens within tab stacks
             // This prevents drawer gesture from hijacking back navigation intent
-            swipeEnabled: !isNested && !isDetailScreen,
+            // Tab stack'lerin root screen'lerinde drawer gesture enable olmalı
+            swipeEnabled: !isNestedInTabStack,
             swipeEdgeWidth: 50,
           };
         }}

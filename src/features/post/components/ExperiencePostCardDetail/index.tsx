@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { PostCard as PostCardType } from '@/src/mock/profile/feed/types';
 import { Dimensions } from 'react-native';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '@/src/components/CardImageCarousel';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -108,7 +108,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                     <VStack flex={1}>
                         <Text
                             color={isDark ? '$textDark400' : '#C7C7C7'}
-                            fontSize={config.tokens.fontSizes['4xs'] as number}
+                            fontSize={8}
                             fontWeight="$semibold"
                         >
                             {data.user.action}
@@ -122,7 +122,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={config.tokens.fontSizes['3xs'] as number}
+                            fontSize={9}
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -194,7 +194,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                     >
                         <Text
                             color={isDark ? '$textDark50' : '#000'}
-                            fontSize={config.tokens.fontSizes['4xs'] as number}
+                            fontSize={8}
                             fontWeight="$semibold"
                         >
                             {tag}
@@ -215,7 +215,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                         />
                         <Text
                             color="#829905"
-                            fontSize={config.tokens.fontSizes['2xs'] as number}
+                            fontSize={10}
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

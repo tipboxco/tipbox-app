@@ -221,7 +221,7 @@ const BookMarksScreen = () => {
           py={0}
           showsVerticalScrollIndicator={false}
         >
-          {isLoading && (
+          {isLoading && !bookmarksData && (
             <Box py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
                 Bookmarks yükleniyor...

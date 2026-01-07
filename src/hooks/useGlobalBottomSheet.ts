@@ -1,5 +1,5 @@
 import { useContext, useMemo } from 'react';
-import { GlobalBottomSheetContext } from '@/src/providers/GlobalBottomSheetProvider';
+import { GlobalBottomSheetContext } from '@/src/components/GlobalBottomSheet/context'; // ARCHITECTURE FIX: Import from context.ts to break circular dependency
 import { GlobalBottomSheetContextType } from '@/src/components/GlobalBottomSheet/types';
 
 /**

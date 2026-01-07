@@ -1,13 +1,18 @@
-'use client';
+// ARCHITECTURE FIX: Removed 'use client' directive - not needed for React Native
+// This directive was causing StyledProvider errors
 import { createConfig } from '@gluestack-ui/themed';
 import { config as defaultConfig } from '@gluestack-ui/config';
+
+// ARCHITECTURE FIX: Safe token access - defaultConfig.tokens might be undefined
+const defaultTokens = defaultConfig?.tokens || {};
+const defaultColors = defaultTokens?.colors || {};
 
 export const config = createConfig({
   ...defaultConfig,
   tokens: {
-    ...defaultConfig.tokens,
+    ...defaultTokens,
     colors: {
-      ...defaultConfig.tokens.colors,
+      ...defaultColors,
       backgroundLight0: '#FFFFFF',
       backgroundLight50: '#F9FAFB',
       backgroundLight100: '#F3F4F6',
@@ -45,6 +50,7 @@ export const config = createConfig({
       primary600: '#6366F1',
     },
     space: {
+      ...(defaultTokens?.space || {}),
       px: '1px',
       '0': '0',
       '0.5': '2px',
@@ -62,11 +68,13 @@ export const config = createConfig({
       '24': '96px',
     },
     fonts: {
+      ...(defaultTokens?.fonts || {}),
       heading: 'System',
       body: 'System',
       mono: 'System',
     },
     fontSizes: {
+      ...(defaultTokens?.fontSizes || {}),
       '4xs': 8,
       '3xs': 9,
       '2xs': 10,
@@ -85,6 +93,7 @@ export const config = createConfig({
       '9xl': 128,
     },
     fontWeights: {
+      ...(defaultTokens?.fontWeights || {}),
       hairline: 100,
       thin: 200,
       light: 300,
@@ -96,6 +105,7 @@ export const config = createConfig({
       black: 900,
     },
     radii: {
+      ...(defaultTokens?.radii || {}),
       none: 0,
       xs: 2,
       sm: 4,
@@ -108,6 +118,7 @@ export const config = createConfig({
       'postcard': 5
     },
     shadows: {
+      ...((defaultTokens as any)?.shadows || {}),
       xs: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },

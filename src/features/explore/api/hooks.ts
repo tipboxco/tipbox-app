@@ -48,11 +48,14 @@ export const useHottest = (limit: number = 20, search?: string) => {
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
       return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].data.id : undefined);
     },
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
+    // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
+    // isFetchingNextPage değişiklikleri render tetiklemez
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };
 
@@ -69,8 +72,8 @@ export const useMarketplaceBanners = () => {
   return useQuery<MarketplaceBanner[], Error>({
     queryKey: exploreKeys.marketplaceBanners(),
     queryFn: getMarketplaceBanners,
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -105,11 +108,13 @@ export const useExploreEvents = (limit: number = 10, search?: string) => {
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
       return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].eventId : undefined);
     },
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
+    // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };
 
@@ -141,11 +146,13 @@ export const useNewBrands = (limit: number = 10, search?: string) => {
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
       return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].brandId : undefined);
     },
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
+    // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };
 
@@ -176,11 +183,13 @@ export const useNewProducts = (limit: number = 10) => {
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini kullan
       return lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].productId : undefined);
     },
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
+    // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };
 

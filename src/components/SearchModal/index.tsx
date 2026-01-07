@@ -37,7 +37,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.5; // %50
 const SWIPE_THRESHOLD = 100; // Kapatma için minimum kayma mesafesi
 
-type SearchFilter = 'users' | 'brands' | 'products';
+type SearchFilter = 'all' | 'users' | 'brands' | 'products';
 
 interface SearchModalProps {
   visible: boolean;
@@ -56,7 +56,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<SearchFilter>('users');
+  const [selectedFilter, setSelectedFilter] = useState<SearchFilter>('all');
   const inputRef = useRef<any>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [shouldRender, setShouldRender] = useState(false);
@@ -79,11 +79,26 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
         return ['brand'];
       case 'products':
         return ['product'];
+      case 'all':
       default:
         return ['user', 'brand', 'product'];
     }
   }, [selectedFilter]);
 
+  // Default veriler için (input boşken) - her zaman aktif
+  const {
+    data: defaultData,
+    isLoading: isDefaultLoading,
+  } = useSearch(
+    {
+      keyword: '', // Boş keyword ile default verileri getir
+      types: searchTypes,
+      limit: 10, // Default: 10'ar veri (API limit ile uyumlu)
+    },
+    debouncedQuery.length === 0 // Sadece input boşken aktif
+  );
+
+  // Arama sonuçları için (input dolu iken) - sadece query varsa aktif
   const {
     data: searchData,
     isLoading: isSearching,
@@ -92,10 +107,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     {
       keyword: debouncedQuery,
       types: searchTypes,
-      limit: 4, // Default: 4'er veri
+      limit: 10, // API limit ile uyumlu
     },
     debouncedQuery.length > 0 // Sadece query varsa aktif et
   );
+
+  // Input boşken default verileri, dolu iken arama sonuçlarını kullan
+  const displayData = debouncedQuery.length > 0 ? searchData : defaultData;
+  const isLoading = debouncedQuery.length > 0 ? isSearching : isDefaultLoading;
 
   // Debounce effect - thread safety için optimize edildi
   useEffect(() => {
@@ -143,54 +162,55 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     panY.value = 0;
   }, [handleClose]);
 
-  // Modal açılma/kapanma animasyonu
+  // PERFORMANCE FIX: Optimized modal animation with faster spring config and requestAnimationFrame
+  // Removed 50ms delay, optimized spring parameters for instant feel
   useEffect(() => {
     if (visible) {
       setShouldRender(true);
-      setIsAnimating(true); // Animasyon başladı - gesture handler'ı devre dışı bırak
-      // Modal açılıyor - yukarıdan aşağıya
-      // Önce değerleri reset et
+      setIsAnimating(true);
+      
+      // Reset values immediately
       translateY.value = -MODAL_HEIGHT;
       panY.value = 0;
       
-      // Kısa bir delay ile animasyonu başlat (render tamamlansın)
-      const timer = setTimeout(() => {
-        opacity.value = withTiming(1, { duration: 200 });
+      // PERFORMANCE FIX: Use requestAnimationFrame instead of setTimeout for instant start
+      // This ensures animation starts on next frame (16ms) instead of 50ms delay
+      const rafId = requestAnimationFrame(() => {
+        // FIX: Optimized spring config to prevent overshoot (aşağı inip yukarı çıkma sorunu)
+        // Higher damping (25) = less overshoot, balanced stiffness (200) = smooth but controlled
+        opacity.value = withTiming(1, { duration: 150 }); // Reduced from 200ms to 150ms
         translateY.value = withSpring(
           0,
           {
-            damping: 20,
-            stiffness: 90,
-            mass: 0.5,
+            damping: 25, // Increased from 15 to prevent overshoot
+            stiffness: 200, // Reduced from 300 for smoother, controlled animation
+            mass: 0.3, // Kept light for responsiveness
           },
           (finished) => {
             'worklet';
             if (finished) {
-              // Animasyon bitti - gesture handler'ı aktif et
               runOnJS(setIsAnimating)(false);
-              // Input'a focus et - JS thread'ine geç
               runOnJS(focusInput)();
             }
           }
         );
-      }, 50);
+      });
 
-      return () => clearTimeout(timer);
+      return () => cancelAnimationFrame(rafId);
     } else if (shouldRender) {
-      setIsAnimating(true); // Kapanma animasyonu başladı
-      // Modal kapanıyor - aşağıdan yukarıya
-      opacity.value = withTiming(0, { duration: 200 });
+      setIsAnimating(true);
+      // FIX: Consistent spring config for close animation (no overshoot)
+      opacity.value = withTiming(0, { duration: 150 }); // Reduced from 200ms
       translateY.value = withSpring(
         -MODAL_HEIGHT,
         {
-          damping: 20,
-          stiffness: 90,
-          mass: 0.5,
+          damping: 25, // Consistent with open animation to prevent overshoot
+          stiffness: 200,
+          mass: 0.3,
         },
         (finished) => {
           'worklet';
           if (finished) {
-            // JS thread'ine geç - sadece bir kez çağır
             runOnJS(closeModal)();
           }
         }
@@ -226,9 +246,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             translateY.value = withSpring(
               -MODAL_HEIGHT,
               {
-                damping: 20,
-                stiffness: 90,
-                mass: 0.5,
+                damping: 25, // Consistent with other animations
+                stiffness: 200,
+                mass: 0.3,
               },
               (finished) => {
                 'worklet';
@@ -238,12 +258,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 }
               }
             );
-            opacity.value = withTiming(0, { duration: 200 });
+            opacity.value = withTiming(0, { duration: 150 }); // Consistent duration
           } else {
-            // Geri dön
+            // FIX: Consistent spring config for gesture return (no overshoot)
             panY.value = withSpring(0, {
-              damping: 20,
-              stiffness: 90,
+              damping: 25,
+              stiffness: 200,
+              mass: 0.3,
             });
           }
         })
@@ -338,33 +359,50 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
   // Render search results
   const renderSearchResults = () => {
+    // Input boşken, eğer seçili filtreye ait default data varsa göster
+    // Aksi halde "Arama yapmak için yazmaya başlayın" mesajını göster
     if (debouncedQuery.length === 0) {
-      return (
-        <Box flex={1} justifyContent="center" alignItems="center" py="$20">
-          <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
-          <Text
-            mt="$4"
-            fontSize={16}
-            color={isDark ? '#8E8E93' : '#8E8E93'}
-            textAlign="center"
-          >
-            Arama yapmak için yazmaya başlayın
-          </Text>
-        </Box>
-      );
+      // Seçili filtreye göre default data kontrolü
+      const hasDefaultDataForFilter =
+        (selectedFilter === 'all' && displayData && (
+          (displayData.userData && displayData.userData.length > 0) ||
+          (displayData.brandData && displayData.brandData.length > 0) ||
+          (displayData.productData && displayData.productData.length > 0)
+        )) ||
+        (selectedFilter === 'users' && displayData?.userData && displayData.userData.length > 0) ||
+        (selectedFilter === 'brands' && displayData?.brandData && displayData.brandData.length > 0) ||
+        (selectedFilter === 'products' && displayData?.productData && displayData.productData.length > 0);
+
+      // Eğer default data yoksa ve loading değilse "Arama yapmak için yazmaya başlayın" göster
+      if (!hasDefaultDataForFilter && !isLoading) {
+        return (
+          <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+            <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
+            <Text
+              mt="$4"
+              fontSize="$sm"
+              color={isDark ? '#8E8E93' : '#8E8E93'}
+              textAlign="center"
+            >
+              Arama yapmak için yazmaya başlayın
+            </Text>
+          </Box>
+        );
+      }
+      // Eğer default data varsa, aşağıdaki render mantığı devam edecek
     }
 
-    if (isSearching) {
+    if (isLoading) {
       return (
         <Box flex={1} justifyContent="center" alignItems="center" py="$20">
           <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
           <Text
             mt="$4"
-            fontSize={14}
+            fontSize="$xs"
             color={isDark ? '#8E8E93' : '#8E8E93'}
             textAlign="center"
           >
-            Aranıyor...
+            {debouncedQuery.length > 0 ? 'Aranıyor...' : 'Yükleniyor...'}
           </Text>
         </Box>
       );
@@ -376,7 +414,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           <Feather name="alert-circle" size={48} color="#CE4A4A" />
           <Text
             mt="$4"
-            fontSize={14}
+            fontSize="$xs"
             color="#CE4A4A"
             textAlign="center"
             fontWeight="$semibold"
@@ -385,7 +423,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           </Text>
           <Text
             mt="$2"
-            fontSize={12}
+            fontSize="$2xs"
             color={isDark ? '#8E8E93' : '#8E8E93'}
             textAlign="center"
           >
@@ -395,19 +433,20 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       );
     }
 
-    // Results render
+    // Results render - displayData kullan (default veya arama sonuçları)
     const hasResults =
-      (searchData?.userData && searchData.userData.length > 0) ||
-      (searchData?.brandData && searchData.brandData.length > 0) ||
-      (searchData?.productData && searchData.productData.length > 0);
+      (displayData?.userData && displayData.userData.length > 0) ||
+      (displayData?.brandData && displayData.brandData.length > 0) ||
+      (displayData?.productData && displayData.productData.length > 0);
 
-    if (!hasResults) {
+    // Sadece arama yapıldığında (input dolu) ve sonuç yoksa "Sonuç bulunamadı" göster
+    if (!hasResults && debouncedQuery.length > 0) {
       return (
         <Box flex={1} justifyContent="center" alignItems="center" py="$20">
           <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
           <Text
             mt="$4"
-            fontSize={16}
+            fontSize="$sm"
             color={isDark ? '#8E8E93' : '#8E8E93'}
             textAlign="center"
             fontWeight="$medium"
@@ -416,7 +455,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           </Text>
           <Text
             mt="$2"
-            fontSize={14}
+            fontSize="$xs"
             color={isDark ? '#8E8E93' : '#8E8E93'}
             textAlign="center"
           >
@@ -427,12 +466,192 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     }
 
     return (
-      <VStack space="lg" flex={1}>
-        {/* Users Results */}
-        {selectedFilter === 'users' && searchData?.userData && searchData.userData.length > 0 && (
-          <VStack space="md" mt="$2">
+      <VStack space="sm" flex={1}>
+        {/* All Results - Tüm sonuçları göster */}
+        {selectedFilter === 'all' && (
+          <>
+            {/* Users Results */}
+            {displayData?.userData && displayData.userData.length > 0 && (
+              <VStack space="xs" mt="$1">
+                <Text
+                  fontSize="$2xs"
+                  fontWeight="$semibold"
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  px="$4"
+                >
+                  User
+                </Text>
+                <VStack>
+                  {displayData.userData.map((user: any) => (
+                    <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
+                      <HStack
+                        alignItems="center"
+                        space="sm"
+                        py="$2"
+                        px="$4"
+                      >
+                        {/* Avatar - Circular with red border */}
+                        <Box
+                          width={56}
+                          height={56}
+                          borderRadius={100}
+                          borderWidth={2}
+                          borderColor="#CE4A4A"
+                          alignItems="center"
+                          justifyContent="center"
+                          overflow="hidden"
+                          bg={isDark ? '#1C1C1E' : '#F2F2F7'}
+                        >
+                          <Image
+                            source={toImageSource(user.avatar) || require('@/assets/avatar/ozan.png')}
+                            alt={user.name}
+                            width={52}
+                            height={52}
+                            resizeMode="cover"
+                          />
+                        </Box>
+
+                        {/* User Info */}
+                        <VStack flex={1} space="xs">
+                          <Text
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize="$xs"
+                            fontWeight="$bold"
+                            numberOfLines={1}
+                          >
+                            {user.name}
+                          </Text>
+                          {user.cosmetic && (
+                            <VStack space="xs">
+                              {/* İlk satır */}
+                              <Text
+                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                fontSize="$2xs"
+                                numberOfLines={1}
+                                lineHeight={16}
+                              >
+                                {user.cosmetic.split(' - ')[0] || user.cosmetic}
+                              </Text>
+                              {/* İkinci satır - eğer " - " ile ayrılmışsa */}
+                              {user.cosmetic.includes(' - ') && user.cosmetic.split(' - ').length > 1 && (
+                                <Text
+                                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                  fontSize="$2xs"
+                                  numberOfLines={1}
+                                  lineHeight={16}
+                                >
+                                  {user.cosmetic.split(' - ').slice(1).join(' - ')}
+                                </Text>
+                              )}
+                            </VStack>
+                          )}
+                        </VStack>
+                      </HStack>
+                    </Pressable>
+                  ))}
+                </VStack>
+              </VStack>
+            )}
+
+            {/* Brands Results */}
+            {displayData?.brandData && displayData.brandData.length > 0 && (
+              <VStack space="xs" mt="$1">
+                <Text
+                  fontSize="$2xs"
+                  fontWeight="$semibold"
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  px="$4"
+                >
+                  Brand
+                </Text>
+                <VStack>
+                  {displayData.brandData.map((brand: any) => (
+                    <Pressable key={brand.id} onPress={() => handleBrandPress(brand.id)}>
+                      <HStack
+                        alignItems="center"
+                        space="sm"
+                        py="$2"
+                        px="$4"
+                      >
+                        {/* Brand Logo */}
+                        <Box width={54} height={54} borderRadius={8} overflow="hidden">
+                          <Image
+                            source={
+                              toImageSource(brand.logo) || require('@/assets/inventory/product_01.png')
+                            }
+                            alt={brand.name}
+                            width={54}
+                            height={54}
+                            resizeMode="contain"
+                          />
+                        </Box>
+
+                        {/* Brand Info */}
+                        <VStack flex={1} space="xs">
+                          <Text
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize="$sm"
+                            fontWeight="$bold"
+                            numberOfLines={1}
+                          >
+                            {brand.name}
+                          </Text>
+                          {brand.category && (
+                            <Text
+                              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                              fontSize="$xs"
+                              numberOfLines={1}
+                            >
+                              {brand.category}
+                            </Text>
+                          )}
+                        </VStack>
+                      </HStack>
+                    </Pressable>
+                  ))}
+                </VStack>
+              </VStack>
+            )}
+
+            {/* Products Results */}
+            {displayData?.productData && displayData.productData.length > 0 && (
+              <VStack space="xs" mt="$1">
+                <Text
+                  fontSize="$2xs"
+                  fontWeight="$semibold"
+                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                  px="$4"
+                >
+                  Product
+                </Text>
+                <VStack>
+                  {displayData.productData.map((product: any) => (
+                    <Box
+                      key={product.id}
+                      py="$2"
+                      px="$4"
+                    >
+                      <ProductInfoCard
+                        size="big"
+                        type={ProductInfoType.PRODUCT}
+                        image={toImageSource(product.image) || require('@/assets/inventory/product_01.png')}
+                        title={product.name}
+                        subName={product.model || product.specs || ''}
+                        onPress={() => handleProductPress(product.id)}
+                      />
+                    </Box>
+                  ))}
+                </VStack>
+              </VStack>
+            )}
+          </>
+        )}
+
+        {/* Users Results - Sadece users filtresi seçiliyse */}
+        {selectedFilter === 'users' && displayData?.userData && displayData.userData.length > 0 && (
+          <VStack >
             <Text
-              fontSize={12}
+              fontSize="$xs"
               fontWeight="$semibold"
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
               px="$4"
@@ -440,12 +659,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
               User
             </Text>
             <VStack>
-              {searchData.userData.map((user: any) => (
+              {displayData.userData.map((user: any) => (
                 <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
                   <HStack
                     alignItems="center"
                     space="md"
-                    py="$4"
+                    py="$2"
                     px="$4"
                   >
                     {/* Avatar - Circular with red border */}
@@ -473,7 +692,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     <VStack flex={1} space="xs">
                       <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={15}
+                        fontSize="$sm"
                         fontWeight="$bold"
                         numberOfLines={1}
                       >
@@ -484,7 +703,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                           {/* İlk satır */}
                           <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            fontSize={13}
+                            fontSize="$xs"
                             numberOfLines={1}
                             lineHeight={18}
                           >
@@ -494,7 +713,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                           {user.cosmetic.includes(' - ') && user.cosmetic.split(' - ').length > 1 && (
                             <Text
                               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                              fontSize={13}
+                              fontSize="$xs"
                               numberOfLines={1}
                               lineHeight={18}
                             >
@@ -511,11 +730,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           </VStack>
         )}
 
-        {/* Brands Results */}
-        {selectedFilter === 'brands' && searchData?.brandData && searchData.brandData.length > 0 && (
-          <VStack space="md" mt="$2">
+        {/* Brands Results - Sadece brands filtresi seçiliyse */}
+        {selectedFilter === 'brands' && displayData?.brandData && displayData.brandData.length > 0 && (
+          <VStack space="xs" mt="$1">
             <Text
-              fontSize={12}
+              fontSize="$xs"
               fontWeight="$semibold"
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
               px="$4"
@@ -523,12 +742,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
               Brand
             </Text>
             <VStack>
-              {searchData.brandData.map((brand: any) => (
+              {displayData.brandData.map((brand: any) => (
                 <Pressable key={brand.id} onPress={() => handleBrandPress(brand.id)}>
-                  <HStack
+                    <HStack
                     alignItems="center"
                     space="md"
-                    py="$4"
+                    py="$2"
                     px="$4"
                   >
                     {/* Brand Logo */}
@@ -548,7 +767,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     <VStack flex={1} space="xs">
                       <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={14}
+                        fontSize="$xs"
                         fontWeight="$bold"
                         numberOfLines={1}
                       >
@@ -557,7 +776,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                       {brand.category && (
                         <Text
                           color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                          fontSize={13}
+                          fontSize="$2xs"
                           numberOfLines={1}
                         >
                           {brand.category}
@@ -571,13 +790,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           </VStack>
         )}
 
-        {/* Products Results */}
+        {/* Products Results - Sadece products filtresi seçiliyse */}
         {selectedFilter === 'products' &&
-          searchData?.productData &&
-          searchData.productData.length > 0 && (
-            <VStack space="md" mt="$2">
+          displayData?.productData &&
+          displayData.productData.length > 0 && (
+            <VStack space="xs" mt="$1">
               <Text
-                fontSize={12}
+                fontSize="$xs"
                 fontWeight="$semibold"
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
                 px="$4"
@@ -585,10 +804,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 Product
               </Text>
               <VStack>
-                {searchData.productData.map((product: any) => (
+                {displayData.productData.map((product: any) => (
                   <Box
                     key={product.id}
-                    py="$4"
+                    py="$2"
                     px="$4"
                   >
                     <ProductInfoCard
@@ -664,7 +883,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           >
             <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
               {/* Header */}
-              <VStack space="md" px="$4" pt={insets.top + 8} pb="$2">
+              <VStack space="sm" px="$4" pt={insets.top + 8} pb="$2">
                   {/* Search Bar */}
                   <HStack
                     alignItems="center"
@@ -681,7 +900,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                         placeholder="Search..."
                         placeholderTextColor={isDark ? '#8E8E93' : '#8E8E93'}
                         color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={15}
+                        fontSize="$xs"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         returnKeyType="search"
@@ -715,7 +934,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                         >
                           <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={14}
+                            fontSize="$xs"
                             fontWeight={selectedFilter === filter.id ? '$semibold' : '$normal'}
                           >
                             {filter.label}

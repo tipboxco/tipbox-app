@@ -191,6 +191,7 @@ export const FeedScreen = () => {
   };
 
   const handleExpertPress = () => {
+    // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
     openBottomSheet(
       <>
         {/* Header */}
@@ -213,8 +214,8 @@ export const FeedScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: true,
+        enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
       }
     );
@@ -772,6 +773,9 @@ export const FeedScreen = () => {
               maintainVisibleContentPosition={{
                 minIndexForVisible: 0,
               }}
+              // SCROLL FIX: Android'de nested scroll'ları (yatay carousel'ler) dikey scroll'u engellemeyecek şekilde ayarla
+              // Bu prop, iç içe scroll view'ların (yatay carousel'ler) dikey scroll'u engellemesini önler
+              nestedScrollEnabled={true}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}

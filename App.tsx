@@ -66,41 +66,41 @@ const AppInner = () => {
     }
   }, [navigationBarStyle]);
 
-  // PERFORMANCE FIX: Hide splash screen after auth initialization
-  // This ensures smooth transition from splash to app content
+  // PERFORMANCE FIX: Hide splash screen immediately after auth initialization
+  // Removed 100ms delay - UI is already ready, delay was causing header render delay
   useEffect(() => {
     if (isAuthReady) {
-      // Small delay to ensure smooth transition
       const hideSplash = async () => {
         try {
+          // ARCHITECTURE FIX: Hide splash immediately - no delay needed
+          // Header and screens are ready to render, delay was causing visible lag
           await SplashScreen.hideAsync();
         } catch (error) {
           console.warn('[App] Failed to hide splash screen:', error);
         }
       };
       
-      // Delay to ensure UI is ready
-      const timeout = setTimeout(hideSplash, 100);
-      return () => clearTimeout(timeout);
+      // Hide immediately - no delay
+      hideSplash();
     }
   }, [isAuthReady]);
 
   return (
     <AppProviders>
-      <StatusBarComponent isDark={isDark} />
-      <Navigation />
+      <ErrorBoundary>
+        <StatusBarComponent isDark={isDark} />
+        <Navigation />
+      </ErrorBoundary>
     </AppProviders>
   );
 };
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <QueryProvider>
-        <AuthProvider>
-          <AppInner />
-        </AuthProvider>
-      </QueryProvider>
-    </ErrorBoundary>
+    <QueryProvider>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
+    </QueryProvider>
   );
 }

@@ -87,7 +87,7 @@ interface FilterBarProps {
 export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const { openBottomSheet, closeBottomSheet, updateContent, isOpen } = useGlobalBottomSheet();
+  const { openBottomSheet, closeBottomSheet, isOpen } = useGlobalBottomSheet();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   
@@ -499,31 +499,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     );
   }, [isDark, filters.sort, insets.bottom, tabBarHeight, handleSortSelect, closeBottomSheet]);
 
-  // Update content when bottom sheet is open
-  useEffect(() => {
-    if (isOpen && openFilterRef.current) {
-      let contentToUpdate: React.ReactNode | null = null;
-      
-      switch (openFilterRef.current) {
-        case 'interest':
-          contentToUpdate = interestsContent;
-          break;
-        case 'tag':
-          contentToUpdate = tagsContent;
-          break;
-        case 'category':
-          contentToUpdate = categoryContent;
-          break;
-        case 'sort':
-          contentToUpdate = sortContent;
-          break;
-      }
-      
-      if (contentToUpdate) {
-        updateContent(contentToUpdate);
-      }
-    }
-  }, [isOpen, interestsContent, tagsContent, categoryContent, sortContent, updateContent]);
+  // PERFORMANCE FIX: Removed useEffect for content updates
+  // Content is already passed directly to openBottomSheet, no need for separate update
+  // This eliminates an extra render cycle and reduces delay
 
   // Render filter button
   const renderFilterButton = (
@@ -536,15 +514,32 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     const isActive = count > 0;
 
     const handlePress = () => {
+      // FLICKER FIX: If same filter is already open, just close it (toggle behavior)
+      // This prevents flicker when clicking the same filter button again
+      if (isOpen && openFilterRef.current === filterId) {
+        openFilterRef.current = null;
+        closeBottomSheet();
+        return;
+      }
+      
       openFilterRef.current = filterId;
+      // ARCHITECTURE FIX: Debug log to verify content is passed correctly
+      console.log('[FilterBar] Opening filter:', filterId, {
+        hasContent: !!content,
+        contentType: typeof content,
+        isReactElement: React.isValidElement(content),
+      });
+      
+      // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
+      // Dynamic sizing adapts to content height automatically
+      // Also disable animateOnMount for instant opening (animation handled by @gorhom/bottom-sheet)
       openBottomSheet(content, {
         enablePanDownToClose: true,
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: true,
-        snapPoints: ['50%', '75%'],
+        enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
       });
     };

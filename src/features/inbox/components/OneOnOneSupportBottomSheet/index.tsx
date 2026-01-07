@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     VStack,
     HStack,
@@ -22,7 +22,8 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ScrollView } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { Keyboard, Platform } from 'react-native';
 import OneOnOneSupportRequestModal from '../OneOnOneSupportRequestModal';
 
 interface OneOnOneSupportBottomSheetProps {
@@ -46,6 +47,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
     const [message, setMessage] = useState('');
     const [amount, setAmount] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
     // Kullanıcının mevcut bakiyesi (normalde prop veya store'dan gelecek)
     const currentBalance = 500;
@@ -109,11 +111,34 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
         return supportType.length > 0 && message.trim().length > 0 && numericAmount > 0;
     };
 
+    // Klavye durumunu takip et
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            () => {
+                setIsKeyboardVisible(true);
+            }
+        );
+
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                setIsKeyboardVisible(false);
+            }
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
+
     return (
-        <ScrollView
+        <BottomSheetScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: isKeyboardVisible ? 120 : 20 }}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
         >
             <VStack flex={1}>
                 {/* Başlık */}
@@ -452,7 +477,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                 amount={parseFloat(amount) || 0}
                 currentBalance={currentBalance}
             />
-        </ScrollView>
+        </BottomSheetScrollView>
     );
 };
 

@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import {
     Box,
     VStack,
@@ -24,10 +26,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useAppStore } from '@/src/store/appStore';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
-const MessagesScreen: React.FC = () => {
+interface MessagesScreenProps {
+    onDrawerOpen?: () => void;
+    isActiveTab?: boolean;
+}
+
+const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveTab = true }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [activeCategory, setActiveCategory] = useState<string>('1');
@@ -39,6 +47,7 @@ const MessagesScreen: React.FC = () => {
     const queryClient = useQueryClient();
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();
+    const { closeBottomSheet } = useGlobalBottomSheet();
     
     // Typing state: Hangi thread'de hangi kullanıcı typing yapıyor?
     // Format: { [threadId]: { userId: string, userName?: string } }
@@ -217,13 +226,17 @@ const MessagesScreen: React.FC = () => {
         };
     }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping]);
 
-    // Ekran focus olduğunda mesajları refetch et (MessageDetail'den geri dönüldüğünde)
+    // PERFORMANCE FIX: useFocusEffect kaldırıldı
+    // Tab'a geçildiğinde otomatik refetch yapılmıyor
+    // Mesajlar socket event'leri ile otomatik güncelleniyor (handleNewMessage, handleThreadRead)
+    // Kullanıcı manuel olarak pull to refresh yapabilir
+    
+    // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
     useFocusEffect(
         useCallback(() => {
-            console.log('[MessagesScreen] 🔄 Screen focused, refetching messages...');
-            // Query'yi refetch et (thread okundu durumu güncellenmiş olabilir)
-            queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
-        }, [queryClient])
+            // Screen focus olduğunda bottom sheet'i kapat
+            closeBottomSheet();
+        }, [closeBottomSheet])
     );
     
     const handleMessagePress = (messageId: string) => {
@@ -301,8 +314,43 @@ const MessagesScreen: React.FC = () => {
         return filtered;
     };
 
+    // Drawer açma gesture'ı - sadece sol kenardan başlayan yatay gesture'lar için
+    const drawerGesture = useMemo(
+        () =>
+            Gesture.Pan()
+                .activeOffsetX([10, Number.MAX_SAFE_INTEGER]) // Sadece sağa doğru gesture'ları yakala
+                .failOffsetX([-10, -1]) // Sola doğru gesture'ları ignore et (PagerView swipe için)
+                .failOffsetY([-15, 15]) // Dikey gesture'ları ignore et (FlatList scroll için)
+                .onEnd((event) => {
+                    'worklet';
+                    // Sağa doğru yeterince çekildiyse veya hızlı swipe yapıldıysa drawer'ı aç
+                    // Threshold'u düşürdük (15px) - daha kolay açılması için
+                    if (event.translationX > 15 || event.velocityX > 150) {
+                        if (onDrawerOpen && isActiveTab) {
+                            runOnJS(onDrawerOpen)();
+                        }
+                    }
+                })
+                .enabled(isActiveTab && !!onDrawerOpen), // Sadece aktif tab'da ve callback varsa aktif
+        [isActiveTab, onDrawerOpen]
+    );
+
     return (
         <VStack flex={1} space="md">
+            {/* Sol kenardan drawer açma gesture alanı - PagerView swipe'ını engellememek için küçük alan */}
+            {isActiveTab && onDrawerOpen && (
+                <GestureDetector gesture={drawerGesture}>
+                    <Box
+                        position="absolute"
+                        left={0}
+                        top={0}
+                        bottom={0}
+                        width={40}
+                        zIndex={10}
+                        pointerEvents="box-only"
+                    />
+                </GestureDetector>
+            )}
             {/* Search + Filters */}
             <VStack px="$4" space="md">
                 {/* Search Bar */}

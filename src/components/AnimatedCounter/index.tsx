@@ -6,7 +6,9 @@ import Animated, {
   withTiming,
   withSpring,
 } from 'react-native-reanimated';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+
+// ARCHITECTURE FIX: Removed config import to prevent StyledProvider errors
+// Using hardcoded color mapping instead of config.tokens
 
 interface AnimatedCounterProps {
   value: number;
@@ -14,6 +16,48 @@ interface AnimatedCounterProps {
   fontSize?: string | number;
   ml?: number;
 }
+
+// Color token mapping - hardcoded to avoid StyledProvider dependency
+const colorTokenMap: Record<string, string> = {
+  // Light mode colors
+  backgroundLight0: '#FFFFFF',
+  backgroundLight50: '#F9FAFB',
+  backgroundLight100: '#F3F4F6',
+  backgroundLight200: '#E5E7EB',
+  textLight50: '#F9FAFB',
+  textLight100: '#F3F4F6',
+  textLight200: '#E5E7EB',
+  textLight300: '#D1D5DB',
+  textLight400: '#9CA3AF',
+  textLight500: '#6B7280',
+  textLight600: '#4B5563',
+  textLight700: '#374151',
+  textLight800: '#1F2937',
+  textLight900: '#111827',
+  textLight950: '#030712',
+  // Dark mode colors
+  backgroundDark0: '#0F172A',
+  backgroundDark50: '#1E293B',
+  backgroundDark100: '#334155',
+  backgroundDark200: '#475569',
+  backgroundDark800: '#1E293B',
+  backgroundDark900: '#0F172A',
+  backgroundDark950: '#020617',
+  textDark50: '#F8FAFC',
+  textDark100: '#F1F5F9',
+  textDark200: '#E2E8F0',
+  textDark300: '#CBD5E1',
+  textDark400: '#94A3B8',
+  textDark500: '#64748B',
+  textDark600: '#475569',
+  textDark700: '#334155',
+  textDark800: '#1E293B',
+  textDark900: '#0F172A',
+  textDark950: '#020617',
+  // Primary colors
+  primary500: '#818CF8',
+  primary600: '#6366F1',
+};
 
 // Token'ı gerçek renk değerine çevir
 const resolveColorToken = (colorToken: string | undefined): string | undefined => {
@@ -27,7 +71,7 @@ const resolveColorToken = (colorToken: string | undefined): string | undefined =
   // Token ise (örn: $textDark50) gerçek renk değerini al
   if (colorToken.startsWith('$')) {
     const tokenName = colorToken.substring(1); // $ işaretini kaldır
-    const colorValue = config.tokens.colors[tokenName as keyof typeof config.tokens.colors];
+    const colorValue = colorTokenMap[tokenName];
     return colorValue || colorToken; // Token bulunamazsa orijinal değeri döndür
   }
   

@@ -8,7 +8,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import { useUpdatePostForm } from '../hooks/useUpdatePostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
@@ -363,7 +363,7 @@ export const CreateUpdatePostScreen = () => {
                       >
                         <Text
                           color={isDark ? '$textDark50' : '#000'}
-                          fontSize={config.tokens.fontSizes['4xs'] as number}
+                          fontSize={8}
                           fontWeight="$semibold"
                         >
                           {tag}

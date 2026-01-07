@@ -38,8 +38,8 @@ export const useWallets = () => {
   return useQuery<Wallet[], Error>({
     queryKey: walletKeys.wallets(),
     queryFn: () => getWallets(),
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 30 * 60 * 1000, // 30 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -56,8 +56,8 @@ export const useActiveWallet = () => {
   return useQuery<Wallet, Error>({
     queryKey: walletKeys.active(),
     queryFn: () => getActiveWallet(),
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 30 * 60 * 1000, // 30 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -74,8 +74,8 @@ export const useWalletBalance = () => {
   return useQuery<WalletBalance, Error>({
     queryKey: walletKeys.balance(),
     queryFn: () => getWalletBalance(),
-    staleTime: 30 * 1000, // 30 saniye - balance sık değişebilir
-    gcTime: 5 * 60 * 1000, // 5 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -97,8 +97,8 @@ export const useWalletTransactions = (
   return useQuery<TransactionsResponse, Error>({
     queryKey: walletKeys.transactions(cursor, limit),
     queryFn: () => getWalletTransactions(cursor, limit),
-    staleTime: 1 * 60 * 1000, // 1 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,

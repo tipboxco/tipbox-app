@@ -2,7 +2,7 @@ import React, { memo, useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { navigationService } from '@/src/services/NavigationService';
@@ -116,7 +116,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
                     {toImageSource(data.user.avatar) && (
                         <Image
@@ -138,7 +138,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={config.tokens.fontSizes['3xs'] as number}
+                            fontSize={9}
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -205,7 +205,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                 >
                     <Feather name="info" size={12} color={'#fff'} />
                     <Text
-                        fontSize={config.tokens.fontSizes['4xs'] as number}
+                        fontSize={8}
                         fontWeight="$semibold"
                         ml={5}
                         color={'#fff'}
@@ -222,7 +222,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                     <Text
                         mr={4}
                         color={isDark ? '$textDark400' : '#666'}
-                        fontSize={config.tokens.fontSizes['2xs'] as number}
+                        fontSize={10}
                     >
                         {data.tag}
                     </Text>
@@ -244,7 +244,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                 <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize={config.tokens.fontSizes['2xs'] as number}
+                        fontSize={10}
                         numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
                     >
                         {data.content}
@@ -264,7 +264,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                         />
                         <Text
                             color="#829905"
-                            fontSize={config.tokens.fontSizes['2xs'] as number}
+                            fontSize={10}
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}
@@ -296,8 +296,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                 borderRightWidth={1}
                 borderLeftWidth={1}
                 borderBottomWidth={1}
-                borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-                borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
+                borderBottomRightRadius={5}
+                borderBottomLeftRadius={5}
                 borderColor="#E9E9E9"
                 justifyContent="space-between"
             >

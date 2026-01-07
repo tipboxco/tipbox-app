@@ -73,8 +73,8 @@ export const useFeed = (
       return lastPage.pagination.cursor || undefined;
     },
     // List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
-    staleTime: 3 * 60 * 1000,  // 3 dakika - liste scroll'unda anında göster
-    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Liste ekranlarında refetch yapma
     retry: (failureCount, error: any) => {
@@ -146,8 +146,8 @@ export const useFeedFiltered = (
       return lastPage.pagination.cursor || undefined;
     },
     // List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
-    staleTime: 3 * 60 * 1000,  // 3 dakika - liste scroll'unda anında göster
-    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Liste ekranlarında refetch yapma
     retry: (failureCount, error: any) => {

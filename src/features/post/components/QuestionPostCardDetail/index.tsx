@@ -3,7 +3,7 @@ import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/theme
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { QuestionPost } from '@/src/mock/profile/questions/types';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '@/src/components/CardImageCarousel';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -104,7 +104,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={config.tokens.fontSizes['3xs'] as number}
+                            fontSize={9}
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -161,7 +161,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                 >
                     <Feather name="help-circle" size={12} color={'#fff'} />
                     <Text
-                        fontSize={config.tokens.fontSizes['4xs'] as number}
+                        fontSize={8}
                         fontWeight="$semibold"
                         ml={5}
                         color={'#fff'}
@@ -185,7 +185,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                     >
                         <Feather name="send" size={12} color="#fff" />
                         <Text
-                            fontSize={config.tokens.fontSizes['4xs'] as number}
+                            fontSize={8}
                             fontWeight="$semibold"
                             ml={5}
                             color="#fff"
@@ -200,7 +200,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
             <VStack px={12} pb={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={config.tokens.fontSizes['2xs'] as number}
+                    fontSize={10}
                 >
                     {data.content}
                 </Text>
@@ -218,7 +218,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         />
                         <Text
                             color="#829905"
-                            fontSize={config.tokens.fontSizes['2xs'] as number}
+                            fontSize={10}
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

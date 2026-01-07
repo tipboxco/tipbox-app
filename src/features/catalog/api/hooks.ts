@@ -249,8 +249,8 @@ export const useBrandCatalog = (brandId: string | undefined) => {
       return getBrandCatalog(brandId);
     },
     enabled: !!brandId,
-    staleTime: 5 * 60 * 1000, // 5 dakika - isJoined gibi kullanıcıya özel bilgiler var
-    gcTime: 30 * 60 * 1000, // 30 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
     retry: 3, // Dokümana göre retry mekanizması
@@ -287,10 +287,11 @@ export const useBrandFeed = (brandId: string | undefined, limit: number = 20) =>
       return lastPage.pagination?.cursor;
     },
     enabled: !!brandId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -324,10 +325,11 @@ export const useBrandSurveys = (brandId: string | undefined, limit: number = 20)
       return lastPage.pagination?.cursor;
     },
     enabled: !!brandId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -361,10 +363,11 @@ export const useBrandTrends = (brandId: string | undefined, limit: number = 5) =
       return lastPage.pagination?.cursor;
     },
     enabled: !!brandId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -398,10 +401,11 @@ export const useBrandProductBook = (brandId: string | undefined, limit: number =
       return lastPage.pagination?.cursor;
     },
     enabled: !!brandId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -435,10 +439,11 @@ export const useBrandEvents = (brandId: string | undefined, limit: number = 20) 
       return lastPage.pagination?.cursor;
     },
     enabled: !!brandId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -463,8 +468,8 @@ export const useProductDetail = (productId: string | undefined) => {
       return getProductDetail(productId);
     },
     enabled: !!productId,
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 30 * 60 * 1000, // 30 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -505,10 +510,11 @@ export const useProductPosts = (
       return lastPage.pagination?.cursor;
     },
     enabled: !!productId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -545,10 +551,11 @@ export const useProductNews = (
       return lastPage.pagination?.cursor;
     },
     enabled: !!productId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -573,8 +580,8 @@ export const useNewsDetail = (newsId: string | undefined) => {
       return getNewsDetail(newsId);
     },
     enabled: !!newsId,
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 30 * 60 * 1000, // 30 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -601,8 +608,8 @@ export const useBrandHistory = (brandId: string | undefined) => {
       return getBrandHistory(brandId);
     },
     enabled: !!brandId,
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 30 * 60 * 1000, // 30 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -629,8 +636,8 @@ export const useBrandStats = (brandId: string | undefined) => {
       return getBrandStats(brandId);
     },
     enabled: !!brandId,
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 30 * 60 * 1000, // 30 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,

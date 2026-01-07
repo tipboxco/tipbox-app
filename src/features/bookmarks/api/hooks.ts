@@ -37,10 +37,11 @@ export const useUserBookmarks = () => {
       return getUserBookmarks(userId);
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok - her seferinde fresh data
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
-    refetchOnWindowFocus: true, // Focus olduğunda refetch et
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -80,10 +81,11 @@ export const useUserBookmarksWithFallback = () => {
       }
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok - her seferinde fresh data
-    gcTime: 0, // Cache yok
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch et
-    refetchOnWindowFocus: true, // Focus olduğunda refetch et
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -103,9 +105,11 @@ export const useUserBookmarksNew = (limit: number = 50) => {
   return useQuery<Bookmark[], Error>({
     queryKey: interactionKeys.bookmarks(),
     queryFn: () => getUserBookmarksNew(limit),
-    staleTime: 2 * 60 * 1000, // 2 dakika
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };

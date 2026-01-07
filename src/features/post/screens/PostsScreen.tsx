@@ -304,7 +304,7 @@ export const PostsScreen = () => {
         </Box>
 
         {/* Feed Items */}
-        {isLoading && feedItems.length === 0 ? (
+        {isLoading && !data?.pages?.[0] ? (
           <FeedSkeleton count={5} />
         ) : error ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4">

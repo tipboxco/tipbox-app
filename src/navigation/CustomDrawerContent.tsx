@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -9,11 +9,12 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
-import { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { DrawerContentComponentProps, useDrawerStatus } from '@react-navigation/drawer';
 import { ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -44,11 +45,28 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { colorMode } = useColorMode();
   const navigation = useNavigation<any>();
   const isDark = colorMode === 'dark';
-  const logout = useAppStore(state => state.logout);
-  const user = useAppStore(state => state.user);
-  const updateUser = useAppStore(state => state.updateUser);
+  
+  // PERFORMANCE FIX: Zustand selector'larını shallow ile memoize et
+  const { logout, user, updateUser } = useAppStore(
+    useShallow((state) => ({
+      logout: state.logout,
+      user: state.user,
+      updateUser: state.updateUser,
+    }))
+  );
+  
   const insets = useSafeAreaInsets();
   const bottomPadding = useBottomOffset({ extraPadding: 16 });
+  
+  // PERFORMANCE FIX: Drawer durumunu ref ile sakla - handler'ların dependency'sinden çıkar
+  // useDrawerStatus her frame'de değişebilir, bu yüzden ref ile saklayıp handler'larda runtime'da kontrol ediyoruz
+  const drawerStatus = useDrawerStatus();
+  const drawerStatusRef = useRef(drawerStatus);
+  
+  // Drawer status'ü ref'te güncelle (her render'da)
+  useEffect(() => {
+    drawerStatusRef.current = drawerStatus;
+  }, [drawerStatus]);
   
   // Store'daki user değişikliğini takip et (sonsuz döngüyü önlemek için)
   const previousUserRef = useRef<{ id?: string; fullName?: string; avatar?: string } | null>(null);
@@ -202,85 +220,163 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProfile?.name, userProfile?.avatar, user?.id]);
   
+  // PERFORMANCE FIX: Computed değerleri useMemo ile memoize et
   // Avatar source - profile'dan gelen avatar URL'i veya store'dan veya default avatar
-  const avatarSource =
+  const avatarSource = useMemo(() => 
     toImageSource(userProfile?.avatar) ||
     toImageSource(user?.avatar || null) ||
-    require('@/assets/avatar/ozan.png');
+    require('@/assets/avatar/ozan.png'),
+    [userProfile?.avatar, user?.avatar]
+  );
   
   // Kullanıcı adı - profile'dan gelen name veya store'dan gelen fullName veya email
-  const displayName = userProfile?.name || user?.fullName || user?.email || 'Kullanıcı';
+  const displayName = useMemo(() => 
+    userProfile?.name || user?.fullName || user?.email || 'Kullanıcı',
+    [userProfile?.name, user?.fullName, user?.email]
+  );
   
   // Tagler (titles) - profile'dan gelen titles
-  const tags = userProfile?.titles || [];
+  const tags = useMemo(() => userProfile?.titles || [], [userProfile?.titles]);
   
   // Stats - profile'dan gelen stats
-  const stats = userProfile?.stats || { posts: 0, trust: 0, truster: 0 };
+  const stats = useMemo(() => 
+    userProfile?.stats || { posts: 0, trust: 0, truster: 0 },
+    [userProfile?.stats]
+  );
 
-  const MENU_ITEMS: MenuItem[] = [
+  // PERFORMANCE FIX: Navigation handler'larını useCallback ile memoize et
+  // drawerStatusRef kullanarak handler'ları sabit tutuyoruz (dependency'den çıkardık)
+  const handleNavigateToProfile = useCallback(() => {
+    // Drawer durumunu runtime'da ref'ten kontrol et
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('Profile');
+  }, [props.navigation, navigation]);
+
+  const handleNavigateToWallet = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('Wallet');
+  }, [props.navigation, navigation]);
+
+  const handleNavigateToBookmarks = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('Bookmarks');
+  }, [props.navigation, navigation]);
+
+  const handleNavigateToMarketplace = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('Marketplace');
+  }, [props.navigation, navigation]);
+
+  const handleNavigateToSettings = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('Settings');
+  }, [props.navigation, navigation]);
+
+  const handleNavigateToMoreSchoise = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('MoreSchoise');
+  }, [props.navigation, navigation]);
+
+  const handleCloseDrawer = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+  }, [props.navigation]);
+
+  // PERFORMANCE FIX: Profile section handler'ını memoize et
+  const handleProfilePress = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('Profile');
+  }, [props.navigation, navigation]);
+
+  // PERFORMANCE FIX: Stats section handler'ını memoize et
+  const handleStatsPress = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+    navigation.navigate('Profile');
+  }, [props.navigation, navigation]);
+
+  // PERFORMANCE FIX: Bottom menu handler'larını memoize et
+  const handleBottomMenuPress = useCallback(() => {
+    if (drawerStatusRef.current !== 'open') return;
+    props.navigation.closeDrawer();
+  }, [props.navigation]);
+
+  const handleLogout = useCallback(async () => {
+    if (drawerStatusRef.current !== 'open') return;
+    await logout();
+    props.navigation.closeDrawer();
+    navigation.reset({
+      index: 0,
+      routes: [{ 
+        name: 'Auth',
+        state: {
+          routes: [{ name: 'Welcome' }]
+        }
+      }],
+    });
+  }, [logout, props.navigation, navigation]);
+
+  // PERFORMANCE FIX: MENU_ITEMS array'ini useMemo ile memoize et
+  // Handler'lar useCallback ile memoize edildi, bu yüzden array sadece bir kez oluşturulur
+  const MENU_ITEMS: MenuItem[] = useMemo(() => [
     {
       id: 'account',
       icon: 'user',
       label: 'Account',
-      onPress: () => {
-        props.navigation.closeDrawer();
-        navigation.navigate('Profile');
-      },
+      onPress: handleNavigateToProfile,
     },
     {
       id: 'wallet',
       icon: 'credit-card',
       label: 'Wallet',
-      onPress: () => {
-        props.navigation.closeDrawer();
-        navigation.navigate('Wallet');
-      },
+      onPress: handleNavigateToWallet,
     },
     {
       id: 'bookmarks',
       icon: 'bookmark',
       label: 'Bookmarks',
-      onPress: () => {
-        props.navigation.closeDrawer();
-        navigation.navigate('Bookmarks');
-      },
+      onPress: handleNavigateToBookmarks,
     },
     {
       id: 'marketplace',
       icon: 'shopping-bag',
       label: 'Marketplace',
-      onPress: () => {
-        props.navigation.closeDrawer();
-        navigation.navigate('Marketplace');
-      },
+      onPress: handleNavigateToMarketplace,
     },
     {
       id: 'prime-pass',
       icon: 'award',
       label: 'Prime Pass',
-      onPress: () => {
-        props.navigation.closeDrawer();
-      },
+      onPress: handleCloseDrawer,
     },
     {
       id: 'settings',
       icon: 'settings',
       label: 'Settings',
-      onPress: () => {
-        props.navigation.closeDrawer();
-        navigation.navigate('Settings');
-      },
+      onPress: handleNavigateToSettings,
     },
     {
       id: 'more-schoise',
       icon: 'more-horizontal',
       label: 'MoreSchoise',
-      onPress: () => {
-        props.navigation.closeDrawer();
-        navigation.navigate('MoreSchoise');
-      },
+      onPress: handleNavigateToMoreSchoise,
     },
-  ];
+  ], [
+    handleNavigateToProfile,
+    handleNavigateToWallet,
+    handleNavigateToBookmarks,
+    handleNavigateToMarketplace,
+    handleNavigateToSettings,
+    handleNavigateToMoreSchoise,
+    handleCloseDrawer,
+  ]);
 
   return (
     <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'} w="100%" m={0} p={0}>
@@ -331,10 +427,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
               right: 0,
               zIndex: 0,
             }}
-            onPress={() => {
-              props.navigation.closeDrawer();
-              navigation.navigate('Profile');
-            }}
+            onPress={handleProfilePress}
           >
             <Box px="$6">
               <Box alignItems="center">
@@ -383,10 +476,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           <TouchableOpacity
             activeOpacity={1}
             style={{ opacity: 0.9, zIndex: 2 }}
-            onPress={() => {
-              props.navigation.closeDrawer();
-              navigation.navigate('Profile');
-            }}
+            onPress={handleStatsPress}
           >
             <Box mt={-40} mb="$4">
               <HStack justifyContent="center" alignItems="center" px="$6">
@@ -491,7 +581,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           {/* Settings and Help – DIŞTA px yok, SATIRDA px var */}
           <VStack px="$0">
             <Pressable
-              onPress={() => props.navigation.closeDrawer()}
+              onPress={handleBottomMenuPress}
               h={48}
               justifyContent="center"
               bg="transparent"
@@ -513,7 +603,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
             </HStack>
           </Pressable>
           <Pressable
-            onPress={() => props.navigation.closeDrawer()}
+            onPress={handleBottomMenuPress}
             h={48}
             justifyContent="center"
             bg="transparent"
@@ -535,7 +625,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
             </HStack>
           </Pressable>
           <Pressable
-            onPress={() => props.navigation.closeDrawer()}
+            onPress={handleBottomMenuPress}
             h={48}
             justifyContent="center"
             bg="transparent"
@@ -557,19 +647,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
             </HStack>
           </Pressable>
           <Pressable
-            onPress={async () => {
-              await logout();
-              props.navigation.closeDrawer();
-              navigation.reset({
-                index: 0,
-                routes: [{ 
-                  name: 'Auth',
-                  state: {
-                    routes: [{ name: 'Welcome' }]
-                  }
-                }],
-              });
-            }}
+            onPress={handleLogout}
             h={48}
             justifyContent="center"
             bg="transparent"

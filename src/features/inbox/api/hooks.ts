@@ -53,7 +53,10 @@ export const useMessages = (params?: GetMessagesParams) => {
     queryFn: () => getMessages(params),
     staleTime: 0,
     gcTime: 0,
-    refetchOnMount: 'always',
+    // PERFORMANCE FIX: refetchOnMount kaldırıldı - tab'a geçildiğinde otomatik refetch yapılmıyor
+    // Mesajlar socket event'leri ile otomatik güncelleniyor
+    // Kullanıcı manuel olarak pull to refresh yapabilir
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -186,7 +189,10 @@ export const useSupportRequests = (params?: GetSupportRequestsParams) => {
     queryFn: () => getSupportRequests(params),
     staleTime: 0,
     gcTime: 0,
-    refetchOnMount: 'always',
+    // PERFORMANCE FIX: refetchOnMount kaldırıldı - tab'a geçildiğinde otomatik refetch yapılmıyor
+    // Support request'ler socket event'leri ile otomatik güncelleniyor
+    // Kullanıcı manuel olarak pull to refresh yapabilir
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
   });

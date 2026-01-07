@@ -43,6 +43,11 @@ const composeProviders = (
 /**
  * Composed App Providers
  * All providers are composed into a single provider tree
+ * 
+ * ARCHITECTURE FIX: Provider order matters!
+ * - GluestackProvider must come BEFORE GlobalBottomSheetProvider
+ *   because GlobalBottomSheet content uses Gluestack UI components
+ * - reduceRight wraps from right to left, so order is reversed
  */
 export const AppProviders = composeProviders(
   QueryProvider,
@@ -52,9 +57,9 @@ export const AppProviders = composeProviders(
   SafeAreaProvider,
   PortalProvider,
   BottomSheetModalProvider,
-  GlobalBottomSheetProvider,
+  GluestackProvider, // ARCHITECTURE FIX: Moved before GlobalBottomSheetProvider
+  GlobalBottomSheetProvider, // GlobalBottomSheet needs GluestackProvider context
   NotificationProvider,
-  SocketProvider,
-  GluestackProvider
+  SocketProvider
 );
 

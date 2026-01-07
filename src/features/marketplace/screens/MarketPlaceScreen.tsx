@@ -102,7 +102,7 @@ const MarketPlaceScreen = () => {
 
         {/* NFT Grid */}
         <Box flex={1}>
-          {isLoading && nftData.length === 0 ? (
+          {isLoading && !data?.pages?.[0] ? (
             <Box flex={1} justifyContent="center" alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>

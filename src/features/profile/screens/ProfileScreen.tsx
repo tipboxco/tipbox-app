@@ -1174,8 +1174,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            // UX FIX: Show skeleton loader when tab is loading (lazy loading)
-            activeTabQuery.isLoading ? (
+            // UX FIX: Show skeleton loader only when loading and no cached data
+            activeTabQuery.isLoading && !activeTabQuery.data?.pages?.[0] ? (
               <FeedSkeleton count={3} />
             ) : (
               <Box py={20} alignItems="center">

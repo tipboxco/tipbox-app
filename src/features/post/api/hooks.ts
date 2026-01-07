@@ -203,8 +203,8 @@ export const useBoostOptions = () => {
   return useQuery<BoostOption[], Error>({
     queryKey: postKeys.boostOptions(),
     queryFn: getBoostOptions,
-    staleTime: 5 * 60 * 1000, // 5 dakika cache
-    gcTime: 10 * 60 * 1000, // 10 dakika garbage collection
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -271,8 +271,8 @@ export const usePostDetail = (
     enabled: enabled && !!postId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     // Force refresh ise cache kullanma (notification'dan geldiğinde)
-    staleTime: forceRefresh ? 0 : 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    staleTime: forceRefresh ? 0 : 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: forceRefresh ? 'always' : false, // Force refresh ise her zaman refetch et
     refetchOnWindowFocus: forceRefresh, // Force refresh ise focus'ta da refetch et
     retry: 1,

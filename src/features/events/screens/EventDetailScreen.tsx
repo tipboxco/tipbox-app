@@ -19,7 +19,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { EventsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
-import { useEventDetail, useEventPosts } from '../api/hooks';
+import { useEventDetail, useEventPosts, useJoinEvent } from '../api/hooks';
 import { toImageSource } from '@/src/utils';
 import { CardType, EventStatus } from '@/src/types/common';
 import PostCard from '@/src/components/PostCards/PostCard';
@@ -89,6 +89,9 @@ const EventDetailScreen: React.FC = () => {
         error: postsError,
     } = useEventPosts(eventId, 20);
     
+    // Join Event mutation
+    const joinEventMutation = useJoinEvent();
+    
     // Flatten all pages into a single array
     const feedItems = useMemo(() => {
         if (!postsData?.pages) return [];
@@ -97,7 +100,7 @@ const EventDetailScreen: React.FC = () => {
         );
     }, [postsData?.pages]);
     
-    // Local state for join button (can be synced with API's isJoined later)
+    // Local state for join button (synced with API's isJoined)
     const [isJoined, setIsJoined] = useState(false);
 
     // Format date range from startDate and endDate
@@ -128,6 +131,29 @@ const EventDetailScreen: React.FC = () => {
             setIsJoined(event.isJoined);
         }
     }, [event?.isJoined]);
+
+    // Handle join button press
+    const handleJoinPress = useCallback(() => {
+        if (!eventId) return;
+        
+        // Optimistic update
+        setIsJoined(!isJoined);
+        
+        // Call API
+        joinEventMutation.mutate(eventId, {
+            onError: (error) => {
+                // Revert optimistic update on error
+                setIsJoined(isJoined);
+                console.error('[EventDetailScreen] Join event error:', error);
+            },
+            onSuccess: (data) => {
+                // Update state with API response
+                if (data?.isJoined !== undefined) {
+                    setIsJoined(data.isJoined);
+                }
+            },
+        });
+    }, [eventId, isJoined, joinEventMutation]);
 
     // Map Feed/Post to PostCardData (from FeedScreen)
     const mapFeedToCardData = (item: ProfilePost): PostCardData => {
@@ -675,8 +701,8 @@ const EventDetailScreen: React.FC = () => {
                             bg={isJoined ? '#D9D9D9' : '#C2E607'}
                             borderRadius={5}
                             h={20}
-                            isDisabled={event.status === EventStatus.UPCOMING}
-                            onPress={() => setIsJoined(!isJoined)}
+                            isDisabled={event.status === EventStatus.UPCOMING || joinEventMutation.isPending}
+                            onPress={handleJoinPress}
                         >
                             <ButtonText
                                 color="#000000"
@@ -684,7 +710,10 @@ const EventDetailScreen: React.FC = () => {
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                {isJoined ? 'Joined' : 'Join'}
+                                {joinEventMutation.isPending 
+                                    ? '...' 
+                                    : (isJoined ? 'Joined' : 'Join')
+                                }
                             </ButtonText>
                         </Button>
                     </HStack>

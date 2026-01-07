@@ -6,11 +6,14 @@ import { ReactNode } from 'react';
  * Tüm bottom sheet'ler için ortak ayarlar
  */
 export interface BottomSheetOptions {
-  // Snap points - eğer belirtilmezse enableDynamicSizing kullanılır
-  snapPoints?: (string | number)[];
-  
   // Dynamic sizing - içeriğe göre otomatik boyutlandırma
   enableDynamicSizing?: boolean;
+  
+  // Snap points - klavye açıldığında yukarı kayması için (enableDynamicSizing: false ise kullanılır)
+  snapPoints?: number[];
+  
+  // Initial snap index - hangi snap point'te başlayacağı (default: 0)
+  initialSnapIndex?: number;
   
   // Gesture settings
   enablePanDownToClose?: boolean;
@@ -36,9 +39,6 @@ export interface BottomSheetOptions {
   
   // Padding
   paddingBottom?: number;
-  
-  // Initial snap index
-  initialSnapIndex?: number;
 
   // Keyboard behavior
   keyboardBehavior?: 'interactive' | 'fillParent' | 'extend';
@@ -50,8 +50,7 @@ export interface BottomSheetOptions {
  * Default Bottom Sheet Options
  * Tüm bottom sheet'ler için varsayılan ayarlar
  */
-export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'snapPoints' | 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom'>> & {
-  snapPoints?: (string | number)[];
+export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom'>> & {
   onChange?: (index: number) => void;
   onClose?: () => void;
   backgroundStyle?: ViewStyle;
@@ -59,15 +58,18 @@ export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'sn
   handleIndicatorStyle?: ViewStyle;
   paddingBottom?: number;
 } = {
+  // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
+  // Dynamic sizing adapts to content height automatically
   enableDynamicSizing: true,
   enablePanDownToClose: true,
   enableOverDrag: false,
   enableHandlePanningGesture: true,
   enableContentPanningGesture: true,
-  animateOnMount: true,
+  // PERFORMANCE FIX: Disable animateOnMount by default for instant opening
+  // @gorhom/bottom-sheet handles animation internally, no need for extra animation
+  animateOnMount: false,
   backdropOpacity: 0.5,
   backdropPressBehavior: 'close',
-  initialSnapIndex: 0,
 };
 
 /**

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -376,6 +376,32 @@ const ExploreScreen: React.FC = () => {
     }
   }, [tabsHeight]);
 
+  // PERFORMANCE FIX: Memoize tab content to prevent re-renders on tab switch
+  // Tab content'leri memoize ederek, tab değişiminde sadece görünür olan render edilir
+  const tabContent = useMemo(() => {
+    if (activeCategory === 'hottest') {
+      return <HottestTab />;
+    }
+    return (
+      <NewsTab
+        onEventPress={handleEventPress}
+        onBrandPress={handleBrandPress}
+        onProductPress={handleProductPress}
+        onSeeAllEvents={handleSeeAllEvents}
+        onSeeAllBrands={handleSeeAllBrands}
+        onSeeAllProducts={handleSeeAllProducts}
+      />
+    );
+  }, [
+    activeCategory,
+    handleEventPress,
+    handleBrandPress,
+    handleProductPress,
+    handleSeeAllEvents,
+    handleSeeAllBrands,
+    handleSeeAllProducts,
+  ]);
+
   // PERFORMANCE FIX: ExploreScreen uses ScrollView for heterogeneous content
   // Converting to FlashList would require major refactoring (array of different content types)
   // ScrollView is acceptable here because:
@@ -504,18 +530,8 @@ const ExploreScreen: React.FC = () => {
               </HStack>
             </VStack>
 
-            {/* Content based on active tab */}
-            {activeCategory === 'hottest' && <HottestTab />}
-            {activeCategory === 'news' && (
-              <NewsTab
-                onEventPress={handleEventPress}
-                onBrandPress={handleBrandPress}
-                onProductPress={handleProductPress}
-                onSeeAllEvents={handleSeeAllEvents}
-                onSeeAllBrands={handleSeeAllBrands}
-                onSeeAllProducts={handleSeeAllProducts}
-              />
-            )}
+            {/* Content based on active tab - Memoized for performance */}
+            {tabContent}
           </VStack>
         </ScrollView>
 

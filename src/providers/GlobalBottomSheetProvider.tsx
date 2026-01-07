@@ -1,10 +1,8 @@
-import React, { createContext, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ReactNode } from 'react';
 import { GlobalBottomSheetContextType, BottomSheetOptions } from '@/src/components/GlobalBottomSheet/types';
 import { GlobalBottomSheet } from '@/src/components/GlobalBottomSheet';
-
-// Context oluştur
-const GlobalBottomSheetContext = createContext<GlobalBottomSheetContextType | undefined>(undefined);
+import { GlobalBottomSheetContext } from '@/src/components/GlobalBottomSheet/context'; // ARCHITECTURE FIX: Import from context.ts to break circular dependency
 
 interface GlobalBottomSheetProviderProps {
   children: ReactNode;
@@ -21,24 +19,42 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
 
   /**
    * Bottom sheet aç
+   * PERFORMANCE FIX: React 18 automatically batches state updates in event handlers
+   * All three state updates will be batched in a single render cycle, eliminating delays
+   * FLICKER FIX: If bottom sheet is already open, just update content without closing
+   * This prevents flicker and the open/close flicker issue
    */
   const openBottomSheet = useCallback((newContent: ReactNode, newOptions?: BottomSheetOptions) => {
-    // Tüm state'leri aynı anda set et
-    setContent(newContent);
-    setOptions(newOptions || null);
-    setIsOpen(true);
-  }, []);
+    // FLICKER FIX: If bottom sheet is already open, just update content
+    // This prevents the flicker issue where bottom sheet opens and closes quickly
+    if (isOpen) {
+      // Just update content and options, keep bottom sheet open
+      // This provides smooth transition without closing/reopening
+      setContent(newContent);
+      setOptions(newOptions || null);
+      // Keep isOpen as true - don't change it
+    } else {
+      // PERFORMANCE FIX: React 18 auto-batches these state updates
+      // All updates happen in a single render cycle, no delay
+      setContent(newContent);
+      setOptions(newOptions || null);
+      setIsOpen(true);
+    }
+  }, [isOpen]);
 
   /**
    * Bottom sheet kapat
+   * PERFORMANCE FIX: Reduced cleanup delay from 300ms to 200ms
+   * @gorhom/bottom-sheet animation is typically faster, 200ms is sufficient
    */
   const closeBottomSheet = useCallback(() => {
     setIsOpen(false);
-    // Kısa bir delay ile content'i temizle (animasyon tamamlansın)
+    // PERFORMANCE FIX: Reduced delay for faster cleanup
+    // @gorhom/bottom-sheet close animation is typically 200-250ms
     setTimeout(() => {
       setContent(null);
       setOptions(null);
-    }, 300);
+    }, 200); // Reduced from 300ms to 200ms
   }, []);
 
   /**
@@ -70,7 +86,7 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
 };
 
 /**
- * Global Bottom Sheet Context'i export et (hook için)
+ * ARCHITECTURE FIX: Context is now exported from context.ts
+ * No need to export here to avoid circular dependency
  */
-export { GlobalBottomSheetContext };
 

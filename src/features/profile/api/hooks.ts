@@ -118,8 +118,8 @@ export const useTrustList = (
       return getTrustList(userId, searchQuery);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000, // Search varsa 0 (her zaman fresh), yoksa 5 dakika
-    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000, // Search varsa cache'leme yok, yoksa 10 dakika
+    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000, // Search varsa 0 (her zaman fresh), yoksa 2 saat
+    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000, // Search varsa cache'leme yok, yoksa 4 saat
     refetchOnMount: hasSearchQuery ? 'always' : false, // Search varsa her zaman refetch
     refetchOnWindowFocus: hasSearchQuery, // Search varsa window focus'ta refetch
     // Search query değiştiğinde önceki data'yı gösterme
@@ -214,8 +214,8 @@ export const useTrusterList = (
       return getTrusterList(userId, searchQuery, sort);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000,
-    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000,
+    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000,
+    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000,
     refetchOnMount: hasSearchQuery ? 'always' : false,
     refetchOnWindowFocus: hasSearchQuery,
     placeholderData: undefined,
@@ -305,8 +305,8 @@ export const useUserProfile = (userId: string | undefined) => {
       return getUserProfile(userId);
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 dakika
-    gcTime: 10 * 60 * 1000, // 10 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -330,8 +330,8 @@ export const useInventory = () => {
     queryKey: profileKeys.inventory(),
     queryFn: () => getInventory(),
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -376,8 +376,8 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3) => {
     },
     enabled: !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -416,10 +416,11 @@ export const useUserReviews = (userId: string | undefined, limit: number = 5) =>
       return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
     // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
     // Sadece data, hasNextPage ve error değişiklikleri render tetikler
@@ -456,10 +457,11 @@ export const useUserBenchmarks = (userId: string | undefined, limit: number = 5)
       return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
     // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
     // Sadece data, hasNextPage ve error değişiklikleri render tetikler
@@ -496,10 +498,11 @@ export const useUserTipsAndTricks = (userId: string | undefined, limit: number =
       return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
     // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
     // Sadece data, hasNextPage ve error değişiklikleri render tetikler
@@ -576,10 +579,11 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5) =>
       return lastPage.pagination?.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok - veri hemen stale olur
-    gcTime: 0, // Cache yok - veri hemen temizlenir
-    refetchOnMount: 'always', // Her mount'ta yeniden fetch
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -615,10 +619,11 @@ export const useUserCollectionAchievements = (userId: string | undefined, limit:
       return lastPage.pagination.cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: true, // Her mount'ta yeniden fetch et
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -663,10 +668,11 @@ export const useUserCollectionBridges = (userId: string | undefined, limit: numb
       return cursor;
     },
     enabled: !!userId,
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: true, // Her mount'ta yeniden fetch et
-    refetchOnWindowFocus: false,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };

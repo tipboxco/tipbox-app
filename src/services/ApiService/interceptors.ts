@@ -1,6 +1,9 @@
 import { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { TokenService } from '../TokenService';
-import { useAppStore } from '../../store/appStore';
+// ARCHITECTURE FIX: Lazy import to break circular dependency
+// appStore imports interceptors (updateTokenCache, clearTokenCache)
+// interceptors imports appStore (useAppStore.getState())
+// Solution: Use require() for lazy import at runtime
 
 /**
  * PERFORMANCE FIX: Memory cache for access token
@@ -261,7 +264,9 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           // PERFORMANCE FIX: Update token cache immediately
           updateTokenCache(accessToken);
 
+          // ARCHITECTURE FIX: Lazy import to break circular dependency
           // Store'u güncelle (eğer user varsa)
+          const { useAppStore } = require('../../store/appStore');
           const appState = useAppStore.getState();
           if (appState.user && appState.accessToken) {
             // Access token'ı güncelle (user bilgileri aynı kalır)
@@ -277,10 +282,12 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           }
           return client(originalRequest);
         } catch (refreshError) {
+          // ARCHITECTURE FIX: Lazy import to break circular dependency
           // Refresh başarısız, tüm token'ları temizle ve logout yap
           processQueue(refreshError as AxiosError, null);
           clearTokenCache(); // PERFORMANCE FIX: Clear cache on refresh failure
           await TokenService.clearTokens();
+          const { useAppStore } = require('../../store/appStore');
           useAppStore.getState().logout();
           return Promise.reject(refreshError);
         } finally {

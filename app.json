@@ -13,10 +13,10 @@
       "url": "https://u.expo.dev/098fbee5-88e4-49ba-bb37-80601a5d47af"
     },
     "orientation": "portrait",
-    "icon": "./assets/tipbox_logo.png", 
+    "icon": "./assets/tipbox_logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/tipbox_logo.png",  
+      "image": "./assets/tipbox_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -97,3 +97,4 @@
     }
   }
 }
+

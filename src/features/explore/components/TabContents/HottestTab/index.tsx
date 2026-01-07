@@ -330,7 +330,6 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
         if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
             <ExperiencePostCard
-              key={item.data.id}
               data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
             />
           );
@@ -339,14 +338,12 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
       case CardType.POST:
         return (
           <PostCard
-            key={item.data.id}
             data={mapFeedToCardData(item.data as ProfilePost)}
           />
         );
       case CardType.BENCHMARK:
         return (
           <BenchmarkPostCard
-            key={item.data.id}
             data={mapBenchmarkToCardData(item.data as BenchmarkApiItem & { type: 'benchmark' })}
           />
         );
@@ -354,7 +351,6 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
         if ('contextType' in item.data && 'contextData' in item.data && 'isBoosted' in item.data) {
           return (
             <QuestionPostCard
-              key={item.data.id}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
             />
           );
@@ -363,7 +359,6 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
       case CardType.TIPS_AND_TRICKS:
         return (
           <TipsAndTricksPostCard
-            key={item.data.id}
             data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
           />
         );
@@ -371,7 +366,6 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
         if ('relatedPost' in item.data && 'contextType' in item.data) {
           return (
             <UpdatePostCard
-              key={item.data.id}
               data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
             />
           );
@@ -382,7 +376,26 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
     }
   }, []);
 
-  if (isLoading && hottestItems.length === 0) {
+  // ARCHITECTURE FIX: All hooks must be called before any early returns
+  // React Hooks Rules: Hooks must be called in the same order on every render
+  // PERFORMANCE FIX: Memoize footer component to prevent re-renders
+  const LoadingFooter = useMemo(() => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <Box py="$4" alignItems="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [isFetchingNextPage, isDark]);
+
+  // PERFORMANCE FIX: Memoize keyExtractor
+  const getItemKey = useCallback((item: FeedApiItem) => {
+    return `hottest-${item.data.id}`;
+  }, []);
+
+  // Early returns AFTER all hooks
+  // CACHE FIX: Only show skeleton when loading and no cached data
+  if (isLoading && !data?.pages?.[0]) {
     return <FeedSkeleton count={5} />;
   }
 
@@ -411,18 +424,15 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
       <FlatList
         data={hottestItems}
         renderItem={({ item }) => renderHottestItem(item)}
-        keyExtractor={(item) => item.data.id}
+        keyExtractor={getItemKey}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
-        removeClippedSubviews={false}
+        removeClippedSubviews={true}
         contentContainerStyle={{ paddingTop: 0, paddingBottom: bottomPadding }}
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <Box py="$4" alignItems="center">
-              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
-          ) : null
-        }
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+        windowSize={5}
+        ListFooterComponent={LoadingFooter}
         scrollEnabled={false}
         nestedScrollEnabled={true}
       />

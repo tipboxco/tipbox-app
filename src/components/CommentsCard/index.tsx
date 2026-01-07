@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ImageSourcePropType } from 'react-native';
 import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 
 export interface CommentsCardProps {
   id?: string;
@@ -52,14 +52,14 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
           <VStack space="xs">
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={config.tokens.fontSizes['xs'] as number}
+              fontSize={12}
               fontWeight="$bold"
             >
               {userName}
             </Text>
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={config.tokens.fontSizes['3xs'] as number}
+              fontSize={9}
               fontWeight="$medium"
               numberOfLines={1}
             >
@@ -71,7 +71,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
           <VStack space="xs">
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={config.tokens.fontSizes['2xs'] as number}
+              fontSize={10}
               lineHeight={14}
               numberOfLines={isExpanded || !shouldTruncate ? undefined : 3}
             >
@@ -86,7 +86,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
               >
                 <Text
                   color="#829905"
-                  fontSize={config.tokens.fontSizes['3xs'] as number}
+                  fontSize={9}
                   fontWeight="$medium"
                   textDecorationLine="underline"
                 >
@@ -104,7 +104,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
         top={8}
         right={12}
         color={isDark ? '#8C8C8C' : '#8C8C8C'}
-        fontSize={config.tokens.fontSizes['3xs'] as number}
+        fontSize={9}
         fontWeight="$medium"
       >
         {timeAgo}
