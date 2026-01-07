@@ -284,7 +284,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
               <VStack space="sm">
                 <Text
                   color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                  fontSize={14}
+                  fontSize="$sm"
                   fontWeight="$bold"
                 >
                   Active Events
@@ -293,13 +293,13 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                   <EventSkeleton count={3} isHorizontal={true} />
                 ) : activeEventsError ? (
                   <Box py="$4" alignItems="center">
-                    <Text color="#CE4A4A" fontSize={12}>
+                    <Text color="#CE4A4A" fontSize="$xs">
                       Hata: {activeEventsError.message}
                     </Text>
                   </Box>
                 ) : activeEvents.length === 0 ? (
                   <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
+                    <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
                       Henüz aktif etkinlik bulunmuyor
                     </Text>
                   </Box>
@@ -352,7 +352,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
             <Box>
               <Text
                 color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                fontSize={14}
+                fontSize="$sm"
                 fontWeight="$bold"
               >
                 Upcoming Events
@@ -369,7 +369,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
             {/* Upcoming Events Error State */}
             {upcomingEventsError && (
               <Box pt="$4" alignItems="center" px="$4">
-                <Text color="#CE4A4A" fontSize={12}>
+                <Text color="#CE4A4A" fontSize="$xs">
                   Hata: {upcomingEventsError.message}
                 </Text>
               </Box>
@@ -378,7 +378,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
             {/* Upcoming Events Empty State */}
             {!isUpcomingEventsLoading && upcomingEvents.length === 0 && !upcomingEventsError && (
               <Box pt="$4" alignItems="center" px="$4">
-                <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
+                  <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
                   Henüz yaklaşan etkinlik bulunmuyor
                 </Text>
               </Box>

@@ -454,7 +454,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                         TAB_ROUTES.CATALOG, 
                         'BrandProductDetailScreen' as any, 
                         { 
-                          productId: category.product.id 
+                        productId: category.product.id 
                         }
                       );
                     }

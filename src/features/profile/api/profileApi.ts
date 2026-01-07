@@ -1197,11 +1197,17 @@ export const getUserReplies = async (
 export const getUserCollectionAchievements = async (
   userId: string,
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  searchQuery?: string
 ): Promise<UserCollectionAchievementsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
+  }
+  if (searchQuery) {
+    // Backend'de hem 'q' hem de 'search' parametresi destekleniyor
+    params.append('q', searchQuery);
+    params.append('search', searchQuery);
   }
   params.append('limit', limit.toString());
 

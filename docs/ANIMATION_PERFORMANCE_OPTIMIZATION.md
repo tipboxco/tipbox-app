@@ -375,3 +375,4 @@ Tüm optimizasyonlar uygulandıktan sonra:
 - [@gorhom/bottom-sheet Performance Guide](https://gorhom.github.io/bottom-sheet/performance/)
 - [requestAnimationFrame MDN](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame)
 
+

@@ -97,7 +97,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             <Feather name="zap" size={14} color="#111111" />
                             <Text
                                 color="#111111"
-                                fontSize={9}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                             >
                                 Limited Time
@@ -107,7 +107,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         <HStack alignItems="center" space="xs">
                             <Text
                                 color="#FFFFFF"
-                                fontSize={9}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                             >
                                 {formattedCountdown}
@@ -138,7 +138,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         <VStack space="xs" flex={1}>
                             <Text
                                 color="#FFFFFF"
-                                fontSize={12}
+                                fontSize="$sm"
                                 fontWeight="$bold"
                                 lineHeight={15}
                             >
@@ -146,7 +146,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             </Text>
                             <Text
                                 color="#D1D1D1"
-                                fontSize={9}
+                                fontSize="$2xs"
                                 lineHeight={11}
                                 numberOfLines={2}
                             >
@@ -173,14 +173,14 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                 <VStack space="xs">
                                     <Text
                                         color="#B9B9B9"
-                                        fontSize={9}
+                                        fontSize="$2xs"
                                         fontWeight="$semibold"
                                     >
                                         Your Score
                                     </Text>
                                     <Text
                                         color="#FFFFFF"
-                                        fontSize={10}
+                                        fontSize="$2xs"
                                         fontWeight="$semibold"
                                     >
                                         {data.userScore?.score != null 
@@ -192,7 +192,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
 
                             <Text
                                 color="#FFFFFF"
-                                fontSize={11}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                             >
                                 #{data.userScore?.rank ?? 0}
@@ -229,7 +229,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                         >
                                             <Text
                                                 color="#FFFFFF"
-                                                fontSize={6}
+                                                fontSize="$2xs"
                                                 fontWeight="$semibold"
                                             >
                                                 {user?.rank ?? 0}
@@ -250,7 +250,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         >
                             <Text
                                 color="#FFFFFF"
-                                fontSize={10}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                                 textAlign="center"
                             >

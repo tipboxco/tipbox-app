@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, ActivityIndicator, RefreshControl } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { Platform, ActivityIndicator, RefreshControl, FlatList } from 'react-native';
+import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -43,12 +43,19 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
-export const FeedScreen = () => {
+/**
+ * FeedScreen Inner Component
+ * FeedListContext içinde render edilir, feedListRef'e erişebilir
+ */
+const FeedScreenInner = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAppStore();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  
+  // FeedListContext'ten feedListRef'i al
+  const { feedListRef } = useFeedListContext();
 
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
@@ -752,7 +759,8 @@ export const FeedScreen = () => {
               </Text>
             </Box>
           ) : (
-            <FlashList
+            <FlatList<FeedApiItem>
+              ref={feedListRef}
               data={feedItems}
               renderItem={({ item }) => renderFeedItem(item)}
               keyExtractor={(item, index) => {
@@ -762,20 +770,15 @@ export const FeedScreen = () => {
                 }
                 return `feed-item-${index}`;
               }}
-              estimatedItemSize={400}
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}
               contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
               showsVerticalScrollIndicator={false}
-              // ARCHITECTURE FIX: Scroll position restoration
-              // Preserves scroll position when tab is switched and returned
-              maintainVisibleContentPosition={{
-                minIndexForVisible: 0,
-              }}
-              // SCROLL FIX: Android'de nested scroll'ları (yatay carousel'ler) dikey scroll'u engellemeyecek şekilde ayarla
-              // Bu prop, iç içe scroll view'ların (yatay carousel'ler) dikey scroll'u engellemesini önler
-              nestedScrollEnabled={true}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={10}
+              windowSize={10}
+              initialNumToRender={10}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}
@@ -800,5 +803,17 @@ export const FeedScreen = () => {
 
       </Box>
     </SafeAreaView>
+  );
+};
+
+/**
+ * FeedScreen Component
+ * FeedListProvider ile sarmalanmış, feedListRef'i tüm child component'lere sağlar
+ */
+export const FeedScreen = () => {
+  return (
+    <FeedListProvider>
+      <FeedScreenInner />
+    </FeedListProvider>
   );
 };

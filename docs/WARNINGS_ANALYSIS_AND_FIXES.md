@@ -176,3 +176,4 @@ WARN  expo-notifications: Android Push notifications (remote notifications) func
 
 Tüm kritik circular dependency'ler çözüldü. Proje artık daha temiz bir dependency graph'a sahip ve uyarılar minimize edildi.
 
+
