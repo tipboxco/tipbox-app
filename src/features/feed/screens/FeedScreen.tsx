@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { Platform, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -94,11 +95,11 @@ export const FeedScreen = () => {
     );
   }, [filters]);
 
-  // Feed API hooks - her ikisini de çağır, sadece birini aktif et
+  // Feed API hooks - PERFORMANCE FIX: Only enable filtered query when filters are active
   // Normal feed: /feed endpoint'i (filtre yok)
   // Filtered feed: /feed/filtered endpoint'i (filtre var)
   const normalFeedQuery = useFeed(10);
-  const filteredFeedQuery = useFeedFiltered(10, filters);
+  const filteredFeedQuery = useFeedFiltered(10, filters, hasActiveFilters); // Only enabled when filters are active
 
   // Filtre varsa filtered feed'i, yoksa normal feed'i kullan
   // Bu sayede filtre değiştiğinde otomatik olarak doğru endpoint çağrılır
@@ -761,7 +762,7 @@ export const FeedScreen = () => {
               </Text>
             </Box>
           ) : (
-            <FlatList
+            <FlashList
               data={feedItems}
               renderItem={({ item }) => renderFeedItem(item)}
               keyExtractor={(item, index) => {
@@ -771,12 +772,12 @@ export const FeedScreen = () => {
                 }
                 return `feed-item-${index}`;
               }}
+              estimatedItemSize={400}
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}
               contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
               showsVerticalScrollIndicator={false}
-              removeClippedSubviews={false}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}

@@ -97,6 +97,7 @@ export const useFeed = (
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @param filters - Filtre parametreleri (interests, tags, category, sort)
+ * @param enabled - Query'nin çalışıp çalışmayacağını belirler (default: true)
  * @returns React Query infinite query hook result
  *
  * @example
@@ -104,11 +105,12 @@ export const useFeed = (
  *   interests: ['category-1', 'category-2'],
  *   tags: ['Review', 'Benchmark'],
  *   sort: 'recent'
- * });
+ * }, true);
  */
 export const useFeedFiltered = (
   limit: number = 20,
-  filters?: FeedFilterParams
+  filters?: FeedFilterParams,
+  enabled: boolean = true
 ) => {
   return useInfiniteQuery<FeedApiResponse, Error>({
     queryKey: feedKeys.filtered(undefined, limit, filters),
@@ -116,6 +118,7 @@ export const useFeedFiltered = (
       const cursor = pageParam as string | undefined;
       return getFilteredFeed(cursor, limit, filters);
     },
+    enabled, // PERFORMANCE FIX: Only run query when enabled (prevents duplicate API calls)
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
       // Kalıcı çözüm: lastPage ve pagination kontrolü

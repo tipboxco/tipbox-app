@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
 import { ImageCacheService } from '../services/ImageCacheService';
+import { updateTokenCache, clearTokenCache } from '../services/ApiService/interceptors';
 // Socket bağlantısı adım adım test edilecek
 
 // Types
@@ -115,6 +116,9 @@ export const useAppStore = create<AppState>()(
             console.log('[AppStore]    - Refresh Token Length:', userData.refreshToken.length);
             console.log('[AppStore]    - Save Time:', tokenSaveTime, 'ms');
             
+            // PERFORMANCE FIX: Update token cache for API interceptor
+            updateTokenCache(userData.token);
+            
             // User bilgilerini store'a kaydet
             set({
               user: {
@@ -179,6 +183,7 @@ export const useAppStore = create<AppState>()(
             console.log('📋 Step 1: Token\'lar temizleniyor...');
             const tokenClearStartTime = Date.now();
             await TokenService.clearTokens();
+            clearTokenCache(); // PERFORMANCE FIX: Clear token cache
             const tokenClearTime = Date.now() - tokenClearStartTime;
             console.log('✅ Token\'lar temizlendi');
             console.log('   - Clear Time:', tokenClearTime, 'ms');
