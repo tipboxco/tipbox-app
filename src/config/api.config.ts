@@ -1,6 +1,6 @@
 export const API_CONFIG = { // Environment variable'dan al (öncelikli)
-    BASE_URL: 'http://192.168.1.164:3000',
-    MEDIA_URL: 'http://192.168.1.164:9000',
+    BASE_URL: 'http://192.168.1.116:3000',
+    MEDIA_URL: 'http://192.168.1.116:9000',
     TIMEOUT: 10000,
     RETRY_ATTEMPTS: 3,
     RETRY_DELAY: 1000
