@@ -143,163 +143,86 @@ Deliver a document that:
 - Identifies hidden causes (not just visible symptoms)
 - Can be handed to other LLMs or engineers to research and implement best-practice solutions
 
-Do not summarize prematurely.Do not stop at obvious issues.Think systemically.
-
-
-
-You are acting as a senior mobile architect specializing in React Native + Expo navigation systems, UX flow design, and runtime memory behavior.
-
-
-
-Your responsibility is to REVIEW and RE-DESIGN the application’s navigation, screen flow, provider hierarchy, and UI interaction model so that the app feels smooth, predictable, and instant under all common user interactions.
-
-
-
-This is NOT a cosmetic UI review.
-
-This is a SYSTEM-LEVEL UX & FLOW ARCHITECTURE audit.
-
-
-
----
-
-
+Do not summarize prematurely.Do not stop at obvious issues.Think systemically.You are acting as a senior mobile architect specializing in React Native + Expo navigation systems, UX flow design, and runtime memory behavior.Your responsibility is to REVIEW and RE-DESIGN the application’s navigation, screen flow, provider hierarchy, and UI interaction model so that the app feels smooth, predictable, and instant under all common user interactions.This is NOT a cosmetic UI review.This is a SYSTEM-LEVEL UX & FLOW ARCHITECTURE audit.---
 
 ### CORE OBJECTIVE
 
 Design and validate a navigation and UI architecture that guarantees:
 
-
-
 - Zero accidental back navigation conflicts
-
 - Predictable drawer / tab / stack behavior
-
 - Instant screen transitions (especially from notifications & deep links)
-
 - No unnecessary re-renders or memory growth during navigation
-
 - Smooth modal, filter, search, and animation flows
-
 - Clean separation of concerns between navigation, state, and UI
-
-
 
 ---
 
-
-
 ### NAVIGATION ARCHITECTURE (MANDATORY REVIEW)
 
-
-
 You must deeply analyze and (if necessary) redesign:
-
-
 
 #### 1. Drawer Behavior & Gesture Rules
 
 - When the drawer SHOULD open via gesture
-
 - When drawer gestures MUST be disabled
 
-  (e.g., nested stacks, detail screens, full-screen flows)
+(e.g., nested stacks, detail screens, full-screen flows)
 
 - How to prevent drawer gesture from hijacking “go back” intent
-
 - Drawer state persistence vs reset rules
-
-
 
 Explain:
 
 - Why certain screens must opt-out of drawer gestures
-
 - How gesture priority is resolved at runtime
 
-
-
 ---
-
-
 
 #### 2. Tab Architecture Rules
 
 - Which screens deserve to be top-level tabs
-
 - Which screens must NEVER be tabs
-
 - Tab state persistence vs reset behavior
-
 - Preventing tab re-mount storms
-
 - Handling scroll position & focus restoration
-
-
 
 Define:
 
 - Rules for when a screen belongs in a tab vs stack
-
 - How tabs interact with modals and deep links
 
-
-
 ---
-
-
 
 #### 3. Stack & Screen Ownership
 
 - Clear ownership of screens per stack
-
 - Avoiding cross-stack confusion
-
 - Preventing deep nested stacks from becoming untraceable
-
 - Back behavior determinism (hardware & gesture)
-
-
 
 You must identify:
 
 - Stack depth risks
-
 - Overloaded stacks
-
 - Screens that should be modals instead of stack screens
 
-
-
 ---
-
-
 
 #### 4. Notification & Deep-Link Routing
 
 - When a user taps a notification:
-
     - How to resolve the target screen instantly
-
     - How to avoid unnecessary navigation hops
-
 - Correct stack targeting logic
-
 - Handling cold start vs warm start notification routing
-
-
 
 Explain:
 
 - Why the target screen MUST live in a specific stack
-
 - How to avoid “navigate → redirect → replace” latency chains
 
-
-
 ---
-
-
 
 ### UI INTERACTION & FLOW PERFORMANCE
 
@@ -308,52 +231,31 @@ Explain:
 #### 5. Modal, Filter & Search Architecture
 
 - Where modal state SHOULD live (provider vs local)
-
 - Avoiding global re-renders when opening filters
-
 - Animation lifecycle isolation
-
 - Preventing layout thrashing
-
 - Multiple modals coexistence rules
-
-
 
 Include:
 
 - Why certain modals should be rendered via portals
-
 - How to isolate animated state from business state
 
-
-
 ---
-
-
 
 #### 6. Animation & Transition Smoothness
 
 - Screen transitions vs modal transitions
-
 - JS thread vs UI thread responsibilities
-
 - Reanimated usage boundaries
-
 - Avoiding animation-triggered re-renders
-
-
 
 You must evaluate:
 
 - Why certain animations feel janky
-
 - How to restructure them for 60fps consistency
 
-
-
 ---
-
-
 
 ### MEMORY & STATE DISCIPLINE
 
@@ -362,50 +264,30 @@ You must evaluate:
 #### 7. State Lifetimes & Garbage Behavior
 
 - How long state lives after screen unmount
-
 - Memory retention via closures, refs, providers
-
 - Avoiding implicit memory leaks
-
 - Best practices for state cleanup
-
-
 
 Explain:
 
 - Why React does NOT have explicit GC control
-
 - How architectural discipline replaces “manual GC”
 
-
-
 ---
-
-
 
 #### 8. Provider & Context Placement
 
 - Which providers belong at root
-
 - Which MUST be scoped
-
 - Avoiding provider-driven global re-renders
-
 - Preventing state coupling between unrelated screens
-
-
 
 You must:
 
 - Redesign provider hierarchy if needed
-
 - Explain the performance impact of wrong placement
 
-
-
 ---
-
-
 
 ### SYSTEM RULES & DESIGN PRINCIPLES
 
@@ -416,90 +298,44 @@ You must:
 Derive a clear, enforceable rule set such as:
 
 - “This type of screen can never do X”
-
 - “This interaction must always live in Y layer”
-
 - “Drawer gesture is disabled if condition Z is true”
-
-
 
 These rules should:
 
 - Prevent future regressions
-
 - Be understandable by any engineer joining the project
 
-
-
 ---
-
-
 
 ### OUTPUT FORMAT (MANDATORY)
 
-
-
 Produce a **single Markdown document** containing:
 
-
-
 1. Current Navigation & Flow Diagnosis
-
 2. Identified UX & Flow Risks
-
 3. Drawer / Tab / Stack Design Rules
-
 4. Notification & Deep-Link Routing Strategy
-
 5. Modal, Filter & Search Architecture
-
 6. Animation & Transition Best Practices
-
 7. Memory & State Lifetime Strategy
-
 8. Provider Hierarchy Blueprint
-
 9. Final Recommended Navigation Architecture Diagram (textual)
-
 10. Enforced Design Rules & Best Practices
 
-
-
-Write at Staff / Principal Engineer depth.
-
-Be opinionated.
-
-Explain trade-offs.
-
-Assume this app must feel fast even on low-end devices.
-
-
-
----
-
-
+Write at Staff / Principal Engineer depth.Be opinionated.Explain trade-offs.Assume this app must feel fast even on low-end devices.---
 
 ### FINAL INTENT
 
 This architecture must:
 
 - Feel invisible to the user
-
 - Never surprise them
-
 - Never block them
-
 - Never stutter
-
 - Never leak memory through bad structure
 
-
-
-Do not optimize locally.
-
-Design globally.
-
-
+Do not optimize locally.Design globally.
 
 # React Native + Expo Performans ve Mimari Denetim Planı 
 
@@ -1111,5 +947,3 @@ plugins: [
 - Dynamic imports for large dependencies
 
 ---
-
-## Implementation Notes

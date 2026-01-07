@@ -151,16 +151,24 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
+  // PERFORMANCE FIX: Store onStateChange in ref to prevent infinite loops
+  // onStateChange prop may have a new reference on every render from parent
+  // Using ref ensures we always call the latest version without causing re-renders
+  const onStateChangeRef = useRef(onStateChange);
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
+
   // State değişikliklerini parent'a bildir
   useEffect(() => {
-    onStateChange?.({
+    onStateChangeRef.current?.({
       selectedProduct,
       currentView,
       selectedSubCategoryId,
       selectedProductGroupId,
       breadcrumbItems,
     });
-  }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems, onStateChange]);
+  }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems]);
 
   const resetToRoot = useCallback(() => {
     setBreadcrumbItems([]);

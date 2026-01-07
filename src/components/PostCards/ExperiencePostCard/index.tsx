@@ -180,9 +180,13 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               onPress={() => {
                 // Product için BrandProductDetailScreen'e navigate et
                 if (data.contextData?.id) {
-                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { 
-                    productId: data.contextData.id 
-                  });
+                  navigationService.navigateNested(
+                    TAB_ROUTES.CATALOG, 
+                    'BrandProductDetailScreen' as any, 
+                    { 
+                      productId: data.contextData.id 
+                    }
+                  );
                 }
               }}
             />
@@ -355,6 +359,5 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   );
 };
 
-// PERFORMANCE FIX: Memoize component to prevent unnecessary re-renders in feed lists
-export default React.memo(ExperiencePostCard);
+export default ExperiencePostCard;
 

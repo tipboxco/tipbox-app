@@ -373,11 +373,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const listRef = useRef<FlatList<ListItem>>(null);
   
   // API hooks for each tab
-  const feedQuery = useUserPosts(targetUserId, 5);
-  const reviewsQuery = useUserReviews(targetUserId, 5);
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5);
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5);
-  const repliesQuery = useUserReplies(targetUserId, 5);
+  // PERFORMANCE FIX: Only enable queries for the active tab to prevent unnecessary API calls
+  // This reduces network overhead and improves performance when switching tabs
+  const feedQuery = useUserPosts(targetUserId, 5, { enabled: activeTab === 'feed' });
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: activeTab === 'reviews' });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: activeTab === 'benchmarks' });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: activeTab === 'tips' });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: activeTab === 'replies' });
   
   // Get active tab query
   const activeTabQuery = useMemo(() => {
