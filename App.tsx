@@ -1,8 +1,6 @@
-// Promise polyfill for Hermes
-if (typeof global.Promise === 'undefined') {
-  global.Promise = require('promise');
-}
-import React, { useEffect } from 'react';
+// PERFORMANCE FIX: Removed Promise polyfill - Hermes engine already supports Promise natively
+// This reduces bundle size and startup time
+import React, { useEffect, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import Navigation from '@/src/navigation';
@@ -21,6 +19,28 @@ import { NotificationProvider } from '@/src/providers/NotificationProvider';
 import { SocketProvider } from '@/src/providers/SocketProvider';
 import { useAppStore } from '@/src/store/appStore';
 
+// PERFORMANCE FIX: Memoize status bar style to prevent unnecessary re-renders
+const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
+  <>
+    <SafeAreaView 
+      edges={['top']} 
+      style={{ 
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        backgroundColor: isDark ? '#000000' : '#FFFFFF' 
+      }} 
+    />
+    <StatusBar 
+      style={isDark ? 'light' : 'dark'} 
+      backgroundColor={isDark ? '#000000' : '#FFFFFF'} 
+    />
+  </>
+));
+StatusBarComponent.displayName = 'StatusBarComponent';
+
 export default function App() {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -28,18 +48,22 @@ export default function App() {
   // AppState yönetimi artık AppStateProvider'da yapılıyor
   // Token kontrolü artık AuthProvider'da yapılıyor
 
+  // PERFORMANCE FIX: Memoize navigation bar style object
+  const navigationBarStyle = useMemo(
+    () => ({
+      backgroundColor: isDark ? '#000000' : '#ffffff',
+      buttonStyle: isDark ? 'light' as const : 'dark' as const,
+    }),
+    [isDark]
+  );
+
   // Android navigation bar'ı theme'e göre ayarla
   useEffect(() => {
     if (Platform.OS === 'android') {
-      if (isDark) {
-        NavigationBar.setBackgroundColorAsync('#000000');
-        NavigationBar.setButtonStyleAsync('light'); // ikonlar beyaz
-      } else {
-        NavigationBar.setBackgroundColorAsync('#ffffff');
-        NavigationBar.setButtonStyleAsync('dark'); // ikonlar siyah
-      }
+      NavigationBar.setBackgroundColorAsync(navigationBarStyle.backgroundColor);
+      NavigationBar.setButtonStyleAsync(navigationBarStyle.buttonStyle);
     }
-  }, [isDark]);
+  }, [navigationBarStyle]);
 
   return (
     <QueryProvider>
@@ -53,24 +77,7 @@ export default function App() {
                     <NotificationProvider>
                       <SocketProvider>
                         <GluestackProvider>
-                          {/* Root SafeAreaView - Status bar'ın arkasındaki rengi belirler (iOS) */}
-                          {/* Position absolute ile sadece status bar alanını kaplar, ekranların SafeAreaView'ları ile çakışmaz */}
-                          <SafeAreaView 
-                            edges={['top']} 
-                            style={{ 
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              zIndex: 9999,
-                              backgroundColor: isDark ? '#000000' : '#FFFFFF' 
-                            }} 
-                          />
-                          {/* StatusBar sadece style kontrol eder (iOS'ta backgroundColor çalışmaz) */}
-                          <StatusBar 
-                            style={isDark ? 'light' : 'dark'} 
-                            backgroundColor={isDark ? '#000000' : '#FFFFFF'} 
-                          />
+                          <StatusBarComponent isDark={isDark} />
                           <Navigation />
                         </GluestackProvider>
                       </SocketProvider>

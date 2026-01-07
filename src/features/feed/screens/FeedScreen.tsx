@@ -115,61 +115,50 @@ export const FeedScreen = () => {
     isRefetching,
   } = feedQuery;
 
-  // Flatten all pages into a single array and remove duplicates by ID
-  // Kalıcı çözüm: Tüm undefined/null kontrollerini yap, güvenli array işlemleri kullan
+  // PERFORMANCE FIX: Optimized feedItems memoization
+  // - Single pass through pages and items (reduced from 3 loops to 1)
+  // - Early returns for invalid data
+  // - Efficient Map-based deduplication
   const feedItems = useMemo(() => {
-    // 1. data ve data.pages kontrolü - en üst seviye güvenlik
-    if (!data || !data.pages) {
+    // Early return for invalid data
+    if (!data?.pages || !Array.isArray(data.pages)) {
       return [];
     }
     
-    // 2. data.pages'in array olduğundan emin ol
-    if (!Array.isArray(data.pages)) {
-      console.warn('[FeedScreen] data.pages is not an array:', typeof data.pages, data.pages);
-      return [];
-    }
-    
-    // 3. Undefined/null sayfaları filtrele - flatMap'ten önce güvenli hale getir
-    const validPages = data.pages.filter((page) => {
-      // Sayfa null/undefined değil ve items property'si var mı kontrol et
-      return page != null && typeof page === 'object' && 'items' in page;
-    });
-    
-    // 4. Her sayfanın items array'ini güvenli şekilde al ve birleştir
-    const allItems: FeedApiItem[] = [];
-    for (const page of validPages) {
-      // Her sayfa için items kontrolü
-      if (page && typeof page === 'object' && 'items' in page) {
-        const pageItems = page.items;
-        // items array mi kontrol et
-        if (Array.isArray(pageItems)) {
-          // Her item'ı güvenli şekilde ekle
-          for (const item of pageItems) {
-            if (item != null && typeof item === 'object') {
-              allItems.push(item);
-            }
-          }
-        }
-      }
-    }
-    
-    // 5. Duplicate'leri ID'ye göre kaldır (cursor pagination'da aynı item tekrar gelebilir)
+    // Single-pass algorithm: flatten and deduplicate in one iteration
     const uniqueItemsMap = new Map<string, FeedApiItem>();
-    for (const item of allItems) {
-      // Her item için data ve id kontrolü
-      if (item && typeof item === 'object' && 'data' in item) {
+    
+    // Iterate through pages once
+    for (const page of data.pages) {
+      // Skip invalid pages early
+      if (!page || typeof page !== 'object' || !('items' in page)) {
+        continue;
+      }
+      
+      const pageItems = page.items;
+      // Skip invalid items arrays
+      if (!Array.isArray(pageItems)) {
+        continue;
+      }
+      
+      // Process items in this page
+      for (const item of pageItems) {
+        // Skip invalid items early
+        if (!item || typeof item !== 'object' || !('data' in item)) {
+          continue;
+        }
+        
         const itemData = item.data;
+        // Extract ID efficiently
         if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
           const itemId = String(itemData.id);
-          // Sadece daha önce eklenmemişse ekle
-          if (!uniqueItemsMap.has(itemId)) {
-            uniqueItemsMap.set(itemId, item);
-          }
+          // Map.set automatically handles duplicates (last one wins, which is fine for pagination)
+          uniqueItemsMap.set(itemId, item);
         }
       }
     }
     
-    // 6. Map'ten array'e çevir ve döndür
+    // Convert Map to array (single allocation)
     return Array.from(uniqueItemsMap.values());
   }, [data?.pages]);
 
