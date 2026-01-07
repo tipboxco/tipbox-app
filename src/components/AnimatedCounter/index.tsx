@@ -111,7 +111,9 @@ const AnimatedDigit: React.FC<AnimatedDigitProps> = ({ digit, fontSize, color })
     opacity.value = withTiming(1, { duration: 120 });
   }, [digit]);
 
+  // PERFORMANCE FIX: Add 'worklet' directive for native thread execution
   const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
     return {
       transform: [{ translateY: translateY.value }],
       opacity: opacity.value,
