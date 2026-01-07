@@ -248,7 +248,16 @@ export const NotificationsScreen: React.FC = () => {
     const { isAuthenticated } = useAppStore();
     const [filters, setFilters] = useState<NotificationFilter[]>(notification_filters);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+
+    // Debounce search query for API calls
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery.trim());
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // API hooks
     const activeFilter = filters.find(f => f.isActive);
@@ -257,6 +266,7 @@ export const NotificationsScreen: React.FC = () => {
         limit: 50,
         offset: 0,
         unreadOnly: unreadOnly,
+        search: debouncedSearchQuery || undefined,
     }, isAuthenticated); // Sadece authenticated olduğunda query çalışsın
 
     const notifications = notificationsResponse?.data || [];

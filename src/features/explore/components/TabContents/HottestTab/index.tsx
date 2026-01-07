@@ -26,7 +26,7 @@ import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 
 interface HottestTabProps {
-  // Props gerekirse buraya eklenebilir
+  searchQuery?: string;
 }
 
 // Map Feed to PostCardData
@@ -264,7 +264,7 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
   };
 };
 
-const HottestTabComponent: React.FC<HottestTabProps> = () => {
+const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -280,7 +280,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = () => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useHottest(3);
+  } = useHottest(3, searchQuery);
 
   // Flatten all pages into a single array and remove duplicates by ID
   const hottestItems = useMemo(() => {

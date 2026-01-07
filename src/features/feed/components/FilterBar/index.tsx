@@ -93,13 +93,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
   
   // Calculate panel height for 2 rows x 3 columns grid
   const getPanelHeight = () => {
-    const rowHeight = 50; // Each row height
+    const rowHeight = 42; // Each row height (reduced from 50)
     const rows = 2; // 2 rows
-    const padding = 16;
-    const dividerHeight = 1;
-    const buttonHeight = 50;
-    const buttonPadding = 16;
-    return (rows * rowHeight) + (padding * 2) + dividerHeight + buttonHeight + buttonPadding;
+    const padding = 12; // Reduced from 16
+    const buttonHeight = 32; // Reduced from 50
+    const buttonTopPadding = 8; // Top padding for buttons
+    const buttonBottomPadding = 12; // Bottom padding for buttons (increased to prevent clipping)
+    return (rows * rowHeight) + (padding * 2) + buttonHeight + buttonTopPadding + buttonBottomPadding;
   };
   
   // Track FilterBar height for absolute positioning
@@ -358,126 +358,145 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     const displayRows = rows.slice(0, 2);
 
     return (
-      <VStack bg="#FAFAFA" width="100%">
+      <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
         {/* Options Grid - 2 rows x 3 columns */}
         {options.length === 0 ? (
-          <VStack px="$4" py="$3" alignItems="center" justifyContent="center" minHeight={50}>
-            <Text
-              fontSize="$sm"
-              color="#666666"
-              style={{ color: '#666666', fontSize: 14 }}
+          <VStack px="$3" py="$3" alignItems="center" justifyContent="center" minHeight={60}>
+            <RNText
+              style={{
+                fontSize: 12,
+                color: isDark ? '#FFFFFF' : '#666666',
+                fontWeight: '500',
+              }}
             >
               Yükleniyor...
-            </Text>
+            </RNText>
           </VStack>
         ) : (
-          <VStack px="$4" py="$3" space="sm" width="100%">
+          <VStack px="$3" py="$3" space="sm" width="100%">
             {displayRows.map((row, rowIndex) => (
-            <HStack key={rowIndex} space="sm" justifyContent="space-between" width="100%">
-              {row.map((option) => {
-                const selected = isSelected(option.value);
-                return (
-                  <Pressable
-                    key={option.value}
-                    onPress={() => onSelect(option.value)}
-                    flex={1}
-                  >
-                    <HStack 
-                      alignItems="center" 
-                      space="xs" 
-                      py="$2"
+              <HStack key={rowIndex} space="sm" justifyContent="space-between" width="100%">
+                {row.map((option) => {
+                  const selected = isSelected(option.value);
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => onSelect(option.value)}
                       flex={1}
-                      justifyContent="flex-start"
+                      style={{ minHeight: 40 }}
                     >
-                      {/* Checkbox */}
                       <Box
-                        width={20}
-                        height={20}
-                        borderWidth={1}
-                        borderColor={selected ? '#829905' : '#CCCCCC'}
-                        borderRadius={4}
-                        bg={selected ? '#829905' : '#FFFFFF'}
-                        justifyContent="center"
-                        alignItems="center"
+                        flex={1}
+                        bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
+                        borderWidth={selected ? 1 : 0}
+                        borderColor={selected ? '#829905' : 'transparent'}
+                        borderRadius={6}
+                        px="$1.5"
+                        py="$1.5"
                       >
-                        {selected && (
-                          <Feather name="check" size={14} color="#FFFFFF" />
-                        )}
+                        <HStack 
+                          alignItems="center" 
+                          space="xs" 
+                          flex={1}
+                          justifyContent="flex-start"
+                        >
+                          {/* Checkbox */}
+                          <Box
+                            width={18}
+                            height={18}
+                            borderWidth={1.5}
+                            borderColor={selected ? '#829905' : (isDark ? '#444444' : '#CCCCCC')}
+                            borderRadius={4}
+                            bg={selected ? '#829905' : 'transparent'}
+                            justifyContent="center"
+                            alignItems="center"
+                            flexShrink={0}
+                          >
+                            {selected && (
+                              <Feather name="check" size={12} color="#FFFFFF" />
+                            )}
+                          </Box>
+                          {/* Label */}
+                          <Box flex={1} justifyContent="center">
+                            <RNText
+                              style={{
+                                color: isDark ? '#FFFFFF' : '#000000',
+                                fontSize: 12,
+                                fontWeight: selected ? '600' : '500',
+                                lineHeight: 16,
+                              }}
+                              numberOfLines={2}
+                            >
+                              {option.label}
+                            </RNText>
+                          </Box>
+                        </HStack>
                       </Box>
-                      {/* Label */}
-                      <RNText
-                        style={{ 
-                          color: '#000000',
-                          fontSize: 16,
-                          fontWeight: '600',
-                          flex: 1,
-                          opacity: 1
-                        }}
-                        numberOfLines={1}
-                      >
-                        {option.label}
-                      </RNText>
-                    </HStack>
-                  </Pressable>
-                );
-              })}
-              {/* Fill empty spaces in last row if needed */}
-              {row.length < 3 && Array.from({ length: 3 - row.length }).map((_, idx) => (
-                <Box key={`empty-${idx}`} flex={1} />
-              ))}
-            </HStack>
-          ))}
+                    </Pressable>
+                  );
+                })}
+                {/* Fill empty spaces in last row if needed */}
+                {row.length < 3 && Array.from({ length: 3 - row.length }).map((_, idx) => (
+                  <Box key={`empty-${idx}`} flex={1} />
+                ))}
+              </HStack>
+            ))}
           </VStack>
         )}
 
-        {/* Divider */}
-        <Box height={1} bg="#E9E9E9" />
-
-        {/* Action Buttons */}
-        <HStack px="$4" py="$3" space="sm" justifyContent="space-between">
-          <Pressable
-            onPress={handleClear}
-            flex={1}
-          >
-            <Box
-              py="$3"
-              bg="transparent"
-              borderWidth={1}
-              borderColor="#E9E9E9"
-              borderRadius={8}
-              alignItems="center"
-              justifyContent="center"
+        {/* Action Buttons - Always visible at bottom of dropdown */}
+        <Box px="$3" pt="$2" pb="$3" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <HStack space="sm" justifyContent="space-between" width="100%">
+            <Pressable
+              onPress={handleClear}
+              flex={1}
             >
-              <Text
-                fontSize="$sm"
-                fontWeight="$medium"
-                color="#666666"
+              <Box
+                py="$2"
+                bg="transparent"
+                borderWidth={1}
+                borderColor={isDark ? '#444444' : '#E9E9E9'}
+                borderRadius={6}
+                alignItems="center"
+                justifyContent="center"
+                minHeight={36}
               >
-                Temizle
-              </Text>
-            </Box>
-          </Pressable>
-          <Pressable
-            onPress={handleApply}
-            flex={1}
-          >
-            <Box
-              py="$3"
-              bg="#829905"
-              borderRadius={8}
-              alignItems="center"
-              justifyContent="center"
+                <RNText
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: isDark ? '#FFFFFF' : '#666666',
+                  }}
+                >
+                  Temizle
+                </RNText>
+              </Box>
+            </Pressable>
+            <Pressable
+              onPress={handleApply}
+              flex={1}
             >
-              <Text
-                fontSize="$sm"
-                fontWeight="$bold"
-                color="#FFFFFF"
+              <Box
+                py="$2"
+                bg="#829905"
+                borderRadius={6}
+                alignItems="center"
+                justifyContent="center"
+                minHeight={36}
               >
-                Uygula
-              </Text>
-            </Box>
-          </Pressable>
-        </HStack>
+                <RNText
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  Uygula
+                </RNText>
+              </Box>
+            </Pressable>
+          </HStack>
+        </Box>
       </VStack>
     );
   };
@@ -592,17 +611,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
             right: 0,
             height: panelHeight,
             overflow: 'hidden',
-            backgroundColor: '#FAFAFA',
+            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
             borderTopWidth: 1,
-            borderTopColor: '#E9E9E9',
+            borderTopColor: isDark ? '#333333' : '#E9E9E9',
             borderBottomWidth: 1,
-            borderBottomColor: '#E9E9E9',
+            borderBottomColor: isDark ? '#333333' : '#E9E9E9',
             minHeight: openFilterId ? 50 : 0,
             zIndex: 1000,
             elevation: 10, // Android shadow
             shadowColor: '#000', // iOS shadow
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
+            shadowOpacity: isDark ? 0.3 : 0.1,
             shadowRadius: 4,
           }}
         >

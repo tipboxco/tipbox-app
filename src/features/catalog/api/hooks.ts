@@ -205,27 +205,30 @@ export const useCatalogProductGroups = (subCategoryId: string | undefined) => {
  * Belirli bir ürün grubuna ait ürünleri getirir ve cache'ler
  * 
  * @param productGroupId - Ürün grubu ID'si
+ * @param search - Product adı, marka veya açıklamasında arama (opsiyonel)
  * @returns React Query hook result
  * 
  * @example
- * const { data, isLoading, error } = useCatalogProducts('productgroup-123');
+ * const { data, isLoading, error } = useCatalogProducts('productgroup-123', 'iphone');
  */
-export const useCatalogProducts = (productGroupId: string | undefined) => {
+export const useCatalogProducts = (productGroupId: string | undefined, search?: string) => {
+  const hasSearchQuery = !!search && search.trim().length > 0;
+  
   return useQuery<CatalogProduct[], Error>({
-    queryKey: productGroupId ? catalogKeys.products(productGroupId) : ['catalog', 'products', 'disabled'],
+    queryKey: productGroupId ? [...catalogKeys.products(productGroupId), search] : ['catalog', 'products', 'disabled'],
     queryFn: () => {
       if (!productGroupId) {
         throw new Error('ProductGroup ID is required');
       }
-      return getCatalogProducts(productGroupId);
+      return getCatalogProducts(productGroupId, search);
     },
     enabled: !!productGroupId,
-    staleTime: 60 * 60 * 1000, // 1 saat - dokümana göre backend cache TTL
-    gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
-    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false,
-    retry: 3, // Dokümana göre retry mekanizması
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    staleTime: hasSearchQuery ? 0 : 60 * 60 * 1000, // Search varsa 0, yoksa 1 saat
+    gcTime: hasSearchQuery ? 0 : 24 * 60 * 60 * 1000, // Search varsa cache yok, yoksa 24 saat
+    refetchOnMount: hasSearchQuery ? 'always' : false, // Search varsa her zaman refetch
+    refetchOnWindowFocus: hasSearchQuery, // Search varsa focus'ta refetch
+    retry: hasSearchQuery ? 0 : 3, // Search varsa retry yok, yoksa 3 kez
+    retryDelay: hasSearchQuery ? undefined : (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 

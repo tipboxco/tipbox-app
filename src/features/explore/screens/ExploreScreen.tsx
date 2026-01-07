@@ -286,6 +286,16 @@ const ExploreScreen: React.FC = () => {
   const [searchBarHeight, setSearchBarHeight] = useState(0);
   const [bannerHeight, setBannerHeight] = useState(0);
   const [tabsHeight, setTabsHeight] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Debounce search query for API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Marketplace Banners API hook
   const {
@@ -599,7 +609,7 @@ const ExploreScreen: React.FC = () => {
                 contentContainerStyle={{ paddingBottom: bottomInset }}
                 nestedScrollEnabled={true}
               >
-                <HottestTab />
+                <HottestTab searchQuery={debouncedSearchQuery} />
               </ScrollView>
             </Box>
 
@@ -611,6 +621,7 @@ const ExploreScreen: React.FC = () => {
                 nestedScrollEnabled={true}
               >
                 <NewsTab
+                  searchQuery={debouncedSearchQuery}
                   onEventPress={handleEventPress}
                   onBrandPress={handleBrandPress}
                   onProductPress={handleProductPress}

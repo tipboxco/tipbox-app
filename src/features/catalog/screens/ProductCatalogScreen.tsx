@@ -75,8 +75,21 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den seçili alt kategoriye ait product groups'u getir
   const { data: catalogProductGroups, isLoading: isLoadingProductGroups } = useCatalogProductGroups(selectedSubCategoryId);
   
-  // API'den seçili ürün grubuna ait products'ı getir
-  const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(selectedProductGroupId);
+  // Debounce search query for API calls
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // API'den seçili ürün grubuna ait products'ı getir (search ile)
+  const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
+    selectedProductGroupId,
+    debouncedSearchQuery || undefined
+  );
   
   // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
   useEffect(() => {

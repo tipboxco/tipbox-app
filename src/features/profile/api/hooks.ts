@@ -11,6 +11,7 @@ import {
   getUserLadderBadges,
   getUserCollectionAchievements,
   getUserCollectionBridges,
+  searchProductExperiences,
   getTrustList,
   getTrusterList,
   addToTrustList,
@@ -22,6 +23,7 @@ import {
   type UpdateProfileResponse,
   type ReportUserRequest,
   type ReportUserResponse,
+  type ProductExperienceSearchResponse,
 } from './profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import type {
@@ -599,15 +601,21 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5) =>
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserCollectionAchievements('user-123', 20);
  */
-export const useUserCollectionAchievements = (userId: string | undefined, limit: number = 20) => {
+export const useUserCollectionAchievements = (
+  userId: string | undefined, 
+  limit: number = 20,
+  searchQuery?: string
+) => {
+  const hasSearchQuery = !!searchQuery && searchQuery.trim().length > 0;
+  
   return useInfiniteQuery<UserCollectionAchievementsApiResponse, Error>({
-    queryKey: userId ? profileKeys.userCollectionAchievements(userId, limit) : ['profile', 'collections', 'achievements', 'disabled'],
+    queryKey: userId ? [...profileKeys.userCollectionAchievements(userId, limit), searchQuery] : ['profile', 'collections', 'achievements', 'disabled'],
     queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getUserCollectionAchievements(userId, cursor, limit);
+      return getUserCollectionAchievements(userId, cursor, limit, searchQuery);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -639,15 +647,21 @@ export const useUserCollectionAchievements = (userId: string | undefined, limit:
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserCollectionBridges('user-123', 20);
  */
-export const useUserCollectionBridges = (userId: string | undefined, limit: number = 20) => {
+export const useUserCollectionBridges = (
+  userId: string | undefined, 
+  limit: number = 20,
+  searchQuery?: string
+) => {
+  const hasSearchQuery = !!searchQuery && searchQuery.trim().length > 0;
+  
   return useInfiniteQuery<UserCollectionBridgesApiResponse, Error>({
-    queryKey: userId ? profileKeys.userCollectionBridges(userId, limit) : ['profile', 'collections', 'bridges', 'disabled'],
+    queryKey: userId ? [...profileKeys.userCollectionBridges(userId, limit), searchQuery] : ['profile', 'collections', 'bridges', 'disabled'],
     queryFn: ({ pageParam }) => {
       if (!userId) {
         throw new Error('User ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getUserCollectionBridges(userId, cursor, limit);
+      return getUserCollectionBridges(userId, cursor, limit, searchQuery);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

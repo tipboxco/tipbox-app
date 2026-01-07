@@ -11,6 +11,7 @@ import type { AchievementApiItem } from '@/src/features/events/types';
 interface AchievementBadgesTabProps {
   userId?: string;
   onBadgePress?: (badge: Badge) => void;
+  searchQuery?: string;
 }
 
 // Map AchievementApiItem to Badge format
@@ -38,6 +39,7 @@ const mapAchievementToBadge = (achievement: AchievementApiItem): Badge => {
 export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   userId,
   onBadgePress,
+  searchQuery,
 }) => {
   const bottomInset = useSafeAreaValues('bottom');
   const { colorMode } = useColorMode();
@@ -56,7 +58,7 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     isFetchingNextPage,
     isLoading,
     error,
-  } = useUserCollectionAchievements(targetUserId, ACHIEVEMENTS_PER_PAGE);
+  } = useUserCollectionAchievements(targetUserId, ACHIEVEMENTS_PER_PAGE, searchQuery);
 
   // Flatten all pages into a single array - useMemo ile memoize et
   const achievements = useMemo(() => {

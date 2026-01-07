@@ -43,7 +43,19 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
 
-    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages();
+    // Debounce search query for API calls
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+    
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery.trim());
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [searchQuery]);
+    
+    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages({
+      search: debouncedSearchQuery || undefined,
+    });
     const queryClient = useQueryClient();
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();

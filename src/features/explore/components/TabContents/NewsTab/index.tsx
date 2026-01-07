@@ -12,6 +12,7 @@ import type { EventCardData } from '@/src/types/EventCard';
 import { toImageSource } from '@/src/utils';
 
 interface NewsTabProps {
+  searchQuery?: string;
   onEventPress?: (eventId: string) => void;
   onBrandPress?: (brandId: string) => void;
   onProductPress?: (productId: string) => void;
@@ -21,6 +22,7 @@ interface NewsTabProps {
 }
 
 const NewsTabComponent: React.FC<NewsTabProps> = ({
+  searchQuery,
   onEventPress,
   onBrandPress,
   onProductPress,
@@ -38,7 +40,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     hasNextPage: hasNextEventsPage,
     isFetchingNextPage: isFetchingNextEventsPage,
     isLoading: isLoadingEvents,
-  } = useExploreEvents(10);
+  } = useExploreEvents(10, searchQuery);
   
   // onEndReached loop'unu önlemek için ref
   const isLoadingMoreEventsRef = useRef(false);
@@ -50,7 +52,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     hasNextPage: hasNextBrandsPage,
     isFetchingNextPage: isFetchingNextBrandsPage,
     isLoading: isLoadingBrands,
-  } = useNewBrands(10);
+  } = useNewBrands(10, searchQuery);
 
   // New Products API hook with infinite scroll
   const {
