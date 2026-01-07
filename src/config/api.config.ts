@@ -1,5 +1,5 @@
 export const API_CONFIG = { // Environment variable'dan al (öncelikli)
-    BASE_URL: 'http://192.168.1.164:3000',
+        BASE_URL: 'https://api-test.tipbox.co',
     MEDIA_URL: 'http://192.168.1.164:9000',
     TIMEOUT: 10000,
     RETRY_ATTEMPTS: 3,

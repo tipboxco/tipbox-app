@@ -327,9 +327,9 @@ export const CreateUpdatePostScreen = () => {
                       </HStack>
                       <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize={'$2xs'}
+                        fontSize="$sm"
                         ml={26}
-                        lineHeight={16}
+                        lineHeight={22}
                       >
                         {item.text}
                       </Text>

@@ -162,7 +162,7 @@ const NotificationCard: React.FC<{
                         <HStack alignItems="center" space="xs">
                             <Text
                                 color="#8C8C8C"
-                                fontSize={9}
+                                fontSize="$xs"
                                 fontWeight="$medium"
                             >
                                 {formatRelativeTime(notification.createdAt)}
@@ -194,7 +194,7 @@ const NotificationCard: React.FC<{
                         >
                             <Text
                                 color="#000000"
-                                fontSize={9}
+                                fontSize="$xs"
                                 fontWeight="$bold"
                             >
                                 Görüntüle
@@ -229,7 +229,7 @@ const FilterButton: React.FC<{
             >
                 <Text
                     color="#000000"
-                    fontSize={9}
+                    fontSize="$xs"
                     fontWeight="$semibold"
                     textAlign="center"
                 >
@@ -257,7 +257,7 @@ export const NotificationsScreen: React.FC = () => {
         limit: 50,
         offset: 0,
         unreadOnly: unreadOnly,
-    });
+    }, isAuthenticated); // Sadece authenticated olduğunda query çalışsın
 
     const notifications = notificationsResponse?.data || [];
     
@@ -483,7 +483,7 @@ export const NotificationsScreen: React.FC = () => {
                             placeholder="Bildirimlerde Ara"
                             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                             color={isDark ? '#000' : '#000'}
-                            fontSize={9}
+                            fontSize="$xs"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
@@ -529,7 +529,6 @@ export const NotificationsScreen: React.FC = () => {
                     data={filteredNotifications}
                     renderItem={renderNotificationItem}
                     keyExtractor={keyExtractor}
-                    estimatedItemSize={80} // PERFORMANCE FIX: Critical for FlashList performance
                     contentContainerStyle={{ 
                         paddingHorizontal: 16,
                         paddingTop: 8,

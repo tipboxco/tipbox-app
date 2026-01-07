@@ -310,8 +310,11 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
 
   const handleLogout = useCallback(async () => {
     if (drawerStatusRef.current !== 'open') return;
-    await logout();
+    
+    // Drawer'ı hemen kapat
     props.navigation.closeDrawer();
+    
+    // Navigation'ı hemen reset et (kullanıcı anında çıkış görsün)
     navigation.reset({
       index: 0,
       routes: [{ 
@@ -320,6 +323,12 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           routes: [{ name: 'Welcome' }]
         }
       }],
+    });
+    
+    // Logout işlemini arka planda yap (token temizleme vs.)
+    // State zaten logout() içinde güncelleniyor, bu yüzden navigation reset yeterli
+    logout().catch((error) => {
+      console.error('❌ Logout hatası (arka plan):', error);
     });
   }, [logout, props.navigation, navigation]);
 

@@ -52,14 +52,14 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
             <VStack flex={1} pt={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={9}
+                    fontSize="$xs"
                     fontWeight="$bold"
                 >
                     {product.name}
                 </Text>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={8}
+                    fontSize="$xs"
                     fontWeight="$semibold"
                 >
                     {product.subName}
@@ -151,7 +151,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={9}
+                            fontSize="$xs"
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -168,7 +168,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
             <VStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={10}
+                    fontSize="$sm"
                 >
                     {data.content}
                 </Text>
@@ -186,7 +186,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
                         />
                         <Text
                             color="#829905"
-                            fontSize={10}
+                            fontSize="$sm"
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

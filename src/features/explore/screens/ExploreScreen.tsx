@@ -23,7 +23,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated-carousel';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { SearchModal } from '@/src/components/SearchModal';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useNavigation } from '@react-navigation/native';
@@ -283,7 +282,6 @@ const ExploreScreen: React.FC = () => {
   // Tab state - currentPage'e göre hesaplanıyor
   const activeCategory: 'hottest' | 'news' = currentPage === 0 ? 'hottest' : 'news';
   
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const bottomInset = useSafeAreaValues('bottom');
   const [searchBarHeight, setSearchBarHeight] = useState(0);
   const [bannerHeight, setBannerHeight] = useState(0);
@@ -294,14 +292,6 @@ const ExploreScreen: React.FC = () => {
     data: banners,
     isLoading: isLoadingBanners,
   } = useMarketplaceBanners();
-
-  const handleSearchPress = () => {
-    setIsSearchVisible(true);
-  };
-
-  const handleSearchClose = () => {
-    setIsSearchVisible(false);
-  };
 
   // Callback fonksiyonlarını useCallback ile sarmalayarak referanslarını stabilize et
   const handleEventPress = useCallback((eventId: string) => {
@@ -469,7 +459,6 @@ const ExploreScreen: React.FC = () => {
         <Header
           title="Explore"
           leftAction="menu"
-          onSearchPress={handleSearchPress}
         />
 
         <VStack flex={1} space="md">
@@ -565,7 +554,7 @@ const ExploreScreen: React.FC = () => {
                   <Animated.Text
                     style={[
                       {
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: 'bold',
                       },
                       tab2Style,
@@ -633,12 +622,6 @@ const ExploreScreen: React.FC = () => {
             </Box>
           </AnimatedPagerView>
         </VStack>
-
-        {/* Search Modal */}
-        <SearchModal
-          visible={isSearchVisible}
-          onClose={handleSearchClose}
-        />
       </Box>
     </SafeAreaView>
   );

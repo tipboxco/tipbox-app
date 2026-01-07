@@ -310,6 +310,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         console.log('[NotificationProvider] ⏭️ Notification suppressed - user is viewing the thread');
       }
 
+      // State Sync: Zustand store'a ekle (instant UI update için)
+      // ÖNEMLİ: Bu optimistic update yapıyor, bildirim anında görünecek
+      notificationStateSync.addNotification(notification);
+
       // Domain Service'e yönlendir (EventService → NotificationService)
       // Bu katmanlı mimari: Transport → Domain → State + Navigation
       const { eventService } = await import('@/src/services/EventService');
@@ -325,7 +329,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       );
 
-      // React Query cache'i invalidate et (notificationStateSync periyodik sync yapıyor)
+      // React Query cache'i invalidate et (tüm parametreli query'ler için)
+      // notificationKeys.lists() parametreli query key döndürür, bu yüzden tüm list query'lerini invalidate etmeliyiz
       queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
       queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
     };

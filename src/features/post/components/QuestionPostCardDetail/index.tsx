@@ -104,7 +104,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={9}
+                            fontSize="$xs"
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -161,7 +161,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                 >
                     <Feather name="help-circle" size={12} color={'#fff'} />
                     <Text
-                        fontSize={8}
+                        fontSize="$xs"
                         fontWeight="$semibold"
                         ml={5}
                         color={'#fff'}
@@ -185,7 +185,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                     >
                         <Feather name="send" size={12} color="#fff" />
                         <Text
-                            fontSize={8}
+                            fontSize="$xs"
                             fontWeight="$semibold"
                             ml={5}
                             color="#fff"
@@ -200,7 +200,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
             <VStack px={12} pb={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={10}
+                    fontSize="$sm"
                 >
                     {data.content}
                 </Text>
@@ -218,7 +218,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         />
                         <Text
                             color="#829905"
-                            fontSize={10}
+                            fontSize="$sm"
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

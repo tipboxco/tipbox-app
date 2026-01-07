@@ -108,7 +108,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                     <VStack flex={1}>
                         <Text
                             color={isDark ? '$textDark400' : '#C7C7C7'}
-                            fontSize={8}
+                            fontSize="$xs"
                             fontWeight="$semibold"
                         >
                             {data.user.action}
@@ -122,7 +122,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={9}
+                            fontSize="$xs"
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -159,7 +159,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                         </HStack>
                         <Text
                             color={isDark ? '$textDark50' : '#000'}
-                            fontSize={'$2xs'}
+                            fontSize="$sm"
                             ml={26}
                         >
                             {item.text}
@@ -194,7 +194,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                     >
                         <Text
                             color={isDark ? '$textDark50' : '#000'}
-                            fontSize={8}
+                            fontSize="$xs"
                             fontWeight="$semibold"
                         >
                             {tag}
@@ -215,7 +215,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                         />
                         <Text
                             color="#829905"
-                            fontSize={10}
+                            fontSize="$sm"
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

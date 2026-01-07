@@ -423,7 +423,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
           </Text>
           <Text
             mt="$2"
-            fontSize="$2xs"
+            fontSize="$sm"
             color={isDark ? '#8E8E93' : '#8E8E93'}
             textAlign="center"
           >
@@ -474,7 +474,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             {displayData?.userData && displayData.userData.length > 0 && (
               <VStack space="xs" mt="$1">
                 <Text
-                  fontSize="$2xs"
+                  fontSize="$sm"
                   fontWeight="$semibold"
                   color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   px="$4"
@@ -526,9 +526,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                               {/* İlk satır */}
                               <Text
                                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                fontSize="$2xs"
+                                fontSize="$sm"
                                 numberOfLines={1}
-                                lineHeight={16}
+                                lineHeight={22}
                               >
                                 {user.cosmetic.split(' - ')[0] || user.cosmetic}
                               </Text>
@@ -536,9 +536,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                               {user.cosmetic.includes(' - ') && user.cosmetic.split(' - ').length > 1 && (
                                 <Text
                                   color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                  fontSize="$2xs"
+                                  fontSize="$sm"
                                   numberOfLines={1}
-                                  lineHeight={16}
+                                  lineHeight={22}
                                 >
                                   {user.cosmetic.split(' - ').slice(1).join(' - ')}
                                 </Text>
@@ -557,7 +557,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             {displayData?.brandData && displayData.brandData.length > 0 && (
               <VStack space="xs" mt="$1">
                 <Text
-                  fontSize="$2xs"
+                  fontSize="$sm"
                   fontWeight="$semibold"
                   color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   px="$4"
@@ -617,7 +617,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
             {displayData?.productData && displayData.productData.length > 0 && (
               <VStack space="xs" mt="$1">
                 <Text
-                  fontSize="$2xs"
+                  fontSize="$sm"
                   fontWeight="$semibold"
                   color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   px="$4"
@@ -776,7 +776,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                       {brand.category && (
                         <Text
                           color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                          fontSize="$2xs"
+                          fontSize="$sm"
                           numberOfLines={1}
                         >
                           {brand.category}

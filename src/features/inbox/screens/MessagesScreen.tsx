@@ -304,6 +304,64 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const getFilteredMessages = () => {
         let filtered: InboxMessage[] = messages || [];
 
+        // Aynı recipientUserId'ye sahip thread'leri birleştir
+        // Aynı kullanıcıdan gelen mesajlar tek bir thread'de gösterilmeli
+        const mergedMessages = new Map<string, InboxMessage>();
+        
+        filtered.forEach((message) => {
+            const recipientUserId = message.recipientUserId;
+            
+            if (!recipientUserId) {
+                // recipientUserId yoksa direkt ekle (birleştirme yapılamaz)
+                mergedMessages.set(message.id, message);
+                return;
+            }
+            
+            // Aynı recipientUserId'ye sahip thread var mı kontrol et
+            const existingMessage = Array.from(mergedMessages.values()).find(
+                (msg) => msg.recipientUserId === recipientUserId
+            );
+            
+            if (existingMessage) {
+                // Mevcut thread'i güncelle:
+                // - En son mesajı ve timestamp'i kullan
+                // - Unread count'ları topla
+                // - En yeni thread ID'sini kullan (timestamp'e göre)
+                const existingTimestamp = new Date(existingMessage.timestamp).getTime();
+                const newTimestamp = new Date(message.timestamp).getTime();
+                
+                if (newTimestamp > existingTimestamp) {
+                    // Yeni mesaj daha yeni, mevcut thread'i güncelle
+                    mergedMessages.delete(existingMessage.id);
+                    mergedMessages.set(message.id, {
+                        ...message,
+                        // Unread count'ları topla
+                        unreadCount: (existingMessage.unreadCount || 0) + (message.unreadCount || 0),
+                        // En az bir thread okunmamışsa isUnread true
+                        isUnread: existingMessage.isUnread || message.isUnread,
+                    });
+                } else {
+                    // Mevcut thread daha yeni, sadece unread count'u güncelle
+                    mergedMessages.set(existingMessage.id, {
+                        ...existingMessage,
+                        unreadCount: (existingMessage.unreadCount || 0) + (message.unreadCount || 0),
+                        isUnread: existingMessage.isUnread || message.isUnread,
+                    });
+                }
+            } else {
+                // Yeni thread, direkt ekle
+                mergedMessages.set(message.id, message);
+            }
+        });
+        
+        // Map'ten array'e çevir ve timestamp'e göre sırala (en yeni başta)
+        filtered = Array.from(mergedMessages.values()).sort((a, b) => {
+            const timestampA = new Date(a.timestamp).getTime();
+            const timestampB = new Date(b.timestamp).getTime();
+            return timestampB - timestampA; // En yeni başta
+        });
+
+        // Search query varsa filtrele
         if (searchQuery) {
             filtered = filtered.filter(message =>
                 message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||

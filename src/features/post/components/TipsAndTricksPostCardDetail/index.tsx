@@ -104,7 +104,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={9}
+                            fontSize="$xs"
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -160,7 +160,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                 >
                     <Feather name="info" size={12} color={'#fff'} />
                     <Text
-                        fontSize={8}
+                        fontSize="$xs"
                         fontWeight="$semibold"
                         ml={5}
                         color={'#fff'}
@@ -177,7 +177,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                     <Text
                         mr={4}
                         color={isDark ? '$textDark400' : '#666'}
-                        fontSize={10}
+                        fontSize="$sm"
                     >
                         {data.tag}
                     </Text>
@@ -193,7 +193,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
             <VStack px={12} pb={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={10}
+                    fontSize="$sm"
                 >
                     {data.content}
                 </Text>
@@ -211,7 +211,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                         />
                         <Text
                             color="#829905"
-                            fontSize={10}
+                            fontSize="$sm"
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

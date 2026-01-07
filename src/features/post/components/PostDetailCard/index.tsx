@@ -129,7 +129,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                         {data.user?.title && (
                             <Text
                                 color={isDark ? '$textDark400' : '#787878'}
-                                fontSize={9}
+                                fontSize="$xs"
                                 numberOfLines={1}
                                 maxWidth={250}
                             >
@@ -174,7 +174,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                 <VStack px={12} pb={8}>
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize={10}
+                        fontSize="$sm"
                     >
                         {data.content}
                     </Text>
@@ -193,7 +193,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                         />
                         <Text
                             color="#829905"
-                            fontSize={10}
+                            fontSize="$sm"
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

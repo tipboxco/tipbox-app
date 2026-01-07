@@ -267,9 +267,27 @@ class SocketService {
 
   /**
    * Notification event listener ekler
+   * Backend'den gelebilecek farklı event adlarını da dinler
    */
   public onNotification(callback: (notification: any) => void): void {
-    this.on('notification', callback);
+    // Wrapper callback - tüm event'leri tek bir callback'e yönlendir
+    const wrappedCallback = (data: any) => {
+      if (__DEV__) {
+        console.log('[SocketService] 🔍 Notification event received:', {
+          event: 'notification',
+          data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data,
+        });
+      }
+      callback(data);
+    };
+    
+    // Ana event adı
+    this.on('notification', wrappedCallback);
+    
+    // Alternatif event adları (backend farklı event adı kullanıyor olabilir)
+    // Bu event'ler de aynı callback'i çağırır
+    this.on('new_notification', wrappedCallback);
+    this.on('notifications', wrappedCallback);
   }
 
   /**

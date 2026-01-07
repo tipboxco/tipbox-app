@@ -426,7 +426,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                 subName={context.subName}
                 onPress={() => {
                   // ProductGroup veya SubCategory için CatalogScreen'e navigate et
-                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
                 }}
               />
             </Box>
@@ -450,9 +450,13 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                   onPress={() => {
                     // Product için BrandProductDetailScreen'e navigate et
                     if (category.product?.id) {
-                      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { 
-                        productId: category.product.id 
-                      });
+                      navigationService.navigateNested(
+                        TAB_ROUTES.CATALOG, 
+                        'BrandProductDetailScreen' as any, 
+                        { 
+                          productId: category.product.id 
+                        }
+                      );
                     }
                   }}
                 />
@@ -471,7 +475,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                 subName={category.subCategory}
                 onPress={() => {
                   // Category için CatalogScreen'e navigate et
-                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
                 }}
               />
             </Box>
@@ -489,7 +493,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize={10}
+            fontSize="$sm"
             numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
           >
             {data.content}
@@ -509,7 +513,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
             />
             <Text
               color="#829905"
-              fontSize={10}
+              fontSize="$sm"
               textDecorationLine="underline"
             >
               {isTranslated ? 'Automatically translated from English.' : 'Translate'}

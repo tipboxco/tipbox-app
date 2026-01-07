@@ -113,7 +113,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             </Text>
             <Text
               color={isDark ? '$textDark400' : '#787878'}
-              fontSize={9}
+              fontSize="$xs"
               numberOfLines={1}
               maxWidth={250}
             >
@@ -140,7 +140,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
         >
           <Feather name="info" size={12} color={'#fff'} />
           <Text
-            fontSize={9}
+            fontSize="$xs"
             fontWeight="$bold"
             ml={5}
             color={'#fff'}
@@ -154,8 +154,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
       <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         <Text
           color={isDark ? '$textDark50' : '#000'}
-          fontSize={10}
-          lineHeight={14}
+          fontSize="$sm"
+          lineHeight={22}
         >
           {data.content}
         </Text>
@@ -175,7 +175,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
           <VStack px={12} pt={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
             <Text
               color={isDark ? '$textDark50' : '#A3A3A3'}
-              fontSize={10}
+              fontSize="$sm"
               fontWeight="$bold"
               textDecorationLine="underline"
             >
@@ -225,8 +225,8 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                     </Text>
                     <Text
                       color={isDark ? '$textDark50' : '#000000'}
-                      fontSize={10}
-                      lineHeight={14}
+                      fontSize="$sm"
+                      lineHeight={22}
                     >
                       {contentItem.text}
                     </Text>
@@ -282,7 +282,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                     py={3}
                   >
                     <Text
-                      fontSize={8}
+                      fontSize="$xs"
                       fontWeight="$semibold"
                       color={isDark ? '$textDark50' : '#000000'}
                     >
@@ -305,7 +305,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                 />
                 <Text
                   color="#829905"
-                  fontSize={10}
+                  fontSize="$sm"
                   textDecorationLine="underline"
                 >
                   {isTranslated ? 'Automatically translated from English.' : 'Translate'}
