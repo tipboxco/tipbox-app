@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { FlatList, ActivityIndicator, StyleSheet, ScrollView, Alert } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -370,7 +371,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const listRef = useRef<FlatList<ListItem>>(null);
+  const listRef = useRef<FlashList<ListItem>>(null);
   
   // API hooks for each tab
   // PERFORMANCE FIX: Only enable queries for the active tab to prevent unnecessary API calls
@@ -1084,13 +1085,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        <FlatList
+        <FlashList
           ref={listRef}
           data={listData}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           ListHeaderComponent={renderProfileHeader}
-          stickyHeaderIndices={[1]} // Index 1 = TAB_BAR (ilk item)
+          estimatedItemSize={400} // PERFORMANCE FIX: Critical for FlashList performance
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
@@ -1102,20 +1103,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           }
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          initialNumToRender={5}
-          maxToRenderPerBatch={5}
-          windowSize={10}
-          onScrollToIndexFailed={(info) => {
-            // Scroll hatası durumunda sessizce devam et
-            // TAB_BAR zaten sticky olduğu için scroll yapmaya gerek yok
-            console.warn('[ProfileScreen] scrollToIndex failed (non-critical):', {
-              index: info.index,
-              highestMeasuredFrameIndex: info.highestMeasuredFrameIndex,
-              averageItemLength: info.averageItemLength,
-            });
-            // Scroll işlemini yapmaya çalışma, sticky header zaten var
-          }}
+          // FlashList automatically handles removeClippedSubviews, initialNumToRender, maxToRenderPerBatch, windowSize
+          // These props are not needed for FlashList
         />
       </Box>
     </SafeAreaView>

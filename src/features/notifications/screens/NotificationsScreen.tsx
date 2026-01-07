@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Dimensions, FlatList, RefreshControl } from 'react-native';
+import { Dimensions, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -524,10 +525,11 @@ export const NotificationsScreen: React.FC = () => {
                     </Text>
                 </Box>
             ) : (
-                <FlatList
+                <FlashList
                     data={filteredNotifications}
                     renderItem={renderNotificationItem}
                     keyExtractor={keyExtractor}
+                    estimatedItemSize={80} // PERFORMANCE FIX: Critical for FlashList performance
                     contentContainerStyle={{ 
                         paddingHorizontal: 16,
                         paddingTop: 8,
@@ -541,12 +543,8 @@ export const NotificationsScreen: React.FC = () => {
                             tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
                         />
                     }
-                    // Performance optimizations
-                    removeClippedSubviews={true}
-                    maxToRenderPerBatch={10}
-                    updateCellsBatchingPeriod={50}
-                    initialNumToRender={10}
-                    windowSize={10}
+                    // FlashList automatically handles removeClippedSubviews, maxToRenderPerBatch, initialNumToRender, windowSize
+                    // These props are not needed for FlashList
                     style={{ flex: 1 }}
                 />
             )}

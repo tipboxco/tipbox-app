@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { ScrollView, FlatList, ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -353,8 +354,35 @@ const ExploreScreen: React.FC = () => {
     navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen' as any, { productId });
   }, []);
 
+  // PERFORMANCE FIX: Memoize onLayout handlers to prevent unnecessary re-renders
+  const handleSearchBarLayout = useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    if (searchBarHeight === 0) {
+      setSearchBarHeight(height);
+    }
+  }, [searchBarHeight]);
 
+  const handleBannerLayout = useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    if (bannerHeight === 0) {
+      setBannerHeight(height);
+    }
+  }, [bannerHeight]);
 
+  const handleTabsLayout = useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    if (tabsHeight === 0) {
+      setTabsHeight(height);
+    }
+  }, [tabsHeight]);
+
+  // PERFORMANCE FIX: ExploreScreen uses ScrollView for heterogeneous content
+  // Converting to FlashList would require major refactoring (array of different content types)
+  // ScrollView is acceptable here because:
+  // 1. Content is relatively static (Search Bar, Banner, Tabs, Tab Content)
+  // 2. Tab content (HottestTab, NewsTab) already uses FlatList internally
+  // 3. Nested scrolling is required
+  // For better performance, consider migrating HottestTab and NewsTab internal FlatLists to FlashList
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
@@ -374,12 +402,7 @@ const ExploreScreen: React.FC = () => {
             <VStack
               px="$4"
               py="$2"
-              onLayout={(event) => {
-                const { height } = event.nativeEvent.layout;
-                if (searchBarHeight === 0) {
-                  setSearchBarHeight(height);
-                }
-              }}
+              onLayout={handleSearchBarLayout}
             >
               <HStack
                 alignItems="center"
@@ -410,12 +433,7 @@ const ExploreScreen: React.FC = () => {
             {!isLoadingBanners && banners && banners.length > 0 && (
               <Box
                 mb="$4"
-                onLayout={(event) => {
-                  const { height } = event.nativeEvent.layout;
-                  if (bannerHeight === 0) {
-                    setBannerHeight(height);
-                  }
-                }}
+                onLayout={handleBannerLayout}
               >
                 <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
               </Box>
@@ -428,12 +446,7 @@ const ExploreScreen: React.FC = () => {
               mt={0}
               mb={0}
               pb={0}
-              onLayout={(event) => {
-                const { height } = event.nativeEvent.layout;
-                if (tabsHeight === 0) {
-                  setTabsHeight(height);
-                }
-              }}
+              onLayout={handleTabsLayout}
             >
               <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
                 <Pressable
