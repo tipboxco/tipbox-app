@@ -25,13 +25,27 @@ export const initializeTokenCache = async (): Promise<void> => {
 
 /**
  * Update token cache (called after token refresh or login)
+ * 
+ * CACHE INVALIDATION: This function should be called:
+ * - After successful login (appStore.login)
+ * - After successful token refresh (interceptors.ts:248)
+ * - When token is updated externally
  */
 export const updateTokenCache = (token: string | null): void => {
   cachedAccessToken = token;
+  // If token is null, mark cache as uninitialized to force SecureStore read on next request
+  if (token === null) {
+    isTokenCacheInitialized = false;
+  }
 };
 
 /**
- * Clear token cache (called on logout)
+ * Clear token cache (called on logout or token expiration)
+ * 
+ * CACHE INVALIDATION: This function should be called:
+ * - On logout (appStore.logout)
+ * - On token refresh failure (interceptors.ts:268)
+ * - When token is explicitly invalidated
  */
 export const clearTokenCache = (): void => {
   cachedAccessToken = null;

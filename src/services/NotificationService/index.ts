@@ -48,7 +48,14 @@ class NotificationService {
     this.lastProcessedEventIds.add(eventId);
   }
   /**
-   * Notification'dan navigation action oluştur
+   * ARCHITECTURE FIX: Deterministic Notification Route Resolution
+   * 
+   * Route resolution follows a strict priority order:
+   * 1. Backend navigation data (highest priority)
+   * 2. Metadata-based resolution (postId, threadId, userId, eventId)
+   * 3. Type-based fallback mapping
+   * 
+   * This ensures consistent navigation behavior across all notification sources.
    * 
    * @param notification - Notification object
    * @returns Navigation action veya null
@@ -59,7 +66,7 @@ class NotificationService {
   } | null {
     const { type, metadata, navigation: navData } = notification;
 
-    // Backend'den gelen navigation data varsa öncelik ver
+    // Priority 1: Backend'den gelen navigation data varsa öncelik ver
     if (navData?.screen) {
       return {
         route: navData.screen,
@@ -67,6 +74,61 @@ class NotificationService {
       };
     }
 
+    // Priority 2: Metadata-based resolution (en güvenilir)
+    // Post notification - GlobalStackGroup
+    if (metadata?.postId) {
+      return {
+        route: ROOT_ROUTES.POST,
+        params: {
+          screen: 'PostDetailScreen',
+          params: {
+            postData: { id: metadata.postId },
+            type: 'post',
+            commentId: metadata.commentId,
+          },
+        },
+      };
+    }
+
+    // Message notification - GlobalStackGroup
+    if (metadata?.threadId || metadata?.messageId || metadata?.requestId) {
+      const threadId = metadata.threadId || metadata.messageId || metadata.requestId;
+      return {
+        route: ROOT_ROUTES.MESSAGE_DETAIL,
+        params: {
+          messageId: threadId,
+          threadId: threadId,
+          recipientUserId: metadata.userId,
+          senderName: metadata.userName || 'Kullanıcı',
+          senderTitle: metadata.userTitle || '',
+          senderAvatar: metadata.userAvatar,
+        },
+      };
+    }
+
+    // Profile notification - GlobalStackGroup
+    if (metadata?.userId) {
+      return {
+        route: ROOT_ROUTES.PROFILE,
+        params: {
+          screen: 'ProfileMain',
+          params: { userId: metadata.userId },
+        },
+      };
+    }
+
+    // Event notification - Tab route
+    if (metadata?.eventId) {
+      return {
+        route: TAB_ROUTES.EVENTS,
+        params: {
+          screen: 'EventsScreen',
+          params: { eventId: metadata.eventId },
+        },
+      };
+    }
+
+    // Priority 3: Type-based fallback mapping
     // Notification type'a göre otomatik mapping
     switch (type) {
       // Post ile ilgili bildirimler → Post (GlobalStackGroup)

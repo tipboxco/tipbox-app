@@ -5,19 +5,12 @@ import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import Navigation from '@/src/navigation';
-import { GluestackProvider } from '@/src/components/ui';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { PortalProvider } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryProvider } from '@/src/providers/QueryProvider';
 import { AuthProvider, useAuth } from '@/src/providers/AuthProvider';
-import { AppStateProvider } from '@/src/providers/AppStateProvider';
-import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
-import { NotificationProvider } from '@/src/providers/NotificationProvider';
-import { SocketProvider } from '@/src/providers/SocketProvider';
+import { AppProviders } from '@/src/providers/ComposedProviders';
 import { useAppStore } from '@/src/store/appStore';
 import { ErrorBoundary } from '@/src/components/ErrorBoundary';
 
@@ -93,26 +86,10 @@ const AppInner = () => {
   }, [isAuthReady]);
 
   return (
-    <AppStateProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <PortalProvider>
-            <BottomSheetModalProvider>
-              <GlobalBottomSheetProvider>
-                <NotificationProvider>
-                  <SocketProvider>
-                    <GluestackProvider>
-                      <StatusBarComponent isDark={isDark} />
-                      <Navigation />
-                    </GluestackProvider>
-                  </SocketProvider>
-                </NotificationProvider>
-              </GlobalBottomSheetProvider>
-            </BottomSheetModalProvider>
-          </PortalProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </AppStateProvider>
+    <AppProviders>
+      <StatusBarComponent isDark={isDark} />
+      <Navigation />
+    </AppProviders>
   );
 };
 
