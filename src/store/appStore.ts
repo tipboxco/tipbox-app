@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
 import { ImageCacheService } from '../services/ImageCacheService';
+import { TranslationCacheService } from '../services/TranslationCacheService';
 // Socket bağlantısı adım adım test edilecek
 
 // Types
@@ -198,6 +199,14 @@ export const useAppStore = create<AppState>()(
             const imageCacheClearTime = Date.now() - imageCacheClearStartTime;
             console.log('✅ Image cache temizlendi');
             console.log('   - Clear Time:', imageCacheClearTime, 'ms');
+            
+            // Translation cache'i temizle
+            console.log('📋 Step 4: Translation cache temizleniyor...');
+            const translationCacheClearStartTime = Date.now();
+            await TranslationCacheService.clearAll();
+            const translationCacheClearTime = Date.now() - translationCacheClearStartTime;
+            console.log('✅ Translation cache temizlendi');
+            console.log('   - Clear Time:', translationCacheClearTime, 'ms');
             
             await new Promise(resolve => setTimeout(resolve, 500));
             

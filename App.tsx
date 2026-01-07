@@ -18,6 +18,7 @@ import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProv
 import { NotificationProvider } from '@/src/providers/NotificationProvider';
 import { SocketProvider } from '@/src/providers/SocketProvider';
 import { useAppStore } from '@/src/store/appStore';
+import { TranslationCacheService } from '@/src/services/TranslationCacheService';
 
 // PERFORMANCE FIX: Memoize status bar style to prevent unnecessary re-renders
 const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
@@ -64,6 +65,12 @@ export default function App() {
       NavigationBar.setButtonStyleAsync(navigationBarStyle.buttonStyle);
     }
   }, [navigationBarStyle]);
+
+  // Translation cache cleanup on app start
+  useEffect(() => {
+    // Expired translation cache'lerini temizle
+    TranslationCacheService.cleanupExpired();
+  }, []);
 
   return (
     <QueryProvider>
