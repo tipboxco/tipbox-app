@@ -34,6 +34,7 @@ import { LadderTab } from '../components/TabContents';
 import { Feather } from '@expo/vector-icons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FeedSkeleton } from '@/src/components/Skeletons';
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -568,11 +569,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         message: `Check out ${userProfile.name}'s profile on Tipbox!`,
         url: `tipboxapp://profile/user/${targetUserId}`,
       });
-      setShowActionSheet(false);
+      closeBottomSheet();
     } catch (error) {
       console.error('[ProfileScreen] Share error:', error);
     }
-  }, [userProfile, targetUserId]);
+  }, [userProfile, targetUserId, closeBottomSheet]);
 
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
@@ -597,12 +598,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 description: 'Kullanıcı raporlandı',
               },
             });
-            setShowActionSheet(false);
+            closeBottomSheet();
           },
         },
       ]
     );
-  }, [user?.id, targetUserId, reportUser]);
+  }, [user?.id, targetUserId, reportUser, closeBottomSheet]);
 
   const handleBlock = useCallback(() => {
     Alert.alert(
@@ -619,7 +620,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
             console.log('[ProfileScreen] Block user:', targetUserId);
-            setShowActionSheet(false);
+            closeBottomSheet();
             // Navigate back after blocking
             if (navigation.canGoBack()) {
               navigation.goBack();
@@ -628,7 +629,85 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         },
       ]
     );
-  }, [targetUserId, navigation]);
+  }, [targetUserId, navigation, closeBottomSheet]);
+
+  // BUG FIX: handleOpenActionSheet tanımlanmalı - ActionSheet bottom sheet aç
+  const handleOpenActionSheet = useCallback(() => {
+    if (isOwnProfile || !userProfile) return;
+
+    const actionSheetContent = (
+      <VStack bg={isDark ? '$backgroundDark900' : '$white'} pb={20}>
+        {/* Share */}
+        <Pressable
+          onPress={() => {
+            handleShare();
+            closeBottomSheet();
+          }}
+          px={20}
+          py={16}
+        >
+          <HStack alignItems="center" space="md">
+            <Feather name="share-2" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text
+              color={isDark ? '$textLight0' : '$textDark950'}
+              fontSize="$md"
+              fontWeight="$medium"
+            >
+              Paylaş
+            </Text>
+          </HStack>
+        </Pressable>
+
+        {/* Report */}
+        <Pressable
+          onPress={() => {
+            closeBottomSheet();
+            handleReport();
+          }}
+          px={20}
+          py={16}
+        >
+          <HStack alignItems="center" space="md">
+            <Feather name="flag" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text
+              color={isDark ? '$textLight0' : '$textDark950'}
+              fontSize="$md"
+              fontWeight="$medium"
+            >
+              Raporla
+            </Text>
+          </HStack>
+        </Pressable>
+
+        {/* Block */}
+        <Pressable
+          onPress={() => {
+            closeBottomSheet();
+            handleBlock();
+          }}
+          px={20}
+          py={16}
+        >
+          <HStack alignItems="center" space="md">
+            <Feather name="slash" size={20} color="#FF3040" />
+            <Text
+              color="#FF3040"
+              fontSize="$md"
+              fontWeight="$medium"
+            >
+              Engelle
+            </Text>
+          </HStack>
+        </Pressable>
+      </VStack>
+    );
+
+    openBottomSheet(actionSheetContent, {
+      enablePanDownToClose: true,
+      enableDynamicSizing: true,
+      paddingBottom: insets.bottom + 8,
+    });
+  }, [isOwnProfile, userProfile, isDark, handleShare, handleReport, handleBlock, openBottomSheet, closeBottomSheet, insets.bottom]);
   
   // Handle load more
   const handleLoadMore = useCallback(() => {
@@ -1058,7 +1137,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet]);
   
   if (isProfileLoading) {
     return (
@@ -1094,6 +1173,18 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           estimatedItemSize={400} // PERFORMANCE FIX: Critical for FlashList performance
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            // UX FIX: Show skeleton loader when tab is loading (lazy loading)
+            activeTabQuery.isLoading ? (
+              <FeedSkeleton count={3} />
+            ) : (
+              <Box py={20} alignItems="center">
+                <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+                  Henüz içerik bulunmuyor.
+                </Text>
+              </Box>
+            )
+          }
           ListFooterComponent={
             activeTabQuery.isFetchingNextPage ? (
               <Box py={20} alignItems="center">

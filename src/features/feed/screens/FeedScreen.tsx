@@ -767,6 +767,11 @@ export const FeedScreen = () => {
               ListFooterComponent={renderFooter}
               contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
               showsVerticalScrollIndicator={false}
+              // ARCHITECTURE FIX: Scroll position restoration
+              // Preserves scroll position when tab is switched and returned
+              maintainVisibleContentPosition={{
+                minIndexForVisible: 0,
+              }}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}

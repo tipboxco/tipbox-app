@@ -111,9 +111,20 @@ const NavigationInner = () => {
       ref={navigationRef}
       onReady={() => {
         console.log('[Navigation] ✅ NavigationContainer is ready');
-        // PERFORMANCE FIX: Use event-driven approach instead of polling
-        // Navigation ready event triggers pending navigation consumption immediately
+        // ARCHITECTURE FIX: Event-driven navigation ready handling
+        // Navigation ready olduğunda pending navigation queue'yu consume et
         checkAndConsumePendingNavigation();
+        // NavigationService queue'sunu da consume et
+        navigationService.consumePendingNavigationQueue();
+      }}
+      onStateChange={(state) => {
+        // ARCHITECTURE FIX: Navigation state change event listener
+        // Navigation state değiştiğinde pending navigation'ı tekrar kontrol et
+        // (race condition önlemek için)
+        if (navigationRef.current?.isReady()) {
+          checkAndConsumePendingNavigation();
+          navigationService.consumePendingNavigationQueue();
+        }
       }}
     >
       <RootNavigator />

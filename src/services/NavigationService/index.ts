@@ -21,8 +21,28 @@ import type { MainStackParamList } from '@/src/navigation/types/main.types';
  * navigationService.navigateNested(TAB_ROUTES.FEED, 'FeedScreen', {});
  * ```
  */
+/**
+ * Pending Navigation Queue Item
+ */
+interface PendingNavigationItem {
+  route: string;
+  params?: any;
+  timestamp: number;
+  options?: {
+    priority?: 'high' | 'normal' | 'low';
+    force?: boolean;
+  };
+}
+
 class NavigationService {
   private navigationRef: React.RefObject<NavigationContainerRef<RootStackParamList>> | null = null;
+  
+  /**
+   * ARCHITECTURE FIX: Navigation Queue Pattern
+   * Pending navigation'ları FIFO queue'da tutar
+   * Navigation ready olduğunda queue'daki tüm navigation'ları consume eder
+   */
+  private pendingNavigationQueue: PendingNavigationItem[] = [];
 
   /**
    * Navigation ref'i set et
@@ -77,7 +97,16 @@ class NavigationService {
       force?: boolean; // Kullanıcı busy olsa bile navigate et
     }
   ): void {
+    // ARCHITECTURE FIX: Navigation Queue Pattern
+    // Navigation ready değilse queue'ya ekle, ready olduğunda consume edilir
     if (!this.isReady()) {
+      console.log('[NavigationService] ⏳ Navigation not ready, adding to queue:', routeName);
+      this.pendingNavigationQueue.push({
+        route: routeName as string,
+        params,
+        timestamp: Date.now(),
+        options,
+      });
       return;
     }
 
@@ -250,6 +279,43 @@ class NavigationService {
       console.error('[NavigationService] ❌ Get current route error:', error);
       return undefined;
     }
+  }
+
+  /**
+   * ARCHITECTURE FIX: Consume Pending Navigation Queue
+   * Navigation ready olduğunda queue'daki tüm navigation'ları FIFO sırasıyla consume eder
+   * 
+   * Bu method NavigationContainer'ın onReady ve onStateChange event'lerinden çağrılır
+   */
+  consumePendingNavigationQueue(): void {
+    if (!this.isReady()) {
+      return;
+    }
+
+    if (this.pendingNavigationQueue.length === 0) {
+      return;
+    }
+
+    console.log('[NavigationService] 🔄 Consuming pending navigation queue:', this.pendingNavigationQueue.length, 'items');
+
+    // Queue'daki tüm navigation'ları FIFO sırasıyla consume et
+    while (this.pendingNavigationQueue.length > 0) {
+      const pending = this.pendingNavigationQueue.shift();
+      if (pending) {
+        console.log('[NavigationService] 📍 Consuming queued navigation:', pending.route, pending.params);
+        // Navigate et (bu sefer ready olduğu için direkt execute edilir)
+        this.navigate(pending.route as any, pending.params, pending.options);
+      }
+    }
+  }
+
+  /**
+   * Clear pending navigation queue
+   * Kullanıcı logout olduğunda veya navigation reset edildiğinde çağrılır
+   */
+  clearPendingNavigationQueue(): void {
+    console.log('[NavigationService] 🧹 Clearing pending navigation queue');
+    this.pendingNavigationQueue = [];
   }
 }
 

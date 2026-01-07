@@ -125,6 +125,9 @@ export const TabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        // ARCHITECTURE FIX: Tab state persistence
+        // Prevent tabs from unmounting on blur to preserve scroll position and state
+        unmountOnBlur: false,
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Feather.glyphMap = 'home';
