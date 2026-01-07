@@ -59,3 +59,4 @@ export const deleteDevice = async (
 
 
 
+
