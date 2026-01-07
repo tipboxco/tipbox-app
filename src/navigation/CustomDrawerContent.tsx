@@ -324,7 +324,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
           <TouchableOpacity
             activeOpacity={1}
             style={{ 
-              opacity: 0.9,
+              opacity: 1,
               position: 'absolute',
               top: 70,
               left: 0,

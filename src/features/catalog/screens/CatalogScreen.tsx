@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useReducer } from 'react';
 import { Platform, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
@@ -24,15 +24,60 @@ type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamLi
   navigate: (name: any, params?: any) => void;
 };
 
+// PERFORMANCE FIX: CatalogScreen state management refactoring
+// Consolidate related state into reducer pattern to reduce re-renders and improve maintainability
+interface CatalogScreenState {
+  currentMode: 'product' | 'brand-catalog' | 'brand-selection';
+  selectedCategory: Category | null;
+  selectedProductLocal: any | null;
+  breadcrumbItems: any[];
+}
+
+type CatalogScreenAction =
+  | { type: 'SET_CURRENT_MODE'; payload: 'product' | 'brand-catalog' | 'brand-selection' }
+  | { type: 'SET_SELECTED_CATEGORY'; payload: Category | null }
+  | { type: 'SET_SELECTED_PRODUCT_LOCAL'; payload: any | null }
+  | { type: 'SET_BREADCRUMB_ITEMS'; payload: any[] }
+  | { type: 'RESET_PRODUCT_STATE' };
+
+const catalogScreenReducer = (state: CatalogScreenState, action: CatalogScreenAction): CatalogScreenState => {
+  switch (action.type) {
+    case 'SET_CURRENT_MODE':
+      return { ...state, currentMode: action.payload };
+    case 'SET_SELECTED_CATEGORY':
+      return { ...state, selectedCategory: action.payload };
+    case 'SET_SELECTED_PRODUCT_LOCAL':
+      return { ...state, selectedProductLocal: action.payload };
+    case 'SET_BREADCRUMB_ITEMS':
+      return { ...state, breadcrumbItems: action.payload };
+    case 'RESET_PRODUCT_STATE':
+      return { ...state, selectedProductLocal: null, breadcrumbItems: [] };
+    default:
+      return state;
+  }
+};
+
+const initialState: CatalogScreenState = {
+  currentMode: 'product',
+  selectedCategory: null,
+  selectedProductLocal: null,
+  breadcrumbItems: [],
+};
+
 export const CatalogScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CatalogScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const [currentMode, setCurrentMode] = useState<'product' | 'brand-catalog' | 'brand-selection'>('product');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  
+  // PERFORMANCE FIX: Use reducer for related state management
+  const [catalogState, dispatch] = useReducer(catalogScreenReducer, initialState);
+  const { currentMode, selectedCategory, selectedProductLocal, breadcrumbItems } = catalogState;
+  
+  // UI-specific state (keep as useState for simplicity)
   const [searchQuery, setSearchQuery] = useState('');
   const [headerHeight, setHeaderHeight] = useState(40); // Default header height
+  const [bottomSheetKey, setBottomSheetKey] = useState(0);
   
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -53,11 +98,6 @@ export const CatalogScreen = () => {
   const setSelectedProductGroup = useCatalogUIStore((state) => state.setSelectedProductGroup);
   const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
   
-  // BottomSheet state
-  const [bottomSheetKey, setBottomSheetKey] = useState(0);
-  const [selectedProductLocal, setSelectedProductLocal] = useState<any | null>(null); // Local state for product object (for UI display)
-  const [breadcrumbItems, setBreadcrumbItems] = useState<any[]>([]);
-  
   // Scroll animasyonu için Animated.Value
   const scrollY = useRef(new Animated.Value(0)).current;
   
@@ -65,7 +105,7 @@ export const CatalogScreen = () => {
   const BRAND_TITLE_THRESHOLD = 80;
 
   const handleBrandCategorySelection = (category: Category) => {
-    setSelectedCategory(category);
+    dispatch({ type: 'SET_SELECTED_CATEGORY', payload: category });
     // Brand catalog modunda kal, sadece seçilen kategoriyi güncelle
     // Kullanıcı floating button ile brand-selection moduna geçebilir
   };
@@ -267,16 +307,16 @@ export const CatalogScreen = () => {
   const handleFloatingButtonPress = () => {
     if (currentMode === 'brand-selection') {
       // Brand selection modundan brand catalog moduna geri dön
-      setCurrentMode('brand-catalog');
+      dispatch({ type: 'SET_CURRENT_MODE', payload: 'brand-catalog' });
     } else if (currentMode === 'brand-catalog') {
       // Brand catalog modundan normal moda geri dön
-      setCurrentMode('product');
-      setSelectedCategory(null);
+      dispatch({ type: 'SET_CURRENT_MODE', payload: 'product' });
+      dispatch({ type: 'SET_SELECTED_CATEGORY', payload: null });
       // Scroll pozisyonunu sıfırla
       scrollY.setValue(0);
     } else {
       // Normal moddan brand catalog moduna geç
-      setCurrentMode('brand-catalog');
+      dispatch({ type: 'SET_CURRENT_MODE', payload: 'brand-catalog' });
       // Scroll pozisyonunu sıfırla
       scrollY.setValue(0);
     }
@@ -301,18 +341,28 @@ export const CatalogScreen = () => {
     breadcrumbItems: any[];
   }) => {
     // Update local state for product object (for UI display)
-    setSelectedProductLocal(data.selectedProduct);
+    dispatch({ type: 'SET_SELECTED_PRODUCT_LOCAL', payload: data.selectedProduct });
     
     // Update store with IDs
     setSelectedProduct(data.selectedProduct?.id);
     setCurrentView(data.currentView);
     setSelectedSubCategory(data.selectedSubCategoryId);
     setSelectedProductGroup(data.selectedProductGroupId);
-    setBreadcrumbItems(data.breadcrumbItems);
+    dispatch({ type: 'SET_BREADCRUMB_ITEMS', payload: data.breadcrumbItems });
   }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup]);
 
-  // Scroll handler - Brand ismini geçtikten sonra Header opacity'sini arttır
+  // PERFORMANCE FIX: Throttle scroll handler to reduce JS thread pressure
+  // Throttle to ~60fps (16ms) to prevent excessive Animated.Value updates
+  const lastScrollUpdateRef = useRef<number>(0);
+  const THROTTLE_MS = 16; // ~60fps
+  
   const handleBrandScroll = useCallback((event: any) => {
+    const now = Date.now();
+    if (now - lastScrollUpdateRef.current < THROTTLE_MS) {
+      return; // Skip this update
+    }
+    lastScrollUpdateRef.current = now;
+    
     const offsetY = event.nativeEvent.contentOffset.y;
     scrollY.setValue(offsetY);
   }, [scrollY]);
