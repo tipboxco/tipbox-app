@@ -661,7 +661,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
                                 {thumb ? (
                                   <Image
                                     source={{ uri: thumb }}
-                                    style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: "#fff" }}
+                                    style={{ width: 128, height: 128, borderRadius: 8, backgroundColor: "#fff",objectFit: 'contain' }}
                                     alt={prod.title}
                                   />
                                 ) : (
