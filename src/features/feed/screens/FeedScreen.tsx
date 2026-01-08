@@ -73,15 +73,6 @@ export const FeedScreen = () => {
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
 
-  // Log filter changes (especially for interests)
-  useEffect(() => {
-    if (filters.interests && Array.isArray(filters.interests) && filters.interests.length > 0) {
-      console.log('[FeedScreen] 🔍 Interests filter changed:', {
-        interests: filters.interests,
-        allFilters: filters,
-      });
-    }
-  }, [filters.interests]);
 
   // Filtre aktif mi kontrolü
   // Herhangi bir filtre seçilmişse filtered feed API'sini kullan
@@ -122,7 +113,6 @@ export const FeedScreen = () => {
   const feedItems = useMemo(() => {
     // Early return for invalid data
     if (!data?.pages || !Array.isArray(data.pages)) {
-      console.log('[FeedScreen] feedItems: No pages data');
       return [];
     }
     
@@ -160,22 +150,7 @@ export const FeedScreen = () => {
     }
     
     // Convert Map to array (single allocation)
-    const items = Array.from(uniqueItemsMap.values());
-    
-    // Debug: Log feed items for troubleshooting
-    console.log('[FeedScreen] feedItems processed:', {
-      totalPages: data.pages.length,
-      totalItems: items.length,
-      items: items.map((item) => ({
-        id: item?.data?.id || 'unknown',
-        type: item?.type || 'unknown',
-        hasContextType: 'contextType' in (item?.data || {}),
-        hasContextData: 'contextData' in (item?.data || {}),
-        hasIsBoosted: 'isBoosted' in (item?.data || {}),
-      })),
-    });
-    
-    return items;
+    return Array.from(uniqueItemsMap.values());
   }, [data?.pages]);
 
   const handleSearchPress = () => {
@@ -624,40 +599,12 @@ export const FeedScreen = () => {
     };
   };
 
-  const renderFeedItem = (item: FeedApiItem) => {
+  // PERFORMANCE: useCallback ile wrap edildi - gereksiz re-render'ları önler
+  const renderFeedItem = useCallback((item: FeedApiItem) => {
     // Safety check: ensure item and item.data exist
     if (!item || !item.data || !item.data.id) {
-      console.warn('[FeedScreen] Invalid feed item:', item);
       return null;
     }
-
-    // Debug: Log item type and data structure
-    const itemType = item.type;
-    const itemId = item.data.id;
-    const hasContextType = 'contextType' in item.data;
-    const hasContextData = 'contextData' in item.data;
-    const hasIsBoosted = 'isBoosted' in item.data;
-    const hasRelatedPost = 'relatedPost' in item.data;
-    const hasContentArray = 'content' in item.data && Array.isArray(item.data.content);
-
-    console.log(`[FeedScreen] renderFeedItem: ${itemId}`, {
-      type: itemType,
-      typeMatch: {
-        EXPERIENCE: itemType === CardType.EXPERIENCE,
-        POST: itemType === CardType.POST,
-        BENCHMARK: itemType === CardType.BENCHMARK,
-        QUESTION: itemType === CardType.QUESTION,
-        TIPS_AND_TRICKS: itemType === CardType.TIPS_AND_TRICKS,
-        UPDATE: itemType === CardType.UPDATE,
-      },
-      dataChecks: {
-        hasContextType,
-        hasContextData,
-        hasIsBoosted,
-        hasRelatedPost,
-        hasContentArray,
-      },
-    });
 
     // Use string comparison for type matching (API returns strings, not enum values)
     switch (item.type) {
@@ -672,7 +619,6 @@ export const FeedScreen = () => {
             />
           );
         }
-        console.warn(`[FeedScreen] EXPERIENCE item ${itemId} failed validation checks`);
         return null;
       case CardType.POST:
       case 'post':
@@ -702,11 +648,6 @@ export const FeedScreen = () => {
             />
           );
         }
-        console.warn(`[FeedScreen] QUESTION item ${itemId} failed validation checks:`, {
-          hasContextType: 'contextType' in item.data,
-          hasContextData: 'contextData' in item.data,
-          hasIsBoosted: 'isBoosted' in item.data,
-        });
         return null;
       case CardType.TIPS_AND_TRICKS:
       case 'tipsAndTricks':
@@ -727,13 +668,11 @@ export const FeedScreen = () => {
             />
           );
         }
-        console.warn(`[FeedScreen] UPDATE item ${itemId} failed validation checks`);
         return null;
       default:
-        console.warn(`[FeedScreen] Unknown item type: ${itemType} for item ${itemId}`);
         return null;
     }
-  };
+  }, []);
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -741,14 +680,32 @@ export const FeedScreen = () => {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const renderFooter = () => {
+  // PERFORMANCE: Memoized callbacks and styles
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const keyExtractor = useCallback((item: FeedApiItem, index: number) => {
+    if (item?.data?.id) {
+      return String(item.data.id);
+    }
+    return `feed-item-${index}`;
+  }, []);
+
+  const contentContainerStyle = useMemo(() => ({
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: bottomPadding,
+  }), [bottomPadding]);
+
+  const renderFooter = useCallback(() => {
     if (!isFetchingNextPage) return null;
     return (
       <Box py={20} alignItems="center">
         <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
       </Box>
     );
-  };
+  }, [isFetchingNextPage, isDark]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -812,23 +769,22 @@ export const FeedScreen = () => {
             <FlatList
               data={feedItems}
               renderItem={({ item }) => renderFeedItem(item)}
-              keyExtractor={(item, index) => {
-                // Güvenli key extraction: item.data.id varsa kullan, yoksa index kullan
-                if (item?.data?.id) {
-                  return String(item.data.id);
-                }
-                return `feed-item-${index}`;
-              }}
+              keyExtractor={keyExtractor}
               onEndReached={handleLoadMore}
-              onEndReachedThreshold={0.1}
+              onEndReachedThreshold={0.3}
               ListFooterComponent={renderFooter}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
+              contentContainerStyle={contentContainerStyle}
               showsVerticalScrollIndicator={false}
-              removeClippedSubviews={false}
+              // PERFORMANCE OPTIMIZATIONS
+              removeClippedSubviews={true}
+              initialNumToRender={5}
+              maxToRenderPerBatch={5}
+              windowSize={7}
+              updateCellsBatchingPeriod={50}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}
-                  onRefresh={() => refetch()}
+                  onRefresh={handleRefresh}
                   tintColor={isDark ? '#FFFFFF' : '#000000'}
                   colors={isDark ? ['#FFFFFF'] : ['#000000']}
                 />

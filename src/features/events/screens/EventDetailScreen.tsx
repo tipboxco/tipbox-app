@@ -482,7 +482,7 @@ const EventDetailScreen: React.FC = () => {
 
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: false }
+        { useNativeDriver: true }
     );
 
     // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır

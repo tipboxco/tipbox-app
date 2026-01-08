@@ -1,8 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, TextInput, Dimensions, Animated, Keyboard as RNKeyboard, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TextInput, Dimensions, Keyboard as RNKeyboard, Platform } from 'react-native';
 import { HStack, Icon, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ImageIcon, SendIcon, SmileIcon } from 'lucide-react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 
 interface DraggableKeyboardProps {
   onSendMessage?: (message: string) => void;
@@ -28,35 +34,35 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
-  // Smooth animasyon için Animated.Value
-  const animatedHeight = useRef(new Animated.Value(minHeight)).current;
-  
-  // Ekran yüksekliği (ileride ihtiyaç olursa kullanılır)
-  const screenHeight = Dimensions.get('window').height;
+  // Reanimated shared value - performanslı animasyon için
+  const animatedHeight = useSharedValue(minHeight);
 
-  // Smooth animasyon fonksiyonu
+  // Animasyonlu style - UI thread'de çalışır
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      height: animatedHeight.value,
+    };
+  });
+
+  // Smooth animasyon fonksiyonu - Reanimated ile
   const animateToHeight = (targetHeight: number, duration: number = 300) => {
-    Animated.timing(animatedHeight, {
-      toValue: targetHeight,
+    animatedHeight.value = withTiming(targetHeight, {
       duration,
-      useNativeDriver: false,
-    }).start(() => {
-      currentAnimatedHeight.current = targetHeight;
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
     });
   };
 
   // Başlangıç animasyonu
   useEffect(() => {
-    animatedHeight.setValue(minHeight);
+    animatedHeight.value = minHeight;
   }, [minHeight]);
 
   // Klavye event listener'ları
   useEffect(() => {
     const keyboardDidShowListener = RNKeyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (event) => {
+      () => {
         setIsKeyboardVisible(true);
-        console.log('Klavye açıldı');
       }
     );
 
@@ -65,7 +71,6 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
       () => {
         setIsKeyboardVisible(false);
         // Klavye kapandığında component'i ilk haline döndür
-        console.log('Klavye kapandı, component ilk haline döndürülüyor');
         animateToHeight(minHeight, 300);
         setIsExpanded(false);
       }
@@ -75,11 +80,10 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
       keyboardDidShowListener?.remove();
       keyboardDidHideListener?.remove();
     };
-  }, []);
+  }, [minHeight]);
 
   const handleSendMessage = () => {
     if (message.trim()) {
-      console.log('Mesaj gönderildi:', message);
       if (onSendMessage) {
         onSendMessage(message);
       }
@@ -90,25 +94,15 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
   };
 
   const handleAddImage = () => {
-    console.log('Görsel ekleme');
     if (onAddImage) {
       onAddImage();
     }
   };
 
   const handleAddEmoji = () => {
-    console.log('Emoji ekleme');
     if (onAddEmoji) {
       onAddEmoji();
     }
-  };
-
-  const handleTextInputFocus = () => {
-    console.log('TextInput focus oldu');
-  };
-
-  const handleTextInputBlur = () => {
-    console.log('TextInput blur oldu');
   };
 
   return (
@@ -118,24 +112,26 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
         backgroundColor: 'transparent'
       }}
     >
-      {/* Mesaj giriş alanı (artık drag gesture kullanılmıyor) */}
+      {/* Mesaj giriş alanı */}
       <Animated.View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: animatedHeight,
-          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
-          borderTopLeftRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
-          borderTopRightRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 8,
-          zIndex: 1000,
-        }}
+        style={[
+          {
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+            borderTopLeftRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
+            borderTopRightRadius: (isExpanded && isKeyboardVisible) ? 0 : 20,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 8,
+            zIndex: 1000,
+          },
+          animatedStyle,
+        ]}
       >
           {/* Sürükleme göstergesi - sadece klavye açıkken göster */}
           {isKeyboardVisible && (
@@ -156,7 +152,7 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
           <View style={{ 
             flex: 1, 
             paddingHorizontal: 16,
-            paddingTop: isKeyboardVisible ? 0 : 16, // Klavye kapalıyken padding top ekle
+            paddingTop: isKeyboardVisible ? 0 : 16,
             paddingBottom: isExpanded ? 20 : 8,
           }}>
             <TextInput
@@ -175,8 +171,6 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
               onChangeText={setMessage}
               multiline={isExpanded}
               numberOfLines={isExpanded ? 15 : 1}
-              onFocus={handleTextInputFocus}
-              onBlur={handleTextInputBlur}
             />
           </View>
 
