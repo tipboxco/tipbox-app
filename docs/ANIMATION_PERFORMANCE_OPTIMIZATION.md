@@ -376,3 +376,5 @@ Tüm optimizasyonlar uygulandıktan sonra:
 - [requestAnimationFrame MDN](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame)
 
 
+
+

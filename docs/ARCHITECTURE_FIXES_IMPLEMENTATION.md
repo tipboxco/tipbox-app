@@ -286,3 +286,5 @@ Tüm mimari düzeltmeler başarıyla uygulandı. Uygulama artık:
 ile production'a hazır durumda.
 
 
+
+

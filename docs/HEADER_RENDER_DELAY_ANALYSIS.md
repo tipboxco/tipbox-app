@@ -221,3 +221,5 @@ await SplashScreen.hideAsync();
 **Toplam İyileştirme:** ~700-900ms (0.7-0.9 saniye) → Header anında görünür olmalı
 
 
+
+
