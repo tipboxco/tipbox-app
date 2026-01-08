@@ -106,15 +106,12 @@ class SocketService {
       });
 
       this.socket.once('connect_error', (error) => {
-        // Sadece development modunda detaylı log (login ekranında hata göstermemek için)
-        if (__DEV__) {
-          console.error('[SocketService] ❌ Connection error:', {
-            message: error.message,
-            type: (error as any).type,
-            description: (error as any).description,
-            context: (error as any).context,
-            url: socketUrl,
-          });
+        // Login ekranında hata göstermemek için sessizce return et
+        // Hata logları SocketProvider'da authenticated kontrolü ile gösterilir
+        // Burada sadece development modunda minimal log
+        if (__DEV__ && process.env.NODE_ENV === 'development') {
+          // Minimal log - sadece development'ta
+          console.log('[SocketService] Connection error (will be handled by provider):', error.message);
         }
       });
 
@@ -135,7 +132,8 @@ class SocketService {
       }
 
     } catch (error) {
-      console.error('[SocketService] ❌ Connect failed:', error);
+      // Login ekranında hata göstermemek için sessizce hata fırlat
+      // Hata logları SocketProvider'da authenticated kontrolü ile gösterilir
       throw error;
     }
   }

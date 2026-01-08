@@ -110,18 +110,16 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   useEffect(() => {
     // Log spam'i azalt - sadece önemli durumlarda log
 
-    // Auth hazır değilse bekle
+    // Auth hazır değilse bekle (login ekranında hata göstermemek için sessizce return)
     if (!isAuthReady) {
-      console.log('[SocketProvider] ⏳ Waiting for auth to be ready...');
+      // Login ekranında hata göstermemek için sessizce return et
       return;
     }
 
-    // Authenticated değilse bağlanma
+    // Authenticated değilse bağlanma (login ekranında hata göstermemek için sessizce return)
     if (!isAuthenticated) {
-      console.log('[SocketProvider] ⏳ User not authenticated, socket will not connect');
-      // Eğer bağlıysa disconnect et
+      // Eğer bağlıysa disconnect et (sessizce, hata loglamadan)
       if (isConnected) {
-        console.log('[SocketProvider] 🔌 Disconnecting socket (user logged out)');
         disconnect();
       }
       return;
@@ -179,12 +177,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       })
       .catch((error) => {
         // Sadece authenticated olduğunda hata logla (login ekranında hata göstermemek için)
-        if (isAuthenticated) {
+        if (isAuthenticated && isAuthReady) {
           console.error('[SocketProvider] ❌ Connection failed:', error.message);
         }
         connectionErrorRef.current = true;
         
-        if (maxRetriesRef.current >= MAX_RETRIES && isAuthenticated) {
+        if (maxRetriesRef.current >= MAX_RETRIES && isAuthenticated && isAuthReady) {
           console.log('[SocketProvider] ⛔ Max retries reached, will retry after', RETRY_COOLDOWN / 1000, 'seconds');
         }
       })

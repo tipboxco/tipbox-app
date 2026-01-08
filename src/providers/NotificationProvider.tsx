@@ -97,7 +97,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const unreadCount = unreadCountData?.data?.count || 0;
   
   // Hata durumunda log (ama uygulamayı durdurma)
-  if (unreadCountError && isAuthenticated) {
+  // ÖNEMLİ: Sadece authenticated olduğunda hata logla (login ekranında hata göstermemek için)
+  if (unreadCountError && isAuthenticated && isAuthReady) {
     // Sadece bir kez log göster (log spam'ı önle)
     console.warn('[NotificationProvider] ⚠️ Unread count error (using default 0):', {
       status: (unreadCountError as any)?.response?.status,
@@ -109,15 +110,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Notification service initialization
   // ⚠️ Auth hazır olmadan başlamaz!
+  // ⚠️ Login olmadan token kaydetme yapılmaz!
   useEffect(() => {
     if (!isAuthReady) {
-      console.log('[NotificationProvider] ⏳ Waiting for auth to be ready...');
+      // Login ekranında hata göstermemek için sessizce return et
       return;
     }
 
-    // Authenticated değilse sadece permission iste, token kaydetme
+    // Authenticated değilse hiçbir şey yapma (login ekranında hata göstermemek için)
     if (!isAuthenticated) {
-      console.log('[NotificationProvider] ⏳ User not authenticated, skipping token registration');
+      // Login ekranında hata göstermemek için sessizce return et
       return;
     }
 
