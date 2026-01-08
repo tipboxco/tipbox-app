@@ -21,6 +21,7 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 
 
 interface PostCardProps {
@@ -32,6 +33,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
+  const deviceLocale = useDeviceLocale();
   const [isTranslated, setIsTranslated] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);

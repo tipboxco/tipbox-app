@@ -42,7 +42,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  const [isTranslated, setIsTranslated] = useState(false);
+  
   const [isLiked, setIsLiked] = useState(data.isLiked ?? false);
   const [isBookmarked, setIsBookmarked] = useState(data.isBookmarked ?? false);
   const [isShared, setIsShared] = useState(data.isShared ?? false);
@@ -500,27 +500,6 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           </Text>
         </VStack>
       </Pressable>
-
-      {/* Translate Button */}
-      <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        <Pressable onPress={() => setIsTranslated(!isTranslated)}>
-          <HStack alignItems="center" space="xs">
-            <Image
-              source={require('@/assets/translate.png')}
-              alt="translate"
-              width={16}
-              height={16}
-            />
-            <Text
-              color="#829905"
-              fontSize="$sm"
-              textDecorationLine="underline"
-            >
-              {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-            </Text>
-          </HStack>
-        </Pressable>
-      </Box>
 
       {/* Images */}
       {

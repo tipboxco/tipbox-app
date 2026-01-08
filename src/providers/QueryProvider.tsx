@@ -12,6 +12,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
  * - refetchOnWindowFocus: false (prevent unnecessary refetches)
  * 
  * Note: Backend arkaplanda yeni veriler gönderdiğinde mutation'larda cache invalidation yapılır
+ * Individual features can override these defaults for their specific needs:
+ * - Feed: 2-3 minutes (more dynamic content)
+ * - Catalog: 1 hour (static/semi-static content)
+ * - Profile: 5 minutes (default)
  */
 const queryClient = new QueryClient({
   defaultOptions: {

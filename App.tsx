@@ -1,6 +1,6 @@
 // PERFORMANCE FIX: Removed Promise polyfill - Hermes engine already supports Promise natively
 // This reduces bundle size and startup time
-import React, { useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,8 +11,9 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { QueryProvider } from '@/src/providers/QueryProvider';
 import { AuthProvider, useAuth } from '@/src/providers/AuthProvider';
 import { AppProviders } from '@/src/providers/ComposedProviders';
-import { useAppStore } from '@/src/store/appStore';
-import { ErrorBoundary } from '@/src/components/ErrorBoundary';
+import { TranslationCacheService } from '@/src/services/TranslationCacheService';
+
+
 
 // PERFORMANCE FIX: Keep splash screen visible until auth is ready
 // Prevents showing blank screen during initialization
@@ -41,10 +42,22 @@ const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
 StatusBarComponent.displayName = 'StatusBarComponent';
 
 /**
- * Inner App Component
- * Handles splash screen hiding after auth initialization
+ * ARCHITECTURE FIX: AppInner moved inside AppProviders
+ * 
+ * Hook calls (useColorMode, useAuth) must execute AFTER providers initialize.
+ * Previously, AppInner was calling hooks before AppProviders mounted,
+ * which could cause undefined errors or stale values.
+ * 
+ * New structure:
+ * App() 
+ *   -> QueryProvider
+ *     -> AuthProvider
+ *       -> AppProviders (all providers initialize here)
+ *         -> AppInner (hooks called here - SAFE!)
  */
 const AppInner = () => {
+  // ARCHITECTURE FIX: These hooks now execute AFTER AppProviders mount
+  // AppProviders includes AppStateProvider which initializes Zustand store
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { isAuthReady } = useAuth();
@@ -66,6 +79,12 @@ const AppInner = () => {
     }
   }, [navigationBarStyle]);
 
+  // Translation cache cleanup on app start
+  useEffect(() => {
+    // Expired translation cache'lerini temizle
+    TranslationCacheService.cleanupExpired();
+  }, []);
+
   // PERFORMANCE FIX: Hide splash screen immediately after auth initialization
   // Removed 100ms delay - UI is already ready, delay was causing header render delay
   useEffect(() => {
@@ -86,12 +105,10 @@ const AppInner = () => {
   }, [isAuthReady]);
 
   return (
-    <AppProviders>
-      <ErrorBoundary>
-        <StatusBarComponent isDark={isDark} />
-        <Navigation />
-      </ErrorBoundary>
-    </AppProviders>
+    <>
+      <StatusBarComponent isDark={isDark} />
+      <Navigation />
+    </>
   );
 };
 
@@ -99,7 +116,9 @@ export default function App() {
   return (
     <QueryProvider>
       <AuthProvider>
-        <AppInner />
+        <AppProviders>
+          <AppInner />
+        </AppProviders>
       </AuthProvider>
     </QueryProvider>
   );

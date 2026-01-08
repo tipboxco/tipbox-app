@@ -1,25 +1,48 @@
 import React from 'react';
-import { NavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainerRef, NavigationState } from '@react-navigation/native';
 import type { RootStackParamList } from '@/src/navigation/types/root.types';
 import type { MainStackParamList } from '@/src/navigation/types/main.types';
+import type { 
+  NavigationGuards, 
+  FeatureRouteMap,
+  NavigationLogger 
+} from './types';
+import { getRouteMapping } from './routeMap';
+import { navigationLogger } from './logger';
+import type { FeedStackParamList } from '@/src/features/feed/navigation';
+import type { CatalogStackParamList } from '@/src/features/catalog/navigation';
+import type { ExploreStackParamList } from '@/src/features/explore/navigation';
+import type { EventsStackParamList } from '@/src/features/events/navigation';
+import type { NotificationsStackParamList } from '@/src/features/notifications/navigation';
+import type { InboxStackParamList } from '@/src/features/inbox/navigation';
+
+/**
+ * Stack Param List Union Type
+ * Type-safe screen name validation için
+ */
+type StackParamList = 
+  | FeedStackParamList
+  | CatalogStackParamList
+  | ExploreStackParamList
+  | EventsStackParamList
+  | NotificationsStackParamList
+  | InboxStackParamList;
 
 /**
  * NavigationService
  * 
- * Type-safe merkezi navigation servisi.
- * UI bağlamından bağımsız navigation için tek giriş noktası.
+ * ARCHITECTURE PRINCIPLES:
+ * - Pure: Store'lara bağımlı değil (guards pattern)
+ * - Stateless: Navigation ref dışında state tutmaz
+ * - Framework-agnostic: Navigation tree yapısından bağımsız (route mapping)
+ * - Type-safe: Mümkün olduğunca compile-time type checking
  * 
  * Özellikler:
  * - Type-safe navigation (compile-time kontrol)
- * - Generic methods ile yanlış route/param engelleme
- * - Navigation ref kontrolü (isReady check)
- * - Error handling ve logging
- * 
- * Kullanım:
- * ```typescript
- * navigationService.navigate(ROOT_ROUTES.POST, { screen: 'PostDetailScreen', params: { ... } });
- * navigationService.navigateNested(TAB_ROUTES.FEED, 'FeedScreen', {});
- * ```
+ * - Guards pattern ile store bağımlılığı yok
+ * - Route mapping ile navigation tree'den bağımsız
+ * - Production-safe logging
+ * - Recursive route resolution
  */
 /**
  * Pending Navigation Queue Item
@@ -45,6 +68,18 @@ class NavigationService {
   private pendingNavigationQueue: PendingNavigationItem[] = [];
 
   /**
+   * Navigation guards (opsiyonel)
+   * Store bağımlılığını kaldırmak için guard pattern
+   */
+  private guards?: NavigationGuards;
+
+  /**
+   * Navigation logger
+   * Default olarak production-safe logger kullanılır
+   */
+  private logger: NavigationLogger = navigationLogger;
+
+  /**
    * Navigation ref'i set et
    * NavigationProvider tarafından çağrılır
    */
@@ -53,20 +88,66 @@ class NavigationService {
   }
 
   /**
+   * Navigation guards'ı set et
+   * Store bağımlılığını kaldırmak için guard pattern
+   * 
+   * @param guards - Navigation guards (isUserBusy, setPendingNavigation, vb.)
+   */
+  setGuards(guards: NavigationGuards): void {
+    this.guards = guards;
+  }
+
+  /**
+   * Logger'ı set et (opsiyonel, default production-safe logger)
+   */
+  setLogger(logger: NavigationLogger): void {
+    this.logger = logger;
+  }
+
+  /**
    * Navigation ref hazır mı kontrol et (public)
    */
   isReady(): boolean {
     if (!this.navigationRef?.current) {
-      console.warn('[NavigationService] ⚠️ Navigation ref is not set');
+      this.logger.warn('Navigation ref is not set');
       return false;
     }
 
     if (!this.navigationRef.current.isReady()) {
-      console.warn('[NavigationService] ⚠️ Navigation is not ready yet');
+      this.logger.warn('Navigation is not ready yet');
       return false;
     }
 
     return true;
+  }
+
+  /**
+   * Recursive active route resolver
+   * 
+   * Nested navigation state'lerinde (Drawer → Tab → Screen) 
+   * gerçek aktif ekranı bulur.
+   */
+  private getActiveRoute(state: NavigationState | undefined): { name?: string; params?: any } | null {
+    if (!state) {
+      return null;
+    }
+
+    let route = state.routes[state.index];
+    
+    // Recursively traverse nested states
+    while (route.state) {
+      const nestedState = route.state as NavigationState;
+      if (nestedState.routes && nestedState.index !== undefined) {
+        route = nestedState.routes[nestedState.index];
+      } else {
+        break;
+      }
+    }
+
+    return {
+      name: route.name,
+      params: (route as any)?.params,
+    };
   }
 
   /**
@@ -75,19 +156,11 @@ class NavigationService {
    * Sadece RootStackParamList'teki route'ları kabul eder.
    * Compile-time'da type kontrolü yapılır.
    * 
-   * Safety Check: Kullanıcı kritik ekrandayken navigation defer edilir.
+   * Safety Check: Guards pattern ile kullanıcı busy kontrolü.
    * 
    * @param routeName - Root route name (RootStackParamList key)
    * @param params - Route params (type-safe)
    * @param options - Navigation options (priority, force, vb.)
-   * 
-   * @example
-   * ```typescript
-   * navigationService.navigate(ROOT_ROUTES.POST, {
-   *   screen: 'PostDetailScreen',
-   *   params: { postData, type: 'post' }
-   * });
-   * ```
    */
   navigate<RouteName extends keyof RootStackParamList>(
     routeName: RouteName,
@@ -110,28 +183,28 @@ class NavigationService {
       return;
     }
 
-    // Safety Check - App State Awareness
-    // Kullanıcı kritik ekrandayken (form, ödeme vb.) navigation'ı defer et
-    if (!options?.force) {
-      const { useAppStore } = require('@/src/store/appStore');
-      const appState = useAppStore.getState();
+    // Safety Check - Guards Pattern
+    // Store'a bağımlılık yok, guards üzerinden kontrol edilir
+    if (!options?.force && this.guards) {
+      const isUserBusy = this.guards.isUserBusy();
       
-      if (appState.isUserBusy) {
+      if (isUserBusy) {
         // High priority navigation'lar (ör: acil bildirimler) yine de navigate edebilir
         if (options?.priority !== 'high') {
-          console.warn('[NavigationService] ⏳ User is busy, navigation deferred:', {
+          const reason = this.guards.getBusyReason?.() || 'unknown';
+          this.logger.warn('User is busy, navigation deferred:', {
             route: routeName,
-            reason: appState.busyReason,
+            reason,
             priority: options?.priority || 'normal',
           });
           
-          // Pending navigation'a yaz
-          const { useNotificationStore } = require('@/src/store/notificationStore');
-          const notificationStore = useNotificationStore.getState();
-          notificationStore.setPendingNavigation({
-            route: routeName as string,
-            params,
-          });
+          // Pending navigation'a yaz (guards üzerinden)
+          if (this.guards.setPendingNavigation) {
+            this.guards.setPendingNavigation({
+              route: routeName as string,
+              params,
+            });
+          }
           
           return;
         }
@@ -142,17 +215,18 @@ class NavigationService {
       // Type assertion: React Navigation's type system doesn't fully support generic navigation
       // This is safe because we validate routeName is a keyof RootStackParamList
       (this.navigationRef!.current!.navigate as any)(routeName, params);
-      console.log('[NavigationService] ✅ Navigated to:', routeName, params);
+      this.logger.log('Navigated to:', routeName, params);
     } catch (error) {
-      console.error('[NavigationService] ❌ Navigation error:', error);
-      console.error('[NavigationService] Route:', routeName, 'Params:', params);
+      this.logger.error('Navigation error:', error);
+      this.logger.error('Route:', routeName, 'Params:', params);
     }
   }
 
   /**
    * Nested navigation (Tab → Feature)
    * 
-   * Tab içindeki feature screen'lere navigate etmek için.
+   * Route mapping pattern kullanarak navigation tree'den bağımsız navigation.
+   * Navigation tree değişse bile sadece routeMap güncellenir.
    * 
    * @param tabName - Tab route name (MainStackParamList key)
    * @param screenName - Feature screen name
@@ -160,28 +234,33 @@ class NavigationService {
    * 
    * @example
    * ```typescript
-   * navigationService.navigateNested(TAB_ROUTES.FEED, 'FeedScreen', {});
+   * navigationService.navigateNested('Catalog', 'BrandProductDetailScreen', { productId: '123' });
    * ```
    */
-  navigateNested<
-    TabName extends keyof MainStackParamList,
-    ScreenName extends keyof MainStackParamList[TabName]
-  >(
+  navigateNested<TabName extends keyof MainStackParamList>(
     tabName: TabName,
-    screenName: ScreenName,
-    params?: MainStackParamList[TabName][ScreenName]
+    screenName: string,
+    params?: unknown
   ): void {
     if (!this.isReady()) {
       return;
     }
 
     try {
-      // Nested navigation: MainDrawer → Tabs → Tab → Feature Screen
-      // Use any for nested navigation params (React Navigation limitation)
+      // Route mapping pattern: Navigation tree'den bağımsız
+      const routeMapping = getRouteMapping(tabName);
+      
+      if (!routeMapping) {
+        this.logger.error('Route mapping not found for tab:', tabName);
+        return;
+      }
+
+      // Build navigation params using route mapping
+      // Yapı: root → tabContainer → tab → screen
       const navigationParams: any = {
-        screen: 'Tabs',
+        screen: routeMapping.tabContainer || 'Tabs',
         params: {
-          screen: tabName,
+          screen: routeMapping.tab,
           params: {
             screen: screenName,
             params: params,
@@ -189,12 +268,12 @@ class NavigationService {
         },
       };
       
-      // Type assertion: React Navigation's type system doesn't fully support nested navigation
-      (this.navigationRef!.current!.navigate as any)('MainDrawer', navigationParams);
-      console.log('[NavigationService] ✅ Navigated nested:', tabName, screenName, params);
+      // Navigate using root route from mapping
+      (this.navigationRef!.current!.navigate as any)(routeMapping.root, navigationParams);
+      this.logger.log('Navigated nested:', tabName, screenName, params);
     } catch (error) {
-      console.error('[NavigationService] ❌ Nested navigation error:', error);
-      console.error('[NavigationService] Tab:', tabName, 'Screen:', screenName, 'Params:', params);
+      this.logger.error('Nested navigation error:', error);
+      this.logger.error('Tab:', tabName, 'Screen:', screenName, 'Params:', params);
     }
   }
 
@@ -217,9 +296,9 @@ class NavigationService {
         index: 0,
         routes: [{ name: routeName as never, params: params as never }],
       });
-      console.log('[NavigationService] ✅ Reset navigation to:', routeName);
+      this.logger.log('Reset navigation to:', routeName);
     } catch (error) {
-      console.error('[NavigationService] ❌ Reset navigation error:', error);
+      this.logger.error('Reset navigation error:', error);
     }
   }
 
@@ -234,17 +313,19 @@ class NavigationService {
     try {
       if (this.navigationRef!.current!.canGoBack()) {
         this.navigationRef!.current!.goBack();
-        console.log('[NavigationService] ✅ Went back');
-    } else {
-      console.warn('[NavigationService] ⚠️ Cannot go back - no previous screen');
-    }
+        this.logger.log('Went back');
+      } else {
+        this.logger.warn('Cannot go back - no previous screen');
+      }
     } catch (error) {
-      console.error('[NavigationService] ❌ Go back error:', error);
+      this.logger.error('Go back error:', error);
     }
   }
 
   /**
    * Get current route name
+   * 
+   * Recursive resolver kullanarak nested state'lerde gerçek aktif ekranı bulur.
    */
   getCurrentRouteName(): string | undefined {
     if (!this.isReady()) {
@@ -253,15 +334,18 @@ class NavigationService {
 
     try {
       const state = this.navigationRef!.current!.getState();
-      return state?.routes[state.index]?.name;
+      const activeRoute = this.getActiveRoute(state);
+      return activeRoute?.name;
     } catch (error) {
-      console.error('[NavigationService] ❌ Get current route error:', error);
+      this.logger.error('Get current route error:', error);
       return undefined;
     }
   }
 
   /**
    * Get current route (name + params)
+   * 
+   * Recursive resolver kullanarak nested state'lerde gerçek aktif ekranı bulur.
    */
   getCurrentRoute(): { name?: string; params?: any } | undefined {
     if (!this.isReady()) {
@@ -270,13 +354,9 @@ class NavigationService {
 
     try {
       const state = this.navigationRef!.current!.getState();
-      const route = state?.routes[state.index];
-      return {
-        name: route?.name,
-        params: (route as any)?.params,
-      };
+      return this.getActiveRoute(state) || undefined;
     } catch (error) {
-      console.error('[NavigationService] ❌ Get current route error:', error);
+      this.logger.error('Get current route error:', error);
       return undefined;
     }
   }
@@ -321,4 +401,3 @@ class NavigationService {
 
 // Singleton instance
 export const navigationService = new NavigationService();
-

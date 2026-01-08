@@ -28,7 +28,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
-  const [isTranslated, setIsTranslated] = useState(false);
+  
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -226,27 +226,6 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
             {data.content}
           </Text>
         </Pressable>
-
-        {/* Translate Button */}
-        <Box mt={10}>
-          <Pressable onPress={() => setIsTranslated(!isTranslated)}>
-            <HStack alignItems="center" space="xs">
-              <Image
-                source={require('@/assets/translate.png')}
-                alt="translate"
-                width={16}
-                height={16}
-              />
-              <Text
-                color="#829905"
-                fontSize={10}
-                textDecorationLine="underline"
-              >
-                {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-              </Text>
-            </HStack>
-          </Pressable>
-        </Box>
 
         {/* See Related Post Button - Detay sayfasına yönlendirir */}
         {data.relatedPost && (

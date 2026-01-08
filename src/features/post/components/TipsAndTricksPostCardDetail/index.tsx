@@ -16,6 +16,8 @@ import {
   useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
+import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
+import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 
 interface TipsAndTricksPostCardDetailProps {
     data: TipsAndTricksPost;
@@ -25,7 +27,22 @@ interface TipsAndTricksPostCardDetailProps {
 export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTricksPostCardDetailProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const [isTranslated, setIsTranslated] = useState(false);
+    
+    // Translation hooks
+    const deviceLocale = useDeviceLocale();
+    const {
+        translatedContent,
+        isTranslating,
+        showTranslation,
+        toggleTranslation,
+        shouldTranslate,
+    } = usePostTranslation({
+        postId: data.id,
+        originalContent: data.content,
+        targetLanguage: deviceLocale,
+        sourceLanguage: 'en',
+    });
+    
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -190,35 +207,56 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
             </HStack>
 
             {/* Content */}
-            <VStack px={12} pb={8}>
+            <VStack px={12} pb={8} space="sm">
+                {/* Original Content */}
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
                     fontSize="$sm"
                 >
                     {data.content}
                 </Text>
+                
+                {/* Translated Content */}
+                {showTranslation && translatedContent && (
+                    <VStack space="xs" mt="$2">
+                        <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
+                        <Text
+                            color={isDark ? '$textDark200' : '#666'}
+                            fontSize="$2xl"
+                            fontStyle="italic"
+                        >
+                            {translatedContent}
+                        </Text>
+                    </VStack>
+                )}
             </VStack>
 
             {/* Translate Button */}
-            <Box pb="$3" px="$3">
-                <Pressable onPress={() => setIsTranslated(!isTranslated)}>
-                    <HStack alignItems="center" space="xs">
-                        <Image
-                            source={require('@/assets/translate.png')}
-                            alt="translate"
-                            width={16}
-                            height={16}
-                        />
-                        <Text
-                            color="#829905"
-                            fontSize="$sm"
-                            textDecorationLine="underline"
-                        >
-                            {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-                        </Text>
-                    </HStack>
-                </Pressable>
-            </Box>
+            {shouldTranslate && (
+                <Box pb="$3" px="$3">
+                    <Pressable onPress={toggleTranslation}>
+                        <HStack alignItems="center" space="xs">
+                            <Image
+                                source={require('@/assets/translate.png')}
+                                alt="translate"
+                                width={16}
+                                height={16}
+                            />
+                            <Text
+                                color="#829905"
+                                fontSize="$2xl"
+                                textDecorationLine="underline"
+                            >
+                                {isTranslating
+                                    ? 'Çeviriliyor...'
+                                    : showTranslation
+                                    ? 'Hide Translation'
+                                    : 'Translate'}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                </Box>
+            )}
 
             {/* Images */}
             {data.images && data.images?.length > 0 && (

@@ -55,7 +55,12 @@ const FeedScreenInner = () => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   
   // FeedListContext'ten feedListRef'i al
-  const { feedListRef } = useFeedListContext();
+  // FeedScreenInner FeedListProvider içinde render edildiği için context her zaman tanımlıdır
+  const feedListContext = useFeedListContext();
+  if (!feedListContext) {
+    throw new Error('FeedScreenInner must be rendered within FeedListProvider');
+  }
+  const { feedListRef } = feedListContext;
 
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
@@ -624,8 +629,38 @@ const FeedScreenInner = () => {
       return null;
     }
 
+    // Debug: Log item type and data structure
+    const itemType = item.type;
+    const itemId = item.data.id;
+    const hasContextType = 'contextType' in item.data;
+    const hasContextData = 'contextData' in item.data;
+    const hasIsBoosted = 'isBoosted' in item.data;
+    const hasRelatedPost = 'relatedPost' in item.data;
+    const hasContentArray = 'content' in item.data && Array.isArray(item.data.content);
+
+    console.log(`[FeedScreen] renderFeedItem: ${itemId}`, {
+      type: itemType,
+      typeMatch: {
+        EXPERIENCE: itemType === CardType.EXPERIENCE,
+        POST: itemType === CardType.POST,
+        BENCHMARK: itemType === CardType.BENCHMARK,
+        QUESTION: itemType === CardType.QUESTION,
+        TIPS_AND_TRICKS: itemType === CardType.TIPS_AND_TRICKS,
+        UPDATE: itemType === CardType.UPDATE,
+      },
+      dataChecks: {
+        hasContextType,
+        hasContextData,
+        hasIsBoosted,
+        hasRelatedPost,
+        hasContentArray,
+      },
+    });
+
+    // Use string comparison for type matching (API returns strings, not enum values)
     switch (item.type) {
       case CardType.EXPERIENCE:
+      case 'experience':
         // Experience type için ReviewApiItem kullan ve ExperiencePostCard render et
         if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
@@ -635,8 +670,10 @@ const FeedScreenInner = () => {
             />
           );
         }
+        console.warn(`[FeedScreen] EXPERIENCE item ${itemId} failed validation checks`);
         return null;
       case CardType.POST:
+      case 'post':
         // Post type için ProfilePost kullan ve PostCard render et
         return (
           <PostCard
@@ -645,6 +682,7 @@ const FeedScreenInner = () => {
           />
         );
       case CardType.BENCHMARK:
+      case 'benchmark':
         return (
           <BenchmarkPostCard
             key={item.data.id}
@@ -652,8 +690,9 @@ const FeedScreenInner = () => {
           />
         );
       case CardType.QUESTION:
-        // Question type kontrolü
-        if ('contextType' in item.data && 'contextData' in item.data && 'isBoosted' in item.data) {
+      case 'question':
+        // Question type kontrolü - isBoosted optional olabilir
+        if ('contextType' in item.data && 'contextData' in item.data) {
           return (
             <QuestionPostCard
               key={item.data.id}
@@ -661,8 +700,14 @@ const FeedScreenInner = () => {
             />
           );
         }
+        console.warn(`[FeedScreen] QUESTION item ${itemId} failed validation checks:`, {
+          hasContextType: 'contextType' in item.data,
+          hasContextData: 'contextData' in item.data,
+          hasIsBoosted: 'isBoosted' in item.data,
+        });
         return null;
       case CardType.TIPS_AND_TRICKS:
+      case 'tipsAndTricks':
         return (
           <TipsAndTricksPostCard
             key={item.data.id}
@@ -670,6 +715,7 @@ const FeedScreenInner = () => {
           />
         );
       case CardType.UPDATE:
+      case 'update':
         // Update type için UpdateApiItem kullan ve UpdatePostCard render et
         if ('relatedPost' in item.data && 'contextType' in item.data) {
           return (
@@ -679,8 +725,10 @@ const FeedScreenInner = () => {
             />
           );
         }
+        console.warn(`[FeedScreen] UPDATE item ${itemId} failed validation checks`);
         return null;
       default:
+        console.warn(`[FeedScreen] Unknown item type: ${itemType} for item ${itemId}`);
         return null;
     }
   };

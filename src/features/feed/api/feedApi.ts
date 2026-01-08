@@ -123,6 +123,18 @@ export const getFeed = async (
       },
     };
     
+    // Debug: Log response for troubleshooting
+    console.log('[getFeed] ✅ Response:', {
+      url: `/feed?${params.toString()}`,
+      status: response.status,
+      itemsCount: safeResponse.items.length,
+      items: safeResponse.items.map((item) => ({
+        id: item?.data?.id || 'unknown',
+        type: item?.type || 'unknown',
+      })),
+      pagination: safeResponse.pagination,
+    });
+    
     return safeResponse;
   } catch (error: any) {
     console.error('[getFeed] API Error:', {
@@ -242,11 +254,18 @@ export const getFilteredFeed = async (
         itemsCount: safeResponse.items.length,
         pagination: safeResponse.pagination,
         items: Array.isArray(safeResponse.items) 
-          ? safeResponse.items.map((item) => ({
-              type: item?.type || 'unknown',
-              id: item?.data?.id || 'unknown',
-              title: item?.data?.title || item?.data?.content?.substring(0, 50) || 'N/A',
-            }))
+          ? safeResponse.items.map((item) => {
+              const content = 'content' in (item?.data || {}) 
+                ? (typeof item.data.content === 'string' 
+                    ? item.data.content.substring(0, 50) 
+                    : 'N/A')
+                : 'N/A';
+              return {
+                type: item?.type || 'unknown',
+                id: item?.data?.id || 'unknown',
+                contentPreview: content,
+              };
+            })
           : [],
       },
       fullResponse: safeResponse,
