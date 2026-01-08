@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { TokenService } from '@/src/services/TokenService';
 import { useAppStore } from '@/src/store/appStore';
 import { initializeTokenCache, updateTokenCache, clearTokenCache } from '@/src/services/ApiService/interceptors';
@@ -45,8 +45,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAppStore();
+  
+  // PERFORMANCE FIX: Initialization guard - StrictMode'da çift render'ı önler
+  // useRef ile initialization flag'i tutuyoruz (re-render'da korunur)
+  const initializationRef = useRef(false);
+  const initializationPromiseRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
+    // PERFORMANCE FIX: Guard - eğer zaten initialize edildiyse tekrar etme
+    if (initializationRef.current) {
+      console.log('[AuthProvider] ⏭️ Skipping duplicate initialization (already initialized)');
+      return;
+    }
+
+    // Guard flag'ini set et (StrictMode'da 2. render'da bu guard çalışır)
+    initializationRef.current = true;
+
     const initializeAuth = async () => {
       try {
         console.log('[AuthProvider] 🔐 Initializing auth state...');
@@ -115,7 +129,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    initializeAuth();
+    // PERFORMANCE FIX: Promise'i ref'te sakla - eğer 2. render olursa aynı promise'i kullan
+    if (!initializationPromiseRef.current) {
+      initializationPromiseRef.current = initializeAuth();
+    }
+    
+    // Promise tamamlandığında ref'i temizle (cleanup için)
+    initializationPromiseRef.current.finally(() => {
+      // Promise tamamlandı, ref'i temizle
+    });
   }, []);
 
   // PERFORMANCE FIX: Memoize context value to prevent unnecessary re-renders

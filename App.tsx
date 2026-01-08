@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { QueryProvider } from '@/src/providers/QueryProvider';
-import { AuthProvider, useAuth } from '@/src/providers/AuthProvider';
+import { useAuth } from '@/src/providers/AuthProvider';
 import { AppProviders } from '@/src/providers/ComposedProviders';
 import { TranslationCacheService } from '@/src/services/TranslationCacheService';
 
@@ -48,12 +48,15 @@ StatusBarComponent.displayName = 'StatusBarComponent';
  * Previously, AppInner was calling hooks before AppProviders mounted,
  * which could cause undefined errors or stale values.
  * 
+ * PERFORMANCE FIX: Removed duplicate AuthProvider from App.tsx
+ * AuthProvider is already included in AppProviders, so we don't need it here.
+ * This prevents double initialization and reduces unnecessary TokenService calls.
+ * 
  * New structure:
  * App() 
  *   -> QueryProvider
- *     -> AuthProvider
- *       -> AppProviders (all providers initialize here)
- *         -> AppInner (hooks called here - SAFE!)
+ *     -> AppProviders (includes AuthProvider + all other providers)
+ *       -> AppInner (hooks called here - SAFE!)
  */
 const AppInner = () => {
   // ARCHITECTURE FIX: These hooks now execute AFTER AppProviders mount
@@ -115,11 +118,9 @@ const AppInner = () => {
 export default function App() {
   return (
     <QueryProvider>
-      <AuthProvider>
-        <AppProviders>
-          <AppInner />
-        </AppProviders>
-      </AuthProvider>
+      <AppProviders>
+        <AppInner />
+      </AppProviders>
     </QueryProvider>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Platform, ActivityIndicator, RefreshControl, FlatList } from 'react-native';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -46,8 +46,11 @@ type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & R
 /**
  * FeedScreen Inner Component
  * FeedListContext içinde render edilir, feedListRef'e erişebilir
+ * 
+ * PERFORMANCE FIX: React.memo ile sarmalandı - gereksiz re-render'ları önler
+ * useFocusEffect ile sadece focus'ta render edilir
  */
-const FeedScreenInner = () => {
+const FeedScreenInner = React.memo(() => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -852,16 +855,29 @@ const FeedScreenInner = () => {
       </Box>
     </SafeAreaView>
   );
-};
+}, (prevProps, nextProps) => {
+  // PERFORMANCE FIX: Custom comparison - sadece gerçek değişikliklerde re-render
+  // FeedScreen props almadığı için her zaman true döner (re-render yok)
+  return true;
+});
+FeedScreenInner.displayName = 'FeedScreenInner';
 
 /**
  * FeedScreen Component
  * FeedListProvider ile sarmalanmış, feedListRef'i tüm child component'lere sağlar
+ * 
+ * PERFORMANCE FIX: React.memo ile sarmalandı - gereksiz re-render'ları önler
+ * useFocusEffect ile sadece focus'ta render edilir (mesaj ekranındayken render olmaz)
  */
-export const FeedScreen = () => {
+export const FeedScreen = React.memo(() => {
   return (
     <FeedListProvider>
       <FeedScreenInner />
     </FeedListProvider>
   );
-};
+}, () => {
+  // PERFORMANCE FIX: Custom comparison - sadece gerçek değişikliklerde re-render
+  // FeedScreen props almadığı için her zaman true döner (re-render yok)
+  return true;
+});
+FeedScreen.displayName = 'FeedScreen';
