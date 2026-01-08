@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Box, ScrollView, HStack, VStack, Text, Pressable, Image, Button, Spinner,
+  Box, HStack, VStack, Text, Pressable, Image, Spinner,
   Divider
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -17,15 +17,12 @@ import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
 import { CategorySkeleton, ProductSkeleton } from '@/src/components/Skeletons';
-
-// --- Import FilterDialog ---
 import FilterDialog from '../components/FilterDialog';
 
-// --- Global Category Level ---
-export const MAX_CATEGORY_LEVEL = 3;
+// Infinitescroll için FlatList import et
+import { FlatList } from 'react-native';
 
-// --- Medusa fetch helper ---
-// (Unchanged...)
+export const MAX_CATEGORY_LEVEL = 3;
 
 type MedusaCategory = {
   id: string;
@@ -86,9 +83,6 @@ const PAGE_SIZE = 500;
 
 // --- Medusa API Fetch Helper Functions ---
 
-/**
- * Kategorileri parent_category_id'ye göre çeker
- */
 async function fetchMedusaCategoriesByParent(
   parentId: string | null
 ): Promise<MedusaCategory[]> {
@@ -122,9 +116,6 @@ async function fetchMedusaCategoriesByParent(
   }
 }
 
-/**
- * Filtrelenebilir ürünleri kategori ID'sine göre çeker (pagination destekli)
- */
 async function fetchFilterableProductsByCategoryIdPaged(
   categoryId: string,
   options: {
@@ -141,14 +132,12 @@ async function fetchFilterableProductsByCategoryIdPaged(
   const { searchQuery = '', pageSize = 30, offset = 0, metadataFilters } = options;
 
   try {
-    // Önce custom filterable-products endpoint'ini dene
     let url = `${MEDUSA_BASE_URL}/store/custom/filterable-products?category_id=${categoryId}&limit=${pageSize}&offset=${offset}`;
     
     if (searchQuery) {
       url += `&q=${encodeURIComponent(searchQuery)}`;
     }
 
-    // Metadata filtrelerini ekle
     if (metadataFilters && Object.keys(metadataFilters).length > 0) {
       Object.entries(metadataFilters).forEach(([key, values]) => {
         if (values.length > 0) {
@@ -167,7 +156,6 @@ async function fetchFilterableProductsByCategoryIdPaged(
 
     if (response.ok) {
       const data = await response.json();
-      // Debug: API'den gelen ham veriyi logla
       return {
         products: data.products || [],
         total: data.count || data.products?.length || 0,
@@ -175,7 +163,7 @@ async function fetchFilterableProductsByCategoryIdPaged(
       };
     }
 
-    // Fallback: standart products endpoint
+    // Fallback
     const fallbackUrl = `${MEDUSA_BASE_URL}/store/products?category_id[]=${categoryId}&limit=${pageSize}&offset=${offset}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ''}`;
     
     const fallbackResponse = await fetch(fallbackUrl, {
@@ -203,7 +191,6 @@ async function fetchFilterableProductsByCategoryIdPaged(
   }
 }
 
-// Kategori yolundaki objeler
 type FlatCategoryNode = {
   id: string;
   name: string;
@@ -234,6 +221,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const [productsOffset, setProductsOffset] = useState<number>(0);
   const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(false);
   const [isLoadingMoreProducts, setIsLoadingMoreProducts] = useState<boolean>(false);
+  // Takip için
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   const PRODUCT_PAGE_SIZE = 30;
 
@@ -267,7 +256,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       });
   }, []);
 
-  // Kategori children'ı fetch etmek için
   const fetchAndAppendChildren = useCallback(
     async (categoryNode: MedusaCategory) => {
       setIsLoading(true);
@@ -286,7 +274,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     []
   );
 
-  // Flat -> tree structure
   const buildCategoryTree = useCallback((cats: MedusaCategory[]): FlatCategoryNode[] => {
     const idMap = new Map<string, FlatCategoryNode>();
     cats.forEach(cat => {
@@ -322,10 +309,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     return rootNodes;
   }, []);
 
-  // Kategori tree memoda
   const categoryRoots = useMemo(() => buildCategoryTree(categories), [categories, buildCategoryTree]);
 
-  // Her parentPath'e göre gösterilecek kategoriler (next children)
   const currentCategories = useMemo(() => {
     let nodes: FlatCategoryNode[] = categoryRoots;
     if (parentPath.length > 0) {
@@ -349,7 +334,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const currentLevel = parentPath.length;
   const isProductGroupLevel = currentLevel === MAX_CATEGORY_LEVEL;
 
-  // Breadcrumb güncelle
   useEffect(() => {
     const crumbs: BreadcrumbItem[] = [];
     let search = categoryRoots;
@@ -371,7 +355,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     setBreadcrumbItems(crumbs);
   }, [parentPath, categoryRoots, isProductGroupLevel]);
 
-  // State parent'a bildir
   useEffect(() => {
     onStateChange?.({
       selectedProduct,
@@ -381,7 +364,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     });
   }, [selectedProduct, currentLevel, parentPath, breadcrumbItems, onStateChange]);
 
-  // Ürünleri /store/custom/filterable-products endpointinden çek + Pagination mantığı
+  // -- INF. SCR. FETCH: ürünleri çek ve flatlist için "hasNextPage" ayarla --
   useEffect(() => {
     let cancelled = false;
     const fetchProductsInCategory = async () => {
@@ -389,7 +372,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         const lastCategoryId = parentPath[parentPath.length - 1];
         setIsLoadingProducts(true);
         setProductsOffset(0);
-        // Yeni kategori seçildiğinde filtreleri sıfırla
         setFilterOptions(null);
         setSelectedFilters({});
         try {
@@ -397,22 +379,17 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
             lastCategoryId,
             { searchQuery, pageSize: PRODUCT_PAGE_SIZE, offset: 0 }
           );
-          
           if (cancelled) return;
-          
-          // Debug: filterable_options'ı logla
-         
-          // filterable_options'ı her zaman set et (null olsa bile)
-          console.log('[ProductCatalog] filterable_options:', filterable_options);
           setFilterOptions(filterable_options);
           setProducts(newProducts);
           setProductsTotal(total);
+          setHasNextPage(newProducts.length < total);
         } catch (err) {
-          console.error('[ProductCatalog] Fetch error:', err);
           if (cancelled) return;
           setProducts([]);
           setProductsTotal(0);
           setFilterOptions(null);
+          setHasNextPage(false);
         } finally {
           if (!cancelled) setIsLoadingProducts(false);
         }
@@ -421,6 +398,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         setProductsTotal(0);
         setFilterOptions(null);
         setIsLoadingProducts(false);
+        setHasNextPage(false);
       }
     };
     fetchProductsInCategory();
@@ -430,27 +408,57 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isProductGroupLevel, parentPath, searchQuery]);
 
-  // Daha fazla ürün çek:
-  const handleLoadMoreProducts = async () => {
-    if (!isProductGroupLevel || isLoadingMoreProducts) return;
+  // Infinitescroll ile daha fazla ürün çekme logic'i
+  const isLoadMoreTriggerRef = useRef(false); // reload için hızlıca tekrar çağırmasın diye
+
+  const handleLoadMoreProducts = useCallback(async () => {
+    if (!isProductGroupLevel || isLoadingMoreProducts || !hasNextPage) return;
+    if (isLoadMoreTriggerRef.current) return; // Bitişik tetiklemesin
+    isLoadMoreTriggerRef.current = true;
+
     const lastCategoryId = parentPath[parentPath.length - 1];
-    if (!lastCategoryId) return;
+    if (!lastCategoryId) {
+      isLoadMoreTriggerRef.current = false;
+      return;
+    }
     const nextOffset = products.length;
-    if (nextOffset >= productsTotal) return;
+    if (nextOffset >= productsTotal) {
+      setHasNextPage(false);
+      isLoadMoreTriggerRef.current = false;
+      return;
+    }
     setIsLoadingMoreProducts(true);
     try {
       const { products: moreProducts } = await fetchFilterableProductsByCategoryIdPaged(
         lastCategoryId,
         { searchQuery, pageSize: PRODUCT_PAGE_SIZE, offset: nextOffset }
       );
-      setProducts((prev) => [...prev, ...moreProducts]);
+      setProducts((prev) => {
+        // uniq merge
+        const seen: Record<string, boolean> = {};
+        prev.forEach(p => { seen[p.id] = true; });
+        moreProducts.forEach(p => { if (!seen[p.id]) prev.push(p); });
+        return [...prev];
+      });
       setProductsOffset(nextOffset);
+      setHasNextPage(products.length + moreProducts.length < productsTotal);
     } catch (err) {
       // ignore
     } finally {
       setIsLoadingMoreProducts(false);
+      setTimeout(() => {
+        isLoadMoreTriggerRef.current = false;
+      }, 400);
     }
-  };
+  }, [
+    isProductGroupLevel,
+    isLoadingMoreProducts,
+    hasNextPage,
+    parentPath,
+    products.length,
+    productsTotal,
+    searchQuery
+  ]);
 
   // Kategori/altkategori/g içinde seçim basıldığında
   const handleCategoryPress = async (categoryNode: FlatCategoryNode) => {
@@ -522,12 +530,48 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     onCreatePost?.();
   };
 
+  // -- ÜRÜN tıklandığında bu fonksiyon yönlendirmeyi yapar (copy.tsx'e göre düzenlendi) --
   const handleProductPress = (product: MedusaProduct) => {
     setSelectedProductLocal(product);
-    // Ekstra iş mantığı: burada ürün seçildiğinde başka bir şey yapılacaksa ekleyin.
+
+    // Breadcrumb'ın sonundaki isim
+    const lastCrumb = breadcrumbItems[breadcrumbItems.length - 1];
+    const categoryId = lastCrumb ? lastCrumb.id : undefined;
+    const categoryName = lastCrumb ? lastCrumb.name : undefined;
+
+    // Varsayılan productInfo: mümkün olan en iyi image + title
+    let productInfo: {
+      id: string;
+      image?: string;
+      title?: string;
+      subName?: string;
+      handle?: string;
+    } = {
+      id: product.id,
+      title: product.title,
+      handle: product.handle,
+    };
+
+    if (product.thumbnail) productInfo.image = product.thumbnail;
+    else if (product.images && product.images.length > 0) productInfo.image = product.images[0].url;
+
+    // Kategori adı (ürün hangi grupta gösteriliyordu)
+    if (categoryName) productInfo.subName = categoryName;
+
+    // Yönlendirme. Ürün detay sayfasına ProductInfoType.PRODUCT gidiyor.
+    setFlowContext(ProductInfoType.PRODUCT, product.id, productInfo);
+    navigation.navigate('Post', {
+      screen: 'PostsScreen',
+      params: {
+        stage: 'Product', // Ürün detayı aşaması
+        productId: product.id,
+        name: product.title,
+        productInfo,
+        contextType: ProductInfoType.PRODUCT,
+      }
+    });
   };
 
-  // Checkbox değişirse
   const handleFilterToggle = (key: string, value: string) => {
     setSelectedFilters((prev) => {
       const existing = prev[key] || [];
@@ -539,32 +583,29 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     });
   };
 
-  // Filtreleri uygula butonu
   const handleApplyFilters = () => {
     setShowFilterModal(false);
-    // TODO: Use selectedFilters in fetching!
-    // Use searchQuery + selectedFilters in fetchFilterableProductsByCategoryIdPaged as metadataFilters!
-    // See: fetchFilterableProductsByCategoryIdPaged usage and add selectedFilters to dependency.
+    // TODO: Integrate selectedFilters in fetch!
+    // Not yet implemented; will require update to dependency of product fetching.
   };
 
-  // --- Arayüz: Kategori veya Product Group gösterimi ---
+  // --- UI: Category / Product Group lists ---
+
+  // Kategori görünümünü FlatList ile göstermeye gerek yok: sadece ürün listing için Infinitescroll
   return (
     <Box flex={1}>
-      {/* Breadcrumb */}
       <Breadcrumb
         items={breadcrumbItems}
         onItemPress={handleBreadcrumbPress}
         rootLabel="All Categories"
       />
-      {/* Action Buttons - ProductGroup seviyesinde göster */}
       {isProductGroupLevel && (
         <ActionButtons
           onShowPosts={handleShowPosts}
           onCreatePost={handleCreatePost}
         />
       )}
-      
-      {/* Filter Button - ProductGroup seviyesinde göster */}
+
       {isProductGroupLevel && (
         <HStack px="$4" pb="$2" justifyContent="flex-end">
           <Pressable
@@ -591,7 +632,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         </HStack>
       )}
 
-      {/* --- DIALOG FILTER MODAL --- */}
       <FilterDialog
         isOpen={showFilterModal}
         onClose={() => setShowFilterModal(false)}
@@ -601,169 +641,162 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
         onApply={handleApplyFilters}
       />
 
-      {/* Dynamic Grid */}
-      <ScrollView
-        flex={1}
-        px="$4"
-        // filter button padding için biraz ekstra boşluk ekleyelim
-        contentContainerStyle={{
-          paddingBottom: scrollViewPaddingBottom + (isProductGroupLevel ? 92 : 40)
-        }}
-      >
-        <VStack space="md" pb={scrollViewPaddingBottom}>
-          {/* Loading skeleton */}
-          {isLoading || (isProductGroupLevel && isLoadingProducts) ? (
-            isProductGroupLevel ? (
+      {isProductGroupLevel ? (
+        <Box flex={1} px="$4">
+          {/* Product Skeleton yükleniyor */}
+          {(isLoading || isLoadingProducts) ? (
+            <VStack space="md" pb={scrollViewPaddingBottom}>
               <ProductSkeleton count={9} />
-            ) : (
-              <CategorySkeleton count={9} />
-            )
-          ) : isProductGroupLevel ? (
-            // Max seviyeye gelindiyse: ürünleri göster
-            <>
-              {/* Products grid */}
-              {products.length === 0 ? (
+            </VStack>
+          ) : (
+            <FlatList
+              // Infinitescroll için FlatList
+              data={products}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              numColumns={3}
+              contentContainerStyle={{
+                paddingTop: 0,
+                paddingBottom: scrollViewPaddingBottom + 92,
+                paddingHorizontal: 0,
+              }}
+              renderItem={({ item, index }) => {
+                // grid için satır/kol
+                let thumb = item.thumbnail;
+                if (!thumb && Array.isArray(item.images) && item.images.length > 0)
+                  thumb = item.images[0].url;
+                return (
+                  <Box
+                    w="33.33%"
+                    flex={1}
+                    style={{ padding: 4, minHeight: 170 }}
+                  >
+                    <Pressable
+                      key={item.id}
+                      bg={selectedProduct?.id === item.id ? "$primary200" : "transparent"}
+                      borderRadius={12}
+                      alignItems="center"
+                      justifyContent="center"
+                      p="$2"
+                      mb="$1"
+                      onPress={() => handleProductPress(item)}
+                      style={{ minHeight: 120, marginHorizontal: 2 }}
+                    >
+                      <Box alignItems="center" w="100%">
+                        {thumb ? (
+                          <Image
+                            source={{ uri: thumb }}
+                            style={{ width: 128, height: 128, borderRadius: 8, backgroundColor: "#fff", objectFit: 'contain' }}
+                            alt={item.title}
+                          />
+                        ) : (
+                          <Box
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: 8,
+                              backgroundColor: '#eef',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                            alignItems="center"
+                            justifyContent="center"
+                          >
+                            <Text fontWeight="600" fontSize="$lg">
+                              {item.title && item.title.length > 1
+                                ? item.title[0].toUpperCase()
+                                : '?'}
+                            </Text>
+                          </Box>
+                        )}
+                        <Text pt={4} numberOfLines={2} fontSize="$sm" textAlign="center">
+                          {item.title}
+                        </Text>
+                      </Box>
+                    </Pressable>
+                  </Box>
+                );
+              }}
+              ListEmptyComponent={() => (
                 <Box pt="$8" alignItems="center">
                   <Text color="$muted900" fontSize="$md">
                     No products found in this product group.
                   </Text>
                 </Box>
-              ) : (
-                <>
-                  {Array.from({ length: Math.ceil(products.length / 3) }).map((_, rowIndex) => {
-                    const startIndex = rowIndex * 3;
-                    const rowItems = products.slice(startIndex, startIndex + 3);
-                    const priority = rowIndex < 3 ? 'high' : 'low';
-                    return (
-                      <HStack key={`product-row-${rowIndex}`} space="md" justifyContent="space-between" pt={rowIndex === 0 ? undefined : "$1"}>
-                        {[0, 1, 2].map((colIndex) => {
-                          const prod = rowItems[colIndex];
-                          if (!prod) {
-                            return <Box key={colIndex} flex={1} />;
-                          }
-                          let thumb = prod.thumbnail;
-                          if (!thumb && Array.isArray(prod.images) && prod.images.length > 0)
-                            thumb = prod.images[0].url;
-                          return (
-                            <Pressable
-                              key={prod.id}
-                              flex={1}
-                              bg={selectedProduct?.id === prod.id ? "$primary200" : "transparent"}
-                              borderRadius={12}
-                              alignItems="center"
-                              justifyContent="center"
-                              p="$2"
-                              mb="$1"
-                              onPress={() => handleProductPress(prod)}
-                              style={{ minHeight: 120, marginHorizontal: 2 }}
-                            >
-                              <Box alignItems="center" w="100%">
-                                {thumb ? (
-                                  <Image
-                                    source={{ uri: thumb }}
-                                    style={{ width: 128, height: 128, borderRadius: 8, backgroundColor: "#fff",objectFit: 'contain' }}
-                                    alt={prod.title}
-                                  />
-                                ) : (
-                                  <Box
-                                    style={{
-                                      width: 64,
-                                      height: 64,
-                                      borderRadius: 8,
-                                      backgroundColor: '#eef',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                    alignItems="center"
-                                    justifyContent="center"
-                                  >
-                                    <Text fontWeight="600" fontSize="$lg">
-                                      {prod.title && prod.title.length > 1
-                                        ? prod.title[0].toUpperCase()
-                                        : '?'}
-                                    </Text>
-                                  </Box>
-                                )}
-                                <Text pt={4} numberOfLines={2} fontSize="$sm" textAlign="center">
-                                  {prod.title}
-                                </Text>
-                              </Box>
-                            </Pressable>
-                          );
-                        })}
-                      </HStack>
-                    );
-                  })}
-                  {/* Pagination - Load More button */}
-                  {(products.length < productsTotal) && (
-                    <Box alignItems="center" mt="$2" mb="$4">
-                      <Button
-                        onPress={handleLoadMoreProducts}
-                        isDisabled={isLoadingMoreProducts}
-                        size="md"
-                        px="$8"
-                        variant="solid"
-                        bg={isLoadingMoreProducts ? "$muted300" : "$primary500"}
-                      >
-                        {isLoadingMoreProducts ? (
-                          <HStack alignItems="center" space="xs">
-                            <Spinner color="$muted800" size="sm" />
-                            <Text color="$muted800" fontWeight="600">Loading...</Text>
-                          </HStack>
-                        ) : (
-                          <Text color="#fff" fontWeight="600">
-                            Show More
-                          </Text>
-                        )}
-                      </Button>
-                      <Text mt="$1" fontSize="$xs" color="$muted600">
-                        {products.length} / {productsTotal}
-                      </Text>
-                    </Box>
-                  )}
-                </>
               )}
-            </>
-          ) : (
-            // Alt/ana kategori seviyelerinde: kategorileri göster
-            <>
-              {Array.from({ length: Math.ceil(currentCategories.length / 3) }).map((_, rowIndex) => {
-                const startIndex = rowIndex * 3;
-                const rowItems = currentCategories.slice(startIndex, startIndex + 3);
-                const priority = rowIndex < 3 ? 'high' : 'low';
-                return (
-                  <HStack key={`row-${rowIndex}`} space="md" justifyContent="space-between">
-                    {[0, 1, 2].map((colIndex) => {
-                      const currentItem = rowItems[colIndex];
-                      if (!currentItem) {
-                        return <Box key={colIndex} flex={1} />;
-                      }
-                      let itemImage = currentItem.image;
-                      if (currentItem.metadata && currentItem.metadata.thumb_image) {
-                        itemImage = currentItem.metadata.thumb_image;
-                      }
-                      return (
-                        <CategoryCard
-                          key={currentItem.id}
-                          category={{
-                            id: currentItem.id,
-                            name: currentItem.name,
-                            icon: currentItem.level === MAX_CATEGORY_LEVEL ? 'package' : 'folder',
-                            image: itemImage,
-                            subCategories: [],
-                          } as any}
-                          onPress={() => handleCategoryPress(currentItem)}
-                          priority={priority}
-                        />
-                      );
-                    })}
-                  </HStack>
-                );
-              })}
-            </>
+              // Infinitescroll trigger: aşağı end threshold'da yeni ürünleri al
+              onEndReachedThreshold={0.2}
+              onEndReached={() => {
+                if (!isLoadingProducts && !isLoadingMoreProducts && hasNextPage) {
+                  handleLoadMoreProducts();
+                }
+              }}
+              ListFooterComponent={() =>
+                (isLoadingMoreProducts ?
+                  <Box alignItems="center" mt="$2" mb="$6">
+                    <Spinner color="$muted800" size="lg" />
+                  </Box>
+                  : (
+                    (products.length > 0 && products.length < productsTotal) ?
+                      <Box alignItems="center" mt="$2" mb="$6">
+                        <Text fontSize="$sm" color="$muted600">
+                          {products.length} / {productsTotal}
+                        </Text>
+                      </Box>
+                      : null
+                  )
+                )
+              }
+            />
           )}
-        </VStack>
-      </ScrollView>
+        </Box>
+      ) : (
+        // Kategoriler düz görünüm, eski gibi kalsın (kategori listing'te infinitescroll mantığı yok)
+        <Box flex={1}>
+          <VStack space="md" pb={scrollViewPaddingBottom} px="$4">
+            {/* Loading skeleton */}
+            {isLoading ? (
+              <CategorySkeleton count={9} />
+            ) : (
+              <>
+                {Array.from({ length: Math.ceil(currentCategories.length / 3) }).map((_, rowIndex) => {
+                  const startIndex = rowIndex * 3;
+                  const rowItems = currentCategories.slice(startIndex, startIndex + 3);
+                  const priority = rowIndex < 3 ? 'high' : 'low';
+                  return (
+                    <HStack key={`row-${rowIndex}`} space="md" justifyContent="space-between">
+                      {[0, 1, 2].map((colIndex) => {
+                        const currentItem = rowItems[colIndex];
+                        if (!currentItem) {
+                          return <Box key={colIndex} flex={1} />;
+                        }
+                        let itemImage = currentItem.image;
+                        if (currentItem.metadata && currentItem.metadata.thumb_image) {
+                          itemImage = currentItem.metadata.thumb_image;
+                        }
+                        return (
+                          <CategoryCard
+                            key={currentItem.id}
+                            category={{
+                              id: currentItem.id,
+                              name: currentItem.name,
+                              icon: currentItem.level === MAX_CATEGORY_LEVEL ? 'package' : 'folder',
+                              image: itemImage,
+                              subCategories: [],
+                            } as any}
+                            onPress={() => handleCategoryPress(currentItem)}
+                            priority={priority}
+                          />
+                        );
+                      })}
+                    </HStack>
+                  );
+                })}
+              </>
+            )}
+          </VStack>
+        </Box>
+      )}
     </Box>
   );
 };
