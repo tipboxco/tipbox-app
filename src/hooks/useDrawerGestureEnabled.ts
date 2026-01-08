@@ -34,18 +34,14 @@ export const useDrawerGestureEnabled = (): boolean => {
   const checkGestureEnabled = useCallback(() => {
     try {
       if (!navigationService.isReady()) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] Navigation not ready');
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı - gereksiz işlem
         setIsEnabled(false);
         return;
       }
 
       const state = navigationService.getNavigationState() as any;
       if (!state) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No navigation state');
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);
         return;
       }
@@ -53,22 +49,14 @@ export const useDrawerGestureEnabled = (): boolean => {
       // Root stack'te hangi route aktif?
       const currentRoute = state.routes[state.index];
       if (!currentRoute) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No current route');
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);
         return;
       }
 
-      if (__DEV__) {
-        console.log('[useDrawerGestureEnabled] Current route:', currentRoute.name);
-      }
-
       // App (AppDrawerNavigator) içindeyiz mi?
       if (currentRoute.name !== 'App') {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] Not in App, current:', currentRoute.name);
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);
         return;
       }
@@ -76,9 +64,7 @@ export const useDrawerGestureEnabled = (): boolean => {
       // App'ın state'i var mı? (DrawerNavigator state)
       const appState = currentRoute.state;
       if (!appState || !appState.routes) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No App state or routes');
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);
         return;
       }
@@ -86,9 +72,7 @@ export const useDrawerGestureEnabled = (): boolean => {
       // DrawerNavigator içinde MainTabs var mı?
       const drawerRoute = appState.routes[appState.index];
       if (!drawerRoute || drawerRoute.name !== 'MainTabs') {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No MainTabs in drawer, route:', drawerRoute?.name);
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);
         return;
       }
@@ -96,9 +80,7 @@ export const useDrawerGestureEnabled = (): boolean => {
       // MainTabs'ın state'i var mı? (TabNavigator state)
       const mainTabsState = drawerRoute.state;
       if (!mainTabsState || !mainTabsState.routes) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No MainTabs state or routes');
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);
         return;
       }
@@ -107,20 +89,9 @@ export const useDrawerGestureEnabled = (): boolean => {
       const activeTabIndex = mainTabsState.index;
       const activeTabRoute = mainTabsState.routes[activeTabIndex];
       if (!activeTabRoute) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No active tab route at index:', activeTabIndex);
-        }
+        // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);
         return;
-      }
-
-      if (__DEV__) {
-        console.log('[useDrawerGestureEnabled] Active tab:', activeTabRoute.name, 'index:', activeTabIndex);
-        console.log('[useDrawerGestureEnabled] Active tab route keys:', Object.keys(activeTabRoute));
-        console.log('[useDrawerGestureEnabled] Active tab route.state exists:', !!activeTabRoute.state);
-        if (activeTabRoute.state) {
-          console.log('[useDrawerGestureEnabled] Active tab route.state keys:', Object.keys(activeTabRoute.state));
-        }
       }
 
       // Aktif tab drawer'ı destekliyor mu?
@@ -136,36 +107,20 @@ export const useDrawerGestureEnabled = (): boolean => {
       // React Navigation'da tab navigator state'i farklı yapıda olabilir
       const tabStackState = activeTabRoute.state;
       
-      if (__DEV__) {
-        console.log('[useDrawerGestureEnabled] Tab stack state exists:', !!tabStackState);
-        if (tabStackState) {
-          console.log('[useDrawerGestureEnabled] Tab stack state keys:', Object.keys(tabStackState));
-          console.log('[useDrawerGestureEnabled] Tab stack index:', tabStackState.index);
-          console.log('[useDrawerGestureEnabled] Tab stack routes count:', tabStackState.routes?.length);
-        }
-      }
+      // PERFORMANCE FIX: Tüm console.log'lar kaldırıldı - gereksiz işlemler
       
       // State yoksa veya route'lar yoksa, muhtemelen ilk mount - index 0 kabul et
       // Tab navigator'da state her zaman olmayabilir, bu durumda drawer'ı enable et
       if (!tabStackState || !tabStackState.routes || tabStackState.routes.length === 0) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No tab stack state or empty routes, enabling (assuming index 0)');
-        }
         setIsEnabled(true);
         return;
       }
 
       // FeatureStack seviyesi: Tab stack'inin index'i 0 mı?
       const featureStackIndex = tabStackState.index ?? 0;
-      if (__DEV__) {
-        console.log('[useDrawerGestureEnabled] FeatureStack index:', featureStackIndex);
-      }
       
       if (featureStackIndex !== 0) {
         // FeatureStack içinde başka ekran açılmış - drawer gesture kapalı
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] FeatureStack index !== 0, disabling');
-        }
         setIsEnabled(false);
         return;
       }
@@ -173,23 +128,12 @@ export const useDrawerGestureEnabled = (): boolean => {
       // FeatureStack index 0 - şimdi FeedNavigator seviyesini kontrol et
       const featureStackRoute = tabStackState.routes[featureStackIndex];
       if (!featureStackRoute) {
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No feature stack route at index:', featureStackIndex);
-        }
         setIsEnabled(true);
         return;
       }
 
-      if (__DEV__) {
-        console.log('[useDrawerGestureEnabled] Feature stack route:', featureStackRoute.name);
-        console.log('[useDrawerGestureEnabled] Feature stack route state exists:', !!featureStackRoute.state);
-      }
-
       if (!featureStackRoute.state) {
         // State yoksa, muhtemelen ilk mount - index 0 kabul et
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No feature stack route state, enabling (assuming index 0)');
-        }
         setIsEnabled(true);
         return;
       }
@@ -198,38 +142,23 @@ export const useDrawerGestureEnabled = (): boolean => {
       const navigatorStackState = featureStackRoute.state;
       if (!navigatorStackState || !navigatorStackState.routes) {
         // State yoksa, muhtemelen ilk mount - index 0 kabul et
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] No navigator stack state, enabling (assuming index 0)');
-        }
         setIsEnabled(true);
         return;
       }
 
       const navigatorStackIndex = navigatorStackState.index ?? 0;
-      if (__DEV__) {
-        console.log('[useDrawerGestureEnabled] Navigator stack index:', navigatorStackIndex);
-        console.log('[useDrawerGestureEnabled] Navigator stack routes:', navigatorStackState.routes.map((r: any) => r.name));
-      }
       
       if (navigatorStackIndex !== 0) {
         // Navigator stack içinde başka ekran açılmış (ör: ReviewDetail) - drawer gesture kapalı
-        if (__DEV__) {
-          console.log('[useDrawerGestureEnabled] Navigator stack index !== 0, disabling');
-        }
         setIsEnabled(false);
         return;
       }
 
       // Her iki seviye de index 0 - drawer gesture açık
-      if (__DEV__) {
-        console.log('[useDrawerGestureEnabled] ✅ All checks passed, ENABLING drawer gesture');
-      }
       setIsEnabled(true);
     } catch (error) {
       // Navigation state okunamazsa güvenli tarafta kal (drawer gesture kapalı)
-      if (__DEV__) {
-        console.warn('[useDrawerGestureEnabled] Error reading navigation state:', error);
-      }
+      // PERFORMANCE FIX: console.warn kaldırıldı - gereksiz işlem
       setIsEnabled(false);
     }
   }, []);
@@ -238,12 +167,12 @@ export const useDrawerGestureEnabled = (): boolean => {
     // İlk kontrol
     checkGestureEnabled();
 
-    // PERFORMANCE FIX: Interval süresini artır - gereksiz re-render'ları azalt
-    // Navigation state değişiklikleri çok sık olmaz, 500ms yeterli
-    // TODO: NavigationService'e state change listener eklenebilir
+    // ✅ CRITICAL PERFORMANCE FIX: Interval süresini artır ve sadece gerektiğinde kontrol et
+    // Navigation state değişiklikleri çok sık olmaz, 1000ms yeterli
+    // TODO: NavigationService'e state change listener eklenebilir (daha iyi performans)
     const interval = setInterval(() => {
       checkGestureEnabled();
-    }, 500); // Her 500ms'de kontrol et (200ms'den 500ms'ye çıkarıldı - performans iyileştirmesi)
+    }, 1000); // Her 1000ms'de kontrol et (500ms'den 1000ms'ye çıkarıldı - daha az re-render)
 
     return () => clearInterval(interval);
   }, [checkGestureEnabled]);

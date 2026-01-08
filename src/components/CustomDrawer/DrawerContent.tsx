@@ -92,7 +92,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       } else if (!isDrawerOpen && isOpen) {
         closeDrawer();
       }
-    }, 300); // 300ms debounce - animasyon bitene kadar sync yapma (100ms'den 300ms'ye çıkarıldı)
+    }, 400); // 400ms debounce - animasyon tamamen bitene kadar sync yapma (300ms'den 400ms'ye çıkarıldı)
     
     return () => {
       if (syncTimeoutRef.current) {

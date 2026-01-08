@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { StyleSheet, View, Dimensions, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -14,17 +15,17 @@ import { useDrawerGestureEnabled } from '@/src/hooks/useDrawerGestureEnabled';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.85; // Twitter: ~85%
 
-// ✅ PERFORMANCE FIX: Optimize edilmiş animation config
-// Drawer kapanırken daha hızlı ve smooth olması için
+// ✅ CRITICAL PERFORMANCE FIX: Ultra-fast animation config
+// Drawer açılıp kapanırken donma/kasma önlemek için çok hızlı ve smooth
 const SPRING_CONFIG = {
-  damping: 25, // Biraz daha fazla damping = daha kontrollü, daha az kasa
-  stiffness: 200, // Daha yüksek stiffness = daha hızlı response
-  mass: 0.4, // Daha hafif = daha responsive
+  damping: 30, // Daha fazla damping = daha kontrollü, daha az bounce
+  stiffness: 300, // Çok daha yüksek stiffness = çok daha hızlı response
+  mass: 0.3, // Çok daha hafif = çok daha responsive
   overshootClamping: true, // Overshoot yok
 };
 
 const TIMING_CONFIG = {
-  duration: 150, // 150ms - daha hızlı kapanma
+  duration: 120, // 120ms - ultra hızlı kapanma
 };
 
 // ✅ DOĞRU - Platform-specific edge width (Twitter/Instagram standardı: 24px)
@@ -56,9 +57,12 @@ export const DrawerOverlay: React.FC<DrawerOverlayProps> = ({ children }) => {
   // CRITICAL: Drawer gesture sadece root tab ekranlarında aktif
   const isNavigationGestureEnabled = useDrawerGestureEnabled();
   
-  // CRITICAL: Hem navigation state hem de screen-level gesture enabled kontrolü
-  // Yatay scroll içeren ekranlarda (EventsScreen, InboxScreen) gestureEnabled = false
-  const isDrawerGestureEnabled = isNavigationGestureEnabled && gestureEnabled;
+  // ✅ PERFORMANCE FIX: isDrawerGestureEnabled'i useMemo ile memoize et
+  // Her render'da hesaplanmasını önle (gereksiz re-render'ları azalt)
+  const isDrawerGestureEnabled = useMemo(
+    () => isNavigationGestureEnabled && gestureEnabled,
+    [isNavigationGestureEnabled, gestureEnabled]
+  );
   
   // ✅ DOĞRU - Mount/Unmount stratejisi
   const [shouldRender, setShouldRender] = useState(false);
@@ -66,7 +70,7 @@ export const DrawerOverlay: React.FC<DrawerOverlayProps> = ({ children }) => {
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const overlayOpacity = useSharedValue(0);
 
-  // ✅ CRITICAL PERFORMANCE FIX: setShouldRender'ı geciktir
+  // ✅ CRITICAL PERFORMANCE FIX: setShouldRender'ı optimize et
   // DrawerContent render'ı animasyon başladıktan sonra yapılmalı (kasma önleme)
   useEffect(() => {
     if (isOpen) {
@@ -74,16 +78,10 @@ export const DrawerOverlay: React.FC<DrawerOverlayProps> = ({ children }) => {
       translateX.value = withSpring(0, SPRING_CONFIG);
       overlayOpacity.value = withTiming(1, TIMING_CONFIG);
       
-      // PERFORMANCE FIX: setShouldRender'ı animasyon başladıktan sonra geciktir
-      // requestAnimationFrame + küçük delay ile animasyon başladıktan sonra render et
-      // Bu sayede DrawerContent render'ı animasyon sırasında kasma yaratmaz
-      const timer = setTimeout(() => {
-        requestAnimationFrame(() => {
-          setShouldRender(true);
-        });
-      }, 16); // 16ms delay - bir frame sonra render et
-      
-      return () => clearTimeout(timer);
+      // PERFORMANCE FIX: setShouldRender'ı hemen çağır ama DrawerContent lazy render yapsın
+      // Animasyon başladıktan hemen sonra render et (delay kaldırıldı - daha hızlı)
+      // DrawerContent kendi içinde isDrawerReady ile ağır işlemleri erteleyecek
+      setShouldRender(true);
     } else {
       translateX.value = withSpring(-DRAWER_WIDTH, SPRING_CONFIG, (finished) => {
         if (finished) {
@@ -166,40 +164,40 @@ export const DrawerOverlay: React.FC<DrawerOverlayProps> = ({ children }) => {
   // Her render'da yeniden oluşturulması drawer'ın kasarak kapanmasına neden olur
   const closeSwipeGesture = useMemo(() => {
     return Gesture.Pan()
-      .enabled(isOpen) // Sadece drawer açıkken
-      .activeOffsetX([-5, -Infinity]) // Sadece sola swipe
-      .failOffsetY([-10, 10]) // Vertical scroll her zaman kazanmalı
-      .onBegin(() => {
-        'worklet';
-        runOnJS(setDragging)(true); // Carousel'ı disable et
-      })
-      .onUpdate((e) => {
-        'worklet';
+    .enabled(isOpen) // Sadece drawer açıkken
+    .activeOffsetX([-5, -Infinity]) // Sadece sola swipe
+    .failOffsetY([-10, 10]) // Vertical scroll her zaman kazanmalı
+    .onBegin(() => {
+      'worklet';
+      runOnJS(setDragging)(true); // Carousel'ı disable et
+    })
+    .onUpdate((e) => {
+      'worklet';
         // PERFORMANCE FIX: Gereksiz hesaplamaları optimize et
-        if (e.translationX < 0) {
+      if (e.translationX < 0) {
           const clampedX = e.translationX < -DRAWER_WIDTH ? -DRAWER_WIDTH : e.translationX;
           translateX.value = clampedX;
           // PERFORMANCE FIX: Math.max yerine direkt hesaplama (daha hızlı)
           const opacity = 1 + clampedX / DRAWER_WIDTH;
           overlayOpacity.value = opacity > 0 ? opacity : 0;
-        }
-      })
-      .onEnd((e) => {
-        'worklet';
+      }
+    })
+    .onEnd((e) => {
+      'worklet';
         // PERFORMANCE FIX: setDragging'i onEnd sonunda değil, animasyon başlamadan önce çağır
         // Çünkü animasyon başladıktan sonra zaten gesture bitiyor
-        
-        if (e.translationX < -THRESHOLD || e.velocityX < -VELOCITY_THRESHOLD) {
-          translateX.value = withSpring(-DRAWER_WIDTH, SPRING_CONFIG);
-          overlayOpacity.value = withTiming(0, TIMING_CONFIG);
+      
+      if (e.translationX < -THRESHOLD || e.velocityX < -VELOCITY_THRESHOLD) {
+        translateX.value = withSpring(-DRAWER_WIDTH, SPRING_CONFIG);
+        overlayOpacity.value = withTiming(0, TIMING_CONFIG);
           runOnJS(setDragging)(false); // Carousel'ı enable et - animasyon başlamadan önce
-          runOnJS(closeDrawerJS)();
-        } else {
-          translateX.value = withSpring(0, SPRING_CONFIG);
-          overlayOpacity.value = withTiming(1, TIMING_CONFIG);
+        runOnJS(closeDrawerJS)();
+      } else {
+        translateX.value = withSpring(0, SPRING_CONFIG);
+        overlayOpacity.value = withTiming(1, TIMING_CONFIG);
           runOnJS(setDragging)(false); // Carousel'ı enable et
-        }
-      });
+      }
+    });
   }, [isOpen, closeDrawerJS, setDragging]);
   // CRITICAL FIX: Shared value'lar (translateX, overlayOpacity) dependency array'den çıkarıldı
   // Worklet'ler shared value'ları otomatik olarak capture eder, dependency array'de olmamalı
@@ -211,14 +209,14 @@ export const DrawerOverlay: React.FC<DrawerOverlayProps> = ({ children }) => {
   const drawerStyle = useAnimatedStyle(() => {
     'worklet';
     return {
-      transform: [{ translateX: translateX.value }],
+    transform: [{ translateX: translateX.value }],
     };
   });
 
   const overlayStyle = useAnimatedStyle(() => {
     'worklet';
     return {
-      opacity: overlayOpacity.value,
+    opacity: overlayOpacity.value,
     };
   });
 
@@ -256,9 +254,12 @@ export const DrawerOverlay: React.FC<DrawerOverlayProps> = ({ children }) => {
       )}
 
       {/* Drawer Content - Sadece shouldRender true olduğunda render et */}
+      {/* CRITICAL: SafeAreaView ile status bar'ın altından başla */}
       {shouldRender && (
         <Animated.View style={[styles.drawer, drawerStyle]}>
-          {children}
+          <SafeAreaView edges={['top']} style={styles.drawerSafeArea}>
+            {children}
+          </SafeAreaView>
         </Animated.View>
       )}
     </View>
@@ -282,6 +283,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 16,
+  },
+  drawerSafeArea: {
+    flex: 1,
   },
   edgeDetector: {
     position: 'absolute',
