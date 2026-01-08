@@ -373,7 +373,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
 
   // State parent'a bildir
   useEffect(() => {
-    onStateChangeRef.current?.({
+    onStateChange?.({
       selectedProduct,
       currentLevel,
       parentPath,
