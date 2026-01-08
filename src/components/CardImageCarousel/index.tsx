@@ -114,8 +114,9 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
 
   // FeedListContext'ten feedListRef'i al (optional - sadece feed ekranında mevcut)
   // Feed ekranı dışında kullanılıyorsa context yok, bu durumda gesture arbitration devre dışı
+  // REANIMATED FIX: feedListRef'i direkt kullanmıyoruz, sadece feedListContext üzerinden erişiyoruz
+  // Bu sayede ref worklet'e geçirilmez ve Reanimated uyarısı önlenir
   const feedListContext = useFeedListContext();
-  const feedListRef = feedListContext?.feedListRef;
 
   // GESTURE ARBITRATION: Direction lock mekanizması (UI thread'de, SharedValue ile)
   // RULE 1: Gesture state asla React state ile tutulmaz, sadece SharedValue
@@ -130,17 +131,22 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
   // Feed scroll control: Native thread'den JS thread'e geçiş (sadece gesture bittiğinde)
   // RULE 2: setNativeProps sadece gesture bittiğinde çağrılır, gesture sırasında değil
   // Bu fonksiyonlar worklet callback'lerinde çağrılır, useCallback ile memoize edilir
+  // REANIMATED FIX: feedListRef'i worklet'e geçirmemek için, ref'i closure'da yakalıyoruz
   const disableFeedScroll = useCallback(() => {
-    if (feedListRef?.current) {
-      feedListRef.current.setNativeProps({ scrollEnabled: false });
+    // feedListRef'i closure'da yakala - worklet'e geçirilmez
+    const ref = feedListContext?.feedListRef;
+    if (ref?.current) {
+      ref.current.setNativeProps({ scrollEnabled: false });
     }
-  }, [feedListRef]);
+  }, [feedListContext]);
 
   const enableFeedScroll = useCallback(() => {
-    if (feedListRef?.current) {
-      feedListRef.current.setNativeProps({ scrollEnabled: true });
+    // feedListRef'i closure'da yakala - worklet'e geçirilmez
+    const ref = feedListContext?.feedListRef;
+    if (ref?.current) {
+      ref.current.setNativeProps({ scrollEnabled: true });
     }
-  }, [feedListRef]);
+  }, [feedListContext]);
 
   // Horizontal gesture: Carousel swipe için
   // RULE 3: Aynı anda yalnızca 1 PanGesture ACTIVE olabilir (Race ile garanti)
@@ -165,16 +171,16 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
                 gestureDirection.value = 'horizontal';
                 // Feed scroll'u devre dışı bırak (sadece horizontal tespit edildiğinde)
                 // runOnJS ile JS thread'e geçiş yap
-                if (feedListRef) {
-                  runOnJS(disableFeedScroll)();
-                }
+                // REANIMATED FIX: feedListRef kontrolünü worklet dışında yap (runOnJS callback'inde)
+                runOnJS(disableFeedScroll)();
               }
             }
           }
         })
         .onEnd(() => {
           'worklet';
-          if (gestureDirection.value === 'horizontal' && feedListRef) {
+          if (gestureDirection.value === 'horizontal') {
+            // REANIMATED FIX: feedListRef kontrolünü worklet dışında yap (runOnJS callback'inde)
             runOnJS(enableFeedScroll)();
           }
           gestureDirection.value = 'none';
@@ -182,9 +188,8 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
         .onFinalize(() => {
           'worklet';
           // Güvenlik: Her durumda feed scroll'u tekrar aktif et
-          if (feedListRef) {
-            runOnJS(enableFeedScroll)();
-          }
+          // REANIMATED FIX: feedListRef kontrolünü worklet dışında yap (runOnJS callback'inde)
+          runOnJS(enableFeedScroll)();
           gestureDirection.value = 'none';
         })
         // Horizontal hareketlerde aktif ol - daha agresif threshold
@@ -194,7 +199,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
         // Carousel'ın gesture'ından önce devreye girmek için minPointers
         .minPointers(1)
         .maxPointers(1),
-    [feedListRef, disableFeedScroll, enableFeedScroll]
+    [disableFeedScroll, enableFeedScroll]
   );
 
   // Vertical gesture: Feed scroll için
@@ -243,12 +248,13 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
   // RULE 5: Gesture.Race - İlk ACTIVE olan kazanır, diğeri otomatik CANCEL
   // Bu %100 crash-safe yaklaşımdır
   const composedGesture = useMemo(() => {
-    if (!feedListRef) {
+    // REANIMATED FIX: feedListRef kontrolünü worklet dışında yap
+    if (!feedListContext?.feedListRef) {
       // Feed ekranı dışında kullanılıyorsa gesture arbitration yok
       return undefined;
     }
     return Gesture.Race(horizontalGesture, verticalGesture);
-  }, [feedListRef, horizontalGesture, verticalGesture]);
+  }, [feedListContext, horizontalGesture, verticalGesture]);
 
   const carouselPadding = paddingHorizontal ? paddingHorizontal : 28;
   const carouselWidth = Dimensions.get('window').width;
