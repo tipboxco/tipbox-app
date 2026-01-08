@@ -12,6 +12,7 @@ import type { EventCardData } from '@/src/types/EventCard';
 import { toImageSource } from '@/src/utils';
 
 interface NewsTabProps {
+  searchQuery?: string;
   onEventPress?: (eventId: string) => void;
   onBrandPress?: (brandId: string) => void;
   onProductPress?: (productId: string) => void;
@@ -21,6 +22,7 @@ interface NewsTabProps {
 }
 
 const NewsTabComponent: React.FC<NewsTabProps> = ({
+  searchQuery,
   onEventPress,
   onBrandPress,
   onProductPress,
@@ -38,7 +40,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     hasNextPage: hasNextEventsPage,
     isFetchingNextPage: isFetchingNextEventsPage,
     isLoading: isLoadingEvents,
-  } = useExploreEvents(10);
+  } = useExploreEvents(10, searchQuery);
   
   // onEndReached loop'unu önlemek için ref
   const isLoadingMoreEventsRef = useRef(false);
@@ -50,7 +52,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     hasNextPage: hasNextBrandsPage,
     isFetchingNextPage: isFetchingNextBrandsPage,
     isLoading: isLoadingBrands,
-  } = useNewBrands(10);
+  } = useNewBrands(10, searchQuery);
 
   // New Products API hook with infinite scroll
   const {
@@ -274,6 +276,37 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
     onSeeAllProducts?.();
   };
 
+  // PERFORMANCE FIX: Memoize footer components to prevent re-renders
+  const EventsFooter = useMemo(() => {
+    if (!isFetchingNextEventsPage) return null;
+    return (
+      <Box width={60} height={60} alignItems="center" justifyContent="center" alignSelf="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [isFetchingNextEventsPage, isDark]);
+
+  const BrandsFooter = useMemo(() => {
+    if (!isFetchingNextBrandsPage) return null;
+    return (
+      <Box width={60} height={60} alignItems="center" justifyContent="center" alignSelf="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [isFetchingNextBrandsPage, isDark]);
+
+  const ProductsFooter = useMemo(() => {
+    if (!isFetchingNextProductsPage) return null;
+    return (
+      <Box width={60} height={60} alignItems="center" justifyContent="center" alignSelf="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [isFetchingNextProductsPage, isDark]);
+
+  // PERFORMANCE FIX: Memoize ItemSeparatorComponent
+  const ItemSeparator = useCallback(() => <Box width={12} />, []);
+
   return (
     <VStack space="md" mb="$4" pt={0} mt={0}>
       {/* New Community Events Section */}
@@ -314,7 +347,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingRight: 16, paddingBottom: 8 }}
-              ItemSeparatorComponent={() => <Box width={12} />}
+              ItemSeparatorComponent={ItemSeparator}
               renderItem={({ item }) => (
                 <EventCard
                   data={item}
@@ -322,17 +355,15 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
                   onPress={() => handleEventPress(item.id)}
                 />
               )}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => `event-${item.id}`}
               nestedScrollEnabled={true}
               onEndReached={handleLoadMoreEvents}
               onEndReachedThreshold={0.5}
-              ListFooterComponent={
-                isFetchingNextEventsPage ? (
-                  <Box width={60} height={60} alignItems="center" justifyContent="center" alignSelf="center">
-                    <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                  </Box>
-                ) : null
-              }
+              removeClippedSubviews={true}
+              initialNumToRender={3}
+              maxToRenderPerBatch={3}
+              windowSize={5}
+              ListFooterComponent={EventsFooter}
             />
           )}
         </VStack>
@@ -414,24 +445,22 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingRight: 16 }}
-              ItemSeparatorComponent={() => <Box width={12} />}
+              ItemSeparatorComponent={ItemSeparator}
               renderItem={({ item }) => (
                 <BrandCard
                   data={item}
                   onPress={() => handleBrandPress(item.id)}
                 />
               )}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => `brand-${item.id}`}
               nestedScrollEnabled={true}
               onEndReached={handleLoadMoreBrands}
               onEndReachedThreshold={0.5}
-              ListFooterComponent={
-                isFetchingNextBrandsPage ? (
-                  <Box width={60} height={60} alignItems="center" justifyContent="center" alignSelf="center">
-                    <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                  </Box>
-                ) : null
-              }
+              removeClippedSubviews={true}
+              initialNumToRender={3}
+              maxToRenderPerBatch={3}
+              windowSize={5}
+              ListFooterComponent={BrandsFooter}
             />
           )}
         </VStack>
@@ -513,24 +542,22 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingRight: 16, paddingBottom: 8 }}
-              ItemSeparatorComponent={() => <Box width={12} />}
+              ItemSeparatorComponent={ItemSeparator}
               renderItem={({ item }) => (
                 <ProductCard
                   data={item}
                   onPress={() => handleProductPress(item.id)}
                 />
               )}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => `product-${item.id}`}
               nestedScrollEnabled={true}
               onEndReached={handleLoadMoreProducts}
               onEndReachedThreshold={0.5}
-              ListFooterComponent={
-                isFetchingNextProductsPage ? (
-                  <Box width={60} height={60} alignItems="center" justifyContent="center" alignSelf="center">
-                    <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                  </Box>
-                ) : null
-              }
+              removeClippedSubviews={true}
+              initialNumToRender={3}
+              maxToRenderPerBatch={3}
+              windowSize={5}
+              ListFooterComponent={ProductsFooter}
             />
           )}
         </VStack>

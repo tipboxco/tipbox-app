@@ -1,19 +1,18 @@
-import type { NavigationLogger } from './types';
 
 /**
  * Production-safe logger
  * 
  * Development'ta console.log, production'da sadece error/warn.
  */
-export const navigationLogger: NavigationLogger = {
+export const navigationLogger = {
   debug: (...args: any[]) => {
-    if (__DEV__) {
+    if (process.env.NODE_ENV === 'development') {
       console.log('[NavigationService]', ...args);
     }
   },
   
   warn: (...args: any[]) => {
-    if (__DEV__) {
+    if (process.env.NODE_ENV === 'development') {
       console.warn('[NavigationService] ⚠️', ...args);
     }
   },
@@ -24,7 +23,7 @@ export const navigationLogger: NavigationLogger = {
   },
   
   log: (...args: any[]) => {
-    if (__DEV__) {
+    if (process.env.NODE_ENV === 'development') {
       console.log('[NavigationService] ✅', ...args);
     }
   },

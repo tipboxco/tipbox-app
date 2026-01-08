@@ -1,6 +1,14 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { ScrollView, FlatList, ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+  withTiming,
+} from 'react-native-reanimated';
 import {
   Box,
   VStack,
@@ -15,7 +23,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated-carousel';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { SearchModal } from '@/src/components/SearchModal';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useNavigation } from '@react-navigation/native';
@@ -29,6 +36,8 @@ import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import * as Linking from 'expo-linking';
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 // Banner Carousel Component (CardImageCarousel style)
 interface BannerCarouselProps {
@@ -262,26 +271,37 @@ const ExploreScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<ExploreStackParamList & RootStackParamList>>();
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'hottest' | 'news'>('hottest');
+  const pagerRef = useRef<PagerView>(null);
+  const tabContainerRef = useRef<any>(null);
+  const [tabContainerWidth, setTabContainerWidth] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  
+  // 🎯 CORE: Shared progress value (0 = Hottest, 1 = News)
+  const progress = useSharedValue(0);
+  
+  // Tab state - currentPage'e göre hesaplanıyor
+  const activeCategory: 'hottest' | 'news' = currentPage === 0 ? 'hottest' : 'news';
+  
   const bottomInset = useSafeAreaValues('bottom');
   const [searchBarHeight, setSearchBarHeight] = useState(0);
   const [bannerHeight, setBannerHeight] = useState(0);
   const [tabsHeight, setTabsHeight] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Debounce search query for API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Marketplace Banners API hook
   const {
     data: banners,
     isLoading: isLoadingBanners,
   } = useMarketplaceBanners();
-
-  const handleSearchPress = () => {
-    setIsSearchVisible(true);
-  };
-
-  const handleSearchClose = () => {
-    setIsSearchVisible(false);
-  };
 
   // Callback fonksiyonlarını useCallback ile sarmalayarak referanslarını stabilize et
   const handleEventPress = useCallback((eventId: string) => {
@@ -353,164 +373,266 @@ const ExploreScreen: React.FC = () => {
     navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen' as any, { productId });
   }, []);
 
+  // PERFORMANCE FIX: Memoize onLayout handlers to prevent unnecessary re-renders
+  const handleSearchBarLayout = useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    if (searchBarHeight === 0) {
+      setSearchBarHeight(height);
+    }
+  }, [searchBarHeight]);
 
+  const handleBannerLayout = useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    if (bannerHeight === 0) {
+      setBannerHeight(height);
+    }
+  }, [bannerHeight]);
 
+  const handleTabsLayout = useCallback((event: any) => {
+    const { height } = event.nativeEvent.layout;
+    if (tabsHeight === 0) {
+      setTabsHeight(height);
+    }
+  }, [tabsHeight]);
+
+  // Tab press handler - PagerView native animasyonu ile geçiş
+  const handleTabPress = useCallback((index: number) => {
+    pagerRef.current?.setPage(index);
+  }, []);
+
+  // PagerView scroll handler - realtime progress güncelleme
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      progress.value = position + offset;
+    },
+    [progress]
+  );
+
+  // PagerView page selected handler - snap sonrası progress'i sync et
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
+      setCurrentPage(position);
+    },
+    [progress]
+  );
+
+  // Tab 1 (Hottest) label color animation
+  const tab1Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1],
+      [activeColor, inactiveColor]
+    );
+    return { color };
+  });
+
+  // Tab 2 (News) label color animation
+  const tab2Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1],
+      [inactiveColor, activeColor]
+    );
+    return { color };
+  });
+
+  // Indicator position animation
+  const tabWidth = tabContainerWidth / 2 || 0;
+  const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
+  const indicatorStyle = useAnimatedStyle(() => {
+    // Indicator'ı tab genişliğine göre translate et
+    // Her tab'in ortasına yerleştirmek için: tabWidth * progress + (tabWidth - indicatorWidth) / 2
+    const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+    return {
+      transform: [{ translateX }],
+    };
+  });
+
+  // PERFORMANCE FIX: ExploreScreen uses ScrollView for heterogeneous content
+  // Converting to FlashList would require major refactoring (array of different content types)
+  // ScrollView is acceptable here because:
+  // 1. Content is relatively static (Search Bar, Banner, Tabs, Tab Content)
+  // 2. Tab content (HottestTab, NewsTab) already uses FlatList internally
+  // 3. Nested scrolling is required
+  // For better performance, consider migrating HottestTab and NewsTab internal FlatLists to FlashList
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         <Header
           title="Explore"
           leftAction="menu"
-          onSearchPress={handleSearchPress}
         />
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: bottomInset }}
-          nestedScrollEnabled={true}
-        >
-          <VStack space="md">
-            {/* Search Bar - Trust_TrusterListScreen style */}
-            <VStack
-              px="$4"
-              py="$2"
-              onLayout={(event) => {
-                const { height } = event.nativeEvent.layout;
-                if (searchBarHeight === 0) {
-                  setSearchBarHeight(height);
-                }
-              }}
+        <VStack flex={1} space="md">
+          {/* Search Bar - Trust_TrusterListScreen style */}
+          <VStack
+            px="$4"
+            py="$2"
+            onLayout={handleSearchBarLayout}
+          >
+            <HStack
+              alignItems="center"
+              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+              borderWidth={1}
+              borderColor="#E9E9E9"
+              borderRadius={23}
+              px={12}
+              space="sm"
             >
-              <HStack
-                alignItems="center"
-                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                borderRadius={23}
-                px={12}
-                space="sm"
-              >
-                <Feather
-                  name="search"
-                  size={24}
-                  color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-                />
-                <Input flex={1} borderWidth={0} bg="transparent">
-                  <InputField
-                    placeholder="Ürün Grubu seçin veya ürün adı arayın"
-                    placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                    color={isDark ? '#fff' : '#000'}
-                    fontSize={11}
-                  />
-                </Input>
-              </HStack>
-            </VStack>
-
-            {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
-            {!isLoadingBanners && banners && banners.length > 0 && (
-              <Box
-                mb="$4"
-                onLayout={(event) => {
-                  const { height } = event.nativeEvent.layout;
-                  if (bannerHeight === 0) {
-                    setBannerHeight(height);
-                  }
-                }}
-              >
-                <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
-              </Box>
-            )}
-
-            {/* Category Tabs */}
-            <VStack
-              bg={isDark ? '#000' : '#FFF'}
-              pt={0}
-              mt={0}
-              mb={0}
-              pb={0}
-              onLayout={(event) => {
-                const { height } = event.nativeEvent.layout;
-                if (tabsHeight === 0) {
-                  setTabsHeight(height);
-                }
-              }}
-            >
-              <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
-                <Pressable
-                  onPress={() => setActiveCategory('hottest')}
-                  flex={1}
-                  alignItems="center"
-                  pb="$1"
-                  position="relative"
-                >
-                  <VStack alignItems="center" space="xs">
-                    <Text
-                      fontSize={12}
-                      fontWeight="$bold"
-                      color={activeCategory === 'hottest' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                    >
-                      Hottest
-                    </Text>
-                  </VStack>
-                  <Box
-                    position="absolute"
-                    bottom={-1}
-                    left="25%"
-                    height={2}
-                    width="50%"
-                    borderRadius={999}
-                    bg={activeCategory === 'hottest' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-                  />
-                </Pressable>
-                <Pressable
-                  onPress={() => setActiveCategory('news')}
-                  flex={1}
-                  alignItems="center"
-                  pb="$1"
-                  position="relative"
-                >
-                  <VStack alignItems="center" space="xs">
-                    <Text
-                      fontSize={12}
-                      fontWeight="$bold"
-                      color={activeCategory === 'news' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                    >
-                      What's News
-                    </Text>
-                  </VStack>
-                  <Box
-                    position="absolute"
-                    bottom={-1}
-                    left="20%"
-                    height={2}
-                    width="60%"
-                    borderRadius={999}
-                    bg={activeCategory === 'news' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-                  />
-                </Pressable>
-              </HStack>
-            </VStack>
-
-            {/* Content based on active tab */}
-            {activeCategory === 'hottest' && <HottestTab />}
-            {activeCategory === 'news' && (
-              <NewsTab
-                onEventPress={handleEventPress}
-                onBrandPress={handleBrandPress}
-                onProductPress={handleProductPress}
-                onSeeAllEvents={handleSeeAllEvents}
-                onSeeAllBrands={handleSeeAllBrands}
-                onSeeAllProducts={handleSeeAllProducts}
+              <Feather
+                name="search"
+                size={24}
+                color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
               />
-            )}
+              <Input flex={1} borderWidth={0} bg="transparent">
+                <InputField
+                  placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                  placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                  color={isDark ? '#fff' : '#000'}
+                  fontSize={11}
+                />
+              </Input>
+            </HStack>
           </VStack>
-        </ScrollView>
 
-        {/* Search Modal */}
-        <SearchModal
-          visible={isSearchVisible}
-          onClose={handleSearchClose}
-        />
+          {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
+          {!isLoadingBanners && banners && banners.length > 0 && (
+            <Box
+              mb="$4"
+              onLayout={handleBannerLayout}
+            >
+              <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
+            </Box>
+          )}
+
+          {/* Category Tabs */}
+          <VStack
+            bg={isDark ? '#000' : '#FFF'}
+            pt="$4"
+            onLayout={handleTabsLayout}
+          >
+            <HStack
+              ref={tabContainerRef}
+              borderBottomWidth={1}
+              borderColor="#E9E9E9"
+              p={0}
+              m={0}
+              position="relative"
+              onLayout={(event) => {
+                const width = event.nativeEvent.layout.width;
+                setTabContainerWidth(width);
+              }}
+            >
+              {/* Hottest Tab Label */}
+              <Pressable
+                flex={1}
+                onPress={() => handleTabPress(0)}
+                alignItems="center"
+                pb="$1"
+              >
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                      },
+                      tab1Style,
+                    ]}
+                  >
+                    Hottest
+                  </Animated.Text>
+                </VStack>
+              </Pressable>
+
+              {/* What's News Tab Label */}
+              <Pressable
+                flex={1}
+                onPress={() => handleTabPress(1)}
+                alignItems="center"
+                pb="$1"
+              >
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                      },
+                      tab2Style,
+                    ]}
+                  >
+                    What's News
+                  </Animated.Text>
+                </VStack>
+              </Pressable>
+
+              {/* Animated Indicator */}
+              {tabWidth > 0 && (
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      width: indicatorWidth,
+                      height: 2,
+                      backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                    },
+                    indicatorStyle,
+                  ]}
+                />
+              )}
+            </HStack>
+          </VStack>
+
+          {/* PagerView - Native swipe tab switching */}
+          <AnimatedPagerView
+            ref={pagerRef}
+            style={{ flex: 1 }}
+            initialPage={0}
+            onPageScroll={handlePageScroll}
+            onPageSelected={handlePageSelected}
+          >
+            {/* Hottest Tab */}
+            <Box key="0" flex={1}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: bottomInset }}
+                nestedScrollEnabled={true}
+              >
+                <HottestTab searchQuery={debouncedSearchQuery} />
+              </ScrollView>
+            </Box>
+
+            {/* News Tab */}
+            <Box key="1" flex={1}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: bottomInset }}
+                nestedScrollEnabled={true}
+              >
+                <NewsTab
+                  searchQuery={debouncedSearchQuery}
+                  onEventPress={handleEventPress}
+                  onBrandPress={handleBrandPress}
+                  onProductPress={handleProductPress}
+                  onSeeAllEvents={handleSeeAllEvents}
+                  onSeeAllBrands={handleSeeAllBrands}
+                  onSeeAllProducts={handleSeeAllProducts}
+                />
+              </ScrollView>
+            </Box>
+          </AnimatedPagerView>
+        </VStack>
       </Box>
     </SafeAreaView>
   );

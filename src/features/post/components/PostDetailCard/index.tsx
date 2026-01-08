@@ -3,7 +3,7 @@ import { VStack, Text, Image, HStack, Pressable, Box } from '@gluestack-ui/theme
 import { Feather } from '@expo/vector-icons';
 import CardImageCarousel from '@/src/components/CardImageCarousel';
 
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Post } from '@/src/mock/profile/posts/types';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
@@ -146,7 +146,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                         {data.user?.title && (
                             <Text
                                 color={isDark ? '$textDark400' : '#787878'}
-                                fontSize={config.tokens.fontSizes['3xs'] as number}
+                                fontSize="$xs"
                                 numberOfLines={1}
                                 maxWidth={250}
                             >
@@ -192,7 +192,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                     {/* Original Content */}
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize={config.tokens.fontSizes['2xs'] as number}
+                        fontSize="$sm"
                     >
                         {data.content}
                     </Text>
@@ -203,7 +203,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                             <Text
                                 color={isDark ? '$textDark200' : '#666'}
-                                fontSize={config.tokens.fontSizes['2xs'] as number}
+                                fontSize="$2xl"
                                 fontStyle="italic"
                             >
                                 {translatedContent}
@@ -226,7 +226,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             />
                             <Text
                                 color="#829905"
-                                fontSize={config.tokens.fontSizes['2xs'] as number}
+                                fontSize="$2xl"
                                 textDecorationLine="underline"
                             >
                                 {isTranslating

@@ -48,7 +48,14 @@ class NotificationService {
     this.lastProcessedEventIds.add(eventId);
   }
   /**
-   * Notification'dan navigation action oluştur
+   * ARCHITECTURE FIX: Deterministic Notification Route Resolution
+   * 
+   * Route resolution follows a strict priority order:
+   * 1. Backend navigation data (highest priority)
+   * 2. Metadata-based resolution (postId, threadId, userId, eventId)
+   * 3. Type-based fallback mapping
+   * 
+   * This ensures consistent navigation behavior across all notification sources.
    * 
    * @param notification - Notification object
    * @returns Navigation action veya null
@@ -59,7 +66,7 @@ class NotificationService {
   } | null {
     const { type, metadata, navigation: navData } = notification;
 
-    // Backend'den gelen navigation data varsa öncelik ver
+    // Priority 1: Backend'den gelen navigation data varsa öncelik ver
     if (navData?.screen) {
       return {
         route: navData.screen,
@@ -67,55 +74,143 @@ class NotificationService {
       };
     }
 
+    // Priority 2: Metadata-based resolution (en güvenilir)
+    // Post notification - GlobalStackGroup
+    if (metadata?.postId) {
+      return {
+        route: ROOT_ROUTES.POST,
+        params: {
+          screen: 'PostDetailScreen',
+          params: {
+            postData: { id: metadata.postId },
+            type: 'post',
+            commentId: metadata.commentId,
+          },
+        },
+      };
+    }
+
+    // Message notification - GlobalStackGroup
+    if (metadata?.threadId || metadata?.messageId || metadata?.requestId) {
+      const threadId = metadata.threadId || metadata.messageId || metadata.requestId;
+      return {
+        route: ROOT_ROUTES.MESSAGE_DETAIL,
+        params: {
+          messageId: threadId,
+          threadId: threadId,
+          recipientUserId: metadata.userId,
+          senderName: metadata.userName || 'Kullanıcı',
+          senderTitle: metadata.userTitle || '',
+          senderAvatar: metadata.userAvatar,
+        },
+      };
+    }
+
+    // Profile notification - GlobalStackGroup
+    if (metadata?.userId) {
+      return {
+        route: ROOT_ROUTES.PROFILE,
+        params: {
+          screen: 'ProfileMain',
+          params: { userId: metadata.userId },
+        },
+      };
+    }
+
+    // Event notification - Tab route
+    if (metadata?.eventId) {
+      return {
+        route: TAB_ROUTES.EVENTS,
+        params: {
+          screen: 'EventsScreen',
+          params: { eventId: metadata.eventId },
+        },
+      };
+    }
+
+    // Priority 3: Type-based fallback mapping
     // Notification type'a göre otomatik mapping
     switch (type) {
       // Post ile ilgili bildirimler → Post (GlobalStackGroup)
+      // Fallback: Metadata'da postId yoksa Feed'e yönlendir
       case 'POST_LIKED':
       case 'POST_COMMENTED':
       case 'POST_SHARED':
       case 'POST_FAVORITED':
       case 'COMMENT_LIKED':
       case 'COMMENT_REPLIED':
-        return {
-          route: ROOT_ROUTES.POST,
-          params: {
-            screen: 'PostDetailScreen',
+        // Metadata'da postId varsa PostDetail'e, yoksa Feed'e git
+        if (metadata?.postId) {
+          return {
+            route: ROOT_ROUTES.POST,
             params: {
-              postData: metadata?.postId ? { id: metadata.postId } : undefined,
-              type: 'post',
-              commentId: metadata?.commentId,
+              screen: 'PostDetailScreen',
+              params: {
+                postData: { id: metadata.postId },
+                type: 'post',
+                commentId: metadata.commentId,
+              },
             },
+          };
+        }
+        // Fallback: Feed tab'ına git
+        return {
+          route: TAB_ROUTES.FEED,
+          params: {
+            screen: 'FeedScreen',
           },
         };
 
       // Mesaj bildirimleri → MessageDetail (GlobalStackGroup)
+      // Fallback: Metadata'da threadId yoksa Inbox'a yönlendir
       case 'NEW_MESSAGE':
       case 'DM_REQUEST_RECEIVED':
       case 'DM_REQUEST_ACCEPTED':
+        // Metadata'da threadId varsa MessageDetail'e, yoksa Inbox'a git
+        const threadId = metadata?.threadId || metadata?.messageId || metadata?.requestId;
+        if (threadId) {
+          return {
+            route: ROOT_ROUTES.MESSAGE_DETAIL,
+            params: {
+              messageId: threadId,
+              threadId: threadId,
+              recipientUserId: metadata?.userId,
+              senderName: metadata?.userName || 'Kullanıcı',
+              senderTitle: metadata?.userTitle || '',
+              senderAvatar: metadata?.userAvatar,
+            },
+          };
+        }
+        // Fallback: Inbox tab'ına git
         return {
-          route: ROOT_ROUTES.MESSAGE_DETAIL,
+          route: TAB_ROUTES.INBOX,
           params: {
-            messageId: metadata?.threadId || metadata?.requestId || metadata?.messageId || '',
-            threadId: metadata?.threadId || metadata?.requestId || metadata?.messageId,
-            recipientUserId: metadata?.userId,
-            senderName: metadata?.userName || 'Kullanıcı',
-            senderTitle: metadata?.userTitle || '',
-            senderAvatar: metadata?.userAvatar,
+            screen: 'MessagesScreen',
           },
         };
 
       // Trust bildirimleri → Profile (GlobalStackGroup)
+      // Fallback: Metadata'da userId yoksa Feed'e yönlendir
       case 'NEW_TRUSTER':
       case 'NEW_TRUSTED_BY':
       case 'NEW_BADGE':
       case 'ACHIEVEMENT_UNLOCKED':
-        return {
-          route: ROOT_ROUTES.PROFILE,
-          params: {
-            screen: 'ProfileMain',
+        if (metadata?.userId) {
+          return {
+            route: ROOT_ROUTES.PROFILE,
             params: {
-              userId: metadata?.userId,
+              screen: 'ProfileMain',
+              params: {
+                userId: metadata.userId,
+              },
             },
+          };
+        }
+        // Fallback: Feed tab'ına git
+        return {
+          route: TAB_ROUTES.FEED,
+          params: {
+            screen: 'FeedScreen',
           },
         };
 
@@ -154,6 +249,7 @@ class NotificationService {
         };
 
       // Event bildirimleri → Events (Tab)
+      // Fallback: Metadata'da eventId yoksa Events tab'ına yönlendir
       case 'EVENT_STARTED':
       case 'EVENT_ENDING_SOON':
       case 'EVENT_REWARD_AVAILABLE':
@@ -165,8 +261,14 @@ class NotificationService {
           },
         };
 
+      // Default fallback: Notifications screen (Tab route)
       default:
-        return null;
+        return {
+          route: TAB_ROUTES.NOTIFICATION,
+          params: {
+            screen: 'NotificationsScreen',
+          },
+        };
     }
   }
 

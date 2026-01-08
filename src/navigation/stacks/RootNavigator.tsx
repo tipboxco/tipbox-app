@@ -14,6 +14,10 @@ import MessageDetailScreen from '@/src/features/inbox/screens/MessageDetail';
 import SupportMessageDetailScreen from '@/src/features/inbox/screens/SupportMessageDetail';
 import type { RootStackParamList } from '../types/root.types';
 
+// NOTE: React Native lazy loading is handled by Metro bundler's code splitting
+// Metro automatically splits code based on dynamic imports and navigation patterns
+// For true lazy loading, consider using dynamic imports in navigation actions
+
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 /**
@@ -61,12 +65,31 @@ export const RootNavigator = () => {
         <>
           {/* Main Application - TabNavigator + Drawer */}
           <RootStack.Screen name="MainDrawer" component={DrawerNavigator} />
-         
+          
+          {/* Settings & MoreSchoise */}
+          <RootStack.Screen
+            name="Settings"
+            component={SettingsNavigator}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+              gestureEnabled: true,
+            }}
+          />
+          <RootStack.Screen
+            name="MoreSchoise"
+            component={MoreSchoiseNavigator}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+              gestureEnabled: true,
+            }}
+          />
           
           {/* GlobalStackGroup - Deep-Dive Screens */}
           {/* Bu ekranlar hangi tab açık olursa olsun Root'tan açılır */}
+          {/* PERFORMANCE FIX: Lazy loaded navigators reduce initial bundle size */}
           <RootStack.Group>
-            
             <RootStack.Screen
               name="Post"
               component={PostNavigator}

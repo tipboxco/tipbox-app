@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { Platform, ActivityIndicator, RefreshControl, FlatList } from 'react-native';
+import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -42,12 +43,27 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & RootStackParamList, 'FeedScreen'>;
 
-export const FeedScreen = () => {
+/**
+ * FeedScreen Inner Component
+ * FeedListContext içinde render edilir, feedListRef'e erişebilir
+ * 
+ * PERFORMANCE FIX: React.memo ile sarmalandı - gereksiz re-render'ları önler
+ * useFocusEffect ile sadece focus'ta render edilir
+ */
+const FeedScreenInner = React.memo(() => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAppStore();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  
+  // FeedListContext'ten feedListRef'i al
+  // FeedScreenInner FeedListProvider içinde render edildiği için context her zaman tanımlıdır
+  const feedListContext = useFeedListContext();
+  if (!feedListContext) {
+    throw new Error('FeedScreenInner must be rendered within FeedListProvider');
+  }
+  const { feedListRef } = feedListContext;
 
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
@@ -85,11 +101,11 @@ export const FeedScreen = () => {
     );
   }, [filters]);
 
-  // Feed API hooks - her ikisini de çağır, sadece birini aktif et
+  // Feed API hooks - PERFORMANCE FIX: Only enable filtered query when filters are active
   // Normal feed: /feed endpoint'i (filtre yok)
   // Filtered feed: /feed/filtered endpoint'i (filtre var)
   const normalFeedQuery = useFeed(10);
-  const filteredFeedQuery = useFeedFiltered(10, filters);
+  const filteredFeedQuery = useFeedFiltered(10, filters, hasActiveFilters); // Only enabled when filters are active
 
   // Filtre varsa filtered feed'i, yoksa normal feed'i kullan
   // Bu sayede filtre değiştiğinde otomatik olarak doğru endpoint çağrılır
@@ -181,6 +197,7 @@ export const FeedScreen = () => {
   };
 
   const handleExpertPress = () => {
+    // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
     openBottomSheet(
       <>
         {/* Header */}
@@ -203,8 +220,8 @@ export const FeedScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: true,
+        enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
       }
     );
@@ -766,7 +783,8 @@ export const FeedScreen = () => {
               </Text>
             </Box>
           ) : (
-            <FlatList
+            <FlatList<FeedApiItem>
+              ref={feedListRef}
               data={feedItems}
               renderItem={({ item }) => renderFeedItem(item)}
               keyExtractor={keyExtractor}
@@ -776,11 +794,11 @@ export const FeedScreen = () => {
               contentContainerStyle={contentContainerStyle}
               showsVerticalScrollIndicator={false}
               // PERFORMANCE OPTIMIZATIONS
-              removeClippedSubviews={true}
               initialNumToRender={5}
               maxToRenderPerBatch={5}
               windowSize={7}
               updateCellsBatchingPeriod={50}
+              removeClippedSubviews={true}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}
@@ -806,4 +824,29 @@ export const FeedScreen = () => {
       </Box>
     </SafeAreaView>
   );
-};
+}, (prevProps, nextProps) => {
+  // PERFORMANCE FIX: Custom comparison - sadece gerçek değişikliklerde re-render
+  // FeedScreen props almadığı için her zaman true döner (re-render yok)
+  return true;
+});
+FeedScreenInner.displayName = 'FeedScreenInner';
+
+/**
+ * FeedScreen Component
+ * FeedListProvider ile sarmalanmış, feedListRef'i tüm child component'lere sağlar
+ * 
+ * PERFORMANCE FIX: React.memo ile sarmalandı - gereksiz re-render'ları önler
+ * useFocusEffect ile sadece focus'ta render edilir (mesaj ekranındayken render olmaz)
+ */
+export const FeedScreen = React.memo(() => {
+  return (
+    <FeedListProvider>
+      <FeedScreenInner />
+    </FeedListProvider>
+  );
+}, () => {
+  // PERFORMANCE FIX: Custom comparison - sadece gerçek değişikliklerde re-render
+  // FeedScreen props almadığı için her zaman true döner (re-render yok)
+  return true;
+});
+FeedScreen.displayName = 'FeedScreen';

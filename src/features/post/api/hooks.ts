@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { 
   createFreePost, 
   createBenchmarkPost,
@@ -9,7 +9,9 @@ import {
   splitExperience,
   getBoostOptions,
   getPostDetail,
+  searchPosts,
   type PostDetailResponse,
+  type SearchPostsResponse,
 } from './postApi';
 import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 import type { 
@@ -32,6 +34,8 @@ export const postKeys = {
   free: () => [...postKeys.all, 'free'] as const,
   boostOptions: () => [...postKeys.all, 'boostOptions'] as const,
   detail: (postId: string) => [...postKeys.all, 'detail', postId] as const,
+  search: (q: string, cursor?: string, limit?: number) => 
+    [...postKeys.all, 'search', q, cursor, limit] as const,
 };
 
 /**
@@ -203,8 +207,8 @@ export const useBoostOptions = () => {
   return useQuery<BoostOption[], Error>({
     queryKey: postKeys.boostOptions(),
     queryFn: getBoostOptions,
-    staleTime: 5 * 60 * 1000, // 5 dakika cache
-    gcTime: 10 * 60 * 1000, // 10 dakika garbage collection
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -271,11 +275,47 @@ export const usePostDetail = (
     enabled: enabled && !!postId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     // Force refresh ise cache kullanma (notification'dan geldiğinde)
-    staleTime: forceRefresh ? 0 : 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    staleTime: forceRefresh ? 0 : 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: forceRefresh ? 'always' : false, // Force refresh ise her zaman refetch et
     refetchOnWindowFocus: forceRefresh, // Force refresh ise focus'ta da refetch et
     retry: 1,
+  });
+};
+
+/**
+ * Search Posts infinite query hook
+ * Post başlığı veya içeriğinde arama yapar
+ *
+ * @param q - Arama terimi (required)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSearchPosts('review', 20);
+ */
+export const useSearchPosts = (q: string, limit: number = 20) => {
+  const hasSearchQuery = !!q && q.trim().length > 0;
+  
+  return useInfiniteQuery<SearchPostsResponse, Error>({
+    queryKey: postKeys.search(q, undefined, limit),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return searchPosts(q, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      return lastPage.pagination.cursor;
+    },
+    enabled: hasSearchQuery,
+    staleTime: 0, // Search için cache yok, her zaman fresh data
+    gcTime: 0, // Search için cache yok
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    retry: 0, // Search için retry yok (hızlı hata göster)
   });
 };
 

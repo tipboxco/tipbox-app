@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
@@ -978,6 +978,54 @@ const MessageDetailScreen: React.FC = () => {
     }
   }, [threadId]);
 
+  // Handle Go to Support Chat (accepted request'ler için)
+  // Bu fonksiyon handleSupportRequestAccepted'tan önce tanımlanmalı
+  const handleGoToSupportChat = useCallback((supportThreadId: string, requestId: string) => {
+    if (!supportThreadId) {
+      Alert.alert('Hata', 'Support thread ID bulunamadı');
+      return;
+    }
+
+    // SupportMessageDetail ekranı için gerekli parametreleri hazırla
+    // expertName, expertTitle, expertAvatar: Karşı tarafın (recipient) bilgileri
+    // userName, userTitle, userAvatar: Mevcut kullanıcının bilgileri
+    const currentUserId = user?.id;
+    const finalRecipientUserId = effectiveRecipientUserId || routeParams.recipientUserId;
+    
+    // Eğer current user sender ise, expert = recipient
+    // Eğer current user recipient ise, expert = sender
+    // Şimdilik params'dan gelen bilgileri kullanıyoruz
+    const expertName = params.senderName || 'Unknown';
+    const expertTitle = params.senderTitle || '';
+    const expertAvatar = params.senderAvatar || require('@/assets/avatar/ozan.png');
+    
+    // Mevcut kullanıcının bilgileri (user store'dan alınabilir)
+    const userName = user?.fullName || 'You';
+    const userTitle = ''; // User interface'inde title yok
+    const userAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
+
+    console.log('[MessageDetail] 🔗 Navigating to support chat:', { 
+      threadId: supportThreadId, 
+      requestId,
+      expertName,
+      expertTitle,
+      userName,
+      userTitle,
+    });
+    
+    navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
+      threadId: supportThreadId,
+      requestId: requestId,
+      expertName: expertName,
+      expertTitle: expertTitle,
+      expertAvatar: expertAvatar,
+      userName: userName,
+      userTitle: userTitle,
+      userAvatar: userAvatar,
+      status: 'active', // Support thread aktif olduğu için
+    });
+  }, [user, effectiveRecipientUserId, routeParams, params.senderName, params.senderTitle, params.senderAvatar]);
+
   // Support Request Event Handlers
   const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string }) => {
     console.log('[MessageDetail] ✅ Support request accepted event:', data);
@@ -1377,6 +1425,9 @@ const MessageDetailScreen: React.FC = () => {
 
   // Handle Request 1-on-1 Support button press
   const handleRequestSupportPress = () => {
+    // 1. Klavye açıksa kapat
+    Keyboard.dismiss();
+    
     const routeParams = (route.params as MessageDetailScreenParams) || {
       messageId: '',
       senderName: 'Unknown',
@@ -1397,11 +1448,11 @@ const MessageDetailScreen: React.FC = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
+        enableDynamicSizing: true, // Content boyutuna göre dinamik height
         animateOnMount: true,
-        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
-        keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar
-        keyboardBlurBehavior: 'restore',
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
+        keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar (klavye üzerinde)
+        keyboardBlurBehavior: 'restore', // Klavye kapandığında eski haline döner
         android_keyboardInputMode: 'adjustResize',
       }
     );
@@ -1556,10 +1607,7 @@ const MessageDetailScreen: React.FC = () => {
           Alert.alert('Başarılı', 'Destek talebi kabul edildi');
           // Support thread'e yönlendir
           if (data.threadId) {
-            navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
-              threadId: data.threadId,
-              requestId: requestId,
-            });
+            handleGoToSupportChat(data.threadId, requestId);
           }
         },
         onError: (error: any) => {
@@ -1651,52 +1699,6 @@ const MessageDetailScreen: React.FC = () => {
   }, [isConnected, isSocketReady, socketCancelSupportRequest, cancelSupportRequestMutation]);
 
 
-  // Handle Go to Support Chat (accepted request'ler için)
-  const handleGoToSupportChat = useCallback((supportThreadId: string, requestId: string) => {
-    if (!supportThreadId) {
-      Alert.alert('Hata', 'Support thread ID bulunamadı');
-      return;
-    }
-
-    // SupportMessageDetail ekranı için gerekli parametreleri hazırla
-    // expertName, expertTitle, expertAvatar: Karşı tarafın (recipient) bilgileri
-    // userName, userTitle, userAvatar: Mevcut kullanıcının bilgileri
-    const currentUserId = user?.id;
-    const recipientUserId = effectiveRecipientUserId || recipientUserId;
-    
-    // Eğer current user sender ise, expert = recipient
-    // Eğer current user recipient ise, expert = sender
-    // Şimdilik params'dan gelen bilgileri kullanıyoruz
-    const expertName = params.senderName || 'Unknown';
-    const expertTitle = params.senderTitle || '';
-    const expertAvatar = params.senderAvatar || require('@/assets/avatar/ozan.png');
-    
-    // Mevcut kullanıcının bilgileri (user store'dan alınabilir)
-    const userName = user?.displayName || user?.username || 'You';
-    const userTitle = user?.title || '';
-    const userAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
-
-    console.log('[MessageDetail] 🔗 Navigating to support chat:', { 
-      threadId: supportThreadId, 
-      requestId,
-      expertName,
-      expertTitle,
-      userName,
-      userTitle,
-    });
-    
-    navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
-      threadId: supportThreadId,
-      requestId: requestId,
-      expertName: expertName,
-      expertTitle: expertTitle,
-      expertAvatar: expertAvatar,
-      userName: userName,
-      userTitle: userTitle,
-      userAvatar: userAvatar,
-      status: 'active', // Support thread aktif olduğu için
-    });
-  }, [user, effectiveRecipientUserId, recipientUserId, params.senderName, params.senderTitle, params.senderAvatar]);
 
   // Mesaj öğesi render fonksiyonu
   const renderMessageItem = ({ item }: { item: MessageDetailItem }) => {

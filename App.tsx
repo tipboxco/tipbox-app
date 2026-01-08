@@ -3,22 +3,21 @@
 import React, { useEffect, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import Navigation from '@/src/navigation';
-import { GluestackProvider } from '@/src/components/ui';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { PortalProvider } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryProvider } from '@/src/providers/QueryProvider';
-import { AuthProvider } from '@/src/providers/AuthProvider';
-import { AppStateProvider } from '@/src/providers/AppStateProvider';
-import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
-import { NotificationProvider } from '@/src/providers/NotificationProvider';
-import { SocketProvider } from '@/src/providers/SocketProvider';
-import { useAppStore } from '@/src/store/appStore';
+import { useAuth } from '@/src/providers/AuthProvider';
+import { AppProviders } from '@/src/providers/ComposedProviders';
 import { TranslationCacheService } from '@/src/services/TranslationCacheService';
+
+
+
+// PERFORMANCE FIX: Keep splash screen visible until auth is ready
+// Prevents showing blank screen during initialization
+SplashScreen.preventAutoHideAsync();
 
 // PERFORMANCE FIX: Memoize status bar style to prevent unnecessary re-renders
 const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
@@ -42,12 +41,29 @@ const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
 ));
 StatusBarComponent.displayName = 'StatusBarComponent';
 
-export default function App() {
+/**
+ * ARCHITECTURE FIX: AppInner moved inside AppProviders
+ * 
+ * Hook calls (useColorMode, useAuth) must execute AFTER providers initialize.
+ * Previously, AppInner was calling hooks before AppProviders mounted,
+ * which could cause undefined errors or stale values.
+ * 
+ * PERFORMANCE FIX: Removed duplicate AuthProvider from App.tsx
+ * AuthProvider is already included in AppProviders, so we don't need it here.
+ * This prevents double initialization and reduces unnecessary TokenService calls.
+ * 
+ * New structure:
+ * App() 
+ *   -> QueryProvider
+ *     -> AppProviders (includes AuthProvider + all other providers)
+ *       -> AppInner (hooks called here - SAFE!)
+ */
+const AppInner = () => {
+  // ARCHITECTURE FIX: These hooks now execute AFTER AppProviders mount
+  // AppProviders includes AppStateProvider which initializes Zustand store
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-
-  // AppState yönetimi artık AppStateProvider'da yapılıyor
-  // Token kontrolü artık AuthProvider'da yapılıyor
+  const { isAuthReady } = useAuth();
 
   // PERFORMANCE FIX: Memoize navigation bar style object
   const navigationBarStyle = useMemo(
@@ -72,30 +88,39 @@ export default function App() {
     TranslationCacheService.cleanupExpired();
   }, []);
 
+  // PERFORMANCE FIX: Hide splash screen immediately after auth initialization
+  // Removed 100ms delay - UI is already ready, delay was causing header render delay
+  useEffect(() => {
+    if (isAuthReady) {
+      const hideSplash = async () => {
+        try {
+          // ARCHITECTURE FIX: Hide splash immediately - no delay needed
+          // Header and screens are ready to render, delay was causing visible lag
+          await SplashScreen.hideAsync();
+        } catch (error) {
+          console.warn('[App] Failed to hide splash screen:', error);
+        }
+      };
+      
+      // Hide immediately - no delay
+      hideSplash();
+    }
+  }, [isAuthReady]);
+
+  return (
+    <>
+      <StatusBarComponent isDark={isDark} />
+      <Navigation />
+    </>
+  );
+};
+
+export default function App() {
   return (
     <QueryProvider>
-      <AuthProvider>
-        <AppStateProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaProvider>
-              <PortalProvider>
-                <BottomSheetModalProvider>
-                  <GlobalBottomSheetProvider>
-                    <NotificationProvider>
-                      <SocketProvider>
-                        <GluestackProvider>
-                          <StatusBarComponent isDark={isDark} />
-                          <Navigation />
-                        </GluestackProvider>
-                      </SocketProvider>
-                    </NotificationProvider>
-                  </GlobalBottomSheetProvider>
-                </BottomSheetModalProvider>
-              </PortalProvider>
-            </SafeAreaProvider>
-          </GestureHandlerRootView>
-        </AppStateProvider>
-      </AuthProvider>
+      <AppProviders>
+        <AppInner />
+      </AppProviders>
     </QueryProvider>
   );
 }

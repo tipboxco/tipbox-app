@@ -11,6 +11,7 @@ import type { BridgeBadgeApiItem } from '../../types';
 interface BridgeBadgesTabProps {
   userId?: string;
   onBadgePress?: (badge: Badge) => void;
+  searchQuery?: string;
 }
 
 // Map BridgeBadgeApiItem to Badge format
@@ -29,6 +30,7 @@ const mapBridgeToBadge = (bridge: BridgeBadgeApiItem): Badge => {
 export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
   userId,
   onBadgePress,
+  searchQuery,
 }) => {
   const bottomInset = useSafeAreaValues('bottom');
   const { colorMode } = useColorMode();
@@ -40,7 +42,7 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
   const BRIDGES_PER_PAGE = 10;
 
   // User Collection Bridges API hook with infinite scroll
-  const queryResult = useUserCollectionBridges(targetUserId, BRIDGES_PER_PAGE);
+  const queryResult = useUserCollectionBridges(targetUserId, BRIDGES_PER_PAGE, searchQuery);
   const {
     data,
     fetchNextPage,
@@ -200,7 +202,8 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
   }), []);
 
   // Loading state
-  if (isLoading && !data) {
+  // CACHE FIX: Only show loading when loading and no cached data
+  if (isLoading && !data?.pages?.[0]) {
     return (
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />

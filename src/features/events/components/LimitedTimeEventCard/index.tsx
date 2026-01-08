@@ -28,18 +28,25 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     
+    // ERROR FIX: Null/undefined checks for data properties
+    if (!data) {
+        console.warn('[LimitedTimeEventCard] ⚠️ Data is null or undefined');
+        return null;
+    }
+    
     // Countdown hook - performanslı geri sayım
     const countdown = useCountdown(data.endDate);
     
     // Format countdown: "DDD:HH:MM:SS" -> "HH:MM:SS" (gün kısmını kaldır)
-    const formattedCountdown = countdown 
+    // ERROR FIX: Check if countdown is valid before splitting
+    const formattedCountdown = countdown && typeof countdown === 'string'
         ? countdown.split(':').slice(1).join(':') // İlk kısmı (gün) kaldır
         : '00:00:00';
     
-    // Image sources
+    // Image sources - ERROR FIX: Null checks for image sources
     const backgroundImageSource = toImageSource(data.backgroundImage) || require('@/assets/events/banner_02.png');
     const eventImageSource = toImageSource(data.eventImage) || require('@/assets/events/image_01.png');
-    const userAvatarSource = toImageSource(data.userScore.avatar) || require('@/assets/avatar/ozan.png');
+    const userAvatarSource = toImageSource(data.userScore?.avatar) || require('@/assets/avatar/ozan.png');
 
     return (
         <Box
@@ -90,7 +97,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             <Feather name="zap" size={14} color="#111111" />
                             <Text
                                 color="#111111"
-                                fontSize={9}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                             >
                                 Limited Time
@@ -100,7 +107,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         <HStack alignItems="center" space="xs">
                             <Text
                                 color="#FFFFFF"
-                                fontSize={9}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                             >
                                 {formattedCountdown}
@@ -131,19 +138,19 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         <VStack space="xs" flex={1}>
                             <Text
                                 color="#FFFFFF"
-                                fontSize={12}
+                                fontSize="$sm"
                                 fontWeight="$bold"
                                 lineHeight={15}
                             >
-                                {data.title}
+                                {data.title || 'Event'}
                             </Text>
                             <Text
                                 color="#D1D1D1"
-                                fontSize={9}
+                                fontSize="$2xs"
                                 lineHeight={11}
                                 numberOfLines={2}
                             >
-                                {data.description}
+                                {data.description || ''}
                             </Text>
                         </VStack>
                     </HStack>
@@ -166,27 +173,29 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                 <VStack space="xs">
                                     <Text
                                         color="#B9B9B9"
-                                        fontSize={9}
+                                        fontSize="$2xs"
                                         fontWeight="$semibold"
                                     >
                                         Your Score
                                     </Text>
                                     <Text
                                         color="#FFFFFF"
-                                        fontSize={10}
+                                        fontSize="$2xs"
                                         fontWeight="$semibold"
                                     >
-                                        {data.userScore.score.toLocaleString()} Points
+                                        {data.userScore?.score != null 
+                                            ? `${data.userScore.score.toLocaleString()} Points`
+                                            : '0 Points'}
                                     </Text>
                                 </VStack>
                             </HStack>
 
                             <Text
                                 color="#FFFFFF"
-                                fontSize={11}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                             >
-                                #{data.userScore.rank}
+                                #{data.userScore?.rank ?? 0}
                             </Text>
                         </HStack>
                     </Box>
@@ -195,10 +204,10 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                     <HStack justifyContent="space-between" alignItems="center">
                         {/* Other Users */}
                         <HStack space="xs" alignItems="flex-end">
-                            {data.leaderboardUsers.slice(0, 3).map((user, index) => {
-                                const avatarSource = toImageSource(user.avatar) || require('@/assets/avatar/ozan.png');
+                            {(data.leaderboardUsers || []).slice(0, 3).map((user, index) => {
+                                const avatarSource = toImageSource(user?.avatar) || require('@/assets/avatar/ozan.png');
                                 return (
-                                    <Box key={user.id} ml={index === 0 ? 0 : -12}>
+                                    <Box key={user?.id || index} ml={index === 0 ? 0 : -12}>
                                         <Image
                                             source={avatarSource}
                                             alt={`User ${user.rank}`}
@@ -220,10 +229,10 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                         >
                                             <Text
                                                 color="#FFFFFF"
-                                                fontSize={6}
+                                                fontSize="$2xs"
                                                 fontWeight="$semibold"
                                             >
-                                                {user.rank}
+                                                {user?.rank ?? 0}
                                             </Text>
                                         </Box>
                                     </Box>
@@ -241,7 +250,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         >
                             <Text
                                 color="#FFFFFF"
-                                fontSize={10}
+                                fontSize="$2xs"
                                 fontWeight="$semibold"
                                 textAlign="center"
                             >

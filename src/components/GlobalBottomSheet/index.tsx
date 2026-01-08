@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { Platform, View, Keyboard } from 'react-native';
 import BottomSheet, {
   BottomSheetView,
@@ -8,10 +8,10 @@ import BottomSheet, {
 import { Portal } from '@gorhom/portal';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useContext } from 'react';
-import { GlobalBottomSheetContext } from '@/src/providers/GlobalBottomSheetProvider';
+import { GlobalBottomSheetContext } from './context'; // ARCHITECTURE FIX: Import from context.ts to break circular dependency
 import { DEFAULT_BOTTOM_SHEET_OPTIONS, BottomSheetOptions } from './types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GluestackProvider } from '@/src/components/ui';
+// ARCHITECTURE FIX: Removed GluestackProvider import - GlobalBottomSheet is already inside AppProviders which includes GluestackProvider
 
 /**
  * Global Bottom Sheet Component
@@ -54,68 +54,89 @@ export const GlobalBottomSheet: React.FC = () => {
   }, []);
 
   // Options'ı merge et (default + custom)
-  const mergedOptions: Required<Omit<BottomSheetOptions, 'snapPoints' | 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom' | 'keyboardBehavior' | 'keyboardBlurBehavior' | 'android_keyboardInputMode'>> & {
-    snapPoints?: (string | number)[];
-    onChange?: (index: number) => void;
-    onClose?: () => void;
-    backgroundStyle?: any;
-    handleStyle?: any;
-    handleIndicatorStyle?: any;
-    paddingBottom?: number;
-    keyboardBehavior?: 'interactive' | 'fillParent' | 'extend';
-    keyboardBlurBehavior?: 'none' | 'restore';
-    android_keyboardInputMode?: 'adjustResize' | 'adjustPan';
-  } = {
-    ...DEFAULT_BOTTOM_SHEET_OPTIONS,
-    ...options,
-  };
+  // ARCHITECTURE FIX: Safe options merge - options can be null
+  // PERFORMANCE FIX: Memoize mergedOptions to prevent unnecessary recalculations
+  // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
+  // ARCHITECTURE FIX: Must be defined before useEffect hooks that use it
+  // ERROR FIX: Wrap in try-catch to prevent undefined errors
+  const mergedOptions = useMemo(() => {
+    try {
+      const safeOptions = options || {};
+      const defaultOptions = DEFAULT_BOTTOM_SHEET_OPTIONS || {};
+      const merged = {
+        ...defaultOptions,
+        ...safeOptions,
+        // ARCHITECTURE FIX: Use snapPoints if provided, otherwise use enableDynamicSizing
+        enableDynamicSizing: safeOptions.snapPoints ? false : (safeOptions.enableDynamicSizing ?? defaultOptions.enableDynamicSizing ?? true),
+        snapPoints: safeOptions.snapPoints,
+        initialSnapIndex: safeOptions.initialSnapIndex ?? 0,
+      } as Required<Omit<BottomSheetOptions, 'onChange' | 'onClose' | 'backgroundStyle' | 'handleStyle' | 'handleIndicatorStyle' | 'paddingBottom' | 'keyboardBehavior' | 'keyboardBlurBehavior' | 'android_keyboardInputMode' | 'snapPoints' | 'initialSnapIndex'>> & {
+        onChange?: (index: number) => void;
+        onClose?: () => void;
+        backgroundStyle?: any;
+        handleStyle?: any;
+        handleIndicatorStyle?: any;
+        paddingBottom?: number;
+        keyboardBehavior?: 'interactive' | 'fillParent' | 'extend';
+        keyboardBlurBehavior?: 'none' | 'restore';
+        android_keyboardInputMode?: 'adjustResize' | 'adjustPan';
+        snapPoints?: number[];
+        initialSnapIndex?: number;
+      };
+      
+      return merged;
+    } catch (error) {
+      console.error('[GlobalBottomSheet] ❌ Error creating mergedOptions:', error);
+      // Return safe default options
+      return {
+        ...DEFAULT_BOTTOM_SHEET_OPTIONS,
+        enableDynamicSizing: true,
+        snapPoints: undefined,
+        initialSnapIndex: 0,
+      } as typeof DEFAULT_BOTTOM_SHEET_OPTIONS & { enableDynamicSizing: boolean; snapPoints?: number[]; initialSnapIndex?: number };
+    }
+  }, [options]);
 
-  // Bottom sheet açıldığında expand et
+  // ARCHITECTURE FIX: Debug log to verify bottom sheet state (after mergedOptions is defined)
   useEffect(() => {
-    if (isOpen && content && !isExpandingRef.current) {
-      // Ref'in hazır olmasını bekle - daha uzun timeout ve retry mekanizması
-      let retryCount = 0;
-      const maxRetries = 10;
-      
-      const tryExpand = () => {
-        if (bottomSheetRef.current) {
-          try {
-            isExpandingRef.current = true;
-            if (mergedOptions.snapPoints && mergedOptions.snapPoints.length > 0) {
-              // Snap points varsa ilk snap point'e git
-              bottomSheetRef.current.snapToIndex(mergedOptions.initialSnapIndex || 0);
-            } else if (mergedOptions.enableDynamicSizing) {
-              // Dynamic sizing varsa expand et
-              bottomSheetRef.current.expand();
-            } else {
-              // Fallback: expand et
-              bottomSheetRef.current.expand();
-            }
-          } catch (error) {
-            isExpandingRef.current = false;
-          }
-        } else {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            setTimeout(tryExpand, 100);
-          } else {
-            isExpandingRef.current = false;
-          }
-        }
-      };
+    if (isOpen && content && mergedOptions) {
+      console.log('[GlobalBottomSheet] ✅ Bottom sheet opened:', {
+        hasContent: !!content,
+        contentType: typeof content,
+        isReactElement: React.isValidElement(content),
+        enableDynamicSizing: mergedOptions.enableDynamicSizing,
+      });
+    }
+  }, [isOpen, content, mergedOptions]);
 
-      // İlk deneme - daha kısa delay
-      const timeoutId = setTimeout(tryExpand, 50);
-      
-      return () => {
-        clearTimeout(timeoutId);
-      };
+  // PERFORMANCE FIX: Optimized expansion with useEffect (fallback method)
+  // Primary expansion happens in setRef callback, this is fallback if setRef didn't trigger
+  // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing, never snapToIndex
+  // FLICKER FIX: Reset isExpandingRef when bottom sheet closes to prevent flicker on next open
+  useEffect(() => {
+    if (isOpen && content && !isExpandingRef.current && bottomSheetRef.current && mergedOptions) {
+      try {
+        isExpandingRef.current = true;
+        // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing
+        // Use requestAnimationFrame to ensure bottom sheet is fully mounted
+        requestAnimationFrame(() => {
+          bottomSheetRef.current?.expand();
+        });
+      } catch (error) {
+        console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet (useEffect):', error);
+        isExpandingRef.current = false;
+      }
     } else if (!isOpen && bottomSheetRef.current) {
-      // Kapat
+      // FLICKER FIX: Reset isExpandingRef immediately when closing
+      // This ensures next open doesn't have stale state
       isExpandingRef.current = false;
       bottomSheetRef.current.close();
+    } else if (!isOpen) {
+      // FLICKER FIX: Reset isExpandingRef even if ref is not set
+      // This handles edge cases where ref might be null
+      isExpandingRef.current = false;
     }
-  }, [isOpen, content, mergedOptions.snapPoints, mergedOptions.enableDynamicSizing, mergedOptions.initialSnapIndex]);
+  }, [isOpen, content, mergedOptions]);
 
   // Backdrop component - klavye açıldığında kararmaması için
   const renderBackdrop = useCallback(
@@ -138,6 +159,8 @@ export const GlobalBottomSheet: React.FC = () => {
   );
 
   // Sheet değişikliklerini handle et
+  // FLICKER FIX: Only call closeBottomSheet if isOpen is actually false
+  // This prevents closing when new content is being opened (isOpen is still true)
   const handleSheetChanges = useCallback(
     (index: number) => {
       // Sheet açıldığında (index >= 0) ve henüz expand edilmediyse
@@ -146,9 +169,15 @@ export const GlobalBottomSheet: React.FC = () => {
       }
       
       // Sheet kapandığında (index === -1)
-      if (index === -1) {
+      // FLICKER FIX: Only close if isOpen is actually false
+      // If isOpen is still true, it means new content is being opened, don't close
+      if (index === -1 && !isOpen) {
         isExpandingRef.current = false;
         closeBottomSheet();
+      } else if (index === -1) {
+        // Index is -1 but isOpen is still true - this means content is being updated
+        // Just reset the expanding ref, don't close
+        isExpandingRef.current = false;
       }
       
       // Custom onChange callback'i varsa çağır
@@ -199,57 +228,66 @@ export const GlobalBottomSheet: React.FC = () => {
   // Padding bottom - default: safe area + tab bar height (45)
   const paddingBottom = mergedOptions.paddingBottom ?? (Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8);
 
-  // Ref callback - ref set edildiğinde (TÜM HOOK'LAR ERKEN RETURN'DEN ÖNCE OLMALI)
+  // PERFORMANCE FIX: Expansion when ref is set (primary method)
+  // This runs immediately when BottomSheet component mounts
+  // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing, never snapToIndex
+  // FLICKER FIX: Reset isExpandingRef when ref is null (component unmounts)
   const setRef = useCallback((ref: BottomSheet | null) => {
     bottomSheetRef.current = ref;
-    if (ref && isOpen && content) {
-      // Ref set edildiğinde hemen expand et
-      setTimeout(() => {
-        try {
-          if (mergedOptions.snapPoints && mergedOptions.snapPoints.length > 0) {
-            ref.snapToIndex(mergedOptions.initialSnapIndex || 0);
-          } else if (mergedOptions.enableDynamicSizing) {
-            ref.expand();
-          } else {
-            ref.expand();
-          }
-        } catch (error) {
-          // Silent error handling
-        }
-      }, 50);
+    if (ref && isOpen && content && !isExpandingRef.current && mergedOptions) {
+      // Direct expansion - ref is ready when this callback runs
+      try {
+        isExpandingRef.current = true;
+        // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing
+        // Use requestAnimationFrame to ensure bottom sheet is fully mounted
+        requestAnimationFrame(() => {
+          ref.expand();
+        });
+      } catch (error) {
+        console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet:', error);
+        isExpandingRef.current = false;
+      }
+    } else if (!ref) {
+      // FLICKER FIX: Reset isExpandingRef when ref is null (component unmounts)
+      // This ensures clean state for next mount
+      isExpandingRef.current = false;
     }
-  }, [isOpen, content, mergedOptions.snapPoints, mergedOptions.enableDynamicSizing, mergedOptions.initialSnapIndex]);
+  }, [isOpen, content, mergedOptions]);
 
-  // Content'i GluestackProvider ile wrap et (memoize edilmiş) - HOOK'LAR ERKEN RETURN'DEN ÖNCE OLMALI
-  const wrappedContent = React.useMemo(
-    () => {
-      if (!content) return null;
-      return (
-        <GluestackProvider>
-          {content}
-        </GluestackProvider>
-      );
-    },
-    [content]
-  );
+  // ARCHITECTURE FIX: No need to wrap content with GluestackProvider
+  // GlobalBottomSheet is already inside AppProviders which includes GluestackProvider
+  // Wrapping again causes "StyledProvider" error because nested providers conflict
 
   // Eğer content yoksa render etme (HOOK'LARDAN SONRA)
   if (!content || !isOpen) {
     return null;
   }
 
+  // ARCHITECTURE FIX: Safety check - mergedOptions should always be defined
+  if (!mergedOptions) {
+    console.error('[GlobalBottomSheet] ❌ mergedOptions is undefined');
+    return null;
+  }
+
+  // ARCHITECTURE FIX: Dynamic index based on isOpen state
+  // When isOpen is true, start at specified initialSnapIndex (or 0 if not specified) to show bottom sheet
+  // When isOpen is false, use -1 to hide bottom sheet
+  // If snapPoints are provided, use initialSnapIndex, otherwise use 0
+  const initialIndex = isOpen ? (mergedOptions.initialSnapIndex ?? 0) : -1;
+
   // Portal kullanmadan direkt render et - Portal ref sorunlarına neden oluyor
+  // ARCHITECTURE FIX: Use snapPoints if provided, otherwise use enableDynamicSizing
   return (
     <BottomSheet
       ref={setRef}
-      index={-1}
+      index={initialIndex}
       snapPoints={mergedOptions.snapPoints}
-      enablePanDownToClose={mergedOptions.enablePanDownToClose}
-      enableOverDrag={mergedOptions.enableOverDrag}
-      enableHandlePanningGesture={mergedOptions.enableHandlePanningGesture}
-      enableContentPanningGesture={mergedOptions.enableContentPanningGesture}
-      enableDynamicSizing={mergedOptions.enableDynamicSizing}
-      animateOnMount={mergedOptions.animateOnMount}
+      enableDynamicSizing={mergedOptions.snapPoints ? false : (mergedOptions.enableDynamicSizing ?? true)}
+      enablePanDownToClose={mergedOptions.enablePanDownToClose ?? true}
+      enableOverDrag={mergedOptions.enableOverDrag ?? false}
+      enableHandlePanningGesture={mergedOptions.enableHandlePanningGesture ?? true}
+      enableContentPanningGesture={mergedOptions.enableContentPanningGesture ?? true}
+      animateOnMount={mergedOptions.animateOnMount ?? false}
       backdropComponent={renderBackdrop}
       onChange={handleSheetChanges}
       backgroundStyle={backgroundStyle}
@@ -269,7 +307,7 @@ export const GlobalBottomSheet: React.FC = () => {
       }}
     >
       <BottomSheetView style={{ paddingBottom }}>
-        {wrappedContent || content}
+        {content}
       </BottomSheetView>
     </BottomSheet>
   );

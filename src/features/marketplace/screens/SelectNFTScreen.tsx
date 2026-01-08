@@ -35,7 +35,7 @@ const SelectNFTScreen = () => {
   } = useMyNFTs(12);
 
   // Flatten all pages into a single array
-  const nftListings = data?.pages.flatMap((page) => page) ?? [];
+  const nftListings = data?.pages?.flatMap((page) => page) ?? [];
 
   // Map API response to UserNFTCardData
   const mapListingToCardData = useCallback((listing: UserNFTApiItem): UserNFTCardData => {
@@ -122,7 +122,7 @@ const SelectNFTScreen = () => {
 
         {/* NFT Grid */}
         <Box flex={1}>
-          {isLoading && userNFTData.length === 0 ? (
+          {isLoading && !nftListings.length ? (
             <Box flex={1} justifyContent="center" alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>

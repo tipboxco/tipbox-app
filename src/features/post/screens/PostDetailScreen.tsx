@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform, Dimensions, Keyboard } from 'react-native';
+import { ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, Text, HStack, Pressable, Box, Input, InputField } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
@@ -14,7 +14,7 @@ import { BenchmarkPostCardDetail } from '../components/BenchmarkPostCardDetail';
 import { ExperiencePostCardDetail } from '../components/ExperiencePostCardDetail';
 import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
 import { useSafeAreaValues, toImageSource, formatRelativeTime } from '@/src/utils';
 import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
@@ -98,14 +98,8 @@ export const PostDetailScreen = () => {
 
     // Handle comment input press - bottom sheet'i aç ve input'a focus yap
     const handleCommentInputPress = () => {
-        // Ekran yüksekliğini al
-        const screenHeight = Dimensions.get('window').height;
-        // Bottom sheet klavye yüksekliği kadar yukarıda açılacak
-        // İlk snap point: input + handler + padding için yeterli alan
-        const firstSnapPoint = 120;
-        // İkinci snap point: ekranın %50'si
-        const secondSnapPoint = screenHeight * 0.5;
-
+        // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
+        // Dynamic sizing adapts to content height automatically
         openBottomSheet(
             <CommentBottomSheet
                 postId={postId}
@@ -130,14 +124,12 @@ export const PostDetailScreen = () => {
                 autoFocus={true} // Bottom sheet açıldığında input'a focus yap ve klavyeyi aç
             />,
             {
-                snapPoints: [firstSnapPoint, secondSnapPoint],
                 enablePanDownToClose: true,
                 enableOverDrag: false,
                 enableHandlePanningGesture: true,
                 enableContentPanningGesture: true,
-                enableDynamicSizing: false,
+                enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
                 animateOnMount: true,
-                initialSnapIndex: 0,
                 // Bottom sheet'in bottom uzaklığı klavye yüksekliği kadar olacak
                 paddingBottom: keyboardHeight, // Klavye yüksekliği kadar padding
                 keyboardBehavior: 'extend', // Klavye açıldığında bottom sheet genişler

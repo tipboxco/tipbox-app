@@ -1182,26 +1182,100 @@ export const getUserReplies = async (
 };
 
 /**
+ * Product Experience Search Response Interface
+ * Backend'den dönen experience search response formatı
+ */
+export interface ProductExperienceSearchResponse {
+  items: Array<{
+    id: string;
+    title: string;
+    experienceText: string;
+    inventory: {
+      id: string;
+      product: {
+        id: string;
+        name: string;
+      };
+      user: {
+        id: string;
+      };
+    };
+    createdAt: string;
+  }>;
+  pagination: {
+    cursor: string | null;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * Search Product Experiences endpoint function
+ * Product experience başlığı veya metninde arama yapar
+ *
+ * @param q - Arama terimi (required)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns ProductExperienceSearchResponse - Experience listesi ve pagination bilgisi
+ */
+export const searchProductExperiences = async (
+  q: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<ProductExperienceSearchResponse> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('q', q);
+    if (cursor) {
+      params.append('cursor', cursor);
+    }
+    params.append('limit', Math.min(limit, 50).toString());
+
+    const response = await apiService.getClient().get<ProductExperienceSearchResponse>(
+      `/inventory/experiences/search?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[searchProductExperiences] API Error:', {
+      url: `/inventory/experiences/search?q=${q}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
  * Get User Collection Achievements endpoint function
  * Kullanıcının collection achievements'larını getirir (pagination ile)
  * 
  * API Endpoint: GET /users/{id}/collections/achievements
+ * - q veya search: Badge adı veya açıklamasına göre arama (case-insensitive, opsiyonel)
  * - cursor: Pagination cursor (opsiyonel)
  * - limit: Sayfa başına item sayısı (default: 20, min: 1, max: 100)
  * 
  * @param userId - Kullanıcı ID'si
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param searchQuery - Arama sorgusu (opsiyonel)
  * @returns UserCollectionAchievementsApiResponse - Achievement items ve pagination bilgisi
  */
 export const getUserCollectionAchievements = async (
   userId: string,
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  searchQuery?: string
 ): Promise<UserCollectionAchievementsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
+  }
+  if (searchQuery) {
+    // Backend'de hem 'q' hem de 'search' parametresi destekleniyor
+    params.append('q', searchQuery);
+    params.append('search', searchQuery);
   }
   params.append('limit', limit.toString());
 

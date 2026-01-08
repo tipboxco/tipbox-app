@@ -102,8 +102,8 @@ class NotificationStateSync {
   /**
    * Notification'ı store'a ekle ve cache'i sync et
    * 
-   * ÖNEMLİ: Optimistic update yapmıyoruz, sadece cache'i invalidate ediyoruz.
-   * Bu sayede API'den gelen gerçek count kullanılır ve yanlış sayı gösterilmez.
+   * Optimistic update yapıyoruz - bildirim anında görünecek
+   * API'den gelen gerçek data ile sync edilecek
    */
   addNotification(notification: Notification): void {
     const store = useNotificationStore.getState();
@@ -111,11 +111,61 @@ class NotificationStateSync {
     // Store'a ekle
     store.addRealtimeNotification(notification);
     
-    // Optimistic update YAPMA - API'den gelen gerçek count kullanılacak
-    // Bu sayede yanlış sayı gösterilmez (14 yerine 1 gibi)
-    
-    // Cache'i invalidate et (React Query otomatik refetch yapacak ve gerçek count'u getirecek)
+    // Optimistic update: Cache'e direkt ekle (anında görünsün)
     if (this.queryClient) {
+      // Tüm parametreli list query'lerini al ve güncelle
+      const queryCache = this.queryClient.getQueryCache();
+      const listQueries = queryCache.findAll({ queryKey: notificationKeys.lists() });
+      
+      listQueries.forEach((query) => {
+        const cachedData = query.state.data as { success: boolean; data: Notification[] } | undefined;
+        
+        if (cachedData && Array.isArray(cachedData.data)) {
+          // Duplicate kontrolü
+          const existingIndex = cachedData.data.findIndex((n) => n.id === notification.id);
+          
+          if (existingIndex >= 0) {
+            // Update existing
+            const updatedData = [...cachedData.data];
+            updatedData[existingIndex] = notification;
+            this.queryClient.setQueryData(query.queryKey, {
+              ...cachedData,
+              data: updatedData,
+            });
+          } else {
+            // Add new (prepend - en yeni başta)
+            this.queryClient.setQueryData(query.queryKey, {
+              ...cachedData,
+              data: [notification, ...cachedData.data],
+            });
+          }
+        } else {
+          // Cache yoksa, yeni data oluştur
+          this.queryClient.setQueryData(query.queryKey, {
+            success: true,
+            data: [notification],
+          });
+        }
+      });
+      
+      // Unread count'u increment et (optimistic)
+      store.incrementUnreadCount();
+      
+      // Unread count query'sini güncelle
+      const unreadCountData = this.queryClient.getQueryData<{ success: boolean; data: { count: number } }>(
+        notificationKeys.unreadCount()
+      );
+      
+      if (unreadCountData) {
+        const currentCount = unreadCountData.data?.count || 0;
+        this.queryClient.setQueryData(notificationKeys.unreadCount(), {
+          ...unreadCountData,
+          data: { count: currentCount + 1 },
+        });
+      }
+      
+      // Background'da API'den gerçek data'yı getir (sync için)
+      // Invalidate et ki API'den fresh data gelsin
       this.queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
       this.queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
     }

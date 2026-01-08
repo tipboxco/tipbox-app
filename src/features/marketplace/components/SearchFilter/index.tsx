@@ -1,9 +1,14 @@
 import React from 'react';
-import { HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
+import { HStack, Text, Pressable, Box, Input, InputField } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
-export const SearchFilter = () => {
+interface SearchFilterProps {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}
+
+export const SearchFilter: React.FC<SearchFilterProps> = ({ searchQuery, onSearchChange }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -22,14 +27,16 @@ export const SearchFilter = () => {
           size={20} 
           color={isDark ? '#FFFFFF' : '#8C8C8C'} 
         />
-        <Text
-          color={isDark ? '$textDark400' : '#B9B9B9'}
-          fontSize={9}
-          fontWeight="$medium"
-          flex={1}
-        >
-          Ürün Grubu seçin veya ürün adı arayın
-        </Text>
+        <Input flex={1} borderWidth={0} bg="transparent">
+          <InputField
+            placeholder="NFT adı veya açıklamasında ara"
+            placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+            color={isDark ? '#FFFFFF' : '#000000'}
+            fontSize={9}
+            value={searchQuery}
+            onChangeText={onSearchChange}
+          />
+        </Input>
       </HStack>
       
       <Box w={0.5} h={20} bg={isDark ? '$backgroundDark200' : '#CDCDCD'} />

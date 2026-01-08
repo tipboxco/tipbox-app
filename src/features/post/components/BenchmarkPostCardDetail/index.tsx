@@ -3,7 +3,7 @@ import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/theme
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BenchmarkPost, BenchmarkProduct } from '@/src/mock/profile/benchmark/types';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import { toImageSource } from '@/src/utils';
 import {
   useLikePost,
@@ -54,14 +54,14 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
             <VStack flex={1} pt={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={config.tokens.fontSizes['3xs'] as number}
+                    fontSize="$xs"
                     fontWeight="$bold"
                 >
                     {product.name}
                 </Text>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={config.tokens.fontSizes['4xs'] as number}
+                    fontSize="$xs"
                     fontWeight="$semibold"
                 >
                     {product.subName}
@@ -168,7 +168,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={config.tokens.fontSizes['3xs'] as number}
+                            fontSize="$xs"
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -186,7 +186,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
                 {/* Original Content */}
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={config.tokens.fontSizes['2xs'] as number}
+                    fontSize="$sm"
                 >
                     {data.content}
                 </Text>
@@ -245,7 +245,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
                         />
                         <Text
                             color="#829905"
-                            fontSize={config.tokens.fontSizes['2xs'] as number}
+                            fontSize="$sm"
                             textDecorationLine="underline"
                         >
                             {isTranslated ? 'Automatically translated from English.' : 'Translate'}

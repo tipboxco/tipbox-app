@@ -220,8 +220,11 @@ class ExpoNotificationService {
         });
       }
 
+      // ProjectId'yi app.json'dan veya sabit değerden al
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId || '098fbee5-88e4-49ba-bb37-80601a5d47af';
+      
       const token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        projectId,
       });
 
       this.state.expoPushToken = token.data;
@@ -337,8 +340,11 @@ class ExpoNotificationService {
         return null;
       }
 
+      // ProjectId'yi app.json'dan veya sabit değerden al
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId || '098fbee5-88e4-49ba-bb37-80601a5d47af';
+      
       const token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        projectId,
       });
 
       // Token değiştiyse backend'e kaydet

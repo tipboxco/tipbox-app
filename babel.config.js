@@ -34,6 +34,18 @@ module.exports = function (api) {
           allowUndefined: true,
         },
       ],
+      // PERFORMANCE FIX: Remove console.log in production builds
+      // Keep console.error and console.warn for debugging
+      ...(process.env.NODE_ENV === 'production'
+        ? [
+            [
+              'transform-remove-console',
+              {
+                exclude: ['error', 'warn'],
+              },
+            ],
+          ]
+        : []),
       'react-native-reanimated/plugin'
     ],
   };

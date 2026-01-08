@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { FlatList, ActivityIndicator, StyleSheet, ScrollView, Alert } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -33,6 +34,7 @@ import { LadderTab } from '../components/TabContents';
 import { Feather } from '@expo/vector-icons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FeedSkeleton } from '@/src/components/Skeletons';
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -370,14 +372,16 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const listRef = useRef<FlatList<ListItem>>(null);
+  const listRef = useRef<FlashList<ListItem>>(null);
   
   // API hooks for each tab
-  const feedQuery = useUserPosts(targetUserId, 5);
-  const reviewsQuery = useUserReviews(targetUserId, 5);
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5);
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5);
-  const repliesQuery = useUserReplies(targetUserId, 5);
+  // PERFORMANCE FIX: Only enable queries for the active tab to prevent unnecessary API calls
+  // This reduces network overhead and improves performance when switching tabs
+  const feedQuery = useUserPosts(targetUserId, 5, { enabled: activeTab === 'feed' });
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: activeTab === 'reviews' });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: activeTab === 'benchmarks' });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: activeTab === 'tips' });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: activeTab === 'replies' });
   
   // Get active tab query
   const activeTabQuery = useMemo(() => {
@@ -565,11 +569,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         message: `Check out ${userProfile.name}'s profile on Tipbox!`,
         url: `tipboxapp://profile/user/${targetUserId}`,
       });
-      setShowActionSheet(false);
+      closeBottomSheet();
     } catch (error) {
       console.error('[ProfileScreen] Share error:', error);
     }
-  }, [userProfile, targetUserId]);
+  }, [userProfile, targetUserId, closeBottomSheet]);
 
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
@@ -594,12 +598,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 description: 'Kullanıcı raporlandı',
               },
             });
-            setShowActionSheet(false);
+            closeBottomSheet();
           },
         },
       ]
     );
-  }, [user?.id, targetUserId, reportUser]);
+  }, [user?.id, targetUserId, reportUser, closeBottomSheet]);
 
   const handleBlock = useCallback(() => {
     Alert.alert(
@@ -616,7 +620,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
             console.log('[ProfileScreen] Block user:', targetUserId);
-            setShowActionSheet(false);
+            closeBottomSheet();
             // Navigate back after blocking
             if (navigation.canGoBack()) {
               navigation.goBack();
@@ -625,7 +629,85 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         },
       ]
     );
-  }, [targetUserId, navigation]);
+  }, [targetUserId, navigation, closeBottomSheet]);
+
+  // BUG FIX: handleOpenActionSheet tanımlanmalı - ActionSheet bottom sheet aç
+  const handleOpenActionSheet = useCallback(() => {
+    if (isOwnProfile || !userProfile) return;
+
+    const actionSheetContent = (
+      <VStack bg={isDark ? '$backgroundDark900' : '$white'} pb={20}>
+        {/* Share */}
+        <Pressable
+          onPress={() => {
+            handleShare();
+            closeBottomSheet();
+          }}
+          px={20}
+          py={16}
+        >
+          <HStack alignItems="center" space="md">
+            <Feather name="share-2" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text
+              color={isDark ? '$textLight0' : '$textDark950'}
+              fontSize="$md"
+              fontWeight="$medium"
+            >
+              Paylaş
+            </Text>
+          </HStack>
+        </Pressable>
+
+        {/* Report */}
+        <Pressable
+          onPress={() => {
+            closeBottomSheet();
+            handleReport();
+          }}
+          px={20}
+          py={16}
+        >
+          <HStack alignItems="center" space="md">
+            <Feather name="flag" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text
+              color={isDark ? '$textLight0' : '$textDark950'}
+              fontSize="$md"
+              fontWeight="$medium"
+            >
+              Raporla
+            </Text>
+          </HStack>
+        </Pressable>
+
+        {/* Block */}
+        <Pressable
+          onPress={() => {
+            closeBottomSheet();
+            handleBlock();
+          }}
+          px={20}
+          py={16}
+        >
+          <HStack alignItems="center" space="md">
+            <Feather name="slash" size={20} color="#FF3040" />
+            <Text
+              color="#FF3040"
+              fontSize="$md"
+              fontWeight="$medium"
+            >
+              Engelle
+            </Text>
+          </HStack>
+        </Pressable>
+      </VStack>
+    );
+
+    openBottomSheet(actionSheetContent, {
+      enablePanDownToClose: true,
+      enableDynamicSizing: true,
+      paddingBottom: insets.bottom + 8,
+    });
+  }, [isOwnProfile, userProfile, isDark, handleShare, handleReport, handleBlock, openBottomSheet, closeBottomSheet, insets.bottom]);
   
   // Handle load more
   const handleLoadMore = useCallback(() => {
@@ -1055,7 +1137,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, safeAreaTop, handleShare]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet]);
   
   if (isProfileLoading) {
     return (
@@ -1082,15 +1164,27 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        <FlatList
+        <FlashList
           ref={listRef}
           data={listData}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           ListHeaderComponent={renderProfileHeader}
-          stickyHeaderIndices={[1]} // Index 1 = TAB_BAR (ilk item)
+          estimatedItemSize={400} // PERFORMANCE FIX: Critical for FlashList performance
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            // UX FIX: Show skeleton loader only when loading and no cached data
+            activeTabQuery.isLoading && !activeTabQuery.data?.pages?.[0] ? (
+              <FeedSkeleton count={3} />
+            ) : (
+              <Box py={20} alignItems="center">
+                <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+                  Henüz içerik bulunmuyor.
+                </Text>
+              </Box>
+            )
+          }
           ListFooterComponent={
             activeTabQuery.isFetchingNextPage ? (
               <Box py={20} alignItems="center">
@@ -1100,20 +1194,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           }
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          initialNumToRender={5}
-          maxToRenderPerBatch={5}
-          windowSize={10}
-          onScrollToIndexFailed={(info) => {
-            // Scroll hatası durumunda sessizce devam et
-            // TAB_BAR zaten sticky olduğu için scroll yapmaya gerek yok
-            console.warn('[ProfileScreen] scrollToIndex failed (non-critical):', {
-              index: info.index,
-              highestMeasuredFrameIndex: info.highestMeasuredFrameIndex,
-              averageItemLength: info.averageItemLength,
-            });
-            // Scroll işlemini yapmaya çalışma, sticky header zaten var
-          }}
+          // FlashList automatically handles removeClippedSubviews, initialNumToRender, maxToRenderPerBatch, windowSize
+          // These props are not needed for FlashList
         />
       </Box>
     </SafeAreaView>

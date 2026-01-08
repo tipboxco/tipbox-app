@@ -95,83 +95,98 @@ export const useFloatingButtonBottomOffset = (extraPadding: number = 16): number
 // Image source cache - aynı URL için aynı obje referansını döndürmek için
 const imageSourceCache = new Map<string, ImageSourcePropType>();
 
+// PERFORMANCE FIX: URL normalization cache to avoid repeated URL parsing
+const urlNormalizationCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 1000; // Limit cache size to prevent memory growth
+
 /**
  * Image URL'lerini MEDIA_URL'e göre düzeltir
  * Tüm görsel URL'leri API_CONFIG.MEDIA_URL ile yüklenir
+ * 
+ * PERFORMANCE FIX: Cached URL normalization to avoid repeated parsing
  */
 const fixImageUrl = (url: string): string => {
+  // Check cache first
+  if (urlNormalizationCache.has(url)) {
+    return urlNormalizationCache.get(url)!;
+  }
+  
+  // If cache is too large, clear oldest entries (simple FIFO)
+  if (urlNormalizationCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = urlNormalizationCache.keys().next().value;
+    urlNormalizationCache.delete(firstKey);
+  }
+  
+  let normalizedUrl: string;
   try {
     // Boş string kontrolü
     if (!url || url.trim() === '') {
-      return url;
-    }
+      normalizedUrl = url;
+    } else {
+      // API_CONFIG'den MEDIA_URL'i al
+      const mediaUrl = API_CONFIG.MEDIA_URL;
+      if (!mediaUrl) {
+        normalizedUrl = url;
+      } else {
+        // MEDIA_URL'i parse et
+        const mediaUrlObj = new URL(mediaUrl);
+        const mediaOrigin = mediaUrlObj.origin; // protocol + hostname + port
 
-    // API_CONFIG'den MEDIA_URL'i al
-    const mediaUrl = API_CONFIG.MEDIA_URL;
-    if (!mediaUrl) {
-      return url;
-    }
-
-    // MEDIA_URL'i parse et
-    const mediaUrlObj = new URL(mediaUrl);
-    const mediaOrigin = mediaUrlObj.origin; // protocol + hostname + port
-
-    // Relative path kontrolü (örn: /tipbox-media/...)
-    if (url.startsWith('/')) {
-      // Relative path ise, MEDIA_URL'i ekle
-      return `${mediaOrigin}${url}`;
-    }
-
-    // Absolute URL ise
-    try {
-      const urlObj = new URL(url);
-      
-      // localhost veya 127.0.0.1 içeren URL'leri MEDIA_URL ile değiştir
-      const isLocalhost = urlObj.hostname === 'localhost' || 
-                          urlObj.hostname === '127.0.0.1' ||
-                          urlObj.hostname.startsWith('192.168.') ||
-                          urlObj.hostname.startsWith('10.') ||
-                          urlObj.hostname.startsWith('172.');
-      
-      // Eğer origin zaten MEDIA_URL ile aynıysa, değiştirme
-      if (urlObj.origin === mediaOrigin) {
-        return urlObj.toString();
+        // Relative path kontrolü (örn: /tipbox-media/...)
+        if (url.startsWith('/')) {
+          // Relative path ise, MEDIA_URL'i ekle
+          normalizedUrl = `${mediaOrigin}${url}`;
+        } else {
+          // Absolute URL ise
+          try {
+            const urlObj = new URL(url);
+            
+            // localhost veya 127.0.0.1 içeren URL'leri MEDIA_URL ile değiştir
+            const isLocalhost = urlObj.hostname === 'localhost' || 
+                                urlObj.hostname === '127.0.0.1' ||
+                                urlObj.hostname.startsWith('192.168.') ||
+                                urlObj.hostname.startsWith('10.') ||
+                                urlObj.hostname.startsWith('172.');
+            
+            // Eğer origin zaten MEDIA_URL ile aynıysa, değiştirme
+            if (urlObj.origin === mediaOrigin) {
+              normalizedUrl = urlObj.toString();
+            } else if (isLocalhost) {
+              // localhost veya local network IP ise, origin'i MEDIA_URL ile değiştir
+              normalizedUrl = url.replace(urlObj.origin, mediaOrigin);
+            } else {
+              // Diğer durumlarda da origin'i MEDIA_URL ile değiştir (production için)
+              normalizedUrl = url.replace(urlObj.origin, mediaOrigin);
+            }
+          } catch {
+            // URL parse edilemezse, relative path olarak dene
+            normalizedUrl = `${mediaOrigin}${url.startsWith('/') ? url : '/' + url}`;
+          }
+        }
       }
-      
-      // localhost veya local network IP ise, origin'i MEDIA_URL ile değiştir
-      if (isLocalhost) {
-        return url.replace(urlObj.origin, mediaOrigin);
-      }
-      
-      // Diğer durumlarda da origin'i MEDIA_URL ile değiştir (production için)
-      return url.replace(urlObj.origin, mediaOrigin);
-    } catch {
-      // URL parse edilemezse, relative path olarak dene
-      return `${mediaOrigin}${url.startsWith('/') ? url : '/' + url}`;
     }
   } catch (error) {
-    return url;
+    normalizedUrl = url;
   }
+  
+  // Cache the result
+  urlNormalizationCache.set(url, normalizedUrl);
+  return normalizedUrl;
 };
 
 export const toImageSource = (
   value: string | ImageSourcePropType | null | undefined,
 ): ImageSourcePropType | undefined => {
   if (!value) {
-    // Sadece development modunda uyarı göster
-    if (__DEV__) {
-    console.warn('[toImageSource] ⚠️ Empty or null value provided');
-    }
+    // Null/undefined değerler normal bir durum olabilir (avatar yoksa, image yoksa vs)
+    // Bu yüzden uyarı basmıyoruz - gereksiz spam önlenir
     return undefined;
   }
 
   if (typeof value === 'string') {
     // Boş string kontrolü
     if (value.trim() === '') {
-      // Sadece development modunda uyarı göster
-      if (__DEV__) {
-      console.warn('[toImageSource] ⚠️ Empty string provided');
-      }
+      // Boş string de normal bir durum olabilir
       return undefined;
     }
 

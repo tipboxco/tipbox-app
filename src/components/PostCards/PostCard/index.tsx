@@ -3,7 +3,7 @@ import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack
 import { Feather } from '@expo/vector-icons';
 import { Alert } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { navigationService } from '@/src/services/NavigationService';
@@ -345,7 +345,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
       mb={16}
     >
       {/* Header */}
-      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           {avatarSource && (
             <Pressable onPress={handleAvatarPress}>
@@ -370,7 +370,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#787878'}
-                fontSize={config.tokens.fontSizes['3xs'] as number}
+                fontSize={9}
                 numberOfLines={1}
                 maxWidth={250}
               >
@@ -426,7 +426,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                 subName={context.subName}
                 onPress={() => {
                   // ProductGroup veya SubCategory için CatalogScreen'e navigate et
-                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
                 }}
               />
             </Box>
@@ -450,9 +450,13 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                   onPress={() => {
                     // Product için BrandProductDetailScreen'e navigate et
                     if (category.product?.id) {
-                      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { 
+                      navigationService.navigateNested(
+                        TAB_ROUTES.CATALOG, 
+                        'BrandProductDetailScreen' as any, 
+                        { 
                         productId: category.product.id 
-                      });
+                        }
+                      );
                     }
                   }}
                 />
@@ -471,7 +475,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                 subName={category.subCategory}
                 onPress={() => {
                   // Category için CatalogScreen'e navigate et
-                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
                 }}
               />
             </Box>
@@ -489,7 +493,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize={config.tokens.fontSizes['2xs'] as number}
+            fontSize="$sm"
             numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
           >
             {data.content}
@@ -522,8 +526,8 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         borderRightWidth={1}
         borderLeftWidth={1}
         borderBottomWidth={1}
-        borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-        borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
+        borderBottomRightRadius={5}
+        borderBottomLeftRadius={5}
         borderColor="#E9E9E9"
         justifyContent="space-between"
       >

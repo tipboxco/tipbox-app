@@ -29,13 +29,34 @@ export const notificationKeys = {
 
 /**
  * Get Notifications Query Hook
+ * 
+ * @param enabled - Query'nin aktif olup olmayacağını kontrol eder (default: true)
+ *                  Authenticated değilse false olmalı
  */
-export const useNotifications = (params?: GetNotificationsParams) => {
+export const useNotifications = (params?: GetNotificationsParams, enabled: boolean = true) => {
   return useQuery({
     queryKey: notificationKeys.list(params),
     queryFn: () => getNotifications(params),
-    staleTime: 30 * 1000, // 30 saniye
-    refetchOnWindowFocus: true,
+    enabled, // Authenticated kontrolü için
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    retry: (failureCount, error: any) => {
+      // 500 hatası için retry yapma (backend sorunu)
+      if (error?.response?.status === 500) {
+        console.warn('[useNotifications] Server error (500), skipping retry');
+        return false;
+      }
+      // 401 hatası için retry yapma (authentication sorunu)
+      if (error?.response?.status === 401) {
+        console.warn('[useNotifications] Authentication error (401), skipping retry');
+        return false;
+      }
+      // Diğer hatalar için 1 kez retry yap
+      return failureCount < 1;
+    },
   });
 };
 
@@ -50,9 +71,10 @@ export const useUnreadCount = (enabled: boolean = true) => {
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => getUnreadCount(),
     enabled, // Authenticated kontrolü için
-    staleTime: 10 * 1000, // 10 saniye
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma (refetchInterval ile güncellenir)
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchInterval: enabled ? 30 * 1000 : false, // Sadece enabled ise refetch yap
-    refetchOnWindowFocus: enabled, // Sadece enabled ise refetch yap
+    refetchOnWindowFocus: false, // Cache varsa kullan, yoksa fetch et
     retry: (failureCount, error: any) => {
       // 500 hatası için retry yapma (backend sorunu)
       if (error?.response?.status === 500) {
@@ -77,7 +99,10 @@ export const useNotificationSettings = () => {
   return useQuery({
     queryKey: notificationKeys.settings(),
     queryFn: () => getNotificationSettings(),
-    staleTime: 5 * 60 * 1000, // 5 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
   });
 };
 

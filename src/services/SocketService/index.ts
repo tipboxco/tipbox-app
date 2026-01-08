@@ -106,15 +106,12 @@ class SocketService {
       });
 
       this.socket.once('connect_error', (error) => {
-        // Sadece development modunda detaylı log (login ekranında hata göstermemek için)
-        if (__DEV__) {
-          console.error('[SocketService] ❌ Connection error:', {
-            message: error.message,
-            type: (error as any).type,
-            description: (error as any).description,
-            context: (error as any).context,
-            url: socketUrl,
-          });
+        // Login ekranında hata göstermemek için sessizce return et
+        // Hata logları SocketProvider'da authenticated kontrolü ile gösterilir
+        // Burada sadece development modunda minimal log
+        if (__DEV__ && process.env.NODE_ENV === 'development') {
+          // Minimal log - sadece development'ta
+          console.log('[SocketService] Connection error (will be handled by provider):', error.message);
         }
       });
 
@@ -135,7 +132,8 @@ class SocketService {
       }
 
     } catch (error) {
-      console.error('[SocketService] ❌ Connect failed:', error);
+      // Login ekranında hata göstermemek için sessizce hata fırlat
+      // Hata logları SocketProvider'da authenticated kontrolü ile gösterilir
       throw error;
     }
   }
@@ -267,9 +265,27 @@ class SocketService {
 
   /**
    * Notification event listener ekler
+   * Backend'den gelebilecek farklı event adlarını da dinler
    */
   public onNotification(callback: (notification: any) => void): void {
-    this.on('notification', callback);
+    // Wrapper callback - tüm event'leri tek bir callback'e yönlendir
+    const wrappedCallback = (data: any) => {
+      if (__DEV__) {
+        console.log('[SocketService] 🔍 Notification event received:', {
+          event: 'notification',
+          data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data,
+        });
+      }
+      callback(data);
+    };
+    
+    // Ana event adı
+    this.on('notification', wrappedCallback);
+    
+    // Alternatif event adları (backend farklı event adı kullanıyor olabilir)
+    // Bu event'ler de aynı callback'i çağırır
+    this.on('new_notification', wrappedCallback);
+    this.on('notifications', wrappedCallback);
   }
 
   /**

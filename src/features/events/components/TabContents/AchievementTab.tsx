@@ -161,7 +161,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             <LimitedTimeEventSkeleton />
           ) : limitedEventError ? (
             <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
-              <Text color="#CE4A4A" fontSize={12} textAlign="center">
+                <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
                 Hata: {limitedEventError.message}
               </Text>
             </Box>
@@ -169,9 +169,19 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             <LimitedTimeEventCard
               data={limitedEvent}
               onPress={() => {
-                // Limited time event için EventDetailScreen'e navigate et
+                // Limited time event'i SeeAllReward formatına map et
                 if (onRewardPress) {
-                  onRewardPress(limitedEvent.id);
+                  const reward: SeeAllReward = {
+                    id: limitedEvent.id,
+                    title: limitedEvent.title || '',
+                    image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/ozan.png'),
+                    description: limitedEvent.description || '',
+                    category: '', // Limited event için category yok
+                    isUnlocked: false, // Limited event için unlock durumu yok
+                    completed: limitedEvent.userScore?.score || 0,
+                    task: 0, // Limited event için target score yok
+                  };
+                  onRewardPress(reward);
                 }
               }}
             />
@@ -197,7 +207,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
                 placeholder="Ürün Grubu seçin veya ürün adı arayın"
                 placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                 color={isDark ? '#000' : '#000'}
-                fontSize={9}
+                fontSize="$2xs"
               />
             </Input>
           </HStack>
@@ -214,13 +224,13 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
           <BadgeSkeleton count={6} />
         ) : achievementsError ? (
           <Box py="$4" alignItems="center" px={16}>
-            <Text color="#CE4A4A" fontSize={12} textAlign="center">
+            <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
               Hata: {achievementsError.message}
             </Text>
           </Box>
         ) : getFilteredAchievements.length === 0 ? (
           <Box py="$4" alignItems="center" px={16}>
-            <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12} textAlign="center">
+            <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$sm" textAlign="center">
               {activeFilter === 'All' 
                 ? 'Henüz achievement bulunmuyor'
                 : `Henüz ${activeFilter} durumunda achievement bulunmuyor`}

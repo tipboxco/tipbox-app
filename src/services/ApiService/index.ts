@@ -3,13 +3,9 @@ import { API_CONFIG } from '../../config/api.config';
 import { ApiInterceptors, ApiServiceConfig, IApiService } from './types';
 import { setupApiInterceptors } from './interceptors';
 
-// React Native için fetch adapter kullan
-// Bu, React Native'de network isteklerinin düzgün çalışmasını sağlar
-if (typeof XMLHttpRequest === 'undefined') {
-  // React Native ortamında XMLHttpRequest yok, fetch kullan
-  const { default: fetchAdapter } = require('axios/lib/adapters/xhr');
-  // Not: React Native'de axios otomatik olarak doğru adapter'ı seçer
-}
+// ARCHITECTURE FIX: Removed unnecessary axios adapter import
+// React Native'de axios otomatik olarak doğru adapter'ı seçer (fetch adapter)
+// Gereksiz require() çağrısı uyarıya neden oluyordu
 
 class ApiService implements IApiService {
   private static instance: ApiService;

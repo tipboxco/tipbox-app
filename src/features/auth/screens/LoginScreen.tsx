@@ -44,15 +44,16 @@ export const LoginScreen = () => {
           password,
         });
 
-        // Console'da tam response'u göster
-        console.log('=== LOGIN API RESPONSE ===');
-        console.log('Full Response:', JSON.stringify(result, null, 2));
-        console.log('Response Type:', typeof result);
-        console.log('Response Keys:', Object.keys(result));
-        console.log('User:', { id: result.id, fullName: result.fullName, email: result.email });
-        console.log('Token:', result.token ? '***' : 'undefined');
-        console.log('Refresh Token:', result.refreshToken ? '***' : 'undefined');
-        console.log('==========================');
+        // Console'da response'u göster (sadece development modunda)
+        if (__DEV__) {
+          console.log('[LoginScreen] ✅ Login successful:', {
+            userId: result.id,
+            fullName: result.fullName,
+            email: result.email,
+            hasToken: !!result.token,
+            hasRefreshToken: !!result.refreshToken,
+          });
+        }
 
         // Başarılı toast göster
         toast.show({
@@ -74,17 +75,16 @@ export const LoginScreen = () => {
         // RootNavigator otomatik olarak isAuthenticated=true olduğunda
         // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
       } catch (error: any) {
-        // Console'da tam error'u göster
-        console.error('=== LOGIN API ERROR ===');
-        console.error('Error Object:', error);
-        console.error('Error Message:', error?.message);
-        console.error('Error Response:', error?.response);
-        console.error('Error Response Data:', error?.response?.data);
-        console.error('Error Response Status:', error?.response?.status);
-        console.error('Full Error JSON:', JSON.stringify(error, null, 2));
-        console.error('========================');
+        // Console'da error'u göster (sadece development modunda)
+        if (__DEV__) {
+          console.error('[LoginScreen] ❌ Login error:', {
+            message: error?.message,
+            status: error?.response?.status,
+            responseMessage: error?.response?.data?.message,
+          });
+        }
 
-        // Hata toast göster
+        // Hata toast göster - Backend'den gelen mesajı kullan veya genel mesaj
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||

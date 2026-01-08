@@ -53,6 +53,7 @@ export type RootStackParamList = {
   // SupportMessageDetail - Expert request için
   SupportMessageDetail: {
     requestId?: string;
+    threadId?: string | null;
     expertName: string;
     expertTitle: string;
     expertAvatar: any;
@@ -60,6 +61,7 @@ export type RootStackParamList = {
     userTitle?: string;
     userAvatar?: any;
     recipientUserId?: string;
+    status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
   };
 };
 

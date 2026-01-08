@@ -3,7 +3,7 @@ import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/theme
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { QuestionPost } from '@/src/mock/profile/questions/types';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { navigationService } from '@/src/services/NavigationService';
@@ -116,7 +116,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       mb={16}
     >
       {/* Header */}
-      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={config.tokens.radii['postcard'] as number} borderTopLeftRadius={config.tokens.radii['postcard'] as number} borderColor="#E9E9E9">
+      <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           {toImageSource(data.user.avatar) && (
             <Image
@@ -138,7 +138,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             </Text>
             <Text
               color={isDark ? '$textDark400' : '#787878'}
-              fontSize={config.tokens.fontSizes['3xs'] as number}
+              fontSize={9}
               numberOfLines={1}
               maxWidth={250}
             >
@@ -206,7 +206,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
         >
           <Feather name="help-circle" size={12} color={'#fff'} />
           <Text
-            fontSize={config.tokens.fontSizes['4xs'] as number}
+            fontSize={8}
             fontWeight="$semibold"
             ml={5}
             color={'#fff'}
@@ -230,7 +230,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
           >
             <Feather name="send" size={12} color="#fff" />
             <Text
-              fontSize={config.tokens.fontSizes['4xs'] as number}
+              fontSize={8}
               fontWeight="$semibold"
               ml={5}
               color="#fff"
@@ -251,7 +251,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
         <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize={config.tokens.fontSizes['2xs'] as number}
+            fontSize={10}
             numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
           >
             {data.content}
@@ -282,8 +282,8 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
         borderRightWidth={1}
         borderLeftWidth={1}
         borderBottomWidth={1}
-        borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-        borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
+        borderBottomRightRadius={5}
+        borderBottomLeftRadius={5}
         borderColor="#E9E9E9"
         justifyContent="space-between"
       >
@@ -356,5 +356,6 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
   );
 };
 
-export default QuestionPostCard;
+// PERFORMANCE FIX: Memoize component to prevent unnecessary re-renders in feed lists
+export default React.memo(QuestionPostCard);
 

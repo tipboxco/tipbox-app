@@ -52,8 +52,8 @@ export const useActiveEvents = (limit: number = 20) => {
       return lastPage.pagination.cursor;
     },
     // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
-    gcTime: 10 * 60 * 1000,     // 10 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,     // 4 saat - cache'de tut
     refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
@@ -87,8 +87,8 @@ export const useUpcomingEvents = (limit: number = 20) => {
       return lastPage.pagination.cursor;
     },
     // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
-    gcTime: 10 * 60 * 1000,     // 10 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,     // 4 saat - cache'de tut
     refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
@@ -113,8 +113,8 @@ export const useEventDetail = (eventId: string) => {
     queryFn: () => getEventDetail(eventId),
     enabled: !!eventId, // eventId varsa query çalışır
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -151,8 +151,8 @@ export const useEventPosts = (eventId: string, limit: number = 20) => {
     },
     enabled: !!eventId, // eventId varsa query çalışır
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -188,8 +188,8 @@ export const useEventBadges = (eventId: string, limit: number = 20) => {
     },
     enabled: !!eventId, // eventId varsa query çalışır
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
@@ -337,8 +337,8 @@ export const useEventRequirements = (eventId: string | undefined) => {
       return getEventRequirements(eventId);
     },
     enabled: !!eventId,
-    staleTime: 1 * 60 * 1000, // 1 dakika - ilerleme sık değişebilir
-    gcTime: 5 * 60 * 1000, // 5 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,

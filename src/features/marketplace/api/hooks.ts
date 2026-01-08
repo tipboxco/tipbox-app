@@ -49,10 +49,11 @@ export const useMarketplaceListings = (params: MarketplaceListingsParams = {}) =
       const currentOffset = allPages.reduce((sum, page) => sum + page.length, 0);
       return currentOffset;
     },
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -85,10 +86,11 @@ export const useMyNFTs = (limit: number = 12) => {
       const currentOffset = allPages.reduce((sum, page) => sum + page.length, 0);
       return currentOffset;
     },
-    staleTime: 0, // Cache yok
-    gcTime: 0, // Cache yok
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
   });
 };
@@ -188,8 +190,8 @@ export const useNFTSellInfo = (nftId: string | undefined) => {
       return getNFTSellInfo(nftId);
     },
     enabled: !!nftId,
-    staleTime: 2 * 60 * 1000, // 2 dakika
-    gcTime: 5 * 60 * 1000, // 5 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     retry: 1,
   });
 };
@@ -214,8 +216,8 @@ export const useNFTSellDetail = (nftId: string | undefined) => {
       return getNFTSellDetail(nftId);
     },
     enabled: !!nftId,
-    staleTime: 2 * 60 * 1000, // 2 dakika
-    gcTime: 5 * 60 * 1000, // 5 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     retry: 1,
   });
 };

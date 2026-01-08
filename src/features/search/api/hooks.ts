@@ -25,10 +25,13 @@ export const useSearch = (
   params: SearchParams,
   enabled: boolean = true
 ) => {
+  // Keyword boşsa default verileri getir, doluysa arama yap
+  // enabled kontrolü dışarıdan geliyor (input boşken default, dolu iken arama)
+  
   return useQuery<SearchResponse, Error>({
     queryKey: searchKeys.query(params),
     queryFn: () => search(params),
-    enabled: enabled && !!params.keyword && params.keyword.trim().length > 0,
+    enabled: enabled, // enabled kontrolü SearchModal'dan geliyor
     staleTime: 30 * 1000, // 30 saniye - arama sonuçları kısa süreli cache'lenebilir
     gcTime: 5 * 60 * 1000, // 5 dakika - cache'de tut
     retry: 1,

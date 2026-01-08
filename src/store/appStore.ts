@@ -4,7 +4,52 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
 import { ImageCacheService } from '../services/ImageCacheService';
-import { TranslationCacheService } from '../services/TranslationCacheService';
+import { updateTokenCache, clearTokenCache } from '../services/ApiService/interceptors';
+
+// PERFORMANCE FIX: Debounced AsyncStorage wrapper to reduce I/O overhead
+// Batches multiple writes into single AsyncStorage operation
+class DebouncedAsyncStorage {
+  private writeQueue: Map<string, string> = new Map();
+  private writeTimeout: NodeJS.Timeout | null = null;
+  private readonly DEBOUNCE_MS = 300; // 300ms debounce window
+
+  async getItem(key: string): Promise<string | null> {
+    return await AsyncStorage.getItem(key);
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    // Add to queue
+    this.writeQueue.set(key, value);
+
+    // Clear existing timeout
+    if (this.writeTimeout) {
+      clearTimeout(this.writeTimeout);
+    }
+
+    // Set new timeout
+    this.writeTimeout = setTimeout(async () => {
+      // Batch write all queued items
+      const items = Array.from(this.writeQueue.entries());
+      this.writeQueue.clear();
+
+      // Use multiSet for better performance (single I/O operation)
+      if (items.length > 0) {
+        await AsyncStorage.multiSet(items);
+      }
+
+      this.writeTimeout = null;
+    }, this.DEBOUNCE_MS);
+  }
+
+  async removeItem(key: string): Promise<void> {
+    // Remove from queue if pending
+    this.writeQueue.delete(key);
+    return await AsyncStorage.removeItem(key);
+  }
+}
+
+const debouncedStorage = new DebouncedAsyncStorage();
+
 // Socket bağlantısı adım adım test edilecek
 
 // Types
@@ -116,6 +161,9 @@ export const useAppStore = create<AppState>()(
             console.log('[AppStore]    - Refresh Token Length:', userData.refreshToken.length);
             console.log('[AppStore]    - Save Time:', tokenSaveTime, 'ms');
             
+            // PERFORMANCE FIX: Update token cache for API interceptor
+            updateTokenCache(userData.token);
+            
             // User bilgilerini store'a kaydet
             set({
               user: {
@@ -174,42 +222,7 @@ export const useAppStore = create<AppState>()(
             console.log('🚪 LOGOUT İŞLEMİ BAŞLATILIYOR');
             console.log('========================================');
             
-            set({ isLoading: true, error: null });
-            
-            // Token'ları SecureStore'dan temizle
-            console.log('📋 Step 1: Token\'lar temizleniyor...');
-            const tokenClearStartTime = Date.now();
-            await TokenService.clearTokens();
-            const tokenClearTime = Date.now() - tokenClearStartTime;
-            console.log('✅ Token\'lar temizlendi');
-            console.log('   - Clear Time:', tokenClearTime, 'ms');
-            
-            // Wallet connection bilgisini AsyncStorage'dan temizle
-            console.log('📋 Step 2: Wallet bağlantısı temizleniyor...');
-            const walletClearStartTime = Date.now();
-            await WalletService.clearWalletConnection();
-            const walletClearTime = Date.now() - walletClearStartTime;
-            console.log('✅ Wallet bağlantısı temizlendi');
-            console.log('   - Clear Time:', walletClearTime, 'ms');
-            
-            // Image cache'i temizle (kullanıcıya özel görselleri kaldırmak için)
-            console.log('📋 Step 3: Image cache temizleniyor...');
-            const imageCacheClearStartTime = Date.now();
-            await ImageCacheService.clearAll();
-            const imageCacheClearTime = Date.now() - imageCacheClearStartTime;
-            console.log('✅ Image cache temizlendi');
-            console.log('   - Clear Time:', imageCacheClearTime, 'ms');
-            
-            // Translation cache'i temizle
-            console.log('📋 Step 4: Translation cache temizleniyor...');
-            const translationCacheClearStartTime = Date.now();
-            await TranslationCacheService.clearAll();
-            const translationCacheClearTime = Date.now() - translationCacheClearStartTime;
-            console.log('✅ Translation cache temizlendi');
-            console.log('   - Clear Time:', translationCacheClearTime, 'ms');
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
+            // ÖNCE: State'i anında güncelle (kullanıcı anında çıkış görsün)
             set({
               isAuthenticated: false,
               user: null,
@@ -218,9 +231,43 @@ export const useAppStore = create<AppState>()(
               error: null,
             });
             
+            // ÖNCE: Token'ları SecureStore'dan temizle (kritik - güvenlik)
+            console.log('📋 Step 1: Token\'lar temizleniyor...');
+            const tokenClearStartTime = Date.now();
+            await TokenService.clearTokens();
+            clearTokenCache(); // PERFORMANCE FIX: Clear token cache
+            const tokenClearTime = Date.now() - tokenClearStartTime;
+            console.log('✅ Token\'lar temizlendi');
+            console.log('   - Clear Time:', tokenClearTime, 'ms');
+            
+            // ARKA PLANDA: Wallet ve image cache temizleme (await etmeden)
+            // Kullanıcı zaten çıkış yaptı, bu işlemler arka planda tamamlanabilir
+            Promise.all([
+              (async () => {
+                try {
+                  console.log('📋 Step 2: Wallet bağlantısı temizleniyor (arka plan)...');
+                  await WalletService.clearWalletConnection();
+                  console.log('✅ Wallet bağlantısı temizlendi');
+                } catch (error) {
+                  console.error('⚠️ Wallet temizleme hatası:', error);
+                }
+              })(),
+              (async () => {
+                try {
+                  console.log('📋 Step 3: Image cache temizleniyor (arka plan)...');
+                  await ImageCacheService.clearAll();
+                  console.log('✅ Image cache temizlendi');
+                } catch (error) {
+                  console.error('⚠️ Image cache temizleme hatası:', error);
+                }
+              })(),
+            ]).catch((error) => {
+              console.error('⚠️ Arka plan temizleme hatası:', error);
+            });
+            
             const logoutTime = Date.now() - logoutStartTime;
             console.log('========================================');
-            console.log('✅ LOGOUT İŞLEMİ TAMAMLANDI');
+            console.log('✅ LOGOUT İŞLEMİ TAMAMLANDI (ANINDA)');
             console.log('========================================');
             console.log('   - Total Time:', logoutTime, 'ms');
             console.log('   - isAuthenticated: false');
@@ -230,7 +277,14 @@ export const useAppStore = create<AppState>()(
             console.log('========================================');
           } catch (error) {
             console.error('❌ Logout hatası:', error);
-            set({ error: error as Error, isLoading: false });
+            // Hata olsa bile state'i güncelle (kullanıcı çıkış yapmış sayılır)
+            set({
+              isAuthenticated: false,
+              user: null,
+              accessToken: null,
+              isLoading: false,
+              error: error as Error,
+            });
           }
         },
         
@@ -259,7 +313,9 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: 'app-storage',
-        storage: createJSONStorage(() => AsyncStorage),
+        // PERFORMANCE FIX: Use debounced storage to reduce AsyncStorage I/O
+        // Multiple state changes within 300ms are batched into single write
+        storage: createJSONStorage(() => debouncedStorage as any),
         partialize: (state) => ({
           isAuthenticated: state.isAuthenticated,
           user: state.user,

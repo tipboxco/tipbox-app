@@ -206,7 +206,8 @@ const ReviewsTabComponent = () => {
     );
   }
 
-  if (isLoading && reviews.length === 0) {
+  // CACHE FIX: Only show loading when loading and no cached data
+  if (isLoading && !data?.pages?.[0]) {
     return (
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />

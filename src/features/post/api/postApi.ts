@@ -725,3 +725,67 @@ export const deletePost = async (postId: string): Promise<DeletePostResponse> =>
   }
 };
 
+/**
+ * Search Posts Response Interface
+ * Backend'den dönen post search response formatı
+ */
+export interface SearchPostsResponse {
+  items: Array<{
+    type: 'feed';
+    data: {
+      id: string;
+      title: string;
+      body: string;
+      user: {
+        id: string;
+        name: string;
+        avatar: string | null;
+      };
+      createdAt: string;
+    };
+  }>;
+  pagination: {
+    cursor: string | null;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * Search Posts endpoint function
+ * Post başlığı veya içeriğinde arama yapar
+ *
+ * @param q - Arama terimi (required)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns SearchPostsResponse - Post listesi ve pagination bilgisi
+ */
+export const searchPosts = async (
+  q: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<SearchPostsResponse> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('q', q);
+    if (cursor) {
+      params.append('cursor', cursor);
+    }
+    params.append('limit', Math.min(limit, 50).toString());
+
+    const response = await apiService.getClient().get<SearchPostsResponse>(
+      `/posts/search?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[searchPosts] API Error:', {
+      url: `/posts/search?q=${q}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+

@@ -20,6 +20,16 @@ const MarketPlaceScreen = () => {
   const screenWidth = Dimensions.get('window').width;
   const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with 16px padding on each side
   const navigation = useNavigation();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Debounce search query for API calls
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Marketplace API hook with infinite scroll
   const {
@@ -29,7 +39,10 @@ const MarketPlaceScreen = () => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useMarketplaceListings({ limit: 8 });
+  } = useMarketplaceListings({ 
+    limit: 8,
+    search: debouncedSearchQuery || undefined,
+  });
 
   // Flatten all pages into a single array
   const nftListings = data?.pages.flatMap((page) => page) ?? [];
@@ -97,12 +110,12 @@ const MarketPlaceScreen = () => {
 
         {/* Search Filter */}
         <VStack px={16} py={8}>
-          <SearchFilter />
+          <SearchFilter searchQuery={searchQuery} onSearchChange={setSearchQuery} />
         </VStack>
 
         {/* NFT Grid */}
         <Box flex={1}>
-          {isLoading && nftData.length === 0 ? (
+          {isLoading && !data?.pages?.[0] ? (
             <Box flex={1} justifyContent="center" alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
             </Box>

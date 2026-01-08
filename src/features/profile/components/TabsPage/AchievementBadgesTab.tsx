@@ -11,6 +11,7 @@ import type { AchievementApiItem } from '@/src/features/events/types';
 interface AchievementBadgesTabProps {
   userId?: string;
   onBadgePress?: (badge: Badge) => void;
+  searchQuery?: string;
 }
 
 // Map AchievementApiItem to Badge format
@@ -38,6 +39,7 @@ const mapAchievementToBadge = (achievement: AchievementApiItem): Badge => {
 export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   userId,
   onBadgePress,
+  searchQuery,
 }) => {
   const bottomInset = useSafeAreaValues('bottom');
   const { colorMode } = useColorMode();
@@ -56,7 +58,7 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     isFetchingNextPage,
     isLoading,
     error,
-  } = useUserCollectionAchievements(targetUserId, ACHIEVEMENTS_PER_PAGE);
+  } = useUserCollectionAchievements(targetUserId, ACHIEVEMENTS_PER_PAGE, searchQuery);
 
   // Flatten all pages into a single array - useMemo ile memoize et
   const achievements = useMemo(() => {
@@ -183,7 +185,8 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
   }, [onBadgePress]);
 
   // Loading state
-  if (isLoading && !data) {
+  // CACHE FIX: Only show loading when loading and no cached data
+  if (isLoading && !data?.pages?.[0]) {
     return (
       <VStack px={16} py={16} flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />

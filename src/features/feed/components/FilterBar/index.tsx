@@ -1,14 +1,11 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Animated, Platform, Text as RNText } from 'react-native';
 import { HStack, Pressable, Text, Box, VStack, ScrollView } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
 import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 import type { FeedFilterParams } from '../../api/feedApi';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 /**
  * Backend expected tag values
@@ -43,12 +40,12 @@ export const TAG_OPTIONS = [
  */
 export const INTEREST_OPTIONS = [
   // { value: 'INVENTORY_MATCH', label: 'Inventory Match', count: 57 }, // Temporarily disabled - backend enum issue
-  { value: 'CATEGORY_MATCH', label: 'Category Match', count: 52 },
-  { value: 'MUTUAL_TRUST', label: 'Mutual Trust', count: 17 },
-  { value: 'ENGAGEMENT_HIGH', label: 'Trending', count: 13 }, // Displayed as "Trending" instead of "Engagement High"
-  { value: 'NEW_USER', label: 'New User', count: 6 },
-  { value: 'BOOSTED', label: 'Boosted', count: 3 },
-  { value: 'TRUSTER', label: 'Truster', count: 1 },
+  { value: 'CATEGORY_MATCH', label: 'Category Match' },
+  { value: 'MUTUAL_TRUST', label: 'Mutual Trust' },
+  { value: 'ENGAGEMENT_HIGH', label: 'Trending' }, // Displayed as "Trending" instead of "Engagement High"
+  { value: 'NEW_USER', label: 'New User' },
+  { value: 'BOOSTED', label: 'Boosted' },
+  { value: 'TRUSTER', label: 'Truster' },
 ] as const;
 
 /**
@@ -87,12 +84,26 @@ interface FilterBarProps {
 export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const { openBottomSheet, closeBottomSheet, updateContent, isOpen } = useGlobalBottomSheet();
-  const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
   
-  // Track which filter bottom sheet is open
-  const openFilterRef = useRef<string | null>(null);
+  // Track which filter panel is open
+  const [openFilterId, setOpenFilterId] = useState<string | null>(null);
+  
+  // Animation value for expandable panel height (0 to dynamic height based on content)
+  const panelHeight = useRef(new Animated.Value(0)).current;
+  
+  // Calculate panel height for 2 rows x 3 columns grid
+  const getPanelHeight = () => {
+    const rowHeight = 42; // Each row height (reduced from 50)
+    const rows = 2; // 2 rows
+    const padding = 12; // Reduced from 16
+    const buttonHeight = 32; // Reduced from 50
+    const buttonTopPadding = 8; // Top padding for buttons
+    const buttonBottomPadding = 12; // Bottom padding for buttons (increased to prevent clipping)
+    return (rows * rowHeight) + (padding * 2) + buttonHeight + buttonTopPadding + buttonBottomPadding;
+  };
+  
+  // Track FilterBar height for absolute positioning
+  const [filterBarHeight, setFilterBarHeight] = useState(0);
 
   // Get categories from API (only for Category filter, not for Interests)
   const { data: catalogCategories } = useCatalogCategories();
@@ -217,9 +228,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
       ...filters,
       category: filters.category === categoryId ? undefined : categoryId,
     });
-    openFilterRef.current = null;
-    closeBottomSheet();
-  }, [filters, onFiltersChange, closeBottomSheet]);
+    setOpenFilterId(null);
+  }, [filters, onFiltersChange]);
 
   // Sort - single selection
   const handleSortSelect = useCallback((sortValue: 'recent' | 'top') => {
@@ -227,16 +237,19 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
       ...filters,
       sort: filters.sort === sortValue ? undefined : sortValue,
     });
-    openFilterRef.current = null;
-    closeBottomSheet();
-  }, [filters, onFiltersChange, closeBottomSheet]);
+    setOpenFilterId(null);
+  }, [filters, onFiltersChange]);
   
-  // Clear ref when bottom sheet closes
+  // Animate panel open/close
   useEffect(() => {
-    if (!isOpen) {
-      openFilterRef.current = null;
-    }
-  }, [isOpen]);
+    const targetHeight = openFilterId ? getPanelHeight() : 0;
+    console.log('[FilterBar] Panel animation:', { openFilterId, targetHeight });
+    Animated.timing(panelHeight, {
+      toValue: targetHeight,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [openFilterId, panelHeight]);
 
   // Get selected filter count
   const getFilterCount = (filterId: string) => {
@@ -254,299 +267,256 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     }
   };
 
-  // Interests bottom sheet content - memoized with useMemo
-  const interestsContent = useMemo(() => {
-    return (
-      <VStack space="md" pb={Platform.OS === 'ios' ? insets.bottom : tabBarHeight}>
-        {/* Header */}
-        <VStack space="sm" pb="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333333' : '#E9E9E9'} px="$3">
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text
-              fontSize={16}
-              fontWeight="$bold"
-              color={isDark ? '#FFFFFF' : '#000000'}
-            >
-              Select Interests
-            </Text>
-            <Pressable onPress={() => {
-              openFilterRef.current = null;
-              closeBottomSheet();
-            }}>
-              <Feather name="x" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Pressable>
-          </HStack>
-        </VStack>
-
-        {/* Interest options list */}
-        <ScrollView showsVerticalScrollIndicator={false} maxHeight={400}>
-          <VStack space="xs" px="$3">
-            {INTEREST_OPTIONS.map((interest) => {
-              const isSelected = filters.interests?.includes(interest.value) || false;
-              return (
-                <Pressable
-                  key={interest.value}
-                  onPress={() => handleInterestToggle(interest.value)}
-                >
-                  <Box
-                    py="$3"
-                    bg={isSelected ? '#E2FF46' : 'transparent'}
-                    borderRadius={8}
-                    flexDirection="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <HStack alignItems="center" space="sm" flex={1}>
-                      <Text
-                        fontSize={13}
-                        fontWeight="$medium"
-                        color={isSelected ? '#000000' : isDark ? '#FFFFFF' : '#000000'}
-                      >
-                        {interest.label}
-                      </Text>
-                    </HStack>
-                    {isSelected && (
-                      <Feather name="check" size={18} color="#000000" />
-                    )}
-                  </Box>
-                </Pressable>
-              );
-            })}
-          </VStack>
-        </ScrollView>
-      </VStack>
-    );
-  }, [isDark, filters.interests, insets.bottom, tabBarHeight, handleInterestToggle, closeBottomSheet]);
-
-  // Tags bottom sheet content - memoized with useMemo
-  const tagsContent = useMemo(() => {
-    return (
-      <VStack space="md" pb={Platform.OS === 'ios' ? insets.bottom : tabBarHeight}>
-        {/* Header */}
-        <VStack space="sm" pb="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333333' : '#E9E9E9'} px="$3">
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text
-              fontSize={16}
-              fontWeight="$bold"
-              color={isDark ? '#FFFFFF' : '#000000'}
-            >
-              Select Tags
-            </Text>
-            <Pressable onPress={() => {
-              openFilterRef.current = null;
-              closeBottomSheet();
-            }}>
-              <Feather name="x" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Pressable>
-          </HStack>
-        </VStack>
-
-        {/* Tags list */}
-        <ScrollView showsVerticalScrollIndicator={false} maxHeight={400}>
-          <VStack space="xs" px="$3">
-            {TAG_OPTIONS.map((tag) => {
-              const isSelected = filters.tags?.includes(tag.value) || false;
-              return (
-                <Pressable
-                  key={tag.value}
-                  onPress={() => handleTagToggle(tag.value)}
-                >
-                  <Box
-                    px="$3"
-                    py="$3"
-                    bg={isSelected ? '#E2FF46' : 'transparent'}
-                    borderRadius={8}
-                    flexDirection="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <Text
-                      fontSize={13}
-                      fontWeight="$medium"
-                      color={isSelected ? '#000000' : isDark ? '#FFFFFF' : '#000000'}
-                    >
-                      {tag.label}
-                    </Text>
-                    {isSelected && (
-                      <Feather name="check" size={18} color="#000000" />
-                    )}
-                  </Box>
-                </Pressable>
-              );
-            })}
-          </VStack>
-        </ScrollView>
-      </VStack>
-    );
-  }, [isDark, filters.tags, insets.bottom, tabBarHeight, handleTagToggle, closeBottomSheet]);
-
-  // Category bottom sheet content - memoized with useMemo
-  const categoryContent = useMemo(() => {
-    return (
-      <VStack space="md" pb={Platform.OS === 'ios' ? insets.bottom : tabBarHeight}>
-        {/* Header */}
-        <VStack space="sm" pb="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333333' : '#E9E9E9'} px="$3">
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text
-              fontSize={16}
-              fontWeight="$bold"
-              color={isDark ? '#FFFFFF' : '#000000'}
-            >
-              Select Category
-            </Text>
-            <Pressable onPress={() => {
-              openFilterRef.current = null;
-              closeBottomSheet();
-            }}>
-              <Feather name="x" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Pressable>
-          </HStack>
-        </VStack>
-
-        {/* Category list */}
-        <ScrollView showsVerticalScrollIndicator={false} maxHeight={400}>
-          <VStack space="xs" px="$3">
-            {allCategories.length === 0 ? (
-              <Text
-                fontSize={12}
-                color={isDark ? '#999999' : '#666666'}
-                textAlign="center"
-                py="$4"
-              >
-                Loading categories...
-              </Text>
-            ) : (
-              allCategories.map((category) => {
-                const isSelected = filters.category === category.id;
-                return (
-                  <Pressable
-                    key={category.id}
-                    onPress={() => handleCategorySelect(category.id)}
-                  >
-                    <Box
-                      py="$3"
-                      bg={isSelected ? '#E2FF46' : 'transparent'}
-                      borderRadius={8}
-                    >
-                      <Text
-                        fontSize={13}
-                        fontWeight="$medium"
-                        color={isSelected ? '#000000' : isDark ? '#FFFFFF' : '#000000'}
-                      >
-                        {category.name}
-                      </Text>
-                    </Box>
-                  </Pressable>
-                );
-              })
-            )}
-          </VStack>
-        </ScrollView>
-      </VStack>
-    );
-  }, [isDark, filters.category, allCategories, insets.bottom, tabBarHeight, handleCategorySelect, closeBottomSheet]);
-
-  // Sort bottom sheet content - memoized with useMemo
-  const sortContent = useMemo(() => {
-    return (
-      <VStack space="md" pb={Platform.OS === 'ios' ? insets.bottom : tabBarHeight}>
-        {/* Header */}
-        <VStack space="sm" pb="$3" borderBottomWidth={1} borderBottomColor={isDark ? '#333333' : '#E9E9E9'} px="$3">
-          <HStack justifyContent="space-between" alignItems="center">
-            <Text
-              fontSize={16}
-              fontWeight="$bold"
-              color={isDark ? '#FFFFFF' : '#000000'}
-            >
-              Select Sort
-            </Text>
-            <Pressable onPress={() => {
-              openFilterRef.current = null;
-              closeBottomSheet();
-            }}>
-              <Feather name="x" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Pressable>
-          </HStack>
-        </VStack>
-
-        {/* Sort options */}
-        <VStack space="xs" px="$3">
-          {SORT_OPTIONS.map((sort) => {
-            const isSelected = filters.sort === sort.value;
-            return (
-              <Pressable
-                key={sort.value}
-                onPress={() => handleSortSelect(sort.value)}
-              >
-                <Box
-                  px="$3"
-                  py="$3"
-                  bg={isSelected ? '#E2FF46' : 'transparent'}
-                  borderRadius={8}
-                >
-                  <Text
-                    fontSize={13}
-                    fontWeight="$medium"
-                    color={isSelected ? '#000000' : isDark ? '#FFFFFF' : '#000000'}
-                  >
-                    {sort.label}
-                  </Text>
-                </Box>
-              </Pressable>
-            );
-          })}
-        </VStack>
-      </VStack>
-    );
-  }, [isDark, filters.sort, insets.bottom, tabBarHeight, handleSortSelect, closeBottomSheet]);
-
-  // Update content when bottom sheet is open
-  useEffect(() => {
-    if (isOpen && openFilterRef.current) {
-      let contentToUpdate: React.ReactNode | null = null;
-      
-      switch (openFilterRef.current) {
-        case 'interest':
-          contentToUpdate = interestsContent;
-          break;
-        case 'tag':
-          contentToUpdate = tagsContent;
-          break;
-        case 'category':
-          contentToUpdate = categoryContent;
-          break;
-        case 'sort':
-          contentToUpdate = sortContent;
-          break;
-      }
-      
-      if (contentToUpdate) {
-        updateContent(contentToUpdate);
-      }
+  // Clear all filters for current filter type
+  const handleClear = useCallback(() => {
+    switch (openFilterId) {
+      case 'interest':
+        onFiltersChange({ ...filters, interests: undefined });
+        break;
+      case 'tag':
+        onFiltersChange({ ...filters, tags: undefined });
+        break;
+      case 'category':
+        onFiltersChange({ ...filters, category: undefined });
+        break;
+      case 'sort':
+        onFiltersChange({ ...filters, sort: undefined });
+        break;
     }
-  }, [isOpen, interestsContent, tagsContent, categoryContent, sortContent, updateContent]);
+  }, [openFilterId, filters, onFiltersChange]);
+
+  // Apply filters (close panel)
+  const handleApply = useCallback(() => {
+    setOpenFilterId(null);
+  }, []);
+
+  // Render filter panel content
+  const renderFilterPanel = () => {
+    if (!openFilterId) return null;
+
+    const isSelected = (value: string) => {
+      switch (openFilterId) {
+        case 'interest':
+          return filters.interests?.includes(value) || false;
+        case 'tag':
+          return filters.tags?.includes(value) || false;
+        case 'category':
+          return filters.category === value;
+        case 'sort':
+          return filters.sort === value;
+        default:
+          return false;
+      }
+    };
+
+    let options: Array<{ value: string; label: string }> = [];
+    let onSelect: (value: string) => void;
+    let isMultipleSelection = false;
+
+    switch (openFilterId) {
+      case 'interest':
+        options = [...INTEREST_OPTIONS];
+        onSelect = handleInterestToggle;
+        isMultipleSelection = true;
+        break;
+      case 'tag':
+        options = [...TAG_OPTIONS];
+        onSelect = handleTagToggle;
+        isMultipleSelection = true;
+        break;
+      case 'category':
+        options = allCategories.map(cat => ({ value: cat.id, label: cat.name }));
+        onSelect = handleCategorySelect;
+        isMultipleSelection = false;
+        break;
+      case 'sort':
+        options = [...SORT_OPTIONS];
+        onSelect = (value: string) => handleSortSelect(value as 'recent' | 'top');
+        isMultipleSelection = false;
+        break;
+      default:
+        return null;
+    }
+
+    // Debug: Log options to verify they're loaded
+    console.log('[FilterBar] Rendering panel:', {
+      openFilterId,
+      optionsCount: options.length,
+      options: options.map(opt => opt.label)
+    });
+    
+    if (options.length === 0) {
+      console.log('[FilterBar] No options available for filter:', openFilterId);
+    }
+
+    // Group options into rows of 3
+    const rows: Array<Array<{ value: string; label: string }>> = [];
+    for (let i = 0; i < options.length; i += 3) {
+      rows.push(options.slice(i, i + 3));
+    }
+    // Limit to 2 rows (6 items max)
+    const displayRows = rows.slice(0, 2);
+
+    return (
+      <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
+        {/* Options Grid - 2 rows x 3 columns */}
+        {options.length === 0 ? (
+          <VStack px="$3" py="$3" alignItems="center" justifyContent="center" minHeight={60}>
+            <RNText
+              style={{
+                fontSize: 12,
+                color: isDark ? '#FFFFFF' : '#666666',
+                fontWeight: '500',
+              }}
+            >
+              Yükleniyor...
+            </RNText>
+          </VStack>
+        ) : (
+          <VStack px="$3" py="$3" space="sm" width="100%">
+            {displayRows.map((row, rowIndex) => (
+              <HStack key={rowIndex} space="sm" justifyContent="space-between" width="100%">
+                {row.map((option) => {
+                  const selected = isSelected(option.value);
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => onSelect(option.value)}
+                      flex={1}
+                      style={{ minHeight: 40 }}
+                    >
+                      <Box
+                        flex={1}
+                        bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
+                        borderWidth={selected ? 1 : 0}
+                        borderColor={selected ? '#829905' : 'transparent'}
+                        borderRadius={6}
+                        px="$1.5"
+                        py="$1.5"
+                      >
+                        <HStack 
+                          alignItems="center" 
+                          space="xs" 
+                          flex={1}
+                          justifyContent="flex-start"
+                        >
+                          {/* Checkbox */}
+                          <Box
+                            width={18}
+                            height={18}
+                            borderWidth={1.5}
+                            borderColor={selected ? '#829905' : (isDark ? '#444444' : '#CCCCCC')}
+                            borderRadius={4}
+                            bg={selected ? '#829905' : 'transparent'}
+                            justifyContent="center"
+                            alignItems="center"
+                            flexShrink={0}
+                          >
+                            {selected && (
+                              <Feather name="check" size={12} color="#FFFFFF" />
+                            )}
+                          </Box>
+                          {/* Label */}
+                          <Box flex={1} justifyContent="center">
+                            <RNText
+                              style={{
+                                color: isDark ? '#FFFFFF' : '#000000',
+                                fontSize: 12,
+                                fontWeight: selected ? '600' : '500',
+                                lineHeight: 16,
+                              }}
+                              numberOfLines={2}
+                            >
+                              {option.label}
+                            </RNText>
+                          </Box>
+                        </HStack>
+                      </Box>
+                    </Pressable>
+                  );
+                })}
+                {/* Fill empty spaces in last row if needed */}
+                {row.length < 3 && Array.from({ length: 3 - row.length }).map((_, idx) => (
+                  <Box key={`empty-${idx}`} flex={1} />
+                ))}
+              </HStack>
+            ))}
+          </VStack>
+        )}
+
+        {/* Action Buttons - Always visible at bottom of dropdown */}
+        <Box px="$3" pt="$2" pb="$3" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <HStack space="sm" justifyContent="space-between" width="100%">
+            <Pressable
+              onPress={handleClear}
+              flex={1}
+            >
+              <Box
+                py="$2"
+                bg="transparent"
+                borderWidth={1}
+                borderColor={isDark ? '#444444' : '#E9E9E9'}
+                borderRadius={6}
+                alignItems="center"
+                justifyContent="center"
+                minHeight={36}
+              >
+                <RNText
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '600',
+                    color: isDark ? '#FFFFFF' : '#666666',
+                  }}
+                >
+                  Temizle
+                </RNText>
+              </Box>
+            </Pressable>
+            <Pressable
+              onPress={handleApply}
+              flex={1}
+            >
+              <Box
+                py="$2"
+                bg="#829905"
+                borderRadius={6}
+                alignItems="center"
+                justifyContent="center"
+                minHeight={36}
+              >
+                <RNText
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  Uygula
+                </RNText>
+              </Box>
+            </Pressable>
+          </HStack>
+        </Box>
+      </VStack>
+    );
+  };
 
   // Render filter button
   const renderFilterButton = (
     filterId: string,
-    label: string,
-    icon: string,
-    content: React.ReactNode
+    label: string
   ) => {
     const count = getFilterCount(filterId);
     const isActive = count > 0;
+    const isOpen = openFilterId === filterId;
 
     const handlePress = () => {
-      openFilterRef.current = filterId;
-      openBottomSheet(content, {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableHandlePanningGesture: true,
-        enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: true,
-        snapPoints: ['50%', '75%'],
-        paddingBottom: Platform.OS === 'ios' ? insets.bottom : tabBarHeight,
-      });
+      // Toggle: If same filter is already open, close it
+      if (isOpen) {
+        setOpenFilterId(null);
+      } else {
+        setOpenFilterId(filterId);
+      }
     };
 
     return (
@@ -566,8 +536,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
           <HStack alignItems="center" space="xs">
             <Text
               color={isActive ? '#000000' : '#000000'}
-              fontSize={9}
-              fontWeight="$bold"
+              fontSize="$2xs"
+              fontWeight="$medium"
             >
               {label}
             </Text>
@@ -583,8 +553,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
               >
                 <Text
                   color={isActive ? '#FFFFFF' : '#000000'}
-                  fontSize={8}
-                  fontWeight="$bold"
+                  fontSize="$2xs"
+                  fontWeight="$medium"
                 >
                   {count}
                 </Text>
@@ -598,7 +568,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
             justifyContent="center"
           >
             <Feather
-              name="chevron-down"
+              name={isOpen ? "chevron-up" : "chevron-down"}
               size={8}
               color={isActive ? '#000000' : '#000000'}
             />
@@ -609,17 +579,55 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
   };
 
   return (
-    <Box px="$4" pb="$2" mt="$2">
-      <HStack justifyContent="space-between" alignItems="center">
-        <HStack space="sm" alignItems="center">
-          {renderFilterButton('interest', 'Interests', 'filter', interestsContent)}
-          {renderFilterButton('tag', 'Tags', 'tag', tagsContent)}
-          {renderFilterButton('category', 'Category', 'grid', categoryContent)}
+    <Box position="relative" zIndex={1000}>
+      <Box 
+        px="$4" 
+        pb="$2" 
+        mt="$2"
+        onLayout={(event) => {
+          const { height } = event.nativeEvent.layout;
+          setFilterBarHeight(height);
+        }}
+      >
+        <HStack justifyContent="space-between" alignItems="center">
+          <HStack space="sm" alignItems="center">
+            {renderFilterButton('interest', 'Interests')}
+            {renderFilterButton('tag', 'Tags')}
+            {renderFilterButton('category', 'Category')}
+          </HStack>
+          <Box>
+            {renderFilterButton('sort', 'Sort')}
+          </Box>
         </HStack>
-        <Box>
-          {renderFilterButton('sort', 'Sort', 'arrow-up-down', sortContent)}
-        </Box>
-      </HStack>
+      </Box>
+      
+      {/* Expandable Panel - Absolute positioned, overlays content below */}
+      {openFilterId && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: filterBarHeight,
+            left: 0,
+            right: 0,
+            height: panelHeight,
+            overflow: 'hidden',
+            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+            borderTopWidth: 1,
+            borderTopColor: isDark ? '#333333' : '#E9E9E9',
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? '#333333' : '#E9E9E9',
+            minHeight: openFilterId ? 50 : 0,
+            zIndex: 1000,
+            elevation: 10, // Android shadow
+            shadowColor: '#000', // iOS shadow
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: isDark ? 0.3 : 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          {renderFilterPanel()}
+        </Animated.View>
+      )}
     </Box>
   );
 };

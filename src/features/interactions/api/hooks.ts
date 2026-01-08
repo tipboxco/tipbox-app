@@ -145,7 +145,8 @@ export const usePostStatus = (postId: string) => {
       return response.data!;
     },
     enabled: !!postId,
-    staleTime: 5 * 60 * 1000, // 5 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
   });
 };
 
@@ -165,7 +166,8 @@ export const useComments = (postId: string, limit: number = 50) => {
       return response.data!;
     },
     enabled: !!postId,
-    staleTime: 2 * 60 * 1000, // 2 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
   });
 };
 
@@ -183,7 +185,8 @@ export const useBookmarks = (limit: number = 50) => {
       const response = await getBookmarks(limit);
       return response.data || [];
     },
-    staleTime: 2 * 60 * 1000, // 2 dakika
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
   });
 };
 

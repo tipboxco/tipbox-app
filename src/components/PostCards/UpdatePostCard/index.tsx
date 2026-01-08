@@ -2,7 +2,7 @@ import React, { memo, useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { config } from '@/src/components/ui/gluestack-ui-provider/config';
+// Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
@@ -124,8 +124,8 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
         px={12} 
         py={8} 
         borderWidth={1} 
-        borderTopRightRadius={config.tokens.radii['postcard'] as number} 
-        borderTopLeftRadius={config.tokens.radii['postcard'] as number} 
+        borderTopRightRadius={5} 
+        borderTopLeftRadius={5} 
         borderColor="#E9E9E9"
       >
         <HStack alignItems="center" space="xs">
@@ -149,7 +149,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
             </Text>
             <Text
               color={isDark ? '$textDark400' : '#787878'}
-              fontSize={config.tokens.fontSizes['3xs'] as number}
+              fontSize={9}
               numberOfLines={1}
               maxWidth={250}
             >
@@ -196,7 +196,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
         >
           <Feather name="info" size={12} color={'#fff'} />
           <Text
-            fontSize={config.tokens.fontSizes['3xs'] as number}
+            fontSize={9}
             fontWeight="$bold"
             ml={5}
             color={'#fff'}
@@ -220,7 +220,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
         }}>
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize={config.tokens.fontSizes['2xs'] as number}
+            fontSize={10}
             numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
           >
             {data.content}
@@ -244,7 +244,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
           >
             <Text
               color={isDark ? '$textDark50' : '#A3A3A3'}
-              fontSize={config.tokens.fontSizes['2xs'] as number}
+              fontSize={10}
               textDecorationLine="underline"
               fontWeight="$bold"
             >
@@ -279,8 +279,8 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
         borderRightWidth={1}
         borderLeftWidth={1}
         borderBottomWidth={1}
-        borderBottomRightRadius={config.tokens.radii['postcard'] as number}
-        borderBottomLeftRadius={config.tokens.radii['postcard'] as number}
+        borderBottomRightRadius={5}
+        borderBottomLeftRadius={5}
         borderColor="#E9E9E9"
         justifyContent="space-between"
       >

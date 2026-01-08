@@ -6,12 +6,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
  * PERFORMANCE FIX: Singleton pattern - QueryClient created once and reused
  * 
  * Optimized defaults:
- * - staleTime: 5 minutes (good balance for most features)
- * - gcTime: 10 minutes (reasonable cache retention)
+ * - staleTime: 2 hours (cache invalid olana kadar backend'e istek atma)
+ * - gcTime: 4 hours (cache'de ne kadar süre kalacak)
  * - refetchOnMount: false (use cache when available)
  * - refetchOnWindowFocus: false (prevent unnecessary refetches)
  * 
- * Note: Individual features can override these defaults for their specific needs:
+ * Note: Backend arkaplanda yeni veriler gönderdiğinde mutation'larda cache invalidation yapılır
+ * Individual features can override these defaults for their specific needs:
  * - Feed: 2-3 minutes (more dynamic content)
  * - Catalog: 1 hour (static/semi-static content)
  * - Profile: 5 minutes (default)
@@ -19,8 +20,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 dakika - data ne kadar süre fresh kalacak
-      gcTime: 10 * 60 * 1000, // 10 dakika - cache'de ne kadar süre kalacak (eski cacheTime)
+      staleTime: 2 * 60 * 60 * 1000, // 2 saat - data ne kadar süre fresh kalacak
+      gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de ne kadar süre kalacak (eski cacheTime)
       retry: 1, // Hata durumunda 1 kez daha dene
       refetchOnWindowFocus: false, // Window focus olduğunda otomatik refetch yapma
       refetchOnReconnect: true, // İnternet bağlantısı geldiğinde refetch yap

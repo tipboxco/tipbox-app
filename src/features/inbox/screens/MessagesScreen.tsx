@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { FlatList, RefreshControl } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import {
     Box,
     VStack,
@@ -24,10 +26,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useAppStore } from '@/src/store/appStore';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
-const MessagesScreen: React.FC = () => {
+interface MessagesScreenProps {
+    onDrawerOpen?: () => void;
+    isActiveTab?: boolean;
+}
+
+const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveTab = true }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [activeCategory, setActiveCategory] = useState<string>('1');
@@ -35,10 +43,23 @@ const MessagesScreen: React.FC = () => {
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
 
-    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages();
+    // Debounce search query for API calls
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+    
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery.trim());
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [searchQuery]);
+    
+    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages({
+      search: debouncedSearchQuery || undefined,
+    });
     const queryClient = useQueryClient();
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();
+    const { closeBottomSheet } = useGlobalBottomSheet();
     
     // Typing state: Hangi thread'de hangi kullanıcı typing yapıyor?
     // Format: { [threadId]: { userId: string, userName?: string } }
@@ -217,13 +238,17 @@ const MessagesScreen: React.FC = () => {
         };
     }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping]);
 
-    // Ekran focus olduğunda mesajları refetch et (MessageDetail'den geri dönüldüğünde)
+    // PERFORMANCE FIX: useFocusEffect kaldırıldı
+    // Tab'a geçildiğinde otomatik refetch yapılmıyor
+    // Mesajlar socket event'leri ile otomatik güncelleniyor (handleNewMessage, handleThreadRead)
+    // Kullanıcı manuel olarak pull to refresh yapabilir
+    
+    // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
     useFocusEffect(
         useCallback(() => {
-            console.log('[MessagesScreen] 🔄 Screen focused, refetching messages...');
-            // Query'yi refetch et (thread okundu durumu güncellenmiş olabilir)
-            queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
-        }, [queryClient])
+            // Screen focus olduğunda bottom sheet'i kapat
+            closeBottomSheet();
+        }, [closeBottomSheet])
     );
     
     const handleMessagePress = (messageId: string) => {
@@ -291,6 +316,64 @@ const MessagesScreen: React.FC = () => {
     const getFilteredMessages = () => {
         let filtered: InboxMessage[] = messages || [];
 
+        // Aynı recipientUserId'ye sahip thread'leri birleştir
+        // Aynı kullanıcıdan gelen mesajlar tek bir thread'de gösterilmeli
+        const mergedMessages = new Map<string, InboxMessage>();
+        
+        filtered.forEach((message) => {
+            const recipientUserId = message.recipientUserId;
+            
+            if (!recipientUserId) {
+                // recipientUserId yoksa direkt ekle (birleştirme yapılamaz)
+                mergedMessages.set(message.id, message);
+                return;
+            }
+            
+            // Aynı recipientUserId'ye sahip thread var mı kontrol et
+            const existingMessage = Array.from(mergedMessages.values()).find(
+                (msg) => msg.recipientUserId === recipientUserId
+            );
+            
+            if (existingMessage) {
+                // Mevcut thread'i güncelle:
+                // - En son mesajı ve timestamp'i kullan
+                // - Unread count'ları topla
+                // - En yeni thread ID'sini kullan (timestamp'e göre)
+                const existingTimestamp = new Date(existingMessage.timestamp).getTime();
+                const newTimestamp = new Date(message.timestamp).getTime();
+                
+                if (newTimestamp > existingTimestamp) {
+                    // Yeni mesaj daha yeni, mevcut thread'i güncelle
+                    mergedMessages.delete(existingMessage.id);
+                    mergedMessages.set(message.id, {
+                        ...message,
+                        // Unread count'ları topla
+                        unreadCount: (existingMessage.unreadCount || 0) + (message.unreadCount || 0),
+                        // En az bir thread okunmamışsa isUnread true
+                        isUnread: existingMessage.isUnread || message.isUnread,
+                    });
+                } else {
+                    // Mevcut thread daha yeni, sadece unread count'u güncelle
+                    mergedMessages.set(existingMessage.id, {
+                        ...existingMessage,
+                        unreadCount: (existingMessage.unreadCount || 0) + (message.unreadCount || 0),
+                        isUnread: existingMessage.isUnread || message.isUnread,
+                    });
+                }
+            } else {
+                // Yeni thread, direkt ekle
+                mergedMessages.set(message.id, message);
+            }
+        });
+        
+        // Map'ten array'e çevir ve timestamp'e göre sırala (en yeni başta)
+        filtered = Array.from(mergedMessages.values()).sort((a, b) => {
+            const timestampA = new Date(a.timestamp).getTime();
+            const timestampB = new Date(b.timestamp).getTime();
+            return timestampB - timestampA; // En yeni başta
+        });
+
+        // Search query varsa filtrele
         if (searchQuery) {
             filtered = filtered.filter(message =>
                 message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -301,8 +384,43 @@ const MessagesScreen: React.FC = () => {
         return filtered;
     };
 
+    // Drawer açma gesture'ı - sadece sol kenardan başlayan yatay gesture'lar için
+    const drawerGesture = useMemo(
+        () =>
+            Gesture.Pan()
+                .activeOffsetX([10, Number.MAX_SAFE_INTEGER]) // Sadece sağa doğru gesture'ları yakala
+                .failOffsetX([-10, -1]) // Sola doğru gesture'ları ignore et (PagerView swipe için)
+                .failOffsetY([-15, 15]) // Dikey gesture'ları ignore et (FlatList scroll için)
+                .onEnd((event) => {
+                    'worklet';
+                    // Sağa doğru yeterince çekildiyse veya hızlı swipe yapıldıysa drawer'ı aç
+                    // Threshold'u düşürdük (15px) - daha kolay açılması için
+                    if (event.translationX > 15 || event.velocityX > 150) {
+                        if (onDrawerOpen && isActiveTab) {
+                            runOnJS(onDrawerOpen)();
+                        }
+                    }
+                })
+                .enabled(isActiveTab && !!onDrawerOpen), // Sadece aktif tab'da ve callback varsa aktif
+        [isActiveTab, onDrawerOpen]
+    );
+
     return (
         <VStack flex={1} space="md">
+            {/* Sol kenardan drawer açma gesture alanı - PagerView swipe'ını engellememek için küçük alan */}
+            {isActiveTab && onDrawerOpen && (
+                <GestureDetector gesture={drawerGesture}>
+                    <Box
+                        position="absolute"
+                        left={0}
+                        top={0}
+                        bottom={0}
+                        width={40}
+                        zIndex={10}
+                        pointerEvents="box-only"
+                    />
+                </GestureDetector>
+            )}
             {/* Search + Filters */}
             <VStack px="$4" space="md">
                 {/* Search Bar */}

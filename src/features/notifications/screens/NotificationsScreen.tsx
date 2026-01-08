@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Dimensions, FlatList, RefreshControl } from 'react-native';
+import { Dimensions, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -161,7 +162,7 @@ const NotificationCard: React.FC<{
                         <HStack alignItems="center" space="xs">
                             <Text
                                 color="#8C8C8C"
-                                fontSize={9}
+                                fontSize="$xs"
                                 fontWeight="$medium"
                             >
                                 {formatRelativeTime(notification.createdAt)}
@@ -193,7 +194,7 @@ const NotificationCard: React.FC<{
                         >
                             <Text
                                 color="#000000"
-                                fontSize={9}
+                                fontSize="$xs"
                                 fontWeight="$bold"
                             >
                                 Görüntüle
@@ -228,7 +229,7 @@ const FilterButton: React.FC<{
             >
                 <Text
                     color="#000000"
-                    fontSize={9}
+                    fontSize="$xs"
                     fontWeight="$semibold"
                     textAlign="center"
                 >
@@ -247,7 +248,16 @@ export const NotificationsScreen: React.FC = () => {
     const { isAuthenticated } = useAppStore();
     const [filters, setFilters] = useState<NotificationFilter[]>(notification_filters);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+
+    // Debounce search query for API calls
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery.trim());
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // API hooks
     const activeFilter = filters.find(f => f.isActive);
@@ -256,7 +266,8 @@ export const NotificationsScreen: React.FC = () => {
         limit: 50,
         offset: 0,
         unreadOnly: unreadOnly,
-    });
+        search: debouncedSearchQuery || undefined,
+    }, isAuthenticated); // Sadece authenticated olduğunda query çalışsın
 
     const notifications = notificationsResponse?.data || [];
     
@@ -482,7 +493,7 @@ export const NotificationsScreen: React.FC = () => {
                             placeholder="Bildirimlerde Ara"
                             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                             color={isDark ? '#000' : '#000'}
-                            fontSize={9}
+                            fontSize="$xs"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
@@ -524,7 +535,7 @@ export const NotificationsScreen: React.FC = () => {
                     </Text>
                 </Box>
             ) : (
-                <FlatList
+                <FlashList
                     data={filteredNotifications}
                     renderItem={renderNotificationItem}
                     keyExtractor={keyExtractor}
@@ -541,12 +552,8 @@ export const NotificationsScreen: React.FC = () => {
                             tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
                         />
                     }
-                    // Performance optimizations
-                    removeClippedSubviews={true}
-                    maxToRenderPerBatch={10}
-                    updateCellsBatchingPeriod={50}
-                    initialNumToRender={10}
-                    windowSize={10}
+                    // FlashList automatically handles removeClippedSubviews, maxToRenderPerBatch, initialNumToRender, windowSize
+                    // These props are not needed for FlashList
                     style={{ flex: 1 }}
                 />
             )}
