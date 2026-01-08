@@ -1,92 +1,61 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { TabNavigator } from './TabNavigator';
-import { CustomDrawerContent } from './CustomDrawerContent';
-import { useColorMode } from '@/src/hooks/useColorMode';
-import type { MainStackParamList } from './types/main.types';
+import { DrawerContent } from '@/src/components/CustomDrawer/DrawerContent';
+import type { DrawerParamList } from './types/drawer.types';
 
-const Drawer = createDrawerNavigator<{ Main: { screen: keyof MainStackParamList } }>();
+const Drawer = createDrawerNavigator<DrawerParamList>();
 
-export const DrawerNavigator = () => {
-    const { colorMode } = useColorMode();
-    const isDark = colorMode === 'dark';
-  
-    return (
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={({ route, navigation }) => {
-          // ARCHITECTURE FIX: Dynamic drawer gesture control based on nested stack depth
-          // Drawer gesture should be disabled when:
-          // 1. Tab stack içinde nested screen'lerde (index > 0)
-          // 2. Root stack'te detail screen'lerde (Post, Profile, MessageDetail, etc.)
-          const state = navigation.getState();
-          const currentRoute = state?.routes[state.index];
-          const mainState = currentRoute?.state;
-          
-          // TabNavigator içindeyse, tab stack'in state'ini kontrol et
-          let isNestedInTabStack = false;
-          if (mainState && 'routes' in mainState && mainState.routes) {
-            const tabRoute = mainState.routes[mainState.index || 0];
-            const tabStackState = tabRoute?.state;
-            // Tab stack içinde nested screen'de miyiz? (index > 0)
-            if (tabStackState && 'index' in tabStackState && tabStackState.index !== undefined) {
-              isNestedInTabStack = tabStackState.index > 0;
-            }
-          }
-          
-          return {
-            headerShown: false,
-            drawerType: 'slide',
-            drawerStyle: {
-              width: 301,
-              backgroundColor: isDark ? '#000000' : '#FFFFFF',
-              padding: 0,
-              margin: 0,
-              borderRightWidth: 0,
-              borderTopRightRadius: 0,
-              borderBottomRightRadius: 0,
-              elevation: 0,
-              shadowColor: 'transparent',
-              overflow: 'hidden',
-            },
-            drawerHideStatusBarOnOpen: false,
-            drawerContentStyle: {
-              paddingTop: 0,
-              paddingBottom: 0,
-              paddingLeft: 0,
-              paddingRight: 0,
-              paddingHorizontal: 0,
-              paddingVertical: 0,
-              margin: 0,
-              marginHorizontal: 0,
-              marginVertical: 0,
-              width: '100%',
-              flex: 1,
-            },
-            drawerActiveTintColor: '#829905',
-            drawerInactiveTintColor: isDark ? '#FFFFFF' : '#000000',
-            // ARCHITECTURE FIX: Disable drawer gesture only on nested screens within tab stacks
-            // This prevents drawer gesture from hijacking back navigation intent
-            // Tab stack'lerin root screen'lerinde drawer gesture enable olmalı
-            swipeEnabled: !isNestedInTabStack,
-            swipeEdgeWidth: 50,
-          };
+/**
+ * AppDrawerNavigator
+ * 
+ * CRITICAL: Drawer, Tab'lerin DIŞINDA ve ÜSTÜNDE olmalı
+ * 
+ * Twitter/X Pattern:
+ * - Drawer → Tab (DOĞRU)
+ * - Tab → Drawer (YANLIŞ - gesture ownership kaybı)
+ * 
+ * Gesture ownership drawer'da kalır
+ * swipeEdgeWidth ile edge swipe kontrolü
+ * 
+ * PERFORMANCE FIX: DrawerContent memoized, drawerType optimized
+ */
+export const AppDrawerNavigator = () => {
+  // PERFORMANCE FIX: Memoize drawerContent render - gereksiz re-render'ları önle
+  const renderDrawerContent = useCallback(
+    (props: any) => <DrawerContent {...props} />,
+    []
+  );
+
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: false,
+        drawerType: 'front', // CRITICAL: 'front' drawer'ı ekranın üzerinde overlay olarak açar, ekranı kaydırmaz
+        drawerPosition: 'left',
+        overlayColor: 'rgba(0,0,0,0.5)',
+        swipeEnabled: true,
+        swipeEdgeWidth: 50, // CRITICAL: Edge swipe genişliği (default: 32)
+        drawerStyle: {
+          width: '75%', // Optimal drawer width
+        },
+        // CRITICAL: Production-grade animation config - Twitter/X hızında
+        drawerHideStatusBarOnOpen: false, // Status bar'ı gizleme (titreme önleme)
+        keyboardDismissMode: 'on-drag', // Keyboard'u drawer açılırken dismiss et (UX iyileştirmesi)
+        // React Navigation DrawerNavigator'ın kendi animasyonu kullanılır
+        // Native driver ile optimize edilmiş, hızlı ve smooth
+        // drawerType: 'front' → Drawer ekranın üzerinde overlay olarak açılır, ekran yerinde kalır
+      }}
+      drawerContent={renderDrawerContent}
+    >
+      <Drawer.Screen
+        name="MainTabs"
+        component={TabNavigator}
+        options={{
+          swipeEnabled: true,
         }}
-      >
-        <Drawer.Screen
-          name="Main"
-          component={TabNavigator}
-          options={{
-            drawerItemStyle: { display: 'none' },
-  
-            // 🔑 v7: Drawer.Screen düzeyinde contentStyle kullan
-            // (v6'daki sceneContainerStyle'ın yerini tutar)
-            // TS destekli:
-            // @ts-expect-error bazı tip sürümlerinde görünmeyebilir ama v7'de çalışır
-            contentStyle: { backgroundColor: 'transparent' },
-          }}
-        />
-      </Drawer.Navigator>
-    );
-  };
-  
+      />
+    </Drawer.Navigator>
+  );
+};
+

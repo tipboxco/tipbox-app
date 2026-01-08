@@ -3,7 +3,7 @@ import { Box, HStack, Text, Pressable, VStack } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { useDrawerStore } from '@/src/store/drawerStore';
 
 interface RightButtonProps {
   text: string;
@@ -67,7 +67,23 @@ const HeaderComponent = ({
   
   // Navigation'ı her zaman çağır - NavigationContainer dışındaysa hata fırlatır
   // Bu durumda Header component'i NavigationContainer içinde kullanılmalı
-  const navigation = useNavigation<DrawerNavigationProp<any>>();
+  const navigation = useNavigation<any>();
+  
+  // Drawer store'dan drawer actions al
+  const openDrawer = useDrawerStore((state) => state.openDrawer);
+  
+  // CRITICAL: React Navigation drawer'ı açmak için navigation.openDrawer() kullan
+  const handleOpenDrawer = () => {
+    // React Navigation drawer'ı aç
+    if (navigation.getParent) {
+      const drawerNavigation = navigation.getParent();
+      if (drawerNavigation && 'openDrawer' in drawerNavigation) {
+        (drawerNavigation as any).openDrawer();
+      }
+    }
+    // Drawer store'u da güncelle (sync için)
+    openDrawer();
+  };
 
   // Sol kısım için render fonksiyonu
   const renderLeftAction = () => {
@@ -90,10 +106,10 @@ const HeaderComponent = ({
           break;
         case 'menu':
           iconName = 'menu';
-          // Menu için drawer aç
+          // Menu için drawer aç (React Navigation drawer)
           if (!onPress) {
             return (
-              <Pressable onPress={() => navigation.openDrawer()}>
+              <Pressable onPress={handleOpenDrawer}>
                 <Feather
                   name={iconName as any}
                   size={22}
@@ -147,7 +163,7 @@ const HeaderComponent = ({
     if (onMenuPress) {
       return (
         <Pressable onPress={() => {
-          navigation.openDrawer();
+          openDrawer();
           onMenuPress();
         }}>
           <Feather

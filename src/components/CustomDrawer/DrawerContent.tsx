@@ -6,18 +6,15 @@ import {
   Pressable,
   HStack,
   Image,
+  ScrollView,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
-import { 
-  DrawerContentComponentProps, 
-  useDrawerStatus,
-  DrawerContentScrollView 
-} from '@react-navigation/drawer';
 import { TouchableOpacity } from 'react-native';
+import { navigationService } from '@/src/services/NavigationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
+import { useDrawerStore } from '@/src/store/drawerStore';
 import { useShallow } from 'zustand/react/shallow';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/src/features/profile/api/profileApi';
 import { profileKeys } from '@/src/features/profile/api/hooks';
 import { toImageSource, useBottomOffset } from '@/src/utils';
+import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 
 interface MenuItem {
   id: string;
@@ -45,10 +43,72 @@ const styles = StyleSheet.create({
   },
 });
 
-const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
+/**
+ * Custom Drawer Content Component
+ * 
+ * React Navigation DrawerNavigator ile uyumlu
+ * Drawer state hem navigation hem drawer store'dan okunur (sync)
+ */
+const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) => {
   const { colorMode } = useColorMode();
-  const navigation = useNavigation<any>();
   const isDark = colorMode === 'dark';
+  
+  // Drawer store'dan state oku (sync için)
+  const { isOpen, closeDrawer, openDrawer } = useDrawerStore();
+  
+  // CRITICAL: React Navigation drawer state ile drawer store'u senkronize et
+  // PERFORMANCE FIX: Debounce sync + ref check - titrelemeyi önlemek için
+  // CRITICAL: Sadece drawer açık/kapalı durumunda sync yap, swipe sırasında değil (JS thread'de re-render önleme)
+  const prevStatusRef = useRef<string>('closed');
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    const drawerStatus = props.state?.status || 'closed';
+    const isDrawerOpen = drawerStatus === 'open';
+    
+    // CRITICAL: Status değişmediyse sync yapma (titreleme önleme)
+    if (drawerStatus === prevStatusRef.current) {
+      return; // Status değişmedi, sync yapma
+    }
+    
+    // CRITICAL: Sync'i debounce et - swipe sırasında her adımda sync yapma
+    // PERFORMANCE FIX: Debounce süresini artır - animasyon sırasında sync yapma
+    // Sadece drawer tamamen açık veya kapalı olduğunda sync yap
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    syncTimeoutRef.current = setTimeout(() => {
+      prevStatusRef.current = drawerStatus;
+      
+      // Sync sadece gerçek değişikliklerde yapılmalı (titrelemeyi önlemek için)
+      if (isDrawerOpen === isOpen) {
+        return; // Zaten senkronize
+      }
+      
+      // Navigation drawer açıldığında store'u güncelle
+      if (isDrawerOpen && !isOpen) {
+        openDrawer();
+      } else if (!isDrawerOpen && isOpen) {
+        closeDrawer();
+      }
+    }, 300); // 300ms debounce - animasyon bitene kadar sync yapma (100ms'den 300ms'ye çıkarıldı)
+    
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, [props.state?.status, isOpen, openDrawer, closeDrawer]);
+  
+  // Drawer kapatma fonksiyonu - hem navigation hem store'u güncelle
+  const handleCloseDrawer = useCallback(() => {
+    props.navigation.closeDrawer();
+    closeDrawer();
+  }, [props.navigation, closeDrawer]);
+  
+  // CRITICAL: Tüm closeDrawer() çağrılarını handleCloseDrawer() ile değiştir
+  // Bu sayede hem React Navigation hem drawer store senkronize kalır
   
   // PERFORMANCE FIX: Zustand selector'larını shallow ile memoize et
   const { logout, user, updateUser } = useAppStore(
@@ -62,38 +122,26 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
   const insets = useSafeAreaInsets();
   const bottomPadding = useBottomOffset({ extraPadding: 16 });
   
-  // PERFORMANCE FIX: Drawer durumunu ref ile sakla - handler'ların dependency'sinden çıkar
-  // useDrawerStatus her frame'de değişebilir, bu yüzden ref ile saklayıp handler'larda runtime'da kontrol ediyoruz
-  const drawerStatus = useDrawerStatus();
-  const drawerStatusRef = useRef(drawerStatus);
-  
   // PERFORMANCE FIX: Drawer açılırken titreme/kasma önlemek için optimized render
   // Drawer kapalıyken ağır query'leri ve ScrollView render'ını optimize et
   // Content her zaman render edilir ama ağır işlemler drawer açıldığında yapılır
   const [isDrawerReady, setIsDrawerReady] = useState(false);
   
   // Drawer açıldığında ağır işlemleri başlat, kapanırken durdur (animasyon optimize)
+  // PERFORMANCE FIX: Drawer animasyonu bitene kadar ağır işlemleri ertele (kasma önleme)
   useEffect(() => {
-    if (drawerStatus === 'opening' || drawerStatus === 'open') {
-      // Drawer açılırken ağır işlemleri başlat (kısa delay ile animasyon başladıktan sonra)
+    if (isOpen) {
+      // CRITICAL: Animasyon bitene kadar bekle (150ms spring animasyon süresi)
+      // Bu sayede drawer açılırken kasma olmaz
       const timer = setTimeout(() => {
         setIsDrawerReady(true);
-      }, 100); // 100ms delay - drawer animasyonu başladıktan sonra ağır işlemler
+      }, 200); // 200ms delay - animasyon bitene kadar ağır işlemleri ertele
       return () => clearTimeout(timer);
-    } else if (drawerStatus === 'closing') {
-      // PERFORMANCE FIX: Drawer kapanırken ağır işlemleri durdur - titreme/kasma önleme
-      // Query'yi hemen disable et (animasyon tamamlanmadan önce)
-      setIsDrawerReady(false);
-    } else if (drawerStatus === 'closed') {
+    } else {
       // Drawer kapalıyken flag'i resetle (bir sonraki açılışta tekrar başlat)
       setIsDrawerReady(false);
     }
-  }, [drawerStatus]);
-  
-  // Drawer status'ü ref'te güncelle (her render'da)
-  useEffect(() => {
-    drawerStatusRef.current = drawerStatus;
-  }, [drawerStatus]);
+  }, [isOpen]);
   
   // Store'daki user değişikliğini takip et (sonsuz döngüyü önlemek için)
   const previousUserRef = useRef<{ id?: string; fullName?: string; avatar?: string } | null>(null);
@@ -273,92 +321,80 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
   );
 
   // PERFORMANCE FIX: Navigation handler'larını useCallback ile memoize et
-  // drawerStatusRef kullanarak handler'ları sabit tutuyoruz (dependency'den çıkardık)
+  // Drawer store kullanarak handler'ları sabit tutuyoruz
+  // CRITICAL: NavigationService kullan - NavigationContainer dışında olduğumuz için useNavigation() çalışmaz
   const handleNavigateToProfile = useCallback(() => {
-    // Drawer durumunu runtime'da ref'ten kontrol et
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('Profile');
-  }, [props.navigation, navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('Profile', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   const handleNavigateToWallet = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('Wallet');
-  }, [props.navigation, navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('Wallet', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   const handleNavigateToBookmarks = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('Bookmarks');
-  }, [props.navigation, navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('Bookmarks', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   const handleNavigateToMarketplace = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('Marketplace');
-  }, [props.navigation, navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('Marketplace', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   const handleNavigateToSettings = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('Settings');
-  }, [props.navigation, navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('Settings', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   const handleNavigateToMoreSchoise = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('MoreSchoise');
-  }, [props.navigation, navigation]);
-
-  const handleCloseDrawer = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-  }, [props.navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('MoreSchoise', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   // PERFORMANCE FIX: Profile section handler'ını memoize et
   const handleProfilePress = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('Profile');
-  }, [props.navigation, navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('Profile', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   // PERFORMANCE FIX: Stats section handler'ını memoize et
   const handleStatsPress = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-    navigation.navigate('Profile');
-  }, [props.navigation, navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+    navigationService.navigate('Profile', undefined);
+  }, [isOpen, handleCloseDrawer]);
 
   // PERFORMANCE FIX: Bottom menu handler'larını memoize et
   const handleBottomMenuPress = useCallback(() => {
-    if (drawerStatusRef.current !== 'open') return;
-    props.navigation.closeDrawer();
-  }, [props.navigation]);
+    if (!isOpen) return;
+    handleCloseDrawer();
+  }, [isOpen, handleCloseDrawer]);
 
   const handleLogout = useCallback(async () => {
-    if (drawerStatusRef.current !== 'open') return;
+    if (!isOpen) return;
     
     // Drawer'ı hemen kapat
-    props.navigation.closeDrawer();
+    handleCloseDrawer();
     
     // Navigation'ı hemen reset et (kullanıcı anında çıkış görsün)
-    navigation.reset({
-      index: 0,
-      routes: [{ 
-        name: 'Auth',
-        state: {
-          routes: [{ name: 'Welcome' }]
-        }
-      }],
-    });
+    // CRITICAL: NavigationService kullan - NavigationContainer dışında olduğumuz için useNavigation() çalışmaz
+    navigationService.reset('Auth', undefined);
     
     // Logout işlemini arka planda yap (token temizleme vs.)
     // State zaten logout() içinde güncelleniyor, bu yüzden navigation reset yeterli
     logout().catch((error) => {
       console.error('❌ Logout hatası (arka plan):', error);
     });
-  }, [logout, props.navigation, navigation]);
+  }, [isOpen, handleCloseDrawer, logout]);
 
   // PERFORMANCE FIX: MENU_ITEMS array'ini useMemo ile memoize et
   // Handler'lar useCallback ile memoize edildi, bu yüzden array sadece bir kez oluşturulur
@@ -417,11 +453,8 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
 
   return (
     <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'} w="100%" m={0} p={0}>
-      {/* PERFORMANCE FIX: DrawerContentScrollView kullan - React Navigation dokümantasyonuna göre
-          https://reactnavigation.org/docs/drawer-navigator#installation
-          DrawerContentScrollView notches ve safe area'yı otomatik handle eder */}
-      <DrawerContentScrollView
-        {...props}
+      {/* ScrollView kullan - DrawerContentScrollView yerine */}
+      <ScrollView
         contentContainerStyle={{ 
           flexGrow: 1,
           paddingTop: 0,
@@ -706,21 +739,26 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
           </Pressable>
         </VStack>
         </Box>
-      </DrawerContentScrollView>
+      </ScrollView>
     </Box>
   );
 };
 
 // PERFORMANCE FIX: React.memo ile sarmala - drawer açılırken gereksiz re-render'ları önle
-// Drawer status değişikliklerinde sadece gerekli render'lar yapılır
-export const CustomDrawerContent = React.memo(CustomDrawerContentComponent, (prevProps, nextProps) => {
-  // Custom comparison - drawer props değişmediyse re-render yapma
-  // Drawer navigation props genellikle stable'dır, bu yüzden çoğu durumda re-render yok
-  return (
-    prevProps.state === nextProps.state &&
-    prevProps.navigation === nextProps.navigation &&
-    prevProps.descriptors === nextProps.descriptors
-  );
+// CRITICAL: Drawer swipe sırasında re-render'ı önlemek için sadece status değişikliklerinde re-render
+export const DrawerContent = React.memo(DrawerContentComponent, (prevProps, nextProps) => {
+  // Custom comparison - sadece gerçek değişikliklerde re-render
+  // CRITICAL: Sadece drawer status değiştiğinde re-render (swipe sırasında değil)
+  const prevStatus = prevProps.state?.status || 'closed';
+  const nextStatus = nextProps.state?.status || 'closed';
+  
+  // Status değişmediyse re-render yapma (swipe sırasında status aynı kalır)
+  if (prevStatus === nextStatus) {
+    return true; // Re-render yapma
+  }
+  
+  // Status değiştiyse re-render yap (drawer açıldı/kapandı)
+  return false; // Re-render yap
 });
-CustomDrawerContent.displayName = 'CustomDrawerContent';
+DrawerContent.displayName = 'DrawerContent';
 
