@@ -4,6 +4,7 @@ import { NavigationProvider, useNavigationRef } from '@/src/providers/Navigation
 import { RootNavigator } from './stacks/RootNavigator';
 import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
+// Drawer artık React Navigation DrawerNavigator içinde
 
 /**
  * Navigation Component (Inner)
@@ -107,28 +108,30 @@ const NavigationInner = () => {
   // Navigation ready is handled via onReady callback below
 
   return (
-    <NavigationContainer
-      ref={navigationRef}
-      onReady={() => {
-        console.log('[Navigation] ✅ NavigationContainer is ready');
-        // ARCHITECTURE FIX: Event-driven navigation ready handling
-        // Navigation ready olduğunda pending navigation queue'yu consume et
-        checkAndConsumePendingNavigation();
-        // NavigationService queue'sunu da consume et
-        navigationService.consumePendingNavigationQueue();
-      }}
-      onStateChange={(state) => {
-        // ARCHITECTURE FIX: Navigation state change event listener
-        // Navigation state değiştiğinde pending navigation'ı tekrar kontrol et
-        // (race condition önlemek için)
-        if (navigationRef.current?.isReady()) {
+    <>
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => {
+          console.log('[Navigation] ✅ NavigationContainer is ready');
+          // ARCHITECTURE FIX: Event-driven navigation ready handling
+          // Navigation ready olduğunda pending navigation queue'yu consume et
           checkAndConsumePendingNavigation();
+          // NavigationService queue'sunu da consume et
           navigationService.consumePendingNavigationQueue();
-        }
-      }}
-    >
-      <RootNavigator />
-    </NavigationContainer>
+        }}
+        onStateChange={(state) => {
+          // ARCHITECTURE FIX: Navigation state change event listener
+          // Navigation state değiştiğinde pending navigation'ı tekrar kontrol et
+          // (race condition önlemek için)
+          if (navigationRef.current?.isReady()) {
+            checkAndConsumePendingNavigation();
+            navigationService.consumePendingNavigationQueue();
+          }
+        }}
+      >
+        <RootNavigator />
+      </NavigationContainer>
+    </>
   );
 };
 

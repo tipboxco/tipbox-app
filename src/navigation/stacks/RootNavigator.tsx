@@ -2,7 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuthStatus } from '@/src/hooks/useAuthStatus';
 import { AuthNavigator } from '@/src/features/auth/navigation';
-import { DrawerNavigator } from '../DrawerNavigator';
+import { AppDrawerNavigator } from '../DrawerNavigator';
 import { SettingsNavigator } from '@/src/features/settings/navigation';
 import { MoreSchoiseNavigator } from '@/src/features/moreSchoise/navigation';
 import { PostNavigator } from '@/src/features/post/navigation';
@@ -25,28 +25,18 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
  * 
  * Uygulamanın en üst seviye navigator'ı.
  * 
- * Optimizasyonlar:
- * - useAuthStatus: Memoized selector ile re-render minimize edildi
- * - RootNavigator en az render edilen component olmalı
+ * CRITICAL ARCHITECTURE FIX: Drawer → Tab hierarchy
+ * 
+ * Twitter/X Pattern:
+ * - Drawer, Tab'lerin DIŞINDA ve ÜSTÜNDE olmalı
+ * - Gesture ownership drawer'da kalır
+ * - swipeEdgeWidth ile edge swipe kontrolü
  * 
  * Yapı:
  * - Auth: Authentication flow (if !isAuthenticated)
- * - MainDrawer: Ana uygulama (TabNavigator + Drawer) (if isAuthenticated)
- * - Settings: Ayarlar
- * - MoreSchoise: MoreSchoise ekranı
- * - GlobalStackGroup: Deep-dive screens (Post, Profile, Wallet, vb.)
- * 
- * GlobalStackGroup:
- * - Hangi tab açık olursa olsun Root'tan açılır
- * - Tek instance (memory efficient)
- * - Tab state'inden bağımsız
- * 
- * Not: MessageDetail ve SupportMessageDetail şu an tek screen olarak root'ta.
- * İleride InboxNavigator pattern'ine çekilebilir:
- * InboxNavigator
- *   ├── InboxList
- *   ├── MessageDetail
- *   └── SupportMessageDetail
+ * - App: AppDrawerNavigator → MainTabsNavigator (if isAuthenticated)
+ * - Modal Screens: Settings, MoreSchoise (presentation: 'modal')
+ * - Overlay Screens: Post, Profile, Wallet, Bookmarks, Marketplace, MessageDetail (presentation: 'card')
  */
 export const RootNavigator = () => {
   // Memoized selector ile re-render minimize et
@@ -63,94 +53,94 @@ export const RootNavigator = () => {
         <RootStack.Screen name="Auth" component={AuthNavigator} />
       ) : (
         <>
-          {/* Main Application - TabNavigator + Drawer */}
-          <RootStack.Screen name="MainDrawer" component={DrawerNavigator} />
+          {/* Main Application - AppDrawerNavigator (Drawer → Tab hierarchy) */}
+          <RootStack.Screen name="App" component={AppDrawerNavigator} />
           
-          {/* Settings & MoreSchoise */}
-          <RootStack.Screen
-            name="Settings"
-            component={SettingsNavigator}
-            options={{
-              presentation: 'card',
-              animation: 'slide_from_right',
-              gestureEnabled: true,
-            }}
-          />
-          <RootStack.Screen
-            name="MoreSchoise"
-            component={MoreSchoiseNavigator}
-            options={{
-              presentation: 'card',
-              animation: 'slide_from_right',
-              gestureEnabled: true,
-            }}
-          />
+          {/* Modal Screens - UI flow */}
+          <RootStack.Group screenOptions={{ presentation: 'modal' }}>
+            <RootStack.Screen
+              name="Settings"
+              component={SettingsNavigator}
+              options={{
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+            <RootStack.Screen
+              name="MoreSchoise"
+              component={MoreSchoiseNavigator}
+              options={{
+                animation: 'slide_from_right',
+                gestureEnabled: true,
+              }}
+            />
+          </RootStack.Group>
           
-          {/* GlobalStackGroup - Deep-Dive Screens */}
+          {/* Overlay Screens - Context-free content drill-down */}
           {/* Bu ekranlar hangi tab açık olursa olsun Root'tan açılır */}
           {/* PERFORMANCE FIX: Lazy loaded navigators reduce initial bundle size */}
-          <RootStack.Group>
+          <RootStack.Group screenOptions={{ presentation: 'card' }}>
             <RootStack.Screen
               name="Post"
               component={PostNavigator}
               options={{
-                presentation: 'card',
                 animation: 'slide_from_right',
                 gestureEnabled: true, // Android back behavior için
+                headerShown: false, // Header'ı koru
               }}
             />
             <RootStack.Screen
               name="Profile"
               component={ProfileNavigator}
               options={{
-                presentation: 'card',
                 animation: 'slide_from_right',
                 gestureEnabled: true, // Android back behavior için
+                headerShown: false, // Header'ı koru
               }}
             />
             <RootStack.Screen
               name="Wallet"
               component={WalletNavigator}
               options={{
-                presentation: 'modal',
                 animation: 'slide_from_bottom',
                 gestureEnabled: true, // Android back behavior için
+                headerShown: false, // Header'ı koru
               }}
             />
             <RootStack.Screen
               name="Bookmarks"
               component={BookmarksNavigator}
               options={{
-                presentation: 'card',
                 animation: 'slide_from_right',
                 gestureEnabled: true, // Android back behavior için
+                headerShown: false, // Header'ı koru
               }}
             />
             <RootStack.Screen
               name="Marketplace"
               component={MarketplaceNavigator}
               options={{
-                presentation: 'card',
                 animation: 'slide_from_right',
                 gestureEnabled: true, // Android back behavior için
+                headerShown: false, // Header'ı koru
               }}
             />
             <RootStack.Screen
               name="MessageDetail"
               component={MessageDetailScreen}
               options={{
-                presentation: 'card',
                 animation: 'slide_from_right',
                 gestureEnabled: true, // Android back behavior için
+                headerShown: false, // Header'ı koru
               }}
             />
             <RootStack.Screen
               name="SupportMessageDetail"
               component={SupportMessageDetailScreen}
               options={{
-                presentation: 'card',
                 animation: 'slide_from_right',
                 gestureEnabled: true, // Android back behavior için
+                headerShown: false, // Header'ı koru
               }}
             />
           </RootStack.Group>

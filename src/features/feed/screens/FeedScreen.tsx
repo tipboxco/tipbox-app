@@ -27,6 +27,7 @@ import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
 import { toImageSource, useBottomOffset } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
+import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
@@ -74,6 +75,27 @@ const FeedScreenInner = React.memo(() => {
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // PERFORMANCE FIX: Drawer durumunu kontrol et - drawer açılırken/kapanırken FlatList scroll'unu önle
+  // CRITICAL: isDragging state'ini kullan - swipe sırasında re-render önleme (JS thread'de kasma önleme)
+  const isDrawerOpen = useDrawerStore((state) => state.isOpen);
+  const isDragging = useDrawerStore((state) => state.isDragging);
+  const [isScrollEnabled, setIsScrollEnabled] = useState(true);
+  
+  // Drawer açıkken veya swipe sırasında scroll'u disable et
+  // CRITICAL: isDragging kontrolü ile swipe sırasında re-render önleme
+  useEffect(() => {
+    if (isDrawerOpen || isDragging) {
+      setIsScrollEnabled(false);
+    } else {
+      // Drawer kapandıktan sonra kısa bir delay ile scroll'u enable et
+      // Bu, drawer kapanma animasyonunun tamamlanmasını bekler ve titreme önler
+      const timer = setTimeout(() => {
+        setIsScrollEnabled(true);
+      }, 150); // 150ms delay - drawer kapanma animasyonu tamamlandıktan sonra
+      return () => clearTimeout(timer);
+    }
+  }, [isDrawerOpen, isDragging]);
 
   // Filtre state'i
   // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
@@ -625,40 +647,20 @@ const FeedScreenInner = React.memo(() => {
     };
   };
 
-  const renderFeedItem = (item: FeedApiItem) => {
+  // PERFORMANCE FIX: Memoize renderFeedItem to prevent unnecessary re-renders
+  // useCallback ensures the function reference stays stable across renders
+  // Note: Mapping functions are pure functions and don't need to be in dependencies
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const renderFeedItem = useCallback(({ item }: { item: FeedApiItem }) => {
     // Safety check: ensure item and item.data exist
     if (!item || !item.data || !item.data.id) {
-      console.warn('[FeedScreen] Invalid feed item:', item);
+      if (__DEV__) {
+        console.warn('[FeedScreen] Invalid feed item:', item);
+      }
       return null;
     }
 
-    // Debug: Log item type and data structure
-    const itemType = item.type;
     const itemId = item.data.id;
-    const hasContextType = 'contextType' in item.data;
-    const hasContextData = 'contextData' in item.data;
-    const hasIsBoosted = 'isBoosted' in item.data;
-    const hasRelatedPost = 'relatedPost' in item.data;
-    const hasContentArray = 'content' in item.data && Array.isArray(item.data.content);
-
-    console.log(`[FeedScreen] renderFeedItem: ${itemId}`, {
-      type: itemType,
-      typeMatch: {
-        EXPERIENCE: itemType === CardType.EXPERIENCE,
-        POST: itemType === CardType.POST,
-        BENCHMARK: itemType === CardType.BENCHMARK,
-        QUESTION: itemType === CardType.QUESTION,
-        TIPS_AND_TRICKS: itemType === CardType.TIPS_AND_TRICKS,
-        UPDATE: itemType === CardType.UPDATE,
-      },
-      dataChecks: {
-        hasContextType,
-        hasContextData,
-        hasIsBoosted,
-        hasRelatedPost,
-        hasContentArray,
-      },
-    });
 
     // Use string comparison for type matching (API returns strings, not enum values)
     switch (item.type) {
@@ -668,19 +670,21 @@ const FeedScreenInner = React.memo(() => {
         if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
             <ExperiencePostCard
-              key={item.data.id}
+              key={itemId}
               data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
             />
           );
         }
-        console.warn(`[FeedScreen] EXPERIENCE item ${itemId} failed validation checks`);
+        if (__DEV__) {
+          console.warn(`[FeedScreen] EXPERIENCE item ${itemId} failed validation checks`);
+        }
         return null;
       case CardType.POST:
       case 'post':
         // Post type için ProfilePost kullan ve PostCard render et
         return (
           <PostCard
-            key={item.data.id}
+            key={itemId}
             data={mapFeedToCardData(item.data as ProfilePost)}
           />
         );
@@ -688,7 +692,7 @@ const FeedScreenInner = React.memo(() => {
       case 'benchmark':
         return (
           <BenchmarkPostCard
-            key={item.data.id}
+            key={itemId}
             data={mapBenchmarkToCardData(item.data as BenchmarkApiItem & { type: 'benchmark' })}
           />
         );
@@ -698,22 +702,24 @@ const FeedScreenInner = React.memo(() => {
         if ('contextType' in item.data && 'contextData' in item.data) {
           return (
             <QuestionPostCard
-              key={item.data.id}
+              key={itemId}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
             />
           );
         }
-        console.warn(`[FeedScreen] QUESTION item ${itemId} failed validation checks:`, {
-          hasContextType: 'contextType' in item.data,
-          hasContextData: 'contextData' in item.data,
-          hasIsBoosted: 'isBoosted' in item.data,
-        });
+        if (__DEV__) {
+          console.warn(`[FeedScreen] QUESTION item ${itemId} failed validation checks:`, {
+            hasContextType: 'contextType' in item.data,
+            hasContextData: 'contextData' in item.data,
+            hasIsBoosted: 'isBoosted' in item.data,
+          });
+        }
         return null;
       case CardType.TIPS_AND_TRICKS:
       case 'tipsAndTricks':
         return (
           <TipsAndTricksPostCard
-            key={item.data.id}
+            key={itemId}
             data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
           />
         );
@@ -723,18 +729,22 @@ const FeedScreenInner = React.memo(() => {
         if ('relatedPost' in item.data && 'contextType' in item.data) {
           return (
             <UpdatePostCard
-              key={item.data.id}
+              key={itemId}
               data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
             />
           );
         }
-        console.warn(`[FeedScreen] UPDATE item ${itemId} failed validation checks`);
+        if (__DEV__) {
+          console.warn(`[FeedScreen] UPDATE item ${itemId} failed validation checks`);
+        }
         return null;
       default:
-        console.warn(`[FeedScreen] Unknown item type: ${itemType} for item ${itemId}`);
+        if (__DEV__) {
+          console.warn(`[FeedScreen] Unknown item type: ${item.type} for item ${itemId}`);
+        }
         return null;
     }
-  };
+  }, []); // Empty deps - mapping functions are pure and stable
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -742,14 +752,30 @@ const FeedScreenInner = React.memo(() => {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const renderFooter = () => {
+  // PERFORMANCE FIX: Memoize renderFooter to prevent unnecessary re-renders
+  const renderFooter = useCallback(() => {
     if (!isFetchingNextPage) return null;
     return (
       <Box py={20} alignItems="center">
         <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
       </Box>
     );
-  };
+  }, [isFetchingNextPage, isDark]);
+
+  // PERFORMANCE FIX: Memoize keyExtractor to prevent unnecessary re-renders
+  const keyExtractor = useCallback((item: FeedApiItem, index: number) => {
+    // Güvenli key extraction: item.data.id varsa kullan, yoksa index kullan
+    if (item?.data?.id) {
+      return String(item.data.id);
+    }
+    return `feed-item-${index}`;
+  }, []);
+
+  // PERFORMANCE FIX: Memoize contentContainerStyle to prevent unnecessary re-renders
+  const contentContainerStyle = useMemo(
+    () => ({ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }),
+    [bottomPadding]
+  );
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -813,23 +839,21 @@ const FeedScreenInner = React.memo(() => {
             <FlatList<FeedApiItem>
               ref={feedListRef}
               data={feedItems}
-              renderItem={({ item }) => renderFeedItem(item)}
-              keyExtractor={(item, index) => {
-                // Güvenli key extraction: item.data.id varsa kullan, yoksa index kullan
-                if (item?.data?.id) {
-                  return String(item.data.id);
-                }
-                return `feed-item-${index}`;
-              }}
+              renderItem={renderFeedItem}
+              keyExtractor={keyExtractor}
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }}
+              contentContainerStyle={contentContainerStyle}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={true}
               maxToRenderPerBatch={10}
               windowSize={10}
               initialNumToRender={10}
+              // PERFORMANCE FIX: Drawer açılırken/kapanırken scroll'u devre dışı bırak - titreme/kasma önleme
+              scrollEnabled={isScrollEnabled}
+              // PERFORMANCE FIX: extraData ile FlatList'e ne zaman re-render yapması gerektiğini söyle
+              extraData={feedItems.length}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}

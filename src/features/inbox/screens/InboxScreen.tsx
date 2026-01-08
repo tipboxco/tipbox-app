@@ -14,12 +14,13 @@ import {
   Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DrawerActions } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import MessagesScreen from './MessagesScreen';
 import SupportRequestsScreen from './SupportRequestsScreen';
+import { useDrawerStore } from '@/src/store/drawerStore';
 
 type InboxScreenNavigationProp = NativeStackNavigationProp<any, 'InboxScreen'>;
 
@@ -32,6 +33,26 @@ const InboxScreen: React.FC = () => {
   const pagerRef = useRef<PagerView>(null);
   const tabContainerRef = useRef<any>(null);
   const [tabContainerWidth, setTabContainerWidth] = useState(0);
+  
+  // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
+  const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
+  
+  useFocusEffect(
+    useCallback(() => {
+      // Ekran focus aldığında drawer gesture'ı disable et
+      setGestureEnabled(false);
+      if (__DEV__) {
+        console.log('[InboxScreen] Drawer gesture disabled (horizontal swipe active)');
+      }
+      return () => {
+        // Ekran blur olduğunda drawer gesture'ı tekrar enable et
+        setGestureEnabled(true);
+        if (__DEV__) {
+          console.log('[InboxScreen] Drawer gesture enabled (screen blurred)');
+        }
+      };
+    }, [setGestureEnabled])
+  );
   
   // 🎯 CORE: Shared progress value (0 = Messages, 1 = Support)
   const progress = useSharedValue(0);
