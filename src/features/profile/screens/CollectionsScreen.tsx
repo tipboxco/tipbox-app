@@ -165,7 +165,7 @@ const CollectionsScreen: React.FC = () => {
             />
             <Input flex={1} borderWidth={0} bg="transparent">
               <InputField
-                placeholder="Badge adında ara"
+                placeholder="Search by badge name"
                 placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
                 color={isDark ? '#FFFFFF' : '#000000'}
                 fontSize={9}

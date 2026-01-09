@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, ActivityIndicator, RefreshControl, FlatList } from 'react-native';
+import { Platform, ActivityIndicator, FlatList } from 'react-native';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
-import { Box, HStack, Text, VStack } from '@gluestack-ui/themed';
+import { Box, HStack, Text, VStack } from '@/src/components/ui';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
@@ -57,7 +57,7 @@ const FeedScreenInner = React.memo(() => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAppStore();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
-  
+
   // FeedListContext'ten feedListRef'i al
   // FeedScreenInner FeedListProvider içinde render edildiği için context her zaman tanımlıdır
   const feedListContext = useFeedListContext();
@@ -69,19 +69,19 @@ const FeedScreenInner = React.memo(() => {
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  
+
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  
+
   // PERFORMANCE FIX: Drawer durumunu kontrol et - drawer açılırken/kapanırken FlatList scroll'unu önle
   // CRITICAL: isDragging state'ini kullan - swipe sırasında re-render önleme (JS thread'de kasma önleme)
   const isDrawerOpen = useDrawerStore((state) => state.isOpen);
   const isDragging = useDrawerStore((state) => state.isDragging);
   const [isScrollEnabled, setIsScrollEnabled] = useState(true);
-  
+
   // Drawer açıkken veya swipe sırasında scroll'u disable et
   // CRITICAL: isDragging kontrolü ile swipe sırasında re-render önleme
   useEffect(() => {
@@ -162,30 +162,30 @@ const FeedScreenInner = React.memo(() => {
     if (!data?.pages || !Array.isArray(data.pages)) {
       return [];
     }
-    
+
     // Single-pass algorithm: flatten and deduplicate in one iteration
     const uniqueItemsMap = new Map<string, FeedApiItem>();
-    
+
     // Iterate through pages once
     for (const page of data.pages) {
       // Skip invalid pages early
       if (!page || typeof page !== 'object' || !('items' in page)) {
         continue;
       }
-      
+
       const pageItems = page.items;
       // Skip invalid items arrays
       if (!Array.isArray(pageItems)) {
         continue;
       }
-      
+
       // Process items in this page
       for (const item of pageItems) {
         // Skip invalid items early
         if (!item || typeof item !== 'object' || !('data' in item)) {
           continue;
         }
-        
+
         const itemData = item.data;
         // Extract ID efficiently
         if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
@@ -195,7 +195,7 @@ const FeedScreenInner = React.memo(() => {
         }
       }
     }
-    
+
     // Convert Map to array (single allocation)
     return Array.from(uniqueItemsMap.values());
   }, [data?.pages]);
@@ -263,9 +263,9 @@ const FeedScreenInner = React.memo(() => {
     // content array ise string'e çevir, değilse direkt kullan
     const contentString = Array.isArray(item.content)
       ? item.content
-          .filter((contentItem) => contentItem != null) // Filter out null/undefined items
-          .map((contentItem) => contentItem?.content || '')
-          .join(' ')
+        .filter((contentItem) => contentItem != null) // Filter out null/undefined items
+        .map((contentItem) => contentItem?.content || '')
+        .join(' ')
       : (item.content || '');
 
     return {
@@ -277,7 +277,7 @@ const FeedScreenInner = React.memo(() => {
         avatar: toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png'),
       },
       content: contentString,
-      images: Array.isArray(item.images) 
+      images: Array.isArray(item.images)
         ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
         : [],
       stats: item.stats,
@@ -296,17 +296,17 @@ const FeedScreenInner = React.memo(() => {
 
     const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
       ? item.content
-          .filter((contentItem) => contentItem != null) // Filter out null/undefined items
-          .map((contentItem) => ({
-            tag: {
-              icon: 'tag',
-              title: contentItem?.title || '',
-            },
-            text: contentItem?.content || '',
-            rating: Array(5)
-              .fill(false)
-              .map((_, index) => index < (contentItem?.rating || 0)),
-          }))
+        .filter((contentItem) => contentItem != null) // Filter out null/undefined items
+        .map((contentItem) => ({
+          tag: {
+            icon: 'tag',
+            title: contentItem?.title || '',
+          },
+          text: contentItem?.content || '',
+          rating: Array(5)
+            .fill(false)
+            .map((_, index) => index < (contentItem?.rating || 0)),
+        }))
       : [];
 
     return {
@@ -329,8 +329,8 @@ const FeedScreenInner = React.memo(() => {
       tags: Array.isArray(item.tags) ? item.tags : [],
       images: Array.isArray(item.images)
         ? item.images
-            .map((img) => toImageSource(img))
-            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+          .map((img) => toImageSource(img))
+          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
         : [],
       stats: item.stats,
       createdAt: item.createdAt,
@@ -343,15 +343,15 @@ const FeedScreenInner = React.memo(() => {
 
     const products: BenchmarkProduct[] = (item.products && Array.isArray(item.products))
       ? item.products
-          .filter((p) => p != null) // Filter out null/undefined products
-          .map((p) => ({
-            id: p?.id || '',
-            name: p?.name || '',
-            subName: p?.subName || '',
-            image: toImageSource(p?.image) || require('@/assets/inventory/product_01.png'),
-            isOwned: p?.isOwned || false,
-            choice: p?.choice || false,
-          }))
+        .filter((p) => p != null) // Filter out null/undefined products
+        .map((p) => ({
+          id: p?.id || '',
+          name: p?.name || '',
+          subName: p?.subName || '',
+          image: toImageSource(p?.image) || require('@/assets/inventory/product_01.png'),
+          isOwned: p?.isOwned || false,
+          choice: p?.choice || false,
+        }))
       : [];
 
     return {
@@ -400,8 +400,8 @@ const FeedScreenInner = React.memo(() => {
         content: item.content || '',
         images: Array.isArray(item.images)
           ? item.images
-              .map((img) => toImageSource(img))
-              .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+            .map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
           : [],
         stats: item.stats,
         tag: item.tag,
@@ -440,8 +440,8 @@ const FeedScreenInner = React.memo(() => {
       content: item.content || '',
       images: Array.isArray(item.images)
         ? item.images
-            .map((img) => toImageSource(img))
-            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+          .map((img) => toImageSource(img))
+          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
         : [],
       stats: item.stats,
       tag: item.tag,
@@ -481,8 +481,8 @@ const FeedScreenInner = React.memo(() => {
         isBoosted: item.isBoosted || false,
         images: Array.isArray(item.images)
           ? item.images
-              .map((img) => toImageSource(img))
-              .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+            .map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
           : [],
         stats: item.stats,
         createdAt: item.createdAt,
@@ -522,8 +522,8 @@ const FeedScreenInner = React.memo(() => {
       isBoosted: item.isBoosted || false,
       images: Array.isArray(item.images)
         ? item.images
-            .map((img) => toImageSource(img))
-            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+          .map((img) => toImageSource(img))
+          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
         : [],
       stats: item.stats,
       createdAt: item.createdAt,
@@ -533,7 +533,7 @@ const FeedScreenInner = React.memo(() => {
   // Map Update to UpdateCardData
   const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
     const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
-    
+
     // ContextType'ı ProductInfoType'a çevir
     let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
     if (item.contextType === 'product_group') {
@@ -587,24 +587,24 @@ const FeedScreenInner = React.memo(() => {
     // relatedPost.content formatını component'in beklediği formata çevir
     const relatedPostContent = (item.relatedPost?.content && Array.isArray(item.relatedPost.content))
       ? item.relatedPost.content
-          .filter((contentItem) => contentItem != null) // Filter out null/undefined items
-          .map((contentItem) => {
-            // Rating'i number'dan number[]'e çevir (5 yıldız için)
-            const ratingArray: number[] = Array(5).fill(0);
-            const ratingValue = Math.min(Math.max(Math.round((contentItem?.rating || 0) / 20), 0), 5); // 0-100'den 0-5'e çevir
-            for (let i = 0; i < ratingValue; i++) {
-              ratingArray[i] = 1;
-            }
+        .filter((contentItem) => contentItem != null) // Filter out null/undefined items
+        .map((contentItem) => {
+          // Rating'i number'dan number[]'e çevir (5 yıldız için)
+          const ratingArray: number[] = Array(5).fill(0);
+          const ratingValue = Math.min(Math.max(Math.round((contentItem?.rating || 0) / 20), 0), 5); // 0-100'den 0-5'e çevir
+          for (let i = 0; i < ratingValue; i++) {
+            ratingArray[i] = 1;
+          }
 
-            return {
-              tag: {
-                icon: 'tag',
-                title: contentItem?.title || '',
-              },
-              text: contentItem?.content || '',
-              rating: ratingArray,
-            };
-          })
+          return {
+            tag: {
+              icon: 'tag',
+              title: contentItem?.title || '',
+            },
+            text: contentItem?.content || '',
+            rating: ratingArray,
+          };
+        })
       : [];
 
     return {
@@ -784,7 +784,7 @@ const FeedScreenInner = React.memo(() => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title="Akış"
+          title="Feed"
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />
@@ -823,7 +823,7 @@ const FeedScreenInner = React.memo(() => {
                     {(error as any)?.response?.data?.message && (
                       <Text color={isDark ? '$textDark500' : '$textLight400'} fontSize="$xs" textAlign="center">
                         {(error as any).response.data.message}
-              </Text>
+                      </Text>
                     )}
                   </>
                 )}
@@ -854,14 +854,8 @@ const FeedScreenInner = React.memo(() => {
               scrollEnabled={isScrollEnabled}
               // PERFORMANCE FIX: extraData ile FlatList'e ne zaman re-render yapması gerektiğini söyle
               extraData={feedItems.length}
-              refreshControl={
-                <RefreshControl
-                  refreshing={isRefetching}
-                  onRefresh={() => refetch()}
-                  tintColor={isDark ? '#FFFFFF' : '#000000'}
-                  colors={isDark ? ['#FFFFFF'] : ['#000000']}
-                />
-              }
+              refreshing={isRefetching}
+              onRefresh={() => refetch()}
             />
           )}
         </Box>

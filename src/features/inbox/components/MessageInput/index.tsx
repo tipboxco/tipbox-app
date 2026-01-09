@@ -22,7 +22,7 @@ interface MessageInputProps {
 export const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   onAddImage,
-  placeholder = 'Mesajınızı yazın...',
+  placeholder = 'Type your message...',
   onTypingStart,
   onTypingStop,
   threadId,

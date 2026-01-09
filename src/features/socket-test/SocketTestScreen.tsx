@@ -405,7 +405,7 @@ const SocketTestScreen: React.FC = () => {
                 
                 <Input>
                   <InputField
-                    placeholder="Alıcı Kullanıcı ID"
+                    placeholder="Recipient User ID"
                     value={recipientUserId}
                     onChangeText={setRecipientUserId}
                     color={isDark ? '$white' : '$black'}
@@ -455,7 +455,7 @@ const SocketTestScreen: React.FC = () => {
                 
                 <Input>
                   <InputField
-                    placeholder="Mesaj yazın..."
+                    placeholder="Type a message..."
                     value={messageText}
                     onChangeText={setMessageText}
                     color={isDark ? '$white' : '$black'}

@@ -28,13 +28,13 @@ const NFTDetailScreen = () => {
     const handleSellNFT = () => {
         // Validate price
         if (selectedPrice <= 0) {
-            Alert.alert('Hata', 'Fiyat 0\'dan büyük olmalıdır');
+            Alert.alert('Error', 'Price must be greater than 0');
             return;
         }
 
         // Validate NFT ID
         if (!nftData?.id) {
-            Alert.alert('Hata', 'NFT bilgisi bulunamadı');
+            Alert.alert('Error', 'NFT information not found');
             return;
         }
 
@@ -45,12 +45,12 @@ const NFTDetailScreen = () => {
             },
             {
                 onSuccess: (data) => {
-                    Alert.alert('Başarılı', 'NFT başarıyla satışa koyuldu!', [
-                        { text: 'Tamam', onPress: () => navigation.goBack() }
+                    Alert.alert('Success', 'NFT listed for sale successfully!', [
+                        { text: 'OK', onPress: () => navigation.goBack() }
                     ]);
                 },
                 onError: (error) => {
-                    Alert.alert('Hata', error.message || 'NFT satışa koyulurken bir hata oluştu');
+                    Alert.alert('Error', error.message || 'An error occurred while listing the NFT');
                 },
             }
         );

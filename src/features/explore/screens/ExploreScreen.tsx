@@ -494,7 +494,7 @@ const ExploreScreen: React.FC = () => {
               />
               <Input flex={1} borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                  placeholder="Select product group or search product name"
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                   color={isDark ? '#fff' : '#000'}
                   fontSize={11}

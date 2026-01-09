@@ -164,7 +164,7 @@ export const ResetPasswordScreen = () => {
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               >
                 <InputField 
-                  placeholder="Yeni şifreniz"
+                  placeholder="New password"
                   secureTextEntry
                   value={newPassword}
                   onChangeText={validateNewPassword}
@@ -189,7 +189,7 @@ export const ResetPasswordScreen = () => {
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               >
                 <InputField 
-                  placeholder="Şifrenizi tekrar girin"
+                  placeholder="Confirm your password"
                   secureTextEntry
                   value={confirmPassword}
                   onChangeText={validateConfirmPassword}

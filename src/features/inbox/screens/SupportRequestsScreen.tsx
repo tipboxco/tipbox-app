@@ -140,7 +140,7 @@ const SupportRequestsScreen: React.FC = () => {
     const request = supportRequests?.find(r => r.id === requestId);
     
     if (!request) {
-      Alert.alert('Hata', 'Destek talebi bulunamadı');
+      Alert.alert('Error', 'Support request not found');
       return;
     }
 
@@ -174,7 +174,7 @@ const SupportRequestsScreen: React.FC = () => {
       },
       onError: (error: any) => {
         console.error('[SupportRequestsScreen] ❌ Support request accept error:', error);
-        Alert.alert('Hata', error.message || 'Destek talebi kabul edilemedi');
+        Alert.alert('Error', error.message || 'Support request could not be accepted');
       },
     });
   };
@@ -191,10 +191,10 @@ const SupportRequestsScreen: React.FC = () => {
 
   // Filter options for UI
   const filterOptions = [
-    { id: 'pending', name: 'Sonuçlandırma Bekliyor' },
-    { id: 'active', name: 'Aktif Talepler' },
-    { id: 'awaiting_completion', name: 'Tamamlanma Bekliyor' },
-    { id: 'completed', name: 'Sonuçlandırıldı' },
+    { id: 'pending', name: 'Awaiting Resolution' },
+    { id: 'active', name: 'Active Requests' },
+    { id: 'awaiting_completion', name: 'Awaiting Completion' },
+    { id: 'completed', name: 'Completed' },
   ];
 
   return (
@@ -216,7 +216,7 @@ const SupportRequestsScreen: React.FC = () => {
         />
         <Input flex={1} borderWidth={0} bg="transparent">
           <InputField
-            placeholder="Destek taleplerinde ara"
+            placeholder="Search in support requests"
             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
             color={isDark ? '#000' : '#000'}
             fontSize={9}

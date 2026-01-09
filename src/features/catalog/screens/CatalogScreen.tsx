@@ -485,7 +485,7 @@ export const CatalogScreen = () => {
             <Search size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
             <Input flex={1} borderWidth={0} bg="transparent">
               <InputField
-                placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                placeholder="Select product group or search product name"
                 placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
                 value={searchQuery}
                 onChangeText={setSearchQuery}

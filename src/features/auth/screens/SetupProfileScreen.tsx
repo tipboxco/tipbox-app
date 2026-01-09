@@ -140,7 +140,7 @@ export const SetupProfileScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
             >
               <InputField 
-                placeholder="Adınız Soyadınız"
+                placeholder="Your full name"
                 value={fullName}
                 onChangeText={setFullName}
               />
@@ -158,7 +158,7 @@ export const SetupProfileScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
             >
               <InputField 
-                placeholder="@kullaniciadi"
+                placeholder="@username"
                 value={username}
                 onChangeText={validateUsername}
               />

@@ -140,7 +140,7 @@ export const RegisterScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
             >
               <InputField 
-                placeholder="E-posta adresiniz"
+                placeholder="Your email address"
                 value={email}
                 onChangeText={validateEmail}
               />
@@ -164,7 +164,7 @@ export const RegisterScreen = () => {
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
             >
               <InputField 
-                placeholder="Şifreniz" 
+                placeholder="Your password" 
                 secureTextEntry
                 value={password}
                 onChangeText={validatePassword}

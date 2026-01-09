@@ -440,7 +440,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     />
                     <Input flex={1} borderWidth={0} bg="transparent">
                         <InputField
-                            placeholder="Mesajlarda Ara"
+                            placeholder="Search in messages"
                             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                             color={isDark ? '#000' : '#000'}
                             fontSize={9}

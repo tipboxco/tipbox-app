@@ -184,7 +184,7 @@ const InventoryScreen = () => {
           ListEmptyComponent={
             <Box flex={1} justifyContent="center" alignItems="center" py={40}>
               <Text color={isDark ? '$textDark400' : '$textLight600'}>
-                {searchQuery ? 'Arama sonucu bulunamadı' : 'Envanter boş'}
+                {searchQuery ? 'No search results found' : 'Inventory is empty'}
               </Text>
             </Box>
           }

@@ -74,7 +74,7 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
         />
         <Input flex={1} borderWidth={0} bg="transparent">
           <InputField
-            placeholder="Arkadaş ara"
+            placeholder="Search friend"
             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
             color={isDark ? '#fff' : '#000'}
             fontSize={11}

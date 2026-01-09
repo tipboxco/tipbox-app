@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { VStack, HStack, Box, Text } from '@gluestack-ui/themed';
+import { VStack, HStack, Box, Text } from '@/src/components/ui';
 import { FlatList, ActivityIndicator } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';

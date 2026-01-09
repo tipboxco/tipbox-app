@@ -171,7 +171,7 @@ export const LoginScreen = () => {
               alignItems="center"
             >
               <InputField 
-                placeholder="E-posta adresiniz"
+                placeholder="Your email address"
                 value={email}
                 onChangeText={validateEmail}
               />
@@ -197,7 +197,7 @@ export const LoginScreen = () => {
               alignItems="center"
             >
               <InputField 
-                placeholder="Şifreniz" 
+                placeholder="Your password" 
                 secureTextEntry
                 value={password}
                 onChangeText={validatePassword}

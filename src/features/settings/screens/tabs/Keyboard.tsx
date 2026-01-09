@@ -234,7 +234,7 @@ export const Keyboard: React.FC<KeyboardProps> = () => {
                 onSendMessage={handleSendMessage}
                 onAddImage={handleAddImage}
                 onAddEmoji={handleAddEmoji}
-                placeholder="Yorumunuzu yazın..."
+                placeholder="Write your comment..."
                 minHeight={140}
               />
             </View>

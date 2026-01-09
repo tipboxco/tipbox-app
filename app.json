@@ -13,7 +13,7 @@
       "url": "https://u.expo.dev/098fbee5-88e4-49ba-bb37-80601a5d47af"
     },
     "orientation": "portrait",
-    "icon": "./assets/tipbox_logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/tipbox_logo.png",
@@ -59,7 +59,7 @@
       "package": "com.devkocmehmet.tipboxapp",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/tipbox_logo.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [

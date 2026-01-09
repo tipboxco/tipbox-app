@@ -490,7 +490,7 @@ export const NotificationsScreen: React.FC = () => {
                     />
                     <Input flex={1} borderWidth={0} bg="transparent">
                         <InputField
-                            placeholder="Bildirimlerde Ara"
+                            placeholder="Search in notifications"
                             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                             color={isDark ? '#000' : '#000'}
                             fontSize="$xs"
@@ -531,7 +531,7 @@ export const NotificationsScreen: React.FC = () => {
             ) : filteredNotifications.length === 0 ? (
                 <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
-                        {searchQuery ? 'Arama sonucu bulunamadı.' : 'Henüz bildirim yok.'}
+                        {searchQuery ? 'No search results found.' : 'No notifications yet.'}
                     </Text>
                 </Box>
             ) : (

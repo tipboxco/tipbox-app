@@ -174,7 +174,7 @@ export const NotificationSettingsScreen = () => {
                             />
                             <Input borderWidth={0} bg="transparent" flex={1}>
                                 <InputField
-                                    placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                                    placeholder="Select product group or search product name"
                                     placeholderTextColor="#B9B9B9"
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}

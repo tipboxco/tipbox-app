@@ -230,7 +230,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         >
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder="Ozan Mutluoğlu"
+                                    placeholder="John Doe"
                                     placeholderTextColor="#B9B9B9"
                                     value={nameOnCard}
                                     onChangeText={setNameOnCard}

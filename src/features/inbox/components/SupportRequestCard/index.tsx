@@ -21,19 +21,19 @@ interface SupportRequestCardProps {
 const getStatusInfo = (status: SupportRequest['status']) => {
   switch (status) {
     case 'pending':
-      return { text: 'Beklemede', color: '#FFA500' };
+      return { text: 'Pending', color: '#FFA500' };
     case 'active':
-      return { text: 'Aktif', color: '#4CAF50' };
+      return { text: 'Active', color: '#4CAF50' };
     case 'awaiting_completion':
-      return { text: 'Tamamlanma Bekliyor', color: '#2196F3' };
+      return { text: 'Awaiting Completion', color: '#2196F3' };
     case 'completed':
-      return { text: 'Tamamlandı', color: '#4CAF50' };
+      return { text: 'Completed', color: '#4CAF50' };
     case 'finalized':
-      return { text: 'Sonuçlandırıldı', color: '#9E9E9E' };
+      return { text: 'Finalized', color: '#9E9E9E' };
     case 'reported':
-      return { text: 'Rapor Edildi', color: '#F44336' };
+      return { text: 'Reported', color: '#F44336' };
     default:
-      return { text: 'Bilinmeyen', color: '#9E9E9E' };
+      return { text: 'Unknown', color: '#9E9E9E' };
   }
 };
 
@@ -41,15 +41,15 @@ const getStatusInfo = (status: SupportRequest['status']) => {
 const getButtonText = (status: SupportRequest['status']) => {
   switch (status) {
     case 'pending':
-      return 'Kabul Et';
+      return 'Accept';
     case 'active':
-      return 'Mesajlaş';
+      return 'Message';
     case 'awaiting_completion':
-      return 'Tamamla';
+      return 'Complete';
     case 'completed':
-      return 'Görüntüle';
+      return 'View';
     default:
-      return 'Detay';
+      return 'Details';
   }
 };
 
