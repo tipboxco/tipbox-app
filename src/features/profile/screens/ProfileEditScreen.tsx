@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, Alert } from 'react-native';
+import { ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Box, 
@@ -257,6 +257,11 @@ const ProfileEditScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <Header
@@ -276,7 +281,7 @@ const ProfileEditScreen: React.FC = () => {
         }
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <VStack space="lg">
           {/* Banner Section */}
           <Box position="relative">
@@ -653,6 +658,7 @@ const ProfileEditScreen: React.FC = () => {
         </ModalContent>
       </Modal>
       </Box>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

@@ -39,112 +39,137 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
           SelectCategories: 'select-categories',
         },
       },
-      Main: {
+      // Main Application - AppDrawerNavigator (Drawer → Tab hierarchy)
+      App: {
         screens: {
-          // Feed Tab
-          Feed: {
+          MainTabs: {
             screens: {
-              FeedScreen: 'feed',
-            },
-          },
-          // Explore Tab
-          Explore: {
-            screens: {
-              ExploreScreen: 'explore',
-            },
-          },
-          // Catalog Tab
-          Catalog: {
-            screens: {
-              CatalogScreen: 'catalog',
-            },
-          },
-          // Events Tab
-          Events: {
-            screens: {
-              EventsScreen: 'events',
-              EventDetailScreen: {
-                path: 'event/:eventId',
-                parse: {
-                  eventId: (eventId: string) => eventId,
+              // Feed Tab
+              FeedStack: {
+                screens: {
+                  Feed: {
+                    screens: {
+                      FeedScreen: 'feed',
+                    },
+                  },
                 },
               },
-            },
-          },
-          // Notification Tab
-          Notification: {
-            screens: {
-              NotificationsScreen: 'notifications',
-            },
-          },
-          // Inbox Tab
-          Inbox: {
-            screens: {
-              InboxScreen: 'inbox',
-              MessageDetailScreen: {
-                path: 'inbox/thread/:threadId',
-                parse: {
-                  threadId: (threadId: string) => threadId,
+              // Explore Tab
+              ExploreStack: {
+                screens: {
+                  Explore: {
+                    screens: {
+                      ExploreScreen: 'explore',
+                    },
+                  },
                 },
               },
-              SupportMessageDetail: {
-                path: 'inbox/support/:requestId',
-                parse: {
-                  requestId: (requestId: string) => requestId,
+              // Catalog Tab
+              CatalogStack: {
+                screens: {
+                  Catalog: {
+                    screens: {
+                      CatalogScreen: 'catalog',
+                    },
+                  },
                 },
               },
-            },
-          },
-          // Profile Tab
-          Profile: {
-            screens: {
-              ProfileMain: {
-                path: 'user/:userId?',
-                parse: {
-                  userId: (userId: string) => userId || undefined,
+              // Events Tab
+              EventsStack: {
+                screens: {
+                  Events: {
+                    screens: {
+                      EventsScreen: 'events',
+                      EventDetailScreen: {
+                        path: 'event/:eventId',
+                        parse: {
+                          eventId: (eventId: string) => eventId,
+                        },
+                      },
+                    },
+                  },
                 },
               },
-            },
-          },
-          // Post Stack (Shared)
-          Post: {
-            screens: {
-              PostDetailScreen: {
-                path: 'post/:postId',
-                parse: {
-                  postId: (postId: string) => postId,
-                  commentId: (commentId: string) => commentId || undefined,
+              // Notification Tab
+              NotificationStack: {
+                screens: {
+                  Notification: {
+                    screens: {
+                      NotificationsScreen: 'notifications',
+                    },
+                  },
                 },
               },
-            },
-          },
-          // Bookmarks Tab
-          Bookmarks: {
-            screens: {
-              BookmarksScreen: 'bookmarks',
-            },
-          },
-          // Marketplace Tab
-          Marketplace: {
-            screens: {
-              MarketPlaceScreen: 'marketplace',
-            },
-          },
-          // Wallet Tab
-          Wallet: {
-            screens: {
-              WalletScreen: 'wallet',
+              // Inbox Tab
+              InboxStack: {
+                screens: {
+                  Inbox: {
+                    screens: {
+                      InboxScreen: 'inbox',
+                    },
+                  },
+                },
+              },
             },
           },
         },
       },
-      // Settings Stack
+      // Root Level Detail Screens - Direct access from RootStack
+      // CRITICAL: These screens are at RootStack level, not under Main/App
+      Profile: {
+        screens: {
+          ProfileMain: {
+            path: 'user/:userId?',
+            parse: {
+              userId: (userId: string) => userId || undefined,
+            },
+          },
+        },
+      },
+      Post: {
+        screens: {
+          PostDetailScreen: {
+            path: 'post/:postId',
+            parse: {
+              postId: (postId: string) => postId,
+              commentId: (commentId: string) => commentId || undefined,
+            },
+          },
+        },
+      },
+      Bookmarks: {
+        screens: {
+          BookmarksScreen: 'bookmarks',
+        },
+      },
+      Marketplace: {
+        screens: {
+          MarketPlaceScreen: 'marketplace',
+        },
+      },
+      Wallet: {
+        screens: {
+          WalletScreen: 'wallet',
+        },
+      },
+      MessageDetail: {
+        path: 'inbox/thread/:threadId',
+        parse: {
+          threadId: (threadId: string) => threadId,
+        },
+      },
+      SupportMessageDetail: {
+        path: 'inbox/support/:requestId',
+        parse: {
+          requestId: (requestId: string) => requestId,
+        },
+      },
+      // Modal Screens
       Settings: {
         screens: {
           SettingsScreen: 'settings',
         },
       },
-      // MoreSchoise Stack
       MoreSchoise: {
         screens: {
           MoreSchoiseScreen: 'more-schoise',

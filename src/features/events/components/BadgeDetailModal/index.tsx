@@ -20,8 +20,13 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { EventsStackParamList } from '../../navigation';
 
 const { width, height } = Dimensions.get('window');
+
+type BadgeDetailModalNavigationProp = NativeStackNavigationProp<EventsStackParamList>;
 
 interface BadgeDetailModalProps {
   isVisible: boolean;
@@ -29,18 +34,33 @@ interface BadgeDetailModalProps {
   data: SeeAllReward | null;
 }
 
-export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
+export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = React.memo(({
   isVisible,
   onClose,
   data,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const navigation = useNavigation<BadgeDetailModalNavigationProp>();
 
-  if (!data) return null;
+  // Handle View Achievement button press
+  const handleViewAchievement = () => {
+    onClose();
+    // Navigate to RewardsBadgesScreen
+    navigation.navigate('RewardsBadges');
+  };
+
+  // PERFORMANCE FIX: Don't render modal content when not visible
+  // This prevents unnecessary rendering that slows down modal opening
+  if (!data || !isVisible) return null;
 
   return (
-    <Modal style={{ flex: 1 }} isOpen={isVisible} onClose={onClose} size="md">
+    <Modal 
+      style={{ flex: 1 }} 
+      isOpen={isVisible} 
+      onClose={onClose} 
+      size="md"
+    >
       <ModalBackdrop />
       <ModalContent
         bg={isDark ? '#1A1A1A' : '#FFFFFF'}
@@ -116,14 +136,14 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
               bg="#C2E607"
               borderRadius={8}
               h={48}
-              onPress={onClose}
+              onPress={handleViewAchievement}
             >
               <ButtonText
                 color="#000000"
                 fontSize={12}
                 fontWeight="$bold"
               >
-                {data.isUnlocked ? 'View Your Collections' : 'Follow Ladder'}
+                View Detail
               </ButtonText>
             </Button>
           </VStack>
@@ -131,6 +151,19 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
       </ModalContent>
     </Modal>
   );
-};
+}, (prevProps, nextProps) => {
+  // PERFORMANCE FIX: Only re-render if visibility or data actually changed
+  // Prevents unnecessary re-renders that slow down modal opening
+  return (
+    prevProps.isVisible === nextProps.isVisible &&
+    prevProps.data?.id === nextProps.data?.id &&
+    prevProps.data?.title === nextProps.data?.title &&
+    prevProps.data?.completed === nextProps.data?.completed &&
+    prevProps.data?.task === nextProps.data?.task &&
+    prevProps.data?.isUnlocked === nextProps.data?.isUnlocked
+  );
+});
+
+BadgeDetailModal.displayName = 'BadgeDetailModal';
 
 export default BadgeDetailModal;

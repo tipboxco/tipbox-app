@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -406,6 +407,11 @@ export const CreateTipsAndTrickPostScreen = () => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <FormProvider {...methods}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'} position="relative">
           {/* Header */}
           <Header
@@ -431,6 +437,7 @@ export const CreateTipsAndTrickPostScreen = () => {
             flex={1} 
             showsVerticalScrollIndicator={false}
             onScrollBeginDrag={() => setShowCategoryModal(false)}
+            keyboardShouldPersistTaps="handled"
           >
             <VStack space="md">
               {/* Product Info Card */}
@@ -483,6 +490,7 @@ export const CreateTipsAndTrickPostScreen = () => {
             />
           )}
         </Box>
+        </KeyboardAvoidingView>
       </FormProvider>
     </SafeAreaView>
   );

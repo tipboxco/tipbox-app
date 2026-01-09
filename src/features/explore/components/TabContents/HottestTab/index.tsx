@@ -433,7 +433,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
         maxToRenderPerBatch={3}
         windowSize={5}
         ListFooterComponent={LoadingFooter}
-        scrollEnabled={false}
+        scrollEnabled={true}
         nestedScrollEnabled={true}
       />
     </Box>

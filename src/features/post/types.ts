@@ -31,6 +31,7 @@ export interface CreatePostRequest {
   contextId: string;
   description: string;
   images?: string[]; // Array of image URIs or base64 strings
+  eventId?: string; // Optional - Event ID for event-related posts
 }
 
 /**

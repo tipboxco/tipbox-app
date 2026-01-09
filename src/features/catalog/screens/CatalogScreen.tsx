@@ -3,7 +3,7 @@ import { Platform, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Header } from '@/src/components/Header';
 import { mock_user_profile } from '@/src/mock/common';
@@ -23,6 +23,8 @@ import { useBottomOffset } from '@/src/utils';
 type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
 };
+
+type CatalogScreenRouteProp = RouteProp<CatalogStackParamList, 'CatalogScreen'>;
 
 // PERFORMANCE FIX: CatalogScreen state management refactoring
 // Consolidate related state into reducer pattern to reduce re-renders and improve maintainability
@@ -68,11 +70,26 @@ export const CatalogScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CatalogScreenNavigationProp>();
+  const route = useRoute<CatalogScreenRouteProp>();
   const insets = useSafeAreaInsets();
   
+  // Get initial mode from route params
+  const initialMode = route.params?.view === 'brands' ? 'brand-catalog' : 'product';
+  
   // PERFORMANCE FIX: Use reducer for related state management
-  const [catalogState, dispatch] = useReducer(catalogScreenReducer, initialState);
+  const [catalogState, dispatch] = useReducer(catalogScreenReducer, {
+    ...initialState,
+    currentMode: initialMode,
+  });
   const { currentMode, selectedCategory, selectedProductLocal, breadcrumbItems } = catalogState;
+  
+  // Update mode when route params change
+  useEffect(() => {
+    const newMode = route.params?.view === 'brands' ? 'brand-catalog' : 'product';
+    if (newMode !== currentMode) {
+      dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
+    }
+  }, [route.params?.view, currentMode]);
   
   // UI-specific state (keep as useState for simplicity)
   const [searchQuery, setSearchQuery] = useState('');

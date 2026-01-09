@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Box, Text } from '@/src/components/ui';
 import { FlatList, ActivityIndicator } from 'react-native';
@@ -122,7 +122,7 @@ const MarketPlaceScreen = () => {
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
               <Text color="#CE4A4A" fontSize="$sm">
-                NFT'ler yüklenirken bir hata oluştu: {error.message}
+                An error occurred while loading NFTs: {error.message}
               </Text>
             </Box>
           ) : nftData.length === 0 ? (

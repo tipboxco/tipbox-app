@@ -35,7 +35,7 @@ import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateEventPost } from '../api/hooks';
+import { useCreateFreePost } from '@/src/features/post/api/hooks';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventsStackParamList, 'EventCreatePost'>;
@@ -66,8 +66,8 @@ const EventCreatePost: React.FC = () => {
     const eventProduct = route.params?.product;
     const routeProductSource = route.params?.productSource;
     
-    // Event post mutation hook
-    const createEventPostMutation = useCreateEventPost(eventId || '');
+    // Free post mutation hook (event'e bağlı post için)
+    const createPostMutation = useCreateFreePost();
     
     // Auto-select product if eventType is TYPE2
     useEffect(() => {
@@ -272,14 +272,31 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Product ID'yi al (eğer product seçildiyse)
-            const productId = selectedProduct?.id;
+            // Product seçilmediyse hata göster
+            if (!selectedProduct) {
+                toast.show({
+                    placement: 'top',
+                    render: ({ id }: { id: string }) => {
+                        return (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastDescription>Lütfen bir ürün seçin.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        );
+                    },
+                });
+                return;
+            }
 
-            // API çağrısı
-            const response = await createEventPostMutation.mutateAsync({
+            // API çağrısı - Free post endpoint'ini kullan ve eventId'yi ekle
+            const response = await createPostMutation.mutateAsync({
+                contextType: 'product', // Event post'ları için product context kullanıyoruz
+                contextId: selectedProduct.id,
                 description: content.trim(),
-                productId: productId,
                 images: selectedImages,
+                eventId: eventId, // Event ID'yi request body'ye ekle
             });
 
             console.log('Event post created:', response);

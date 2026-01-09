@@ -55,6 +55,26 @@ export const useDrawerGestureEnabled = (): boolean => {
       }
 
       // App (AppDrawerNavigator) içindeyiz mi?
+      // CRITICAL: RootStack seviyesindeki detay ekranlarında (Profile, Post, vb.) drawer gesture KAPALI
+      // Bu ekranlar: Profile, Post, Wallet, Bookmarks, Marketplace, MessageDetail, SupportMessageDetail, Settings, MoreSchoise
+      const ROOT_LEVEL_DETAIL_SCREENS = [
+        'Profile',
+        'Post',
+        'Wallet',
+        'Bookmarks',
+        'Marketplace',
+        'MessageDetail',
+        'SupportMessageDetail',
+        'Settings',
+        'MoreSchoise',
+      ];
+      
+      if (ROOT_LEVEL_DETAIL_SCREENS.includes(currentRoute.name)) {
+        // RootStack seviyesindeki detay ekranındayız - drawer gesture KAPALI
+        setIsEnabled(false);
+        return;
+      }
+      
       if (currentRoute.name !== 'App') {
         // PERFORMANCE FIX: console.log kaldırıldı
         setIsEnabled(false);

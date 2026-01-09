@@ -154,7 +154,7 @@ const EventsScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
         <Header
           title="Events"
           showBackButton
@@ -163,7 +163,7 @@ const EventsScreen: React.FC = () => {
 
         <VStack flex={1} py="$2" space="md">
           {/* Tab Header */}
-          <VStack pt="$4" bg={isDark ? '#000' : '#FFF'}>
+          <VStack pt="$4" bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}

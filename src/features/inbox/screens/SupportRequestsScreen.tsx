@@ -24,6 +24,7 @@ import type { SupportRequest } from '../api/messagesApi';
 import { Alert } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { toImageSource } from '@/src/utils';
+import { SupportRequestSkeleton } from '@/src/components/Skeletons';
 
 type SupportRequestsScreenNavigationProp = NativeStackNavigationProp<any, 'SupportRequestsScreen'>;
 
@@ -234,10 +235,8 @@ const SupportRequestsScreen: React.FC = () => {
       />
 
       {/* Support Requests List - Full Width */}
-      {isLoading ? (
-        <Box py={20} alignItems="center">
-          <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
-        </Box>
+      {isLoading && (!supportRequests || supportRequests.length === 0) ? (
+        <SupportRequestSkeleton count={5} />
       ) : error ? (
         <Box py={20} alignItems="center">
           <Text color="#CE4A4A">Hata: {error.message}</Text>

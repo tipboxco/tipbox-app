@@ -123,4 +123,6 @@ const BrandPostListScreen: React.FC = () => {
   );
 };
 
+BrandPostListScreen.displayName = 'BrandPostListScreen';
+
 export default BrandPostListScreen;

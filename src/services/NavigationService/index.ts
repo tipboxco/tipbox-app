@@ -256,14 +256,18 @@ class NavigationService {
       }
 
       // Build navigation params using route mapping
-      // Yapı: root → tabContainer → tab → screen
+      // Yapı: root → tabContainer → tabStack → feature → screen
+      // Örnek: App → MainTabs → FeedStack → Feed → ScreenName
       const navigationParams: any = {
-        screen: routeMapping.tabContainer || 'Tabs',
+        screen: routeMapping.tabContainer || 'MainTabs',
         params: {
           screen: routeMapping.tab,
           params: {
-            screen: screenName,
-            params: params,
+            screen: tabName, // MainStackParamList key'i (Feed, Explore, Catalog, vb.)
+            params: {
+              screen: screenName,
+              params: params,
+            },
           },
         },
       };

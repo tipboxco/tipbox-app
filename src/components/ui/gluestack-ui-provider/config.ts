@@ -79,7 +79,7 @@ export const config = createConfig({
       '3xs': 9,
       '2xs': 10,
       xs: 12,
-      sm: 14,
+      sm: 13,
       md: 16,
       lg: 18,
       xl: 20,

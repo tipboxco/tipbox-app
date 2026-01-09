@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VStack, Text, HStack, Pressable, Box, Input, InputField } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -16,7 +16,7 @@ import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
-import { useSafeAreaValues, toImageSource, formatRelativeTime } from '@/src/utils';
+import { toImageSource, formatRelativeTime } from '@/src/utils';
 import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -33,7 +33,7 @@ export const PostDetailScreen = () => {
     const { postData, type, showRelatedPost, relatedPostData } = route.params;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
-    const bottomInset = useSafeAreaValues('bottom');
+    const insets = useSafeAreaInsets();
 
     // Get post ID from postData
     const postId = postData.id;
@@ -130,8 +130,8 @@ export const PostDetailScreen = () => {
                 enableContentPanningGesture: true,
                 enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
                 animateOnMount: true,
-                // Bottom sheet'in bottom uzaklığı klavye yüksekliği kadar olacak
-                paddingBottom: keyboardHeight, // Klavye yüksekliği kadar padding
+                // Bottom sheet'in bottom uzaklığı klavye yüksekliği + safe area bottom inset kadar olacak
+                paddingBottom: keyboardHeight + insets.bottom, // Klavye yüksekliği + safe area bottom inset
                 keyboardBehavior: 'extend', // Klavye açıldığında bottom sheet genişler
                 keyboardBlurBehavior: 'restore',
                 android_keyboardInputMode: 'adjustResize',
@@ -184,6 +184,7 @@ export const PostDetailScreen = () => {
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
         <VStack flex={1} bg={isDark ? '#000000' : '#fff'}>
             {/* Status Bar & Header */}
@@ -312,7 +313,7 @@ export const PostDetailScreen = () => {
                 px="$4"
                 py="$3"
                 style={{
-                    paddingBottom: Platform.OS === 'ios' ? bottomInset : 12,
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
                 }}
             >
                 <HStack space="sm" alignItems="center">

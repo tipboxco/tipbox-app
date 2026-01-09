@@ -18,6 +18,8 @@ import {
 } from '@/src/features/interactions/api/hooks';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface UpdatePostCardDetailProps {
   data: UpdatePost;
@@ -56,6 +58,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
   const unbookmarkPostMutation = useUnbookmarkPost();
   const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
+  const { openBottomSheet } = useGlobalBottomSheet();
 
   // Sync with post status from API
   useEffect(() => {
@@ -95,6 +98,16 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
       postId: data.id,
       shareType: 'INTERNAL_REPOST',
     });
+  };
+
+  const handleOptionsPress = () => {
+    openBottomSheet(
+      <PostOptionsMenu
+        postId={data.id}
+        postContent={data.content}
+        postAuthorName={data.user.name}
+      />
+    );
   };
 
   return (
@@ -137,7 +150,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               {data.user.title}
             </Text>
           </VStack>
-          <Pressable>
+          <Pressable onPress={handleOptionsPress}>
             <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
           </Pressable>
         </HStack>
@@ -152,6 +165,9 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
           borderRadius={20}
           flexDirection="row"
           justifyContent="center"
+          flex={0}
+          flexShrink={1}
+          minWidth={70}
           px='$3'
           py='$2'
         >
@@ -184,7 +200,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
             <Text
               color={isDark ? '$textDark200' : '#666'}
-              fontSize="$2xl"
+              fontSize="$sm"
               fontStyle="italic"
             >
               {translatedContent}
@@ -338,7 +354,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                   />
                   <Text
                     color="#829905"
-                    fontSize="$2xl"
+                    fontSize="$sm"
                     textDecorationLine="underline"
                   >
                     {isTranslating

@@ -18,6 +18,8 @@ import {
 } from '@/src/features/interactions/api/hooks';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface TipsAndTricksPostCardDetailProps {
     data: TipsAndTricksPost;
@@ -54,6 +56,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
     const unbookmarkPostMutation = useUnbookmarkPost();
     const sharePostMutation = useSharePost();
     const { data: postStatus } = usePostStatus(data.id);
+    const { openBottomSheet } = useGlobalBottomSheet();
 
     // Sync with post status from API
     useEffect(() => {
@@ -95,6 +98,16 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
         });
     };
 
+    const handleOptionsPress = () => {
+        openBottomSheet(
+            <PostOptionsMenu
+                postId={data.id}
+                postContent={data.content}
+                postAuthorName={data.user.name}
+            />
+        );
+    };
+
     return (
         <VStack
             bg={isDark ? '$backgroundDark900' : '$white'}
@@ -128,7 +141,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                             {data.user.title}
                         </Text>
                     </VStack>
-                    <Pressable>
+                    <Pressable onPress={handleOptionsPress}>
                         <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
                     </Pressable>
                 </HStack>
@@ -168,12 +181,14 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                     borderColor="#56CFE5"
                     bgColor='#059982'
                     borderRadius={20}
-                    width={100}
+                    flex={0}
+                    flexShrink={1}
+                    minWidth={70}
                     px={10}
                     py={6}
                     flexDirection="row"
                     alignItems="center"
-                    justifyContent="space-evenly"
+                    justifyContent="center"
                 >
                     <Feather name="info" size={12} color={'#fff'} />
                     <Text
@@ -222,7 +237,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                         <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                         <Text
                             color={isDark ? '$textDark200' : '#666'}
-                            fontSize="$2xl"
+                            fontSize="$sm"
                             fontStyle="italic"
                         >
                             {translatedContent}
@@ -244,7 +259,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                             />
                             <Text
                                 color="#829905"
-                                fontSize="$2xl"
+                                fontSize="$sm"
                                 textDecorationLine="underline"
                             >
                                 {isTranslating

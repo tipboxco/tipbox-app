@@ -13,7 +13,7 @@ import BrandPostListScreen from './screens/BrandPostListScreen';
 import BrandEventsScreen from './screens/BrandEventsScreen';
 
 export type CatalogStackParamList = {
-  CatalogScreen: undefined;
+  CatalogScreen: { view?: 'products' | 'brands' } | undefined;
   ProductDetail: { productId: string };
   CategoryProducts: { categoryId: string };
   BrandDetailScreen: { brandId: string };

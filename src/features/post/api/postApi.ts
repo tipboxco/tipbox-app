@@ -56,6 +56,11 @@ export const createFreePost = async (
   formData.append('contextId', data.contextId);
   formData.append('description', data.description);
   
+  // Event ID varsa ekle (event'e bağlı post için)
+  if (data.eventId) {
+    formData.append('eventId', data.eventId);
+  }
+  
   // Images varsa ekle
   if (data.images && data.images.length > 0) {
     data.images.forEach((imageUri, index) => {

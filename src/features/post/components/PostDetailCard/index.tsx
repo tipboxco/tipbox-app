@@ -203,7 +203,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                             <Text
                                 color={isDark ? '$textDark200' : '#666'}
-                                fontSize="$2xl"
+                                fontSize="$sm"
                                 fontStyle="italic"
                             >
                                 {translatedContent}
@@ -226,7 +226,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             />
                             <Text
                                 color="#829905"
-                                fontSize="$2xl"
+                                fontSize="$sm"
                                 textDecorationLine="underline"
                             >
                                 {isTranslating

@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { FlatList, Dimensions, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { FlatList, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import {
   Box,
   VStack,
@@ -124,29 +124,155 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     // Fresh data geldiğinde React Query otomatik UI'ı günceller
   }, [refetchLimitedEvent, refetchAchievements]);
 
-  // ScrollView için scroll handler - nested scroll durumunda onEndReached düzgün çalışmayabilir
-  const handleScrollViewScroll = useCallback(
-    (event: any) => {
-      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-      const paddingToBottom = 100; // ScrollView'in altına yaklaşma mesafesi
-      const isCloseToBottom =
-        layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+  // ListHeaderComponent - Limited Event, Search Bar ve Filter
+  const ListHeaderComponent = useMemo(() => (
+    <VStack space="md" px="$4" pb="$4">
+      {/* Limited Time Event Card */}
+      {isLimitedEventLoading ? (
+        <LimitedTimeEventSkeleton />
+      ) : limitedEventError ? (
+        <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
+          <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+            Hata: {limitedEventError.message}
+          </Text>
+        </Box>
+      ) : limitedEvent ? (
+        <LimitedTimeEventCard
+          data={limitedEvent}
+          onPress={() => {
+            // Limited time event'i SeeAllReward formatına map et
+            if (onRewardPress) {
+              const reward: SeeAllReward = {
+                id: limitedEvent.id,
+                title: limitedEvent.title || '',
+                image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/ozan.png'),
+                description: limitedEvent.description || '',
+                category: '', // Limited event için category yok
+                isUnlocked: false, // Limited event için unlock durumu yok
+                completed: limitedEvent.userScore?.score || 0,
+                task: 0, // Limited event için target score yok
+              };
+              onRewardPress(reward);
+            }
+          }}
+        />
+      ) : null}
 
-      if (isCloseToBottom && hasNextAchievementsPage && !isFetchingNextAchievementsPage) {
-        fetchNextAchievementsPage();
-      }
-    },
-    [hasNextAchievementsPage, isFetchingNextAchievementsPage, fetchNextAchievementsPage]
-  );
+      {/* Search Bar */}
+      <HStack
+        alignItems="center"
+        bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+        borderWidth={1}
+        borderColor="#E9E9E9"
+        borderRadius={20}
+        px={14}
+        space="sm"
+      >
+        <Feather
+          name="search"
+          size={24}
+          color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+        />
+        <Input flex={1} borderWidth={0} bg="transparent">
+          <InputField
+            placeholder="Select product group or search product name"
+            placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+            color={isDark ? '#000' : '#000'}
+            fontSize="$2xs"
+          />
+        </Input>
+      </HStack>
+
+      {/* Achievement Filter */}
+      <AchievementFilter
+        activeFilter={activeFilter}
+        onFilterChange={onFilterChange}
+      />
+    </VStack>
+  ), [
+    isLimitedEventLoading,
+    limitedEventError,
+    limitedEvent,
+    isDark,
+    activeFilter,
+    onFilterChange,
+    onRewardPress,
+  ]);
+
+  // Empty state component
+  const EmptyComponent = useMemo(() => {
+    if (isAchievementsLoading && mappedAchievements.length === 0) {
+      return <BadgeSkeleton count={6} />;
+    }
+    if (achievementsError) {
+      return (
+        <Box py="$4" alignItems="center" px={16}>
+          <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+            Hata: {achievementsError.message}
+          </Text>
+        </Box>
+      );
+    }
+    if (getFilteredAchievements.length === 0) {
+      return (
+        <Box py="$4" alignItems="center" px={16}>
+          <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$sm" textAlign="center">
+            {activeFilter === 'All' 
+              ? 'Henüz achievement bulunmuyor'
+              : `Henüz ${activeFilter} durumunda achievement bulunmuyor`}
+          </Text>
+        </Box>
+      );
+    }
+    return null;
+  }, [
+    isAchievementsLoading,
+    mappedAchievements.length,
+    achievementsError,
+    getFilteredAchievements.length,
+    activeFilter,
+    isDark,
+  ]);
+
+  // numColumns'u sabit tut (FlatList numColumns'u dinamik değiştirmeyi desteklemiyor)
+  // Boş durumda zaten ListEmptyComponent gösteriliyor, o yüzden her zaman 2 kullan
+  const numColumns = 2;
+  const hasItems = getFilteredAchievements.length > 0;
 
   return (
     <VStack flex={1}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
+      <FlatList
+        key={`achievement-list-${numColumns}`} // numColumns değişirse yeniden render et
+        data={getFilteredAchievements}
+        numColumns={numColumns}
         showsVerticalScrollIndicator={false}
-        onScroll={handleScrollViewScroll}
-        scrollEventThrottle={400}
+        contentContainerStyle={{ paddingHorizontal: hasItems ? 16 : 0, paddingBottom: bottomInset + 24 }}
+        ItemSeparatorComponent={hasItems ? () => <Box height={12} /> : undefined}
+        columnWrapperStyle={hasItems ? { gap: 12 } : undefined}
+        ListHeaderComponent={ListHeaderComponent}
+        ListEmptyComponent={() => EmptyComponent}
+        renderItem={({ item }) => (
+          <Box flex={1}>
+            <BadgeCard
+              data={item}
+              onPress={() => onRewardPress(item)}
+            />
+          </Box>
+        )}
+        keyExtractor={(item) => item.id}
+        onEndReached={() => {
+          if (hasNextAchievementsPage && !isFetchingNextAchievementsPage) {
+            fetchNextAchievementsPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isFetchingNextAchievementsPage ? (
+            <Box pt="$4" alignItems="center" width="100%">
+              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -154,116 +280,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
           />
         }
-      >
-        <VStack space="md" px="$4">
-          {/* Limited Time Event Card */}
-          {isLimitedEventLoading ? (
-            <LimitedTimeEventSkeleton />
-          ) : limitedEventError ? (
-            <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
-                <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                Hata: {limitedEventError.message}
-              </Text>
-            </Box>
-          ) : limitedEvent ? (
-            <LimitedTimeEventCard
-              data={limitedEvent}
-              onPress={() => {
-                // Limited time event'i SeeAllReward formatına map et
-                if (onRewardPress) {
-                  const reward: SeeAllReward = {
-                    id: limitedEvent.id,
-                    title: limitedEvent.title || '',
-                    image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/ozan.png'),
-                    description: limitedEvent.description || '',
-                    category: '', // Limited event için category yok
-                    isUnlocked: false, // Limited event için unlock durumu yok
-                    completed: limitedEvent.userScore?.score || 0,
-                    task: 0, // Limited event için target score yok
-                  };
-                  onRewardPress(reward);
-                }
-              }}
-            />
-          ) : null}
-
-          {/* Search Bar */}
-          <HStack
-            alignItems="center"
-            bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-            borderWidth={1}
-            borderColor="#E9E9E9"
-            borderRadius={20}
-            px={14}
-            space="sm"
-          >
-            <Feather
-              name="search"
-              size={24}
-              color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-            />
-            <Input flex={1} borderWidth={0} bg="transparent">
-              <InputField
-                placeholder="Select product group or search product name"
-                placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                color={isDark ? '#000' : '#000'}
-                fontSize="$2xs"
-              />
-            </Input>
-          </HStack>
-
-          {/* Achievement Filter */}
-          <AchievementFilter
-            activeFilter={activeFilter}
-            onFilterChange={onFilterChange}
-          />
-        </VStack>
-
-        {/* Achievement Badges Grid */}
-        {isAchievementsLoading && mappedAchievements.length === 0 ? (
-          <BadgeSkeleton count={6} />
-        ) : achievementsError ? (
-          <Box py="$4" alignItems="center" px={16}>
-            <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-              Hata: {achievementsError.message}
-            </Text>
-          </Box>
-        ) : getFilteredAchievements.length === 0 ? (
-          <Box py="$4" alignItems="center" px={16}>
-            <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$sm" textAlign="center">
-              {activeFilter === 'All' 
-                ? 'Henüz achievement bulunmuyor'
-                : `Henüz ${activeFilter} durumunda achievement bulunmuyor`}
-            </Text>
-          </Box>
-        ) : (
-          <FlatList
-            data={getFilteredAchievements}
-            numColumns={2}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 0 }}
-            ItemSeparatorComponent={() => <Box height={12} />}
-            columnWrapperStyle={{ gap: 12 }}
-            renderItem={({ item }) => (
-              <Box flex={1}>
-                <BadgeCard
-                  data={item}
-                  onPress={() => onRewardPress(item)}
-                />
-              </Box>
-            )}
-            keyExtractor={(item) => item.id}
-            ListFooterComponent={
-              isFetchingNextAchievementsPage ? (
-                <Box pt="$4" alignItems="center" width="100%">
-                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                </Box>
-              ) : null
-            }
-          />
-        )}
-      </ScrollView>
+      />
     </VStack>
   );
 };

@@ -6,11 +6,10 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
-import { FilterBar } from '../components/FilterBar';
+import { FilterBarReanimated } from '../components/FilterBar/FilterBarReanimated';
 import { AssetAccessCard } from '../components/AssetAccessCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { ExpertButton } from '@/src/components/FloatingActionButton';
 import ExpertBottomSheet from '@/src/components/ExpertBottomSheet';
 import { SearchModal } from '@/src/components/SearchModal';
 import PostCard from '@/src/components/PostCards/PostCard';
@@ -127,7 +126,7 @@ const FeedScreenInner = React.memo(() => {
     return !!(
       (filters.interests && Array.isArray(filters.interests) && filters.interests.length > 0) ||
       (filters.tags && Array.isArray(filters.tags) && filters.tags.length > 0) ||
-      filters.category ||
+      (filters.category && Array.isArray(filters.category) && filters.category.length > 0) ||
       filters.sort
     );
   }, [filters]);
@@ -789,7 +788,7 @@ const FeedScreenInner = React.memo(() => {
           onSearchPress={handleSearchPress}
         />
         <AssetAccessCard onTabChange={handleTabChange} />
-        <FilterBar filters={filters} onFiltersChange={setFilters} />
+        <FilterBarReanimated filters={filters} onFiltersChange={setFilters} />
         <Box flex={1}>
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
@@ -863,11 +862,6 @@ const FeedScreenInner = React.memo(() => {
         <SearchModal
           visible={isSearchVisible}
           onClose={handleSearchClose}
-        />
-
-        {/* Expert Button */}
-        <ExpertButton
-          onPress={handleExpertPress}
         />
 
       </Box>

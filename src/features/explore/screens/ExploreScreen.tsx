@@ -35,6 +35,8 @@ import type { ExploreStackParamList } from '../navigation';
 import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { ProductInfoType } from '@/src/types/common';
 import * as Linking from 'expo-linking';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
@@ -348,29 +350,47 @@ const ExploreScreen: React.FC = () => {
 
   // See All Buttons - Navigation handlers
   const handleSeeAllEvents = useCallback(() => {
-    // Events tab'ına navigate et
+    // Catalog tab'ına Event listesine git (Events tab'ına navigate et)
     navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen' as any, undefined);
   }, []);
 
   const handleSeeAllBrands = useCallback(() => {
-    // Catalog tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
+    // Catalog tab'ına Brand listesine git
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'brands' });
   }, []);
 
   const handleSeeAllProducts = useCallback(() => {
-    // Catalog tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
+    // Catalog tab'ına Product listesine git
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'products' });
   }, []);
 
   // Item Press Handlers - Navigation
   const handleBrandPress = useCallback((brandId: string) => {
-    // BrandDetailScreen'e navigate et (Catalog stack içinde)
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandDetailScreen' as any, { brandId });
+    // BrandPostListScreen'e navigate et (Catalog stack içinde)
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandPostListScreen' as any, { brandId });
   }, []);
 
   const handleProductPress = useCallback((productId: string) => {
-    // BrandProductDetailScreen'e navigate et (Catalog stack içinde)
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen' as any, { productId });
+    // PostsScreen'e navigate et (Post stack içinde, product context ile)
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'PostsScreen',
+      params: {
+        stage: 'Product',
+        name: '', // Product name API'den gelecek veya PostsScreen'de gösterilmeyecek
+        productInfo: {
+          image: require('@/assets/inventory/product_01.png'), // Placeholder, API'den gelecek
+          title: '', // Placeholder, API'den gelecek
+        },
+        selectedProduct: {
+          id: productId,
+          name: '', // Placeholder, API'den gelecek
+          description: '',
+          image: require('@/assets/inventory/product_01.png'), // Placeholder
+        },
+        contextType: ProductInfoType.PRODUCT,
+        contextId: productId, // Product ID'yi contextId olarak gönder
+      },
+    });
   }, []);
 
   // PERFORMANCE FIX: Memoize onLayout handlers to prevent unnecessary re-renders
@@ -604,32 +624,20 @@ const ExploreScreen: React.FC = () => {
           >
             {/* Hottest Tab */}
             <Box key="0" flex={1}>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: bottomInset }}
-                nestedScrollEnabled={true}
-              >
-                <HottestTab searchQuery={debouncedSearchQuery} />
-              </ScrollView>
+              <HottestTab searchQuery={debouncedSearchQuery} />
             </Box>
 
             {/* News Tab */}
             <Box key="1" flex={1}>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: bottomInset }}
-                nestedScrollEnabled={true}
-              >
-                <NewsTab
-                  searchQuery={debouncedSearchQuery}
-                  onEventPress={handleEventPress}
-                  onBrandPress={handleBrandPress}
-                  onProductPress={handleProductPress}
-                  onSeeAllEvents={handleSeeAllEvents}
-                  onSeeAllBrands={handleSeeAllBrands}
-                  onSeeAllProducts={handleSeeAllProducts}
-                />
-              </ScrollView>
+              <NewsTab
+                searchQuery={debouncedSearchQuery}
+                onEventPress={handleEventPress}
+                onBrandPress={handleBrandPress}
+                onProductPress={handleProductPress}
+                onSeeAllEvents={handleSeeAllEvents}
+                onSeeAllBrands={handleSeeAllBrands}
+                onSeeAllProducts={handleSeeAllProducts}
+              />
             </Box>
           </AnimatedPagerView>
         </VStack>

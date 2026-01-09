@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef } from 'react';
-import { FlatList, ActivityIndicator } from 'react-native';
+import { FlatList, ActivityIndicator, ScrollView } from 'react-native';
 import { Box, VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventSkeleton } from '@/src/components/Skeletons';
@@ -308,40 +308,40 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   const ItemSeparator = useCallback(() => <Box width={12} />, []);
 
   return (
-    <VStack space="md" mb="$4" pt={0} mt={0}>
-      {/* New Community Events Section */}
-      <Box pl="$4">
-        <VStack space="sm" mb="$4">
-          <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
-            <Text
-              color={isDark ? '#FFFFFF' : '#B9B9B9'}
-              fontSize={14}
-              fontWeight="$bold"
-            >
-              New Community Events
-            </Text>
-            <Pressable onPress={handleSeeAllEvents}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+      contentContainerStyle={{ paddingBottom: 16 }}
+    >
+      <VStack space="md" mb="$4" pt={0} mt={0}>
+        {/* New Community Events Section */}
+      {(isLoadingEvents || events.length > 0) && (
+        <Box pl="$4">
+          <VStack space="sm" mb="$4">
+            <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
               <Text
-                color="#A3A3A3"
-                fontSize={12}
-                fontWeight="$medium"
-                textDecorationLine="underline"
+                color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                fontSize={14}
+                fontWeight="$bold"
               >
-                See Event Catalog
+                New Community Events
               </Text>
-            </Pressable>
-          </HStack>
-          {isLoadingEvents ? (
-            <Box pl="$4">
-              <EventSkeleton count={3} isHorizontal={true} />
-            </Box>
-          ) : events.length === 0 ? (
-            <Box py="$4" alignItems="center">
-              <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
-                Henüz etkinlik bulunmuyor.
-              </Text>
-            </Box>
-          ) : (
+              <Pressable onPress={handleSeeAllEvents}>
+                <Text
+                  color="#A3A3A3"
+                  fontSize={12}
+                  fontWeight="$medium"
+                  textDecorationLine="underline"
+                >
+                  See Event Catalog
+                </Text>
+              </Pressable>
+            </HStack>
+            {isLoadingEvents ? (
+              <Box pl="$4">
+                <EventSkeleton count={3} isHorizontal={true} />
+              </Box>
+            ) : (
             <FlatList
               data={events}
               horizontal
@@ -365,81 +365,77 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
               windowSize={5}
               ListFooterComponent={EventsFooter}
             />
-          )}
-        </VStack>
-      </Box>
+            )}
+          </VStack>
+        </Box>
+      )}
 
       {/* New Brands Section */}
-      <Box pl="$4">
-        <VStack space="sm" mb="$4">
-          <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
-            <Text
-              color={isDark ? '#FFFFFF' : '#B9B9B9'}
-              fontSize={14}
-              fontWeight="$bold"
-            >
-              New Brands
-            </Text>
-            <Pressable onPress={handleSeeAllBrands}>
+      {(isLoadingBrands || brands.length > 0) && (
+        <Box pl="$4">
+          <VStack space="sm" mb="$4">
+            <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
               <Text
-                color="#A3A3A3"
-                fontSize={12}
-                fontWeight="$medium"
-                textDecorationLine="underline"
+                color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                fontSize={14}
+                fontWeight="$bold"
               >
-                See Brand Catalog
+                New Brands
               </Text>
-            </Pressable>
-          </HStack>
-          {isLoadingBrands ? (
-            <Box pl="$4">
-              <HStack space={12}>
-                {Array.from({ length: 3 }).map((_, index) => {
-                  const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
-                  const shimmerColor = isDark ? '#404040' : '#E9E9E9';
-                  return (
-                    <Box
-                      key={index}
-                      width={120}
-                      height={150}
-                      bg={skeletonColor}
-                      borderWidth={1}
-                      borderColor={isDark ? '#404040' : '#E9E9E9'}
-                      borderRadius={10}
-                      p="$2"
-                    >
-                      <VStack space="sm" alignItems="center">
-                        <Box
-                          width={80}
-                          height={80}
-                          borderRadius={40}
-                          bg={shimmerColor}
-                        />
-                        <Box
-                          width={90}
-                          height={12}
-                          borderRadius={3}
-                          bg={shimmerColor}
-                        />
-                        <Box
-                          width={70}
-                          height={10}
-                          borderRadius={3}
-                          bg={shimmerColor}
-                        />
-                      </VStack>
-                    </Box>
-                  );
-                })}
-              </HStack>
-            </Box>
-          ) : brands.length === 0 ? (
-            <Box py="$4" alignItems="center">
-              <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
-                Henüz brand bulunmuyor.
-              </Text>
-            </Box>
-          ) : (
+              <Pressable onPress={handleSeeAllBrands}>
+                <Text
+                  color="#A3A3A3"
+                  fontSize={12}
+                  fontWeight="$medium"
+                  textDecorationLine="underline"
+                >
+                  See Brand Catalog
+                </Text>
+              </Pressable>
+            </HStack>
+            {isLoadingBrands ? (
+              <Box pl="$4">
+                <HStack space={12}>
+                  {Array.from({ length: 3 }).map((_, index) => {
+                    const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
+                    const shimmerColor = isDark ? '#404040' : '#E9E9E9';
+                    return (
+                      <Box
+                        key={index}
+                        width={120}
+                        height={150}
+                        bg={skeletonColor}
+                        borderWidth={1}
+                        borderColor={isDark ? '#404040' : '#E9E9E9'}
+                        borderRadius={10}
+                        p="$2"
+                      >
+                        <VStack space="sm" alignItems="center">
+                          <Box
+                            width={80}
+                            height={80}
+                            borderRadius={40}
+                            bg={shimmerColor}
+                          />
+                          <Box
+                            width={90}
+                            height={12}
+                            borderRadius={3}
+                            bg={shimmerColor}
+                          />
+                          <Box
+                            width={70}
+                            height={10}
+                            borderRadius={3}
+                            bg={shimmerColor}
+                          />
+                        </VStack>
+                      </Box>
+                    );
+                  })}
+                </HStack>
+              </Box>
+            ) : (
             <FlatList
               data={brands}
               horizontal
@@ -462,81 +458,77 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
               windowSize={5}
               ListFooterComponent={BrandsFooter}
             />
-          )}
-        </VStack>
-      </Box>
+            )}
+          </VStack>
+        </Box>
+      )}
 
       {/* New Products Section */}
-      <Box pl="$4">
-        <VStack space="sm">
-          <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
-            <Text
-              color={isDark ? '#FFFFFF' : '#B9B9B9'}
-              fontSize={14}
-              fontWeight="$bold"
-            >
-              New Products
-            </Text>
-            <Pressable onPress={handleSeeAllProducts}>
+      {(isLoadingProducts || products.length > 0) && (
+        <Box pl="$4">
+          <VStack space="sm">
+            <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
               <Text
-                color="#A3A3A3"
-                fontSize={12}
-                fontWeight="$medium"
-                textDecorationLine="underline"
+                color={isDark ? '#FFFFFF' : '#B9B9B9'}
+                fontSize={14}
+                fontWeight="$bold"
               >
-                See Product Catalog
+                New Products
               </Text>
-            </Pressable>
-          </HStack>
-          {isLoadingProducts ? (
-            <Box pl="$4">
-              <HStack space={12}>
-                {Array.from({ length: 3 }).map((_, index) => {
-                  const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
-                  const shimmerColor = isDark ? '#404040' : '#E9E9E9';
-                  return (
-                    <Box
-                      key={index}
-                      width={120}
-                      height={150}
-                      bg={skeletonColor}
-                      borderWidth={1}
-                      borderColor={isDark ? '#404040' : '#E9E9E9'}
-                      borderRadius={10}
-                      p="$2"
-                    >
-                      <VStack space="sm" alignItems="center">
-                        <Box
-                          width={86}
-                          height={86}
-                          borderRadius={5}
-                          bg={shimmerColor}
-                        />
-                        <Box
-                          width={90}
-                          height={12}
-                          borderRadius={3}
-                          bg={shimmerColor}
-                        />
-                        <Box
-                          width={70}
-                          height={10}
-                          borderRadius={3}
-                          bg={shimmerColor}
-                        />
-                      </VStack>
-                    </Box>
-                  );
-                })}
-              </HStack>
-            </Box>
-          ) : products.length === 0 ? (
-            <Box py="$4" alignItems="center">
-              <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={12}>
-                Henüz product bulunmuyor.
-              </Text>
-            </Box>
-          ) : (
+              <Pressable onPress={handleSeeAllProducts}>
+                <Text
+                  color="#A3A3A3"
+                  fontSize={12}
+                  fontWeight="$medium"
+                  textDecorationLine="underline"
+                >
+                  See Product Catalog
+                </Text>
+              </Pressable>
+            </HStack>
+            {isLoadingProducts ? (
+              <Box pl="$4">
+                <HStack space={12}>
+                  {Array.from({ length: 3 }).map((_, index) => {
+                    const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
+                    const shimmerColor = isDark ? '#404040' : '#E9E9E9';
+                    return (
+                      <Box
+                        key={index}
+                        width={120}
+                        height={150}
+                        bg={skeletonColor}
+                        borderWidth={1}
+                        borderColor={isDark ? '#404040' : '#E9E9E9'}
+                        borderRadius={10}
+                        p="$2"
+                      >
+                        <VStack space="sm" alignItems="center">
+                          <Box
+                            width={86}
+                            height={86}
+                            borderRadius={5}
+                            bg={shimmerColor}
+                          />
+                          <Box
+                            width={90}
+                            height={12}
+                            borderRadius={3}
+                            bg={shimmerColor}
+                          />
+                          <Box
+                            width={70}
+                            height={10}
+                            borderRadius={3}
+                            bg={shimmerColor}
+                          />
+                        </VStack>
+                      </Box>
+                    );
+                  })}
+                </HStack>
+              </Box>
+            ) : (
             <FlatList
               data={products}
               horizontal
@@ -559,10 +551,12 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
               windowSize={5}
               ListFooterComponent={ProductsFooter}
             />
-          )}
-        </VStack>
-      </Box>
-    </VStack>
+            )}
+          </VStack>
+        </Box>
+      )}
+      </VStack>
+    </ScrollView>
   );
 };
 

@@ -56,6 +56,17 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // Drawer store'dan state oku (sync için)
   const { isOpen, closeDrawer, openDrawer } = useDrawerStore();
   
+  // DEBUG: Drawer state'i logla
+  useEffect(() => {
+    const drawerStatus = props.state?.status || 'closed';
+    console.log('[DrawerContent] 📊 Drawer state changed:', { 
+      isOpen, 
+      drawerStatus,
+      isDrawerOpen: drawerStatus !== 'closed',
+      navigationState: props.state
+    });
+  }, [isOpen, props.state?.status, props.state]);
+  
   // CRITICAL: React Navigation drawer state ile drawer store'u senkronize et
   // PERFORMANCE FIX: Debounce sync + ref check - titrelemeyi önlemek için
   // CRITICAL: Sadece drawer açık/kapalı durumunda sync yap, swipe sırasında değil (JS thread'de re-render önleme)
@@ -321,67 +332,130 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   );
 
   // PERFORMANCE FIX: Navigation handler'larını useCallback ile memoize et
-  // Drawer store kullanarak handler'ları sabit tutuyoruz
-  // CRITICAL: NavigationService kullan - NavigationContainer dışında olduğumuz için useNavigation() çalışmaz
+  // CRITICAL FIX: NavigationService kullan - root navigator ref'ine direkt erişir
+  // Drawer content NavigationContainer içinde olduğu için NavigationService çalışır
+  // CRITICAL FIX: DrawerContent sadece drawer açıkken render edilir, bu yüzden state kontrolü gereksiz
+  // Handler çağrıldıysa drawer açık demektir
   const handleNavigateToProfile = useCallback(() => {
-    if (!isOpen) return;
+    console.log('[DrawerContent] 🎯 handleNavigateToProfile called', { 
+      userId: user?.id,
+      drawerStatus: props.state?.status,
+      isOpen
+    });
+    if (!user?.id) {
+      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
+      return;
+    }
+    console.log('[DrawerContent] ✅ Navigating to Profile...');
     handleCloseDrawer();
-    navigationService.navigate('Profile', undefined);
-  }, [isOpen, handleCloseDrawer]);
+    // NavigationService root navigator ref'ine direkt erişir
+    navigationService.navigate('Profile', {
+      screen: 'ProfileMain',
+      params: { userId: user.id },
+    });
+    console.log('[DrawerContent] ✅ Navigation called');
+  }, [handleCloseDrawer, user?.id, props.state?.status, isOpen]);
 
   const handleNavigateToWallet = useCallback(() => {
-    if (!isOpen) return;
+    console.log('[DrawerContent] 🎯 handleNavigateToWallet called');
+    console.log('[DrawerContent] ✅ Navigating to Wallet...');
     handleCloseDrawer();
     navigationService.navigate('Wallet', undefined);
-  }, [isOpen, handleCloseDrawer]);
+    console.log('[DrawerContent] ✅ Navigation called');
+  }, [handleCloseDrawer]);
 
   const handleNavigateToBookmarks = useCallback(() => {
-    if (!isOpen) return;
     handleCloseDrawer();
     navigationService.navigate('Bookmarks', undefined);
-  }, [isOpen, handleCloseDrawer]);
+  }, [handleCloseDrawer]);
 
   const handleNavigateToMarketplace = useCallback(() => {
-    if (!isOpen) return;
     handleCloseDrawer();
     navigationService.navigate('Marketplace', undefined);
-  }, [isOpen, handleCloseDrawer]);
+  }, [handleCloseDrawer]);
 
   const handleNavigateToSettings = useCallback(() => {
-    if (!isOpen) return;
     handleCloseDrawer();
     navigationService.navigate('Settings', undefined);
-  }, [isOpen, handleCloseDrawer]);
+  }, [handleCloseDrawer]);
 
   const handleNavigateToMoreSchoise = useCallback(() => {
-    if (!isOpen) return;
     handleCloseDrawer();
     navigationService.navigate('MoreSchoise', undefined);
-  }, [isOpen, handleCloseDrawer]);
+  }, [handleCloseDrawer]);
 
   // PERFORMANCE FIX: Profile section handler'ını memoize et
   const handleProfilePress = useCallback(() => {
-    if (!isOpen) return;
+    console.log('[DrawerContent] 🎯 handleProfilePress called (Avatar)', { 
+      userId: user?.id,
+      drawerStatus: props.state?.status,
+      isOpen
+    });
+    if (!user?.id) {
+      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
+      return;
+    }
+    console.log('[DrawerContent] ✅ Navigating to Profile (Avatar)...');
     handleCloseDrawer();
-    navigationService.navigate('Profile', undefined);
-  }, [isOpen, handleCloseDrawer]);
+    navigationService.navigate('Profile', {
+      screen: 'ProfileMain',
+      params: { userId: user.id },
+    });
+    console.log('[DrawerContent] ✅ Navigation called');
+  }, [handleCloseDrawer, user?.id, props.state?.status, isOpen]);
 
-  // PERFORMANCE FIX: Stats section handler'ını memoize et
-  const handleStatsPress = useCallback(() => {
-    if (!isOpen) return;
+  // PERFORMANCE FIX: Stats section handler'larını memoize et
+  const handlePostsPress = useCallback(() => {
+    console.log('[DrawerContent] 🎯 handlePostsPress called', { userId: user?.id });
+    if (!user?.id) {
+      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
+      return;
+    }
+    console.log('[DrawerContent] ✅ Navigating to Profile (Posts)...');
     handleCloseDrawer();
-    navigationService.navigate('Profile', undefined);
-  }, [isOpen, handleCloseDrawer]);
+    navigationService.navigate('Profile', {
+      screen: 'ProfileMain',
+      params: { userId: user.id },
+    });
+    console.log('[DrawerContent] ✅ Navigation called');
+  }, [handleCloseDrawer, user?.id]);
+
+  const handleTrustPress = useCallback(() => {
+    console.log('[DrawerContent] 🎯 handleTrustPress called', { userId: user?.id });
+    if (!user?.id) {
+      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
+      return;
+    }
+    console.log('[DrawerContent] ✅ Navigating to TrustList...');
+    handleCloseDrawer();
+    navigationService.navigate('Profile', {
+      screen: 'TrustList',
+      params: { userId: user.id, initialTab: 'trust' },
+    });
+    console.log('[DrawerContent] ✅ Navigation called');
+  }, [handleCloseDrawer, user?.id]);
+
+  const handleTrusterPress = useCallback(() => {
+    console.log('[DrawerContent] 🎯 handleTrusterPress called', { userId: user?.id });
+    if (!user?.id) {
+      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
+      return;
+    }
+    console.log('[DrawerContent] ✅ Navigating to TrustList (Truster)...');
+    handleCloseDrawer();
+    navigationService.navigate('Profile', {
+      screen: 'TrustList',
+      params: { userId: user.id, initialTab: 'truster' },
+    });
+    console.log('[DrawerContent] ✅ Navigation called');
+  }, [handleCloseDrawer, user?.id]);
 
   // PERFORMANCE FIX: Bottom menu handler'larını memoize et
   const handleBottomMenuPress = useCallback(() => {
-    if (!isOpen) return;
     handleCloseDrawer();
-  }, [isOpen, handleCloseDrawer]);
+  }, [handleCloseDrawer]);
 
   const handleLogout = useCallback(async () => {
-    if (!isOpen) return;
-    
     // Drawer'ı hemen kapat
     handleCloseDrawer();
     
@@ -394,7 +468,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     logout().catch((error) => {
       console.error('❌ Logout hatası (arka plan):', error);
     });
-  }, [isOpen, handleCloseDrawer, logout]);
+  }, [handleCloseDrawer, logout]);
 
   // PERFORMANCE FIX: MENU_ITEMS array'ini useMemo ile memoize et
   // Handler'lar useCallback ile memoize edildi, bu yüzden array sadece bir kez oluşturulur
@@ -452,7 +526,13 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   ]);
 
   return (
-    <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'} w="100%" m={0} p={0}>
+    <Box 
+      flex={1} 
+      bg={isDark ? '#000000' : '#FFFFFF'} 
+      w="100%" 
+      m={0} 
+      p={0}
+    >
       {/* ScrollView kullan - DrawerContentScrollView yerine */}
       <ScrollView
         contentContainerStyle={{ 
@@ -472,7 +552,13 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           width: '100%',
         }}
       >
-        <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'} w="100%" m={0} p={0}>
+        <Box 
+          flex={1} 
+          bg={isDark ? '#000000' : '#FFFFFF'} 
+          w="100%" 
+          m={0} 
+          p={0}
+        >
           {/* Banner Section – FULL BLEED */}
           <Box h={280} w="100%" position="relative" bg={isDark ? '#000000' : '#FFFFFF'}>
           {/* Banner */}
@@ -496,7 +582,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               right: 0,
               zIndex: 0,
             }}
-            onPress={handleProfilePress}
+            onPress={() => {
+              console.log('[DrawerContent] 👆 TouchableOpacity (Avatar) pressed');
+              handleProfilePress();
+            }}
           >
             <Box px="$6">
               <Box alignItems="center">
@@ -542,54 +631,78 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
         </Box>
 
           {/* Stats Section – FULL BLEED, içte hizalama */}
-          <TouchableOpacity
-            activeOpacity={1}
-            style={{ opacity: 0.9, zIndex: 2 }}
-            onPress={handleStatsPress}
-          >
-            <Box mt={-40} mb="$4">
-              <HStack justifyContent="center" alignItems="center" px="$6">
-              <VStack alignItems="center" space="xs" flex={1}>
-                <Text
-                  color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={14}
-                  fontWeight="$bold"
-                >
-                  {stats.posts}
-                </Text>
-                <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
-                  Posts
-                </Text>
-              </VStack>
+          <Box mt={-40} mb="$4">
+            <HStack justifyContent="center" alignItems="center" px="$6">
+              <Pressable
+                onPress={() => {
+                  console.log('[DrawerContent] 👆 Pressable (Posts) pressed');
+                  handlePostsPress();
+                }}
+                flex={1}
+                alignItems="center"
+                $hover={{ opacity: 0.7 }}
+              >
+                <VStack alignItems="center" space="xs">
+                  <Text
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    fontSize={14}
+                    fontWeight="$bold"
+                  >
+                    {stats.posts}
+                  </Text>
+                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                    Posts
+                  </Text>
+                </VStack>
+              </Pressable>
               <Box w={1} h={30} bg={isDark ? '#DFDFDF' : '#DFDFDF'} />
-              <VStack alignItems="center" space="xs" flex={1}>
-                <Text
-                  color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={14}
-                  fontWeight="$bold"
-                >
-                  {stats.trust}
-                </Text>
-                <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
-                  Trust
-                </Text>
-              </VStack>
+              <Pressable
+                onPress={() => {
+                  console.log('[DrawerContent] 👆 Pressable (Trust) pressed');
+                  handleTrustPress();
+                }}
+                flex={1}
+                alignItems="center"
+                $hover={{ opacity: 0.7 }}
+              >
+                <VStack alignItems="center" space="xs">
+                  <Text
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    fontSize={14}
+                    fontWeight="$bold"
+                  >
+                    {stats.trust}
+                  </Text>
+                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                    Trust
+                  </Text>
+                </VStack>
+              </Pressable>
               <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
-              <VStack alignItems="center" space="xs" flex={1}>
-                <Text
-                  color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={14}
-                  fontWeight="$bold"
-                >
-                  {stats.truster}
-                </Text>
-                <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
-                  Truster
-                </Text>
-              </VStack>
-              </HStack>
-            </Box>
-          </TouchableOpacity>
+              <Pressable
+                onPress={() => {
+                  console.log('[DrawerContent] 👆 Pressable (Truster) pressed');
+                  handleTrusterPress();
+                }}
+                flex={1}
+                alignItems="center"
+                $hover={{ opacity: 0.7 }}
+              >
+                <VStack alignItems="center" space="xs">
+                  <Text
+                    color={isDark ? '$textDark50' : '$textLight900'}
+                    fontSize={14}
+                    fontWeight="$bold"
+                  >
+                    {stats.truster}
+                  </Text>
+                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                    Truster
+                  </Text>
+                </VStack>
+              </Pressable>
+            </HStack>
+          </Box>
 
           {/* Premium Banner – FULL BLEED, içte padding */}
           <Box w="100%" mb="$3">
@@ -620,7 +733,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             {MENU_ITEMS.map((item: MenuItem) => (
               <Pressable
                 key={item.id}
-                onPress={item.onPress}
+                onPress={() => {
+                  console.log('[DrawerContent] 👆 MenuItem pressed:', item.id, item.label);
+                  item.onPress();
+                }}
                 h={48}
                 justifyContent="center"
                 bg="transparent"

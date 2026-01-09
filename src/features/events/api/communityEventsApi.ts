@@ -392,6 +392,33 @@ export const joinEvent = async (
 };
 
 /**
+ * Leave Event endpoint function
+ * /events/{eventId}/leave endpoint'ine POST request göndererek etkinlikten ayrılır
+ *
+ * @param eventId - Event ID'si
+ * @returns EventDetailApiResponse - Güncellenmiş event detay bilgileri
+ */
+export const leaveEvent = async (
+  eventId: string
+): Promise<EventDetailApiResponse> => {
+  try {
+    const response = await apiService.getClient().post<EventDetailApiResponse>(
+      `/events/${eventId}/leave`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[leaveEvent] API Error:', {
+      url: `/events/${eventId}/leave`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
  * Get Event Requirements endpoint function
  * /events/{eventId}/requirements endpoint'inden etkinlik gereksinimleri ve ilerleme bilgilerini getirir
  *

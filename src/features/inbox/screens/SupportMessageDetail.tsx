@@ -1134,6 +1134,8 @@ const SupportMessageDetailScreen: React.FC = () => {
           }
           contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         />
       </KeyboardAvoidingView>
 

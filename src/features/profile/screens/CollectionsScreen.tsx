@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, HStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft } from 'lucide-react-native';
 import { Feather } from '@expo/vector-icons';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Header } from '@/src/components/Header';
 import type { Badge } from '@/src/mock/profile/badges/types';
 import CollectionTabs from '../components/CollectionTabs';
@@ -15,8 +16,9 @@ import BadgeDetail from '../components/BadgeDetail';
 import { useSafeAreaValues } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { ProfileStackParamList } from '../navigation';
 
-type CollectionsScreenNavigationProp = NativeStackNavigationProp<any, 'CollectionsScreen'>;
+type CollectionsScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'Collections'>;
 
 const CollectionsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -47,7 +49,7 @@ const CollectionsScreen: React.FC = () => {
     
     const handleClose = () => {
       closeBottomSheet();
-    setTimeout(() => setSelectedBadge(null), 300);
+      setTimeout(() => setSelectedBadge(null), 300);
     };
 
     // Badge detail content'i hazırla
@@ -106,10 +108,10 @@ const CollectionsScreen: React.FC = () => {
           backgroundColor: isDark ? '#666666' : '#CCCCCC',
         },
         onChange: (index: number) => {
-    // Sheet kapandığında selectedBadge'i temizle
-    if (index === -1) {
+          // Sheet kapandığında selectedBadge'i temizle
+          if (index === -1) {
             setTimeout(() => setSelectedBadge(null), 300);
-    }
+          }
         },
       }
     );
@@ -143,7 +145,7 @@ const CollectionsScreen: React.FC = () => {
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <Header
-        title="Michael Clark's Collections"
+        title={`${user?.name || 'User'}'s Collections`}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />

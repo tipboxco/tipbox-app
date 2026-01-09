@@ -197,7 +197,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
                         <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                         <Text
                             color={isDark ? '$textDark200' : '#666'}
-                            fontSize={config.tokens.fontSizes['2xs'] as number}
+                            fontSize="$sm"
                             fontStyle="italic"
                         >
                             {translatedContent}
@@ -219,7 +219,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
                             />
                             <Text
                                 color="#829905"
-                                fontSize={config.tokens.fontSizes['2xs'] as number}
+                                fontSize="$sm"
                                 textDecorationLine="underline"
                             >
                                 {isTranslating

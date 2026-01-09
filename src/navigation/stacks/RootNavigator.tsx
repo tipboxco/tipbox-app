@@ -25,18 +25,24 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
  * 
  * Uygulamanın en üst seviye navigator'ı.
  * 
- * CRITICAL ARCHITECTURE FIX: Drawer → Tab hierarchy
+ * CRITICAL ARCHITECTURE: Flat Navigation Pattern (Twitter/X, Instagram)
  * 
  * Twitter/X Pattern:
  * - Drawer, Tab'lerin DIŞINDA ve ÜSTÜNDE olmalı
  * - Gesture ownership drawer'da kalır
  * - swipeEdgeWidth ile edge swipe kontrolü
+ * - Detay ekranları (Profile, Post, vb.) RootStack seviyesinde (Z-Index yönetimi)
  * 
  * Yapı:
  * - Auth: Authentication flow (if !isAuthenticated)
  * - App: AppDrawerNavigator → MainTabsNavigator (if isAuthenticated)
- * - Modal Screens: Settings, MoreSchoise (presentation: 'modal')
- * - Overlay Screens: Post, Profile, Wallet, Bookmarks, Marketplace, MessageDetail (presentation: 'card')
+ * - DetailsGroup: Post, Profile, Wallet, Bookmarks, Marketplace, MessageDetail (presentation: 'card')
+ * - ModalsGroup: Settings, MoreSchoise (presentation: 'modal')
+ * 
+ * PERFORMANCE BENEFITS:
+ * - Detay ekranları RootStack'te olduğu için Tab Bar ve Drawer otomatik arkada kalır
+ * - Memory efficiency: Drawer sadece MainTabs'ı sarmalar, detay ekranlarında freeze olur
+ * - Z-Index yönetimi: Detay ekranları açıldığında Tab Bar gizlenir (otomatik)
  */
 export const RootNavigator = () => {
   // Memoized selector ile re-render minimize et
@@ -56,92 +62,73 @@ export const RootNavigator = () => {
           {/* Main Application - AppDrawerNavigator (Drawer → Tab hierarchy) */}
           <RootStack.Screen name="App" component={AppDrawerNavigator} />
           
-          {/* Modal Screens - UI flow */}
-          <RootStack.Group screenOptions={{ presentation: 'modal' }}>
-            <RootStack.Screen
-              name="Settings"
-              component={SettingsNavigator}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true,
-              }}
-            />
-            <RootStack.Screen
-              name="MoreSchoise"
-              component={MoreSchoiseNavigator}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true,
-              }}
-            />
-          </RootStack.Group>
-          
-          {/* Overlay Screens - Context-free content drill-down */}
+          {/* DetailsGroup - Context-free content drill-down screens */}
           {/* Bu ekranlar hangi tab açık olursa olsun Root'tan açılır */}
-          {/* PERFORMANCE FIX: Lazy loaded navigators reduce initial bundle size */}
-          <RootStack.Group screenOptions={{ presentation: 'card' }}>
+          {/* CRITICAL: Native Stack kullanıldığı için swipe back gesture native hissiyat verir */}
+          {/* PERFORMANCE: Lazy loaded navigators reduce initial bundle size */}
+          <RootStack.Group 
+            screenOptions={{ 
+              presentation: 'card',
+              animation: 'slide_from_right',
+              gestureEnabled: true, // Native swipe back gesture
+              headerShown: false,
+            }}
+          >
             <RootStack.Screen
               name="Post"
               component={PostNavigator}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true, // Android back behavior için
-                headerShown: false, // Header'ı koru
-              }}
             />
             <RootStack.Screen
               name="Profile"
               component={ProfileNavigator}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true, // Android back behavior için
-                headerShown: false, // Header'ı koru
-              }}
-            />
-            <RootStack.Screen
-              name="Wallet"
-              component={WalletNavigator}
-              options={{
-                animation: 'slide_from_bottom',
-                gestureEnabled: true, // Android back behavior için
-                headerShown: false, // Header'ı koru
-              }}
             />
             <RootStack.Screen
               name="Bookmarks"
               component={BookmarksNavigator}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true, // Android back behavior için
-                headerShown: false, // Header'ı koru
-              }}
             />
             <RootStack.Screen
               name="Marketplace"
               component={MarketplaceNavigator}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true, // Android back behavior için
-                headerShown: false, // Header'ı koru
-              }}
             />
             <RootStack.Screen
               name="MessageDetail"
               component={MessageDetailScreen}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true, // Android back behavior için
-                headerShown: false, // Header'ı koru
-              }}
             />
             <RootStack.Screen
               name="SupportMessageDetail"
               component={SupportMessageDetailScreen}
-              options={{
-                animation: 'slide_from_right',
-                gestureEnabled: true, // Android back behavior için
-                headerShown: false, // Header'ı koru
-              }}
+            />
+          </RootStack.Group>
+          
+          {/* Wallet - Special animation (slide from bottom) */}
+          <RootStack.Screen
+            name="Wallet"
+            component={WalletNavigator}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_bottom',
+              gestureEnabled: true,
+              headerShown: false,
+            }}
+          />
+          
+          {/* ModalsGroup - UI flow screens */}
+          {/* CRITICAL: Modal presentation ile Settings ve MoreSchoise aşağıdan yukarıya açılır */}
+          <RootStack.Group 
+            screenOptions={{ 
+              presentation: 'modal',
+              animation: 'slide_from_right',
+              gestureEnabled: true,
+              headerShown: false,
+            }}
+          >
+            <RootStack.Screen
+              name="Settings"
+              component={SettingsNavigator}
+            />
+            <RootStack.Screen
+              name="MoreSchoise"
+              component={MoreSchoiseNavigator}
             />
           </RootStack.Group>
         </>

@@ -65,12 +65,12 @@ export interface FeedFilterParams {
   tags?: string[];
   
   /** 
-   * Kategori - Tek bir kategori ID'si
+   * Kategori - Kategori ID'leri array'i
    * Backend'de interests ile birleştirilir (OR mantığı)
    * mainCategoryId ve subCategoryId alanlarında filtreleme yapılır
-   * Query: category=category-id
+   * Query: category[]=category-id-1&category[]=category-id-2
    */
-  category?: string;
+  category?: string[];
   
   /** 
    * Sıralama
@@ -167,7 +167,7 @@ export const getFeed = async (
  * - Tüm filtreler: getFilteredFeed(undefined, 20, { interests: ['cat1'], tags: ['Review'], category: 'cat2', sort: 'top' })
  * - Sadece interests: getFilteredFeed(undefined, 20, { interests: ['cat1', 'cat2'] })
  * - Sadece tags: getFilteredFeed(undefined, 20, { tags: ['Review', 'Benchmark'] })
- * - Sadece category: getFilteredFeed(undefined, 20, { category: 'cat1' })
+ * - Sadece category: getFilteredFeed(undefined, 20, { category: ['cat1', 'cat2'] })
  * - Sadece sort: getFilteredFeed(undefined, 20, { sort: 'recent' })
  */
 export const getFilteredFeed = async (
@@ -203,11 +203,15 @@ export const getFilteredFeed = async (
     });
   }
   
-  // Kategori (Category) - Tek değer olarak gönderilir
+  // Kategori (Category) - Array olarak gönderilir
   // Backend'de interests ile birleştirilir (OR mantığı)
-  // Query: category=category-id
-  if (filters?.category) {
-    params.append('category', filters.category);
+  // Query: category[]=category-id-1&category[]=category-id-2
+  if (filters?.category && Array.isArray(filters.category) && filters.category.length > 0) {
+    filters.category.forEach((categoryId) => {
+      if (categoryId) {
+        params.append('category[]', categoryId);
+      }
+    });
   }
   
   // Sıralama (Sort) - 'recent' veya 'top'

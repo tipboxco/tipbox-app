@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getEventBadges, getLimitedEvent, getAchievements, createEventPost, joinEvent, getEventRequirements, type CreateEventPostRequest, type CreateEventPostResponse, type EventBadgesResponse, type EventRequirementsResponse } from './communityEventsApi';
+import { getActiveEvents, getUpcomingEvents, getEventDetail, getEventPosts, getEventBadges, getLimitedEvent, getAchievements, createEventPost, joinEvent, leaveEvent, getEventRequirements, type CreateEventPostRequest, type CreateEventPostResponse, type EventBadgesResponse, type EventRequirementsResponse } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
 import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
@@ -307,6 +307,31 @@ export const useJoinEvent = () => {
 
   return useMutation<EventDetailApiResponse, Error, string>({
     mutationFn: joinEvent,
+    onSuccess: (data, eventId) => {
+      // Event detail query'sini invalidate et
+      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      // Active ve upcoming events query'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
+      queryClient.invalidateQueries({ queryKey: eventsKeys.upcoming() });
+    },
+  });
+};
+
+/**
+ * Leave Event mutation hook
+ * Etkinlikten ayrılır
+ *
+ * @returns React Query mutation hook
+ *
+ * @example
+ * const leaveEventMutation = useLeaveEvent();
+ * leaveEventMutation.mutate('event-123');
+ */
+export const useLeaveEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<EventDetailApiResponse, Error, string>({
+    mutationFn: leaveEvent,
     onSuccess: (data, eventId) => {
       // Event detail query'sini invalidate et
       queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });

@@ -27,6 +27,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { MessageSkeleton } from '@/src/components/Skeletons';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -459,10 +460,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             </VStack>
 
             {/* Messages List - Full Height */}
-            {isLoading ? (
-                <Box py={20} alignItems="center">
-                    <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
-                </Box>
+            {isLoading && (!messages || messages.length === 0) ? (
+                <MessageSkeleton count={5} />
             ) : error ? (
                 <Box py={20} alignItems="center">
                     <Text color="#CE4A4A">Hata: {error.message}</Text>

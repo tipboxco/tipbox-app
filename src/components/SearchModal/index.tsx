@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Platform, Keyboard, ActivityIndicator, Dimensions, Modal, StyleSheet, Pressable as RNPressable } from 'react-native';
+import PagerView from 'react-native-pager-view';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
   runOnJS,
+  interpolateColor,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
@@ -37,7 +39,9 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.5; // %50
 const SWIPE_THRESHOLD = 100; // Kapatma için minimum kayma mesafesi
 
-type SearchFilter = 'all' | 'users' | 'brands' | 'products';
+type SearchFilter = 'users' | 'brands' | 'products';
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 interface SearchModalProps {
   visible: boolean;
@@ -56,11 +60,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<SearchFilter>('all');
+  const [selectedFilter, setSelectedFilter] = useState<SearchFilter>('users');
   const inputRef = useRef<any>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [shouldRender, setShouldRender] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const pagerRef = useRef<PagerView>(null);
+  const tabContainerRef = useRef<any>(null);
+  const [tabContainerWidth, setTabContainerWidth] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Debounced search query - API çağrısını optimize et
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -69,8 +77,51 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   const translateY = useSharedValue(-MODAL_HEIGHT);
   const opacity = useSharedValue(0);
   const panY = useSharedValue(0);
+  
+  // 🎯 CORE: Shared progress value (0 = Users, 1 = Brands, 2 = Products)
+  const progress = useSharedValue(0);
 
-  // Search API hook - sadece debounced query varsa çağrılır
+  // Her tab için önceden verileri çek ve cache'le - tab değiştiğinde önceki tab'ın verileri görünmesin
+  // Users tab için
+  const {
+    data: usersDefaultData,
+    isLoading: isUsersLoading,
+  } = useSearch(
+    {
+      keyword: '',
+      types: ['user'],
+      limit: 4,
+    },
+    debouncedQuery.length === 0 && visible // Modal açıkken ve input boşken aktif
+  );
+
+  // Brands tab için
+  const {
+    data: brandsDefaultData,
+    isLoading: isBrandsLoading,
+  } = useSearch(
+    {
+      keyword: '',
+      types: ['brand'],
+      limit: 4,
+    },
+    debouncedQuery.length === 0 && visible // Modal açıkken ve input boşken aktif
+  );
+
+  // Products tab için
+  const {
+    data: productsDefaultData,
+    isLoading: isProductsLoading,
+  } = useSearch(
+    {
+      keyword: '',
+      types: ['product'],
+      limit: 4,
+    },
+    debouncedQuery.length === 0 && visible // Modal açıkken ve input boşken aktif
+  );
+
+  // Arama sonuçları için (input dolu iken) - seçili tab'a göre
   const searchTypes = useMemo(() => {
     switch (selectedFilter) {
       case 'users':
@@ -79,26 +130,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
         return ['brand'];
       case 'products':
         return ['product'];
-      case 'all':
       default:
-        return ['user', 'brand', 'product'];
+        return ['user'];
     }
   }, [selectedFilter]);
 
-  // Default veriler için (input boşken) - her zaman aktif
-  const {
-    data: defaultData,
-    isLoading: isDefaultLoading,
-  } = useSearch(
-    {
-      keyword: '', // Boş keyword ile default verileri getir
-      types: searchTypes,
-      limit: 10, // Default: 10'ar veri (API limit ile uyumlu)
-    },
-    debouncedQuery.length === 0 // Sadece input boşken aktif
-  );
-
-  // Arama sonuçları için (input dolu iken) - sadece query varsa aktif
   const {
     data: searchData,
     isLoading: isSearching,
@@ -107,14 +143,68 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     {
       keyword: debouncedQuery,
       types: searchTypes,
-      limit: 10, // API limit ile uyumlu
+      limit: 10, // Arama sonuçları için 10'ar tane (API limit ile uyumlu)
     },
-    debouncedQuery.length > 0 // Sadece query varsa aktif et
+    debouncedQuery.length > 0 && visible // Sadece query varsa ve modal açıkken aktif et
   );
 
-  // Input boşken default verileri, dolu iken arama sonuçlarını kullan
-  const displayData = debouncedQuery.length > 0 ? searchData : defaultData;
-  const isLoading = debouncedQuery.length > 0 ? isSearching : isDefaultLoading;
+  // Display data'yı seçili tab'a göre belirle - cache'den kullan
+  const displayData = useMemo(() => {
+    if (debouncedQuery.length > 0) {
+      return searchData;
+    }
+    // Input boşken, seçili tab'a göre cache'den veri al
+    switch (selectedFilter) {
+      case 'users':
+        return usersDefaultData;
+      case 'brands':
+        return brandsDefaultData;
+      case 'products':
+        return productsDefaultData;
+      default:
+        return usersDefaultData;
+    }
+  }, [debouncedQuery.length, searchData, selectedFilter, usersDefaultData, brandsDefaultData, productsDefaultData]);
+
+  // Loading state'i seçili tab'a göre belirle
+  const isLoading = useMemo(() => {
+    if (debouncedQuery.length > 0) {
+      return isSearching;
+    }
+    switch (selectedFilter) {
+      case 'users':
+        return isUsersLoading;
+      case 'brands':
+        return isBrandsLoading;
+      case 'products':
+        return isProductsLoading;
+      default:
+        return isUsersLoading;
+    }
+  }, [debouncedQuery.length, isSearching, selectedFilter, isUsersLoading, isBrandsLoading, isProductsLoading]);
+
+  // Has results kontrolü - sadece seçili tab'ın verilerini kontrol et
+  const hasResults = useMemo(() => {
+    if (debouncedQuery.length > 0) {
+      // Arama sonuçları için
+      return (
+        (selectedFilter === 'users' && displayData?.userData && displayData.userData.length > 0) ||
+        (selectedFilter === 'brands' && displayData?.brandData && displayData.brandData.length > 0) ||
+        (selectedFilter === 'products' && displayData?.productData && displayData.productData.length > 0)
+      );
+    }
+    // Default veriler için - sadece seçili tab'ın verilerini kontrol et
+    switch (selectedFilter) {
+      case 'users':
+        return displayData?.userData && displayData.userData.length > 0;
+      case 'brands':
+        return displayData?.brandData && displayData.brandData.length > 0;
+      case 'products':
+        return displayData?.productData && displayData.productData.length > 0;
+      default:
+        return false;
+    }
+  }, [debouncedQuery.length, selectedFilter, displayData]);
 
   // Debounce effect - thread safety için optimize edildi
   useEffect(() => {
@@ -141,6 +231,84 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
     setDebouncedQuery('');
     onClose();
   }, [onClose]);
+
+  // Tab press handler - PagerView native animasyonu ile geçiş
+  const handleTabPress = useCallback((index: number) => {
+    pagerRef.current?.setPage(index);
+    // Filter'ı da güncelle
+    const filters: SearchFilter[] = ['users', 'brands', 'products'];
+    setSelectedFilter(filters[index]);
+  }, []);
+
+  // PagerView scroll handler - realtime progress güncelleme
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      progress.value = position + offset;
+    },
+    [progress]
+  );
+
+  // PagerView page selected handler - snap sonrası progress'i sync et
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
+      setCurrentPage(position);
+      // Filter'ı da güncelle
+      const filterMap: SearchFilter[] = ['users', 'brands', 'products'];
+      setSelectedFilter(filterMap[position]);
+    },
+    [progress]
+  );
+
+  // Tab 1 (Users) label color animation
+  const tab1Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1, 2],
+      [activeColor, inactiveColor, inactiveColor]
+    );
+    return { color };
+  });
+
+  // Tab 2 (Brands) label color animation
+  const tab2Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1, 2],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  });
+
+  // Tab 3 (Products) label color animation
+  const tab3Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1, 2],
+      [inactiveColor, inactiveColor, activeColor]
+    );
+    return { color };
+  });
+
+  // Indicator position animation
+  const tabWidth = tabContainerWidth / 3 || 0;
+  const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
+  const indicatorStyle = useAnimatedStyle(() => {
+    // Indicator'ı tab genişliğine göre translate et
+    const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+    return {
+      transform: [{ translateX }],
+    };
+  });
 
   // Focus input callback - worklet dışında tanımla
   const focusInput = useCallback(() => {
@@ -172,6 +340,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
       // Reset values immediately
       translateY.value = -MODAL_HEIGHT;
       panY.value = 0;
+      progress.value = 0;
+      setCurrentPage(0);
+      setSelectedFilter('users');
+      // PagerView'i de ilk sayfaya al
+      pagerRef.current?.setPage(0);
       
       // PERFORMANCE FIX: Use requestAnimationFrame instead of setTimeout for instant start
       // This ensures animation starts on next frame (16ms) instead of 50ms delay
@@ -359,22 +532,56 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
 
   // Render search results
   const renderSearchResults = () => {
-    // Input boşken, eğer seçili filtreye ait default data varsa göster
-    // Aksi halde "Arama yapmak için yazmaya başlayın" mesajını göster
-    if (debouncedQuery.length === 0) {
-      // Seçili filtreye göre default data kontrolü
-      const hasDefaultDataForFilter =
-        (selectedFilter === 'all' && displayData && (
-          (displayData.userData && displayData.userData.length > 0) ||
-          (displayData.brandData && displayData.brandData.length > 0) ||
-          (displayData.productData && displayData.productData.length > 0)
-        )) ||
-        (selectedFilter === 'users' && displayData?.userData && displayData.userData.length > 0) ||
-        (selectedFilter === 'brands' && displayData?.brandData && displayData.brandData.length > 0) ||
-        (selectedFilter === 'products' && displayData?.productData && displayData.productData.length > 0);
+    // Arama yapıldığında (input dolu iken)
+    if (debouncedQuery.length > 0) {
+      if (isSearching) {
+        return (
+          <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text
+              mt="$4"
+              fontSize="$xs"
+              color={isDark ? '#8E8E93' : '#8E8E93'}
+              textAlign="center"
+            >
+              Aranıyor...
+            </Text>
+          </Box>
+        );
+      }
 
-      // Eğer default data yoksa ve loading değilse "Arama yapmak için yazmaya başlayın" göster
-      if (!hasDefaultDataForFilter && !isLoading) {
+      if (searchError) {
+        return (
+          <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$20">
+            <Feather name="alert-circle" size={48} color="#CE4A4A" />
+            <Text
+              mt="$4"
+              fontSize="$xs"
+              color="#CE4A4A"
+              textAlign="center"
+              fontWeight="$semibold"
+            >
+              Arama sırasında bir hata oluştu
+            </Text>
+            <Text
+              mt="$2"
+              fontSize="$sm"
+              color={isDark ? '#8E8E93' : '#8E8E93'}
+              textAlign="center"
+            >
+              Lütfen tekrar deneyin
+            </Text>
+          </Box>
+        );
+      }
+
+      // Arama sonuçları yoksa
+      const hasSearchResults = 
+        (selectedFilter === 'users' && searchData?.userData && searchData.userData.length > 0) ||
+        (selectedFilter === 'brands' && searchData?.brandData && searchData.brandData.length > 0) ||
+        (selectedFilter === 'products' && searchData?.productData && searchData.productData.length > 0);
+
+      if (!hasSearchResults) {
         return (
           <Box flex={1} justifyContent="center" alignItems="center" py="$20">
             <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
@@ -383,283 +590,38 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
               fontSize="$sm"
               color={isDark ? '#8E8E93' : '#8E8E93'}
               textAlign="center"
+              fontWeight="$medium"
             >
-              Arama yapmak için yazmaya başlayın
+              Sonuç bulunamadı
+            </Text>
+            <Text
+              mt="$2"
+              fontSize="$xs"
+              color={isDark ? '#8E8E93' : '#8E8E93'}
+              textAlign="center"
+            >
+              "{debouncedQuery}" için arama sonucu yok
             </Text>
           </Box>
         );
       }
-      // Eğer default data varsa, aşağıdaki render mantığı devam edecek
+
+      // Arama sonuçlarını göster - arama sonuçları için displayData yerine searchData kullan
+      // Bu kısım aşağıdaki return'de render edilecek
     }
 
-    if (isLoading) {
+    // Input boşken - default veriler
+    // Tab değiştiğinde önceki tab'ın verilerini gösterme - sadece seçili tab'ın verilerini göster
+    // Her tab için doğrudan cache'den veri al
+
+    // Arama sonuçları için render
+    if (debouncedQuery.length > 0) {
       return (
-        <Box flex={1} justifyContent="center" alignItems="center" py="$20">
-          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-          <Text
-            mt="$4"
-            fontSize="$xs"
-            color={isDark ? '#8E8E93' : '#8E8E93'}
-            textAlign="center"
-          >
-            {debouncedQuery.length > 0 ? 'Aranıyor...' : 'Yükleniyor...'}
-          </Text>
-        </Box>
-      );
-    }
-
-    if (searchError) {
-      return (
-        <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$20">
-          <Feather name="alert-circle" size={48} color="#CE4A4A" />
-          <Text
-            mt="$4"
-            fontSize="$xs"
-            color="#CE4A4A"
-            textAlign="center"
-            fontWeight="$semibold"
-          >
-            Arama sırasında bir hata oluştu
-          </Text>
-          <Text
-            mt="$2"
-            fontSize="$sm"
-            color={isDark ? '#8E8E93' : '#8E8E93'}
-            textAlign="center"
-          >
-            Lütfen tekrar deneyin
-          </Text>
-        </Box>
-      );
-    }
-
-    // Results render - displayData kullan (default veya arama sonuçları)
-    const hasResults =
-      (displayData?.userData && displayData.userData.length > 0) ||
-      (displayData?.brandData && displayData.brandData.length > 0) ||
-      (displayData?.productData && displayData.productData.length > 0);
-
-    // Sadece arama yapıldığında (input dolu) ve sonuç yoksa "Sonuç bulunamadı" göster
-    if (!hasResults && debouncedQuery.length > 0) {
-      return (
-        <Box flex={1} justifyContent="center" alignItems="center" py="$20">
-          <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
-          <Text
-            mt="$4"
-            fontSize="$sm"
-            color={isDark ? '#8E8E93' : '#8E8E93'}
-            textAlign="center"
-            fontWeight="$medium"
-          >
-            Sonuç bulunamadı
-          </Text>
-          <Text
-            mt="$2"
-            fontSize="$xs"
-            color={isDark ? '#8E8E93' : '#8E8E93'}
-            textAlign="center"
-          >
-            "{debouncedQuery}" için arama sonucu yok
-          </Text>
-        </Box>
-      );
-    }
-
-    return (
-      <VStack space="sm" flex={1}>
-        {/* All Results - Tüm sonuçları göster */}
-        {selectedFilter === 'all' && (
-          <>
-            {/* Users Results */}
-            {displayData?.userData && displayData.userData.length > 0 && (
-              <VStack space="xs" mt="$1">
-                <Text
-                  fontSize="$sm"
-                  fontWeight="$semibold"
-                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  px="$4"
-                >
-                  User
-                </Text>
-                <VStack>
-                  {displayData.userData.map((user: any) => (
-                    <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
-                      <HStack
-                        alignItems="center"
-                        space="sm"
-                        py="$2"
-                        px="$4"
-                      >
-                        {/* Avatar - Circular with red border */}
-                        <Box
-                          width={56}
-                          height={56}
-                          borderRadius={100}
-                          borderWidth={2}
-                          borderColor="#CE4A4A"
-                          alignItems="center"
-                          justifyContent="center"
-                          overflow="hidden"
-                          bg={isDark ? '#1C1C1E' : '#F2F2F7'}
-                        >
-                          <Image
-                            source={toImageSource(user.avatar) || require('@/assets/avatar/ozan.png')}
-                            alt={user.name}
-                            width={52}
-                            height={52}
-                            resizeMode="cover"
-                          />
-                        </Box>
-
-                        {/* User Info */}
-                        <VStack flex={1} space="xs">
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$xs"
-                            fontWeight="$bold"
-                            numberOfLines={1}
-                          >
-                            {user.name}
-                          </Text>
-                          {user.cosmetic && (
-                            <VStack space="xs">
-                              {/* İlk satır */}
-                              <Text
-                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                fontSize="$sm"
-                                numberOfLines={1}
-                                lineHeight={22}
-                              >
-                                {user.cosmetic.split(' - ')[0] || user.cosmetic}
-                              </Text>
-                              {/* İkinci satır - eğer " - " ile ayrılmışsa */}
-                              {user.cosmetic.includes(' - ') && user.cosmetic.split(' - ').length > 1 && (
-                                <Text
-                                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                  fontSize="$sm"
-                                  numberOfLines={1}
-                                  lineHeight={22}
-                                >
-                                  {user.cosmetic.split(' - ').slice(1).join(' - ')}
-                                </Text>
-                              )}
-                            </VStack>
-                          )}
-                        </VStack>
-                      </HStack>
-                    </Pressable>
-                  ))}
-                </VStack>
-              </VStack>
-            )}
-
-            {/* Brands Results */}
-            {displayData?.brandData && displayData.brandData.length > 0 && (
-              <VStack space="xs" mt="$1">
-                <Text
-                  fontSize="$sm"
-                  fontWeight="$semibold"
-                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  px="$4"
-                >
-                  Brand
-                </Text>
-                <VStack>
-                  {displayData.brandData.map((brand: any) => (
-                    <Pressable key={brand.id} onPress={() => handleBrandPress(brand.id)}>
-                      <HStack
-                        alignItems="center"
-                        space="sm"
-                        py="$2"
-                        px="$4"
-                      >
-                        {/* Brand Logo */}
-                        <Box width={54} height={54} borderRadius={8} overflow="hidden">
-                          <Image
-                            source={
-                              toImageSource(brand.logo) || require('@/assets/inventory/product_01.png')
-                            }
-                            alt={brand.name}
-                            width={54}
-                            height={54}
-                            resizeMode="contain"
-                          />
-                        </Box>
-
-                        {/* Brand Info */}
-                        <VStack flex={1} space="xs">
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$bold"
-                            numberOfLines={1}
-                          >
-                            {brand.name}
-                          </Text>
-                          {brand.category && (
-                            <Text
-                              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                              fontSize="$xs"
-                              numberOfLines={1}
-                            >
-                              {brand.category}
-                            </Text>
-                          )}
-                        </VStack>
-                      </HStack>
-                    </Pressable>
-                  ))}
-                </VStack>
-              </VStack>
-            )}
-
-            {/* Products Results */}
-            {displayData?.productData && displayData.productData.length > 0 && (
-              <VStack space="xs" mt="$1">
-                <Text
-                  fontSize="$sm"
-                  fontWeight="$semibold"
-                  color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  px="$4"
-                >
-                  Product
-                </Text>
-                <VStack>
-                  {displayData.productData.map((product: any) => (
-                    <Box
-                      key={product.id}
-                      py="$2"
-                      px="$4"
-                    >
-                      <ProductInfoCard
-                        size="big"
-                        type={ProductInfoType.PRODUCT}
-                        image={toImageSource(product.image) || require('@/assets/inventory/product_01.png')}
-                        title={product.name}
-                        subName={product.model || product.specs || ''}
-                        onPress={() => handleProductPress(product.id)}
-                      />
-                    </Box>
-                  ))}
-                </VStack>
-              </VStack>
-            )}
-          </>
-        )}
-
-        {/* Users Results - Sadece users filtresi seçiliyse */}
-        {selectedFilter === 'users' && displayData?.userData && displayData.userData.length > 0 && (
-          <VStack >
-            <Text
-              fontSize="$xs"
-              fontWeight="$semibold"
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              px="$4"
-            >
-              User
-            </Text>
+        <VStack space="sm" flex={1}>
+          {/* Users Tab - Arama sonuçları */}
+          {selectedFilter === 'users' && searchData?.userData && searchData.userData.length > 0 && (
             <VStack>
-              {displayData.userData.map((user: any) => (
+              {searchData.userData.map((user: any) => (
                 <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
                   <HStack
                     alignItems="center"
@@ -700,7 +662,6 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                       </Text>
                       {user.cosmetic && (
                         <VStack space="xs">
-                          {/* İlk satır */}
                           <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             fontSize="$xs"
@@ -709,7 +670,6 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                           >
                             {user.cosmetic.split(' - ')[0] || user.cosmetic}
                           </Text>
-                          {/* İkinci satır - eğer " - " ile ayrılmışsa */}
                           {user.cosmetic.includes(' - ') && user.cosmetic.split(' - ').length > 1 && (
                             <Text
                               color={isDark ? '#8C8C8C' : '#8C8C8C'}
@@ -727,24 +687,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 </Pressable>
               ))}
             </VStack>
-          </VStack>
-        )}
+          )}
 
-        {/* Brands Results - Sadece brands filtresi seçiliyse */}
-        {selectedFilter === 'brands' && displayData?.brandData && displayData.brandData.length > 0 && (
-          <VStack space="xs" mt="$1">
-            <Text
-              fontSize="$xs"
-              fontWeight="$semibold"
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              px="$4"
-            >
-              Brand
-            </Text>
+          {/* Brands Tab - Arama sonuçları */}
+          {selectedFilter === 'brands' && searchData?.brandData && searchData.brandData.length > 0 && (
             <VStack>
-              {displayData.brandData.map((brand: any) => (
+              {searchData.brandData.map((brand: any) => (
                 <Pressable key={brand.id} onPress={() => handleBrandPress(brand.id)}>
-                    <HStack
+                  <HStack
                     alignItems="center"
                     space="md"
                     py="$2"
@@ -787,51 +737,232 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                 </Pressable>
               ))}
             </VStack>
-          </VStack>
-        )}
+          )}
 
-        {/* Products Results - Sadece products filtresi seçiliyse */}
-        {selectedFilter === 'products' &&
-          displayData?.productData &&
-          displayData.productData.length > 0 && (
-            <VStack space="xs" mt="$1">
-              <Text
-                fontSize="$xs"
-                fontWeight="$semibold"
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                px="$4"
-              >
-                Product
-              </Text>
-              <VStack>
-                {displayData.productData.map((product: any) => (
-                  <Box
-                    key={product.id}
-                    py="$2"
-                    px="$4"
-                  >
-                    <ProductInfoCard
-                      size="big"
-                      type={ProductInfoType.PRODUCT}
-                      image={toImageSource(product.image) || require('@/assets/inventory/product_01.png')}
-                      title={product.name}
-                      subName={product.model || product.specs || ''}
-                      onPress={() => handleProductPress(product.id)}
-                    />
-                  </Box>
-                ))}
-              </VStack>
+          {/* Products Tab - Arama sonuçları */}
+          {selectedFilter === 'products' && searchData?.productData && searchData.productData.length > 0 && (
+            <VStack>
+              {searchData.productData.map((product: any) => (
+                <Box
+                  key={product.id}
+                  py="$2"
+                  px="$4"
+                >
+                  <ProductInfoCard
+                    size="big"
+                    type={ProductInfoType.PRODUCT}
+                    image={toImageSource(product.image) || require('@/assets/inventory/product_01.png')}
+                    title={product.name}
+                    subName={product.model || product.specs || ''}
+                    onPress={() => handleProductPress(product.id)}
+                  />
+                </Box>
+              ))}
             </VStack>
           )}
+        </VStack>
+      );
+    }
+
+    // Default veriler için render - her tab için doğrudan cache'den veri al
+    return (
+      <VStack space="sm" flex={1}>
+        {/* Users Tab - Sadece users göster - sadece users tab'ı seçiliyse ve veri varsa */}
+        {selectedFilter === 'users' && (
+          <>
+            {isUsersLoading ? (
+              <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+                <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                <Text
+                  mt="$4"
+                  fontSize="$xs"
+                  color={isDark ? '#8E8E93' : '#8E8E93'}
+                  textAlign="center"
+                >
+                  Yükleniyor...
+                </Text>
+              </Box>
+            ) : usersDefaultData?.userData && usersDefaultData.userData.length > 0 ? (
+              <VStack>
+                {usersDefaultData.userData.map((user: any) => (
+              <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
+                <HStack
+                  alignItems="center"
+                  space="md"
+                  py="$2"
+                  px="$4"
+                >
+                  {/* Avatar - Circular with red border */}
+                  <Box
+                    width={56}
+                    height={56}
+                    borderRadius={100}
+                    borderWidth={2}
+                    borderColor="#CE4A4A"
+                    alignItems="center"
+                    justifyContent="center"
+                    overflow="hidden"
+                    bg={isDark ? '#1C1C1E' : '#F2F2F7'}
+                  >
+                    <Image
+                      source={toImageSource(user.avatar) || require('@/assets/avatar/ozan.png')}
+                      alt={user.name}
+                      width={52}
+                      height={52}
+                      resizeMode="cover"
+                    />
+                  </Box>
+
+                  {/* User Info */}
+                  <VStack flex={1} space="xs">
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize="$sm"
+                      fontWeight="$bold"
+                      numberOfLines={1}
+                    >
+                      {user.name}
+                    </Text>
+                    {user.cosmetic && (
+                      <VStack space="xs">
+                        {/* İlk satır */}
+                        <Text
+                          color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                          fontSize="$xs"
+                          numberOfLines={1}
+                          lineHeight={18}
+                        >
+                          {user.cosmetic.split(' - ')[0] || user.cosmetic}
+                        </Text>
+                        {/* İkinci satır - eğer " - " ile ayrılmışsa */}
+                        {user.cosmetic.includes(' - ') && user.cosmetic.split(' - ').length > 1 && (
+                          <Text
+                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            fontSize="$xs"
+                            numberOfLines={1}
+                            lineHeight={18}
+                          >
+                            {user.cosmetic.split(' - ').slice(1).join(' - ')}
+                          </Text>
+                        )}
+                      </VStack>
+                    )}
+                  </VStack>
+                  </HStack>
+                </Pressable>
+              ))}
+              </VStack>
+            ) : null}
+          </>
+        )}
+
+        {/* Brands Tab - Sadece brands göster - sadece brands tab'ı seçiliyse ve veri varsa */}
+        {selectedFilter === 'brands' && (
+          <>
+            {isBrandsLoading ? (
+              <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+                <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                <Text
+                  mt="$4"
+                  fontSize="$xs"
+                  color={isDark ? '#8E8E93' : '#8E8E93'}
+                  textAlign="center"
+                >
+                  Yükleniyor...
+                </Text>
+              </Box>
+            ) : brandsDefaultData?.brandData && brandsDefaultData.brandData.length > 0 ? (
+              <VStack>
+                {brandsDefaultData.brandData.map((brand: any) => (
+              <Pressable key={brand.id} onPress={() => handleBrandPress(brand.id)}>
+                <HStack
+                  alignItems="center"
+                  space="md"
+                  py="$2"
+                  px="$4"
+                >
+                  {/* Brand Logo */}
+                  <Box width={54} height={54} borderRadius={8} overflow="hidden">
+                    <Image
+                      source={
+                        toImageSource(brand.logo) || require('@/assets/inventory/product_01.png')
+                      }
+                      alt={brand.name}
+                      width={54}
+                      height={54}
+                      resizeMode="contain"
+                    />
+                  </Box>
+
+                  {/* Brand Info */}
+                  <VStack flex={1} space="xs">
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize="$xs"
+                      fontWeight="$bold"
+                      numberOfLines={1}
+                    >
+                      {brand.name}
+                    </Text>
+                    {brand.category && (
+                      <Text
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        fontSize="$sm"
+                        numberOfLines={1}
+                      >
+                        {brand.category}
+                      </Text>
+                    )}
+                  </VStack>
+                  </HStack>
+                </Pressable>
+              ))}
+              </VStack>
+            ) : null}
+          </>
+        )}
+
+        {/* Products Tab - Sadece products göster - sadece products tab'ı seçiliyse ve veri varsa */}
+        {selectedFilter === 'products' && (
+          <>
+            {isProductsLoading ? (
+              <Box flex={1} justifyContent="center" alignItems="center" py="$20">
+                <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                <Text
+                  mt="$4"
+                  fontSize="$xs"
+                  color={isDark ? '#8E8E93' : '#8E8E93'}
+                  textAlign="center"
+                >
+                  Yükleniyor...
+                </Text>
+              </Box>
+            ) : productsDefaultData?.productData && productsDefaultData.productData.length > 0 ? (
+              <VStack>
+                {productsDefaultData.productData.map((product: any) => (
+                <Box
+                  key={product.id}
+                  py="$2"
+                  px="$4"
+                >
+                  <ProductInfoCard
+                    size="big"
+                    type={ProductInfoType.PRODUCT}
+                    image={toImageSource(product.image) || require('@/assets/inventory/product_01.png')}
+                    title={product.name}
+                    subName={product.model || product.specs || ''}
+                    onPress={() => handleProductPress(product.id)}
+                  />
+                </Box>
+              ))}
+              </VStack>
+            ) : null}
+          </>
+        )}
       </VStack>
     );
   };
 
-  const filters: { id: SearchFilter; label: string }[] = [
-    { id: 'users', label: 'Users' },
-    { id: 'brands', label: 'Brands' },
-    { id: 'products', label: 'Products' },
-  ];
 
   if (!shouldRender && !visible) {
     return null;
@@ -857,10 +988,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
               },
               overlayAnimatedStyle,
             ]}
+            pointerEvents={visible ? 'auto' : 'none'}
           >
             <RNPressable
               style={StyleSheet.absoluteFillObject}
               onPress={handleClose}
+              pointerEvents="box-only"
             />
           </Animated.View>
 
@@ -880,8 +1013,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
               },
               modalAnimatedStyle,
             ]}
+            pointerEvents="box-none"
           >
-            <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
+            <VStack flex={1} bg={isDark ? '#000000' : '#FFFFFF'} pointerEvents="auto">
               {/* Header */}
               <VStack space="sm" px="$4" pt={insets.top + 8} pb="$2">
                   {/* Search Bar */}
@@ -914,41 +1048,137 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     )}
                   </HStack>
 
-                  {/* Filters */}
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <HStack space="sm" px="$4">
-                      {filters.map((filter) => (
-                        <Pressable
-                          key={filter.id}
-                          onPress={() => setSelectedFilter(filter.id)}
-                          bg={
-                            selectedFilter === filter.id
-                              ? (isDark ? '#2C2C2E' : '#E5E5EA')
-                              : (isDark ? '#1C1C1E' : '#FFFFFF')
-                          }
-                          borderWidth={selectedFilter === filter.id ? 0 : 1}
-                          borderColor={isDark ? '#2C2C2E' : '#E5E5EA'}
-                          borderRadius={20}
-                          px="$4"
-                          py="$2"
-                        >
-                          <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$xs"
-                            fontWeight={selectedFilter === filter.id ? '$semibold' : '$normal'}
-                          >
-                            {filter.label}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </HStack>
-                  </ScrollView>
                 </VStack>
 
-                {/* Content */}
-                <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-                  {renderSearchResults()}
-                </ScrollView>
+                {/* Tab Header */}
+                <VStack pt="$2" bg={isDark ? '#000000' : '#FFFFFF'}>
+                  <HStack
+                    ref={tabContainerRef}
+                    borderBottomWidth={1}
+                    borderColor="#E9E9E9"
+                    p={0}
+                    m={0}
+                    position="relative"
+                    onLayout={(event) => {
+                      const width = event.nativeEvent.layout.width;
+                      setTabContainerWidth(width);
+                    }}
+                  >
+                    {/* Users Tab Label */}
+                    <Pressable
+                      flex={1}
+                      onPress={() => handleTabPress(0)}
+                      alignItems="center"
+                      py="$1"
+                    >
+                      <VStack alignItems="center" space="xs">
+                        <Animated.Text
+                          style={[
+                            {
+                              fontSize: 12,
+                              fontWeight: 'bold',
+                            },
+                            tab1Style,
+                          ]}
+                        >
+                          Users
+                        </Animated.Text>
+                      </VStack>
+                    </Pressable>
+
+                    {/* Brands Tab Label */}
+                    <Pressable
+                      flex={1}
+                      onPress={() => handleTabPress(1)}
+                      alignItems="center"
+                      py="$1"
+                    >
+                      <VStack alignItems="center" space="xs">
+                        <Animated.Text
+                          style={[
+                            {
+                              fontSize: 12,
+                              fontWeight: 'bold',
+                            },
+                            tab2Style,
+                          ]}
+                        >
+                          Brands
+                        </Animated.Text>
+                      </VStack>
+                    </Pressable>
+
+                    {/* Products Tab Label */}
+                    <Pressable
+                      flex={1}
+                      onPress={() => handleTabPress(2)}
+                      alignItems="center"
+                      py="$1"
+                    >
+                      <VStack alignItems="center" space="xs">
+                        <Animated.Text
+                          style={[
+                            {
+                              fontSize: 12,
+                              fontWeight: 'bold',
+                            },
+                            tab3Style,
+                          ]}
+                        >
+                          Products
+                        </Animated.Text>
+                      </VStack>
+                    </Pressable>
+
+                    {/* Animated Indicator */}
+                    {tabWidth > 0 && (
+                      <Animated.View
+                        style={[
+                          {
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            width: indicatorWidth,
+                            height: 2,
+                            backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                          },
+                          indicatorStyle,
+                        ]}
+                      />
+                    )}
+                  </HStack>
+                </VStack>
+
+                {/* PagerView - Native swipe tab switching */}
+                <AnimatedPagerView
+                  ref={pagerRef}
+                  style={{ flex: 1 }}
+                  initialPage={0}
+                  onPageScroll={handlePageScroll}
+                  onPageSelected={handlePageSelected}
+                  pointerEvents="auto"
+                >
+                  {/* Users Tab */}
+                  <Box key={`users-${selectedFilter === 'users' ? 'active' : 'inactive'}`} flex={1}>
+                    <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+                      {renderSearchResults()}
+                    </ScrollView>
+                  </Box>
+
+                  {/* Brands Tab */}
+                  <Box key={`brands-${selectedFilter === 'brands' ? 'active' : 'inactive'}`} flex={1}>
+                    <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+                      {renderSearchResults()}
+                    </ScrollView>
+                  </Box>
+
+                  {/* Products Tab */}
+                  <Box key={`products-${selectedFilter === 'products' ? 'active' : 'inactive'}`} flex={1}>
+                    <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+                      {renderSearchResults()}
+                    </ScrollView>
+                  </Box>
+                </AnimatedPagerView>
 
               {/* Handler - Altta, sadece buradan sürüklenebilir (alttan yukarı çekme) */}
               <GestureDetector gesture={panGesture}>
