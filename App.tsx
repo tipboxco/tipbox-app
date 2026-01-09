@@ -20,6 +20,7 @@ import { TranslationCacheService } from '@/src/services/TranslationCacheService'
 SplashScreen.preventAutoHideAsync();
 
 // PERFORMANCE FIX: Memoize status bar style to prevent unnecessary re-renders
+// CRITICAL: SafeAreaView backgroundColor transparent - ekranın kendi background'ı görünsün
 const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
   <>
     <SafeAreaView 
@@ -30,12 +31,13 @@ const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
         left: 0,
         right: 0,
         zIndex: 9999,
-        backgroundColor: isDark ? '#000000' : '#FFFFFF' 
+        backgroundColor: 'transparent' // CRITICAL: Transparent - ekranın background'ı görünsün
       }} 
     />
     <StatusBar 
       style={isDark ? 'light' : 'dark'} 
-      backgroundColor={isDark ? '#000000' : '#FFFFFF'} 
+      backgroundColor="transparent" // CRITICAL: Transparent - ekranın background'ı görünsün
+      translucent={true} // Android için translucent mode
     />
   </>
 ));

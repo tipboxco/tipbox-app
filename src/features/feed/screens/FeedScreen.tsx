@@ -27,6 +27,7 @@ import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
 import { toImageSource, useBottomOffset } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
+import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
@@ -74,6 +75,27 @@ const FeedScreenInner = React.memo(() => {
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // PERFORMANCE FIX: Drawer durumunu kontrol et - drawer açılırken/kapanırken FlatList scroll'unu önle
+  // CRITICAL: isDragging state'ini kullan - swipe sırasında re-render önleme (JS thread'de kasma önleme)
+  const isDrawerOpen = useDrawerStore((state) => state.isOpen);
+  const isDragging = useDrawerStore((state) => state.isDragging);
+  const [isScrollEnabled, setIsScrollEnabled] = useState(true);
+  
+  // Drawer açıkken veya swipe sırasında scroll'u disable et
+  // CRITICAL: isDragging kontrolü ile swipe sırasında re-render önleme
+  useEffect(() => {
+    if (isDrawerOpen || isDragging) {
+      setIsScrollEnabled(false);
+    } else {
+      // Drawer kapandıktan sonra kısa bir delay ile scroll'u enable et
+      // Bu, drawer kapanma animasyonunun tamamlanmasını bekler ve titreme önler
+      const timer = setTimeout(() => {
+        setIsScrollEnabled(true);
+      }, 150); // 150ms delay - drawer kapanma animasyonu tamamlandıktan sonra
+      return () => clearTimeout(timer);
+    }
+  }, [isDrawerOpen, isDragging]);
 
   // Filtre state'i
   // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
@@ -631,7 +653,7 @@ const FeedScreenInner = React.memo(() => {
         if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
             <ExperiencePostCard
-              key={item.data.id}
+              key={itemId}
               data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
             />
           );
@@ -642,7 +664,7 @@ const FeedScreenInner = React.memo(() => {
         // Post type için ProfilePost kullan ve PostCard render et
         return (
           <PostCard
-            key={item.data.id}
+            key={itemId}
             data={mapFeedToCardData(item.data as ProfilePost)}
           />
         );
@@ -650,7 +672,7 @@ const FeedScreenInner = React.memo(() => {
       case 'benchmark':
         return (
           <BenchmarkPostCard
-            key={item.data.id}
+            key={itemId}
             data={mapBenchmarkToCardData(item.data as BenchmarkApiItem & { type: 'benchmark' })}
           />
         );
@@ -660,7 +682,7 @@ const FeedScreenInner = React.memo(() => {
         if ('contextType' in item.data && 'contextData' in item.data) {
           return (
             <QuestionPostCard
-              key={item.data.id}
+              key={itemId}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
             />
           );
@@ -670,7 +692,7 @@ const FeedScreenInner = React.memo(() => {
       case 'tipsAndTricks':
         return (
           <TipsAndTricksPostCard
-            key={item.data.id}
+            key={itemId}
             data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
           />
         );
@@ -680,7 +702,7 @@ const FeedScreenInner = React.memo(() => {
         if ('relatedPost' in item.data && 'contextType' in item.data) {
           return (
             <UpdatePostCard
-              key={item.data.id}
+              key={itemId}
               data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
             />
           );
@@ -724,8 +746,7 @@ const FeedScreenInner = React.memo(() => {
     );
   }, [isFetchingNextPage, isDark]);
 
-  return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+  return (<SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box
         flex={1}
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
@@ -799,6 +820,10 @@ const FeedScreenInner = React.memo(() => {
               windowSize={7}
               updateCellsBatchingPeriod={50}
               removeClippedSubviews={true}
+              // PERFORMANCE FIX: Drawer açılırken/kapanırken scroll'u devre dışı bırak - titreme/kasma önleme
+              scrollEnabled={isScrollEnabled}
+              // PERFORMANCE FIX: extraData ile FlatList'e ne zaman re-render yapması gerektiğini söyle
+              extraData={feedItems.length}
               refreshControl={
                 <RefreshControl
                   refreshing={isRefetching}

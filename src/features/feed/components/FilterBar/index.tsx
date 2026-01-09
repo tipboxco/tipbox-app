@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Animated, Platform, Text as RNText } from 'react-native';
+import { Animated, Platform, Text as RNText, Easing } from 'react-native';
 import { HStack, Pressable, Text, Box, VStack, ScrollView } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
@@ -66,6 +66,7 @@ export const SORT_OPTIONS = [
 interface FilterBarProps {
   filters: FeedFilterParams;
   onFiltersChange: (filters: FeedFilterParams) => void;
+  onPanelHeightChange?: (height: number) => void;
 }
 
 /**
@@ -81,15 +82,22 @@ interface FilterBarProps {
  * - Category: Single category selection, merged with interests in backend
  * - Sort: recent (Boost → Date) or top (Likes → Views → Date)
  */
-export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }) => {
+export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, onPanelHeightChange }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
   // Track which filter panel is open
   const [openFilterId, setOpenFilterId] = useState<string | null>(null);
+  // Track if panel should be rendered (for smooth close animation)
+  const [shouldRenderPanel, setShouldRenderPanel] = useState(false);
+  // Track last open filter ID for rendering during close animation
+  const [lastOpenFilterId, setLastOpenFilterId] = useState<string | null>(null);
+  // Ref to track shouldRenderPanel for stale closure prevention
+  const shouldRenderPanelRef = useRef(false);
   
-  // Animation value for expandable panel height (0 to dynamic height based on content)
+  // Animation values for expandable panel
   const panelHeight = useRef(new Animated.Value(0)).current;
+  const panelOpacity = useRef(new Animated.Value(0)).current;
   
   // Calculate panel height for 2 rows x 3 columns grid
   const getPanelHeight = () => {
@@ -101,9 +109,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     const buttonBottomPadding = 12; // Bottom padding for buttons (increased to prevent clipping)
     return (rows * rowHeight) + (padding * 2) + buttonHeight + buttonTopPadding + buttonBottomPadding;
   };
-  
-  // Track FilterBar height for absolute positioning
-  const [filterBarHeight, setFilterBarHeight] = useState(0);
 
   // Get categories from API (only for Category filter, not for Interests)
   const { data: catalogCategories } = useCatalogCategories();
@@ -222,34 +227,85 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     });
   }, [filters, onFiltersChange]);
 
-  // Category - single selection
+  // Category - single selection (panel stays open until Apply is pressed)
   const handleCategorySelect = useCallback((categoryId: string) => {
     onFiltersChange({
       ...filters,
       category: filters.category === categoryId ? undefined : categoryId,
     });
-    setOpenFilterId(null);
+    // Panel stays open - user must press Apply to close
   }, [filters, onFiltersChange]);
 
-  // Sort - single selection
+  // Sort - single selection (panel stays open until Apply is pressed)
   const handleSortSelect = useCallback((sortValue: 'recent' | 'top') => {
     onFiltersChange({
       ...filters,
       sort: filters.sort === sortValue ? undefined : sortValue,
     });
-    setOpenFilterId(null);
+    // Panel stays open - user must press Apply to close
   }, [filters, onFiltersChange]);
   
-  // Animate panel open/close
+  // Update ref when shouldRenderPanel changes
+  useEffect(() => {
+    shouldRenderPanelRef.current = shouldRenderPanel;
+  }, [shouldRenderPanel]);
+
+  // Animate panel open/close with smooth easing
   useEffect(() => {
     const targetHeight = openFilterId ? getPanelHeight() : 0;
+    const targetOpacity = openFilterId ? 1 : 0;
+    
     console.log('[FilterBar] Panel animation:', { openFilterId, targetHeight });
-    Animated.timing(panelHeight, {
-      toValue: targetHeight,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [openFilterId, panelHeight]);
+    
+    if (openFilterId) {
+      // Opening: set render flag and last filter ID first
+      setLastOpenFilterId(openFilterId);
+      setShouldRenderPanel(true);
+      
+      // Start animation after render (double RAF to ensure DOM is ready)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          Animated.parallel([
+            Animated.timing(panelHeight, {
+              toValue: targetHeight,
+              duration: 300,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+            Animated.timing(panelOpacity, {
+              toValue: targetOpacity,
+              duration: 300,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: false,
+            }),
+          ]).start();
+        });
+      });
+    } else {
+      // Closing: only animate if panel is currently rendered
+      if (shouldRenderPanelRef.current) {
+        Animated.parallel([
+          Animated.timing(panelHeight, {
+            toValue: targetHeight,
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(panelOpacity, {
+            toValue: targetOpacity,
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+        ]).start(() => {
+          // After animation completes, remove panel
+          setShouldRenderPanel(false);
+          setLastOpenFilterId(null);
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openFilterId]);
 
   // Get selected filter count
   const getFilterCount = (filterId: string) => {
@@ -292,10 +348,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
 
   // Render filter panel content
   const renderFilterPanel = () => {
-    if (!openFilterId) return null;
+    // Use lastOpenFilterId during close animation, otherwise use openFilterId
+    const filterIdToRender = openFilterId || lastOpenFilterId;
+    if (!filterIdToRender) return null;
 
     const isSelected = (value: string) => {
-      switch (openFilterId) {
+      switch (filterIdToRender) {
         case 'interest':
           return filters.interests?.includes(value) || false;
         case 'tag':
@@ -313,7 +371,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
     let onSelect: (value: string) => void;
     let isMultipleSelection = false;
 
-    switch (openFilterId) {
+    switch (filterIdToRender) {
       case 'interest':
         options = [...INTEREST_OPTIONS];
         onSelect = handleInterestToggle;
@@ -340,13 +398,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
 
     // Debug: Log options to verify they're loaded
     console.log('[FilterBar] Rendering panel:', {
-      openFilterId,
+      filterIdToRender,
       optionsCount: options.length,
       options: options.map(opt => opt.label)
     });
     
     if (options.length === 0) {
-      console.log('[FilterBar] No options available for filter:', openFilterId);
+      console.log('[FilterBar] No options available for filter:', filterIdToRender);
     }
 
     // Group options into rows of 3
@@ -579,15 +637,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
   };
 
   return (
-    <Box position="relative" zIndex={1000}>
+    <Box>
       <Box 
         px="$4" 
         pb="$2" 
         mt="$2"
-        onLayout={(event) => {
-          const { height } = event.nativeEvent.layout;
-          setFilterBarHeight(height);
-        }}
       >
         <HStack justifyContent="space-between" alignItems="center">
           <HStack space="sm" alignItems="center">
@@ -601,29 +655,25 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange }
         </HStack>
       </Box>
       
-      {/* Expandable Panel - Absolute positioned, overlays content below */}
-      {openFilterId && (
+      {/* Expandable Panel - Normal flow, pushes content down */}
+      {shouldRenderPanel && (
         <Animated.View
           style={{
-            position: 'absolute',
-            top: filterBarHeight,
-            left: 0,
-            right: 0,
             height: panelHeight,
+            opacity: panelOpacity,
             overflow: 'hidden',
             backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-            borderTopWidth: 1,
+            borderTopWidth: (openFilterId || lastOpenFilterId) ? 1 : 0,
             borderTopColor: isDark ? '#333333' : '#E9E9E9',
-            borderBottomWidth: 1,
+            borderBottomWidth: (openFilterId || lastOpenFilterId) ? 1 : 0,
             borderBottomColor: isDark ? '#333333' : '#E9E9E9',
-            minHeight: openFilterId ? 50 : 0,
-            zIndex: 1000,
-            elevation: 10, // Android shadow
+            elevation: (openFilterId || lastOpenFilterId) ? 10 : 0, // Android shadow
             shadowColor: '#000', // iOS shadow
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: isDark ? 0.3 : 0.1,
+            shadowOpacity: (openFilterId || lastOpenFilterId) ? (isDark ? 0.3 : 0.1) : 0,
             shadowRadius: 4,
           }}
+          pointerEvents={openFilterId ? 'auto' : 'none'}
         >
           {renderFilterPanel()}
         </Animated.View>

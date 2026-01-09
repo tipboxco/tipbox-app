@@ -215,13 +215,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   useEffect(() => {
     if (!isAuthenticated || !state.isInitialized) {
       // Login ekranında hata göstermemek için sessizce return et
-      // Sadece development modunda log göster
-      if (__DEV__) {
-        console.log('[NotificationProvider] ⏳ Socket listener not ready:', {
-          isAuthenticated,
-          isInitialized: state.isInitialized,
-        });
-      }
+      // Log kaldırıldı - bu normal bir durum, hata değil
       return;
     }
 

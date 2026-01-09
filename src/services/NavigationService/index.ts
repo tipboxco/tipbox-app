@@ -362,6 +362,27 @@ class NavigationService {
   }
 
   /**
+   * Get navigation state
+   * 
+   * NavigationContainer dışındaki component'ler için navigation state'ine erişim sağlar.
+   * Örnek: Custom drawer, overlay component'ler
+   * 
+   * @returns NavigationState | undefined
+   */
+  getNavigationState(): NavigationState | undefined {
+    if (!this.isReady()) {
+      return undefined;
+    }
+
+    try {
+      return this.navigationRef!.current!.getState();
+    } catch (error) {
+      this.logger.error('Get navigation state error:', error);
+      return undefined;
+    }
+  }
+
+  /**
    * ARCHITECTURE FIX: Consume Pending Navigation Queue
    * Navigation ready olduğunda queue'daki tüm navigation'ları FIFO sırasıyla consume eder
    * 

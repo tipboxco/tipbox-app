@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -372,7 +371,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const listRef = useRef<FlashList<ListItem>>(null);
+  const listRef = useRef<FlatList<ListItem>>(null);
   
   // API hooks for each tab
   // PERFORMANCE FIX: Only enable queries for the active tab to prevent unnecessary API calls
@@ -1164,13 +1163,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        <FlashList
+        <FlatList
           ref={listRef}
           data={listData}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           ListHeaderComponent={renderProfileHeader}
-          estimatedItemSize={400} // PERFORMANCE FIX: Critical for FlashList performance
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
@@ -1194,8 +1192,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           }
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           showsVerticalScrollIndicator={false}
-          // FlashList automatically handles removeClippedSubviews, initialNumToRender, maxToRenderPerBatch, windowSize
-          // These props are not needed for FlashList
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
         />
       </Box>
     </SafeAreaView>

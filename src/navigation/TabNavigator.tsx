@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
+import { getHeavyTabFreezeRule } from './rules/freezeRules';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -198,6 +199,9 @@ export const TabNavigator = () => {
     }
   }, [unreadCount, markAllAsReadMutation]);
 
+  // Heavy tab'ler için freeze rule
+  const heavyTabFreezeRule = getHeavyTabFreezeRule();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -223,10 +227,18 @@ export const TabNavigator = () => {
       <Tab.Screen
         name="CatalogStack"
         component={CatalogStackNavigator}
+        options={{
+          // Heavy tab: freeze on blur
+          freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
+        }}
       />
       <Tab.Screen
         name="EventsStack"
         component={EventsStackNavigator}
+        options={{
+          // Heavy tab: freeze on blur
+          freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
+        }}
       />
       <Tab.Screen
         name="NotificationStack"
