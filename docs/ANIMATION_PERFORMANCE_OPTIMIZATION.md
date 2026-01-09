@@ -378,3 +378,5 @@ Tüm optimizasyonlar uygulandıktan sonra:
 
 
 
+
+

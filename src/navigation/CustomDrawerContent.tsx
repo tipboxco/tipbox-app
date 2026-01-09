@@ -14,9 +14,8 @@ import {
   useDrawerStatus,
   DrawerContentScrollView 
 } from '@react-navigation/drawer';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { Feather as FeatherIcon } from '@expo/vector-icons';
@@ -74,18 +73,15 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
   
   // Drawer açıldığında ağır işlemleri başlat, kapanırken durdur (animasyon optimize)
   useEffect(() => {
-    if (drawerStatus === 'opening' || drawerStatus === 'open') {
-      // Drawer açılırken ağır işlemleri başlat (kısa delay ile animasyon başladıktan sonra)
+    if (drawerStatus === 'open') {
+      // Drawer açıldığında ağır işlemleri başlat (kısa delay ile animasyon başladıktan sonra)
       const timer = setTimeout(() => {
         setIsDrawerReady(true);
       }, 100); // 100ms delay - drawer animasyonu başladıktan sonra ağır işlemler
       return () => clearTimeout(timer);
-    } else if (drawerStatus === 'closing') {
-      // PERFORMANCE FIX: Drawer kapanırken ağır işlemleri durdur - titreme/kasma önleme
+    } else {
+      // PERFORMANCE FIX: Drawer kapalıyken ağır işlemleri durdur - titreme/kasma önleme
       // Query'yi hemen disable et (animasyon tamamlanmadan önce)
-      setIsDrawerReady(false);
-    } else if (drawerStatus === 'closed') {
-      // Drawer kapalıyken flag'i resetle (bir sonraki açılışta tekrar başlat)
       setIsDrawerReady(false);
     }
   }, [drawerStatus]);
@@ -421,7 +417,14 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
           https://reactnavigation.org/docs/drawer-navigator#installation
           DrawerContentScrollView notches ve safe area'yı otomatik handle eder */}
       <DrawerContentScrollView
-        {...props}
+        {...(props as any)}
+        style={{
+          backgroundColor: isDark ? '#000000' : '#FFFFFF',
+          margin: 0,
+          padding: 0,
+          flex: 1,
+          width: '100%',
+        }}
         contentContainerStyle={{ 
           flexGrow: 1,
           paddingTop: 0,
@@ -429,13 +432,6 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
           paddingLeft: 0,
           paddingRight: 0,
           margin: 0,
-          width: '100%',
-        }}
-        style={{
-          backgroundColor: isDark ? '#000000' : '#FFFFFF',
-          margin: 0,
-          padding: 0,
-          flex: 1,
           width: '100%',
         }}
       >
@@ -448,7 +444,7 @@ const CustomDrawerContentComponent = (props: DrawerContentComponentProps) => {
               colors={['#4A1D96', '#1E293B']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[styles.gradient, { height: 120 }]}
+              {...({ style: [styles.gradient, { height: 120 }] } as any)}
             />
           </Box>
           

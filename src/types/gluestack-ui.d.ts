@@ -21,9 +21,11 @@ type ExtendedFontSize =
   | '$9xl'
   | number;
 
-// React Native StyleSheet tip tanımlarını genişletme
-// Gluestack UI token'larını desteklemek için
+// React Native tip tanımlarını genişletme
 declare module 'react-native' {
+  // React Native'in export ettiği tüm componentleri ve utility'leri export et
+  export * from 'react-native';
+  
   namespace ReactNative {
     interface TextStyle {
       fontSize?: ExtendedFontSize;
@@ -31,9 +33,11 @@ declare module 'react-native' {
   }
 }
 
-// Gluestack UI'nin tip tanımlarını genişletme
-// StyledComponentProps içindeki fontSize tipini genişletiyoruz
+// Gluestack UI tip tanımlarını genişletme
 declare module '@gluestack-ui/themed' {
+  // Gluestack UI'nin export ettiği tüm componentleri export et
+  export * from '@gluestack-ui/themed';
+  
   // StyledComponentProps'un fontSize property'sini genişlet
   // Bu, Text, Heading ve diğer text componentler için geçerli
   export interface StyledComponentProps<
