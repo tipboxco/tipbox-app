@@ -67,11 +67,11 @@ export const ProductInfoCard = ({
           bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
         >
           <Image
-            source={imageSource}
+            source={{uri: image}}
             alt={title || "Product"}
             width={imageSize}
             height={imageSize}
-            resizeMode="cover"
+            resizeMode="contain"
           />
         </Box>
 

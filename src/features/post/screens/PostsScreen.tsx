@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useCallback, useState, useEffect } from 'react';
-import { Platform, FlatList, ActivityIndicator } from 'react-native';
+import { Platform, FlatList, ActivityIndicator, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, Pressable, Text } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -14,8 +14,6 @@ import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { useCreatePostFlowStore } from '../store/createPostFlowStore';
-import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { useBottomOffset } from '@/src/utils';
 import { useFeed } from '@/src/features/feed/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
@@ -24,36 +22,81 @@ import type { ProfilePost } from '@/src/features/profile/types';
 import { toImageSource } from '@/src/utils';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 
-// @ProductCatalogScreen.tsx (75-81) değerleri:
-// const MEDUSA_BASE_URL =
-//   process.env.EXPO_PUBLIC_MEDUSA_URL || 'http://192.168.1.26:8090'; // fallback
-// const CATEGORIES_ENDPOINT_BASE = `${MEDUSA_BASE_URL}/store/product-categories?`;
-// const MEDUSA_API_KEY =
-//   process.env.EXPO_PUBLIC_MEDUSA_PUBLISHABLE_API_KEY ||
-//   'pk_cfe68434d1ee0dd82890fcfe492a3472656dbea641266cb02f3dae8b204de65e';
-
-// Bu değerleri aşağıda kullan:
 const MEDUSA_BASE_URL =
   process.env.EXPO_PUBLIC_MEDUSA_URL || 'http://192.168.1.26:8090'; // fallback
 const MEDUSA_API_KEY =
   process.env.EXPO_PUBLIC_MEDUSA_PUBLISHABLE_API_KEY ||
   'pk_cfe68434d1ee0dd82890fcfe492a3472656dbea641266cb02f3dae8b204de65e';
 
-type MedusaProduct = {
+// Yeni ürün tipi, API'den gelen şekle uygun
+type MedusaApiProductImage = {
   id: string;
-  title: string;
-  description?: string;
-  subtitle?: string;
-  images?: { url: string }[];
+  url: string;
+  metadata?: any;
+  rank?: number;
+  product_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
 };
 
+type MedusaApiProductOptionValue = {
+  id: string;
+  value: string;
+  metadata?: any;
+  option_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+};
+type MedusaApiProductOption = {
+  id: string;
+  title: string;
+  metadata?: any;
+  product_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+  values: MedusaApiProductOptionValue[];
+};
+// Diğer alanlar da eklenebilir gerekirse
+type MedusaApiProduct = {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  description?: string | null;
+  handle?: string;
+  is_giftcard?: boolean;
+  discountable?: boolean;
+  thumbnail?: string;
+  collection_id?: string | null;
+  type_id?: string | null;
+  weight?: number | null;
+  length?: number | null;
+  height?: number | null;
+  width?: number | null;
+  hs_code?: string | null;
+  origin_country?: string | null;
+  mid_code?: string | null;
+  material?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  type?: any;
+  collection?: any;
+  options?: MedusaApiProductOption[];
+  tags?: any[];
+  images?: MedusaApiProductImage[];
+  variants?: any[];
+  categories?: any[];
+};
+
+// API'den gelen ürünü çeken hook
 function useMedusaProduct(productId?: string) {
-  const [product, setProduct] = useState<MedusaProduct | null>(null);
+  const [product, setProduct] = useState<MedusaApiProduct | null>(null);
   const [loading, setLoading] = useState<boolean>(!!productId);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    console.log('useMedusaProduct', productId);
     if (!productId) {
       setProduct(null);
       setLoading(false);
@@ -158,7 +201,9 @@ export const PostsScreen = () => {
       contextType: ProductInfoType.PRODUCT,
       productInfo: product
         ? {
-            image: product.images?.[0]?.url,
+            image: product.images && product.images.length > 0
+              ? product.images[0].url
+              : (product.thumbnail ?? undefined),
             title: product.title,
             subName: product.subtitle,
           }
@@ -216,7 +261,7 @@ export const PostsScreen = () => {
 
         {/* Content */}
         <Box flex={1}>
-          {/* Product Info Card */}
+          {/* Product Info Card ve detay: */}
           <Box px="$4" py="$2">
             {/* Show loading, error, or the ProductInfoCard */}
             {productLoading ? (
@@ -228,13 +273,50 @@ export const PostsScreen = () => {
                 {productError.message}
               </Text>
             ) : product ? (
-              <ProductInfoCard
-                image={product.images?.[0]?.url}
-                title={product.title}
-                subName={product.subtitle}
-                size="big"
-                type={ProductInfoType.PRODUCT}
-              />
+              <>
+                <ProductInfoCard
+                  image={product.thumbnail || undefined}
+                  title={product.title}
+                  subName={product.subtitle || ''}
+                  size="big"
+                  type={ProductInfoType.PRODUCT}
+                />
+                {/* Ürün galerisi (varsa çoklu görsel) */}
+                {product.images && product.images.length > 1 && (
+                  <ScrollView
+                    horizontal
+                    style={{ marginTop: 12 }}
+                    showsHorizontalScrollIndicator={false}
+                  >
+                    {product.images.map((img, idx) => (
+                      <Box key={img.id || idx} mr={idx === product.images.length - 1 ? 0 : 10}>
+                        <Image
+                          source={{ uri: img.url }}
+                          style={{
+                            width: 100,
+                            height: 100,
+                            borderRadius: 8,
+                            backgroundColor: isDark ? '#333' : '#eee',
+                          }}
+                          resizeMode="contain"
+                        />
+                      </Box>
+                    ))}
+                  </ScrollView>
+                )}
+                {/* Açıklama alanı */}
+                {product.description ? (
+                  <Box mt={12}>
+                    <Text
+                      fontSize="$sm"
+                      color={isDark ? '$textDark300' : '$textLight700'}
+                      style={{ lineHeight: 20 }}
+                    >
+                      {product.description}
+                    </Text>
+                  </Box>
+                ) : null}
+              </>
             ) : (
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$md">
                 Ürün bulunamadı.
