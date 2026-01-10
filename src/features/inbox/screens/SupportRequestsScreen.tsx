@@ -15,7 +15,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import SupportRequestCard from '../components/SupportRequestCard/index';
 import SupportRequestFilterGroup from '../components/SupportRequestFilterGroup/index';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useSupportRequests, useAcceptSupportRequest } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,10 +23,12 @@ import { inboxKeys } from '../api/hooks';
 import type { SupportRequest } from '../api/messagesApi';
 import { Alert } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
-import { toImageSource } from '@/src/utils';
 import { SupportRequestSkeleton } from '@/src/components/Skeletons';
 
 type SupportRequestsScreenNavigationProp = NativeStackNavigationProp<any, 'SupportRequestsScreen'>;
+
+// Default user avatar
+const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
 
 const SupportRequestsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -57,6 +59,7 @@ const SupportRequestsScreen: React.FC = () => {
   };
 
   const { data: supportRequests, isLoading, error, refetch, isRefetching } = useSupportRequests(apiParams);
+  const supportRequestsArray = Array.isArray(supportRequests) ? supportRequests : [];
 
   // Socket event handlers
   const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string; timestamp: string }) => {
@@ -115,12 +118,30 @@ const SupportRequestsScreen: React.FC = () => {
     // Request'i oluşturan kullanıcının bilgileri (user olarak)
     const userName = request.userName;
     const userTitle = request.userTitle;
-    const userAvatar = request.userAvatar ? toImageSource(request.userAvatar) : require('@/assets/avatar/ozan.png');
+    
+    // Avatar URL logları
+    console.log('[SupportRequestsScreen] handleRequestPress - User Avatar URLs:', {
+      requestId,
+      rawUserAvatar: request.userAvatar,
+      userAvatarType: typeof request.userAvatar,
+      userAvatarAfterToImageSource: request.userAvatar ? toImageSource(request.userAvatar) : null,
+    });
+    
+    const userAvatar = request.userAvatar ? (toImageSource(request.userAvatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
     
     // Mevcut kullanıcının bilgileri (expert olarak - request'i kabul eden/edebilecek kişi)
     const expertName = user?.fullName || 'Expert';
     const expertTitle = ''; // User interface'inde title yok
-    const expertAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
+    
+    // Expert Avatar URL logları
+    console.log('[SupportRequestsScreen] handleRequestPress - Expert Avatar URLs:', {
+      requestId,
+      rawExpertAvatar: user?.avatar,
+      expertAvatarType: typeof user?.avatar,
+      expertAvatarAfterToImageSource: user?.avatar ? toImageSource(user.avatar) : null,
+    });
+    
+    const expertAvatar = user?.avatar ? (toImageSource(user.avatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
     
     // SupportMessageDetail'e yönlendir (tüm durumlar için)
     navigation.navigate('SupportMessageDetail', {
@@ -153,12 +174,30 @@ const SupportRequestsScreen: React.FC = () => {
         // Mevcut kullanıcının bilgileri (expert olarak)
         const expertName = user?.fullName || 'Expert';
         const expertTitle = '';
-        const expertAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
+        
+        // Expert Avatar URL logları
+        console.log('[SupportRequestsScreen] handleAccept - Expert Avatar URLs:', {
+          requestId,
+          rawExpertAvatar: user?.avatar,
+          expertAvatarType: typeof user?.avatar,
+          expertAvatarAfterToImageSource: user?.avatar ? toImageSource(user.avatar) : null,
+        });
+        
+        const expertAvatar = user?.avatar ? (toImageSource(user.avatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
         
         // Request'i oluşturan kullanıcının bilgileri (user olarak)
         const userName = request.userName;
         const userTitle = request.userTitle;
-        const userAvatar = request.userAvatar ? toImageSource(request.userAvatar) : require('@/assets/avatar/ozan.png');
+        
+        // User Avatar URL logları
+        console.log('[SupportRequestsScreen] handleAccept - User Avatar URLs:', {
+          requestId,
+          rawUserAvatar: request.userAvatar,
+          userAvatarType: typeof request.userAvatar,
+          userAvatarAfterToImageSource: request.userAvatar ? toImageSource(request.userAvatar) : null,
+        });
+        
+        const userAvatar = request.userAvatar ? (toImageSource(request.userAvatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
         
         // Yeni oluşturulan thread ile SupportMessageDetail ekranına yönlendir
         navigation.navigate('SupportMessageDetail', {
@@ -235,7 +274,7 @@ const SupportRequestsScreen: React.FC = () => {
       />
 
       {/* Support Requests List - Full Width */}
-      {isLoading && (!supportRequests || supportRequests.length === 0) ? (
+      {isLoading && !supportRequests ? (
         <SupportRequestSkeleton count={5} />
       ) : error ? (
         <Box py={20} alignItems="center">
@@ -243,7 +282,7 @@ const SupportRequestsScreen: React.FC = () => {
         </Box>
       ) : (
         <FlatList
-          data={supportRequests || []}
+          data={supportRequestsArray}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <SupportRequestCard
@@ -264,7 +303,7 @@ const SupportRequestsScreen: React.FC = () => {
           }
           ListEmptyComponent={
             <Box py={20} alignItems="center">
-              <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Destek talebi bulunamadı</Text>
+              <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No support requests found</Text>
             </Box>
           }
         />

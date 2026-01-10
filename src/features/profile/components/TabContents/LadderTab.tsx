@@ -186,7 +186,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   const renderItem = ({ item: badge }: { item: ProfileLadderBadge }) => {
     const isCompleted = getIsCompleted(badge);
     const imageSource = badge.image ? toImageSource(badge.image) : undefined;
-    const defaultImage = require('@/assets/badges/badge_01.png');
+    const defaultImage = require('@/assets/defaultImages/default-badge.png');
 
     return (
       <TouchableOpacity onPress={() => handleBadgePress(badge)} activeOpacity={0.7}>
@@ -327,7 +327,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   if (!ladderBadges || ladderBadges.length === 0) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" py={20}>
-        <Text color={isDark ? '$textDark400' : '#797979'}>Henüz ladder badge bulunmuyor.</Text>
+        <Text color={isDark ? '$textDark400' : '#797979'}>No ladder badges yet.</Text>
       </Box>
     );
   }

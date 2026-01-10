@@ -64,6 +64,25 @@ export interface TrusterUser {
 }
 
 /**
+ * Suggested User - API'den gelen önerilen kullanıcı tipi
+ * /users/suggested endpoint response'u
+ */
+export interface SuggestedUser {
+  id: string;
+  name: string;
+  title: string;
+  avatar: string | null;
+  /**
+   * Önerilen kullanıcıyı trust eden diğer kullanıcıların avatar'ları
+   * Overlapping avatars için kullanılır
+   */
+  mutualTrustAvatars?: Array<{
+    id: string;
+    avatar: string | null;
+  }>;
+}
+
+/**
  * Badge - Kullanıcı rozet bilgisi
  * API response:
  * {

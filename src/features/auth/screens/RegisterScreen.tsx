@@ -57,9 +57,9 @@ export const RegisterScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Kayıt Başarılı</ToastTitle>
+                <ToastTitle>Registration Successful</ToastTitle>
                 <ToastDescription>
-                  {result.message || 'Kayıt işlemi başarıyla tamamlandı!'}
+                  {result.message || 'Registration completed successfully!'}
                 </ToastDescription>
               </Toast>
               </Box>
@@ -84,7 +84,7 @@ export const RegisterScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'Kayıt işlemi sırasında bir hata oluştu';
+          'An error occurred during registration';
 
         toast.show({
           placement: 'top',
@@ -92,7 +92,7 @@ export const RegisterScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Kayıt Hatası</ToastTitle>
+                <ToastTitle>Registration Error</ToastTitle>
                 <ToastDescription>{errorMessage}</ToastDescription>
               </Toast>
               </Box>
@@ -198,7 +198,7 @@ export const RegisterScreen = () => {
           disabled={!isEmailValid || !isPasswordValid || registerMutation.isPending}
         >
           <ButtonText color="$textLight900">
-            {registerMutation.isPending ? 'Kaydediliyor...' : 'Confirm'}
+            {registerMutation.isPending ? 'Registering...' : 'Confirm'}
           </ButtonText>
         </Button>
 
@@ -210,7 +210,7 @@ export const RegisterScreen = () => {
           mb="$4"
           onPress={() => navigation.navigate('Login')}
         >
-          Zaten bir hesabınız var mı? Sign In
+          Already have an account? Sign In
         </Text>
       </VStack>
       </Box>

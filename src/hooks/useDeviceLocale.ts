@@ -11,7 +11,6 @@ export const useDeviceLocale = () => {
   useEffect(() => {
     const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
     setLocale(deviceLocale);
-    console.log('[useDeviceLocale] Device language:', deviceLocale);
   }, []);
 
   return locale;

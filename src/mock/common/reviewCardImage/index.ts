@@ -14,7 +14,7 @@ export const mock_review_card_image: Omit<ReviewImageCardProps, 'onPress'> = {
     rating: 3,
     usageDuration: "4-7 Days",
     experience: "Could be Better",
-    userImage: require('@/assets/avatar/ozan.png'),
+    userImage: require('@/assets/avatar/default-useravatar.png'),
     userName: "Teresa Randolph",
     userBadge: "Kitchen Specialist",
     userAction: "Added a new product and experiences to your inventory!"

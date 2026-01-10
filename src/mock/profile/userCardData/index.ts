@@ -3,7 +3,7 @@ import { UserCardData } from './types';
 export const mock_user_card: UserCardData = {
   id: "1",
   name: "Georgia Green",
-  avatar: require('@/assets/avatar/ozan.png'),
+  avatar: require('@/assets/avatar/default-useravatar.png'),
   description: "Passionate about exploring the latest gadgets and digital lifestyles. Sharing honest reviews and real-life experiences with tech products.",
   titles: [
     "Everyday Consumer",

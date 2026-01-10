@@ -203,7 +203,7 @@ const BrandHistoryScreen: React.FC = () => {
                         alignItems="center"
                       >
                         <Image
-                          source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
+                          source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
                           alt={badge.title}
                           w={60}
                           h={60}

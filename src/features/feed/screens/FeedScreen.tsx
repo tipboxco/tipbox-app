@@ -259,6 +259,8 @@ const FeedScreenInner = React.memo(() => {
 
   // Map Feed to PostCardData
   const mapFeedToCardData = (item: ProfilePost): PostCardData => {
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    
     // content array ise string'e çevir, değilse direkt kullan
     const contentString = Array.isArray(item.content)
       ? item.content
@@ -267,31 +269,48 @@ const FeedScreenInner = React.memo(() => {
         .join(' ')
       : (item.content || '');
 
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const mappedImages = Array.isArray(item.images)
+      ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+      : [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+    // contextData.image için fallback
+    const contextImage = item.contextData?.image
+      ? toImageSource(item.contextData.image)
+      : undefined;
+    const contextData = item.contextData
+      ? {
+          ...item.contextData,
+          image: contextImage || item.contextData.image || defaultPostImage,
+        }
+      : undefined;
+
     return {
       id: item.id || '',
       user: {
         id: item.user?.id || '',
         name: item.user?.name || '',
         title: item.user?.title || '',
-        avatar: toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png'),
+        avatar: toImageSource(item.user?.avatar) || require('@/assets/avatar/default-useravatar.png'),
       },
       content: contentString,
-      images: Array.isArray(item.images)
-        ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
-        : [],
+      images,
       stats: item.stats,
       createdAt: item.createdAt,
       contextType: item.contextType,
-      contextData: item.contextData,
+      contextData,
     };
   };
 
   // Map Experience (ReviewApiItem) to ReviewCardData
   const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
-    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    const defaultAvatar = require('@/assets/avatar/default-useravatar.png');
+    const avatarSource = toImageSource(item.user?.avatar) || defaultAvatar;
     const productImage = item.contextData?.image
       ? toImageSource(item.contextData.image)
-      : undefined;
+      : defaultPostImage;
 
     const content: ReviewCardContentItem[] = (item.content && Array.isArray(item.content))
       ? item.content
@@ -308,6 +327,14 @@ const FeedScreenInner = React.memo(() => {
         }))
       : [];
 
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const mappedImages = Array.isArray(item.images)
+      ? item.images
+          .map((img) => toImageSource(img))
+          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+      : [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
     return {
       id: item.id || '',
       user: {
@@ -321,16 +348,12 @@ const FeedScreenInner = React.memo(() => {
         id: item.contextData?.id || '',
         name: item.contextData?.name || '',
         subName: item.contextData?.subName || '',
-        image: productImage,
+        image: productImage || defaultPostImage,
         isOwned: item.contextData?.isOwned || false,
       },
       content,
       tags: Array.isArray(item.tags) ? item.tags : [],
-      images: Array.isArray(item.images)
-        ? item.images
-          .map((img) => toImageSource(img))
-          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-        : [],
+      images,
       stats: item.stats,
       createdAt: item.createdAt,
     };
@@ -338,7 +361,7 @@ const FeedScreenInner = React.memo(() => {
 
   // Map Benchmark to BenchmarkCardData
   const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
-    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
+    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
 
     const products: BenchmarkProduct[] = (item.products && Array.isArray(item.products))
       ? item.products
@@ -370,12 +393,21 @@ const FeedScreenInner = React.memo(() => {
 
   // Map Tips to TipsCardData
   const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
-    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
 
     // contextData undefined kontrolü
     if (!item.contextData) {
       console.warn('[mapTipsToCardData] Missing contextData for item:', item.id);
       // Güvenli default değerler döndür
+      // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+      const mappedImages = Array.isArray(item.images)
+        ? item.images
+            .map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+        : [];
+      const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
       return {
         id: item.id || '',
         user: {
@@ -397,11 +429,7 @@ const FeedScreenInner = React.memo(() => {
           },
         },
         content: item.content || '',
-        images: Array.isArray(item.images)
-          ? item.images
-            .map((img) => toImageSource(img))
-            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-          : [],
+        images,
         stats: item.stats,
         tag: item.tag,
         createdAt: item.createdAt,
@@ -427,6 +455,14 @@ const FeedScreenInner = React.memo(() => {
       product,
     };
 
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const mappedImages = Array.isArray(item.images)
+      ? item.images
+          .map((img) => toImageSource(img))
+          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+      : [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
     return {
       id: item.id || '',
       user: {
@@ -437,11 +473,7 @@ const FeedScreenInner = React.memo(() => {
       },
       category,
       content: item.content || '',
-      images: Array.isArray(item.images)
-        ? item.images
-          .map((img) => toImageSource(img))
-          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-        : [],
+      images,
       stats: item.stats,
       tag: item.tag,
       createdAt: item.createdAt,
@@ -450,12 +482,21 @@ const FeedScreenInner = React.memo(() => {
 
   // Map Question to QuestionCardData
   const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/ozan.png');
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    const avatarSource = toImageSource(item.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
 
     // contextData undefined kontrolü
     if (!item.contextData) {
       console.warn('[mapQuestionToCardData] Missing contextData for item:', item.id);
       // Güvenli default değerler döndür
+      // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+      const mappedImages = Array.isArray(item.images)
+        ? item.images
+            .map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+        : [];
+      const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
       return {
         id: item.id || '',
         user: {
@@ -478,11 +519,7 @@ const FeedScreenInner = React.memo(() => {
         },
         content: item.content || '',
         isBoosted: item.isBoosted || false,
-        images: Array.isArray(item.images)
-          ? item.images
-            .map((img) => toImageSource(img))
-            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-          : [],
+        images,
         stats: item.stats,
         createdAt: item.createdAt,
       };
@@ -508,6 +545,14 @@ const FeedScreenInner = React.memo(() => {
       product,
     };
 
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const mappedImages = Array.isArray(item.images)
+      ? item.images
+          .map((img) => toImageSource(img))
+          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
+      : [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
     return {
       id: item.id || '',
       user: {
@@ -519,11 +564,7 @@ const FeedScreenInner = React.memo(() => {
       category,
       content: item.content || '',
       isBoosted: item.isBoosted || false,
-      images: Array.isArray(item.images)
-        ? item.images
-          .map((img) => toImageSource(img))
-          .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
-        : [],
+      images,
       stats: item.stats,
       createdAt: item.createdAt,
     };
@@ -531,7 +572,8 @@ const FeedScreenInner = React.memo(() => {
 
   // Map Update to UpdateCardData
   const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
-    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
 
     // ContextType'ı ProductInfoType'a çevir
     let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
@@ -544,6 +586,12 @@ const FeedScreenInner = React.memo(() => {
     // relatedPost null check - eğer yoksa default değerler kullan
     if (!item.relatedPost) {
       console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
+      // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+      const mappedImages = Array.isArray(item.images)
+        ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+        : [];
+      const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
       // Return a safe default structure
       return {
         id: item.id,
@@ -564,9 +612,7 @@ const FeedScreenInner = React.memo(() => {
           isOwned: false,
         },
         content: item.content || '',
-        images: Array.isArray(item.images)
-          ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
-          : [],
+        images,
         relatedPost: {
           id: '',
           product: {
@@ -606,6 +652,12 @@ const FeedScreenInner = React.memo(() => {
         })
       : [];
 
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const mappedImages = Array.isArray(item.images)
+      ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+      : [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
     return {
       id: item.id || '',
       user: {
@@ -625,9 +677,7 @@ const FeedScreenInner = React.memo(() => {
         isOwned: item.relatedPost?.product?.isOwned || false,
       },
       content: item.content || '',
-      images: Array.isArray(item.images)
-        ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
-        : [],
+      images,
       relatedPost: {
         id: item.relatedPost?.id || '',
         product: {
@@ -639,9 +689,12 @@ const FeedScreenInner = React.memo(() => {
         },
         content: relatedPostContent,
         tags: (item.relatedPost?.tags && Array.isArray(item.relatedPost.tags)) ? item.relatedPost.tags : [],
-        images: (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
-          ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
-          : [],
+        images: (() => {
+          const relatedPostImages = (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
+            ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+            : [];
+          return relatedPostImages.length > 0 ? relatedPostImages : [defaultPostImage];
+        })(),
       },
     };
   };
@@ -831,7 +884,7 @@ const FeedScreenInner = React.memo(() => {
           ) : feedItems.length === 0 ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Henüz feed içeriği bulunmuyor.
+                No feed content found yet.
               </Text>
             </Box>
           ) : (

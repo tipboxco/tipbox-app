@@ -26,6 +26,13 @@ const mapQuestionToCardData = (item: ProfileReplies): QuestionCardData => {
     product,
   };
 
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const mappedImages = item.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
   return {
     id: item.id,
     user: {
@@ -37,9 +44,7 @@ const mapQuestionToCardData = (item: ProfileReplies): QuestionCardData => {
     category,
     content: item.content,
     isBoosted: item.isBoosted,
-    images: item.images
-      ?.map((img) => toImageSource(img))
-      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+    images,
     stats: item.stats,
     createdAt: item.createdAt,
   };
@@ -221,7 +226,7 @@ const RepliesTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          Henüz reply bulunmuyor.
+          No replies yet.
         </Text>
       </VStack>
     );

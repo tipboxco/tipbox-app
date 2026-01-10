@@ -21,8 +21,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/src/features/profile/api/profileApi';
 import { profileKeys } from '@/src/features/profile/api/hooks';
-import { toImageSource, useBottomOffset } from '@/src/utils';
+import { toImageSource, useBottomOffset  } from '@/src/utils';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
+
+// Default user avatar
+const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
 
 interface MenuItem {
   id: string;
@@ -56,61 +59,9 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // Drawer store'dan state oku (sync için)
   const { isOpen, closeDrawer, openDrawer } = useDrawerStore();
   
-  // DEBUG: Drawer state'i logla
-  useEffect(() => {
-    const drawerStatus = props.state?.status || 'closed';
-    console.log('[DrawerContent] 📊 Drawer state changed:', { 
-      isOpen, 
-      drawerStatus,
-      isDrawerOpen: drawerStatus !== 'closed',
-      navigationState: props.state
-    });
-  }, [isOpen, props.state?.status, props.state]);
-  
-  // CRITICAL: React Navigation drawer state ile drawer store'u senkronize et
-  // PERFORMANCE FIX: Debounce sync + ref check - titrelemeyi önlemek için
-  // CRITICAL: Sadece drawer açık/kapalı durumunda sync yap, swipe sırasında değil (JS thread'de re-render önleme)
-  const prevStatusRef = useRef<string>('closed');
-  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  useEffect(() => {
-    const drawerStatus = props.state?.status || 'closed';
-    const isDrawerOpen = drawerStatus === 'open';
-    
-    // CRITICAL: Status değişmediyse sync yapma (titreleme önleme)
-    if (drawerStatus === prevStatusRef.current) {
-      return; // Status değişmedi, sync yapma
-    }
-    
-    // CRITICAL: Sync'i debounce et - swipe sırasında her adımda sync yapma
-    // PERFORMANCE FIX: Debounce süresini artır - animasyon sırasında sync yapma
-    // Sadece drawer tamamen açık veya kapalı olduğunda sync yap
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-    }
-    
-    syncTimeoutRef.current = setTimeout(() => {
-      prevStatusRef.current = drawerStatus;
-      
-      // Sync sadece gerçek değişikliklerde yapılmalı (titrelemeyi önlemek için)
-      if (isDrawerOpen === isOpen) {
-        return; // Zaten senkronize
-      }
-      
-      // Navigation drawer açıldığında store'u güncelle
-      if (isDrawerOpen && !isOpen) {
-        openDrawer();
-      } else if (!isDrawerOpen && isOpen) {
-        closeDrawer();
-      }
-    }, 400); // 400ms debounce - animasyon tamamen bitene kadar sync yapma (300ms'den 400ms'ye çıkarıldı)
-    
-    return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-    };
-  }, [props.state?.status, isOpen, openDrawer, closeDrawer]);
+  // CRITICAL: Drawer state sync - drawer store kullanılıyor, navigation state sync'i kaldırıldı
+  // Drawer açık/kapalı durumu drawer store'dan (isOpen) kontrol ediliyor
+  // React Navigation drawer state'inde status property'si yok, bu yüzden sadece drawer store kullanılıyor
   
   // Drawer kapatma fonksiyonu - hem navigation hem store'u güncelle
   const handleCloseDrawer = useCallback(() => {
@@ -309,12 +260,92 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   
   // PERFORMANCE FIX: Computed değerleri useMemo ile memoize et
   // Avatar source - profile'dan gelen avatar URL'i veya store'dan veya default avatar
-  const avatarSource = useMemo(() => 
+  const initialAvatarSource = useMemo(() => 
     toImageSource(userProfile?.avatar) ||
     toImageSource(user?.avatar || null) ||
-    require('@/assets/avatar/ozan.png'),
+    DEFAULT_USER_AVATAR,
     [userProfile?.avatar, user?.avatar]
   );
+  
+  // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
+  const [avatarSource, setAvatarSource] = useState(initialAvatarSource);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const avatarLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Avatar değiştiğinde state'i güncelle ve load durumunu resetle
+  useEffect(() => {
+    const newSource = toImageSource(userProfile?.avatar) ||
+      toImageSource(user?.avatar || null) ||
+      DEFAULT_USER_AVATAR;
+    
+    // Önceki timeout'u temizle
+    if (avatarLoadTimeoutRef.current) {
+      clearTimeout(avatarLoadTimeoutRef.current);
+      avatarLoadTimeoutRef.current = null;
+    }
+    
+    // Eğer yeni source default avatar değilse, load kontrolü yap
+    if (newSource !== DEFAULT_USER_AVATAR) {
+      setAvatarSource(newSource);
+      setIsImageLoaded(false);
+      
+      // 5 saniye içinde görsel yüklenmezse default avatar'a geç
+      avatarLoadTimeoutRef.current = setTimeout(() => {
+        setAvatarSource((currentSource: any) => {
+          // Eğer hala yüklenmediyse ve source değişmediyse default avatar'a geç
+          if (currentSource === newSource) {
+            console.log('[DrawerContent] Avatar load timeout, using default avatar:', {
+              userId: user?.id,
+              attemptedSource: newSource,
+            });
+            return DEFAULT_USER_AVATAR;
+          }
+          return currentSource;
+        });
+        setIsImageLoaded(true);
+      }, 5000); // 5 saniye timeout
+    } else {
+      // Zaten default avatar ise direkt set et
+      setAvatarSource(DEFAULT_USER_AVATAR);
+      setIsImageLoaded(true);
+    }
+    
+    return () => {
+      if (avatarLoadTimeoutRef.current) {
+        clearTimeout(avatarLoadTimeoutRef.current);
+        avatarLoadTimeoutRef.current = null;
+      }
+    };
+  }, [userProfile?.avatar, user?.avatar, user?.id]);
+  
+  // Avatar başarıyla yüklendiğinde
+  const handleAvatarLoad = useCallback(() => {
+    console.log('[DrawerContent] Avatar loaded successfully:', {
+      userId: user?.id,
+      source: avatarSource,
+    });
+    setIsImageLoaded(true);
+    // Timeout'u temizle
+    if (avatarLoadTimeoutRef.current) {
+      clearTimeout(avatarLoadTimeoutRef.current);
+      avatarLoadTimeoutRef.current = null;
+    }
+  }, [user?.id, avatarSource]);
+  
+  // Avatar yüklenme hatası durumunda default avatar'a geçiş
+  const handleAvatarError = useCallback(() => {
+    console.log('[DrawerContent] Avatar load error, using default avatar:', {
+      userId: user?.id,
+      attemptedSource: avatarSource,
+    });
+    setAvatarSource(DEFAULT_USER_AVATAR);
+    setIsImageLoaded(true); // Default avatar zaten yüklü sayılır
+    // Timeout'u temizle
+    if (avatarLoadTimeoutRef.current) {
+      clearTimeout(avatarLoadTimeoutRef.current);
+      avatarLoadTimeoutRef.current = null;
+    }
+  }, [user?.id, avatarSource]);
   
   // Kullanıcı adı - profile'dan gelen name veya store'dan gelen fullName veya email
   const displayName = useMemo(() => 
@@ -339,7 +370,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const handleNavigateToProfile = useCallback(() => {
     console.log('[DrawerContent] 🎯 handleNavigateToProfile called', { 
       userId: user?.id,
-      drawerStatus: props.state?.status,
       isOpen
     });
     if (!user?.id) {
@@ -354,7 +384,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       params: { userId: user.id },
     });
     console.log('[DrawerContent] ✅ Navigation called');
-  }, [handleCloseDrawer, user?.id, props.state?.status, isOpen]);
+  }, [handleCloseDrawer, user?.id, isOpen]);
 
   const handleNavigateToWallet = useCallback(() => {
     console.log('[DrawerContent] 🎯 handleNavigateToWallet called');
@@ -388,7 +418,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const handleProfilePress = useCallback(() => {
     console.log('[DrawerContent] 🎯 handleProfilePress called (Avatar)', { 
       userId: user?.id,
-      drawerStatus: props.state?.status,
       isOpen
     });
     if (!user?.id) {
@@ -402,7 +431,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       params: { userId: user.id },
     });
     console.log('[DrawerContent] ✅ Navigation called');
-  }, [handleCloseDrawer, user?.id, props.state?.status, isOpen]);
+  }, [handleCloseDrawer, user?.id, isOpen]);
 
   // PERFORMANCE FIX: Stats section handler'larını memoize et
   const handlePostsPress = useCallback(() => {
@@ -604,6 +633,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                     w="100%"
                     h="100%"
                     rounded="$full"
+                    onLoad={handleAvatarLoad}
+                    onError={handleAvatarError}
                   />
                 </Box>
                 <Text
@@ -861,19 +892,16 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
 };
 
 // PERFORMANCE FIX: React.memo ile sarmala - drawer açılırken gereksiz re-render'ları önle
-// CRITICAL: Drawer swipe sırasında re-render'ı önlemek için sadece status değişikliklerinde re-render
+// CRITICAL: Drawer swipe sırasında re-render'ı önlemek için props değişikliklerini kontrol et
 export const DrawerContent = React.memo(DrawerContentComponent, (prevProps, nextProps) => {
   // Custom comparison - sadece gerçek değişikliklerde re-render
-  // CRITICAL: Sadece drawer status değiştiğinde re-render (swipe sırasında değil)
-  const prevStatus = prevProps.state?.status || 'closed';
-  const nextStatus = nextProps.state?.status || 'closed';
-  
-  // Status değişmediyse re-render yapma (swipe sırasında status aynı kalır)
-  if (prevStatus === nextStatus) {
+  // Drawer state drawer store'dan kontrol ediliyor, bu yüzden props state kontrolü kaldırıldı
+  // Props değişmediyse re-render yapma
+  if (prevProps.state === nextProps.state) {
     return true; // Re-render yapma
   }
   
-  // Status değiştiyse re-render yap (drawer açıldı/kapandı)
+  // Props değiştiyse re-render yap
   return false; // Re-render yap
 });
 DrawerContent.displayName = 'DrawerContent';

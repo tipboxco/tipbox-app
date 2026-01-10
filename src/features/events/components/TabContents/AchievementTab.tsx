@@ -60,7 +60,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
 
   // Map AchievementApiItem to SeeAllReward format (BadgeCard component'i için)
   const mapAchievementToSeeAllReward = useCallback((achievement: AchievementApiItem): SeeAllReward => {
-    const imageSource = toImageSource(achievement.image) || require('@/assets/avatar/ozan.png');
+    const imageSource = toImageSource(achievement.image) || require('@/assets/avatar/default-useravatar.png');
     
     return {
       id: achievement.id,
@@ -128,7 +128,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const ListHeaderComponent = useMemo(() => (
     <VStack space="md" px="$4" pb="$4">
       {/* Limited Time Event Card */}
-      {isLimitedEventLoading ? (
+      {isLimitedEventLoading && !limitedEvent ? (
         <LimitedTimeEventSkeleton />
       ) : limitedEventError ? (
         <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
@@ -145,7 +145,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
               const reward: SeeAllReward = {
                 id: limitedEvent.id,
                 title: limitedEvent.title || '',
-                image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/ozan.png'),
+                image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/default-useravatar.png'),
                 description: limitedEvent.description || '',
                 category: '', // Limited event için category yok
                 isUnlocked: false, // Limited event için unlock durumu yok
@@ -201,7 +201,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
 
   // Empty state component
   const EmptyComponent = useMemo(() => {
-    if (isAchievementsLoading && mappedAchievements.length === 0) {
+    if (isAchievementsLoading && !achievementsData) {
       return <BadgeSkeleton count={6} />;
     }
     if (achievementsError) {
@@ -218,8 +218,8 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
         <Box py="$4" alignItems="center" px={16}>
           <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$sm" textAlign="center">
             {activeFilter === 'All' 
-              ? 'Henüz achievement bulunmuyor'
-              : `Henüz ${activeFilter} durumunda achievement bulunmuyor`}
+              ? 'No achievements yet'
+              : `No ${activeFilter} achievements yet`}
           </Text>
         </Box>
       );
@@ -233,6 +233,46 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     activeFilter,
     isDark,
   ]);
+
+  // Initial loading state - hem limited event hem achievements ilk yüklemede ise tüm ekran için skeleton göster
+  // Cache'den veri varsa skeleton gösterme
+  const isInitialLoading = (isLimitedEventLoading && !limitedEvent) || 
+                           (isAchievementsLoading && !achievementsData);
+
+  // İlk yüklemede ve cache'den veri yoksa tüm ekran için skeleton göster
+  if (isInitialLoading && !limitedEvent && !achievementsData) {
+    return (
+      <VStack flex={1} px="$4" py="$4" space="md">
+        {/* Limited Time Event Skeleton */}
+        <LimitedTimeEventSkeleton />
+
+        {/* Search Bar Skeleton */}
+        <Box
+          bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          borderRadius={20}
+          height={40}
+        />
+
+        {/* Filter Skeleton */}
+        <HStack space="sm">
+          {['All', 'Not Started', 'In Progress', 'Completed'].map((_, index) => (
+            <Box
+              key={index}
+              bg={isDark ? '#2A2A2A' : '#E9E9E9'}
+              borderRadius={20}
+              height={32}
+              width={80}
+            />
+          ))}
+        </HStack>
+
+        {/* Achievements Skeleton */}
+        <BadgeSkeleton count={6} />
+      </VStack>
+    );
+  }
 
   // numColumns'u sabit tut (FlatList numColumns'u dinamik değiştirmeyi desteklemiyor)
   // Boş durumda zaten ListEmptyComponent gösteriliyor, o yüzden her zaman 2 kullan

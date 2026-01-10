@@ -16,7 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -71,7 +71,7 @@ const mockMessageHistory: MessageDetailItem[] = [
     timestamp: '10:30',
     isSent: false,
     senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+    senderAvatar: DEFAULT_USER_AVATAR,
   },
   {
     id: '2',
@@ -85,7 +85,7 @@ const mockMessageHistory: MessageDetailItem[] = [
     timestamp: '10:33',
     isSent: false,
     senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+    senderAvatar: DEFAULT_USER_AVATAR,
   },
   {
     id: '4',
@@ -99,7 +99,7 @@ const mockMessageHistory: MessageDetailItem[] = [
     timestamp: '10:36',
     isSent: false,
     senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+    senderAvatar: DEFAULT_USER_AVATAR,
   },
   {
     id: '6',
@@ -997,12 +997,12 @@ const MessageDetailScreen: React.FC = () => {
     // Şimdilik params'dan gelen bilgileri kullanıyoruz
     const expertName = params.senderName || 'Unknown';
     const expertTitle = params.senderTitle || '';
-    const expertAvatar = params.senderAvatar || require('@/assets/avatar/ozan.png');
+    const expertAvatar = params.senderAvatar || DEFAULT_USER_AVATAR;
     
     // Mevcut kullanıcının bilgileri (user store'dan alınabilir)
     const userName = user?.fullName || 'You';
     const userTitle = ''; // User interface'inde title yok
-    const userAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
+    const userAvatar = user?.avatar ? toImageSource(user.avatar) : DEFAULT_USER_AVATAR;
 
     console.log('[MessageDetail] 🔗 Navigating to support chat:', { 
       threadId: supportThreadId, 
@@ -1979,7 +1979,7 @@ const MessageDetailScreen: React.FC = () => {
             <Image
               source={
                 toImageSource(item.senderAvatar || params.senderAvatar) ||
-                require('@/assets/avatar/ozan.png')
+                DEFAULT_USER_AVATAR
               }
               alt={item.senderName || params.senderName || 'User'}
               width={24}

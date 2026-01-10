@@ -6,7 +6,7 @@ export const mock_benchmark_posts: BenchmarkPost[] = [
     user: {
       id: '1',
       name: 'Michael Clark',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Technology Enthusiast - Hardware Expert',
     },
     content: 'iPhone 16 Pro Max vs Samsung Galaxy S25 Ultra karşılaştırması. Her iki telefonun da güçlü yanları var, hangisi daha iyi?',
@@ -41,7 +41,7 @@ export const mock_benchmark_posts: BenchmarkPost[] = [
     user: {
       id: '2',
       name: 'Sarah Johnson',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Tech Reviewer - Gadget Expert',
     },
     content: 'Google Pixel 9 Pro vs OnePlus 13 Pro detaylı karşılaştırması. Kamera kalitesi, performans ve pil ömrü açısından analiz.',
@@ -76,7 +76,7 @@ export const mock_benchmark_posts: BenchmarkPost[] = [
     user: {
       id: '3',
       name: 'Alex Chen',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Mobile Expert - Phone Reviewer',
     },
     content: 'Xiaomi 15 Ultra vs Huawei Mate 70 Pro karşılaştırması. Her iki telefonun da güçlü kamera sistemleri var, hangisi daha iyi performans gösteriyor?',

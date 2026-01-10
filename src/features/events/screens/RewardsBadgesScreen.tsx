@@ -51,7 +51,7 @@ const RewardsBadgesScreen: React.FC = () => {
                         id: item.id,
                         title: item.title || '',
                         description: item.description || '',
-                        image: toImageSource(item.image) || require('@/assets/avatar/ozan.png'),
+                        image: toImageSource(item.image) || require('@/assets/avatar/default-useravatar.png'),
                         category: '', // API'den gelmiyor, boş string
                         isUnlocked: item.status === 'completed',
                         completed: item.current,

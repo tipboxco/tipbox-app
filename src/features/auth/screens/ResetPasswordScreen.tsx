@@ -47,9 +47,9 @@ export const ResetPasswordScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Geçersiz Şifre</ToastTitle>
+                  <ToastTitle>Invalid Password</ToastTitle>
                   <ToastDescription>
-                    Şifre en az 8 karakter olmalı ve şifreler eşleşmelidir.
+                    Password must be at least 8 characters and passwords must match.
                   </ToastDescription>
                 </Toast>
               </Box>
@@ -66,8 +66,8 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Şifreler Eşleşmiyor</ToastTitle>
-                <ToastDescription>Lütfen aynı şifreyi girin.</ToastDescription>
+                <ToastTitle>Passwords Don't Match</ToastTitle>
+                <ToastDescription>Please enter the same password.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -80,7 +80,7 @@ export const ResetPasswordScreen = () => {
     try {
       // TODO: Endpoint'e istek atılacak
       // const response = await forgotPasswordApi.resetPassword({ email, newPassword });
-      console.log('Reset Password - Yeni şifre ayarlanıyor:', { email, newPassword: '***' });
+      console.log('Reset Password - Setting new password:', { email, newPassword: '***' });
 
       // Simüle edilmiş başarılı response
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -91,8 +91,8 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Şifre Sıfırlandı</ToastTitle>
-                <ToastDescription>Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.</ToastDescription>
+                <ToastTitle>Password Reset</ToastTitle>
+                <ToastDescription>Your password has been successfully updated. You can now sign in.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -113,9 +113,9 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
+                <ToastTitle>Error</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || error?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'}
+                  {error?.response?.data?.message || error?.message || 'An error occurred. Please try again.'}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -148,8 +148,8 @@ export const ResetPasswordScreen = () => {
             color={isDark ? '$textDark300' : '$textLight600'}
             mb="$4"
           >
-            Yeni şifrenizi belirleyin.{'\n'}
-            Şifreniz en az 8 karakter olmalıdır.
+            Set your new password.{'\n'}
+            Your password must be at least 8 characters.
           </Text>
 
           <VStack space="md">
@@ -214,7 +214,7 @@ export const ResetPasswordScreen = () => {
             disabled={!isNewPasswordValid || !isConfirmPasswordValid || isLoading}
           >
             <ButtonText color="$textLight900">
-              {isLoading ? 'Kaydediliyor...' : 'Şifreyi Sıfırla'}
+              {isLoading ? 'Saving...' : 'Reset Password'}
             </ButtonText>
           </Button>
 
@@ -226,7 +226,7 @@ export const ResetPasswordScreen = () => {
             mb="$4"
             onPress={() => navigation.goBack()}
           >
-            Geri dön
+            Go Back
           </Text>
         </VStack>
       </Box>

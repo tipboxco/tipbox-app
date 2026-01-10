@@ -46,12 +46,6 @@ export const TokenService = {
       tokenCache.accessToken = token;
       tokenCache.isInitialized = true;
 
-      if (token) {
-        console.log('[TokenService] ✅ Access Token retrieved from SecureStore (cached)');
-        console.log('[TokenService]    - Length:', token.length, 'characters');
-      } else {
-        console.log('[TokenService] ⚠️ No access token found in SecureStore');
-      }
       return token;
     } catch (error) {
       console.error('[TokenService] ❌ Error getting access token:', error);
@@ -92,10 +86,6 @@ export const TokenService = {
    */
   async setTokens(accessToken: string, refreshToken: string): Promise<void> {
     try {
-      console.log('[TokenService] 📋 Saving tokens to SecureStore...');
-      console.log('[TokenService]    - Access Token Length:', accessToken.length);
-      console.log('[TokenService]    - Refresh Token Length:', refreshToken.length);
-      
       await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
       
@@ -103,8 +93,6 @@ export const TokenService = {
       tokenCache.accessToken = accessToken;
       tokenCache.refreshToken = refreshToken;
       tokenCache.isInitialized = true;
-      
-      console.log('[TokenService] ✅ Tokens saved to SecureStore (cache updated)');
     } catch (error) {
       console.error('[TokenService] ❌ Error setting tokens:', error);
       // Hata durumunda cache'i temizle
@@ -138,7 +126,6 @@ export const TokenService = {
    */
   async clearTokens(): Promise<void> {
     try {
-      console.log('[TokenService] 📋 Clearing tokens from SecureStore...');
       await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
       
@@ -146,8 +133,6 @@ export const TokenService = {
       tokenCache.accessToken = null;
       tokenCache.refreshToken = null;
       tokenCache.isInitialized = false;
-      
-      console.log('[TokenService] ✅ Tokens cleared from SecureStore (cache cleared)');
     } catch (error) {
       console.error('[TokenService] ❌ Error clearing tokens:', error);
       // Hata durumunda da cache'i temizle

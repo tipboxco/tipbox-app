@@ -123,7 +123,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       id: brandId,
       name: brand.name,
       followers: '',
-      logo: toImageSource(brand.image) || require('@/assets/avatar/ozan.png'),
+      logo: toImageSource(brand.image) || require('@/assets/avatar/default-useravatar.png'),
       bannerImage: require('@/assets/events/banner.png'),
       isJoined: false,
     };

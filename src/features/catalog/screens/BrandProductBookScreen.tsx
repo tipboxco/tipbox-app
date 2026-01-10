@@ -56,7 +56,7 @@ const BrandProductBookScreen: React.FC = () => {
 
     // Map BrandProduct to component format
     const mapProductToCardData = (product: BrandProduct) => {
-        const imageSource = toImageSource(product.image) || require('@/assets/avatar/ozan.png');
+        const imageSource = toImageSource(product.image) || require('@/assets/avatar/default-useravatar.png');
         
         return {
             id: product.productId,
@@ -305,7 +305,7 @@ const BrandProductBookScreen: React.FC = () => {
                         {allProductGroups.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
-                                    Henüz ürün bulunmuyor
+                                    No products yet
                                 </Text>
                             </Box>
                         ) : (

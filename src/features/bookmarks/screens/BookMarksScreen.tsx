@@ -35,10 +35,26 @@ const BookMarksScreen = () => {
 
   // Map Post bookmark to PostCardData
   const mapPostToCardData = (item: ProfilePost & { type: 'post' }): PostCardData => {
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
     // content array ise string'e çevir, değilse direkt kullan
     const contentString = Array.isArray(item.content)
       ? item.content.map((contentItem) => contentItem.content || '').join(' ')
       : (item.content || '');
+
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+    // contextData.image için fallback
+    const contextImage = item.contextData?.image
+      ? toImageSource(item.contextData.image)
+      : undefined;
+    const contextData = item.contextData
+      ? {
+          ...item.contextData,
+          image: contextImage || item.contextData.image || defaultPostImage,
+        }
+      : undefined;
 
     return {
       id: item.id,
@@ -49,11 +65,11 @@ const BookMarksScreen = () => {
         avatar: toImageSource(item.user.avatar)!,
       },
       content: contentString,
-      images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+      images,
       stats: item.stats,
       createdAt: item.createdAt,
       contextType: item.contextType,
-      contextData: item.contextData,
+      contextData,
     };
   };
 
@@ -142,6 +158,13 @@ const BookMarksScreen = () => {
       product,
     };
 
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    const mappedImages = item.images
+      ?.map((img) => toImageSource(img))
+      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
     return {
       id: item.id,
       user: {
@@ -153,9 +176,7 @@ const BookMarksScreen = () => {
       category,
       content: item.content,
       isBoosted: item.isBoosted,
-      images: item.images
-        ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+      images,
       stats: item.stats,
       createdAt: item.createdAt,
     };
@@ -240,7 +261,7 @@ const BookMarksScreen = () => {
           {!isLoading && !error && (!bookmarks || bookmarks.length === 0) && (
             <Box py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Henüz bookmark bulunmuyor.
+                No bookmarks yet.
               </Text>
             </Box>
           )}

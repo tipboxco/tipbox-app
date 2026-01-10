@@ -13,7 +13,7 @@ export const mock_review_card: ReviewCardProps = {
     usageDuration: "4-7 Days",
     experience: "It Could be Better",
     useCase: "Daily Use",
-    userImage: require('@/assets/avatar/ozan.png'),
+    userImage: require('@/assets/avatar/default-useravatar.png'),
     userName: "Adan Galloway",
     userBadge: "Technology Expert",
     userAction: "Added a new product and experiences to your inventory!"

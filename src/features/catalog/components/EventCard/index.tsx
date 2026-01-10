@@ -78,7 +78,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
             overflow="hidden"
           >
             <Image
-              source={event.image}
+              source={event.image || require('@/assets/defaultImages/default-event.png')}
               alt={event.title}
               style={{
                 width: 68,

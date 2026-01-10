@@ -212,7 +212,7 @@ const BenchmarksTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          Henüz benchmark bulunmuyor.
+          No benchmarks yet.
         </Text>
       </VStack>
     );

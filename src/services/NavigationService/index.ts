@@ -173,7 +173,6 @@ class NavigationService {
     // ARCHITECTURE FIX: Navigation Queue Pattern
     // Navigation ready değilse queue'ya ekle, ready olduğunda consume edilir
     if (!this.isReady()) {
-      console.log('[NavigationService] ⏳ Navigation not ready, adding to queue:', routeName);
       this.pendingNavigationQueue.push({
         route: routeName as string,
         params,
@@ -401,13 +400,11 @@ class NavigationService {
       return;
     }
 
-    console.log('[NavigationService] 🔄 Consuming pending navigation queue:', this.pendingNavigationQueue.length, 'items');
 
     // Queue'daki tüm navigation'ları FIFO sırasıyla consume et
     while (this.pendingNavigationQueue.length > 0) {
       const pending = this.pendingNavigationQueue.shift();
       if (pending) {
-        console.log('[NavigationService] 📍 Consuming queued navigation:', pending.route, pending.params);
         // Navigate et (bu sefer ready olduğu için direkt execute edilir)
         this.navigate(pending.route as any, pending.params, pending.options);
       }
@@ -419,7 +416,6 @@ class NavigationService {
    * Kullanıcı logout olduğunda veya navigation reset edildiğinde çağrılır
    */
   clearPendingNavigationQueue(): void {
-    console.log('[NavigationService] 🧹 Clearing pending navigation queue');
     this.pendingNavigationQueue = [];
   }
 }

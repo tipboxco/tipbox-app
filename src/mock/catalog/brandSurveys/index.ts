@@ -27,7 +27,7 @@ export const mock_surveys: Survey[] = [
     user: {
       id: '1',
       name: 'Michael Clark',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Technology Enthusiast',
     },
   },
@@ -48,7 +48,7 @@ export const mock_surveys: Survey[] = [
     user: {
       id: '2',
       name: 'Sarah Johnson',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Mobile Expert',
     },
     progress: 60,
@@ -70,7 +70,7 @@ export const mock_surveys: Survey[] = [
     user: {
       id: '3',
       name: 'Alex Chen',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Camera Specialist',
     },
     progress: 100,
@@ -92,7 +92,7 @@ export const mock_surveys: Survey[] = [
     user: {
       id: '4',
       name: 'David Wilson',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Performance Tester',
     },
   },
@@ -105,7 +105,7 @@ export const mockBenchmarkData: BenchmarkPost = {
     id: '1',
     name: 'Ahmet Yılmaz',
     title: 'Tech Expert',
-    avatar: require('@/assets/avatar/ozan.png'),
+    avatar: require('@/assets/avatar/default-useravatar.png'),
   },
   products: [
     {
@@ -141,7 +141,7 @@ export const mockTipsAndTricksData: TipsAndTricksPost = {
     id: '1',
     name: 'Elif Kaya',
     title: 'Mobile Expert',
-    avatar: require('@/assets/avatar/ozan.png'),
+    avatar: require('@/assets/avatar/default-useravatar.png'),
   },
   category: {
     id: '1',
@@ -176,7 +176,7 @@ export const mockPostData: Post = {
     id: '1',
     name: 'Mehmet Demir',
     title: 'Gadget Reviewer',
-    avatar: require('@/assets/avatar/ozan.png'),
+    avatar: require('@/assets/avatar/default-useravatar.png'),
   },
   category: {
     id: '1',

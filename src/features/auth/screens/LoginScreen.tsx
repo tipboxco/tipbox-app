@@ -62,9 +62,9 @@ export const LoginScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Giriş Başarılı</ToastTitle>
+                <ToastTitle>Login Successful</ToastTitle>
                 <ToastDescription>
-                    Hoş geldiniz, {result.fullName || result.email}!
+                    Welcome, {result.fullName || result.email}!
                 </ToastDescription>
               </Toast>
               </Box>
@@ -88,7 +88,7 @@ export const LoginScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'Giriş işlemi sırasında bir hata oluştu';
+          'An error occurred during login';
 
         toast.show({
           placement: 'top',
@@ -96,7 +96,7 @@ export const LoginScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Giriş Hatası</ToastTitle>
+                <ToastTitle>Login Error</ToastTitle>
                 <ToastDescription>{errorMessage}</ToastDescription>
               </Toast>
               </Box>
@@ -109,9 +109,9 @@ export const LoginScreen = () => {
 
   const handleGuestLogin = async () => {
     try {
-      console.log('Misafir girişi başlatılıyor...');
+      console.log('Starting guest login...');
       await loginAsGuest();
-      console.log('Misafir girişi tamamlandı!');
+      console.log('Guest login completed!');
       
       // Ana sayfaya yönlendir
       navigation.reset({
@@ -125,7 +125,7 @@ export const LoginScreen = () => {
         }],
       });
     } catch (error) {
-      console.error('Misafir girişi hatası:', error);
+      console.error('Guest login error:', error);
     }
   };
 
@@ -242,7 +242,7 @@ export const LoginScreen = () => {
           disabled={!isEmailValid || !isPasswordValid || loginMutation.isPending}
         >
           <ButtonText color="$textLight900">
-            {loginMutation.isPending ? 'Giriş yapılıyor...' : 'Confirm'}
+            {loginMutation.isPending ? 'Signing in...' : 'Confirm'}
           </ButtonText>
         </Button>
 
@@ -254,7 +254,7 @@ export const LoginScreen = () => {
           rounded="$lg"
           mt="$2"
         >
-          <ButtonText>Misafir Olarak Devam Et</ButtonText>
+          <ButtonText>Continue as Guest</ButtonText>
         </Button>
 
         <Text
@@ -265,7 +265,7 @@ export const LoginScreen = () => {
           mb="$4"
           onPress={() => navigation.navigate('Register')}
         >
-          Hesabınız yok mu? Sign Up
+          Don't have an account? Sign Up
         </Text>
       </VStack>
       </Box>

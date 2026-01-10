@@ -6,7 +6,7 @@ export const mock_brand_product_experience_posts: PostCards = [
     user: {
       id: '1',
       name: 'Michael Clark',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Technology Enthusiast - Hardware Expert - Digital Surfer',
       action: 'Added new product and experiences to inventory!'
     },
@@ -53,7 +53,7 @@ export const mock_brand_product_experience_posts: PostCards = [
     user: {
       id: '2',
       name: 'Sarah Johnson',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Home & Lifestyle Expert - Product Reviewer',
       action: 'Added new product and experiences to inventory!'
     },
@@ -99,7 +99,7 @@ export const mock_brand_product_experience_posts: PostCards = [
     user: {
       id: '3',
       name: 'Alex Chen',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Tech Reviewer - Gadget Enthusiast',
       action: 'Added new product and experiences to inventory!'
     },

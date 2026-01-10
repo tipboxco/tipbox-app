@@ -4,14 +4,14 @@ import { VStack, Text, Box } from '@gluestack-ui/themed';
 import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
 import { useUserReviews } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
+import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { ProfileReview } from '../../types';
 
 const mapReviewToCardData = (review: ProfileReview): ReviewCardData => {
   const avatarSource = review.user?.avatar
     ? toImageSource(review.user.avatar)!
-    : require('@/assets/avatar/ozan.png');
+    : DEFAULT_USER_AVATAR;
   
   const productImage = review.contextData?.image
     ? toImageSource(review.contextData.image)
@@ -232,7 +232,7 @@ const ReviewsTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          Henüz review bulunmuyor.
+          No reviews yet.
         </Text>
       </VStack>
     );

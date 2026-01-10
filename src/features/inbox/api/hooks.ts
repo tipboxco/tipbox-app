@@ -51,8 +51,9 @@ export const useMessages = (params?: GetMessagesParams) => {
   return useQuery<InboxMessage[], Error>({
     queryKey: [...inboxKeys.messages(), params],
     queryFn: () => getMessages(params),
-    staleTime: 0,
-    gcTime: 0,
+    // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
+    staleTime: 5 * 60 * 1000,  // 5 dakika - cache invalid olana kadar backend'e istek atma
+    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
     // PERFORMANCE FIX: refetchOnMount kaldırıldı - tab'a geçildiğinde otomatik refetch yapılmıyor
     // Mesajlar socket event'leri ile otomatik güncelleniyor
     // Kullanıcı manuel olarak pull to refresh yapabilir
@@ -165,9 +166,10 @@ export const useThreadMessages = (threadId: string | null) => {
       return getThreadMessages(threadId);
     },
     enabled: !!threadId,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
+    // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
+    staleTime: 2 * 60 * 1000,  // 2 dakika - cache invalid olana kadar backend'e istek atma
+    gcTime: 5 * 60 * 1000,     // 5 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -187,8 +189,9 @@ export const useSupportRequests = (params?: GetSupportRequestsParams) => {
   return useQuery<SupportRequest[], Error>({
     queryKey: inboxKeys.supportRequests(params),
     queryFn: () => getSupportRequests(params),
-    staleTime: 0,
-    gcTime: 0,
+    // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
+    staleTime: 5 * 60 * 1000,  // 5 dakika - cache invalid olana kadar backend'e istek atma
+    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
     // PERFORMANCE FIX: refetchOnMount kaldırıldı - tab'a geçildiğinde otomatik refetch yapılmıyor
     // Support request'ler socket event'leri ile otomatik güncelleniyor
     // Kullanıcı manuel olarak pull to refresh yapabilir

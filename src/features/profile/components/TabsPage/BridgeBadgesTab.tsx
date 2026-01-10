@@ -16,7 +16,7 @@ interface BridgeBadgesTabProps {
 
 // Map BridgeBadgeApiItem to Badge format
 const mapBridgeToBadge = (bridge: BridgeBadgeApiItem): Badge => {
-  const imageSource = toImageSource(bridge.image) || require('@/assets/badges/badge_01.png');
+  const imageSource = toImageSource(bridge.image) || require('@/assets/defaultImages/default-badge.png');
   
   return {
     id: bridge.id,
@@ -230,7 +230,7 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          Henüz bridge badge bulunmuyor.
+          No bridge badges yet.
         </Text>
       </VStack>
     );

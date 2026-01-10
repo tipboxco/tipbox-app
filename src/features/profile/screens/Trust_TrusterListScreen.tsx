@@ -1,12 +1,18 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    interpolateColor,
+    withTiming,
+} from 'react-native-reanimated';
 import {
     VStack,
     HStack,
     Text,
     Pressable,
     Box,
-    Image,
     Input,
     InputField,
     ScrollView
@@ -23,7 +29,9 @@ import { SuggestionCard } from '../components/SuggestionCard';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useTrustList, useTrusterList } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, DEFAULT_USER_AVATAR } from '@/src/utils';
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type TrustListScreenRouteProp = {
@@ -45,6 +53,12 @@ export const Trust_TrusterListScreen = () => {
     const bottomInset = useSafeAreaValues('bottom');
 
     const userId = route.params?.userId;
+    const pagerRef = useRef<PagerView>(null);
+    const tabContainerRef = useRef<any>(null);
+    const [tabContainerWidth, setTabContainerWidth] = useState(0);
+    
+    // PagerView progress value (0 = trust, 1 = truster)
+    const progress = useSharedValue(route.params?.initialTab === 'truster' ? 1 : 0);
     const [activeTab, setActiveTab] = useState<'trust' | 'truster'>(
         route.params?.initialTab || 'trust'
     );
@@ -55,6 +69,38 @@ export const Trust_TrusterListScreen = () => {
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+
+    // Tab press handler - PagerView native animasyonu ile geçiş
+    const handleTabPress = useCallback((index: number) => {
+        pagerRef.current?.setPage(index);
+    }, []);
+
+    // PagerView scroll handler - realtime progress güncelleme
+    const handlePageScroll = useCallback(
+        (e: any) => {
+            'worklet';
+            const { position, offset } = e.nativeEvent;
+            progress.value = position + offset;
+        },
+        [progress]
+    );
+
+    // PagerView page selected handler - snap sonrası progress'i sync et
+    const handlePageSelected = useCallback(
+        (e: any) => {
+            const position = e.nativeEvent.position;
+            progress.value = withTiming(position, { duration: 0 });
+            setActiveTab(position === 0 ? 'trust' : 'truster');
+        },
+        [progress]
+    );
+
+    // Initial page setup
+    useEffect(() => {
+        const initialPage = route.params?.initialTab === 'truster' ? 1 : 0;
+        pagerRef.current?.setPage(initialPage);
+        progress.value = initialPage;
+    }, []);
 
     // Debounce search query - Trust sekmesi için API'ye istek atmadan önce 500ms bekle
     useEffect(() => {
@@ -145,6 +191,41 @@ export const Trust_TrusterListScreen = () => {
         setSelectedSort(sort);
         closeBottomSheet();
     };
+
+    // Tab 1 (Trust) label color animation
+    const tab1Style = useAnimatedStyle(() => {
+        const activeColor = isDark ? '#FFFFFF' : '#000000';
+        const inactiveColor = '#8C8C8C';
+        const color = interpolateColor(
+            progress.value,
+            [0, 1],
+            [activeColor, inactiveColor]
+        );
+        return { color };
+    });
+
+    // Tab 2 (Truster) label color animation
+    const tab2Style = useAnimatedStyle(() => {
+        const activeColor = isDark ? '#FFFFFF' : '#000000';
+        const inactiveColor = '#8C8C8C';
+        const color = interpolateColor(
+            progress.value,
+            [0, 1],
+            [inactiveColor, activeColor]
+        );
+        return { color };
+    });
+
+    // Indicator position animation
+    const tabWidth = tabContainerWidth / 2 || 0;
+    const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
+    const indicatorStyle = useAnimatedStyle(() => {
+        // Indicator'ı tab genişliğine göre translate et
+        const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+        return {
+            transform: [{ translateX }],
+        };
+    });
 
     const handleFilterPress = () => {
         openBottomSheet(
@@ -304,59 +385,77 @@ export const Trust_TrusterListScreen = () => {
 
                 {/* Tab Bar */}
                 <VStack py={16} bg={isDark ? '#000' : '#FAFAFA'}>
-                    <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0} mb={16}>
+                    <HStack
+                        ref={tabContainerRef}
+                        borderBottomWidth={1}
+                        borderColor="#E9E9E9"
+                        p={0}
+                        m={0}
+                        mb={16}
+                        position="relative"
+                        onLayout={(event) => {
+                            const width = event.nativeEvent.layout.width;
+                            setTabContainerWidth(width);
+                        }}
+                    >
+                        {/* Trust Tab Label */}
                         <Pressable
-                            onPress={() => setActiveTab('trust')}
+                            onPress={() => handleTabPress(0)}
                             flex={1}
                             alignItems="center"
                             pb="$1"
-                            position="relative"
                         >
                             <VStack alignItems="center" space="xs">
-                                <Text
-                                    color={activeTab === 'trust' ? '#000' : '#8C8C8C'}
-                                    fontSize={12}
-                                    fontWeight="$bold"
+                                <Animated.Text
+                                    style={[
+                                        {
+                                            fontSize: 12,
+                                            fontWeight: 'bold',
+                                        },
+                                        tab1Style,
+                                    ]}
                                 >
                                     Trust
-                                </Text>
+                                </Animated.Text>
                             </VStack>
-                            <Box
-                                position="absolute"
-                                bottom={-1}
-                                left="25%"
-                                height={2}
-                                width="50%"
-                                borderRadius={999}
-                                bg={activeTab === 'trust' ? '#000' : 'transparent'}
-                            />
                         </Pressable>
+                        {/* Truster Tab Label */}
                         <Pressable
-                            onPress={() => setActiveTab('truster')}
+                            onPress={() => handleTabPress(1)}
                             flex={1}
                             alignItems="center"
                             pb="$1"
-                            position="relative"
                         >
                             <VStack alignItems="center" space="xs">
-                                <Text
-                                    color={activeTab === 'truster' ? '#000' : '#8C8C8C'}
-                                    fontSize={12}
-                                    fontWeight="$bold"
+                                <Animated.Text
+                                    style={[
+                                        {
+                                            fontSize: 12,
+                                            fontWeight: 'bold',
+                                        },
+                                        tab2Style,
+                                    ]}
                                 >
                                     Truster
-                                </Text>
+                                </Animated.Text>
                             </VStack>
-                            <Box
-                                position="absolute"
-                                bottom={-1}
-                                left="25%"
-                                height={2}
-                                width="50%"
-                                borderRadius={999}
-                                bg={activeTab === 'truster' ? '#000' : 'transparent'}
-                            />
                         </Pressable>
+                        {/* Animated Indicator */}
+                        {tabWidth > 0 && (
+                            <Animated.View
+                                style={[
+                                    {
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        width: indicatorWidth,
+                                        height: 2,
+                                        backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                                    },
+                                    indicatorStyle,
+                                ]}
+                            />
+                        )}
                     </HStack>
 
                     <VStack px="$4">
@@ -399,9 +498,16 @@ export const Trust_TrusterListScreen = () => {
                     </VStack>
                 </VStack>
 
-                {/* Content */}
-                <VStack flex={1}>
-                    {activeTab === 'trust' ? (
+                {/* Content - PagerView with horizontal scroll */}
+                <AnimatedPagerView
+                    ref={pagerRef}
+                    style={{ flex: 1 }}
+                    initialPage={route.params?.initialTab === 'truster' ? 1 : 0}
+                    onPageScroll={handlePageScroll}
+                    onPageSelected={handlePageSelected}
+                >
+                    {/* Trust Tab */}
+                    <Box key="0" flex={1}>
                         <ScrollView
                             flex={1}
                             keyboardShouldPersistTaps="handled"
@@ -414,17 +520,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 3'
                                     }
                                 ]}
@@ -466,7 +572,10 @@ export const Trust_TrusterListScreen = () => {
                                 ))
                             )}
                         </ScrollView>
-                    ) : (
+                    </Box>
+
+                    {/* Truster Tab */}
+                    <Box key="1" flex={1}>
                         <ScrollView
                             flex={1}
                             keyboardShouldPersistTaps="handled"
@@ -479,17 +588,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 3'
                                     }
                                 ]}
@@ -526,8 +635,8 @@ export const Trust_TrusterListScreen = () => {
                                 />
                             )))}
                         </ScrollView>
-                    )}
-                </VStack>
+                    </Box>
+                </AnimatedPagerView>
 
                 {/* Güvenli kapanış overlay'i - sadece popover açıkken aktif */}
                 {openPopoverId && (

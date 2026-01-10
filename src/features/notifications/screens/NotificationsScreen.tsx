@@ -21,7 +21,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { notification_filters } from '@/src/mock/notifications';
 import { NotificationFilter } from '@/src/mock/notifications/types';
 import { Header } from '@/src/components/Header';
-import { toImageSource, formatRelativeTime } from '@/src/utils';
+import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
 import {
     useNotifications,
     useMarkNotificationAsRead,
@@ -106,7 +106,7 @@ const NotificationCard: React.FC<{
 
     const userAvatar = notification.metadata?.userAvatar 
         ? toImageSource(notification.metadata.userAvatar)
-        : require('@/assets/avatar/ozan.png');
+        : DEFAULT_USER_AVATAR;
     const userName = notification.metadata?.userName || 'Kullanıcı';
 
     return (
@@ -271,40 +271,6 @@ export const NotificationsScreen: React.FC = () => {
 
     const notifications = notificationsResponse?.data || [];
     
-    // Debug: Notification data kontrolü ve API isteği kontrolü
-    useEffect(() => {
-        console.log('[NotificationsScreen] 📋 Notifications API Status:', {
-            endpoint: '/notifications',
-            params: { limit: 50, offset: 0, unreadOnly },
-            isLoading,
-            hasResponse: !!notificationsResponse,
-            responseSuccess: notificationsResponse?.success,
-            dataCount: notifications.length,
-            error: error ? {
-                message: error.message,
-                status: (error as any)?.response?.status,
-                data: (error as any)?.response?.data,
-            } : null,
-        });
-        
-        if (notifications.length > 0) {
-            console.log('[NotificationsScreen] ✅ Notifications loaded:', {
-                count: notifications.length,
-                firstNotification: {
-                    id: notifications[0].id,
-                    type: notifications[0].type,
-                    title: notifications[0].title,
-                    message: notifications[0].message,
-                    read: notifications[0].read,
-                },
-            });
-        } else if (!isLoading && notificationsResponse) {
-            console.log('[NotificationsScreen] ⚠️ No notifications found:', {
-                responseSuccess: notificationsResponse.success,
-                dataArray: notificationsResponse.data,
-            });
-        }
-    }, [notifications.length, isLoading, error, notificationsResponse, unreadOnly]);
 
     const handleFilterPress = (selectedFilter: NotificationFilter) => {
         setFilters(prev =>
@@ -345,7 +311,6 @@ export const NotificationsScreen: React.FC = () => {
             const action = getNavigationAction(notification);
             
             if (!action) {
-                console.log('[NotificationsScreen] ℹ️ No navigation action for notification:', notification.type);
                 return;
             }
 
@@ -359,7 +324,6 @@ export const NotificationsScreen: React.FC = () => {
                     priority: 'high', // Kullanıcı tıklaması yüksek öncelikli
                     force: false, // App State Awareness kontrolü yapılır
                 });
-                console.log('[NotificationsScreen] ✅ Navigated to global screen:', route, params);
                 return;
             }
 
@@ -376,7 +340,6 @@ export const NotificationsScreen: React.FC = () => {
                     priority: 'high', // Kullanıcı tıklaması yüksek öncelikli
                     force: false, // App State Awareness kontrolü yapılır
                 });
-                console.log('[NotificationsScreen] ✅ Navigated to tab screen:', tabRoute, screenName, screenParams);
                 return;
             }
 

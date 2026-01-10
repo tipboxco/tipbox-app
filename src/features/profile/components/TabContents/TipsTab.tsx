@@ -222,7 +222,7 @@ const TipsTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          Henüz tips & tricks bulunmuyor.
+          No tips & tricks yet.
         </Text>
       </VStack>
     );

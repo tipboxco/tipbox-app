@@ -188,7 +188,7 @@ export const WalletScreen: React.FC = () => {
       rarityTextColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
         ? '#AB2847' 
         : undefined,
-      image: nft.image || require('@/assets/badges/badge_01.png'),
+      image: nft.image || require('@/assets/defaultImages/default-badge.png'),
     }));
   }, [nftsData]);
 

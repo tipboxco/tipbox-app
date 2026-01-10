@@ -8,8 +8,6 @@ export const imagePickerConfig = {
     quality: 0.7,
     base64: false,
     exif: false,
-    cropperCircleOverlay: true, // Yuvarlak crop overlay
-    useFrontCamera: true, // Ön kamera kullan
   } satisfies ImagePickerOptions,
 
   gallery: {
@@ -20,7 +18,6 @@ export const imagePickerConfig = {
     allowsMultipleSelection: false,
     base64: false,
     exif: false,
-    cropperCircleOverlay: true, // Yuvarlak crop overlay
   } satisfies ImagePickerOptions,
 
   galleryMultiple: {
@@ -30,8 +27,6 @@ export const imagePickerConfig = {
     allowsMultipleSelection: true,
     base64: false,
     exif: false,
-    // iOS için özel ayarlar
-    presentationStyle: 'pageSheet' as const, // iOS'ta daha iyi çalışması için
   } satisfies ImagePickerOptions,
 
   // Yükleme limitleri

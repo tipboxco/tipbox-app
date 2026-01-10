@@ -16,215 +16,76 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { Header } from '@/src/components/Header';
 import { SuggestedUserCard } from '../components/SuggestedUserCard';
+import { useSuggestedUsers, useAddToTrustList } from '../api/hooks';
+import { toImageSource } from '@/src/utils';
+import { ActivityIndicator } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys } from '../api/hooks';
 
 type SuggestedUsersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-// Mock data for suggested users
-const mockSuggestedUsers = [
-    {
-        id: '1',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '2',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '3',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '4',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '5',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '6',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '7',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '8',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '9',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '10',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '11',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '12',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '13',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '14',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '15',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '16',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    }
-];
 
 export const SuggestedUsersScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<SuggestedUsersScreenNavigationProp>();
+    const queryClient = useQueryClient();
     
     const [addedUsers, setAddedUsers] = useState<string[]>([]);
+    
+    // API hooks
+    const { data: suggestedUsers, isLoading, error } = useSuggestedUsers();
+    const addToTrustMutation = useAddToTrustList();
 
     const handleAddTrust = (userId: string) => {
-        console.log('Add trust clicked for user:', userId);
+        if (addedUsers.includes(userId)) {
+            return; // Zaten eklenmiş
+        }
+        
         setAddedUsers(prev => [...prev, userId]);
+        
+        // API'ye trust ekle
+        addToTrustMutation.mutate(userId, {
+            onSuccess: () => {
+                console.log('[SuggestedUsersScreen] ✅ User added to trust list');
+                // Trust listesini invalidate et
+                queryClient.invalidateQueries({ queryKey: profileKeys.trusts() });
+                // Suggested users listesini invalidate et (kullanıcı listeden çıkarılabilir)
+                queryClient.invalidateQueries({ queryKey: profileKeys.suggestedUsers() });
+            },
+            onError: (error) => {
+                console.error('[SuggestedUsersScreen] ❌ Add trust error:', error);
+                // Hata durumunda addedUsers'dan çıkar
+                setAddedUsers(prev => prev.filter(id => id !== userId));
+            },
+        });
+    };
+
+    // API'den gelen veriyi SuggestedUserCard formatına map et
+    const mapSuggestedUserToCardData = (user: any) => {
+        // Kullanıcının kendi avatar'ı
+        const userAvatar = user.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/default-useravatar.png');
+        
+        // Mutual trust avatars (eğer varsa)
+        const mutualAvatars = user.mutualTrustAvatars || [];
+        const mappedAvatars = [
+            {
+                id: user.id,
+                source: userAvatar,
+                alt: user.name,
+            },
+            ...mutualAvatars.slice(0, 2).map((mutual: any, index: number) => ({
+                id: mutual.id || `mutual-${index}`,
+                source: mutual.avatar ? toImageSource(mutual.avatar) : require('@/assets/avatar/default-useravatar.png'),
+                alt: `Mutual trust ${index + 1}`,
+            })),
+        ];
+
+        return {
+            id: user.id,
+            name: user.name,
+            title: user.title || '',
+            avatars: mappedAvatars,
+        };
     };
 
     return (
@@ -232,25 +93,46 @@ export const SuggestedUsersScreen = () => {
         <VStack flex={1} bg={isDark ? '#000' : '#FFFFFF'}>
             {/* Header */}
             <Header
-                title="Micheal Clark"
+                title="Suggested Users"
                 showBackButton
                 onBackPress={() => navigation.goBack()}
             />
 
             {/* Content */}
-            <ScrollView flex={1} keyboardShouldPersistTaps="handled">
-                {mockSuggestedUsers.map((user, index) => (
-                    <SuggestedUserCard
-                        key={user.id}
-                        id={user.id}
-                        name={user.name}
-                        title={user.title}
-                        avatars={user.avatars}
-                        onAddTrust={handleAddTrust}
-                        showBorder={false}
-                    />
-                ))}
-            </ScrollView>
+            {isLoading ? (
+                <Box flex={1} justifyContent="center" alignItems="center">
+                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
+            ) : error ? (
+                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                    <Text color="#CE4A4A" fontSize="$sm">
+                        {error.message || 'Failed to load suggested users'}
+                    </Text>
+                </Box>
+            ) : suggestedUsers && suggestedUsers.length > 0 ? (
+                <ScrollView flex={1} keyboardShouldPersistTaps="handled">
+                    {suggestedUsers.map((user) => {
+                        const cardData = mapSuggestedUserToCardData(user);
+                        return (
+                            <SuggestedUserCard
+                                key={user.id}
+                                id={cardData.id}
+                                name={cardData.name}
+                                title={cardData.title}
+                                avatars={cardData.avatars}
+                                onAddTrust={handleAddTrust}
+                                showBorder={false}
+                            />
+                        );
+                    })}
+                </ScrollView>
+            ) : (
+                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$sm">
+                        No suggested users found
+                    </Text>
+                </Box>
+            )}
         </VStack>
         </SafeAreaView>
     );

@@ -123,18 +123,6 @@ export const getFeed = async (
       },
     };
     
-    // Debug: Log response for troubleshooting
-    console.log('[getFeed] ✅ Response:', {
-      url: `/feed?${params.toString()}`,
-      status: response.status,
-      itemsCount: safeResponse.items.length,
-      items: safeResponse.items.map((item) => ({
-        id: item?.data?.id || 'unknown',
-        type: item?.type || 'unknown',
-      })),
-      pagination: safeResponse.pagination,
-    });
-    
     return safeResponse;
   } catch (error: any) {
     console.error('[getFeed] API Error:', {
@@ -203,15 +191,18 @@ export const getFilteredFeed = async (
     });
   }
   
-  // Kategori (Category) - Array olarak gönderilir
+  // Kategori (Category) - Backend tek bir kategori ID bekliyor
   // Backend'de interests ile birleştirilir (OR mantığı)
-  // Query: category[]=category-id-1&category[]=category-id-2
+  // Query: category=category-id (tek değer)
+  // NOT: Backend'de Prisma sorgusu array'i desteklemiyor, bu yüzden sadece ilk kategori gönderiliyor
+  // TODO: Backend'de Prisma sorgusu düzeltilmeli: mainCategoryId: { in: categoryArray }
   if (filters?.category && Array.isArray(filters.category) && filters.category.length > 0) {
-    filters.category.forEach((categoryId) => {
-      if (categoryId) {
-        params.append('category[]', categoryId);
-      }
-    });
+    // Backend tek bir değer bekliyor, ilk kategoriyi gönder
+    // Backend düzeltildiğinde array olarak gönderilebilir
+    const firstCategory = filters.category[0];
+    if (firstCategory) {
+      params.append('category', firstCategory);
+    }
   }
   
   // Sıralama (Sort) - 'recent' veya 'top'

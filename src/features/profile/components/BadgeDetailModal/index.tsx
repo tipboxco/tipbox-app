@@ -38,7 +38,7 @@ export const BadgeDetailModal: React.FC<BadgeDetailModalProps> = ({
   if (!data) return null;
 
   const imageSource = data.image ? toImageSource(data.image) : undefined;
-  const defaultImage = require('@/assets/badges/badge_01.png');
+  const defaultImage = require('@/assets/defaultImages/default-badge.png');
   const isCompleted = data.total >= data.current;
 
   return (

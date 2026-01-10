@@ -7,7 +7,7 @@ export const mock_posts: Post[] = [
       id: '1',
       name: 'Michael Clark',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '1',
@@ -38,7 +38,7 @@ export const mock_posts: Post[] = [
       id: '2',
       name: 'Sarah Johnson',
       title: 'Professional Photographer - Tech Reviewer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '2',
@@ -74,7 +74,7 @@ export const mock_posts: Post[] = [
       id: '3',
       name: 'Sarah Johnson',
       title: 'Professional Photographer - Tech Reviewer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '3',

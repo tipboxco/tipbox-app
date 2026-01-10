@@ -212,9 +212,9 @@ export const useLimitedEvent = () => {
     queryKey: eventsKeys.limited(),
     queryFn: () => getLimitedEvent(),
     // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
-    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    staleTime: 30 * 60 * 1000,  // 30 dakika - cache invalid olana kadar backend'e istek atma
+    gcTime: 60 * 60 * 1000,     // 1 saat - cache'de tut
+    refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
   });
@@ -247,9 +247,9 @@ export const useAchievements = (limit: number = 20) => {
       return lastPage.pagination.cursor;
     },
     // Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 1000,  // 2 dakika - tab geçişlerinde anında göster
-    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    staleTime: 30 * 60 * 1000,  // 30 dakika - cache invalid olana kadar backend'e istek atma
+    gcTime: 60 * 60 * 1000,      // 1 saat - cache'de tut
+    refetchOnMount: false,       // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     retry: 1,
   });

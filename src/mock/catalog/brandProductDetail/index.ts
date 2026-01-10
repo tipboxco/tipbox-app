@@ -5,7 +5,7 @@ export const mock_product_detail: ProductDetail = {
   user: {
     id: '1',
     name: 'Michael Clark',
-    avatar: require('@/assets/avatar/ozan.png'),
+    avatar: require('@/assets/avatar/default-useravatar.png'),
     title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
   },
   category: {

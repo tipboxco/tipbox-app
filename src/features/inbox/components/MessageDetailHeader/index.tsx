@@ -62,7 +62,7 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
             <Image
               source={
                 toImageSource(senderAvatar) ||
-                require('@/assets/avatar/ozan.png')
+                require('@/assets/avatar/default-useravatar.png')
               }
               alt={senderName}
               width={48}

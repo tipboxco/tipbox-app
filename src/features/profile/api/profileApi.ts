@@ -18,6 +18,7 @@ import type {
   UserCollectionBridgesApiResponse,
   TrustUser,
   TrusterUser,
+  SuggestedUser,
 } from '../types';
 
 /**
@@ -50,10 +51,30 @@ export interface UpdateProfileResponse {
 export const getUserProfile = async (
   userId: string
 ): Promise<UserProfile> => {
-  const response = await apiService.getClient().get<UserProfile>(
+  const response = await apiService.getClient().get<any>(
     `/users/${userId}/profile`
   );
-  return response.data;
+  
+  // API'den avatarUrl geliyor, avatar olarak map ediyoruz
+  const apiData = response.data;
+  
+  const mappedProfile: UserProfile = {
+    id: apiData.id,
+    name: apiData.name,
+    avatar: apiData.avatarUrl || apiData.avatar || '', // API'den avatarUrl veya avatar gelebilir
+    bannerUrl: apiData.bannerUrl || apiData.banner || '',
+    biography: apiData.biography || '',
+    titles: apiData.titles || [],
+    stats: apiData.stats || {
+      posts: 0,
+      trust: 0,
+      truster: 0,
+    },
+    badges: apiData.badges || [],
+    isTrusted: apiData.isTrusted ?? null,
+  };
+  
+  return mappedProfile;
 };
 
 /**

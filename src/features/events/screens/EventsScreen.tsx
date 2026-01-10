@@ -45,13 +45,11 @@ const EventsScreen: React.FC = () => {
       // Ekran focus aldığında drawer gesture'ı disable et
       setGestureEnabled(false);
       if (__DEV__) {
-        console.log('[EventsScreen] Drawer gesture disabled (horizontal swipe active)');
       }
       return () => {
         // Ekran blur olduğunda drawer gesture'ı tekrar enable et
         setGestureEnabled(true);
         if (__DEV__) {
-          console.log('[EventsScreen] Drawer gesture enabled (screen blurred)');
         }
       };
     }, [setGestureEnabled])
@@ -73,7 +71,6 @@ const EventsScreen: React.FC = () => {
       console.error('[EventsScreen] handleEventPress: eventId is missing');
       return;
     }
-    console.log('[EventsScreen] Navigating to EventDetail with eventId:', eventId);
     try {
       navigation.navigate('EventDetail', { eventId });
     } catch (error) {
