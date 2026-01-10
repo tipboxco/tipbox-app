@@ -23,7 +23,7 @@ import { SuggestionCard } from '../components/SuggestionCard';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useTrustList, useTrusterList, useUserProfile } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, DEFAULT_USER_AVATAR } from '@/src/utils';
 
 type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type TrustListScreenRouteProp = {
@@ -417,17 +417,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 3'
                                     }
                                 ]}
@@ -482,17 +482,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 3'
                                     }
                                 ]}
