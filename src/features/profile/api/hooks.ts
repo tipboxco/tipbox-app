@@ -123,10 +123,10 @@ export const useTrustList = (
       return getTrustList(userId, searchQuery);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000, // Search varsa 0 (her zaman fresh), yoksa 2 saat
-    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000, // Search varsa cache'leme yok, yoksa 4 saat
-    refetchOnMount: hasSearchQuery ? 'always' : false, // Search varsa her zaman refetch
-    refetchOnWindowFocus: hasSearchQuery, // Search varsa window focus'ta refetch
+    staleTime: hasSearchQuery ? 0 : 30 * 60 * 1000, // Search varsa 0 (her zaman fresh), yoksa 30 dakika
+    gcTime: hasSearchQuery ? 0 : 60 * 60 * 1000, // Search varsa cache'leme yok, yoksa 1 saat
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et (tab geçişlerinde anında göster)
+    refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     // Search query değiştiğinde önceki data'yı gösterme
     placeholderData: undefined,
     // Search query değiştiğinde query'yi yeniden başlat
@@ -219,10 +219,10 @@ export const useTrusterList = (
       return getTrusterList(userId, searchQuery, sort);
     },
     enabled: !!userId,
-    staleTime: hasSearchQuery ? 0 : 2 * 60 * 60 * 1000,
-    gcTime: hasSearchQuery ? 0 : 4 * 60 * 60 * 1000,
-    refetchOnMount: hasSearchQuery ? 'always' : false,
-    refetchOnWindowFocus: hasSearchQuery,
+    staleTime: hasSearchQuery ? 0 : 30 * 60 * 1000, // Search varsa 0 (her zaman fresh), yoksa 30 dakika
+    gcTime: hasSearchQuery ? 0 : 60 * 60 * 1000, // Search varsa cache'leme yok, yoksa 1 saat
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et (tab geçişlerinde anında göster)
+    refetchOnWindowFocus: false, // Tab geçişlerinde refetch yapma
     placeholderData: undefined,
     retry: hasSearchQuery ? 0 : 1,
   });

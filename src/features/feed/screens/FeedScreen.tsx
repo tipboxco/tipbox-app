@@ -273,16 +273,21 @@ const FeedScreenInner = React.memo(() => {
     const mappedImages = Array.isArray(item.images)
       ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
       : [];
-    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+    
+    // FIX: contextData.image null olduğunda default görseli images array'ine ekle (content'in altındaki büyük görsel alanına)
+    // images array'i boşsa veya contextData.image null ise, default görseli images array'ine ekle
+    const images = mappedImages.length > 0 
+      ? mappedImages 
+      : [defaultPostImage]; // images array'i boşsa default görsel ekle (content'in altındaki büyük görsel alanına)
 
-    // contextData.image için fallback
+    // contextData.image için fallback - null/undefined/empty string durumunda default görsel kullan
     const contextImage = item.contextData?.image
-      ? toImageSource(item.contextData.image)
-      : undefined;
+      ? (toImageSource(item.contextData.image) || defaultPostImage)
+      : defaultPostImage; // FIX: contextData.image null/undefined ise direkt default görsel kullan
     const contextData = item.contextData
       ? {
           ...item.contextData,
-          image: contextImage || item.contextData.image || defaultPostImage,
+          image: contextImage, // FIX: contextImage zaten default görsel içeriyor
         }
       : undefined;
 

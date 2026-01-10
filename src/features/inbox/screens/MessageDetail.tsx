@@ -1322,7 +1322,7 @@ const MessageDetailScreen: React.FC = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
         keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar
         keyboardBlurBehavior: 'restore',
@@ -1449,7 +1449,7 @@ const MessageDetailScreen: React.FC = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true, // Content boyutuna göre dinamik height
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
         keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar (klavye üzerinde)
         keyboardBlurBehavior: 'restore', // Klavye kapandığında eski haline döner

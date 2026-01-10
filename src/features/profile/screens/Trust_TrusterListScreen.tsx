@@ -71,9 +71,15 @@ export const Trust_TrusterListScreen = () => {
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
     // Tab press handler - PagerView native animasyonu ile geçiş
+    // PERFORMANCE FIX: State'i anında güncelle (SearchModal gibi)
     const handleTabPress = useCallback((index: number) => {
+        // Tab progress'i güncelle (animasyon için)
+        progress.value = withTiming(index, { duration: 200 });
+        // PagerView'i güncelle
         pagerRef.current?.setPage(index);
-    }, []);
+        // ActiveTab state'ini anında güncelle (cache'den veri anında gösterilsin)
+        setActiveTab(index === 0 ? 'trust' : 'truster');
+    }, [progress]);
 
     // PagerView scroll handler - realtime progress güncelleme
     const handlePageScroll = useCallback(
@@ -86,10 +92,13 @@ export const Trust_TrusterListScreen = () => {
     );
 
     // PagerView page selected handler - snap sonrası progress'i sync et
+    // PERFORMANCE FIX: State'i anında sync et (SearchModal gibi)
     const handlePageSelected = useCallback(
         (e: any) => {
             const position = e.nativeEvent.position;
+            // Tab progress'i anında sync et
             progress.value = withTiming(position, { duration: 0 });
+            // ActiveTab state'ini anında güncelle (cache'den veri anında gösterilsin)
             setActiveTab(position === 0 ? 'trust' : 'truster');
         },
         [progress]
@@ -116,15 +125,17 @@ export const Trust_TrusterListScreen = () => {
         }
     }, [searchQuery, activeTab]);
 
-    // React Query hook - sadece trust sekmesinde aktif, search query ile
+    // React Query hook - her zaman aktif (cache'den anında göster)
+    // Tab değiştiğinde cache'den veri varsa direkt göster, yoksa fetch et
     const { data: trustListData, isLoading: isTrustListLoading, error: trustListError } = useTrustList(
-        activeTab === 'trust' ? userId : undefined,
+        userId,
         activeTab === 'trust' ? (debouncedSearchQuery.trim() || undefined) : undefined
     );
 
-    // React Query hook - sadece truster sekmesinde aktif, search query ile
+    // React Query hook - her zaman aktif (cache'den anında göster)
+    // Tab değiştiğinde cache'den veri varsa direkt göster, yoksa fetch et
     const { data: trusterListData, isLoading: isTrusterListLoading, error: trusterListError } = useTrusterList(
-        activeTab === 'truster' ? userId : undefined,
+        userId,
         activeTab === 'truster' ? (debouncedSearchQuery.trim() || undefined) : undefined
     );
 
@@ -151,17 +162,15 @@ export const Trust_TrusterListScreen = () => {
         };
     };
 
-    // Trust sekmesi için sadece API'den gelen verileri kullan (backend'de filtrelenmiş)
-    const trustUsers: TrustUserCardUser[] = activeTab === 'trust'
-        ? (trustListData?.map(transformTrustApiUserToCardUser) || [])
-        : [];
+    // Trust sekmesi için API'den gelen verileri kullan (cache'den veya fresh data)
+    // Her zaman cache'den veri varsa göster (tab değiştiğinde anında göster)
+    const trustUsers: TrustUserCardUser[] = trustListData?.map(transformTrustApiUserToCardUser) || [];
 
-    // Truster sekmesi için API verisi
-    const trusterUsers: TrustUserCardUser[] = activeTab === 'truster'
-        ? (trusterListData?.map(transformTrusterApiUserToCardUser) || [])
-        : [];
+    // Truster sekmesi için API verisi (cache'den veya fresh data)
+    // Her zaman cache'den veri varsa göster (tab değiştiğinde anında göster)
+    const trusterUsers: TrustUserCardUser[] = trusterListData?.map(transformTrusterApiUserToCardUser) || [];
 
-    // Get current data based on active tab
+    // Get current data based on active tab - cache'den veri varsa anında göster
     const currentUsers = activeTab === 'trust' ? trustUsers : trusterUsers;
 
     // Filter users based on search query - sadece Truster sekmesi için frontend filtreleme
@@ -352,7 +361,7 @@ export const Trust_TrusterListScreen = () => {
             {
                 enablePanDownToClose: true,
                 enableDynamicSizing: true,
-                animateOnMount: true,
+                animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
                 paddingBottom: bottomInset,
                 backgroundStyle: {
                     backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
@@ -540,7 +549,7 @@ export const Trust_TrusterListScreen = () => {
                             />
 
                             {/* Trust Users List */}
-                            {isTrustListLoading ? (
+                            {isTrustListLoading && !trustListData ? (
                                 <Box py={20} alignItems="center">
                                     <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
                                 </Box>
@@ -608,7 +617,7 @@ export const Trust_TrusterListScreen = () => {
                             />
 
                             {/* Truster Users List */}
-                            {isTrusterListLoading ? (
+                            {isTrusterListLoading && !trusterListData ? (
                                 <Box py={20} alignItems="center">
                                     <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
                                 </Box>

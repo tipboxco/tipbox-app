@@ -129,7 +129,7 @@ export const PostDetailScreen = () => {
                 enableHandlePanningGesture: true,
                 enableContentPanningGesture: true,
                 enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
-                animateOnMount: true,
+                animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
                 // Bottom sheet'in bottom uzaklığı klavye yüksekliği + safe area bottom inset kadar olacak
                 paddingBottom: keyboardHeight + insets.bottom, // Klavye yüksekliği + safe area bottom inset
                 keyboardBehavior: 'extend', // Klavye açıldığında bottom sheet genişler

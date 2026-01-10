@@ -258,7 +258,7 @@ export const PostsScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: bottomOffset,
         onChange: (index: number) => {
           // Reset bottom sheet key when sheet closes to reset view state

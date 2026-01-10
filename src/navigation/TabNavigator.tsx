@@ -120,8 +120,8 @@ export const TabNavigator = () => {
     }
     
     return {
-      backgroundColor: '#FAFAFA',
-      borderTopColor: '#E9E9E9',
+      backgroundColor: isDark ? '#000000' : '#FAFAFA',
+      borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : '#E9E9E9',
       height: Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding,
       paddingTop: 4,
       paddingBottom: Platform.OS === 'ios' ? insets.bottom : androidBottomPadding,
@@ -131,7 +131,7 @@ export const TabNavigator = () => {
       right: 0,
       zIndex: 1000,
     };
-  }, [insets.bottom, isTabBarVisible]);
+  }, [insets.bottom, isTabBarVisible, isDark]);
 
   // PERFORMANCE FIX: Tab bar icon render fonksiyonunu useCallback ile memoize et
   // Her tab değişiminde tüm tab'lar için çalışmasını önler
@@ -211,7 +211,7 @@ export const TabNavigator = () => {
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
         tabBarActiveTintColor: '#758600',
-        tabBarInactiveTintColor: '#000000',
+        tabBarInactiveTintColor: isDark ? '#FFFFFF' : '#000000',
         tabBarShowLabel: false,
         tabBarStyle,
       })}

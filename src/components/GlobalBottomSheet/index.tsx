@@ -109,19 +109,18 @@ export const GlobalBottomSheet: React.FC = () => {
     }
   }, [isOpen, content, mergedOptions]);
 
-  // PERFORMANCE FIX: Optimized expansion with useEffect (fallback method)
-  // Primary expansion happens in setRef callback, this is fallback if setRef didn't trigger
+  // PERFORMANCE FIX: Fallback expansion with useEffect (only if setRef didn't trigger)
+  // Primary expansion happens in setRef callback, this is fallback for edge cases
+  // PERFORMANCE FIX: Removed requestAnimationFrame - direct expand() call for instant opening
   // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing, never snapToIndex
   // FLICKER FIX: Reset isExpandingRef when bottom sheet closes to prevent flicker on next open
   useEffect(() => {
-    if (isOpen && content && !isExpandingRef.current && bottomSheetRef.current && mergedOptions) {
+    if (isOpen && content && !isExpandingRef.current && bottomSheetRef.current) {
       try {
         isExpandingRef.current = true;
-        // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing
-        // Use requestAnimationFrame to ensure bottom sheet is fully mounted
-        requestAnimationFrame(() => {
-          bottomSheetRef.current?.expand();
-        });
+        // PERFORMANCE FIX: Direct expand() call - no requestAnimationFrame delay
+        // Ref is ready, expand immediately for instant opening
+        bottomSheetRef.current.expand();
       } catch (error) {
         console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet (useEffect):', error);
         isExpandingRef.current = false;
@@ -136,7 +135,7 @@ export const GlobalBottomSheet: React.FC = () => {
       // This handles edge cases where ref might be null
       isExpandingRef.current = false;
     }
-  }, [isOpen, content, mergedOptions]);
+  }, [isOpen, content]); // PERFORMANCE FIX: Removed mergedOptions from dependencies to prevent unnecessary re-renders
 
   // Backdrop component - klavye açıldığında kararmaması için
   const renderBackdrop = useCallback(
@@ -230,19 +229,18 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // PERFORMANCE FIX: Expansion when ref is set (primary method)
   // This runs immediately when BottomSheet component mounts
+  // PERFORMANCE FIX: Removed requestAnimationFrame - direct expand() call for instant opening
   // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing, never snapToIndex
   // FLICKER FIX: Reset isExpandingRef when ref is null (component unmounts)
   const setRef = useCallback((ref: BottomSheet | null) => {
     bottomSheetRef.current = ref;
-    if (ref && isOpen && content && !isExpandingRef.current && mergedOptions) {
-      // Direct expansion - ref is ready when this callback runs
+    if (ref && isOpen && content && !isExpandingRef.current) {
+      // PERFORMANCE FIX: Direct expansion - no requestAnimationFrame delay
+      // Ref is ready, expand immediately for instant opening (~16-33ms faster)
       try {
         isExpandingRef.current = true;
         // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing
-        // Use requestAnimationFrame to ensure bottom sheet is fully mounted
-        requestAnimationFrame(() => {
-          ref.expand();
-        });
+        ref.expand();
       } catch (error) {
         console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet:', error);
         isExpandingRef.current = false;
@@ -252,7 +250,7 @@ export const GlobalBottomSheet: React.FC = () => {
       // This ensures clean state for next mount
       isExpandingRef.current = false;
     }
-  }, [isOpen, content, mergedOptions]);
+  }, [isOpen, content]); // PERFORMANCE FIX: Removed mergedOptions from dependencies
 
   // ARCHITECTURE FIX: No need to wrap content with GluestackProvider
   // GlobalBottomSheet is already inside AppProviders which includes GluestackProvider
@@ -269,11 +267,11 @@ export const GlobalBottomSheet: React.FC = () => {
     return null;
   }
 
-  // ARCHITECTURE FIX: Dynamic index based on isOpen state
-  // When isOpen is true, start at specified initialSnapIndex (or 0 if not specified) to show bottom sheet
-  // When isOpen is false, use -1 to hide bottom sheet
-  // If snapPoints are provided, use initialSnapIndex, otherwise use 0
-  const initialIndex = isOpen ? (mergedOptions.initialSnapIndex ?? 0) : -1;
+  // PERFORMANCE FIX: Always start at -1 (closed) and use expand() to open
+  // This eliminates the two-stage opening (mount at initialIndex → expand)
+  // Direct expand() is faster than mount → initialIndex → expand
+  // ARCHITECTURE FIX: Bottom sheet always starts closed, expand() opens it instantly
+  const initialIndex = -1;
 
   // Portal kullanmadan direkt render et - Portal ref sorunlarına neden oluyor
   // ARCHITECTURE FIX: Use snapPoints if provided, otherwise use enableDynamicSizing
