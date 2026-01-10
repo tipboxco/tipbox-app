@@ -288,6 +288,10 @@ const ExploreScreen: React.FC = () => {
   const [tabsHeight, setTabsHeight] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '$backgroundLight0', [isDark]);
+  const tabHeaderBgColor = useMemo(() => isDark ? '#000' : '#FFF', [isDark]);
 
   // Debounce search query for API calls
   useEffect(() => {
@@ -483,7 +487,7 @@ const ExploreScreen: React.FC = () => {
   // For better performance, consider migrating HottestTab and NewsTab internal FlatLists to FlashList
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <Box flex={1} bg={backgroundColor}>
         <Header
           title="Explore"
           leftAction="menu"
@@ -533,7 +537,7 @@ const ExploreScreen: React.FC = () => {
 
           {/* Category Tabs */}
           <VStack
-            bg={isDark ? '#000' : '#FFF'}
+            bg={tabHeaderBgColor}
             pt="$4"
             onLayout={handleTabsLayout}
           >
@@ -646,4 +650,5 @@ const ExploreScreen: React.FC = () => {
 
 ExploreScreen.displayName = 'ExploreScreen';
 
-export default ExploreScreen;
+// PERFORMANCE FIX: Memoize ExploreScreen to prevent unnecessary re-renders during tab transitions
+export default React.memo(ExploreScreen);

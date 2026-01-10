@@ -66,7 +66,7 @@ const initialState: CatalogScreenState = {
   breadcrumbItems: [],
 };
 
-export const CatalogScreen = () => {
+const CatalogScreenComponent = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CatalogScreenNavigationProp>();
@@ -448,8 +448,7 @@ export const CatalogScreen = () => {
       >
         <Header
           title={getTitle()}
-          showBackButton
-          onBackPress={() => navigation.goBack()}
+          leftAction="menu"
         />
       </Box>
 
@@ -485,8 +484,7 @@ export const CatalogScreen = () => {
           >
             <Header
               title={getTitle()}
-              showBackButton
-              onBackPress={() => navigation.goBack()}
+              leftAction="menu"
             />
           </Box>
         </Animated.View>
@@ -545,3 +543,6 @@ export const CatalogScreen = () => {
     </SafeAreaView>
   );
 };
+
+// PERFORMANCE FIX: Memoize CatalogScreen to prevent unnecessary re-renders during tab transitions
+export const CatalogScreen = React.memo(CatalogScreenComponent);

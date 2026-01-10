@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -65,6 +65,9 @@ const EventsScreen: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
 
+  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FAFAFA', [isDark]);
+  const tabHeaderBgColor = useMemo(() => '#FFFFFF', []); // Tab header her zaman beyaz
 
   const handleEventPress = (eventId: string) => {
     if (!eventId) {
@@ -151,16 +154,15 @@ const EventsScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+      <Box flex={1} bg={backgroundColor}>
         <Header
           title="Events"
-          showBackButton
-          onBackPress={() => navigation.goBack()}
+          leftAction="menu"
         />
 
         <VStack flex={1} py="$2" space="md">
           {/* Tab Header */}
-          <VStack pt="$4" bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+          <VStack pt="$4" bg={tabHeaderBgColor}>
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}
@@ -274,4 +276,5 @@ const EventsScreen: React.FC = () => {
 
 EventsScreen.displayName = 'EventsScreen';
 
-export default EventsScreen;
+// PERFORMANCE FIX: Memoize EventsScreen to prevent unnecessary re-renders during tab transitions
+export default React.memo(EventsScreen);

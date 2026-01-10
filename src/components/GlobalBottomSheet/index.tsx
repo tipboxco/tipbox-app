@@ -273,9 +273,10 @@ export const GlobalBottomSheet: React.FC = () => {
   // ARCHITECTURE FIX: Bottom sheet always starts closed, expand() opens it instantly
   const initialIndex = -1;
 
-  // Portal kullanmadan direkt render et - Portal ref sorunlarına neden oluyor
-  // ARCHITECTURE FIX: Use snapPoints if provided, otherwise use enableDynamicSizing
-  return (
+  // PERFORMANCE FIX: Use Portal to render Bottom Sheet outside navigation hierarchy
+  // This prevents navigation re-renders from affecting Bottom Sheet performance
+  // PortalProvider is already in AppProviders, so Portal should work correctly
+  const bottomSheetContent = (
     <BottomSheet
       ref={setRef}
       index={initialIndex}
@@ -308,6 +309,14 @@ export const GlobalBottomSheet: React.FC = () => {
         {content}
       </BottomSheetView>
     </BottomSheet>
+  );
+
+  // ARCHITECTURE FIX: Use Portal to render outside navigation hierarchy
+  // This improves performance by isolating Bottom Sheet from navigation re-renders
+  return (
+    <Portal hostName="bottom-sheet">
+      {bottomSheetContent}
+    </Portal>
   );
 };
 

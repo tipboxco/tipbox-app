@@ -272,7 +272,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
           />
         }
         ListHeaderComponent={
-          <VStack space="md" py="$4">
+          <VStack space="md" pb="$4">
             {/* Search Bar */}
             <Box>
               <HStack

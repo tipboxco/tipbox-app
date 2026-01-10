@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ReactNode } from 'react';
+import { InteractionManager } from 'react-native';
 import { GlobalBottomSheetContextType, BottomSheetOptions } from '@/src/components/GlobalBottomSheet/types';
 import { GlobalBottomSheet } from '@/src/components/GlobalBottomSheet';
 import { GlobalBottomSheetContext } from '@/src/components/GlobalBottomSheet/context'; // ARCHITECTURE FIX: Import from context.ts to break circular dependency
@@ -19,8 +20,8 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
 
   /**
    * Bottom sheet aç
-   * PERFORMANCE FIX: React 18 automatically batches state updates in event handlers
-   * All three state updates will be batched in a single render cycle, eliminating delays
+   * PERFORMANCE FIX: Use InteractionManager to delay opening until interactions complete
+   * This prevents Bottom Sheet lag when opened immediately after navigation/animations
    * FLICKER FIX: If bottom sheet is already open, just update content without closing
    * This prevents flicker and the open/close flicker issue
    */
@@ -34,11 +35,15 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
       setOptions(newOptions || null);
       // Keep isOpen as true - don't change it
     } else {
-      // PERFORMANCE FIX: React 18 auto-batches these state updates
-      // All updates happen in a single render cycle, no delay
-      setContent(newContent);
-      setOptions(newOptions || null);
-      setIsOpen(true);
+      // PERFORMANCE FIX: Wait for interactions to complete before opening
+      // This prevents Bottom Sheet lag when opened during navigation/animations
+      InteractionManager.runAfterInteractions(() => {
+        // React 18 auto-batches these state updates
+        // All updates happen in a single render cycle, no delay
+        setContent(newContent);
+        setOptions(newOptions || null);
+        setIsOpen(true);
+      });
     }
   }, [isOpen]);
 

@@ -1,8 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { Platform, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
@@ -24,54 +22,13 @@ import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { InboxNavigator } from '@/src/features/inbox/navigation';
 import type { TabParamList } from './types/tab.types';
-import type { MainStackParamList } from './types/main.types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
-const FeatureStack = createNativeStackNavigator<MainStackParamList>();
 
-// PERFORMANCE FIX: Stack Navigator'ları React.memo ile memoize et
-// Her TabNavigator render'ında yeni instance oluşturulmasını önler
-const FeedStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Feed" component={FeedNavigator} />
-  </FeatureStack.Navigator>
-));
-FeedStackNavigator.displayName = 'FeedStackNavigator';
-
-const ExploreStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Explore" component={ExploreNavigator} />
-  </FeatureStack.Navigator>
-));
-ExploreStackNavigator.displayName = 'ExploreStackNavigator';
-
-const CatalogStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Catalog" component={CatalogNavigator} />
-  </FeatureStack.Navigator>
-));
-CatalogStackNavigator.displayName = 'CatalogStackNavigator';
-
-const EventsStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Events" component={EventsNavigator} />
-  </FeatureStack.Navigator>
-));
-EventsStackNavigator.displayName = 'EventsStackNavigator';
-
-const NotificationStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Notification" component={NotificationsNavigator} />
-  </FeatureStack.Navigator>
-));
-NotificationStackNavigator.displayName = 'NotificationStackNavigator';
-
-const InboxStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Inbox" component={InboxNavigator} />
-  </FeatureStack.Navigator>
-));
-InboxStackNavigator.displayName = 'InboxStackNavigator';
+// PERFORMANCE FIX: Removed unnecessary FeatureStack wrapper layer
+// Directly use FeedNavigator, ExploreNavigator, etc. - they already return StackNavigators
+// This eliminates one nesting level: Tab > FeatureStack > FeedNavigator → Tab > FeedNavigator
+// Reduces mounting time and React diffing complexity
 
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();
@@ -203,20 +160,29 @@ export const TabNavigator = () => {
   // Heavy tab'ler için freeze rule
   const heavyTabFreezeRule = getHeavyTabFreezeRule();
 
+  // ARCHITECTURE FIX: Edge-to-Edge Design Pattern
+  // Manual inset management for full-bleed design with controlled background colors
+  // Drawer can extend full height without SafeAreaView constraints
+  const backgroundColor = isDark ? '#000000' : '#FFFFFF';
+  const bottomBarColor = isDark ? '#1A1A1A' : '#FAFAFA';
+
   return (
-    <SafeAreaView 
-      edges={['top', 'bottom']} 
-      style={{ 
-        flex: 1,
-        backgroundColor: isDark ? '#000000' : '#FFFFFF'
-      }}
-    >
-      {/* Tab ekranlarının padding'den etkilenmemesi için negative margin */}
-      <View style={{ 
-        flex: 1,
-        marginTop: -insets.top,
-        marginBottom: -insets.bottom
-      }}>
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Tab Navigator - Tam ekranı kaplar, Drawer buraya kadar uzanabilir */}
+      <View style={{ flex: 1 }}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
             // ARCHITECTURE FIX: Tab state persistence
@@ -232,15 +198,15 @@ export const TabNavigator = () => {
         >
           <Tab.Screen
             name="FeedStack"
-            component={FeedStackNavigator}
+            component={FeedNavigator}
           />
           <Tab.Screen
             name="ExploreStack"
-            component={ExploreStackNavigator}
+            component={ExploreNavigator}
           />
           <Tab.Screen
             name="CatalogStack"
-            component={CatalogStackNavigator}
+            component={CatalogNavigator}
             options={{
               // Heavy tab: freeze on blur
               freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
@@ -248,7 +214,7 @@ export const TabNavigator = () => {
           />
           <Tab.Screen
             name="EventsStack"
-            component={EventsStackNavigator}
+            component={EventsNavigator}
             options={{
               // Heavy tab: freeze on blur
               freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
@@ -256,17 +222,30 @@ export const TabNavigator = () => {
           />
           <Tab.Screen
             name="NotificationStack"
-            component={NotificationStackNavigator}
+            component={NotificationsNavigator}
             listeners={{
               tabPress: handleNotificationTabPress,
             }}
           />
           <Tab.Screen
             name="InboxStack"
-            component={InboxStackNavigator}
+            component={InboxNavigator}
           />
         </Tab.Navigator>
       </View>
-    </SafeAreaView>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını boyar (Tab Bar altı) */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor: bottomBarColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };

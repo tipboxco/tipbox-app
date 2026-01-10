@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -55,6 +55,10 @@ const InboxScreen: React.FC = () => {
   // 🎯 CORE: Shared progress value (0 = Messages, 1 = Support)
   const progress = useSharedValue(0);
   const [currentPage, setCurrentPage] = useState(0);
+  
+  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '$backgroundLight0', [isDark]);
+  const tabHeaderBgColor = useMemo(() => isDark ? '#000' : '#FFF', [isDark]);
 
   // Drawer açma fonksiyonu
   const openDrawer = useCallback(() => {
@@ -134,7 +138,7 @@ const InboxScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <Box flex={1} bg={backgroundColor}>
         <Header
           title="Inbox"
           leftAction="menu"
@@ -142,7 +146,7 @@ const InboxScreen: React.FC = () => {
 
         <VStack flex={1} py="$2" space="md">
           {/* Tab Header */}
-          <VStack pt="$4" bg={isDark ? '#000' : '#FFF'}>
+          <VStack pt="$4" bg={tabHeaderBgColor}>
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}
@@ -244,4 +248,5 @@ const InboxScreen: React.FC = () => {
 
 InboxScreen.displayName = 'InboxScreen';
 
-export default InboxScreen;
+// PERFORMANCE FIX: Memoize InboxScreen to prevent unnecessary re-renders during tab transitions
+export default React.memo(InboxScreen);

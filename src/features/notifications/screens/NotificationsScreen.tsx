@@ -240,7 +240,7 @@ const FilterButton: React.FC<{
     );
 };
 
-export const NotificationsScreen: React.FC = () => {
+const NotificationsScreenComponent: React.FC = () => {
     const navigation = useNavigation<NotificationsScreenNavigationProp>();
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -250,6 +250,10 @@ export const NotificationsScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    
+    // PERFORMANCE FIX: Memoize background colors to prevent re-renders
+    const backgroundColor = useMemo(() => isDark ? '#000000' : '#FAFAFA', [isDark]);
+    const searchBarBgColor = useMemo(() => isDark ? '#1A1A1A' : '#F2F2F2', [isDark]);
 
     // Debounce search query for API calls
     useEffect(() => {
@@ -426,20 +430,19 @@ export const NotificationsScreen: React.FC = () => {
 
     return (
         <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '#000000' : '#FAFAFA'}>
+        <Box flex={1} bg={backgroundColor}>
             {/* Header */}
             <Header 
                 title="Notifications"
-                showBackButton={true}
-                onBackPress={() => navigation.goBack()}
+                leftAction="menu"
             />
             
             {/* Search and Filter Section */}
-            <VStack space="md" pb="$4" px="$4" bg={isDark ? '#000000' : '#FAFAFA'}>
+            <VStack space="md" pb="$4" px="$4" bg={backgroundColor}>
                 {/* Search Bar */}
                 <HStack
                     alignItems="center"
-                    bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+                    bg={searchBarBgColor}
                     borderWidth={1}
                     borderColor="#E9E9E9"
                     borderRadius={20}
@@ -524,5 +527,10 @@ export const NotificationsScreen: React.FC = () => {
         </SafeAreaView>
     );
 };
+
+// PERFORMANCE FIX: Memoize NotificationsScreen to prevent unnecessary re-renders during tab transitions
+const NotificationsScreen = React.memo(NotificationsScreenComponent);
+
+NotificationsScreen.displayName = 'NotificationsScreen';
 
 export default NotificationsScreen;

@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { Box, HStack, Text, Pressable, VStack, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -74,8 +74,9 @@ const HeaderComponent = ({
   // Drawer store'dan drawer actions al
   const openDrawer = useDrawerStore((state) => state.openDrawer);
   
+  // PERFORMANCE FIX: Memoize drawer open handler to prevent re-renders
   // CRITICAL: React Navigation drawer'ı açmak için navigation.openDrawer() kullan
-  const handleOpenDrawer = () => {
+  const handleOpenDrawer = useCallback(() => {
     // React Navigation drawer'ı aç
     if (navigation.getParent) {
       const drawerNavigation = navigation.getParent();
@@ -85,10 +86,12 @@ const HeaderComponent = ({
     }
     // Drawer store'u da güncelle (sync için)
     openDrawer();
-  };
+  }, [navigation, openDrawer]);
 
+  // PERFORMANCE FIX: Memoize render functions to prevent re-renders
+  // Static configuration - no inline functions to prevent unmount-remount
   // Sol kısım için render fonksiyonu
-  const renderLeftAction = () => {
+  const renderLeftAction = useMemo(() => {
     // Yeni props öncelikli
     if (leftAction) {
       let iconName: string;
@@ -178,10 +181,11 @@ const HeaderComponent = ({
     }
 
     return null;
-  };
+  }, [leftAction, onLeftActionPress, showBackButton, onBackPress, onMenuPress, isDark, handleOpenDrawer, openDrawer]);
 
+  // PERFORMANCE FIX: Memoize right actions render to prevent re-renders
   // Sağ kısım için render fonksiyonu
-  const renderRightActions = () => {
+  const renderRightActions = useMemo(() => {
     const actions = [];
 
     // 3 noktalı icon buton
@@ -294,23 +298,32 @@ const HeaderComponent = ({
         {actions}
       </HStack>
     ) : null;
-  };
+  }, [showThreeDots, onThreeDotsPress, showFilter, onFilterPress, showShare, onSharePress, rightButton, rightAction, onSearchPress, isDark]);
+
+  // PERFORMANCE FIX: Fixed header height for consistent tab transitions
+  // All screens use the same header height to prevent lag/trembling during tab transitions
+  const HEADER_MIN_HEIGHT = 56; // Header base height (my="$2" + content ~40px)
+
+  // PERFORMANCE FIX: Memoize background color and text color to prevent re-renders
+  const headerBgColor = useMemo(() => backgroundColor || (isDark ? '#000000' : '#FFFFFF'), [backgroundColor, isDark]);
+  const headerTextColor = useMemo(() => textColor || (isDark ? '#FFFFFF' : '#000000'), [textColor, isDark]);
 
   return (
     <VStack>
       <Box
-        bg={backgroundColor || (isDark ? '#000000' : '#FFFFFF')}
+        bg={headerBgColor}
         px="$4"
         justifyContent="center"
+        minHeight={HEADER_MIN_HEIGHT}
       >
-        <Box my="$2">
-          <HStack space="md" alignItems="center">
+        <HStack space="md" alignItems="center">
             {/* Sol kısım - Flex1, flex-start */}
             <Box flex={1} alignItems="flex-start" justifyContent="center">
-              {renderLeftAction()}
+              {renderLeftAction}
             </Box>
 
             {/* Orta kısım - Flex3, center */}
+            {/* PERFORMANCE FIX: Static configuration - logo/title render memoized */}
             <Box flex={3} alignItems="center" justifyContent="center">
               {logo ? (
                 <Image
@@ -322,7 +335,7 @@ const HeaderComponent = ({
                 />
               ) : title ? (
                 <Text
-                  color={textColor || (isDark ? '#FFFFFF' : '#000000')}
+                  color={headerTextColor}
                   fontSize="$md"
                   fontWeight="$bold"
                   textAlign="center"
@@ -334,10 +347,9 @@ const HeaderComponent = ({
 
             {/* Sağ kısım - Flex1, flex-end */}
             <Box flex={1} alignItems="flex-end" justifyContent="center">
-              {renderRightActions()}
+              {renderRightActions}
             </Box>
           </HStack>
-        </Box>
       </Box>
     </VStack>
   );

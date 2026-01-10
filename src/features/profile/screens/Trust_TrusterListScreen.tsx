@@ -417,17 +417,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: require('@/assets/avatar/default-useravatar.png'),
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: require('@/assets/avatar/default-useravatar.png'),
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: require('@/assets/avatar/default-useravatar.png'),
                                         alt: 'User 3'
                                     }
                                 ]}
@@ -482,17 +482,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: require('@/assets/avatar/default-useravatar.png'),
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: require('@/assets/avatar/default-useravatar.png'),
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: require('@/assets/avatar/default-useravatar.png'),
                                         alt: 'User 3'
                                     }
                                 ]}

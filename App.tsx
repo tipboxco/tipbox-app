@@ -87,14 +87,7 @@ const AppInner = () => {
   }, [isAuthReady]);
 
   return (
-    <View 
-      style={{ 
-        flex: 1, 
-        backgroundColor: isDark ? '#000000' : '#FFFFFF' // FIX: Root container üst kısım rengi (beyaz)
-      }}
-    >
-      {/* FIX: SafeAreaView'ler NavigationContainer içine taşındı (src/navigation/index.tsx) */}
-      {/* Bu sayede Drawer SafeAreaView'lerin üstünde görünür */}
+    <View style={{ flex: 1 }}>
       <Navigation />
     </View>
   );

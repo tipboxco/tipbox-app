@@ -35,38 +35,29 @@ export const PostDetailScreen = () => {
     const insets = useSafeAreaInsets();
     
     // FIX: route.params undefined kontrolü - güvenli erişim
-    const params = route.params;
+    // Deep link veya notification'dan gelen durumlarda params undefined olabilir
+    const params = route.params || {};
     
-    // FIX: useEffect hook'ları conditional dışında olmalı
-    useEffect(() => {
-        if (!params || !params.postData) {
-            console.error('[PostDetailScreen] ❌ Missing route.params or postData:', params);
-            // Geri dönülecek ekran yoksa Auth'a yönlendir
-            if (navigation.canGoBack()) {
-                navigation.goBack();
-            } else {
-                // Root navigator'a reset yap - App (MainTabs) ekranına git
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'App' }],
-                });
-            }
-        }
-    }, [params, navigation]);
+    // PostId'yi belirle: önce params.postId'den, sonra postData.id'den
+    // Deep link durumu: route.params.postId (linking.config.ts'de path: 'post/:postId' tanımlı)
+    // Normal navigation: params.postData.id
+    const postId = params?.postId || params?.postData?.id;
     
-    if (!params || !params.postData) {
-        return null;
-    }
+    // Normal navigation durumu: postData'dan postId al
+    const postData = params?.postData;
     
-    const { postData, type, showRelatedPost, relatedPostData } = params;
-
-    // Get post ID from postData
-    const postId = postData?.id;
+    // Type'ı belirle: params'dan veya default 'post'
+    const type = params?.type || 'post';
+    const showRelatedPost = params?.showRelatedPost;
+    const relatedPostData = params?.relatedPostData;
     
-    // FIX: postId kontrolü
+    // FIX: postId kontrolü - postId yoksa geri dön (sadece bir kez kontrol et)
     useEffect(() => {
         if (!postId) {
-            console.error('[PostDetailScreen] ❌ Missing postId in postData:', postData);
+            // Sadece development'ta log'la, production'da sessizce geri dön
+            if (__DEV__) {
+                console.warn('[PostDetailScreen] ⚠️ Missing postId. Route params:', params);
+            }
             // Geri dönülecek ekran yoksa Auth'a yönlendir
             if (navigation.canGoBack()) {
                 navigation.goBack();
@@ -78,32 +69,32 @@ export const PostDetailScreen = () => {
                 });
             }
         }
-    }, [postId, postData, navigation]);
+    }, [postId, navigation]);
     
     if (!postId) {
         return null;
     }
 
     // Check if postData is complete (has stats, user, etc.) or just an ID
-    // Notification'dan gelen postData sadece { id: "..." } formatında olabilir
-    const isPostDataComplete = postData.stats !== undefined && postData.user !== undefined;
+    // Notification'dan veya deep link'ten gelen postData sadece { id: "..." } formatında olabilir veya hiç olmayabilir
+    const isPostDataComplete = postData && postData.stats !== undefined && postData.user !== undefined;
     
-    // Instagram gibi davranış: Bildirimlerden geldiğinde her zaman en güncel veriyi göster
-    // Notification'dan geldiğinde (postData sadece ID içeriyorsa) forceRefresh = true
+    // Instagram gibi davranış: Bildirimlerden veya deep link'ten geldiğinde her zaman en güncel veriyi göster
+    // Notification/deep link'ten geldiğinde (postData yoksa veya sadece ID içeriyorsa) forceRefresh = true
     // Bu sayede eski bildirimlere tıklandığında bile en güncel beğeni/yorum sayısı gösterilir
-    const isFromNotification = !isPostDataComplete;
+    const isFromNotificationOrDeepLink = !postData || !isPostDataComplete;
     
-    // Fetch post detail - Notification'dan geldiğinde her zaman en güncel veriyi fetch et
+    // Fetch post detail - Notification/deep link'ten geldiğinde her zaman en güncel veriyi fetch et
     const { data: fetchedPostData, isLoading: isLoadingPost } = usePostDetail(
       postId,
       true, // Her zaman enabled
-      isFromNotification // Notification'dan geldiğinde force refresh
+      isFromNotificationOrDeepLink // Notification/deep link'ten geldiğinde force refresh
     );
 
     // Use fetched post data if available, otherwise use the passed postData
-    // Notification'dan geldiğinde her zaman fetched data kullan (en güncel)
-    const finalPostData = isFromNotification 
-      ? (fetchedPostData || postData) // Notification'dan geldiğinde fetched data öncelikli
+    // Notification/deep link'ten geldiğinde her zaman fetched data kullan (en güncel)
+    const finalPostData = isFromNotificationOrDeepLink 
+      ? (fetchedPostData || postData || { id: postId }) // Notification/deep link'ten geldiğinde fetched data öncelikli
       : (fetchedPostData || postData); // Feed'den geldiğinde de fetched data varsa onu kullan
     const finalType = type || fetchedPostData?.type || 'post';
 
@@ -255,13 +246,14 @@ export const PostDetailScreen = () => {
             >
                 {/* Detail Card */}
                 {/* Loading state: Post detail fetch ediliyorsa göster */}
-                {isLoadingPost && !isPostDataComplete ? (
+                {/* Deep link veya notification'dan geldiğinde (postData yoksa) loading göster */}
+                {isLoadingPost && (!postData || !isPostDataComplete) ? (
                     <Box flex={1} justifyContent="center" alignItems="center" py="$8">
                         <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
                             Post yükleniyor...
                         </Text>
                     </Box>
-                ) : (
+                ) : finalPostData && finalPostData.id ? (
                     <>
                         {finalType === 'tipsAndTricks' ? (
                             <TipsAndTricksPostCardDetail data={finalPostData} onCommentPress={handleCommentInputPress} />
@@ -282,6 +274,12 @@ export const PostDetailScreen = () => {
                             <PostDetailCard data={finalPostData} onCommentPress={handleCommentInputPress} />
                         )}
                     </>
+                ) : (
+                    <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
+                            Post bulunamadı.
+                        </Text>
+                    </Box>
                 )}
 
                 {/* Comments Header + Filter */}
