@@ -4,7 +4,10 @@ import { NavigationProvider, useNavigationRef } from '@/src/providers/Navigation
 import { RootNavigator } from './stacks/RootNavigator';
 import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
+import { StatusBar } from 'expo-status-bar';
+import { useColorMode } from '@/src/hooks/useColorMode';
 // Drawer artık React Navigation DrawerNavigator içinde
+// FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için
 
 /**
  * Navigation Component (Inner)
@@ -104,8 +107,18 @@ const NavigationInner = () => {
   // This eliminates unnecessary CPU usage from 500ms intervals
   // Navigation ready is handled via onReady callback below
 
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
   return (
     <>
+      {/* FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için */}
+      {/* Drawer SafeAreaView'lerin dışında kalır ve tam ekranı kaplar */}
+      <StatusBar 
+        style={isDark ? 'light' : 'dark'} 
+        backgroundColor={isDark ? '#000000' : '#FFFFFF'}
+        translucent={true}
+      />
       <NavigationContainer
         ref={navigationRef}
         onReady={() => {

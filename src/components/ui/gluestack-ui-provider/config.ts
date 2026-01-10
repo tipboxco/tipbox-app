@@ -48,6 +48,9 @@ export const config = createConfig({
       textDark950: '#020617',
       primary500: '#818CF8',
       primary600: '#6366F1',
+      // Tipbox brand colors
+      tipboxPrimary: '#D0F205', // Tipbox primary button color
+      buttonPrimary: '#D0F205', // Primary button color (alias for tipboxPrimary)
     },
     space: {
       ...(defaultTokens?.space || {}),

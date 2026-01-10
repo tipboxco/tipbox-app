@@ -57,8 +57,8 @@ export const RegisterScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Registration Successful</ToastTitle>
-                <ToastDescription>
+                <ToastTitle fontSize="$sm">Registration Successful</ToastTitle>
+                <ToastDescription fontSize="$sm">
                   {result.message || 'Registration completed successfully!'}
                 </ToastDescription>
               </Toast>
@@ -92,8 +92,8 @@ export const RegisterScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Registration Error</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
+                <ToastTitle fontSize="$sm">Registration Error</ToastTitle>
+                <ToastDescription fontSize="$sm">{errorMessage}</ToastDescription>
               </Toast>
               </Box>
             );

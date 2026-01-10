@@ -841,7 +841,7 @@ const FeedScreenInner = React.memo(() => {
         bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
       >
         <Header
-          title="Feed"
+          logo={require('@/assets/tipbox-nobg.png')}
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />

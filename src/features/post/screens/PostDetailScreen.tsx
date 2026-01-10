@@ -30,13 +30,59 @@ export const PostDetailScreen = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<NativeStackNavigationProp<PostStackParamList>>();
     const route = useRoute<PostDetailScreenRouteProp>();
-    const { postData, type, showRelatedPost, relatedPostData } = route.params;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
     const insets = useSafeAreaInsets();
+    
+    // FIX: route.params undefined kontrolü - güvenli erişim
+    const params = route.params;
+    
+    // FIX: useEffect hook'ları conditional dışında olmalı
+    useEffect(() => {
+        if (!params || !params.postData) {
+            console.error('[PostDetailScreen] ❌ Missing route.params or postData:', params);
+            // Geri dönülecek ekran yoksa Auth'a yönlendir
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                // Root navigator'a reset yap - App (MainTabs) ekranına git
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'App' }],
+                });
+            }
+        }
+    }, [params, navigation]);
+    
+    if (!params || !params.postData) {
+        return null;
+    }
+    
+    const { postData, type, showRelatedPost, relatedPostData } = params;
 
     // Get post ID from postData
-    const postId = postData.id;
+    const postId = postData?.id;
+    
+    // FIX: postId kontrolü
+    useEffect(() => {
+        if (!postId) {
+            console.error('[PostDetailScreen] ❌ Missing postId in postData:', postData);
+            // Geri dönülecek ekran yoksa Auth'a yönlendir
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                // Root navigator'a reset yap - App (MainTabs) ekranına git
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'App' }],
+                });
+            }
+        }
+    }, [postId, postData, navigation]);
+    
+    if (!postId) {
+        return null;
+    }
 
     // Check if postData is complete (has stats, user, etc.) or just an ID
     // Notification'dan gelen postData sadece { id: "..." } formatında olabilir

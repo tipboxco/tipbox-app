@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from 'react';
-import { Box, HStack, Text, Pressable, VStack } from '@gluestack-ui/themed';
+import { Box, HStack, Text, Pressable, VStack, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -20,7 +20,8 @@ interface RightButtonProps {
 }
 
 interface HeaderProps {
-  title: string;
+  title?: string;
+  logo?: any; // Logo image source (require() veya ImageSourcePropType)
   backgroundColor?: string;
   textColor?: string;
   // Sol kısım için props
@@ -44,6 +45,7 @@ interface HeaderProps {
 
 const HeaderComponent = ({
   title,
+  logo,
   backgroundColor,
   textColor,
   leftAction,
@@ -310,14 +312,24 @@ const HeaderComponent = ({
 
             {/* Orta kısım - Flex3, center */}
             <Box flex={3} alignItems="center" justifyContent="center">
-              <Text
-                color={textColor || (isDark ? '#FFFFFF' : '#000000')}
-                fontSize="$md"
-                fontWeight="$bold"
-                textAlign="center"
-              >
-                {title}
-              </Text>
+              {logo ? (
+                <Image
+                  source={logo}
+                  alt="Logo"
+                  width={120}
+                  height={40}
+                  resizeMode="contain"
+                />
+              ) : title ? (
+                <Text
+                  color={textColor || (isDark ? '#FFFFFF' : '#000000')}
+                  fontSize="$md"
+                  fontWeight="$bold"
+                  textAlign="center"
+                >
+                  {title}
+                </Text>
+              ) : null}
             </Box>
 
             {/* Sağ kısım - Flex1, flex-end */}
@@ -337,6 +349,7 @@ export const Header = memo(HeaderComponent, (prevProps, nextProps) => {
   // Custom comparison function for better memoization
   return (
     prevProps.title === nextProps.title &&
+    prevProps.logo === nextProps.logo &&
     prevProps.backgroundColor === nextProps.backgroundColor &&
     prevProps.textColor === nextProps.textColor &&
     prevProps.leftAction === nextProps.leftAction &&

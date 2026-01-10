@@ -62,8 +62,8 @@ export const LoginScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Login Successful</ToastTitle>
-                <ToastDescription>
+                <ToastTitle fontSize="$sm">Login Successful</ToastTitle>
+                <ToastDescription fontSize="$sm">
                     Welcome, {result.fullName || result.email}!
                 </ToastDescription>
               </Toast>
@@ -96,8 +96,8 @@ export const LoginScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Login Error</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
+                <ToastTitle fontSize="$sm">Login Error</ToastTitle>
+                <ToastDescription fontSize="$sm">{errorMessage}</ToastDescription>
               </Toast>
               </Box>
             );
@@ -233,7 +233,7 @@ export const LoginScreen = () => {
         </Text>
 
         <Button
-          bg="$yellow400"
+          bg="$buttonPrimary"
           py="$1"
           rounded="$lg"
           mt="$4"

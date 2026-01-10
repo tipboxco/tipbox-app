@@ -27,6 +27,11 @@ export const AuthNavigator = () => {
         headerShown: false,
         gestureEnabled: true,
         animation: 'slide_from_right',
+        // FIX: Title fontunu küçült - Alert'lerde taşmasını önler
+        headerTitleStyle: {
+          fontSize: 12, // Default 17'den küçültüldü
+          fontWeight: '600',
+        },
       }}
       initialRouteName='Welcome'
     >
@@ -55,14 +60,14 @@ export const AuthNavigator = () => {
         name='ForgotPassword'
         component={ForgotPasswordScreen}
         options={{
-          title: 'Şifremi Unuttum',
+          title: 'Şifre Sıfırlama', // FIX: "Şifremi Unuttum" → "Şifre Sıfırlama" (daha kısa)
         }}
       />
       <AuthStack.Screen
         name='VerifyCode'
         component={AuthVerifyCodeScreen}
         options={{
-          title: 'Doğrulama Kodu',
+          title: 'Doğrulama', // FIX: "Doğrulama Kodu" → "Doğrulama" (daha kısa)
         }}
       />
       <AuthStack.Screen
@@ -76,7 +81,7 @@ export const AuthNavigator = () => {
         name='SetupProfile'
         component={SetupProfileScreen}
         options={{
-          title: 'Profil Düzenle',
+          title: 'Profil', // FIX: "Profil Düzenle" → "Profil" (daha kısa)
           gestureEnabled: false,
         }}
       />

@@ -59,9 +59,6 @@ export const RootNavigator = () => {
         <RootStack.Screen name="Auth" component={AuthNavigator} />
       ) : (
         <>
-          {/* Main Application - AppDrawerNavigator (Drawer → Tab hierarchy) */}
-          <RootStack.Screen name="App" component={AppDrawerNavigator} />
-          
           {/* DetailsGroup - Context-free content drill-down screens */}
           {/* Bu ekranlar hangi tab açık olursa olsun Root'tan açılır */}
           {/* CRITICAL: Native Stack kullanıldığı için swipe back gesture native hissiyat verir */}
@@ -131,6 +128,17 @@ export const RootNavigator = () => {
               component={MoreSchoiseNavigator}
             />
           </RootStack.Group>
+          
+          {/* Main Application - AppDrawerNavigator (Drawer → Tab hierarchy) */}
+          {/* FIX: Drawer'ı en son ekle - stack'te en üstte olması için */}
+          {/* Drawer açıldığında SafeAreaView'lerin üstünde görünmesi için stack sırası önemli */}
+          <RootStack.Screen 
+            name="App" 
+            component={AppDrawerNavigator}
+            options={{
+              headerShown: false,
+            }}
+          />
         </>
       )}
     </RootStack.Navigator>

@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { Platform, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -203,54 +204,69 @@ export const TabNavigator = () => {
   const heavyTabFreezeRule = getHeavyTabFreezeRule();
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        // ARCHITECTURE FIX: Tab state persistence
-        // Prevent tabs from unmounting on blur to preserve scroll position and state
-        unmountOnBlur: false,
-        headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
-        tabBarActiveTintColor: '#758600',
-        tabBarInactiveTintColor: isDark ? '#FFFFFF' : '#000000',
-        tabBarShowLabel: false,
-        tabBarStyle,
-      })}
+    <SafeAreaView 
+      edges={['top', 'bottom']} 
+      style={{ 
+        flex: 1,
+        backgroundColor: isDark ? '#000000' : '#FFFFFF'
+      }}
     >
-      <Tab.Screen
-        name="FeedStack"
-        component={FeedStackNavigator}
-      />
-      <Tab.Screen
-        name="ExploreStack"
-        component={ExploreStackNavigator}
-      />
-      <Tab.Screen
-        name="CatalogStack"
-        component={CatalogStackNavigator}
-        options={{
-          // Heavy tab: freeze on blur
-          freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
-        }}
-      />
-      <Tab.Screen
-        name="EventsStack"
-        component={EventsStackNavigator}
-        options={{
-          // Heavy tab: freeze on blur
-          freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
-        }}
-      />
-      <Tab.Screen
-        name="NotificationStack"
-        component={NotificationStackNavigator}
-        listeners={{
-          tabPress: handleNotificationTabPress,
-        }}
-      />
-      <Tab.Screen
-        name="InboxStack"
-        component={InboxStackNavigator}
-      />
-    </Tab.Navigator>
+      {/* Tab ekranlarının padding'den etkilenmemesi için negative margin */}
+      <View style={{ 
+        flex: 1,
+        marginTop: -insets.top,
+        marginBottom: -insets.bottom
+      }}>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            // ARCHITECTURE FIX: Tab state persistence
+            // Prevent tabs from unmounting on blur to preserve scroll position and state
+            unmountOnBlur: false,
+            headerShown: false,
+            tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
+            tabBarActiveTintColor: '#758600',
+            tabBarInactiveTintColor: isDark ? '#FFFFFF' : '#000000',
+            tabBarShowLabel: false,
+            tabBarStyle,
+          })}
+        >
+          <Tab.Screen
+            name="FeedStack"
+            component={FeedStackNavigator}
+          />
+          <Tab.Screen
+            name="ExploreStack"
+            component={ExploreStackNavigator}
+          />
+          <Tab.Screen
+            name="CatalogStack"
+            component={CatalogStackNavigator}
+            options={{
+              // Heavy tab: freeze on blur
+              freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
+            }}
+          />
+          <Tab.Screen
+            name="EventsStack"
+            component={EventsStackNavigator}
+            options={{
+              // Heavy tab: freeze on blur
+              freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
+            }}
+          />
+          <Tab.Screen
+            name="NotificationStack"
+            component={NotificationStackNavigator}
+            listeners={{
+              tabPress: handleNotificationTabPress,
+            }}
+          />
+          <Tab.Screen
+            name="InboxStack"
+            component={InboxStackNavigator}
+          />
+        </Tab.Navigator>
+      </View>
+    </SafeAreaView>
   );
 };

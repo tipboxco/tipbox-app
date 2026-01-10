@@ -561,6 +561,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       w="100%" 
       m={0} 
       p={0}
+      style={{
+        zIndex: 10000, // FIX: DrawerContent'in SafeAreaView'in üstünde görünmesi için
+        elevation: 10000, // Android için elevation
+      }}
     >
       {/* ScrollView kullan - DrawerContentScrollView yerine */}
       <ScrollView

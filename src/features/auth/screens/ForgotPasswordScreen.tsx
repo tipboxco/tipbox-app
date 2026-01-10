@@ -33,8 +33,8 @@ export const ForgotPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Invalid Email</ToastTitle>
-              <ToastDescription>Please enter a valid email address.</ToastDescription>
+              <ToastTitle fontSize="$sm">Invalid Email</ToastTitle>
+              <ToastDescription fontSize="$sm">Please enter a valid email address.</ToastDescription>
             </Toast>
             </Box>
           );
@@ -58,8 +58,8 @@ export const ForgotPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>Email Sent</ToastTitle>
-              <ToastDescription>Verification code has been sent to your email address.</ToastDescription>
+              <ToastTitle fontSize="$sm">Email Sent</ToastTitle>
+              <ToastDescription fontSize="$sm">Verification code has been sent to your email address.</ToastDescription>
             </Toast>
             </Box>
           );
@@ -80,8 +80,8 @@ export const ForgotPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Error</ToastTitle>
-              <ToastDescription>
+              <ToastTitle fontSize="$sm">Error</ToastTitle>
+              <ToastDescription fontSize="$sm">
                 {error?.response?.data?.message || error?.message || 'An error occurred. Please try again.'}
               </ToastDescription>
             </Toast>

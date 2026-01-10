@@ -5,8 +5,6 @@ import { Platform, View } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import Navigation from '@/src/navigation';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { QueryProvider } from '@/src/providers/QueryProvider';
 import { useAuth } from '@/src/providers/AuthProvider';
@@ -19,42 +17,8 @@ import { TranslationCacheService } from '@/src/services/TranslationCacheService'
 // Prevents showing blank screen during initialization
 SplashScreen.preventAutoHideAsync();
 
-// PERFORMANCE FIX: Memoize status bar style to prevent unnecessary re-renders
-// FIX: SafeAreaView background rengi theme'e göre ayarla - üst ve alt kısımların renk uyumu için
-const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
-  <>
-    {/* Üst SafeAreaView - Status bar alanı */}
-    <SafeAreaView 
-      edges={['top']} 
-      style={{ 
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        backgroundColor: isDark ? '#000000' : '#FFFFFF' // FIX: Theme'e göre background rengi
-      }} 
-    />
-    {/* Alt SafeAreaView - Home indicator alanı */}
-    <SafeAreaView 
-      edges={['bottom']} 
-      style={{ 
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA' // FIX: Alt kısım için açık gri (light mode), koyu gri (dark mode)
-      }} 
-    />
-    <StatusBar 
-      style={isDark ? 'light' : 'dark'} 
-      backgroundColor={isDark ? '#000000' : '#FFFFFF'} // FIX: Theme'e göre background rengi
-      translucent={true} // Android için translucent mode
-    />
-  </>
-));
-StatusBarComponent.displayName = 'StatusBarComponent';
+// FIX: SafeAreaView'ler NavigationContainer içine taşındı (src/navigation/index.tsx)
+// Bu sayede Drawer SafeAreaView'lerin üstünde görünür
 
 /**
  * ARCHITECTURE FIX: AppInner moved inside AppProviders
@@ -123,19 +87,16 @@ const AppInner = () => {
   }, [isAuthReady]);
 
   return (
-    <>
-      <StatusBarComponent isDark={isDark} />
-      {/* FIX: Root container'a background rengi ekle - üst ve alt kısımların renk uyumu için */}
-      {/* NavigationContainer'ın arkasındaki root View, tüm ekranı kaplar ve safe area'ların rengini belirler */}
-      <View 
-        style={{ 
-          flex: 1, 
-          backgroundColor: isDark ? '#000000' : '#FFFFFF' // FIX: Root container üst kısım rengi (beyaz)
-        }}
-      >
-        <Navigation />
-      </View>
-    </>
+    <View 
+      style={{ 
+        flex: 1, 
+        backgroundColor: isDark ? '#000000' : '#FFFFFF' // FIX: Root container üst kısım rengi (beyaz)
+      }}
+    >
+      {/* FIX: SafeAreaView'ler NavigationContainer içine taşındı (src/navigation/index.tsx) */}
+      {/* Bu sayede Drawer SafeAreaView'lerin üstünde görünür */}
+      <Navigation />
+    </View>
   );
 };
 

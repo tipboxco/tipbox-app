@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "tipbox-app",
+    "name": "",
     "slug": "tipbox-app",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -13,12 +13,11 @@
       "url": "https://u.expo.dev/098fbee5-88e4-49ba-bb37-80601a5d47af"
     },
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/tipbox-square-black.png",
     "splash": {
-      "image": "./assets/tipbox_logo.png",
+      "image": "./assets/splash-black.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "scheme": "tipboxapp",
     "assetBundlePatterns": [
@@ -59,8 +58,8 @@
       "package": "com.devkocmehmet.tipboxapp",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/tipbox-square-black.png",
+        "backgroundColor": "#000000"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -74,9 +73,17 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-black.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ],
+      [
         "expo-notifications",
         {
-          "icon": "./assets/tipbox_logo.png",
+          "icon": "./assets/tipbox-white-logo.jpg",
           "color": "#ffffff"
         }
       ],

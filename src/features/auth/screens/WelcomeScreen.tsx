@@ -1,6 +1,6 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, HStack, Icon } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image } from '@gluestack-ui/themed';
 import { LogIn, Mail, Facebook } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -20,16 +20,22 @@ export const WelcomeScreen = () => {
         flex={1}
         bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
       >
-      {/* Hero Image */}
-      <Box h={350} bg="$gray100" alignItems="center" justifyContent="center">
-        <Text color="$gray400" fontSize="$xl">Image Placeholder</Text>
+      {/* Hero Image - Tipbox Logo */}
+      <Box h={350} bg={isDark ? '$backgroundDark50' : '$backgroundLight0'} alignItems="center" justifyContent="center">
+        <Image
+          source={require('@/assets/tipbox-square-black.png')}
+          alt="Tipbox Logo"
+          width={200}
+          height={200}
+          resizeMode="contain"
+        />
       </Box>
 
       {/* Content */}
       <VStack flex={1} px="$10" space="md" mt="$8">
         <VStack space="md" alignItems="center">
           <Button
-            bg="$yellow400"
+            bg="$buttonPrimary"
             h={44}
             rounded="$lg"
             w={315}

@@ -47,8 +47,8 @@ export const ResetPasswordScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Invalid Password</ToastTitle>
-                  <ToastDescription>
+                  <ToastTitle fontSize="$sm">Invalid Password</ToastTitle>
+                  <ToastDescription fontSize="$sm">
                     Password must be at least 8 characters and passwords must match.
                   </ToastDescription>
                 </Toast>
@@ -66,8 +66,8 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Passwords Don't Match</ToastTitle>
-                <ToastDescription>Please enter the same password.</ToastDescription>
+                <ToastTitle fontSize="$sm">Passwords Don't Match</ToastTitle>
+                <ToastDescription fontSize="$sm">Please enter the same password.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -91,8 +91,8 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Password Reset</ToastTitle>
-                <ToastDescription>Your password has been successfully updated. You can now sign in.</ToastDescription>
+                <ToastTitle fontSize="$sm">Password Reset</ToastTitle>
+                <ToastDescription fontSize="$sm">Your password has been successfully updated. You can now sign in.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -113,8 +113,8 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Error</ToastTitle>
-                <ToastDescription>
+                <ToastTitle fontSize="$sm">Error</ToastTitle>
+                <ToastDescription fontSize="$sm">
                   {error?.response?.data?.message || error?.message || 'An error occurred. Please try again.'}
                 </ToastDescription>
               </Toast>
