@@ -195,7 +195,7 @@ export const SwapScreen: React.FC = () => {
           enableHandlePanningGesture: true,
           enableContentPanningGesture: true,
           enableDynamicSizing: true,
-          animateOnMount: true,
+          animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
           handleIndicatorStyle: {
             backgroundColor: isDark ? '#333333' : '#B8B8B7',
             width: 70,
@@ -249,7 +249,7 @@ export const SwapScreen: React.FC = () => {
             enableHandlePanningGesture: true,
             enableContentPanningGesture: true,
             enableDynamicSizing: true,
-            animateOnMount: true,
+            animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
             handleIndicatorStyle: {
               backgroundColor: isDark ? '#333333' : '#B8B8B7',
               width: 70,

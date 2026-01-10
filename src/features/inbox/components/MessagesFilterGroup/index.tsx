@@ -35,13 +35,14 @@ export const MessagesFilterGroup: React.FC<MessagesFilterGroupProps> = ({
         borderColor="#EFEFEF"
         borderRadius={10}
         px="$3"
+        py="$1"
         minHeight={28}
         justifyContent="center"
         alignItems="center"
       >
         <Text
           color="#000000"
-          fontSize={9}
+          fontSize="$xs"
           fontWeight="$semibold"
           textAlign="center"
         >

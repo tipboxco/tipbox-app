@@ -97,8 +97,8 @@ export const SelectCategoriesScreen = () => {
         // isAuthenticated değişikliği otomatik olarak yeni stack'i render eder
       } catch (error: any) {
         // Hata durumunda kullanıcıya bilgi ver
-        const errorMessage = error.response?.data?.message || error.message || 'Kategoriler kaydedilirken bir hata oluştu.';
-        Alert.alert('Hata', errorMessage, [{ text: 'Tamam' }]);
+        const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving categories.';
+        Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
         console.error('[SelectCategoriesScreen] Update interests error:', error);
       }
     }
@@ -118,7 +118,7 @@ export const SelectCategoriesScreen = () => {
           color={isDark ? '$textDark50' : '$textLight900'}
           textAlign="center"
         >
-          İlgi Alanlarınızı Seçin
+          Select Your Interests
         </Text>
         
         <Text
@@ -127,7 +127,7 @@ export const SelectCategoriesScreen = () => {
           textAlign="center"
           mb="$4"
         >
-          Size özel içerikler sunabilmemiz için en az bir kategori seçin
+          Select at least one category so we can provide you with personalized content
         </Text>
 
         <ScrollView flex={1} showsVerticalScrollIndicator={false}>
@@ -155,7 +155,7 @@ export const SelectCategoriesScreen = () => {
             <Spinner size="small" color="$textLight900" />
           ) : (
             <ButtonText color="$textLight900">
-              {`Devam Et (${selectedSubCategories.length} seçili)`}
+              {`Continue (${selectedSubCategories.length} selected)`}
             </ButtonText>
           )}
         </Button>

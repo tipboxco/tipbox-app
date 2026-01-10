@@ -64,15 +64,8 @@ export const getNotifications = async (
       }>;
     }>('/notifications', { params });
     
-    console.log('[getNotifications] 📥 Raw API response:', {
-      success: response.data.success,
-      dataLength: response.data.data?.length || 0,
-      firstItem: response.data.data?.[0] ? JSON.stringify(response.data.data[0], null, 2) : 'no items',
-    });
-    
     // Response data kontrolü
     if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
-      console.warn('[getNotifications] ⚠️ Invalid response format:', response.data);
       return {
         success: response.data?.success ?? false,
         data: [],
@@ -111,11 +104,6 @@ export const getNotifications = async (
         metadata,
         navigation: item.data?.navigation || item.metadata?.navigation,
       };
-    });
-    
-    console.log('[getNotifications] ✅ Mapped data:', {
-      count: mappedData.length,
-      firstMapped: mappedData[0] ? JSON.stringify(mappedData[0], null, 2) : 'no items',
     });
     
     return {

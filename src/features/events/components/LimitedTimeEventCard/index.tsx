@@ -11,8 +11,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
 import type { LimitedEventApiResponse } from '../../types';
-import { useCountdown } from '@/src/utils';
-import { toImageSource } from '@/src/utils';
+import { useCountdown, toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -44,9 +43,9 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
         : '00:00:00';
     
     // Image sources - ERROR FIX: Null checks for image sources
-    const backgroundImageSource = toImageSource(data.backgroundImage) || require('@/assets/events/banner_02.png');
-    const eventImageSource = toImageSource(data.eventImage) || require('@/assets/events/image_01.png');
-    const userAvatarSource = toImageSource(data.userScore?.avatar) || require('@/assets/avatar/ozan.png');
+    const backgroundImageSource = toImageSource(data.backgroundImage) || require('@/assets/defaultImages/default-banner.png');
+    const eventImageSource = toImageSource(data.eventImage) || require('@/assets/defaultImages/default-event.png');
+    const userAvatarSource = toImageSource(data.userScore?.avatar) || require('@/assets/avatar/default-useravatar.png');
 
     return (
         <Box
@@ -205,7 +204,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         {/* Other Users */}
                         <HStack space="xs" alignItems="flex-end">
                             {(data.leaderboardUsers || []).slice(0, 3).map((user, index) => {
-                                const avatarSource = toImageSource(user?.avatar) || require('@/assets/avatar/ozan.png');
+                                const avatarSource = toImageSource(user?.avatar) || require('@/assets/avatar/default-useravatar.png');
                                 return (
                                     <Box key={user?.id || index} ml={index === 0 ? 0 : -12}>
                                         <Image

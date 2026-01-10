@@ -6,7 +6,7 @@ export const mock_post_cards: PostCards = [
     user: {
       id: '1',
       name: 'Georgia Green',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Everyday Consumer - Home Appliance Enthusiast - Product Reviewer',
       action: 'Added new product and experiences to inventory!'
     },
@@ -54,7 +54,7 @@ export const mock_post_cards: PostCards = [
     user: {
       id: '1',
       name: 'Georgia Green',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Everyday Consumer - Home Appliance Enthusiast - Product Reviewer',
       action: 'Added new product and experiences to inventory!'
     },

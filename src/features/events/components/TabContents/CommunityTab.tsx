@@ -158,23 +158,12 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
   const isLoadingMoreRef = useRef(false);
   const fetchNextUpcomingPage = useCallback(() => {
     if (isLoadingMoreRef.current) {
-      console.log('[Upcoming Events] Zaten yükleme devam ediyor, istek atılmadı');
       return;
     }
     
     if (!hasNextUpcomingPage || isFetchingNextUpcomingPage) {
-      console.log('[Upcoming Events] Yeni sayfa yok veya zaten yükleniyor', {
-        hasNextPage: hasNextUpcomingPage,
-        isFetching: isFetchingNextUpcomingPage,
-      });
       return;
     }
-    
-    console.log('[Upcoming Events] fetchNextUpcomingPage çağrıldı', {
-      hasNextPage: hasNextUpcomingPage,
-      isFetching: isFetchingNextUpcomingPage,
-      currentItemsCount: upcomingEvents.length,
-    });
     
     isLoadingMoreRef.current = true;
     fetchNextUpcomingPageOriginal();
@@ -206,23 +195,55 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
       const isCloseToBottom =
         layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
 
-      console.log('[Upcoming Events Scroll]', {
-        layoutHeight: layoutMeasurement.height,
-        contentOffsetY: contentOffset.y,
-        contentHeight: contentSize.height,
-        isCloseToBottom,
-        hasNextPage: hasNextUpcomingPage,
-        isFetching: isFetchingNextUpcomingPage,
-        distanceFromBottom: contentSize.height - (layoutMeasurement.height + contentOffset.y),
-      });
-
       if (isCloseToBottom && hasNextUpcomingPage && !isFetchingNextUpcomingPage) {
-        console.log('[Upcoming Events] Yeni sayfa yükleniyor (onScroll handler)...');
         fetchNextUpcomingPage();
       }
     },
     [hasNextUpcomingPage, isFetchingNextUpcomingPage, fetchNextUpcomingPage]
   );
+
+  // Initial loading state - hem active hem upcoming ilk yüklemede ise tüm ekran için skeleton göster
+  // Cache'den veri varsa skeleton gösterme
+  const isInitialLoading = (isActiveEventsLoading && !activeEventsData) || 
+                           (isUpcomingEventsLoading && !upcomingEventsData);
+
+  // İlk yüklemede ve cache'den veri yoksa tüm ekran için skeleton göster
+  if (isInitialLoading && !activeEventsData && !upcomingEventsData) {
+    return (
+      <VStack flex={1} px="$4" py="$4" space="md">
+        {/* Search Bar Skeleton */}
+        <Box
+          bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          borderRadius={20}
+          height={40}
+        />
+
+        {/* Active Events Section Skeleton */}
+        <VStack space="sm">
+          <Box
+            bg={isDark ? '#2A2A2A' : '#E9E9E9'}
+            width={100}
+            height={16}
+            borderRadius={4}
+          />
+          <EventSkeleton count={3} isHorizontal={true} />
+        </VStack>
+
+        {/* Upcoming Events Section Skeleton */}
+        <VStack space="sm">
+          <Box
+            bg={isDark ? '#2A2A2A' : '#E9E9E9'}
+            width={120}
+            height={16}
+            borderRadius={4}
+          />
+          <EventSkeleton count={4} isGrid={true} />
+        </VStack>
+      </VStack>
+    );
+  }
 
   return (
     <VStack flex={1}>
@@ -289,7 +310,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                 >
                   Active Events
                 </Text>
-                {isActiveEventsLoading ? (
+                {isActiveEventsLoading && !activeEventsData ? (
                   <EventSkeleton count={3} isHorizontal={true} />
                 ) : activeEventsError ? (
                   <Box py="$4" alignItems="center">
@@ -300,7 +321,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                 ) : activeEvents.length === 0 ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                      Henüz aktif etkinlik bulunmuyor
+                      No active events yet
                     </Text>
                   </Box>
                 ) : (
@@ -360,7 +381,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
             </Box>
 
             {/* Upcoming Events Loading State */}
-            {isUpcomingEventsLoading && upcomingEvents.length === 0 && (
+            {isUpcomingEventsLoading && !upcomingEventsData && (
               <Box pt="$4">
                 <EventSkeleton count={4} isGrid={true} />
               </Box>
@@ -379,7 +400,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
             {!isUpcomingEventsLoading && upcomingEvents.length === 0 && !upcomingEventsError && (
               <Box pt="$4" alignItems="center" px="$4">
                   <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$xs">
-                  Henüz yaklaşan etkinlik bulunmuyor
+                  No upcoming events yet
                 </Text>
               </Box>
             )}

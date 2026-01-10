@@ -77,7 +77,7 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ isVisible, onClose }) => 
                                     alignItems="center"
                                 >
                                     <Image
-                                        source={require('@/assets/avatar/ozan.png')}
+                                        source={require('@/assets/avatar/default-useravatar.png')}
                                         alt="Micheal Clark"
                                         width={38}
                                         height={38}
@@ -115,7 +115,7 @@ const CongratsModal: React.FC<CongratsModalProps> = ({ isVisible, onClose }) => 
                                     alignItems="center"
                                 >
                                     <Image
-                                        source={require('@/assets/avatar/ozan.png')}
+                                        source={require('@/assets/avatar/default-useravatar.png')}
                                         alt="Trevor Nace"
                                         width={38}
                                         height={38}

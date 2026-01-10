@@ -6,7 +6,7 @@ export const mock_brand_product_posts: Post[] = [
     user: {
       id: '1',
       name: 'Michael Clark',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
     },
     category: {
@@ -37,7 +37,7 @@ export const mock_brand_product_posts: Post[] = [
     user: {
       id: '2',
       name: 'Sarah Johnson',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Home & Lifestyle Expert - Product Reviewer',
     },
     category: {
@@ -68,7 +68,7 @@ export const mock_brand_product_posts: Post[] = [
     user: {
       id: '3',
       name: 'Alex Chen',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Tech Reviewer - Gadget Enthusiast',
     },
     category: {

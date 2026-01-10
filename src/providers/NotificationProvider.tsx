@@ -123,15 +123,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
-    console.log('[NotificationProvider] ========================================');
-    console.log('[NotificationProvider] 🔔 Notification Service Initialization Started');
-    console.log('[NotificationProvider] ========================================');
-    console.log('[NotificationProvider]    - Auth Ready: ✅');
-    console.log('[NotificationProvider]    - Is Authenticated:', isAuthenticated);
-
     const initializeNotifications = async () => {
       try {
-        console.log('[NotificationProvider] 📋 Step 1: Requesting notification permission...');
         const notificationState = await notificationService.initialize();
         
         setState({
@@ -139,11 +132,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           permissionStatus: notificationState.permissionStatus,
           expoPushToken: notificationState.expoPushToken,
         });
-        
-        console.log('[NotificationProvider] ✅ Notification service initialized');
-        console.log('[NotificationProvider]    - Permission Status:', notificationState.permissionStatus);
-        console.log('[NotificationProvider]    - Push Token:', notificationState.expoPushToken ? '✅' : '❌');
-        console.log('[NotificationProvider] ========================================');
 
         // Pending token varsa tekrar dene
         await notificationService.retryPendingPushToken();
@@ -167,7 +155,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         const newToken = await notificationService.refreshPushToken();
         if (newToken && newToken !== state.expoPushToken) {
           setState(prev => ({ ...prev, expoPushToken: newToken }));
-          console.log('[NotificationProvider] 🔄 Push token refreshed');
         }
       } catch (error) {
         console.error('[NotificationProvider] ❌ Error refreshing push token:', error);
@@ -201,7 +188,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     if (!isAuthenticated) {
       // Logout durumunda tüm notification query'lerini temizle
-      console.log('[NotificationProvider] 🧹 Clearing notification queries on logout');
       queryClient.removeQueries({ queryKey: notificationKeys.all });
       // Notification store'u da temizle
       const notificationStore = useNotificationStore.getState();
@@ -233,13 +219,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
-    console.log('[NotificationProvider] ✅ Registering socket notification listener', {
-      socketId: socket.id,
-      isConnected: isSocketConnected,
-    });
-
     const handleSocketNotification = async (notification: Notification) => {
-      console.log('[NotificationProvider] 📨 Socket notification received:', notification);
 
       // Analytics: Notification received tracking
       await notificationAnalytics.trackReceived(
@@ -263,7 +243,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           
           // Eğer aktif thread ID varsa ve notification thread ID ile eşleşiyorsa notification gösterilmemeli
           if (activeThreadId && notificationThreadId && activeThreadId === notificationThreadId) {
-            console.log('[NotificationProvider] ⏭️ Skipping notification - user is viewing this thread:', notificationThreadId);
             shouldShowNotification = false;
           } else {
             // Fallback: NavigationService'den aktif route'u kontrol et (eski yöntem)
@@ -275,7 +254,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               const currentThreadId = currentRoute?.params?.threadId || currentRoute?.params?.messageId;
               
               if (notificationThreadId && currentThreadId && notificationThreadId === currentThreadId) {
-                console.log('[NotificationProvider] ⏭️ Skipping notification - user is viewing this thread (route check):', notificationThreadId);
                 shouldShowNotification = false;
               }
             }
@@ -298,12 +276,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               navigation: notification.navigation,
             },
           });
-          console.log('[NotificationProvider] ✅ Local notification sent for socket event');
         } catch (error) {
           console.error('[NotificationProvider] ❌ Error sending local notification:', error);
         }
       } else if (!shouldShowNotification) {
-        console.log('[NotificationProvider] ⏭️ Notification suppressed - user is viewing the thread');
       }
 
       // State Sync: Zustand store'a ekle (instant UI update için)
@@ -332,9 +308,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
 
     // Register socket notification listener
-    console.log('[NotificationProvider] 🔌 Registering socket notification listener...');
     socketService.onNotification(handleSocketNotification);
-    console.log('[NotificationProvider] ✅ Socket notification listener registered');
 
     // DEBUG: Tüm socket event'lerini dinle (sadece development için)
     if (__DEV__ && socket) {
@@ -350,7 +324,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
 
     return () => {
-      console.log('[NotificationProvider] 🧹 Cleaning up socket notification listener');
       socketService.off('notification', handleSocketNotification);
     };
   }, [isAuthenticated, state.isInitialized, isForeground, queryClient]);
@@ -362,7 +335,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
 
     const handleNotificationReceived = async (notification: NotificationPayload) => {
-      console.log('[NotificationProvider] 📱 Push notification received (foreground):', notification);
       
       // Mesaj bildirimleri için özel kontrol: Eğer kullanıcı MessageDetail ekranındaysa ve aynı thread'deyse notification gösterilmemeli
       const notificationType = notification.data?.type as string;
@@ -380,7 +352,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           
           // Eğer aktif thread ID varsa ve notification thread ID ile eşleşiyorsa notification gösterilmemeli
           if (activeThreadId && notificationThreadId && activeThreadId === notificationThreadId) {
-            console.log('[NotificationProvider] ⏭️ Skipping push notification - user is viewing this thread:', notificationThreadId);
             // Query'leri yine de refresh et (state update için)
             queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
             queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
@@ -395,7 +366,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               const currentThreadId = currentRoute?.params?.threadId || currentRoute?.params?.messageId;
               
               if (notificationThreadId && currentThreadId && notificationThreadId === currentThreadId) {
-                console.log('[NotificationProvider] ⏭️ Skipping push notification - user is viewing this thread (route check):', notificationThreadId);
                 // Query'leri yine de refresh et (state update için)
                 queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
                 queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
@@ -414,7 +384,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     };
 
     const handleNotificationResponse = async (notification: NotificationPayload) => {
-      console.log('[NotificationProvider] 👆 Push notification tapped:', notification);
       
       const notificationId = notification.data?.notificationId as string;
       const notificationType = notification.data?.type as string;
@@ -476,7 +445,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const syncBadge = async () => {
       try {
         await notificationService.setBadgeCount(unreadCount);
-        console.log('[NotificationProvider] ✅ Badge count synced:', unreadCount);
       } catch (error) {
         console.error('[NotificationProvider] ❌ Error syncing badge count:', error);
       }

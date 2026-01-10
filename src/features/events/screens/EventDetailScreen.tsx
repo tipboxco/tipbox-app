@@ -20,7 +20,7 @@ import type { EventsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
 import { useEventDetail, useEventPosts, useJoinEvent, useLeaveEvent } from '../api/hooks';
-import { toImageSource } from '@/src/utils';
+    import { toImageSource } from '@/src/utils';
 import { CardType, EventStatus } from '@/src/types/common';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
@@ -177,10 +177,26 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Feed/Post to PostCardData (from FeedScreen)
     const mapFeedToCardData = (item: ProfilePost): PostCardData => {
+        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
         // content array ise string'e çevir, değilse direkt kullan
         const contentString = Array.isArray(item.content)
             ? item.content.map((contentItem) => contentItem.content || '').join(' ')
             : (item.content || '');
+
+        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+        const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
+        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+        // contextData.image için fallback
+        const contextImage = item.contextData?.image
+            ? toImageSource(item.contextData.image)
+            : undefined;
+        const contextData = item.contextData
+            ? {
+                ...item.contextData,
+                image: contextImage || item.contextData.image || defaultPostImage,
+              }
+            : undefined;
 
         return {
             id: item.id,
@@ -188,20 +204,20 @@ const EventDetailScreen: React.FC = () => {
                 id: item.user.id,
                 name: item.user.name,
                 title: item.user.title,
-                avatar: toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png'),
+                avatar: toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png'),
             },
             content: contentString,
-            images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+            images,
             stats: item.stats,
             createdAt: item.createdAt,
             contextType: item.contextType,
-            contextData: item.contextData,
+            contextData,
         };
     };
 
     // Map Benchmark to BenchmarkCardData (from FeedScreen)
     const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }): BenchmarkCardData => {
-        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
 
         const products: BenchmarkProduct[] = (item.products && Array.isArray(item.products))
             ? item.products.map((p) => ({
@@ -231,7 +247,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Experience (ReviewApiItem) to ReviewCardData (from FeedScreen)
     const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
-        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
         const productImage = item.contextData?.image
             ? toImageSource(item.contextData.image)
             : undefined;
@@ -248,7 +264,7 @@ const EventDetailScreen: React.FC = () => {
                     .fill(false)
                     .map((_, index) => index < (contentItem.rating || 0)),
             }))
-            : (typeof item.content === 'string' && item.content.trim())
+            : (typeof item.content === 'string' && (item.content as string).trim())
                 ? [{
                     tag: {
                         icon: 'tag',
@@ -287,7 +303,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Tips to TipsCardData (from FeedScreen)
     const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
-        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
 
         const productImage = toImageSource(item.contextData?.image);
         if (!productImage) {
@@ -330,7 +346,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Question to QuestionCardData (from FeedScreen)
     const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
-        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+            const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
 
         const productImage = toImageSource(item.contextData?.image);
         if (!productImage) {
@@ -352,6 +368,13 @@ const EventDetailScreen: React.FC = () => {
             product,
         };
 
+        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+        const mappedImages = item.images
+            ?.map((img) => toImageSource(img))
+            .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
         return {
             id: item.id,
             user: {
@@ -363,9 +386,7 @@ const EventDetailScreen: React.FC = () => {
             category,
             content: item.content,
             isBoosted: item.isBoosted,
-            images: item.images
-                ?.map((img) => toImageSource(img))
-                .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+            images,
             stats: item.stats,
             createdAt: item.createdAt,
         };
@@ -373,7 +394,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Update to UpdateCardData (from FeedScreen)
     const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
-        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/ozan.png');
+        const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
         
         // ContextType'ı ProductInfoType'a çevir
         let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
@@ -578,7 +599,7 @@ const EventDetailScreen: React.FC = () => {
     }
 
     const dateRange = formatDateRange(event.startDate, event.endDate);
-    const bannerImageSource = event.bannerImage ? toImageSource(event.bannerImage) : require('@/assets/events/banner.png');
+    const bannerImageSource = event.bannerImage ? toImageSource(event.bannerImage) : require('@/assets/defaultImages/default-banner.png');
     const participantAvatars = event.participants?.map(p => p.avatar) || [];
 
     return (
@@ -961,7 +982,7 @@ const EventDetailScreen: React.FC = () => {
                         ) : feedItems.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
-                                    Henüz post bulunmuyor
+                                    No posts yet
                                 </Text>
                             </Box>
                         ) : (

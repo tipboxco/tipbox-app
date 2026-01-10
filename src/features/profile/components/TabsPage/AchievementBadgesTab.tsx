@@ -16,7 +16,7 @@ interface AchievementBadgesTabProps {
 
 // Map AchievementApiItem to Badge format
 const mapAchievementToBadge = (achievement: AchievementApiItem): Badge => {
-  const imageSource = toImageSource(achievement.image) || require('@/assets/badges/badge_01.png');
+  const imageSource = toImageSource(achievement.image) || require('@/assets/defaultImages/default-badge.png');
   
   // Rarity belirleme - status'a göre veya default 'Usual'
   // API'den rarity gelmiyorsa, completed durumuna göre belirleyebiliriz
@@ -213,7 +213,7 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          Henüz achievement bulunmuyor.
+          No achievements yet.
         </Text>
       </VStack>
     );

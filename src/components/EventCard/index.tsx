@@ -52,47 +52,18 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           overflow="hidden"
           padding='$2'
         >
-          {data.image ? (
-            (() => {
-              const imageSource = toImageSource(data.image);
-              return imageSource ? (
-                <Image
-                  source={imageSource}
-                  alt={data.title}
-                  style={{ width: '100%', height: '100%' }}
-                  borderRadius={5}
-                />
-              ) : (
-                <Box
-                  width="100%"
-                  height="100%"
-                  bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Feather
-                    name="image"
-                    size={32}
-                    color={isDark ? '#666' : '#999'}
-                  />
-                </Box>
-              );
-            })()
-          ) : (
-            <Box
-              width="100%"
-              height="100%"
-              bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Feather
-                name="image"
-                size={32}
-                color={isDark ? '#666' : '#999'}
+          {(() => {
+            const imageSource = data.image ? toImageSource(data.image) : null;
+            const defaultImage = require('@/assets/defaultImages/default-event.png');
+            return (
+              <Image
+                source={imageSource || defaultImage}
+                alt={data.title}
+                style={{ width: '100%', height: '100%' }}
+                borderRadius={5}
               />
-            </Box>
-          )}
+            );
+          })()}
           {/* Event Type Badge */}
           <Box
             position="absolute"

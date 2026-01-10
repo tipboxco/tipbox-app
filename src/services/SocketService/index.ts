@@ -28,7 +28,6 @@ class SocketService {
    */
   public async connect(): Promise<void> {
     if (this.socket?.connected) {
-      console.log('[SocketService] ✅ Already connected');
       return;
     }
 
@@ -44,11 +43,6 @@ class SocketService {
       const socketUrl = API_CONFIG.BASE_URL;
       const isHttps = socketUrl.startsWith('https://');
       const isWss = socketUrl.startsWith('wss://');
-      
-      console.log('[SocketService] 🔌 Connecting to:', socketUrl, {
-        isHttps,
-        isWss,
-      });
       
       const extraHeaders: Record<string, string> = {
         Authorization: `Bearer ${accessToken}`,
@@ -95,41 +89,17 @@ class SocketService {
 
       // Event handlers - sadece bir kez ekle
       this.socket.once('connect', () => {
-        console.log('[SocketService] ✅ Connected:', {
-          socketId: this.socket?.id,
-          transport: this.socket?.io?.engine?.transport?.name,
-        });
+        // Connection successful
       });
 
-      this.socket.on('disconnect', (reason) => {
-        console.log('[SocketService] ❌ Disconnected:', reason);
+      this.socket.on('disconnect', () => {
+        // Disconnected
       });
 
-      this.socket.once('connect_error', (error) => {
+      this.socket.once('connect_error', () => {
         // Login ekranında hata göstermemek için sessizce return et
         // Hata logları SocketProvider'da authenticated kontrolü ile gösterilir
-        // Burada sadece development modunda minimal log
-        if (__DEV__ && process.env.NODE_ENV === 'development') {
-          // Minimal log - sadece development'ta
-          console.log('[SocketService] Connection error (will be handled by provider):', error.message);
-        }
       });
-
-      // DEBUG: Tüm socket event'lerini log'la (sadece development için)
-      if (__DEV__) {
-        // Socket.IO'da onAny metodu yok, bu yüzden manuel olarak dinleyeceğiz
-        // Önemli event'leri log'la
-        const logEvent = (eventName: string) => {
-          this.socket?.on(eventName, (data: any) => {
-            console.log(`[SocketService] 📨 Event received: ${eventName}`, {
-              data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data,
-            });
-          });
-        };
-
-        // Bilinen event'leri log'la
-        ['notification', 'new_notification', 'notifications', 'message', 'new_message'].forEach(logEvent);
-      }
 
     } catch (error) {
       // Login ekranında hata göstermemek için sessizce hata fırlat
@@ -145,7 +115,6 @@ class SocketService {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      console.log('[SocketService] 🔌 Disconnected');
     }
   }
 
@@ -203,7 +172,6 @@ class SocketService {
    * Dokümana göre: send_message event'i recipientId bekliyor
    */
   public sendMessage(recipientId: string, message: string): void {
-    console.log('[SocketService] 📤 Emitting send_message:', { recipientId, message });
     this.socket?.emit('send_message', { recipientId, message });
   }
 
@@ -270,12 +238,6 @@ class SocketService {
   public onNotification(callback: (notification: any) => void): void {
     // Wrapper callback - tüm event'leri tek bir callback'e yönlendir
     const wrappedCallback = (data: any) => {
-      if (__DEV__) {
-        console.log('[SocketService] 🔍 Notification event received:', {
-          event: 'notification',
-          data: typeof data === 'object' ? JSON.stringify(data, null, 2) : data,
-        });
-      }
       callback(data);
     };
     

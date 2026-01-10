@@ -36,11 +36,11 @@ export const SetupProfileScreen = () => {
       if (result.success && result.asset) {
         setProfileImage(result.asset.uri);
       } else {
-        console.error('Fotoğraf çekme hatası:', result.error);
+        console.error('Photo capture error:', result.error);
         // TODO: Hata mesajını kullanıcıya göster
       }
     } catch (error) {
-      console.error('Kamera hatası:', error);
+      console.error('Camera error:', error);
       // TODO: Hata mesajını kullanıcıya göster
     }
   };
@@ -59,8 +59,8 @@ export const SetupProfileScreen = () => {
         navigation.navigate('SelectCategories');
       } catch (error: any) {
         // Hata durumunda kullanıcıya bilgi ver
-        const errorMessage = error.response?.data?.message || error.message || 'Profil bilgileri kaydedilirken bir hata oluştu.';
-        Alert.alert('Hata', errorMessage, [{ text: 'Tamam' }]);
+        const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving profile information.';
+        Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
         console.error('[SetupProfileScreen] Profile setup error:', error);
       }
     }
@@ -80,7 +80,7 @@ export const SetupProfileScreen = () => {
           color={isDark ? '$textDark50' : '$textLight900'}
           textAlign="center"
         >
-          Profil Bilgilerinizi Girin
+          Enter Your Profile Information
         </Text>
 
         {/* Profile Photo */}
@@ -131,7 +131,7 @@ export const SetupProfileScreen = () => {
         <VStack space="md" mt="$4">
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Ad Soyad</FormControlLabelText>
+              <FormControlLabelText>Full Name</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -149,7 +149,7 @@ export const SetupProfileScreen = () => {
 
           <FormControl>
             <FormControlLabel>
-              <FormControlLabelText>Kullanıcı Adı</FormControlLabelText>
+              <FormControlLabelText>Username</FormControlLabelText>
             </FormControlLabel>
             <Input
               variant="outline"
@@ -185,7 +185,7 @@ export const SetupProfileScreen = () => {
           {setupProfileMutation.isPending ? (
             <Spinner size="small" color="$textLight900" />
           ) : (
-            <ButtonText color="$textLight900">Devam Et</ButtonText>
+            <ButtonText color="$textLight900">Continue</ButtonText>
           )}
         </Button>
       </VStack>

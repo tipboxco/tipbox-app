@@ -16,7 +16,7 @@ import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
-import { toImageSource, formatRelativeTime } from '@/src/utils';
+import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -129,7 +129,7 @@ export const PostDetailScreen = () => {
                 enableHandlePanningGesture: true,
                 enableContentPanningGesture: true,
                 enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
-                animateOnMount: true,
+                animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
                 // Bottom sheet'in bottom uzaklığı klavye yüksekliği + safe area bottom inset kadar olacak
                 paddingBottom: keyboardHeight + insets.bottom, // Klavye yüksekliği + safe area bottom inset
                 keyboardBehavior: 'extend', // Klavye açıldığında bottom sheet genişler
@@ -157,7 +157,7 @@ export const PostDetailScreen = () => {
                 id: item.comment.id,
                 userName: item.user.name || 'Anonymous',
                 userTitle: item.user.avatar ? '' : '', // API'de title yok, boş bırakıyoruz
-                avatar: item.user.avatar ? toImageSource(item.user.avatar) : require('@/assets/avatar/ozan.png'),
+                avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
                 timeAgo: formatRelativeTime(item.comment.createdAt),
                 content: item.comment.comment,
             });
@@ -170,7 +170,7 @@ export const PostDetailScreen = () => {
                         id: reply.id,
                         userName: item.user.name || 'Anonymous',
                         userTitle: '',
-                        avatar: item.user.avatar ? toImageSource(item.user.avatar) : require('@/assets/avatar/ozan.png'),
+                        avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
                         timeAgo: formatRelativeTime(reply.createdAt),
                         content: reply.comment,
                     });

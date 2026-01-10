@@ -62,19 +62,25 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
     ? post.content.map((item) => item?.content || '').join(' ')
     : (post?.content || '');
 
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const avatarSource = toImageSource(post.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = post.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
   return {
     id: post.id,
     user: {
       id: post.user.id,
       name: post.user.name || '',
       title: post.user.title || '',
-      avatar: toImageSource(post.user.avatar)!,
+      avatar: avatarSource,
     },
     content: contentString,
-    images:
-      post.images
-        ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    images,
     stats: {
       likes: post.stats.likes,
       comments: post.stats.comments || 0,
@@ -88,7 +94,7 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
           id: post.contextData.id,
           name: post.contextData.name || '',
           subName: post.contextData.subName || '',
-          image: contextImage || post.contextData.image,
+          image: contextImage || post.contextData?.image || require('@/assets/defaultImages/default-post.png'),
           isOwned: post.contextData.isOwned,
         }
       : undefined,
@@ -102,7 +108,7 @@ const mapExperienceToCardData = (review: ProfileReview): ReviewCardData | null =
   
   const avatarSource = review.user?.avatar
     ? toImageSource(review.user.avatar)!
-    : require('@/assets/avatar/ozan.png');
+      : require('@/assets/avatar/default-useravatar.png');
   
   const productImage = review.contextData?.image
     ? toImageSource(review.contextData.image)
@@ -152,14 +158,16 @@ const mapBenchmarkToCardData = (item: BenchmarkApiItem): BenchmarkCardData | nul
   }
   
   const avatarSource = toImageSource(item.user.avatar)!;
-  const products: BenchmarkProduct[] = (item?.products || []).map((p) => ({
-    id: p?.id || '',
-    name: p?.name || '',
-    subName: p?.subName || '',
-    image: toImageSource(p?.image)!,
-    isOwned: p?.isOwned || false,
-    choice: p?.choice || false,
-  }));
+  const products: BenchmarkProduct[] = (item?.products || [])
+    .filter((p) => p?.id) // Filter out invalid products
+    .map((p) => ({
+      id: p.id || '',
+      name: p?.name || '',
+      subName: p?.subName || '',
+      image: toImageSource(p?.image) || require('@/assets/inventory/product_01.png'),
+      isOwned: p?.isOwned || false,
+      choice: p?.choice || false,
+    }));
 
   return {
     id: item.id,
@@ -182,17 +190,18 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
   }
   
   const avatarSource = toImageSource(item?.user?.avatar)!;
+  const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: TipsProduct = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subName: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
   };
   const category: TipsCategory = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subCategory: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
     product,
   };
 
@@ -221,19 +230,27 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
   }
   
   const avatarSource = toImageSource(item?.user?.avatar)!;
+  const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: QuestionCardProduct = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subName: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
   };
   const category: QuestionCardCategory = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subCategory: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
     product,
   };
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const mappedImages = item.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
   return {
     id: item.id,
@@ -246,9 +263,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
     category,
     content: item.content,
     isBoosted: item.isBoosted,
-    images: item.images
-      ?.map((img) => toImageSource(img))
-      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+    images,
     stats: item.stats,
     createdAt: item.createdAt,
   };
@@ -354,6 +369,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Profile API hook
   const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(targetUserId);
   
+  // Avatar URL kontrolü için log
+  React.useEffect(() => {
+    if (userProfile) {
+      console.log('[ProfileScreen] User Profile Avatar:', {
+        userId: userProfile.id,
+        name: userProfile.name,
+        avatar: userProfile.avatar,
+        hasAvatar: !!userProfile.avatar,
+        avatarLength: userProfile.avatar?.length || 0,
+      });
+    }
+  }, [userProfile]);
+  
   // Trust mutations
   const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
@@ -392,16 +420,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       case 'replies': return repliesQuery;
       default: return feedQuery;
     }
-  }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]);
+  }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]) as typeof feedQuery;
   
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
-    if (!activeTabQuery.data?.pages) return [];
+    const queryData = activeTabQuery.data as any;
+    if (!queryData?.pages) return [];
     
-    const allItems = activeTabQuery.data.pages.flatMap((page) => page?.items ?? []) ?? [];
-    const validItems = allItems.filter((item) => item?.id);
-    const uniqueItems = validItems.filter((item, index, self) => 
-      index === self.findIndex((t) => t?.id === item?.id)
+    const allItems = queryData.pages.flatMap((page: any) => page?.items ?? []) ?? [];
+    const validItems = allItems.filter((item: any) => item?.id);
+    const uniqueItems = validItems.filter((item: any, index: number, self: any[]) => 
+      index === self.findIndex((t: any) => t?.id === item?.id)
     );
     
     const mapped: MappedPost[] = [];
@@ -798,7 +827,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               flexShrink={0}
             >
               <Image
-                source={toImageSource(userProfile.avatar) || require('@/assets/avatar/ozan.png')}
+                source={toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png') }
                 alt={userProfile.name}
                 w="100%"
                 h="100%"
@@ -1098,7 +1127,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       alignItems="center"
                     >
                       <Image
-                        source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
+                        source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
                         alt={badge.title}
                         w={60}
                         h={60}
@@ -1173,12 +1202,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
             // UX FIX: Show skeleton loader only when loading and no cached data
-            activeTabQuery.isLoading && !activeTabQuery.data?.pages?.[0] ? (
+            activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
               <FeedSkeleton count={3} />
             ) : (
               <Box py={20} alignItems="center">
                 <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-                  Henüz içerik bulunmuyor.
+                  No content found yet.
                 </Text>
               </Box>
             )

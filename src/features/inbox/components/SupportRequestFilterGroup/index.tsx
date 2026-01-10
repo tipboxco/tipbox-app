@@ -7,7 +7,12 @@ import {
   Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { SupportRequestFilter } from '@/src/mock/inbox/SupportRequests/types';
+
+export interface SupportRequestFilter {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
 
 interface SupportRequestFilterGroupProps {
   filters: SupportRequestFilter[];
@@ -37,7 +42,7 @@ export const SupportRequestFilterGroup: React.FC<SupportRequestFilterGroupProps>
               bg={activeFilter === filter.id ? '#F1F1F1' : 'transparent'}
               borderWidth={1}
               borderColor="#EFEFEF"
-              borderRadius={20}
+              borderRadius={10}
               px="$3"
               py="$1"
               minHeight={28}
@@ -45,8 +50,8 @@ export const SupportRequestFilterGroup: React.FC<SupportRequestFilterGroupProps>
               alignItems="center"
             >
               <Text
-                color={isDark ? '#000000' : '#000000'}
-                fontSize={9}
+                color="#000000"
+                fontSize="$xs"
                 fontWeight="$semibold"
                 textAlign="center"
               >

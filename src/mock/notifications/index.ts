@@ -13,7 +13,7 @@ export const notification_mock: NotificationItem[] = [
     type: 'like',
     user: {
       name: 'Mehmet Koç',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     message: 'Mehmet Koç, bir gönderini beğendi!',
     timeAgo: '22d',
@@ -28,7 +28,7 @@ export const notification_mock: NotificationItem[] = [
     type: 'tip',
     user: {
       name: 'Mehmet Koç',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     message: 'Mehmet Koç, bahşiş gönderdi!',
     timeAgo: '22d',
@@ -42,7 +42,7 @@ export const notification_mock: NotificationItem[] = [
     type: 'comment',
     user: {
       name: 'Mehmet Koç',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     message: 'Mehmet Koç, bir gönderine yorum yapıt!',
     timeAgo: '22d',
@@ -57,7 +57,7 @@ export const notification_mock: NotificationItem[] = [
     type: 'trust',
     user: {
       name: 'Mehmet Koç',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     message: 'Mehmet Koç, seni trust listesine ekledi!',
     timeAgo: '22d',

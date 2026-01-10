@@ -460,7 +460,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             </VStack>
 
             {/* Messages List - Full Height */}
-            {isLoading && (!messages || messages.length === 0) ? (
+            {isLoading && !messages ? (
                 <MessageSkeleton count={5} />
             ) : error ? (
                 <Box py={20} alignItems="center">

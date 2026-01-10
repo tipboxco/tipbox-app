@@ -126,7 +126,7 @@ const InventoryDetailScreen = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8,
       }
     );

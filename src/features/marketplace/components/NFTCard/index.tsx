@@ -32,7 +32,7 @@ export const NFTCard = ({ data }: NFTCardProps) => {
                         width: '100%',
                         height: '100%',
                     }}
-                    source={data.image}
+                    source={data.image || require('@/assets/defaultImages/default-marketplace.png')}
                     alt={data.title}
                     borderRadius={5}
                     resizeMode="cover"

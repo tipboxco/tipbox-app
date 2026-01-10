@@ -100,7 +100,7 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
               overflow="hidden"
             >
               <Image
-                source={require('@/assets/avatar/ozan.png')}
+                source={require('@/assets/avatar/default-useravatar.png')}
                 alt="User Avatar"
                 style={{ width: 26, height: 26 }}
                 resizeMode="cover"

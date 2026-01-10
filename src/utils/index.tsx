@@ -7,7 +7,12 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
-import { API_CONFIG } from '@/src/config/api.config';
+
+/**
+ * Default user avatar image
+ * Tüm profil görselleri için yüklenmeyen avatar'lar için kullanılır
+ */
+export const DEFAULT_USER_AVATAR: ImageSourcePropType = require('@/assets/avatar/default-useravatar.png');
 
 // Event Type Enum
 export enum EventType {
@@ -92,88 +97,10 @@ export const useFloatingButtonBottomOffset = (extraPadding: number = 16): number
   return useBottomOffset({ includeTabBar: false, extraPadding });
 };
 
-// Image source cache - aynı URL için aynı obje referansını döndürmek için
-const imageSourceCache = new Map<string, ImageSourcePropType>();
-
-// PERFORMANCE FIX: URL normalization cache to avoid repeated URL parsing
-const urlNormalizationCache = new Map<string, string>();
-const MAX_CACHE_SIZE = 1000; // Limit cache size to prevent memory growth
-
 /**
- * Image URL'lerini MEDIA_URL'e göre düzeltir
- * Tüm görsel URL'leri API_CONFIG.MEDIA_URL ile yüklenir
- * 
- * PERFORMANCE FIX: Cached URL normalization to avoid repeated parsing
+ * String URL'yi React Native Image component'inin kullanabileceği formata çevirir
+ * Backend'den gelen URL'leri direkt kullanır, herhangi bir dönüşüm yapmaz
  */
-const fixImageUrl = (url: string): string => {
-  // Check cache first
-  if (urlNormalizationCache.has(url)) {
-    return urlNormalizationCache.get(url)!;
-  }
-  
-  // If cache is too large, clear oldest entries (simple FIFO)
-  if (urlNormalizationCache.size >= MAX_CACHE_SIZE) {
-    const firstKey = urlNormalizationCache.keys().next().value;
-    urlNormalizationCache.delete(firstKey);
-  }
-  
-  let normalizedUrl: string;
-  try {
-    // Boş string kontrolü
-    if (!url || url.trim() === '') {
-      normalizedUrl = url;
-    } else {
-      // API_CONFIG'den MEDIA_URL'i al
-      const mediaUrl = API_CONFIG.MEDIA_URL;
-      if (!mediaUrl) {
-        normalizedUrl = url;
-      } else {
-        // MEDIA_URL'i parse et
-        const mediaUrlObj = new URL(mediaUrl);
-        const mediaOrigin = mediaUrlObj.origin; // protocol + hostname + port
-
-        // Relative path kontrolü (örn: /tipbox-media/...)
-        if (url.startsWith('/')) {
-          // Relative path ise, MEDIA_URL'i ekle
-          normalizedUrl = `${mediaOrigin}${url}`;
-        } else {
-          // Absolute URL ise
-          try {
-            const urlObj = new URL(url);
-            
-            // localhost veya 127.0.0.1 içeren URL'leri MEDIA_URL ile değiştir
-            const isLocalhost = urlObj.hostname === 'localhost' || 
-                                urlObj.hostname === '127.0.0.1' ||
-                                urlObj.hostname.startsWith('192.168.') ||
-                                urlObj.hostname.startsWith('10.') ||
-                                urlObj.hostname.startsWith('172.');
-            
-            // Eğer origin zaten MEDIA_URL ile aynıysa, değiştirme
-            if (urlObj.origin === mediaOrigin) {
-              normalizedUrl = urlObj.toString();
-            } else if (isLocalhost) {
-              // localhost veya local network IP ise, origin'i MEDIA_URL ile değiştir
-              normalizedUrl = url.replace(urlObj.origin, mediaOrigin);
-            } else {
-              // Diğer durumlarda da origin'i MEDIA_URL ile değiştir (production için)
-              normalizedUrl = url.replace(urlObj.origin, mediaOrigin);
-            }
-          } catch {
-            // URL parse edilemezse, relative path olarak dene
-            normalizedUrl = `${mediaOrigin}${url.startsWith('/') ? url : '/' + url}`;
-          }
-        }
-      }
-    }
-  } catch (error) {
-    normalizedUrl = url;
-  }
-  
-  // Cache the result
-  urlNormalizationCache.set(url, normalizedUrl);
-  return normalizedUrl;
-};
-
 export const toImageSource = (
   value: string | ImageSourcePropType | null | undefined,
 ): ImageSourcePropType | undefined => {
@@ -190,16 +117,8 @@ export const toImageSource = (
       return undefined;
     }
 
-    // localhost içeren URL'leri düzelt
-    const fixedUrl = fixImageUrl(value);
-    
-    // URL'in geçerli olduğunu kontrol et
-    if (!fixedUrl || fixedUrl.trim() === '') {
-      return undefined;
-    }
-    
-    // Her seferinde yeni source oluştur - cache sorunlarını önlemek için
-    const imageSource: ImageSourcePropType = { uri: fixedUrl };
+    // Backend'den gelen URL'yi direkt kullan
+    const imageSource: ImageSourcePropType = { uri: value };
     
     return imageSource;
   }

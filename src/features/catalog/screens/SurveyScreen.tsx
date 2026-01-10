@@ -186,7 +186,7 @@ const SurveyScreen: React.FC = () => {
         id: postData.user.id,
         name: postData.user.name,
         title: postData.user.title,
-        avatar: avatarSource || require('@/assets/avatar/ozan.png'),
+        avatar: avatarSource || require('@/assets/avatar/default-useravatar.png'),
       },
       content: typeof postData.content === 'string' ? postData.content : '',
       images: postData.images
@@ -396,6 +396,13 @@ const SurveyScreen: React.FC = () => {
       product,
     };
 
+    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+    const mappedImages = postData.images
+      ?.map((img: string) => toImageSource(img))
+      .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
     return {
       id: postData.id,
       user: {
@@ -407,9 +414,7 @@ const SurveyScreen: React.FC = () => {
       category,
       content: typeof postData.content === 'string' ? postData.content : '',
       isBoosted: postData.isBoosted,
-      images: postData.images
-        ?.map((img: string) => toImageSource(img))
-        .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+      images,
       stats: postData.stats,
       createdAt: postData.createdAt,
     };
@@ -485,7 +490,7 @@ const SurveyScreen: React.FC = () => {
         id: postData.user?.id || '',
         name: postData.user?.name || '',
         title: postData.user?.title || '',
-        avatar: avatarSource || require('@/assets/avatar/ozan.png'),
+        avatar: avatarSource || require('@/assets/avatar/default-useravatar.png'),
       },
       contextType: productInfoType,
       product: productData ? {
@@ -665,7 +670,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Henüz trend içerik bulunmuyor.
+                No trending content found yet.
               </Text>
             </VStack>
           );
@@ -783,7 +788,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Henüz anket bulunmuyor.
+                No surveys yet.
               </Text>
             </VStack>
           );

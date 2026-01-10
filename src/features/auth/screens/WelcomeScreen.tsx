@@ -111,7 +111,7 @@ export const WelcomeScreen = () => {
             fontSize="$xs"
             color={isDark ? '$textDark300' : '$textLight600'}
           >
-            Zaten bir hesabınız var mı?
+            Already have an account?
           </Text>
           <Text
             fontSize="$xs"

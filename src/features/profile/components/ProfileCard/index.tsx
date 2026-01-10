@@ -17,7 +17,7 @@ import { ProfileStackParamList } from '../../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
 import type { UserProfile } from '../../types';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useSafeAreaValues, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useAddToTrustList, useRemoveFromTrustList } from '../../api/hooks';
 
 interface ProfileCardProps {
@@ -138,7 +138,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             flexShrink={0}
           >
             <Image
-              source={toImageSource(userData.avatar) || require('@/assets/avatar/ozan.png')}
+              source={toImageSource(userData.avatar) || DEFAULT_USER_AVATAR }
               alt={userData.name}
               w="100%"
               h="100%"
@@ -460,7 +460,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     alignItems="center"
                   >
                     <Image
-                      source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
                       alt={badge.title}
                       w={60}
                       h={60}

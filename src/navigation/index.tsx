@@ -26,7 +26,6 @@ const NavigationInner = () => {
         if (route) {
           // NavigationService kullan (type-safe)
           navigationService.navigate(route.screen as any, route.params as any);
-          console.log('[Navigation] ✅ Initial deep link navigated:', route);
         }
       }
     };
@@ -41,7 +40,6 @@ const NavigationInner = () => {
       if (route) {
         // NavigationService kullan (type-safe)
         navigationService.navigate(route.screen as any, route.params as any);
-        console.log('[Navigation] ✅ Deep link navigated:', route);
       }
     });
 
@@ -70,7 +68,6 @@ const NavigationInner = () => {
     const appState = useAppStore.getState();
     
     if (appState.isUserBusy) {
-      console.log('[Navigation] ⏳ User is busy, pending navigation not consumed:', appState.busyReason);
       return;
     }
 
@@ -112,7 +109,6 @@ const NavigationInner = () => {
       <NavigationContainer
         ref={navigationRef}
         onReady={() => {
-          console.log('[Navigation] ✅ NavigationContainer is ready');
           // ARCHITECTURE FIX: Event-driven navigation ready handling
           // Navigation ready olduğunda pending navigation queue'yu consume et
           checkAndConsumePendingNavigation();

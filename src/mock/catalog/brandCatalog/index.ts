@@ -5,7 +5,7 @@ export const mock_brand_data: Brand = {
   name: 'Apple',
   description: 'Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak.',
   followers: '120K Followers',
-  logo: require('@/assets/avatar/ozan.png'),
+  logo: require('@/assets/avatar/default-useravatar.png'),
   bannerImage: require('@/assets/events/banner.png'),
   isJoined: false,
 };
@@ -16,7 +16,7 @@ export const mock_brand_posts = [
     user: {
       id: '1',
       name: 'Ozan Mutluoğlu',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
     },
     category: {
@@ -47,7 +47,7 @@ export const mock_brand_posts = [
     user: {
       id: '2',
       name: 'Michael Clark',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
     },
     category: {
@@ -99,7 +99,7 @@ export const mock_brand_detail: BrandDetail = {
   name: 'Apple',
   description: 'Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak. Marka Açıklamasının uzun hali burada yazacak.',
   followers: '120K Followers',
-  logo: require('@/assets/avatar/ozan.png'),
+  logo: require('@/assets/avatar/default-useravatar.png'),
   bannerImage: require('@/assets/events/banner.png'),
   isJoined: false,
   sections: mock_brand_sections,

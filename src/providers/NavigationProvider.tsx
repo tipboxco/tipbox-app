@@ -70,7 +70,6 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     navigationService.setGuards(guards);
     
     if (__DEV__) {
-      console.log('[NavigationProvider] ✅ Navigation ref and guards set to NavigationService');
     }
   }, []);
 

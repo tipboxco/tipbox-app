@@ -3,7 +3,7 @@ import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 
 interface SendBottomSheetProps {
   onClose: () => void;
@@ -46,18 +46,18 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
   // Mock friends list
   const mockFriends = [
-    { id: '1', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '2', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '3', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '4', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '5', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '6', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '7', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '8', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '9', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '10', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '11', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '12', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
+    { id: '1', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '2', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '3', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '4', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '5', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '6', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '7', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '8', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '9', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '10', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '11', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '12', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
   ];
 
   const handleWalletAddressSelect = () => {

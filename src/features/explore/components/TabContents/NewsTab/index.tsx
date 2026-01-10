@@ -9,7 +9,7 @@ import ProductCard from '../../ProductCard';
 import type { ProductCardData } from '../../ProductCard';
 import { useExploreEvents, useNewBrands, useNewProducts } from '../../../api/hooks';
 import type { EventCardData } from '@/src/types/EventCard';
-import { toImageSource } from '@/src/utils';
+import { toImageSource   } from '@/src/utils';
 
 interface NewsTabProps {
   searchQuery?: string;
@@ -91,11 +91,14 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
 
   // Map API event data to EventCardData format
   const mapEventToCardData = (event: any): EventCardData => {
+    const defaultEventImage = require('@/assets/defaultImages/default-banner.png');
+    const imageSource = event.image ? toImageSource(event.image) : null;
+    
     return {
       id: event.eventId,
       title: event.title,
       description: event.description,
-      image: event.image || null,
+      image: imageSource || defaultEventImage,
       dateRange: formatDateRange(event.startDate, event.endDate),
       interaction: event.interaction,
       avatars: event.participants.map((p: any) => p.avatar),
@@ -128,7 +131,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       id: brand.brandId,
       name: brand.title,
       description: brand.description,
-      logo: imageSource || require('@/assets/avatar/ozan.png'),
+      logo: imageSource || require('@/assets/avatar/default-useravatar.png'),
       followers: '',
       bannerImage: undefined,
       isJoined: false,
@@ -395,7 +398,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
             </HStack>
             {isLoadingBrands ? (
               <Box pl="$4">
-                <HStack space={12}>
+                <HStack space="md">
                   {Array.from({ length: 3 }).map((_, index) => {
                     const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
                     const shimmerColor = isDark ? '#404040' : '#E9E9E9';
@@ -488,7 +491,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
             </HStack>
             {isLoadingProducts ? (
               <Box pl="$4">
-                <HStack space={12}>
+                <HStack space="md">
                   {Array.from({ length: 3 }).map((_, index) => {
                     const skeletonColor = isDark ? '#2A2A2A' : '#FDFDFD';
                     const shimmerColor = isDark ? '#404040' : '#E9E9E9';

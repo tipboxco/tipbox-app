@@ -1,7 +1,7 @@
 // PERFORMANCE FIX: Removed Promise polyfill - Hermes engine already supports Promise natively
 // This reduces bundle size and startup time
 import React, { useEffect, useMemo } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import Navigation from '@/src/navigation';
@@ -20,9 +20,10 @@ import { TranslationCacheService } from '@/src/services/TranslationCacheService'
 SplashScreen.preventAutoHideAsync();
 
 // PERFORMANCE FIX: Memoize status bar style to prevent unnecessary re-renders
-// CRITICAL: SafeAreaView backgroundColor transparent - ekranın kendi background'ı görünsün
+// FIX: SafeAreaView background rengi theme'e göre ayarla - üst ve alt kısımların renk uyumu için
 const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
   <>
+    {/* Üst SafeAreaView - Status bar alanı */}
     <SafeAreaView 
       edges={['top']} 
       style={{ 
@@ -31,12 +32,24 @@ const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
         left: 0,
         right: 0,
         zIndex: 9999,
-        backgroundColor: 'transparent' // CRITICAL: Transparent - ekranın background'ı görünsün
+        backgroundColor: isDark ? '#000000' : '#FFFFFF' // FIX: Theme'e göre background rengi
+      }} 
+    />
+    {/* Alt SafeAreaView - Home indicator alanı */}
+    <SafeAreaView 
+      edges={['bottom']} 
+      style={{ 
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA' // FIX: Alt kısım için açık gri (light mode), koyu gri (dark mode)
       }} 
     />
     <StatusBar 
       style={isDark ? 'light' : 'dark'} 
-      backgroundColor="transparent" // CRITICAL: Transparent - ekranın background'ı görünsün
+      backgroundColor={isDark ? '#000000' : '#FFFFFF'} // FIX: Theme'e göre background rengi
       translucent={true} // Android için translucent mode
     />
   </>
@@ -112,7 +125,16 @@ const AppInner = () => {
   return (
     <>
       <StatusBarComponent isDark={isDark} />
-      <Navigation />
+      {/* FIX: Root container'a background rengi ekle - üst ve alt kısımların renk uyumu için */}
+      {/* NavigationContainer'ın arkasındaki root View, tüm ekranı kaplar ve safe area'ların rengini belirler */}
+      <View 
+        style={{ 
+          flex: 1, 
+          backgroundColor: isDark ? '#000000' : '#FFFFFF' // FIX: Root container üst kısım rengi (beyaz)
+        }}
+      >
+        <Navigation />
+      </View>
     </>
   );
 };

@@ -17,6 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useReportUser, useRemoveFromTrustList } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
+import { DEFAULT_USER_AVATAR } from '@/src/utils';
 
 export interface TrustUserCardUser {
   id: string;
@@ -140,7 +141,7 @@ export const TrustUserCard = ({
 
   const avatarSource =
     user.avatar ??
-    require('@/assets/avatar/ozan.png');
+    DEFAULT_USER_AVATAR;
 
   return (
     <HStack

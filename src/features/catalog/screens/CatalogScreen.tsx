@@ -178,7 +178,7 @@ export const CatalogScreen = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: bottomOffset,
         handleIndicatorStyle: {
           backgroundColor: isDark ? '#333333' : '#B8B8B7',

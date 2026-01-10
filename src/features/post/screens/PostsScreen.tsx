@@ -21,7 +21,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
-import { useBottomOffset } from '@/src/utils';
+import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useFeed } from '@/src/features/feed/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
@@ -31,7 +31,6 @@ import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
 import type { ReviewApiItem } from '@/src/types/ReviewsCard';
 import type { UpdateApiItem } from '@/src/types/UpdateCard';
-import { toImageSource } from '@/src/utils';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
@@ -259,7 +258,7 @@ export const PostsScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: bottomOffset,
         onChange: (index: number) => {
           // Reset bottom sheet key when sheet closes to reset view state
@@ -320,7 +319,7 @@ export const PostsScreen = () => {
         ) : feedItems.length === 0 ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4">
             <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-              Henüz bu context için gönderi bulunmuyor.
+              No posts found for this context yet.
             </Text>
           </Box>
         ) : (
@@ -340,7 +339,7 @@ export const PostsScreen = () => {
                             id: (item.data as ProfilePost).user.id,
                             name: (item.data as ProfilePost).user.name,
                             title: (item.data as ProfilePost).user.title,
-                            avatar: toImageSource((item.data as ProfilePost).user.avatar) || require('@/assets/avatar/ozan.png'),
+                            avatar: toImageSource((item.data as ProfilePost).user.avatar) || DEFAULT_USER_AVATAR,
                           },
                           content: Array.isArray((item.data as ProfilePost).content)
                             ? (item.data as ProfilePost).content.map((c: any) => c.content || '').join(' ')

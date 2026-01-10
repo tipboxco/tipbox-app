@@ -62,6 +62,7 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
   // Tek banner varsa sadece göster, carousel kullanma
   if (banners.length === 1) {
     const imageSource = toImageSource(banners[0].imageUrl);
+    const defaultBannerImage = require('@/assets/defaultImages/default-banner.png');
     return (
       <Box
         w={carouselWidth}
@@ -71,78 +72,76 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
         position="relative"
         alignSelf="center"
       >
-        {imageSource && (
-          <Pressable
-            onPress={() => {
-              if (onBannerPress && banners[0].linkUrl) {
-                onBannerPress(banners[0].linkUrl);
-              }
-            }}
+        <Pressable
+          onPress={() => {
+            if (onBannerPress && banners[0].linkUrl) {
+              onBannerPress(banners[0].linkUrl);
+            }
+          }}
+          style={{
+            position: 'relative',
+          }}
+        >
+          <Image
+            source={imageSource || defaultBannerImage}
+            alt={banners[0].title}
+            resizeMode="cover"
+            width={itemWidth}
+            height={carouselHeight}
+            borderRadius={12}
+          />
+          {/* Gradient Overlay */}
+          <Box
+            position="absolute"
+            bottom={0}
+            left={0}
+            right={0}
+            height={80}
+            overflow="hidden"
             style={{
-              position: 'relative',
+              width: itemWidth,
+              borderBottomLeftRadius: 12,
+              borderBottomRightRadius: 12,
             }}
           >
-            <Image
-              source={imageSource}
-              alt={banners[0].title}
-              resizeMode="cover"
-              width={itemWidth}
-              height={carouselHeight}
-              borderRadius={12}
-            />
-            {/* Gradient Overlay */}
-            <Box
-              position="absolute"
-              bottom={0}
-              left={0}
-              right={0}
-              height={80}
-              overflow="hidden"
+            <LinearGradient
+              colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 0, y: 0 }}
               style={{
-                width: itemWidth,
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 80,
+                justifyContent: 'flex-end',
+                paddingBottom: 12,
+                paddingHorizontal: 16,
                 borderBottomLeftRadius: 12,
                 borderBottomRightRadius: 12,
               }}
             >
-              <LinearGradient
-                colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
-                start={{ x: 0, y: 1 }}
-                end={{ x: 0, y: 0 }}
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 80,
-                  justifyContent: 'flex-end',
-                  paddingBottom: 12,
-                  paddingHorizontal: 16,
-                  borderBottomLeftRadius: 12,
-                  borderBottomRightRadius: 12,
-                }}
-              >
-                <VStack space="xs">
-                  <Text
-                    color="#FFFFFF"
-                    fontSize={14}
-                    fontWeight="$bold"
-                    numberOfLines={1}
-                  >
-                    {banners[0].title}
-                  </Text>
-                  <Text
-                    color="#FFFFFF"
-                    fontSize={12}
-                    numberOfLines={2}
-                    opacity={0.9}
-                  >
-                    {banners[0].description}
-                  </Text>
-                </VStack>
-              </LinearGradient>
-            </Box>
-          </Pressable>
-        )}
+              <VStack space="xs">
+                <Text
+                  color="#FFFFFF"
+                  fontSize={14}
+                  fontWeight="$bold"
+                  numberOfLines={1}
+                >
+                  {banners[0].title}
+                </Text>
+                <Text
+                  color="#FFFFFF"
+                  fontSize={12}
+                  numberOfLines={2}
+                  opacity={0.9}
+                >
+                  {banners[0].description}
+                </Text>
+              </VStack>
+            </LinearGradient>
+          </Box>
+        </Pressable>
       </Box>
     );
   }
@@ -166,6 +165,7 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
         renderItem={({ index }) => {
           const item = banners[index];
           const imageSource = toImageSource(item.imageUrl);
+          const defaultBannerImage = require('@/assets/defaultImages/default-banner.png');
           return (
             <Box
               width={carouselWidth}
@@ -184,16 +184,14 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
                   position: 'relative',
                 }}
               >
-                {imageSource && (
-                  <Image
-                    source={imageSource}
-                    alt={item.title}
-                    resizeMode="cover"
-                    width={itemWidth - itemSpacing}
-                    height={carouselHeight}
-                    borderRadius={12}
-                  />
-                )}
+                <Image
+                  source={imageSource || defaultBannerImage}
+                  alt={item.title}
+                  resizeMode="cover"
+                  width={itemWidth - itemSpacing}
+                  height={carouselHeight}
+                  borderRadius={12}
+                />
                 {/* Gradient Overlay */}
                 <Box
                   position="absolute"

@@ -55,10 +55,6 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({ children }) 
   const appStateRef = useRef<AppStateType>('active');
 
   useEffect(() => {
-    console.log('[AppStateProvider] ========================================');
-    console.log('[AppStateProvider] 📱 App State Provider Initialized');
-    console.log('[AppStateProvider] ========================================');
-
     // İlk app state'i al
     const currentState = AppState.currentState;
     const normalizedState = normalizeAppState(currentState);
@@ -67,32 +63,19 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({ children }) 
     setIsForeground(normalizedState === 'active');
     setIsBackground(normalizedState === 'background');
 
-    console.log('[AppStateProvider] ✅ Initial App State:', normalizedState);
-
     // AppState değişikliklerini dinle
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       const normalizedNextState = normalizeAppState(nextAppState);
       const previousState = appStateRef.current; // Ref'ten önceki state'i al
       
-      console.log('[AppStateProvider] ========================================');
-      console.log('[AppStateProvider] 🔄 App State Changed');
-      console.log('[AppStateProvider] ========================================');
-      console.log('[AppStateProvider]    - Previous:', previousState);
-      console.log('[AppStateProvider]    - Current:', normalizedNextState);
-      
       setAppState(normalizedNextState);
       appStateRef.current = normalizedNextState; // Ref'i güncelle
       setIsForeground(normalizedNextState === 'active');
       setIsBackground(normalizedNextState === 'background');
-      
-      console.log('[AppStateProvider]    - isForeground:', normalizedNextState === 'active');
-      console.log('[AppStateProvider]    - isBackground:', normalizedNextState === 'background');
-      console.log('[AppStateProvider] ========================================');
     });
 
     return () => {
       subscription.remove();
-      console.log('[AppStateProvider] 🧹 App State Provider Cleaned Up');
     };
   }, []);
 

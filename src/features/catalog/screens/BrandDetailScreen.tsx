@@ -23,7 +23,7 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import ExperiencePostCard from '@/src/components/PostCards/ExperiencePostCard';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandCatalog, useBrandFeed } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
 import type { PostCardData } from '@/src/types/PostCard';
@@ -32,7 +32,6 @@ import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAn
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import { CardType } from '@/src/types/common';
-import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -90,7 +89,7 @@ const BrandDetailScreen: React.FC = () => {
                 id: postData.user.id,
                 name: postData.user.name,
                 title: postData.user.title,
-                avatar: avatarSource || require('@/assets/avatar/ozan.png'),
+                avatar: avatarSource || require('@/assets/avatar/default-useravatar.png'),
             },
             content: typeof postData.content === 'string' ? postData.content : '',
             images: postData.images
@@ -276,6 +275,13 @@ const BrandDetailScreen: React.FC = () => {
             product,
         };
 
+        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+        const mappedImages = postData.images
+            ?.map((img: string) => toImageSource(img))
+            .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
         return {
             id: postData.id,
             user: {
@@ -287,9 +293,7 @@ const BrandDetailScreen: React.FC = () => {
             category,
             content: typeof postData.content === 'string' ? postData.content : '',
             isBoosted: postData.isBoosted,
-            images: postData.images
-                ?.map((img: string) => toImageSource(img))
-                .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+            images,
             stats: postData.stats,
             createdAt: postData.createdAt,
         };
@@ -511,7 +515,7 @@ const BrandDetailScreen: React.FC = () => {
                     overflow="hidden"
                 >
                     <Image
-                        source={toImageSource(brandCatalog.bannerImage) || require('@/assets/banner/banner_01.png')}
+                        source={toImageSource(brandCatalog.bannerImage) || require('@/assets/defaultImages/default-banner.png')}
                         alt="Brand Banner"
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
@@ -819,7 +823,7 @@ const BrandDetailScreen: React.FC = () => {
                         ) : allPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
-                                    Henüz post bulunmuyor
+                                    No posts yet
                                 </Text>
                             </Box>
                         ) : (

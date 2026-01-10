@@ -33,8 +33,8 @@ export const ForgotPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Geçersiz E-posta</ToastTitle>
-              <ToastDescription>Lütfen geçerli bir e-posta adresi girin.</ToastDescription>
+              <ToastTitle>Invalid Email</ToastTitle>
+              <ToastDescription>Please enter a valid email address.</ToastDescription>
             </Toast>
             </Box>
           );
@@ -47,7 +47,7 @@ export const ForgotPasswordScreen = () => {
     try {
       // TODO: Endpoint'e istek atılacak
       // const response = await forgotPasswordApi.sendCode({ email });
-      console.log('Forgot Password - Email gönderiliyor:', email);
+      console.log('Forgot Password - Sending email:', email);
 
       // Simüle edilmiş başarılı response
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -58,8 +58,8 @@ export const ForgotPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>E-posta Gönderildi</ToastTitle>
-              <ToastDescription>Doğrulama kodu e-posta adresinize gönderildi.</ToastDescription>
+              <ToastTitle>Email Sent</ToastTitle>
+              <ToastDescription>Verification code has been sent to your email address.</ToastDescription>
             </Toast>
             </Box>
           );
@@ -80,9 +80,9 @@ export const ForgotPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Hata</ToastTitle>
+              <ToastTitle>Error</ToastTitle>
               <ToastDescription>
-                {error?.response?.data?.message || error?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'}
+                {error?.response?.data?.message || error?.message || 'An error occurred. Please try again.'}
               </ToastDescription>
             </Toast>
             </Box>
@@ -115,8 +115,8 @@ export const ForgotPasswordScreen = () => {
             color={isDark ? '$textDark300' : '$textLight600'}
             mb="$4"
           >
-            Şifrenizi sıfırlamak için e-posta adresinizi girin.{'\n'}
-            Size doğrulama kodu göndereceğiz.
+            Enter your email address to reset your password.{'\n'}
+            We will send you a verification code.
           </Text>
 
           <VStack space="md">
@@ -157,7 +157,7 @@ export const ForgotPasswordScreen = () => {
             disabled={!isEmailValid || isLoading}
           >
             <ButtonText color="$textLight900">
-              {isLoading ? 'Gönderiliyor...' : 'Kodu Gönder'}
+              {isLoading ? 'Sending...' : 'Send Code'}
             </ButtonText>
           </Button>
 
@@ -169,7 +169,7 @@ export const ForgotPasswordScreen = () => {
             mb="$4"
             onPress={() => navigation.goBack()}
           >
-            Geri dön
+            Go Back
           </Text>
         </VStack>
       </Box>

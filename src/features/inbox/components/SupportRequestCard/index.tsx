@@ -5,11 +5,14 @@ import {
   HStack,
   Text,
   Pressable,
-  Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource } from '@/src/utils';
+import { CachedImage } from '@/src/components/CachedImage';
 import type { SupportRequest } from '@/src/features/inbox/api/messagesApi';
+
+// Default user avatar
+const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
 
 interface SupportRequestCardProps {
   data: SupportRequest;
@@ -59,6 +62,20 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
   const statusInfo = getStatusInfo(data.status);
   const buttonText = getButtonText(data.status);
 
+  // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
+  const initialAvatarSource = data.userAvatar 
+    ? (toImageSource(data.userAvatar) || DEFAULT_USER_AVATAR)
+    : DEFAULT_USER_AVATAR;
+  const [avatarSource, setAvatarSource] = React.useState(initialAvatarSource);
+
+  // Avatar değiştiğinde state'i güncelle
+  React.useEffect(() => {
+    const newSource = data.userAvatar 
+      ? (toImageSource(data.userAvatar) || DEFAULT_USER_AVATAR)
+      : DEFAULT_USER_AVATAR;
+    setAvatarSource(newSource);
+  }, [data.userAvatar]);
+
   const handlePress = () => {
     // Pending durumunda card'a tıklandığında hiçbir şey yapma
     // Sadece "Kabul Et" butonuna tıklandığında işlem yapılacak
@@ -82,6 +99,29 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
     }
   };
 
+  // Avatar yüklenme hatası durumunda default avatar'a geçiş
+  const handleAvatarError = (error: Error) => {
+    console.log('[SupportRequestCard] Avatar load error, using default avatar:', {
+      requestId: data.id,
+      userName: data.userName,
+      error: error.message,
+      attemptedSource: avatarSource,
+    });
+    setAvatarSource(DEFAULT_USER_AVATAR);
+  };
+
+  // Avatar URL logları
+  React.useEffect(() => {
+    console.log('[SupportRequestCard] Avatar URLs:', {
+      requestId: data.id,
+      userName: data.userName,
+      rawUserAvatar: data.userAvatar,
+      userAvatarType: typeof data.userAvatar,
+      userAvatarAfterToImageSource: data.userAvatar ? toImageSource(data.userAvatar) : null,
+      finalAvatarSource: avatarSource,
+    });
+  }, [data.id, data.userName, data.userAvatar, avatarSource]);
+
   return (
     <Pressable
       onPress={handlePress}
@@ -100,20 +140,22 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
             width={48}
             height={48}
             borderRadius={24}
-            bg="#F400FF"
             justifyContent="center"
             alignItems="center"
+            overflow="hidden"
           >
-            <Image
-              source={
-                typeof data.userAvatar === 'string'
-                  ? toImageSource(data.userAvatar) || require('@/assets/avatar/ozan.png')
-                  : data.userAvatar || require('@/assets/avatar/ozan.png')
-              }
-              alt={data.userName}
-              width={42}
-              height={42}
-              borderRadius={21}
+            <CachedImage
+              source={avatarSource}
+              placeholder={DEFAULT_USER_AVATAR}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+              }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              priority="high"
+              onError={handleAvatarError}
             />
           </Box>
 

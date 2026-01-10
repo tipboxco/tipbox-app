@@ -260,20 +260,24 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       </Pressable>
 
       {/* Images */}
-      {data.images && data.images?.length > 0 && (
-        <Pressable
-          onPress={() => {
-            navigation.navigate('Post', {
-              screen: 'PostDetailScreen',
-              params: { postData: data, type: 'question' }
-            });
-          }}
-        >
+      <Pressable
+        onPress={() => {
+          navigation.navigate('Post', {
+            screen: 'PostDetailScreen',
+            params: { postData: data, type: 'question' }
+          });
+        }}
+      >
         <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
+          <CardImageCarousel 
+            images={
+              data.images && data.images.length > 0
+                ? data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                : [require('@/assets/defaultImages/default-post.png')]
+            } 
+          />
         </VStack>
-        </Pressable>
-      )}
+      </Pressable>
 
       {/* Stats */}
       <HStack
