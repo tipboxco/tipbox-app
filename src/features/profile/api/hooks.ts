@@ -18,6 +18,7 @@ import {
   removeFromTrustList,
   updateProfile,
   reportUser,
+  getSuggestedUsers,
   type UserFeedApiResponse,
   type UpdateProfileRequest,
   type UpdateProfileResponse,
@@ -45,6 +46,8 @@ import type {
   ProfileFeedItem,
   UserCollectionAchievementsApiResponse,
   UserCollectionBridgesApiResponse,
+  SuggestedUser,
+  SuggestedUsersApiResponse,
 } from '../types';
 
 /**
@@ -59,6 +62,9 @@ export const profileKeys = {
   trusters: () => [...profileKeys.all, 'trusters'] as const,
   trusterList: (userId: string, searchQuery?: string, sort?: string) =>
     [...profileKeys.trusters(), userId, ...(searchQuery ? ['search', searchQuery] : []), ...(sort ? ['sort', sort] : [])] as const,
+  suggested: () => [...profileKeys.all, 'suggested'] as const,
+  suggestedUsers: (searchQuery?: string) =>
+    [...profileKeys.suggested(), ...(searchQuery ? ['search', searchQuery] : [])] as const,
   inventory: () => [...profileKeys.all, 'inventory'] as const,
   posts: () => [...profileKeys.all, 'posts'] as const,
   userPosts: (userId: string) =>
@@ -823,6 +829,37 @@ export const useReportUser = () => {
     onError: (error) => {
       console.error('[useReportUser] ❌ Mutation error:', error);
     },
+  });
+};
+
+/**
+ * Get Suggested Users infinite query hook
+ * Önerilen kullanıcıları infinite scroll ile getirir
+ *
+ * @param searchQuery - İsim veya kullanıcı adına göre arama (opsiyonel)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useSuggestedUsers();
+ * const allUsers = data?.pages.flatMap(page => page.items) ?? [];
+ */
+export const useSuggestedUsers = (searchQuery?: string) => {
+  const queryClient = useQueryClient();
+  const hasSearchQuery = !!searchQuery && searchQuery.trim().length > 0;
+
+  return useInfiniteQuery<SuggestedUsersApiResponse, Error>({
+    queryKey: profileKeys.suggestedUsers(searchQuery),
+    queryFn: ({ pageParam }) => 
+      getSuggestedUsers(searchQuery, pageParam as string | undefined, 20),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => 
+      lastPage.pagination.hasMore ? lastPage.pagination.nextCursor : undefined,
+    enabled: true,
+    staleTime: hasSearchQuery ? 0 : 5 * 60 * 1000, // Search varsa 0, yoksa 5 dakika
+    gcTime: hasSearchQuery ? 0 : 10 * 60 * 1000, // Search varsa 0, yoksa 10 dakika
+    refetchOnMount: hasSearchQuery ? 'always' : false,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 };
 

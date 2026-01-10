@@ -326,3 +326,34 @@ export interface UserCollectionBridgesApiResponse {
     limit: number;
   };
 }
+
+/**
+ * Suggested User - Önerilen kullanıcı tipi
+ * /users/suggested endpoint'inden dönen kullanıcı bilgisi
+ */
+export interface SuggestedUser {
+  id: string;
+  userName: string;
+  name: string;
+  avatar: string | null;
+  titles: string[];
+  isTrusted: boolean;
+  mutualTrustCount?: number;
+  stats?: {
+    posts: number;
+    trust: number;
+    truster: number;
+  };
+}
+
+/**
+ * Suggested Users API Response - Pagination ile birlikte
+ * /users/suggested endpoint'inden dönen response
+ */
+export interface SuggestedUsersApiResponse {
+  items: SuggestedUser[];
+  pagination: {
+    nextCursor: string | null;
+    hasMore: boolean;
+  };
+}

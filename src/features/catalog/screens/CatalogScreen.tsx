@@ -83,13 +83,16 @@ export const CatalogScreen = () => {
   });
   const { currentMode, selectedCategory, selectedProductLocal, breadcrumbItems } = catalogState;
   
-  // Update mode when route params change
+  // Update mode when route params change (not when currentMode changes)
+  const routeView = route.params?.view;
   useEffect(() => {
-    const newMode = route.params?.view === 'brands' ? 'brand-catalog' : 'product';
-    if (newMode !== currentMode) {
+    const newMode = routeView === 'brands' ? 'brand-catalog' : 'product';
+    // Only update if route params actually changed the mode requirement
+    if ((routeView === 'brands' && currentMode !== 'brand-catalog') || 
+        (routeView !== 'brands' && currentMode === 'brand-catalog')) {
       dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
     }
-  }, [route.params?.view, currentMode]);
+  }, [routeView]); // Only depend on route params, not currentMode
   
   // UI-specific state (keep as useState for simplicity)
   const [searchQuery, setSearchQuery] = useState('');

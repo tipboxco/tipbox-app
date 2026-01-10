@@ -7,7 +7,8 @@ import {
     Pressable, 
     Box, 
     Image,
-    ScrollView
+    ScrollView,
+    Spinner
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -16,215 +17,121 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { Header } from '@/src/components/Header';
 import { SuggestedUserCard } from '../components/SuggestedUserCard';
+import { useSuggestedUsers, useAddToTrustList } from '../api/hooks';
+import { FlatList } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 
 type SuggestedUsersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-// Mock data for suggested users
-const mockSuggestedUsers = [
-    {
-        id: '1',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '2',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '3',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '4',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '5',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '6',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '7',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '8',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '9',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '10',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '11',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '12',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '13',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '14',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '15',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    },
-    {
-        id: '16',
-        name: 'Micheal Clark',
-        title: 'Technology Enthuistant - Hardware Expert - Digital Innovation Specialist',
-        avatars: [
-            {
-                id: '1',
-                source: require('@/assets/avatar/ozan.png'),
-                alt: 'User 1'
-            }
-        ]
-    }
-];
 
 export const SuggestedUsersScreen = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<SuggestedUsersScreenNavigationProp>();
+    const queryClient = useQueryClient();
     
-    const [addedUsers, setAddedUsers] = useState<string[]>([]);
+    // Local state for optimistic updates
+    const [localTrustedUsers, setLocalTrustedUsers] = useState<Set<string>>(new Set());
+    
+    // React Query hooks
+    const { 
+        data, 
+        isLoading, 
+        error, 
+        fetchNextPage, 
+        hasNextPage, 
+        isFetchingNextPage 
+    } = useSuggestedUsers();
+    
+    const addTrustMutation = useAddToTrustList();
+
+    // Tüm sayfaları tek array'de topla ve duplicate'ları filtrele
+    const allUsers = React.useMemo(() => {
+        if (!data?.pages) return [];
+        
+        const flatUsers = data.pages.flatMap(page => page.items);
+        
+        // Duplicate kullanıcıları filtrele (aynı ID'ye sahip kullanıcılar)
+        const uniqueUsers = flatUsers.reduce((acc, user) => {
+            if (!acc.find(u => u.id === user.id)) {
+                acc.push(user);
+            }
+            return acc;
+        }, [] as typeof flatUsers);
+        
+        return uniqueUsers;
+    }, [data?.pages]);
 
     const handleAddTrust = (userId: string) => {
         console.log('Add trust clicked for user:', userId);
-        setAddedUsers(prev => [...prev, userId]);
+        
+        // Optimistic update: Hemen UI'da göster
+        setLocalTrustedUsers(prev => new Set(prev).add(userId));
+        
+        addTrustMutation.mutate(userId, {
+            onSuccess: () => {
+                console.log('✅ Trust added successfully');
+                // Suggested users listesini yenile
+                queryClient.invalidateQueries({ queryKey: ['profile', 'suggested'] });
+            },
+            onError: (error) => {
+                console.error('❌ Failed to add trust:', error);
+                // Hata olursa optimistic update'i geri al
+                setLocalTrustedUsers(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(userId);
+                    return newSet;
+                });
+            },
+        });
+    };
+
+    const handleLoadMore = () => {
+        if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    };
+
+    const renderFooter = () => {
+        if (!isFetchingNextPage) return null;
+        return (
+            <Box py={16} alignItems="center">
+                <Spinner size="small" color={isDark ? '#FFF' : '#000'} />
+            </Box>
+        );
+    };
+
+    const renderEmptyComponent = () => {
+        if (isLoading) {
+            return (
+                <Box flex={1} alignItems="center" justifyContent="center" py={40}>
+                    <Spinner size="large" color={isDark ? '#FFF' : '#000'} />
+                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} mt={16}>
+                        Loading suggested users...
+                    </Text>
+                </Box>
+            );
+        }
+
+        if (error) {
+            return (
+                <Box flex={1} alignItems="center" justifyContent="center" py={40}>
+                    <Text color="#FF0000" fontSize={14}>
+                        An error occurred
+                    </Text>
+                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} mt={8} fontSize={12}>
+                        {error.message}
+                    </Text>
+                </Box>
+            );
+        }
+
+        return (
+            <Box flex={1} alignItems="center" justifyContent="center" py={40}>
+                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize={14}>
+                    No suggested users found
+                </Text>
+            </Box>
+        );
     };
 
     return (
@@ -232,25 +139,33 @@ export const SuggestedUsersScreen = () => {
         <VStack flex={1} bg={isDark ? '#000' : '#FFFFFF'}>
             {/* Header */}
             <Header
-                title="Micheal Clark"
+                title="Suggested Users"
                 showBackButton
                 onBackPress={() => navigation.goBack()}
             />
 
             {/* Content */}
-            <ScrollView flex={1} keyboardShouldPersistTaps="handled">
-                {mockSuggestedUsers.map((user, index) => (
+            <FlatList
+                data={allUsers}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
                     <SuggestedUserCard
-                        key={user.id}
-                        id={user.id}
-                        name={user.name}
-                        title={user.title}
-                        avatars={user.avatars}
+                        id={item.id}
+                        name={item.name}
+                        titles={item.titles}
+                        avatar={item.avatar}
+                        mutualTrustCount={item.mutualTrustCount}
+                        isTrusted={item.isTrusted || localTrustedUsers.has(item.id)}
                         onAddTrust={handleAddTrust}
                         showBorder={false}
                     />
-                ))}
-            </ScrollView>
+                )}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={renderEmptyComponent}
+                contentContainerStyle={allUsers.length === 0 ? { flex: 1 } : undefined}
+            />
         </VStack>
         </SafeAreaView>
     );

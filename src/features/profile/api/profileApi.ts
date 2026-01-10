@@ -18,6 +18,8 @@ import type {
   UserCollectionBridgesApiResponse,
   TrustUser,
   TrusterUser,
+  SuggestedUser,
+  SuggestedUsersApiResponse,
 } from '../types';
 
 /**
@@ -50,9 +52,50 @@ export interface UpdateProfileResponse {
 export const getUserProfile = async (
   userId: string
 ): Promise<UserProfile> => {
+  console.log('[getUserProfile] 📤 API Request:', {
+    url: `/users/${userId}/profile`,
+    userId,
+    timestamp: new Date().toISOString(),
+  });
+  
   const response = await apiService.getClient().get<UserProfile>(
     `/users/${userId}/profile`
   );
+  
+  // CRITICAL: Profile response'unu detaylıca logla
+  console.log('[getUserProfile] 📥 API Response:', {
+    url: `/users/${userId}/profile`,
+    userId,
+    timestamp: new Date().toISOString(),
+    responseStatus: response.status,
+    responseData: {
+      id: response.data?.id,
+      name: response.data?.name,
+      avatar: response.data?.avatar,
+      biography: response.data?.biography,
+      bannerUrl: response.data?.bannerUrl,
+      titles: response.data?.titles,
+      badges: response.data?.badges?.length || 0,
+      stats: response.data?.stats,
+      isTrusted: response.data?.isTrusted,
+    },
+    fullResponse: response.data,
+  });
+  
+  // PERFORMANCE: Stats değerlerini özellikle kontrol et
+  if (response.data?.stats) {
+    console.log('[getUserProfile] 📊 Stats Detay:', {
+      posts: response.data.stats.posts,
+      trust: response.data.stats.trust,
+      truster: response.data.stats.truster,
+      statsType: {
+        posts: typeof response.data.stats.posts,
+        trust: typeof response.data.stats.trust,
+        truster: typeof response.data.stats.truster,
+      },
+    });
+  }
+  
   return response.data;
 };
 
@@ -1705,6 +1748,59 @@ export const reportUser = async (
       statusText: error.response?.statusText,
       requestData: data,
       responseData: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Suggested Users endpoint function
+ * Kullanıcıya önerilen kullanıcıları getirir
+ * 
+ * API Endpoint: GET /users/suggested
+ * 
+ * @param searchQuery - İsim veya kullanıcı adına göre arama (opsiyonel)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns SuggestedUsersApiResponse - Önerilen kullanıcılar ve pagination bilgisi
+ */
+export const getSuggestedUsers = async (
+  searchQuery?: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<SuggestedUsersApiResponse> => {
+  const params = new URLSearchParams();
+  
+  if (searchQuery) {
+    params.append('q', searchQuery);
+  }
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<SuggestedUsersApiResponse>(
+      `/users/suggested?${params.toString()}`
+    );
+    
+    console.log('[getSuggestedUsers] 📥 API Response:', {
+      url: `/users/suggested?${params.toString()}`,
+      itemsCount: response.data?.items?.length || 0,
+      hasMore: response.data?.pagination?.hasMore,
+      nextCursor: response.data?.pagination?.nextCursor,
+      firstUser: response.data?.items?.[0]?.name,
+      lastUser: response.data?.items?.[response.data.items.length - 1]?.name,
+    });
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('[getSuggestedUsers] ❌ API Error:', {
+      url: `/users/suggested?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
       message: error.message,
     });
     throw error;

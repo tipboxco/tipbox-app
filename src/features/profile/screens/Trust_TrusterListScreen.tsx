@@ -21,7 +21,7 @@ import { TrustUser as ApiTrustUser, TrusterUser as ApiTrusterUser } from '@/src/
 import { TrustUserCard, TrustUserCardUser } from '../components/TrustUserCard';
 import { SuggestionCard } from '../components/SuggestionCard';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { useTrustList, useTrusterList } from '../api/hooks';
+import { useTrustList, useTrusterList, useUserProfile } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
 import { useSafeAreaValues } from '@/src/utils';
 
@@ -55,6 +55,9 @@ export const Trust_TrusterListScreen = () => {
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+
+    // Get user profile for header title
+    const { data: userProfile } = useUserProfile(userId);
 
     // Debounce search query - Trust sekmesi için API'ye istek atmadan önce 500ms bekle
     useEffect(() => {
@@ -297,7 +300,7 @@ export const Trust_TrusterListScreen = () => {
             <VStack flex={1} bg={isDark ? '#000' : '#FAFAFA'}>
                 {/* Header */}
                 <Header
-                    title="Micheal Clark"
+                    title={userProfile?.name || 'Loading...'}
                     showBackButton
                     onBackPress={() => navigation.goBack()}
                 />
