@@ -27,7 +27,8 @@ export interface EventDetailApiResponse {
   eventType: string; // 'default' veya 'product'
   status: EventStatus; // 'active' veya 'upcoming'
   isJoined: boolean;
-  bannerImage?: string | null; // Banner image (ileride gelecek, şimdilik optional)
+  banner?: string | null; // API'den gelen banner field'ı (detail sayfası banner'ı)
+  image?: string | null; // Event card image (EventsScreen'de görünen)
   rewards: EventDetailReward[];
   participants?: Array<{
     userId: string;
