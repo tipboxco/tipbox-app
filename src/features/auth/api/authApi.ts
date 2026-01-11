@@ -383,9 +383,9 @@ export const updateUserInterests = async (
 
 /**
  * Google Login endpoint function
- * Google OAuth ile giriş yapmak için API çağrısı
+ * Firebase Authentication ile Google OAuth ile giriş yapmak için API çağrısı
  * 
- * @param idToken - Google'dan alınan ID token
+ * @param idToken - Firebase'den alınan ID token (Firebase Authentication ile doğrulanmış)
  * @returns ApiLoginResponse - Backend'den gelen ham response (store'da kullanılacak)
  */
 export interface GoogleLoginRequest {
