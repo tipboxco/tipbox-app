@@ -671,7 +671,10 @@ const EventDetailScreen: React.FC = () => {
     }
 
     const dateRange = formatDateRange(event.startDate, event.endDate);
-    const bannerImageSource = event.bannerImage ? toImageSource(event.bannerImage) : require('@/assets/defaultImages/default-banner.png');
+    // Banner için önce banner field'ını kullan (API'den gelen), yoksa image kullan (EventsScreen'de görünen)
+    const bannerImageSource = event.banner 
+        ? toImageSource(event.banner) 
+        : (event.image ? toImageSource(event.image) : require('@/assets/defaultImages/default-event.png'));
     const participantAvatars = event.participants?.map(p => p.avatar) || [];
 
     return (
@@ -710,6 +713,9 @@ const EventDetailScreen: React.FC = () => {
                     }
                 }}
                 scrollEventThrottle={16}
+                bounces={false}
+                overScrollMode="never"
+                showsVerticalScrollIndicator={false}
             >
                 {/* Banner Image */}
                 <Box
