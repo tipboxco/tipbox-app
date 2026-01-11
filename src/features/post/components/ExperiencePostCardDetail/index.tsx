@@ -26,7 +26,6 @@ interface ExperiencePostCardDetailProps {
 export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePostCardDetailProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const [isTranslated, setIsTranslated] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -202,27 +201,6 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                     </HStack>
                 ))}
             </HStack>
-
-            {/* Translate Button */}
-            <Box pb="$3" px="$3">
-                <Pressable onPress={() => setIsTranslated(!isTranslated)}>
-                    <HStack alignItems="center" space="xs">
-                        <Image
-                            source={require('@/assets/translate.png')}
-                            alt="translate"
-                            width={16}
-                            height={16}
-                        />
-                        <Text
-                            color="#829905"
-                            fontSize="$sm"
-                            textDecorationLine="underline"
-                        >
-                            {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-                        </Text>
-                    </HStack>
-                </Pressable>
-            </Box>
 
             {data.images?.length > 0 && (
                 <VStack px={12} >
