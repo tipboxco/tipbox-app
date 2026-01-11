@@ -494,7 +494,7 @@ const ExploreScreen: React.FC = () => {
         />
 
         <VStack flex={1} space="md">
-          {/* Search Bar - Trust_TrusterListScreen style */}
+          {/* Search Bar - Fixed at top */}
           <VStack
             px="$4"
             py="$2"
@@ -525,17 +525,7 @@ const ExploreScreen: React.FC = () => {
             </HStack>
           </VStack>
 
-          {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
-          {!isLoadingBanners && banners && banners.length > 0 && (
-            <Box
-              mb="$4"
-              onLayout={handleBannerLayout}
-            >
-              <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
-            </Box>
-          )}
-
-          {/* Category Tabs */}
+          {/* Category Tabs - Fixed */}
           <VStack
             bg={tabHeaderBgColor}
             pt="$4"
@@ -626,7 +616,20 @@ const ExploreScreen: React.FC = () => {
           >
             {/* Hottest Tab */}
             <Box key="0" flex={1}>
-              <HottestTab searchQuery={debouncedSearchQuery} />
+              <HottestTab 
+                searchQuery={debouncedSearchQuery}
+                headerComponent={
+                  /* Marketplace Banners Carousel - Scrollable */
+                  !isLoadingBanners && banners && banners.length > 0 ? (
+                    <Box
+                      mb="$4"
+                      onLayout={handleBannerLayout}
+                    >
+                      <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
+                    </Box>
+                  ) : null
+                }
+              />
             </Box>
 
             {/* News Tab */}
@@ -639,6 +642,17 @@ const ExploreScreen: React.FC = () => {
                 onSeeAllEvents={handleSeeAllEvents}
                 onSeeAllBrands={handleSeeAllBrands}
                 onSeeAllProducts={handleSeeAllProducts}
+                headerComponent={
+                  /* Marketplace Banners Carousel - Scrollable */
+                  !isLoadingBanners && banners && banners.length > 0 ? (
+                    <Box
+                      mb="$4"
+                      onLayout={handleBannerLayout}
+                    >
+                      <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
+                    </Box>
+                  ) : null
+                }
               />
             </Box>
           </AnimatedPagerView>

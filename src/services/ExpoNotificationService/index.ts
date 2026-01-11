@@ -220,8 +220,12 @@ class ExpoNotificationService {
         });
       }
 
-      // ProjectId'yi app.json'dan veya sabit değerden al
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId || '098fbee5-88e4-49ba-bb37-80601a5d47af';
+      // ProjectId'yi app.json'dan al
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      
+      if (!projectId) {
+        throw new Error('Expo projectId bulunamadı. app.json dosyasında extra.eas.projectId tanımlı olmalı.');
+      }
       
       const token = await Notifications.getExpoPushTokenAsync({
         projectId,
@@ -340,8 +344,12 @@ class ExpoNotificationService {
         return null;
       }
 
-      // ProjectId'yi app.json'dan veya sabit değerden al
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId || '098fbee5-88e4-49ba-bb37-80601a5d47af';
+      // ProjectId'yi app.json'dan al
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      
+      if (!projectId) {
+        throw new Error('Expo projectId bulunamadı. app.json dosyasında extra.eas.projectId tanımlı olmalı.');
+      }
       
       const token = await Notifications.getExpoPushTokenAsync({
         projectId,

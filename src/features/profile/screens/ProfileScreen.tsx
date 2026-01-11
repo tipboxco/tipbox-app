@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList } from 'react-native';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -34,6 +34,8 @@ import { Feather } from '@expo/vector-icons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedSkeleton } from '@/src/components/Skeletons';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -277,11 +279,14 @@ type MappedPost =
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
 
-// List item type
-type ListItem = 
-  | { type: 'TAB_BAR' }
-  | { type: 'POST'; id: string; data: MappedPost }
-  | { type: 'LADDER_CONTENT' };
+// Tab page props
+interface TabPageProps {
+  tabKey: TabKey;
+  targetUserId: string;
+  isDark: boolean;
+  bottomPadding: number;
+  profileHeader: React.ReactElement;
+}
 
 // TabsBar Component
 interface TabsBarProps {
@@ -348,71 +353,18 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
   );
 };
 
-const ProfileScreen = ({ route }: ProfileScreenProps) => {
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-  const { user } = useAppStore();
-  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
-  const rootNavigation = useNavigation<any>();
-  const safeAreaTop = useSafeAreaValues('top');
-  const safeAreaBottom = useSafeAreaValues('bottom');
-  const insets = useSafeAreaInsets();
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  
-  // Bottom padding for FlatList content
-  const bottomPadding = useBottomOffset({ includeTabBar: true, extraPadding: 16 });
-  
-  // Route params'tan userId al, yoksa store'daki user.id'yi kullan
-  const routeUserId = route.params?.userId;
-  const targetUserId = routeUserId || user?.id;
-  
-  // Profile API hook
-  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(targetUserId);
-  
-  // Avatar URL kontrolü için log
-  React.useEffect(() => {
-    if (userProfile) {
-      console.log('[ProfileScreen] User Profile Avatar:', {
-        userId: userProfile.id,
-        name: userProfile.name,
-        avatar: userProfile.avatar,
-        hasAvatar: !!userProfile.avatar,
-        avatarLength: userProfile.avatar?.length || 0,
-      });
-    }
-  }, [userProfile]);
-  
-  // Trust mutations
-  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
-  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
-  
-  // Inbox mutations
-  const sendGiftMutation = useSendGift();
-  const createSupportRequestMutation = useCreateSupportRequest();
-  const sendDirectMessageMutation = useSendDirectMessage();
-  
-  // Report mutation
-  const { mutate: reportUser, isPending: isReporting } = useReportUser();
-  
-  // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
-  const isOwnProfile = user?.id === targetUserId;
-  
-  // Active tab state
-  const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const listRef = useRef<FlatList<ListItem>>(null);
-  
+// Tab Page Component - Her tab için ayrı bir sayfa
+const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding, profileHeader }) => {
   // API hooks for each tab
-  // PERFORMANCE FIX: Only enable queries for the active tab to prevent unnecessary API calls
-  // This reduces network overhead and improves performance when switching tabs
-  const feedQuery = useUserPosts(targetUserId, 5, { enabled: activeTab === 'feed' });
-  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: activeTab === 'reviews' });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: activeTab === 'benchmarks' });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: activeTab === 'tips' });
-  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: activeTab === 'replies' });
+  const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: tabKey === 'benchmarks' });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: tabKey === 'tips' });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: tabKey === 'replies' });
   
   // Get active tab query
   const activeTabQuery = useMemo(() => {
-    switch (activeTab) {
+    switch (tabKey) {
       case 'feed': return feedQuery;
       case 'reviews': return reviewsQuery;
       case 'benchmarks': return benchmarksQuery;
@@ -420,10 +372,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       case 'replies': return repliesQuery;
       default: return feedQuery;
     }
-  }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]) as typeof feedQuery;
+  }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]) as typeof feedQuery;
   
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
+    if (tabKey === 'ladders') return [];
+    
     const queryData = activeTabQuery.data as any;
     if (!queryData?.pages) return [];
     
@@ -484,79 +438,172 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
     
     return mapped;
-  }, [activeTabQuery.data]);
+  }, [activeTabQuery.data, tabKey]);
   
-  // FlatList data: [TAB_BAR, ...posts] veya [TAB_BAR, LADDER_CONTENT]
-  const listData = useMemo<ListItem[]>(() => {
-    if (activeTab === 'ladders') {
-      return [
-        { type: 'TAB_BAR' },
-        { type: 'LADDER_CONTENT' },
-      ];
+  // Handle load more
+  const handleLoadMore = useCallback(() => {
+    if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
+      activeTabQuery.fetchNextPage();
     }
-    return [
-      { type: 'TAB_BAR' },
-      ...mappedPosts.map((post) => ({ type: 'POST' as const, id: post.id, data: post })),
-    ];
-  }, [mappedPosts, activeTab]);
+  }, [activeTabQuery]);
   
-  // Render item
-  const renderItem = useCallback(({ item }: { item: ListItem }) => {
-    if (item.type === 'TAB_BAR') {
-      return (
-        <TabsBar
-          activeTab={activeTab}
-          onChangeTab={(tab) => {
-            setActiveTab(tab);
-            // TAB_BAR zaten sticky olduğu için scroll yapmaya gerek yok
-          }}
-          isDark={isDark}
-        />
-      );
+  // Render post card
+  const renderPostCard = useCallback((postData: MappedPost) => {
+    switch (postData.type) {
+      case 'experience':
+        return <ExperiencePostCard data={postData.data} />;
+      case 'benchmark':
+        return <BenchmarkPostCard data={postData.data} />;
+      case 'tips':
+        return <TipsAndTricksPostCard data={postData.data} />;
+      case 'question':
+        return <QuestionPostCard data={postData.data} />;
+      case 'post':
+      default:
+        return <PostCard data={postData.data} />;
     }
-    
-    // Render LadderTab content
-    if (item.type === 'LADDER_CONTENT') {
-      return <LadderTab />;
-    }
-    
-    // Render post card
-    if (item.type !== 'POST') return null;
-    const postData = item.data;
-    
-    // Post card'ları padding ile sarmala
-    const renderPostCard = () => {
-      switch (postData.type) {
-        case 'experience':
-          return <ExperiencePostCard data={postData.data} />;
-        case 'benchmark':
-          return <BenchmarkPostCard data={postData.data} />;
-        case 'tips':
-          return <TipsAndTricksPostCard data={postData.data} />;
-        case 'question':
-          return <QuestionPostCard data={postData.data} />;
-        case 'post':
-        default:
-          return <PostCard data={postData.data} />;
-      }
-    };
-    
+  }, []);
+  
+  // Render LadderTab
+  if (tabKey === 'ladders') {
     return (
-      <Box px={16}>
-        {renderPostCard()}
-      </Box>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+      >
+        {profileHeader}
+        <LadderTab />
+      </ScrollView>
     );
-  }, [activeTab, isDark, listData]);
+  }
   
-  // Key extractor
-  const keyExtractor = useCallback((item: ListItem, index: number) => {
-    if (item.type === 'TAB_BAR') {
-      return 'tab-bar';
+  return (
+    <FlatList
+      data={mappedPosts}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <Box px={16}>
+          {renderPostCard(item)}
+        </Box>
+      )}
+      ListHeaderComponent={profileHeader}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.5}
+      ListEmptyComponent={
+        activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
+          <FeedSkeleton count={3} />
+        ) : (
+          <Box py={20} alignItems="center">
+            <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+              No content found yet.
+            </Text>
+          </Box>
+        )
+      }
+      ListFooterComponent={
+        activeTabQuery.isFetchingNextPage ? (
+          <Box py={20} alignItems="center">
+            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        ) : null
+      }
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
+      showsVerticalScrollIndicator={false}
+      removeClippedSubviews={true}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={5}
+    />
+  );
+};
+
+const ProfileScreen = ({ route }: ProfileScreenProps) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const { user } = useAppStore();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+  const rootNavigation = useNavigation<any>();
+  const safeAreaTop = useSafeAreaValues('top');
+  const safeAreaBottom = useSafeAreaValues('bottom');
+  const insets = useSafeAreaInsets();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // Bottom padding for FlatList content
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
+  
+  // Route params'tan userId al, yoksa store'daki user.id'yi kullan
+  const routeUserId = route.params?.userId;
+  const targetUserId = routeUserId || user?.id;
+  
+  // Profile API hook
+  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(targetUserId);
+  
+  // Avatar URL kontrolü için log
+  React.useEffect(() => {
+    if (userProfile) {
+      console.log('[ProfileScreen] User Profile Avatar:', {
+        userId: userProfile.id,
+        name: userProfile.name,
+        avatar: userProfile.avatar,
+        hasAvatar: !!userProfile.avatar,
+        avatarLength: userProfile.avatar?.length || 0,
+      });
     }
-    if (item.type === 'LADDER_CONTENT') {
-      return 'ladder-content';
+  }, [userProfile]);
+  
+  // Trust mutations
+  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
+  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
+  
+  // Inbox mutations
+  const sendGiftMutation = useSendGift();
+  const createSupportRequestMutation = useCreateSupportRequest();
+  const sendDirectMessageMutation = useSendDirectMessage();
+  
+  // Report mutation
+  const { mutate: reportUser, isPending: isReporting } = useReportUser();
+  
+  // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
+  const isOwnProfile = user?.id === targetUserId;
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<TabKey>('feed');
+  const horizontalListRef = useRef<FlatList>(null);
+  const tabIndexRef = useRef(0);
+  
+  // Tab index'i bul
+  const getTabIndex = useCallback((tabKey: TabKey) => {
+    return TABS.findIndex(tab => tab.key === tabKey);
+  }, []);
+  
+  // Tab değiştiğinde yatay FlatList'i scroll et
+  const handleTabChange = useCallback((tabKey: TabKey) => {
+    const index = getTabIndex(tabKey);
+    if (index !== -1 && horizontalListRef.current) {
+      tabIndexRef.current = index;
+      horizontalListRef.current.scrollToIndex({ index, animated: true });
+      setActiveTab(tabKey);
     }
-    return item.id || `post-${index}`;
+  }, [getTabIndex]);
+  
+  // Yatay scroll olduğunda aktif tab'ı güncelle
+  const handleHorizontalScroll = useCallback((event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / SCREEN_WIDTH);
+    if (index >= 0 && index < TABS.length && index !== tabIndexRef.current) {
+      tabIndexRef.current = index;
+      setActiveTab(TABS[index].key);
+    }
+  }, []);
+  
+  // Scroll to index hatası için fallback
+  const handleScrollToIndexFailed = useCallback((info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
+    // Scroll hatası durumunda biraz bekle ve tekrar dene
+    setTimeout(() => {
+      if (horizontalListRef.current) {
+        horizontalListRef.current.scrollToIndex({ index: info.index, animated: false });
+      }
+    }, 100);
   }, []);
   
   // Action button handlers
@@ -736,13 +783,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       paddingBottom: insets.bottom + 8,
     });
   }, [isOwnProfile, userProfile, isDark, handleShare, handleReport, handleBlock, openBottomSheet, closeBottomSheet, insets.bottom]);
-  
-  // Handle load more
-  const handleLoadMore = useCallback(() => {
-    if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
-      activeTabQuery.fetchNextPage();
-    }
-  }, [activeTabQuery]);
   
   // ListHeaderComponent: Banner + Profile Info
   const renderProfileHeader = useCallback(() => {
@@ -1189,42 +1229,63 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     );
   }
   
+  // Profile header'ı memoize et
+  const profileHeader = useMemo(() => renderProfileHeader(), [
+    userProfile, 
+    isDark, 
+    isOwnProfile, 
+    targetUserId, 
+    trustUser, 
+    untrustUser, 
+    isTrusting, 
+    isUntrusting, 
+    rootNavigation, 
+    user, 
+    navigation, 
+    handleShare, 
+    handleOpenActionSheet
+  ]);
+  
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        {/* TabsBar - Header'da sabit */}
+        <TabsBar
+          activeTab={activeTab}
+          onChangeTab={handleTabChange}
+          isDark={isDark}
+        />
+        
+        {/* Yatay FlatList - Her tab bir sayfa */}
         <FlatList
-          ref={listRef}
-          data={listData}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          ListHeaderComponent={renderProfileHeader}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListEmptyComponent={
-            // UX FIX: Show skeleton loader only when loading and no cached data
-            activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
-              <FeedSkeleton count={3} />
-            ) : (
-              <Box py={20} alignItems="center">
-                <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-                  No content found yet.
-                </Text>
-              </Box>
-            )
-          }
-          ListFooterComponent={
-            activeTabQuery.isFetchingNextPage ? (
-              <Box py={20} alignItems="center">
-                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-              </Box>
-            ) : null
-          }
-          contentContainerStyle={{ paddingBottom: bottomPadding }}
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
+          ref={horizontalListRef}
+          data={TABS}
+          keyExtractor={(item) => item.key}
+          renderItem={({ item }) => (
+            <Box width={SCREEN_WIDTH} flex={1}>
+              <TabPage
+                tabKey={item.key}
+                targetUserId={targetUserId || ''}
+                isDark={isDark}
+                bottomPadding={bottomPadding}
+                profileHeader={profileHeader}
+              />
+            </Box>
+          )}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleHorizontalScroll}
+          onScrollToIndexFailed={handleScrollToIndexFailed}
+          scrollEnabled={true}
+          decelerationRate="fast"
+          snapToInterval={SCREEN_WIDTH}
+          snapToAlignment="start"
+          getItemLayout={(data, index) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
+            index,
+          })}
         />
       </Box>
     </SafeAreaView>

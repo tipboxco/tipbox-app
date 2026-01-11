@@ -68,14 +68,14 @@ export const LoginScreen = () => {
           placement: 'top',
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast 
-                  nativeID={`toast-${id}`} 
-                  action="success" 
-                  variant="solid"
-                  bg="rgba(194, 230, 7, 0.2)"
-                >
-                  <ToastTitle fontSize="$sm">Login Successful</ToastTitle>
+              <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
+                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                  <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
+                    Login Successful
+                  </ToastTitle>
+                  <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={2}>
+                    Welcome, {result.fullName || result.email}!
+                  </ToastDescription>
                 </Toast>
               </Box>
             );
@@ -104,10 +104,14 @@ export const LoginScreen = () => {
           placement: 'top',
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm">Login Error</ToastTitle>
-                <ToastDescription fontSize="$sm">{errorMessage}</ToastDescription>
+                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
+                  Login Error
+                </ToastTitle>
+                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={3}>
+                  {errorMessage}
+                </ToastDescription>
               </Toast>
               </Box>
             );
@@ -158,10 +162,12 @@ export const LoginScreen = () => {
         placement: 'top',
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle fontSize="$sm">Google Login Successful</ToastTitle>
-                <ToastDescription fontSize="$sm">
+                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
+                  Google Login Successful
+                </ToastTitle>
+                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={2}>
                   Welcome, {googleResult.user.name || googleResult.user.email}!
                 </ToastDescription>
               </Toast>
@@ -185,10 +191,14 @@ export const LoginScreen = () => {
         placement: 'top',
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
+            <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm">Google Login Error</ToastTitle>
-                <ToastDescription fontSize="$sm">{errorMessage}</ToastDescription>
+                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
+                  Google Login Error
+                </ToastTitle>
+                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={3}>
+                  {errorMessage}
+                </ToastDescription>
               </Toast>
             </Box>
           );

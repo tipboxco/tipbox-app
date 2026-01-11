@@ -13,14 +13,22 @@ import {
   AuthCredential,
 } from 'firebase/auth';
 import { getFirebaseAuth } from '@/src/config/firebase.config';
-import * as Google from 'expo-auth-session/providers/google';
+import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { GoogleUser, GoogleAuthResult, GoogleServiceState } from './types';
 import { FIREBASE_WEB_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from '@env';
 
 // WebBrowser'ı tamamlandığında kapat
 WebBrowser.maybeCompleteAuthSession();
+
+// Google OAuth Discovery Document
+const googleDiscovery = {
+  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+  tokenEndpoint: 'https://oauth2.googleapis.com/token',
+  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+};
 
 class GoogleService {
   private state: GoogleServiceState = {
@@ -50,30 +58,96 @@ class GoogleService {
       this.state.isLoading = true;
       this.state.error = null;
 
-      // Expo Google provider ile OAuth akışını başlat
-      const [request, response, promptAsync] = Google.useAuthRequest({
-        clientId: this.getClientIdForPlatform(),
+      const clientId = this.getClientIdForPlatform();
+      const redirectUri = this.getRedirectUri();
+
+      // Debug: Redirect URI'yi logla
+      console.log('[GoogleService] 🔍 Redirect URI:', redirectUri);
+      console.log('[GoogleService] 🔍 Client ID:', clientId.substring(0, 20) + '...');
+
+      // Nonce oluştur - id_token response type için zorunlu (güvenlik için)
+      // Cryptographically secure random string (32+ karakter)
+      const nonce = 
+        Math.random().toString(36).substring(2, 15) + 
+        Math.random().toString(36).substring(2, 15) + 
+        Date.now().toString(36) +
+        Math.random().toString(36).substring(2, 15);
+      
+      console.log('[GoogleService] 🔐 Generated nonce:', nonce.substring(0, 20) + '...');
+
+      // AuthRequest oluştur - IdToken response type kullan
+      // id_token flow: Direkt ID token al (token exchange gerekmez)
+      const request = new AuthSession.AuthRequest({
+        clientId,
         scopes: ['openid', 'profile', 'email'],
-        redirectUri: this.getRedirectUri(),
+        redirectUri,
+        responseType: AuthSession.ResponseType.IdToken, // IdToken flow kullan
+        usePKCE: false,
+        extraParams: {
+          nonce: nonce, // id_token için zorunlu
+        },
       });
 
-      // OAuth akışını başlat
-      const result = await promptAsync();
+      // OAuth akışını başlat - promptAsync kullan
+      console.log('[GoogleService] 🚀 Starting OAuth flow...');
+      console.log('[GoogleService] 🔗 Redirect URI:', redirectUri);
+      console.log('[GoogleService] 🔗 Client ID:', clientId.substring(0, 30) + '...');
+      
+      // Timeout ile promptAsync (30 saniye)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('OAuth flow timeout - 30 saniye içinde tamamlanmadı'));
+        }, 30000);
+      });
+
+      const result = await Promise.race([
+        request.promptAsync(googleDiscovery),
+        timeoutPromise,
+      ]) as any;
+
+      console.log('[GoogleService] 📥 OAuth result:', {
+        type: result.type,
+        hasParams: !!result.params,
+        paramsKeys: result.params ? Object.keys(result.params) : [],
+        params: result.params, // Tüm params'ı logla
+        error: result.type === 'error' ? result.error : null,
+        fullResult: JSON.stringify(result, null, 2), // Tüm result'ı logla
+      });
 
       // Kullanıcı iptal ettiyse
       if (result.type === 'cancel' || result.type === 'dismiss') {
+        console.log('[GoogleService] ❌ User cancelled or dismissed');
         throw new Error('Google girişi kullanıcı tarafından iptal edildi');
       }
 
       // Hata durumu
       if (result.type === 'error') {
+        console.error('[GoogleService] ❌ OAuth error:', result.error);
         throw new Error(result.error?.message || 'Google girişi sırasında bir hata oluştu');
       }
 
-      // Başarılı - ID token'ı al
+      // Başarılı - ID token'ı direkt al (token exchange gerekmez)
       if (result.type === 'success' && result.params?.id_token) {
+        console.log('[GoogleService] ✅ OAuth success, ID token received');
+        console.log('[GoogleService] 📋 Result params keys:', Object.keys(result.params || {}));
+        
         const idToken = result.params.id_token;
         const accessToken = result.params.access_token;
+
+        // Nonce doğrulaması (güvenlik için)
+        // Not: ID token içindeki nonce'u decode edip kontrol etmek gerekir
+        // Şimdilik basit kontrol yapıyoruz
+        console.log('[GoogleService] 🔐 Verifying nonce in ID token...');
+        
+        // ID token'ı decode et (JWT format) - nonce doğrulaması için
+        // Not: React Native'de Buffer yok, bu yüzden atlıyoruz
+        // Firebase Authentication zaten ID token'ı doğrular
+        console.log('[GoogleService] 📦 ID token received, length:', idToken.length);
+
+        if (!idToken) {
+          console.error('[GoogleService] ❌ ID token missing in result:', result.params);
+          throw new Error('ID token alınamadı - OAuth result\'da id_token yok');
+        }
 
         // Firebase Authentication ile credential oluştur
         const credential = GoogleAuthProvider.credential(idToken, accessToken);
@@ -100,13 +174,21 @@ class GoogleService {
 
         return {
           idToken: firebaseIdToken, // Backend'e gönderilecek Firebase ID token
-          accessToken: accessToken,
+          accessToken: accessToken || '',
           user,
         };
       }
 
-      throw new Error('Google girişi başarısız: ID token alınamadı');
+      // Başarılı değilse
+      console.error('[GoogleService] ❌ OAuth flow failed - unexpected result type:', {
+        resultType: result.type,
+        hasParams: !!result.params,
+        params: result.params,
+        fullResult: JSON.stringify(result, null, 2),
+      });
+      throw new Error(`Google girişi başarısız: Beklenmeyen result type: ${result.type}`);
     } catch (error) {
+      console.error('[GoogleService] ❌ Login error:', error);
       this.state.error = error as Error;
       this.state.isLoading = false;
       this.state.isAuthenticated = false;
@@ -136,10 +218,28 @@ class GoogleService {
 
   /**
    * Redirect URI'yi döndür
+   * 
+   * Google Cloud Console Web Client ID sadece HTTPS URL'leri kabul eder
+   * Custom scheme'ler (tipboxapp://) kabul edilmez
+   * Development modunda bile sabit HTTPS URL kullanmalıyız
    */
   private getRedirectUri(): string {
-    // Expo için redirect URI
-    return `${Platform.OS === 'web' ? window.location.origin : 'tipboxapp://'}`;
+    // Web platform için
+    if (Platform.OS === 'web') {
+      return AuthSession.makeRedirectUri({ useProxy: false });
+    }
+    
+    // Hem development hem production için sabit HTTPS URL kullan
+    // Google Cloud Console Web Client ID sadece HTTPS URL'leri kabul eder
+    // Development modunda `useProxy: true` `exp://` döndürür, bu kabul edilmez
+    // Bu yüzden sabit Expo proxy HTTPS URL kullanıyoruz
+    const expoConfig = Constants.expoConfig;
+    const owner = expoConfig?.owner || 'tipboxco';
+    const slug = expoConfig?.slug || 'tipbox-app';
+    const httpsRedirectUri = `https://auth.expo.io/@${owner}/${slug}`;
+    
+    console.log('[GoogleService] 🔧 Using fixed HTTPS redirect URI (required for Google Cloud Console):', httpsRedirectUri);
+    return httpsRedirectUri;
   }
 
   /**

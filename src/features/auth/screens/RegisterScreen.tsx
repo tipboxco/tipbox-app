@@ -95,10 +95,14 @@ export const RegisterScreen = () => {
           placement: 'top',
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm">Registration Error</ToastTitle>
-                <ToastDescription fontSize="$sm">{errorMessage}</ToastDescription>
+                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
+                  Registration Error
+                </ToastTitle>
+                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={3}>
+                  {errorMessage}
+                </ToastDescription>
               </Toast>
               </Box>
             );

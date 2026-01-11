@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BenchmarkPost, BenchmarkProduct } from '@/src/mock/profile/benchmark/types';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
-import { toImageSource } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import {
   useLikePost,
   useUnlikePost,
@@ -21,7 +21,12 @@ interface BenchmarkPostCardDetailProps {
     onCommentPress?: () => void;
 }
 
-const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark: boolean; }) => (
+const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark: boolean; }) => {
+    const productImageSource = product.image 
+        ? toImageSource(product.image) || require('@/assets/inventory/product_01.png')
+        : require('@/assets/inventory/product_01.png');
+    
+    return (
     <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : '#E9E9E9'} borderRadius={10} position="relative">
         <VStack padding={6} flex={1} >
             <Box position="relative" w={'$full'} overflow='hidden'>
@@ -30,7 +35,7 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
                     h={'$full'}
                     aspectRatio={1}
                     borderRadius={10}
-                    source={product.image}
+                    source={productImageSource}
                     alt={product.name}
                     resizeMode='cover'
                 />
@@ -69,7 +74,8 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
             </VStack>
         </VStack>
     </HStack>
-);
+    );
+};
 
 export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostCardDetailProps) => {
     const { colorMode } = useColorMode();
@@ -151,7 +157,7 @@ export const BenchmarkPostCardDetail = ({ data, onCommentPress }: BenchmarkPostC
             <VStack px={12} py={8}>
                 <HStack alignItems="center" space="xs">
                     <Image
-                        source={toImageSource(data.user.avatar)!}
+                        source={toImageSource(data.user.avatar) || DEFAULT_USER_AVATAR}
                         alt={data.user.name}
                         mr={8}
                         width={42}

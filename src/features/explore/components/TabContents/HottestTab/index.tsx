@@ -27,6 +27,7 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 
 interface HottestTabProps {
   searchQuery?: string;
+  headerComponent?: React.ReactElement | null;
 }
 
 // Map Feed to PostCardData
@@ -334,7 +335,7 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
   };
 };
 
-const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
+const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerComponent }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -490,7 +491,7 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
   }
 
   return (
-    <Box px="$4" pt={0} mt={0}>
+    <Box flex={1} pt={0} mt={0}>
       <FlatList
         data={hottestItems}
         renderItem={({ item }) => renderHottestItem(item)}
@@ -498,13 +499,15 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
         removeClippedSubviews={true}
-        contentContainerStyle={{ paddingTop: 0, paddingBottom: bottomPadding }}
+        contentContainerStyle={{ paddingTop: 0, paddingBottom: bottomPadding, paddingHorizontal: 16 }}
         initialNumToRender={3}
         maxToRenderPerBatch={3}
         windowSize={5}
+        ListHeaderComponent={headerComponent}
         ListFooterComponent={LoadingFooter}
         scrollEnabled={true}
-        nestedScrollEnabled={true}
+        nestedScrollEnabled={false}
+        showsVerticalScrollIndicator={true}
       />
     </Box>
   );

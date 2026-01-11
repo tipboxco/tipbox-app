@@ -23,6 +23,7 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
     'tipboxapp://',
     'https://tipbox.app',
     'https://*.tipbox.app',
+    'https://auth.expo.io', // Expo OAuth proxy için
   ],
   config: {
     screens: {

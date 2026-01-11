@@ -19,6 +19,7 @@ interface NewsTabProps {
   onSeeAllEvents?: () => void;
   onSeeAllBrands?: () => void;
   onSeeAllProducts?: () => void;
+  headerComponent?: React.ReactElement | null;
 }
 
 const NewsTabComponent: React.FC<NewsTabProps> = ({
@@ -29,6 +30,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   onSeeAllEvents,
   onSeeAllBrands,
   onSeeAllProducts,
+  headerComponent,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -312,10 +314,11 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
 
   return (
     <ScrollView
-      showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator={true}
       nestedScrollEnabled={true}
       contentContainerStyle={{ paddingBottom: 16 }}
     >
+      {headerComponent}
       <VStack space="md" mb="$4" pt={0} mt={0}>
         {/* New Community Events Section */}
       {(isLoadingEvents || events.length > 0) && (
