@@ -9,7 +9,10 @@ import {
     Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import {
+  BoltIcon,
+  ClockIcon,
+} from 'react-native-heroicons/outline';
 import type { LimitedEventApiResponse } from '../../types';
 import { useCountdown, toImageSource } from '@/src/utils';
 
@@ -93,7 +96,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             alignItems="center"
                             space="xs"
                         >
-                            <Feather name="zap" size={14} color="#111111" />
+                            <BoltIcon width={14} height={14} color="#111111" />
                             <Text
                                 color="#111111"
                                 fontSize="$2xs"
@@ -111,7 +114,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             >
                                 {formattedCountdown}
                             </Text>
-                            <Feather name="clock" size={18} color="#FFFFFF" />
+                            <ClockIcon width={18} height={18} color="#FFFFFF" />
                         </HStack>
                     </HStack>
 

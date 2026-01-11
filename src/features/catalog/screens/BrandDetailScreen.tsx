@@ -17,7 +17,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronLeftIcon,
+  ArrowTopRightOnSquareIcon,
+  UsersIcon,
+  ChevronRightIcon,
+} from 'react-native-heroicons/outline';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
@@ -549,7 +554,7 @@ const BrandDetailScreen: React.FC = () => {
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <Feather name="arrow-left" size={20} color="#FFFFFF" />
+                            <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
                         </Pressable>
 
                         <Pressable
@@ -560,7 +565,7 @@ const BrandDetailScreen: React.FC = () => {
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <Feather name="share-2" size={20} color="#FFFFFF" />
+                            <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
                         </Pressable>
                     </HStack>
 
@@ -606,7 +611,7 @@ const BrandDetailScreen: React.FC = () => {
                                 {brandCatalog.name}
                             </Text>
                             <HStack alignItems="center" space="sm">
-                                <Feather name="users" size={12} color="#9D9D9D" />
+                                <UsersIcon width={12} height={12} color="#9D9D9D" />
                                 <Text
                                     color="#9D9D9D"
                                     fontSize={9}
@@ -719,7 +724,7 @@ const BrandDetailScreen: React.FC = () => {
                                             >
                                                 Explore
                                             </ButtonText>
-                                            <Feather name="chevron-right" size={12} color="#000000" />
+                                            <ChevronRightIcon width={12} height={12} color="#000000" />
                                         </HStack>
                                     </Button>
                                 </VStack>
@@ -786,7 +791,7 @@ const BrandDetailScreen: React.FC = () => {
                                             >
                                                 View
                                             </ButtonText>
-                                            <Feather name="chevron-right" size={12} color="#000000" />
+                                            <ChevronRightIcon width={12} height={12} color="#000000" />
                                         </HStack>
                                     </Button>
                                 </VStack>

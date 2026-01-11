@@ -410,7 +410,6 @@ const CatalogScreenComponent = () => {
         console.log('[CatalogScreen] Rendering ProductCatalogScreen');
         return (
           <ProductCatalogScreen
-            onCreatePost={handleCreatePost}
             onStateChange={handleProductCatalogStateChange}
             scrollViewPaddingBottom={paddingBottom}
           />

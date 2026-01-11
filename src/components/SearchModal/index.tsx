@@ -22,7 +22,11 @@ import {
   ScrollView,
   Image,
 } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ExclamationCircleIcon,
+  MagnifyingGlassIcon,
+  XCircleIcon,
+} from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useSearch } from '@/src/features/search/api/hooks';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
@@ -792,7 +796,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   // 🎯 OPTIMIZATION: Memoized error component
   const ErrorView = useMemo(() => (
     <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$20">
-      <Feather name="alert-circle" size={48} color="#CE4A4A" />
+      <ExclamationCircleIcon width={48} height={48} color="#CE4A4A" />
       <Text
         mt="$4"
         fontSize="$xs"
@@ -816,7 +820,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
   // 🎯 OPTIMIZATION: Memoized empty state component
   const EmptyView = useMemo(() => (
     <Box flex={1} justifyContent="center" alignItems="center" py="$20">
-      <Feather name="search" size={56} color={isDark ? '#48484A' : '#D1D1D6'} />
+      <MagnifyingGlassIcon width={56} height={56} color={isDark ? '#48484A' : '#D1D1D6'} />
       <Text
         mt="$4"
         fontSize="$sm"
@@ -992,7 +996,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     space="sm"
                     h={48}
                   >
-                    <Feather name="search" size={20} color={isDark ? '#8E8E93' : '#8E8E93'} />
+                    <MagnifyingGlassIcon width={20} height={20} color={isDark ? '#8E8E93' : '#8E8E93'} />
                     <Input flex={1} borderWidth={0} bg="transparent">
                       <InputField
                         ref={inputRef}
@@ -1008,7 +1012,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                     </Input>
                     {searchQuery.length > 0 && (
                       <Pressable onPress={() => dispatch({ type: 'SET_SEARCH_QUERY', payload: '' })} p="$1">
-                        <Feather name="x-circle" size={18} color={isDark ? '#8E8E93' : '#8E8E93'} />
+                        <XCircleIcon width={18} height={18} color={isDark ? '#8E8E93' : '#8E8E93'} />
                       </Pressable>
                     )}
                   </HStack>

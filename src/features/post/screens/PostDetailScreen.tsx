@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VStack, Text, HStack, Pressable, Box, Input, InputField } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronDownIcon,
+  PaperAirplaneIcon,
+} from 'react-native-heroicons/outline';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -316,9 +319,9 @@ export const PostDetailScreen = () => {
                         >
                             Newest
                         </Text>
-                        <Feather
-                            name="chevron-down"
-                            size={14}
+                        <ChevronDownIcon
+                            width={14}
+                            height={14}
                             color={isDark ? '#FFFFFF' : '#000000'}
                         />
                     </Pressable>
@@ -389,9 +392,9 @@ export const PostDetailScreen = () => {
                         alignItems="center"
                         justifyContent="center"
                     >
-                        <Feather
-                            name="send"
-                            size={18}
+                        <PaperAirplaneIcon
+                            width={18}
+                            height={18}
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                         />
                     </Box>

@@ -9,7 +9,11 @@ import type { CatalogStackParamList } from '../navigation';
 import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
+import {
+  DocumentTextIcon,
+  ChatBubbleLeftIcon,
+  CalendarIcon,
+} from 'react-native-heroicons/outline';
 import BrandInfoCard from '../components/BrandInfoCard';
 import PointsHistoryCard from '../components/PointsHistoryCard';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
@@ -84,7 +88,7 @@ const BrandHistoryScreen: React.FC = () => {
                 alignItems="center"
               >
               <VStack alignItems="center" space="xs">
-                <Feather name="file-text" size={24} color="#A1A1A1" />
+                <DocumentTextIcon width={24} height={24} color="#A1A1A1" />
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize={12}
@@ -119,7 +123,7 @@ const BrandHistoryScreen: React.FC = () => {
                 alignItems="center"
               >
               <VStack alignItems="center" space="xs">
-                <Feather name="message-circle" size={24} color="#A1A1A1" />
+                <ChatBubbleLeftIcon width={24} height={24} color="#A1A1A1" />
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize={12}
@@ -154,7 +158,7 @@ const BrandHistoryScreen: React.FC = () => {
                 alignItems="center"
               >
               <VStack alignItems="center" space="xs">
-                <Feather name="calendar" size={24} color="#A1A1A1" />
+                <CalendarIcon width={24} height={24} color="#A1A1A1" />
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize={12}

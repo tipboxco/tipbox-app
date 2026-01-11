@@ -22,7 +22,7 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { XMarkIcon } from 'react-native-heroicons/outline';
 import { useDevices, useDeleteDevice } from '../../api/hooks';
 import type { Device } from '../../types';
 
@@ -293,7 +293,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
               Cihazı Kaldır
             </Text>
             <AlertDialogCloseButton>
-              <Feather name="x" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+              <XMarkIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
             </AlertDialogCloseButton>
           </AlertDialogHeader>
           <AlertDialogBody>

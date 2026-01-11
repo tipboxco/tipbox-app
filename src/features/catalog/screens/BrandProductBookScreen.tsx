@@ -17,7 +17,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
+} from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandProductBook } from '../api/hooks';
 import type { BrandProductGroup, BrandProduct } from '../types';
@@ -199,7 +202,7 @@ const BrandProductBookScreen: React.FC = () => {
                 >
                     {productGroup.productGroupName}
                 </Text>
-                <Feather name="chevron-right" size={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
+                <ChevronRightIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
             </HStack>
 
             {/* Horizontal Scrollable Products */}
@@ -274,7 +277,7 @@ const BrandProductBookScreen: React.FC = () => {
                         justifyContent="center"
                     >
                         <HStack alignItems="center" space="sm">
-                            <Feather name="search" size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
+                            <MagnifyingGlassIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
                             <Input flex={1} borderWidth={0} bg="transparent">
                                 <InputField
                                     placeholder="Select product group or search product name"

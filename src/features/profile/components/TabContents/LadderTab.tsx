@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager, ActivityIndicator } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { CheckIcon } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useUserLadderBadges } from '../../api/hooks';
 import { useCurrentUserIdOrLogout } from '@/src/utils';
@@ -284,7 +284,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
                 justifyContent="center"
                 zIndex={10}
               >
-                <Feather name="check" size={16} color="#fff" />
+                <CheckIcon width={16} height={16} color="#fff" />
               </Box>
             </>
           )}

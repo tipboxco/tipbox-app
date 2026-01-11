@@ -1,7 +1,10 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import {
+  BookOpenIcon,
+  ChevronRightIcon,
+} from 'react-native-heroicons/outline';
 
 interface NewsCardProps {
   id: string;
@@ -60,7 +63,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
           <VStack pr={'$5'} maxHeight={92} flex={1} space="xs">
             {/* Source and Date */}
             <HStack alignItems="center" space="xs">
-              <Feather name="book-open" size={12} color="#B9B9B9" />
+              <BookOpenIcon width={12} height={12} color="#B9B9B9" />
               <Text
                 color="#B9B9B9"
                 fontSize={9}
@@ -98,7 +101,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
             alignItems="center"
             justifyContent="center"
           >
-            <Feather name="chevron-right" size={24} color="#B9B9B9" />
+            <ChevronRightIcon width={24} height={24} color="#B9B9B9" />
           </Box>
         </HStack>
       </Box>

@@ -18,7 +18,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { EventsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronLeftIcon,
+  ArrowTopRightOnSquareIcon,
+  CalendarIcon,
+  UsersIcon,
+  PencilSquareIcon,
+  TrophyIcon,
+} from 'react-native-heroicons/outline';
 import { useEventDetail, useEventPosts, useJoinEvent, useLeaveEvent } from '../api/hooks';
     import { toImageSource } from '@/src/utils';
 import { CardType, EventStatus } from '@/src/types/common';
@@ -759,7 +766,7 @@ const EventDetailScreen: React.FC = () => {
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <Feather name="arrow-left" size={20} color="#FFFFFF" />
+                            <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
                         </Pressable>
 
                         <Pressable
@@ -771,7 +778,7 @@ const EventDetailScreen: React.FC = () => {
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <Feather name="share-2" size={20} color="#FFFFFF" />
+                            <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
                         </Pressable>
                     </HStack>
                 </Box>
@@ -877,7 +884,7 @@ const EventDetailScreen: React.FC = () => {
                                         alignItems="center"
                                         justifyContent="center"
                                     >
-                                        <Feather name="calendar" size={16} color="#B9B9B9" />
+                                        <CalendarIcon width={16} height={16} color="#B9B9B9" />
                                     </Box>
                                     <VStack>
                                         <Text
@@ -908,7 +915,7 @@ const EventDetailScreen: React.FC = () => {
                                         alignItems="center"
                                         justifyContent="center"
                                     >
-                                        <Feather name="users" size={16} color="#B9B9B9" />
+                                        <UsersIcon width={16} height={16} color="#B9B9B9" />
                                     </Box>
                                     <VStack>
                                         <Text
@@ -998,11 +1005,7 @@ const EventDetailScreen: React.FC = () => {
                                                     alignItems="center"
                                                     justifyContent="center"
                                                 >
-                                                    <Feather
-                                                        name="award"
-                                                        size={24}
-                                                        color={isDark ? '#666' : '#999'}
-                                                    />
+                                                    <TrophyIcon width={24} height={24} color={isDark ? '#666' : '#999'} />
                                                 </Box>
                                             )}
                                             <Text
@@ -1126,7 +1129,7 @@ const EventDetailScreen: React.FC = () => {
                             });
                         }}
                     >
-                        <Feather name="edit-3" size={24} color="#000000" />
+                        <PencilSquareIcon width={24} height={24} color="#000000" />
                     </Pressable>
                 </Box>
             )}

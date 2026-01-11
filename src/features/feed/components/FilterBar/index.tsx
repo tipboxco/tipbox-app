@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { Animated, Platform, Text as RNText, Easing } from 'react-native';
 import { HStack, Pressable, Text, Box, VStack, ScrollView } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { CheckIcon } from 'react-native-heroicons/solid';
 import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
 import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 import type { FeedFilterParams } from '../../api/feedApi';
@@ -475,7 +475,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
                             flexShrink={0}
                           >
                             {selected && (
-                              <Feather name="check" size={12} color="#FFFFFF" />
+                              <CheckIcon width={12} height={12} color="#FFFFFF" />
                             )}
                           </Box>
                           {/* Label */}

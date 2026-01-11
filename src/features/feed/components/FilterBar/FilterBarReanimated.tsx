@@ -29,7 +29,11 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+} from 'react-native-heroicons/outline';
+import { CheckIcon as CheckIconSolid } from 'react-native-heroicons/solid';
 import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
 import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 import type { FeedFilterParams } from '../../api/feedApi';
@@ -477,7 +481,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
                             alignItems="center"
                             flexShrink={0}
                           >
-                            {selected && <Feather name="check" size={10} color="#FFFFFF" />}
+                            {selected && <CheckIconSolid width={10} height={10} color="#FFFFFF" />}
                           </Box>
                           <Box flex={1} justifyContent="center">
                             <RNText
@@ -601,12 +605,12 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           {arrowStyle ? (
             <Animated.View style={arrowStyle}>
               <Box width={12} height={12} alignItems="center" justifyContent="center">
-                <Feather name="chevron-down" size={8} color={isActive ? '#000000' : '#000000'} />
+                <ChevronDownIcon width={8} height={8} color={isActive ? '#000000' : '#000000'} />
               </Box>
             </Animated.View>
           ) : (
             <Box width={12} height={12} alignItems="center" justifyContent="center">
-              <Feather name="chevron-down" size={8} color={isActive ? '#000000' : '#000000'} />
+              <ChevronDownIcon width={8} height={8} color={isActive ? '#000000' : '#000000'} />
             </Box>
           )}
         </Box>

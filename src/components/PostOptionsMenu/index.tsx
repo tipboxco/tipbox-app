@@ -1,6 +1,9 @@
 import React, { useCallback } from 'react';
 import { VStack, HStack, Text, Pressable } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ArrowTopRightOnSquareIcon,
+  FlagIcon,
+} from 'react-native-heroicons/outline';
 import { Alert, Share } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -74,7 +77,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
         borderColor={isDark ? '$borderDark600' : '#E9E9E9'}
       >
         <HStack alignItems="center" space="md">
-          <Feather name="share-2" size={20} color={isDark ? '#fff' : '#000'} />
+          <ArrowTopRightOnSquareIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
           <Text
             color={isDark ? '$textDark50' : '#000'}
             fontSize="$md"
@@ -92,7 +95,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
         py={16}
       >
         <HStack alignItems="center" space="md">
-          <Feather name="flag" size={20} color="#FF3040" />
+          <FlagIcon width={20} height={20} color="#FF3040" />
           <Text
             color="#FF3040"
             fontSize="$md"

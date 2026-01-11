@@ -8,6 +8,8 @@ import Animated, {
   useAnimatedStyle,
   interpolateColor,
   withTiming,
+  runOnJS,
+  useAnimatedReaction,
 } from 'react-native-reanimated';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -317,16 +319,44 @@ interface TabsBarProps {
   progress: ReturnType<typeof useSharedValue<number>>;
   tabContainerRef: React.RefObject<any>;
   onTabContainerLayout: (width: number) => void;
+  tabsScrollOffset: number; // Content scroll'dan gelen offset
 }
 
-const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
+const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout, tabsScrollOffset }) => {
   const activeColor = isDark ? '#FFFFFF' : '#000000';
   const inactiveColor = '#A3A3A3';
   const scrollViewRef = useRef<ScrollView>(null);
-  const scrollOffset = useSharedValue(0);
   
   // Tab genişliği: ekran genişliği / 4 (başlangıçta görünen tab sayısı)
   const tabWidth = SCREEN_WIDTH / 4;
+  
+  // Tabs scroll offset değiştiğinde ScrollView'i güncelle
+  useEffect(() => {
+    if (scrollViewRef.current && tabsScrollOffset > 0) {
+      scrollViewRef.current.scrollTo({
+        x: tabsScrollOffset,
+        animated: true,
+      });
+    } else if (scrollViewRef.current && tabsScrollOffset === 0) {
+      scrollViewRef.current.scrollTo({
+        x: 0,
+        animated: true,
+      });
+    }
+  }, [tabsScrollOffset]);
+  
+  // Progress'e göre scroll enabled kontrolü
+  const [isScrollEnabledState, setIsScrollEnabledState] = useState(false);
+  
+  useAnimatedReaction(
+    () => progress.value,
+    (value) => {
+      'worklet';
+      const enabled = value >= 3;
+      runOnJS(setIsScrollEnabledState)(enabled);
+    },
+    []
+  );
   
   // Her tab için animasyonlu stil - NotificationsScreen'deki gibi
   const tab0Style = useAnimatedStyle(() => {
@@ -395,39 +425,17 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
     }
   };
 
-  // Scroll offset hesaplama fonksiyonu
-  const calculateScrollOffset = useCallback((tabIndex: number): number => {
-    if (tabIndex < 3) return 0; // İlk 4 tab görünür
-    return (tabIndex - 2) * tabWidth; // İlk 2 tab gizlenir, aktif tab görünür
-  }, [tabWidth]);
-
-  // Aktif tab değiştiğinde otomatik scroll
-  useEffect(() => {
-    const tabIndex = TABS.findIndex(tab => tab.key === activeTab);
-    if (tabIndex === -1) return;
-    
-    const offset = calculateScrollOffset(tabIndex);
-    scrollOffset.value = withTiming(offset, { duration: 300 });
-    
-    // ScrollView'e scroll yap
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({
-        x: offset,
-        animated: true,
-      });
-    }
-  }, [activeTab, calculateScrollOffset, scrollOffset]);
 
   // Indicator position animation
   const indicatorWidth = tabWidth * 0.8;
   
   const indicatorStyle = useAnimatedStyle(() => {
     const baseTranslateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
-    const translateX = baseTranslateX + scrollOffset.value;
+    const translateX = baseTranslateX + tabsScrollOffset;
     return {
       transform: [{ translateX }],
     };
-  }, [tabWidth, indicatorWidth]);
+  }, [tabWidth, indicatorWidth, tabsScrollOffset]);
 
   return (
     <Box
@@ -443,7 +451,7 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
         scrollEventThrottle={16}
-        scrollEnabled={false} // Programmatic scroll only
+        scrollEnabled={isScrollEnabledState}
       >
         <HStack
           ref={tabContainerRef}
@@ -634,42 +642,48 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
     );
   }
   
+  // ScrollView için scroll handler - load more için
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    if (isCloseToBottom && activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
+      handleLoadMore();
+    }
+  }, [activeTabQuery, handleLoadMore]);
+
   return (
-    <FlatList
-      data={mappedPosts}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <Box px={16}>
-          {renderPostCard(item)}
-        </Box>
-      )}
-      onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.5}
-      ListEmptyComponent={
-        activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
-          <FeedSkeleton count={3} />
-        ) : (
-          <Box py={20} alignItems="center">
-            <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-              No content found yet.
-            </Text>
-          </Box>
-        )
-      }
-      ListFooterComponent={
-        activeTabQuery.isFetchingNextPage ? (
-          <Box py={20} alignItems="center">
-            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-          </Box>
-        ) : null
-      }
-      contentContainerStyle={{ paddingBottom: bottomPadding }}
+    <ScrollView
       showsVerticalScrollIndicator={false}
-      removeClippedSubviews={true}
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
-      windowSize={5}
-    />
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
+      onScroll={handleScroll}
+      scrollEventThrottle={400}
+      nestedScrollEnabled={true}
+    >
+      {activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
+        <FeedSkeleton count={3} />
+      ) : mappedPosts.length === 0 ? (
+        <Box py={20} alignItems="center">
+          <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+            No content found yet.
+          </Text>
+        </Box>
+      ) : (
+        <>
+          {mappedPosts.map((item) => (
+            <Box key={item.id} px={16}>
+              {renderPostCard(item)}
+            </Box>
+          ))}
+          {activeTabQuery.isFetchingNextPage && (
+            <Box py={20} alignItems="center">
+              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+          )}
+        </>
+      )}
+    </ScrollView>
   );
 };
 
@@ -724,42 +738,61 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const pagerRef = useRef<PagerView>(null);
+  const contentFlatListRef = useRef<FlatList>(null);
   const tabContainerRef = useRef<any>(null);
   
   // 🎯 CORE: Shared progress value for tab animations
   const progress = useSharedValue(0);
+  
+  // Tab genişliği: ekran genişliği / 4
+  const tabWidth = SCREEN_WIDTH / 4;
   
   // Tab index'i bul
   const getTabIndex = useCallback((tabKey: TabKey) => {
     return TABS.findIndex(tab => tab.key === tabKey);
   }, []);
   
-  // Tab değiştiğinde PagerView'i scroll et
+  // Tab değiştiğinde Content FlatList'i scroll et
   const handleTabChange = useCallback((tabKey: TabKey) => {
     const index = getTabIndex(tabKey);
-    if (index !== -1 && pagerRef.current) {
-      pagerRef.current.setPage(index);
+    if (index !== -1 && contentFlatListRef.current) {
+      contentFlatListRef.current.scrollToOffset({
+        offset: index * SCREEN_WIDTH,
+        animated: true,
+      });
       setActiveTab(tabKey);
     }
   }, [getTabIndex]);
   
-  // PagerView scroll handler - realtime progress güncelleme
-  const handlePageScroll = useCallback(
-    (e: any) => {
-      'worklet';
-      const { position, offset } = e.nativeEvent;
-      progress.value = position + offset;
+  // Tabs scroll offset state - Content scroll'a göre güncellenecek
+  const [tabsScrollOffset, setTabsScrollOffset] = useState(0);
+  
+  // Content FlatList scroll handler - realtime progress güncelleme
+  const handleContentScroll = useCallback(
+    (event: any) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const currentIndex = offsetX / SCREEN_WIDTH;
+      progress.value = currentIndex;
+      
+      // Tab 3'e gelindiğinde tabs'ı 1 tab width sola kaydır
+      if (currentIndex >= 3) {
+        // Tab 3+: 1 tab width sola kay
+        setTabsScrollOffset(1 * tabWidth);
+      } else {
+        // Tab 0-2: Başa dön
+        setTabsScrollOffset(0);
+      }
     },
-    [progress]
+    [progress, tabWidth]
   );
 
-  // PagerView page selected handler - snap sonrası progress'i sync et
-  const handlePageSelected = useCallback(
-    (e: any) => {
-      const position = e.nativeEvent.position;
-      progress.value = withTiming(position, { duration: 0 });
-      setActiveTab(TABS[position].key);
+  // Content FlatList scroll end handler - snap sonrası sync
+  const handleContentScrollEnd = useCallback(
+    (event: any) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / SCREEN_WIDTH);
+      progress.value = withTiming(index, { duration: 0 });
+      setActiveTab(TABS[index].key);
     },
     [progress]
   );
@@ -1413,7 +1446,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
-  // Not: profileHeader artık activeTab ve handleTabChange parametrelerini alıyor, bu yüzden her tab sayfasında ayrı oluşturulacak
+  const profileHeader = useMemo(() => {
+    return renderProfileHeader(activeTab, handleTabChange, isProfileLoading);
+  }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading]);
   
   if (isProfileLoading) {
     return (
@@ -1436,55 +1471,64 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       </SafeAreaView>
     );
   }
-  
-  // Profile header'ı oluştur (sabit üst kısım için)
-  const profileHeader = useMemo(() => {
-    return renderProfileHeader(activeTab, handleTabChange, isProfileLoading);
-  }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading]);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        {/* Sabit Üst Kısım: Banner + Profile Info + Tabs Bar */}
+        {profileHeader}
+        <TabsBar 
+          activeTab={activeTab} 
+          onChangeTab={handleTabChange} 
+          isDark={isDark}
+          progress={progress}
+          tabContainerRef={tabContainerRef}
+          onTabContainerLayout={handleTabContainerLayout}
+          tabsScrollOffset={tabsScrollOffset}
+        />
+        
+        {/* Scrollable İçerik: Tab Sayfaları */}
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
           nestedScrollEnabled={true}
+          scrollEventThrottle={16}
         >
-          {/* Sabit Üst Kısım: Banner + Profile Info + Tabs Bar */}
-          {profileHeader}
-          <TabsBar 
-            activeTab={activeTab} 
-            onChangeTab={handleTabChange} 
-            isDark={isDark}
-            progress={progress}
-            tabContainerRef={tabContainerRef}
-            onTabContainerLayout={handleTabContainerLayout}
-          />
-          
-          {/* Yatay Kaydırılabilir İçerik: Tab Sayfaları - PagerView ile animasyonlu */}
+          {/* Yatay Kaydırılabilir İçerik: FlatList ile */}
           <Box style={{ minHeight: Dimensions.get('window').height * 0.5 }}>
-            <AnimatedPagerView
-              ref={pagerRef}
-              style={{ height: Dimensions.get('window').height * 0.6 }}
-              initialPage={0}
-              onPageScroll={handlePageScroll}
-              onPageSelected={handlePageSelected}
-              scrollEnabled={true}
-            >
-              {TABS.map((tab) => (
-                <Box key={tab.key} flex={1}>
+            <FlatList
+              ref={contentFlatListRef}
+              data={TABS}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              onScroll={handleContentScroll}
+              onMomentumScrollEnd={handleContentScrollEnd}
+              keyExtractor={(item) => item.key}
+              getItemLayout={(data, index) => ({
+                length: SCREEN_WIDTH,
+                offset: SCREEN_WIDTH * index,
+                index,
+              })}
+              renderItem={({ item }) => (
+                <Box width={SCREEN_WIDTH} flex={1}>
                   <TabPage
-                    tabKey={tab.key}
+                    tabKey={item.key}
                     targetUserId={targetUserId || ''}
                     isDark={isDark}
                     bottomPadding={0}
                   />
                 </Box>
-              ))}
-            </AnimatedPagerView>
+              )}
+              removeClippedSubviews={false}
+              windowSize={5}
+              maxToRenderPerBatch={2}
+              initialNumToRender={2}
+            />
           </Box>
         </ScrollView>
-      </Box>
+      </VStack>
     </SafeAreaView>
   );
 };

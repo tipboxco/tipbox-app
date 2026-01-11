@@ -1,6 +1,9 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  CreditCardIcon,
+  DocumentDuplicateIcon,
+} from 'react-native-heroicons/outline';
 
 interface WalletCardInfoProps {
   name?: string;
@@ -33,7 +36,7 @@ export const WalletCardInfo: React.FC<WalletCardInfoProps> = ({
           alignItems="center"
           justifyContent="center"
         >
-          <Feather name="credit-card" size={24} color="#000000" />
+          <CreditCardIcon width={24} height={24} color="#000000" />
         </Box>
         <VStack flex={1}>
           <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
@@ -44,7 +47,7 @@ export const WalletCardInfo: React.FC<WalletCardInfoProps> = ({
               {address}
             </Text>
             <Pressable onPress={onCopyPress}>
-              <Feather name="copy" size={12} color="#000000" />
+              <DocumentDuplicateIcon width={12} height={12} color="#000000" />
             </Pressable>
           </HStack>
         </VStack>

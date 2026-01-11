@@ -1,7 +1,11 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, HStack, Text, Pressable, Image } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  TrophyIcon,
+  ArrowTopRightOnSquareIcon,
+  ShoppingBagIcon,
+} from 'react-native-heroicons/outline';
 import { Header } from '@/src/components/Header';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -87,7 +91,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                                 alignItems="center"
                                 space="xs"
                             >
-                                <Feather name="award" size={10} color={isDark ? '#FFFFFF' : '#000000'} />
+                                <TrophyIcon width={10} height={10} color={isDark ? '#FFFFFF' : '#000000'} />
                                 <Text
                                     fontSize={9}
                                     fontWeight="$medium"
@@ -117,7 +121,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             justifyContent="center"
                         >
                             <HStack alignItems="center" space="xs">
-                                <Feather name="share-2" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+                                <ArrowTopRightOnSquareIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     Transfer Et
                                 </Text>
@@ -154,7 +158,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                             }}
                         >
                             <HStack alignItems="center" space="xs">
-                                <Feather name="shopping-cart" size={24} color="#000000" />
+                                <ShoppingBagIcon width={24} height={24} color="#000000" />
                                 <Text fontSize={11} fontWeight="$semibold" color="#000000">
                                     Sat
                                 </Text>

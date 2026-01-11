@@ -8,7 +8,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
+import {
+  CheckIcon,
+  CircleStackIcon,
+  PresentationChartBarIcon,
+  GiftIcon,
+} from 'react-native-heroicons/outline';
+import { CheckIcon as CheckIconSolid } from 'react-native-heroicons/solid';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useEventDetail, useJoinEvent, useEventRequirements } from '@/src/features/events/api/hooks';
 
@@ -51,7 +57,7 @@ const BrandEventsDetailScreen: React.FC = () => {
         borderColor: '#ADADAD',
         textColor: '#000000',
         text: 'Joined',
-        icon: 'check' as const,
+                    icon: 'check' as const, // CheckIcon kullanılacak
       };
     }
     return {
@@ -90,7 +96,11 @@ const BrandEventsDetailScreen: React.FC = () => {
             alignItems="center"
             justifyContent="center"
           >
-            <Feather name={requirement.icon as any} size={16} color="#FFFFFF" />
+            {requirement.icon === 'check' ? (
+              <CheckIconSolid width={16} height={16} color="#FFFFFF" />
+            ) : (
+              <CircleStackIcon width={16} height={16} color="#FFFFFF" />
+            )}
           </Box>
 
           {/* Content */}
@@ -222,8 +232,8 @@ const BrandEventsDetailScreen: React.FC = () => {
                     <ActivityIndicator size="small" color={buttonStyle.textColor} />
                   ) : (
                     <HStack alignItems="center" space="xs">
-                      {buttonStyle.icon && (
-                        <Feather name={buttonStyle.icon} size={12} color={buttonStyle.textColor} />
+                      {buttonStyle.icon && buttonStyle.icon === 'check' && (
+                        <CheckIconSolid width={12} height={12} color={buttonStyle.textColor} />
                       )}
                       <Text
                         color={buttonStyle.textColor}
@@ -286,7 +296,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Feather name="bar-chart-2" size={16} color="#B9B9B9" />
+                  <PresentationChartBarIcon width={16} height={16} color="#B9B9B9" />
                 </Box>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
@@ -349,7 +359,7 @@ const BrandEventsDetailScreen: React.FC = () => {
                     alignItems="center"
                     justifyContent="center"
                   >
-                    <Feather name="gift" size={16} color="#B9B9B9" />
+                    <GiftIcon width={16} height={16} color="#B9B9B9" />
                   </Box>
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}

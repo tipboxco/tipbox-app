@@ -1,6 +1,13 @@
 import React, { memo, useMemo, useCallback } from 'react';
 import { Box, HStack, Text, Pressable, VStack, Image } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronLeftIcon,
+  Bars3Icon,
+  XMarkIcon,
+  FunnelIcon,
+  ArrowTopRightOnSquareIcon,
+  MagnifyingGlassIcon,
+} from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { useDrawerStore } from '@/src/store/drawerStore';
@@ -97,9 +104,11 @@ const HeaderComponent = ({
       let iconName: string;
       let onPress = onLeftActionPress;
 
+      let IconComponent: React.ComponentType<{ width?: number; height?: number; color?: string }> | null = null;
+
       switch (leftAction) {
         case 'back':
-          iconName = 'arrow-left';
+          IconComponent = ChevronLeftIcon;
           // Back için fallback: navigation.goBack()
           if (!onPress) {
             onPress = () => {
@@ -110,14 +119,14 @@ const HeaderComponent = ({
           }
           break;
         case 'menu':
-          iconName = 'menu';
+          IconComponent = Bars3Icon;
           // Menu için drawer aç (React Navigation drawer)
           if (!onPress) {
             return (
               <Pressable onPress={handleOpenDrawer}>
-                <Feather
-                  name={iconName as any}
-                  size={22}
+                <Bars3Icon
+                  width={22}
+                  height={22}
                   color={isDark ? '#FFFFFF' : '#000000'}
                 />
               </Pressable>
@@ -125,7 +134,7 @@ const HeaderComponent = ({
           }
           break;
         case 'cancel':
-          iconName = 'x';
+          IconComponent = XMarkIcon;
           // Cancel için onPress zorunlu (modal/conditional render içinde kullanılıyor)
           // Fallback yok, çünkü modal içinde navigation.goBack() çalışmaz
           break;
@@ -134,7 +143,7 @@ const HeaderComponent = ({
       }
 
       // onPress undefined ise buton render edilmemeli
-      if (!onPress) {
+      if (!onPress || !IconComponent) {
         return null;
       }
 
@@ -143,9 +152,9 @@ const HeaderComponent = ({
           onPress={onPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Feather
-            name={iconName as any}
-            size={22}
+          <IconComponent
+            width={22}
+            height={22}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>
@@ -156,9 +165,9 @@ const HeaderComponent = ({
     if (showBackButton && onBackPress) {
       return (
         <Pressable onPress={onBackPress}>
-          <Feather
-            name="arrow-left"
-            size={22}
+          <ChevronLeftIcon
+            width={22}
+            height={22}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>
@@ -171,9 +180,9 @@ const HeaderComponent = ({
           openDrawer();
           onMenuPress();
         }}>
-          <Feather
-            name="menu"
-            size={22}
+          <Bars3Icon
+            width={22}
+            height={22}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>
@@ -220,9 +229,9 @@ const HeaderComponent = ({
     if (showFilter && onFilterPress) {
       actions.push(
         <Pressable key="filter" onPress={onFilterPress} mr={showShare || rightButton ? '$2' : '$0'}>
-          <Feather
-            name="filter"
-            size={22}
+          <FunnelIcon
+            width={22}
+            height={22}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>
@@ -233,9 +242,9 @@ const HeaderComponent = ({
     if (showShare && onSharePress) {
       actions.push(
         <Pressable key="share" onPress={onSharePress} mr={rightButton ? '$2' : '$0'}>
-          <Feather
-            name="share-2"
-            size={22}
+          <ArrowTopRightOnSquareIcon
+            width={22}
+            height={22}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>
@@ -284,9 +293,9 @@ const HeaderComponent = ({
     if (!actions.length && onSearchPress) {
       return (
         <Pressable onPress={onSearchPress}>
-          <Feather
-            name="search"
-            size={22}
+          <MagnifyingGlassIcon
+            width={22}
+            height={22}
             color={isDark ? '#FFFFFF' : '#000000'}
           />
         </Pressable>

@@ -120,111 +120,29 @@ export const GlobalBottomSheet: React.FC = () => {
     }
   }, [isOpen, content, mergedOptions]);
 
-  // PERFORMANCE FIX: Fallback expansion with useEffect (only if setRef didn't trigger)
-  // Primary expansion happens in setRef callback, this is fallback for edge cases
-  // PERFORMANCE FIX: Removed requestAnimationFrame - direct expand() call for instant opening
+  // PERFORMANCE FIX: Simplified expansion - no retry mechanism, no requestAnimationFrame delay
+  // Primary expansion happens in setRef callback (immediate)
+  // This useEffect is only fallback if setRef didn't trigger (rare edge case)
   // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing, never snapToIndex
   // FLICKER FIX: Reset isExpandingRef when bottom sheet closes to prevent flicker on next open
-  // CONTROL FIX: Added better control and logging for bottom sheet expansion
-  // FIX: Wait for ref to be ready before expanding (retry mechanism)
   useEffect(() => {
-    console.log('[GlobalBottomSheet] 🔄 useEffect triggered:', {
-      isOpen,
-      hasContent: !!content,
-      hasRef: !!bottomSheetRef.current,
-      isExpandingRef: isExpandingRef.current,
-    });
-    
-    if (isOpen && content) {
-      // FIX: If ref is not ready yet, wait for it with retry mechanism
-      if (!bottomSheetRef.current) {
-        console.log('[GlobalBottomSheet] ⏳ Ref not ready yet, waiting...');
-        // Retry mechanism: Check for ref every 50ms, max 10 times (500ms total)
-        let retryCount = 0;
-        const maxRetries = 10;
-        const retryInterval = setInterval(() => {
-          retryCount++;
-          if (bottomSheetRef.current) {
-            console.log('[GlobalBottomSheet] ✅ Ref is now ready, expanding...');
-            clearInterval(retryInterval);
-            // Ref is ready, now expand
-            if (!isExpandingRef.current) {
-              isExpandingRef.current = true;
-              requestAnimationFrame(() => {
-                if (bottomSheetRef.current && isOpen && content) {
-                  try {
-                    console.log('[GlobalBottomSheet] 🚀 Calling expand() after ref ready');
-                    bottomSheetRef.current.expand();
-                    console.log('[GlobalBottomSheet] ✅ expand() called successfully (useEffect after ref ready)');
-                  } catch (error) {
-                    console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet:', error);
-                    isExpandingRef.current = false;
-                  }
-                }
-              });
-            }
-          } else if (retryCount >= maxRetries) {
-            console.warn('[GlobalBottomSheet] ⚠️ Ref not ready after max retries, giving up');
-            clearInterval(retryInterval);
-          }
-        }, 50);
-        
-        return () => clearInterval(retryInterval);
-      }
-      
-      // Ref is ready, proceed with expansion
-      if (!isExpandingRef.current) {
-        try {
-          isExpandingRef.current = true;
-          console.log('[GlobalBottomSheet] 🔄 Attempting to expand bottom sheet (useEffect)');
-          // CONTROL FIX: Use requestAnimationFrame to ensure ref is fully ready
-          requestAnimationFrame(() => {
-            if (bottomSheetRef.current && isOpen && content) {
-              try {
-                console.log('[GlobalBottomSheet] 🚀 Calling expand() in requestAnimationFrame (useEffect)');
-                bottomSheetRef.current.expand();
-                console.log('[GlobalBottomSheet] ✅ expand() called successfully (useEffect)');
-              } catch (error) {
-                console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet (useEffect RAF):', error);
-                isExpandingRef.current = false;
-              }
-            }
-          });
-        } catch (error) {
-          console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet (useEffect):', error);
-          isExpandingRef.current = false;
-        }
-      } else {
-        // CONTROL FIX: If already expanding, try again after a short delay
-        // This handles cases where expand() was called but didn't work
-        const timeoutId = setTimeout(() => {
-          if (bottomSheetRef.current && isOpen && content) {
-            try {
-              console.log('[GlobalBottomSheet] 🔄 Retrying expand() after delay');
-              bottomSheetRef.current.expand();
-            } catch (error) {
-              console.error('[GlobalBottomSheet] ❌ Error retrying expand():', error);
-            }
-          }
-        }, 200);
-        return () => clearTimeout(timeoutId);
+    if (isOpen && content && bottomSheetRef.current && !isExpandingRef.current) {
+      try {
+        isExpandingRef.current = true;
+        // PERFORMANCE FIX: Direct expand() call - no requestAnimationFrame delay
+        // @gorhom/bottom-sheet handles timing internally, no need for RAF
+        bottomSheetRef.current.expand();
+      } catch (error) {
+        console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet:', error);
+        isExpandingRef.current = false;
       }
     } else if (!isOpen && bottomSheetRef.current) {
       // FLICKER FIX: Reset isExpandingRef immediately when closing
-      // This ensures next open doesn't have stale state
-      console.log('[GlobalBottomSheet] 🔒 Closing bottom sheet');
       isExpandingRef.current = false;
       bottomSheetRef.current.close();
     } else if (!isOpen) {
       // FLICKER FIX: Reset isExpandingRef even if ref is not set
-      // This handles edge cases where ref might be null
       isExpandingRef.current = false;
-    } else {
-      console.log('[GlobalBottomSheet] ⏸️ useEffect: Conditions not met:', {
-        isOpen,
-        hasContent: !!content,
-        hasRef: !!bottomSheetRef.current,
-      });
     }
   }, [isOpen, content]); // PERFORMANCE FIX: Removed mergedOptions from dependencies to prevent unnecessary re-renders
 
@@ -336,54 +254,25 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // PERFORMANCE FIX: Expansion when ref is set (primary method)
   // This runs immediately when BottomSheet component mounts
-  // PERFORMANCE FIX: Removed requestAnimationFrame - direct expand() call for instant opening
+  // PERFORMANCE FIX: Direct expand() call - no requestAnimationFrame delay
+  // @gorhom/bottom-sheet handles timing internally, no need for RAF
   // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing, never snapToIndex
   // FLICKER FIX: Reset isExpandingRef when ref is null (component unmounts)
-  // CONTROL FIX: Added better control and logging for bottom sheet expansion
   const setRef = useCallback((ref: BottomSheet | null) => {
-    console.log('[GlobalBottomSheet] 🔗 setRef called:', {
-      hasRef: !!ref,
-      isOpen,
-      hasContent: !!content,
-      isExpandingRef: isExpandingRef.current,
-    });
     bottomSheetRef.current = ref;
-    if (ref && isOpen && content) {
-      // CONTROL FIX: Always try to expand when ref is set, even if isExpandingRef is true
-      // This ensures bottom sheet opens even if previous expansion failed
+    if (ref && isOpen && content && !isExpandingRef.current) {
       try {
-        if (!isExpandingRef.current) {
-          isExpandingRef.current = true;
-          console.log('[GlobalBottomSheet] 🔄 Attempting to expand bottom sheet (setRef)');
-        }
-        // ARCHITECTURE FIX: Always use expand() with enableDynamicSizing
-        // CONTROL FIX: Use requestAnimationFrame to ensure ref is fully ready
-        requestAnimationFrame(() => {
-          if (ref && isOpen && content) {
-            try {
-              console.log('[GlobalBottomSheet] 🚀 Calling expand() in requestAnimationFrame');
-              ref.expand();
-              console.log('[GlobalBottomSheet] ✅ expand() called successfully (setRef)');
-            } catch (error) {
-              console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet (setRef RAF):', error);
-            }
-          }
-        });
+        isExpandingRef.current = true;
+        // PERFORMANCE FIX: Direct expand() call - instant opening
+        // @gorhom/bottom-sheet ref is ready when setRef is called
+        ref.expand();
       } catch (error) {
-        console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet (setRef):', error);
+        console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet:', error);
         isExpandingRef.current = false;
       }
     } else if (!ref) {
       // FLICKER FIX: Reset isExpandingRef when ref is null (component unmounts)
-      // This ensures clean state for next mount
-      console.log('[GlobalBottomSheet] 🔒 Ref is null, resetting isExpandingRef');
       isExpandingRef.current = false;
-    } else {
-      console.log('[GlobalBottomSheet] ⏸️ Conditions not met for expansion:', {
-        hasRef: !!ref,
-        isOpen,
-        hasContent: !!content,
-      });
     }
   }, [isOpen, content]); // PERFORMANCE FIX: Removed mergedOptions from dependencies
 

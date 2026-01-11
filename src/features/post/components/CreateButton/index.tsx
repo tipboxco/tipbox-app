@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { PlusIcon } from 'react-native-heroicons/outline';
 import { useBottomOffset } from '@/src/utils';
 
 interface CreateButtonProps {
@@ -31,7 +31,7 @@ export const CreateButton = ({ onPress }: CreateButtonProps) => {
         shadowRadius={3.84}
         elevation={5}
       >
-        <Feather name="plus" size={24} color="#596B00" />
+        <PlusIcon width={24} height={24} color="#596B00" />
       </Box>
     </Pressable>
   );

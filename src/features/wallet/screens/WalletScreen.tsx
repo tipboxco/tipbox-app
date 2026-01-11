@@ -4,7 +4,16 @@ import { ActivityIndicator } from 'react-native';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import {
+  QrCodeIcon,
+  PaperAirplaneIcon,
+  ArrowsRightLeftIcon,
+  GiftIcon,
+  FunnelIcon,
+  PresentationChartBarIcon,
+  ChevronDownIcon,
+  TrophyIcon,
+} from 'react-native-heroicons/outline';
 import { WalletCardInfo } from '../components/WalletCardInfo';
 import { HistoryCard } from '../components/HistoryCard';
 import { SendBottomSheet } from '../components/SendBottomSheet';
@@ -282,34 +291,37 @@ export const WalletScreen: React.FC = () => {
                 {/* Quick Actions */}
                 <HStack mt="$4" space="md">
                   {[
-                    { icon: 'qr-code', label: 'Receive' as const, onPress: () => {} },
-                    { icon: 'send', label: 'Send' as const, onPress: handleSendPress },
-                    { icon: 'shuffle', label: 'Swap' as const, onPress: () => navigation.navigate('SwapScreen') },
-                    { icon: 'gift', label: 'Claim' as const, onPress: handleClaimPress },
-                  ].map((action) => (
-                    <Pressable
-                      key={action.label}
-                      onPress={action.onPress}
-                      flex={1}
-                      bg="$backgroundLight0"
-                      $dark-bg="$backgroundDark800"
-                      borderWidth={1}
-                      borderColor="$borderLight200"
-                      $dark-borderColor="$borderDark600"
-                      rounded={10}
-                      py="$3"
-                      px="$3"
-                      alignItems="center"
-                      justifyContent="center"
-                    >
-                      <VStack alignItems="center" space="xs">
-                        <Feather name={action.icon as any} size={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text fontSize={11} fontWeight="$medium" color="$textLight900" $dark-color="$textDark50">
-                          {action.label}
-                        </Text>
-                      </VStack>
-                    </Pressable>
-                  ))}
+                    { icon: QrCodeIcon, label: 'Receive' as const, onPress: () => {} },
+                    { icon: PaperAirplaneIcon, label: 'Send' as const, onPress: handleSendPress },
+                    { icon: ArrowsRightLeftIcon, label: 'Swap' as const, onPress: () => navigation.navigate('SwapScreen') },
+                    { icon: GiftIcon, label: 'Claim' as const, onPress: handleClaimPress },
+                  ].map((action) => {
+                    const IconComponent = action.icon;
+                    return (
+                      <Pressable
+                        key={action.label}
+                        onPress={action.onPress}
+                        flex={1}
+                        bg="$backgroundLight0"
+                        $dark-bg="$backgroundDark800"
+                        borderWidth={1}
+                        borderColor="$borderLight200"
+                        $dark-borderColor="$borderDark600"
+                        rounded={10}
+                        py="$3"
+                        px="$3"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <VStack alignItems="center" space="xs">
+                          <IconComponent width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                          <Text fontSize={11} fontWeight="$medium" color="$textLight900" $dark-color="$textDark50">
+                            {action.label}
+                          </Text>
+                        </VStack>
+                      </Pressable>
+                    );
+                  })}
                 </HStack>
               </Box>
 
@@ -320,10 +332,10 @@ export const WalletScreen: React.FC = () => {
                 </Text>
                 <HStack space="sm" alignItems="center">
                   <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
-                    <Feather name="filter" size={16} color="#000000" />
+                    <FunnelIcon width={16} height={16} color="#000000" />
                   </Pressable>
                   <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
-                    <Feather name="bar-chart-2" size={16} color="#000000" />
+                    <PresentationChartBarIcon width={16} height={16} color="#000000" />
                   </Pressable>
                 </HStack>
               </HStack>
@@ -454,7 +466,7 @@ export const WalletScreen: React.FC = () => {
                         <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                           Filtrele
                         </Text>
-                        <Feather name="chevron-down" size={12} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
                     </Pressable>
                     {/* Sırala Button */}
@@ -472,7 +484,7 @@ export const WalletScreen: React.FC = () => {
                         <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                           Sırala
                         </Text>
-                        <Feather name="chevron-down" size={12} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
                     </Pressable>
                   </HStack>
@@ -536,7 +548,7 @@ export const WalletScreen: React.FC = () => {
                                   alignItems="center"
                                   space="xs"
                                 >
-                                  <Feather name="award" size={10} color={isDark ? '#FFFFFF' : '#000000'} />
+                                  <TrophyIcon width={10} height={10} color={isDark ? '#FFFFFF' : '#000000'} />
                                   <Text 
                                     fontSize={9} 
                                     fontWeight="$medium" 

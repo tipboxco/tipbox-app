@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, VStack, HStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { CalendarIcon } from 'react-native-heroicons/outline';
 import type { ImageSourcePropType } from 'react-native';
 
 /**
@@ -112,7 +112,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
 
             {/* Date Range */}
             <HStack alignItems="center" space="xs">
-              <Feather name="calendar" size={12} color="#B9B9B9" />
+              <CalendarIcon width={12} height={12} color="#B9B9B9" />
               <Text
                 color="#B9B9B9"
                 fontSize={9}

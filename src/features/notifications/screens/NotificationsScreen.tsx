@@ -20,7 +20,17 @@ import {
     InputField,
     Spinner,
 } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  XMarkIcon,
+  HeartIcon,
+  GiftIcon,
+  ChatBubbleLeftIcon,
+  UserPlusIcon,
+  TrophyIcon,
+  CalendarIcon,
+  BellIcon,
+  MagnifyingGlassIcon,
+} from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { NotificationsStackParamList } from '@/src/features/notifications/navigation';
@@ -64,31 +74,31 @@ const NotificationCard: React.FC<{
     const markAsReadMutation = useMarkNotificationAsRead();
     const deleteMutation = useDeleteNotification();
 
-    const getIconName = (type: NotificationType): string => {
+    const getIconComponent = (type: NotificationType): React.ComponentType<{ width?: number; height?: number; color?: string }> => {
         switch (type) {
             case 'POST_LIKED':
             case 'COMMENT_LIKED':
-                return 'heart';
+                return HeartIcon;
             case 'TIPS_RECEIVED':
             case 'TIPS_SENT':
             case 'REWARD_EARNED':
-                return 'gift';
+                return GiftIcon;
             case 'POST_COMMENTED':
             case 'COMMENT_REPLIED':
             case 'NEW_MESSAGE':
-                return 'message-circle';
+                return ChatBubbleLeftIcon;
             case 'NEW_TRUSTER':
             case 'NEW_TRUSTED_BY':
-                return 'user-check';
+                return UserPlusIcon;
             case 'NEW_BADGE':
             case 'ACHIEVEMENT_UNLOCKED':
-                return 'award';
+                return TrophyIcon;
             case 'EVENT_STARTED':
             case 'EVENT_ENDING_SOON':
             case 'EVENT_REWARD_AVAILABLE':
-                return 'calendar';
+                return CalendarIcon;
             default:
-                return 'bell';
+                return BellIcon;
         }
     };
 
@@ -178,13 +188,12 @@ const NotificationCard: React.FC<{
                             >
                                 {formatRelativeTime(notification.createdAt)}
                             </Text>
-                            <Feather
-                                name={getIconName(notification.type) as any}
-                                size={14}
-                                color="#7D7D7D"
-                            />
+                            {(() => {
+                                const IconComponent = getIconComponent(notification.type);
+                                return <IconComponent width={14} height={14} color="#7D7D7D" />;
+                            })()}
                             <Pressable onPress={handleDelete} ml="$2">
-                                <Feather name="x" size={14} color="#7D7D7D" />
+                                <XMarkIcon width={14} height={14} color="#7D7D7D" />
                             </Pressable>
                         </HStack>
                     </HStack>
@@ -594,9 +603,9 @@ const NotificationsScreenComponent: React.FC = () => {
                     px={14}
                     space="sm"
                 >
-                    <Feather
-                        name="search"
-                        size={24}
+                    <MagnifyingGlassIcon
+                        width={24}
+                        height={24}
                         color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
                     />
                     <Input flex={1} borderWidth={0} bg="transparent">

@@ -149,6 +149,7 @@ export const ForgotPasswordScreen = () => {
                 size="md"
                 bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
+                alignItems="center"
               >
                 <InputField 
                   placeholder="Your email address"
@@ -161,14 +162,15 @@ export const ForgotPasswordScreen = () => {
                   as={CheckCircle} 
                   color={isEmailValid ? "$success500" : "$gray400"} 
                   size="md" 
-                  mr="$2" 
+                  mr="$2"
+                  alignSelf="center"
                 />
               </Input>
             </FormControl>
           </VStack>
 
           <Button
-            bg="$yellow400"
+            bg="$buttonPrimary"
             py="$1"
             rounded="$lg"
             mt="$4"

@@ -1,7 +1,7 @@
 import React from 'react';
 import { HStack, VStack, Text, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { TrophyIcon } from 'react-native-heroicons/outline';
 
 interface PointsHistoryItem {
   id: string;
@@ -35,7 +35,7 @@ const PointsHistoryCard: React.FC<PointsHistoryCardProps> = ({ item }) => {
           alignItems="center"
           justifyContent="center"
         >
-          <Feather name="award" size={16} color="#9B9B9B" />
+          <TrophyIcon width={16} height={16} color="#9B9B9B" />
         </Box>
 
         {/* Content */}

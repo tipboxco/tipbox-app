@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { CheckCircle, Mail } from 'lucide-react-native';
+import { CheckCircle, Mail, Eye, EyeOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
@@ -31,6 +31,7 @@ export const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = (text: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -289,17 +290,19 @@ export const LoginScreen = () => {
             >
               <InputField 
                 placeholder="Your password" 
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={validatePassword}
               />
-              <Icon 
-                as={CheckCircle} 
-                color={isPasswordValid ? "$success500" : "$gray400"} 
-                size="md" 
-                mr="$2"
-                alignSelf="center"
-              />
+              <Pressable onPress={() => setShowPassword(!showPassword)}>
+                <Icon 
+                  as={showPassword ? EyeOff : Eye} 
+                  color={isDark ? '$textDark300' : '$textLight600'} 
+                  size="md" 
+                  mr="$2"
+                  alignSelf="center"
+                />
+              </Pressable>
             </Input>
             <Box flexDirection="row" justifyContent="flex-end" mt="$1">
               <Text
@@ -313,15 +316,6 @@ export const LoginScreen = () => {
             </Box>
           </FormControl>
         </VStack>
-
-        <Text
-          fontSize="$xs"
-          color={isDark ? '$textDark300' : '$textLight600'}
-          textAlign="center"
-          mt="$4"
-        >
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </Text>
 
         <Button
           bg="$buttonPrimary"

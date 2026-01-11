@@ -187,16 +187,6 @@ export const WelcomeScreen = () => {
           </Button>
         </VStack>
 
-        <Text
-          fontSize="$xs"
-          color={isDark ? '$textDark300' : '$textLight600'}
-          textAlign="center"
-          mt="$4"
-          px="$8"
-        >
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </Text>
-
         <HStack 
           mt="auto" 
           mb={insets.bottom + 16} 

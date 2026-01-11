@@ -1,7 +1,11 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ShieldCheckIcon,
+  LinkIcon,
+  PlusIcon,
+} from 'react-native-heroicons/outline';
 import { Header } from '@/src/components/Header';
 import { WalletService } from '@/src/services/WalletService';
 import { useNavigation } from '@react-navigation/native';
@@ -44,7 +48,7 @@ export const WalletConnection: React.FC = () => {
                     alignItems="center"
                     justifyContent="center"
                 >
-                    <Feather name="shield" size={64} color="#9CA3AF" />
+                    <ShieldCheckIcon width={64} height={64} color="#9CA3AF" />
                 </Box>
 
                 {/* Action buttons block (Create / Connect) */}
@@ -64,7 +68,7 @@ export const WalletConnection: React.FC = () => {
                         mb="$2"
                     >
                         <HStack space="xs" alignItems="center">
-                            <Feather name="link" size={14} color="#6B7280" />
+                            <LinkIcon width={14} height={14} color="#6B7280" />
                             <Text fontSize={12} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
                                 Connect Wallet
                             </Text>
@@ -85,7 +89,7 @@ export const WalletConnection: React.FC = () => {
                         mb="$2"
                     >
                         <HStack space="xs" alignItems="center">
-                            <Feather name="plus" size={14} color="#000000" />
+                            <PlusIcon width={14} height={14} color="#000000" />
                             <Text fontSize={12} fontWeight="$bold" color="$black">
                                 Create a Wallet
                             </Text>

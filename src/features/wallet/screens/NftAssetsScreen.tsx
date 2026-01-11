@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, HStack, Text, Pressable, Image, ActivityIndicator } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronDownIcon,
+  TrophyIcon,
+} from 'react-native-heroicons/outline';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -109,7 +112,7 @@ export const NftAssetsScreen: React.FC = () => {
                     <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                       Filtrele
                     </Text>
-                    <Feather name="chevron-down" size={12} color={isDark ? '#FFFFFF' : '#000000'} />
+                    <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                   </HStack>
                 </Pressable>
                 {/* Sırala Button */}
@@ -127,7 +130,7 @@ export const NftAssetsScreen: React.FC = () => {
                     <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                       Sırala
                     </Text>
-                    <Feather name="chevron-down" size={12} color={isDark ? '#FFFFFF' : '#000000'} />
+                    <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                   </HStack>
                 </Pressable>
               </HStack>
@@ -207,7 +210,7 @@ export const NftAssetsScreen: React.FC = () => {
                                 alignItems="center"
                                 space="xs"
                               >
-                                <Feather name="award" size={10} color={isDark ? '#FFFFFF' : '#000000'} />
+                                <TrophyIcon width={10} height={10} color={isDark ? '#FFFFFF' : '#000000'} />
                                 <Text 
                                   fontSize={9} 
                                   fontWeight="$medium" 

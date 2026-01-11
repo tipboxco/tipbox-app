@@ -16,7 +16,18 @@ import { StyleSheet } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import { useShallow } from 'zustand/react/shallow';
-import { Feather as FeatherIcon } from '@expo/vector-icons';
+import {
+  UserCircleIcon,
+  CreditCardIcon,
+  BookmarkIcon,
+  ShoppingBagIcon,
+  TrophyIcon,
+  Cog6ToothIcon,
+  StarIcon,
+  QuestionMarkCircleIcon,
+  ClockIcon,
+  ArrowRightStartOnRectangleIcon,
+} from 'react-native-heroicons/outline';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/src/features/profile/api/profileApi';
@@ -29,12 +40,10 @@ const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
 
 interface MenuItem {
   id: string;
-  icon: FeatherIconName;
+  icon: React.ComponentType<{ width?: number; height?: number; color?: string }>;
   label: string;
   onPress: () => void;
 }
-
-type FeatherIconName = keyof typeof FeatherIcon.glyphMap;
 
 const styles = StyleSheet.create({
   gradient: {
@@ -504,44 +513,44 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const MENU_ITEMS: MenuItem[] = useMemo(() => [
     {
       id: 'account',
-      icon: 'user',
+      icon: UserCircleIcon,
       label: 'Account',
       onPress: handleNavigateToProfile,
     },
     {
       id: 'wallet',
-      icon: 'credit-card',
+      icon: CreditCardIcon,
       label: 'Wallet',
       onPress: handleNavigateToWallet,
     },
     {
       id: 'bookmarks',
-      icon: 'bookmark',
+      icon: BookmarkIcon,
       label: 'Bookmarks',
       onPress: handleNavigateToBookmarks,
     },
     {
       id: 'marketplace',
-      icon: 'shopping-bag',
+      icon: ShoppingBagIcon,
       label: 'Marketplace',
       onPress: handleNavigateToMarketplace,
     },
     {
       id: 'prime-pass',
-      icon: 'award',
+      icon: TrophyIcon,
       label: 'Prime Pass',
       onPress: handleCloseDrawer,
     },
     {
       id: 'settings',
-      icon: 'settings',
+      icon: Cog6ToothIcon,
       label: 'Settings',
       onPress: handleNavigateToSettings,
     },
     // MoreSchoise seçeneği şimdilik gizlendi
     // {
     //   id: 'more-schoise',
-    //   icon: 'more-horizontal',
+    //   icon: EllipsisHorizontalIcon,
     //   label: 'MoreSchoise',
     //   onPress: handleNavigateToMoreSchoise,
     // },
@@ -781,7 +790,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               >
               <HStack space="md" alignItems="center">
                 <Box w={24} h={24} justifyContent="center" alignItems="center">
-                  <FeatherIcon name={item.icon} size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <item.icon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
                 <Text 
                   color={isDark ? '$textDark50' : '$textLight900'}
@@ -811,7 +820,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             >
             <HStack space="md" alignItems="center">
               <Box w={20} h={20} justifyContent="center" alignItems="center">
-                <FeatherIcon name="star" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                <StarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
@@ -833,7 +842,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           >
             <HStack space="md" alignItems="center">
               <Box w={20} h={20} justifyContent="center" alignItems="center">
-                <FeatherIcon name="help-circle" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                <QuestionMarkCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
@@ -855,7 +864,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           >
             <HStack space="md" alignItems="center">
               <Box w={20} h={20} justifyContent="center" alignItems="center">
-                <FeatherIcon name="clock" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                <ClockIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
@@ -877,7 +886,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           >
             <HStack space="md" alignItems="center">
               <Box w={20} h={20} justifyContent="center" alignItems="center">
-                <FeatherIcon name="log-out" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                <ArrowRightStartOnRectangleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}

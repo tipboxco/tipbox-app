@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  EllipsisHorizontalIcon,
+  InformationCircleIcon,
+  TagIcon,
+  CubeIcon,
+  StarIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import {
+  StarIcon as StarIconSolid,
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '@/src/components/CardImageCarousel';
@@ -151,7 +166,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             </Text>
           </VStack>
           <Pressable onPress={handleOptionsPress}>
-            <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
+            <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
           </Pressable>
         </HStack>
       </VStack>
@@ -171,7 +186,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
           px='$3'
           py='$2'
         >
-          <Feather name="info" size={12} color={'#fff'} />
+          <InformationCircleIcon width={12} height={12} color="#fff" />
           <Text
             fontSize="$xs"
             fontWeight="$bold"
@@ -262,12 +277,11 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                 >
                 {/* Card Header - Başlık ve Content aynı hizada */}
                 <HStack px={16} py={8} alignItems="flex-start" space="sm">
-                  <Feather 
-                    name={contentItem.tag.icon === 'tag' ? 'tag' : 'package'} 
-                    size={18} 
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    style={{ marginTop: 2 }}
-                  />
+                  {contentItem.tag.icon === 'tag' ? (
+                    <TagIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
+                  ) : (
+                    <CubeIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
+                  )}
                   <VStack flex={1} space="xs">
                     <Text
                       fontSize={11}
@@ -302,13 +316,19 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                       {[1, 2, 3, 4, 5].map((star) => {
                         const rating = contentItem.rating || [];
                         const isFilled = star <= rating.filter((r: number) => r === 1).length;
-                        return (
-                          <Feather
+                        return isFilled ? (
+                          <StarIconSolid
                             key={star}
-                            name="star"
-                            size={24}
-                            color={isFilled ? '#829905' : '#E9E9E9'}
-                            fill={isFilled ? '#829905' : 'transparent'}
+                            width={24}
+                            height={24}
+                            color="#829905"
+                          />
+                        ) : (
+                          <StarIcon
+                            key={star}
+                            width={24}
+                            height={24}
+                            color="#E9E9E9"
                           />
                         );
                       })}
@@ -393,12 +413,11 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             <HStack>
               <Pressable onPress={handleLike}>
                 <HStack mr={10} alignItems="center">
-                  <Feather
-                    name="heart"
-                    size={24}
-                    color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                    fill={isLiked ? '#FF3040' : 'none'}
-                  />
+                  {isLiked ? (
+                    <HeartIconSolid width={24} height={24} color="#FF3040" />
+                  ) : (
+                    <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                  )}
                   <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                     {(relatedPostData?.stats || data.stats)?.likes || 0}
                   </Text>
@@ -410,7 +429,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                 opacity={onCommentPress ? 1 : 0.5}
               >
                 <HStack mr={10} alignItems="center">
-                  <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+                  <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                   <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                     {(relatedPostData?.stats || data.stats)?.comments || 0}
                   </Text>
@@ -418,7 +437,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               </Pressable>
               <Pressable onPress={handleShare}>
                 <HStack mr={10} alignItems="center">
-                  <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+                  <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                   <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                     {(relatedPostData?.stats || data.stats)?.shares || 0}
                   </Text>
@@ -426,12 +445,11 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               </Pressable>
               <Pressable onPress={handleBookmark}>
                 <HStack mr={10} alignItems="center">
-                  <Feather
-                    name="bookmark"
-                    size={24}
-                    color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                    fill={isBookmarked ? '#829905' : 'none'}
-                  />
+                  {isBookmarked ? (
+                    <BookmarkIconSolid width={24} height={24} color="#829905" />
+                  ) : (
+                    <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                  )}
                   <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                     {(relatedPostData?.stats || data.stats)?.bookmarks || 0}
                   </Text>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource, cleanNewlines } from '@/src/utils';
@@ -138,7 +138,7 @@ export const ProductInfoCard = ({
           />
         )}
         {shouldShowChevron && (
-          <Feather name="chevron-right" size={24} color={isDark ? '#fff' : '#A3A3A3'} />
+          <ChevronRightIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
         )}
       </Box>
     </HStack>

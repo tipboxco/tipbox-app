@@ -16,6 +16,10 @@ import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
 import { CategorySkeleton, ProductSkeleton } from '@/src/components/Skeletons';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
+import { useBottomOffset } from '@/src/utils';
+import { useShallow } from 'zustand/react/shallow';
 
 type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
@@ -43,25 +47,52 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // Create Post Flow Store
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
   
-  // Catalog UI Store
-  const setSelectedProduct = useCatalogUIStore((state) => state.setSelectedProduct);
-  const setSelectedSubCategory = useCatalogUIStore((state) => state.setSelectedSubCategory);
-  const setSelectedProductGroup = useCatalogUIStore((state) => state.setSelectedProductGroup);
-  const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
+  // PERFORMANCE FIX: Use shallow selector to prevent unnecessary re-renders
+  // Catalog UI Store - Actions (stable references)
+  const { 
+    setSelectedProduct, 
+    setSelectedSubCategory, 
+    setSelectedProductGroup, 
+    setCurrentView 
+  } = useCatalogUIStore(
+    useShallow((state) => ({
+      setSelectedProduct: state.setSelectedProduct,
+      setSelectedSubCategory: state.setSelectedSubCategory,
+      setSelectedProductGroup: state.setSelectedProductGroup,
+      setCurrentView: state.setCurrentView,
+    }))
+  );
+  
+  // PERFORMANCE FIX: Use shallow selector for values
+  const {
+    selectedSubCategoryId,
+    selectedProductGroupId,
+    currentView,
+  } = useCatalogUIStore(
+    useShallow((state) => ({
+      selectedSubCategoryId: state.selectedSubCategoryId,
+      selectedProductGroupId: state.selectedProductGroupId,
+      currentView: state.currentView,
+    }))
+  );
   
   // Seçili kategori ID'si (subcategories çekmek için) - Local state (API için)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   
-  // Seçili alt kategori ID'si (product groups çekmek için) - Store'dan oku
-  const selectedSubCategoryId = useCatalogUIStore((state) => state.selectedSubCategoryId);
+  // Seçili alt kategori ID'si setter - Store'dan oku
   const setSelectedSubCategoryId = useCatalogUIStore((state) => state.setSelectedSubCategory);
   
-  // Seçili ürün grubu ID'si (products çekmek için) - Store'dan oku
-  const selectedProductGroupId = useCatalogUIStore((state) => state.selectedProductGroupId);
+  // Seçili ürün grubu ID'si setter - Store'dan oku
   const setSelectedProductGroupId = useCatalogUIStore((state) => state.setSelectedProductGroup);
   
-  // Current view - Store'dan oku
-  const currentView = useCatalogUIStore((state) => state.currentView);
+  // Global bottom sheet hook - PERFORMANCE FIX: Direct access, no callback chain
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // Bottom offset for bottom sheet padding
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+  
+  // Bottom sheet key for remounting
+  const [bottomSheetKey, setBottomSheetKey] = useState(0);
   
   // Prefetch helper
   const { prefetchSubCategories, prefetchProductGroups, prefetchProducts } = useCatalogPrefetch();
@@ -601,10 +632,162 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     }
   };
 
+  // PERFORMANCE FIX: Direct bottom sheet access - no callback chain
+  // This eliminates the callback chain: ProductCatalogScreen -> CatalogScreen -> handleCreatePost
+  const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
+    console.log('📝 [ProductCatalogScreen] Post type selected:', type, 'experienceOption:', experienceOption);
+    
+    // Close bottom sheet first
+    closeBottomSheet();
+    
+    // Get current store state
+    const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+    
+    // Determine contextType and contextId based on current selection
+    // Priority: Product > ProductGroup > SubCategory
+    let determinedContextType: ProductInfoType | undefined;
+    let determinedContextId: string | undefined;
+    let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
+    
+    // Determine context based on current view and selection (from store)
+    if (selectedProductId && currentView === 'products') {
+      determinedContextType = ProductInfoType.PRODUCT;
+      determinedContextId = selectedProductId;
+      if (selectedProduct) {
+        productInfoSnapshot = {
+          image: selectedProduct.image,
+          title: selectedProduct.name,
+          subName: selectedProduct.description,
+        };
+      }
+    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+      determinedContextType = ProductInfoType.PRODUCT_GROUP;
+      determinedContextId = selectedProductGroupId;
+    } else if (selectedSubCategoryId) {
+      determinedContextType = ProductInfoType.SUB_CATEGORY;
+      determinedContextId = selectedSubCategoryId;
+    }
+    
+    // Navigate to appropriate screen based on post type
+    if (type === 'free') {
+      // Save to flow store if context is available
+      if (determinedContextType && determinedContextId) {
+        setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
+      }
+      navigation.navigate('Post', {
+        screen: 'CreatePostScreen',
+      });
+    } else if (type === 'tips') {
+      navigation.navigate('Post', {
+        screen: 'CreateTipsAndTrickPostScreen',
+      });
+    } else if (type === 'question') {
+      navigation.navigate('Post', {
+        screen: 'CreateQuestionPostScreen',
+      });
+    } else if (type === 'experience') {
+      navigation.navigate('Post', {
+        screen: 'CreateExperiencePostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+            brand: selectedProduct.brand,
+          } : undefined,
+          fromInventory: experienceOption === 'own',
+          experienceOption: experienceOption,
+        },
+      });
+    } else if (type === 'comparison') {
+      navigation.navigate('Post', {
+        screen: 'CreateBenchmarkPostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+          } : undefined,
+        },
+      });
+    } else if (type === 'update') {
+      navigation.navigate('Post', {
+        screen: 'CreateUpdatePostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+            brand: selectedProduct.brand,
+          } : undefined,
+        },
+      });
+    }
+  }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId]);
+
   const handleCreatePost = useCallback(() => {
     console.log('📝 [ProductCatalogScreen] Create Post button pressed');
-    onCreatePost?.();
-  }, [onCreatePost]);
+    
+    // Reset bottom sheet key to remount component and reset view
+    setBottomSheetKey(prev => prev + 1);
+    
+    // Determine stage for bottom sheet
+    // Priority: Product > ProductGroup > SubCategory
+    let stageForBottomSheet: 'subcategories' | 'productgroups' | 'products' | undefined;
+    const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+    
+    if (currentView === 'categories') {
+      stageForBottomSheet = undefined;
+    } else if (selectedProductId && currentView === 'products') {
+      stageForBottomSheet = 'products';
+    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+      stageForBottomSheet = 'subcategories';
+    } else if (currentView === 'subcategories') {
+      stageForBottomSheet = 'subcategories';
+    } else if (currentView === 'productgroups') {
+      stageForBottomSheet = 'subcategories';
+    } else {
+      stageForBottomSheet = currentView as 'subcategories' | 'products';
+    }
+    
+    // PERFORMANCE FIX: Direct bottom sheet open - no callback chain
+    openBottomSheet(
+      <CreatePostBottomSheet
+        key={bottomSheetKey + 1}
+        onClose={closeBottomSheet}
+        onPostTypeSelect={handlePostTypeSelect}
+        onViewChange={(view) => {
+          console.log('BottomSheet view changed:', view);
+        }}
+        stage={stageForBottomSheet}
+        selectedProduct={selectedProduct ? {
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          subName: selectedProduct.description || undefined,
+          image: selectedProduct.image,
+          hasDiscount: false,
+        } : undefined}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        paddingBottom: bottomOffset,
+        onChange: (index: number) => {
+          // Reset bottom sheet key when sheet closes to reset view state
+          if (index === -1) {
+            setBottomSheetKey(prev => prev + 1);
+          }
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
 
   const getCurrentData = () => {
     switch (currentView) {

@@ -5,7 +5,7 @@ import { useNavigation, useRoute, type RouteProp } from '@react-navigation/nativ
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Tag, Package, Star, Layers } from 'lucide-react-native';
 import { VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { PencilSquareIcon } from 'react-native-heroicons/outline';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -316,7 +316,7 @@ const InventoryDetailScreen = () => {
           shadowRadius={4.65}
           elevation={8}
         >
-          <Feather name="edit-3" size={24} color="#000000" />
+          <PencilSquareIcon width={24} height={24} color="#000000" />
         </Box>
       </Pressable>
     )}

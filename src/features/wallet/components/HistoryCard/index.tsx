@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { DocumentDuplicateIcon } from 'react-native-heroicons/outline';
 
 interface HistoryCardProps {
   type: string;
@@ -8,7 +8,7 @@ interface HistoryCardProps {
   amount: string;
   amountColor?: string;
   date?: string;
-  icon?: keyof typeof Feather.glyphMap;
+  icon?: React.ComponentType<{ width?: number; height?: number; color?: string }>;
   onCopyPress?: () => void;
 }
 
@@ -57,7 +57,7 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
           </Text>
           {onCopyPress && (
             <Pressable onPress={onCopyPress}>
-              <Feather name="copy" size={12} color="#000000" />
+              <DocumentDuplicateIcon width={12} height={12} color="#000000" />
             </Pressable>
           )}
         </VStack>
