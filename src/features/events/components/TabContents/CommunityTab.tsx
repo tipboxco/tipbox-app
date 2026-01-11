@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import {
   Box,
@@ -15,8 +15,10 @@ import { useSafeAreaValues } from '@/src/utils';
 import { EventSkeleton } from '@/src/components/Skeletons';
 
 const { width } = Dimensions.get('window');
-// EventCard genişliği: isGrid=false (horizontal) için CARD_WIDTH kullanılıyor
-const CARD_WIDTH = (width - 48) / 2;
+// EventCard genişliği: Daha kompakt, peek effect daha belirgin
+const HORIZONTAL_PADDING = 16;
+const CARD_GAP = 12;
+const CARD_WIDTH = width * 0.55; // Ekranın %55'i = çok daha kompakt ve peek effect güçlü
 
 type CommunityTabProps = {
   onEventPress: (eventId: string) => void;
@@ -74,6 +76,10 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
+  
+  // Current scroll position for pagination dots
+  const [currentActiveIndex, setCurrentActiveIndex] = useState(0);
+  const activeEventsListRef = useRef<FlatList>(null);
 
   // Active Events API hook
   const {
@@ -150,6 +156,14 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     
     return Array.from(uniqueEventsMap.values());
   }, [upcomingEventsData?.pages]);
+
+  // Handle active events scroll for pagination dots
+  const handleActiveEventsScroll = useCallback((event: any) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / (CARD_WIDTH + CARD_GAP));
+    setCurrentActiveIndex(index);
+  }, []);
+
 
   // fetchNextUpcomingPage'i wrap edip loop koruması ekliyoruz
   const isLoadingMoreRef = useRef(false);
@@ -286,46 +300,79 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                     </Text>
                   </Box>
                 ) : (
-                  <FlatList
-                    data={activeEvents}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    ItemSeparatorComponent={() => <Box width={12} />}
-                    contentContainerStyle={{ 
-                      paddingRight: isFetchingNextActivePage ? 16 : 16,
-                    }}
-                    renderItem={({ item }) => (
-                      <EventCard
-                        data={item}
-                        isGrid={false}
-                        onPress={() => onEventPress(item.id)}
+                  <VStack space="sm">
+                    {/* Horizontal ScrollView with Peek Effect - 2. kartın yarısı görünür */}
+                    <Box position="relative">
+                      <FlatList
+                        ref={activeEventsListRef}
+                        data={activeEvents}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        ItemSeparatorComponent={() => <Box width={CARD_GAP} />}
+                        contentContainerStyle={{ 
+                          paddingRight: HORIZONTAL_PADDING,
+                          paddingLeft: 0, // Sol padding'i kaldır - Upcoming Events ile aynı hizaya getir
+                        }}
+                        renderItem={({ item }) => (
+                          <Box width={CARD_WIDTH}>
+                            <EventCard
+                              data={item}
+                              isGrid={false}
+                              onPress={() => onEventPress(item.id)}
+                            />
+                          </Box>
+                        )}
+                        keyExtractor={(item) => item.id}
+                        snapToInterval={CARD_WIDTH + CARD_GAP}
+                        decelerationRate="fast"
+                        snapToAlignment="start"
+                        pagingEnabled={false}
+                        onScroll={handleActiveEventsScroll}
+                        scrollEventThrottle={16}
+                        ListFooterComponent={
+                          isFetchingNextActivePage ? (
+                            <Box 
+                              justifyContent="center" 
+                              alignItems="center" 
+                              pl={CARD_GAP}
+                              style={{ 
+                                width: 60,
+                                height: 210,
+                              }}
+                            >
+                              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                            </Box>
+                          ) : null
+                        }
+                        onEndReached={() => {
+                          if (hasNextActivePage && !isFetchingNextActivePage) {
+                            fetchNextActivePage();
+                          }
+                        }}
+                        onEndReachedThreshold={0.5}
+                        scrollEnabled={true}
+                        nestedScrollEnabled={true}
                       />
+                    </Box>
+
+                    {/* Pagination Dots - Minimal version (5 nokta max, +N yok) */}
+                    {activeEvents.length > 1 && (
+                      <HStack justifyContent="center" space="xs" pt="$2">
+                        {activeEvents.slice(0, Math.min(activeEvents.length, 5)).map((_, index) => (
+                          <Box
+                            key={index}
+                            width={currentActiveIndex === index ? 20 : 6}
+                            height={6}
+                            borderRadius={3}
+                            bg={currentActiveIndex === index 
+                              ? (isDark ? '#FFFFFF' : '#000000')
+                              : (isDark ? '#4A4A4A' : '#D9D9D9')
+                            }
+                          />
+                        ))}
+                      </HStack>
                     )}
-                    keyExtractor={(item) => item.id}
-                    ListFooterComponent={
-                      isFetchingNextActivePage ? (
-                        <Box 
-                          justifyContent="center" 
-                          alignItems="center" 
-                          pl={12}
-                          style={{ 
-                            width: 60, // Loading indicator için küçük genişlik
-                            height: 210, // EventCard'ın yüksekliği ile aynı
-                          }}
-                        >
-                          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                        </Box>
-                      ) : null
-                    }
-                    onEndReached={() => {
-                      if (hasNextActivePage && !isFetchingNextActivePage) {
-                        fetchNextActivePage();
-                      }
-                    }}
-                    onEndReachedThreshold={0.5}
-                    scrollEnabled={true}
-                    nestedScrollEnabled={true}
-                  />
+                  </VStack>
                 )}
               </VStack>
             </Box>

@@ -14,7 +14,9 @@ import { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard';
 import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
+// Horizontal card: Ekranın %55'i (kompakt ve peek effect güçlü)
+const HORIZONTAL_CARD_WIDTH = width * 0.55;
+// Grid card: 2'li grid düzeni
 const GRID_CARD_WIDTH = (width - 48) / 2; // 16px padding on each side + 16px gap between cards
 
 interface EventCardProps {
@@ -38,7 +40,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         borderWidth={1}
         borderColor="#E9E9E9"
         borderRadius={10}
-        width={isGrid ? GRID_CARD_WIDTH : CARD_WIDTH}
+        width={isGrid ? GRID_CARD_WIDTH : HORIZONTAL_CARD_WIDTH}
         overflow="hidden"
         flexDirection="column"
       >
