@@ -69,12 +69,14 @@ export const LoginScreen = () => {
           render: ({ id }) => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle fontSize="$sm">Login Successful</ToastTitle>
-                <ToastDescription fontSize="$sm">
-                    Welcome, {result.fullName || result.email}!
-                </ToastDescription>
-              </Toast>
+                <Toast 
+                  nativeID={`toast-${id}`} 
+                  action="success" 
+                  variant="solid"
+                  bg="rgba(194, 230, 7, 0.2)"
+                >
+                  <ToastTitle fontSize="$sm">Login Successful</ToastTitle>
+                </Toast>
               </Box>
             );
           },

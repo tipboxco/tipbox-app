@@ -64,8 +64,8 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
     setBookmarksCount(data.stats.bookmarks);
   }, [data.stats.likes, data.stats.comments, data.stats.shares, data.stats.bookmarks]);
 
-  // Product'ı relatedPost.product'tan al
-  const product = data.relatedPost.product;
+  // Product'ı relatedPost.product'tan al (null check ile)
+  const product = data.relatedPost?.product;
   
   // ContextType'a göre ProductInfoType belirle
   const productInfoType = data.contextType || ProductInfoType.PRODUCT;

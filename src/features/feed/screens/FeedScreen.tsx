@@ -588,7 +588,7 @@ const FeedScreenInner = React.memo(() => {
       productInfoType = ProductInfoType.SUB_CATEGORY;
     }
 
-    // relatedPost null check - eğer yoksa default değerler kullan
+    // relatedPost null check - eğer yoksa relatedPost olmadan döndür
     if (!item.relatedPost) {
       console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
       // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
@@ -597,7 +597,7 @@ const FeedScreenInner = React.memo(() => {
         : [];
       const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
-      // Return a safe default structure
+      // Return a safe default structure without relatedPost
       return {
         id: item.id,
         user: {
@@ -618,19 +618,7 @@ const FeedScreenInner = React.memo(() => {
         },
         content: item.content || '',
         images,
-        relatedPost: {
-          id: '',
-          product: {
-            id: '',
-            name: '',
-            subName: '',
-            image: require('@/assets/inventory/product_01.png'),
-            isOwned: false,
-          },
-          content: [],
-          tags: [],
-          images: [],
-        },
+        relatedPost: undefined, // relatedPost olmadığında undefined döndür
       };
     }
 
@@ -683,24 +671,24 @@ const FeedScreenInner = React.memo(() => {
       },
       content: item.content || '',
       images,
-      relatedPost: {
-        id: item.relatedPost?.id || '',
+      relatedPost: item.relatedPost ? {
+        id: item.relatedPost.id || '',
         product: {
-          id: item.relatedPost?.product?.id || '',
-          name: item.relatedPost?.product?.name || '',
-          subName: item.relatedPost?.product?.subName || '',
-          image: toImageSource(item.relatedPost?.product?.image) || require('@/assets/inventory/product_01.png'),
-          isOwned: item.relatedPost?.product?.isOwned || false,
+          id: item.relatedPost.product?.id || '',
+          name: item.relatedPost.product?.name || '',
+          subName: item.relatedPost.product?.subName || '',
+          image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
+          isOwned: item.relatedPost.product?.isOwned || false,
         },
         content: relatedPostContent,
-        tags: (item.relatedPost?.tags && Array.isArray(item.relatedPost.tags)) ? item.relatedPost.tags : [],
+        tags: (item.relatedPost.tags && Array.isArray(item.relatedPost.tags)) ? item.relatedPost.tags : [],
         images: (() => {
           const relatedPostImages = (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
             ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
             : [];
           return relatedPostImages.length > 0 ? relatedPostImages : [defaultPostImage];
         })(),
-      },
+      } : undefined,
     };
   };
 

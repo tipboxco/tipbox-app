@@ -460,22 +460,24 @@ const SurveyScreen: React.FC = () => {
 
     // RelatedPost için content array'ini map et
     const relatedPostContent = Array.isArray(postData.content) && postData.content.length > 0
-      ? postData.content.map((c: any) => {
-          // Rating 0-100 arası, 0-5 arasına çevir
-          const ratingValue = typeof c === 'object' && c.rating ? c.rating : 0;
-          const stars = Math.floor(ratingValue / 20);
-          
-          return {
-            tag: {
-              icon: 'tag',
-              title: (typeof c === 'object' && c.title) ? c.title : 'Update',
-            },
-            text: typeof c === 'string' ? c : (c.content || ''),
-            rating: Array(5)
-              .fill(0)
-              .map((_, index) => index < stars ? 1 : 0), // number[] formatına çevir
-          };
-        })
+      ? postData.content
+          .filter((c: any) => c != null) // null/undefined items'ları filtrele
+          .map((c: any) => {
+            // Rating 0-100 arası, 0-5 arasına çevir
+            const ratingValue = typeof c === 'object' && c.rating ? c.rating : 0;
+            const stars = Math.floor(ratingValue / 20);
+            
+            return {
+              tag: {
+                icon: 'tag',
+                title: (typeof c === 'object' && c.title) ? c.title : 'Update',
+              },
+              text: typeof c === 'string' ? c : (c.content || ''),
+              rating: Array(5)
+                .fill(0)
+                .map((_, index) => index < stars ? 1 : 0), // number[] formatına çevir
+            };
+          })
       : [];
 
     // relatedPost için id gerekli (postData.id kullanılabilir)
@@ -483,6 +485,23 @@ const SurveyScreen: React.FC = () => {
 
     // Product data için isOwned kontrolü (BrandUpdateApiItem'da isOwned yok)
     const productIsOwned = (productData as any)?.isOwned || false;
+
+    // relatedPost oluştur (sadece relatedPostContent varsa)
+    const relatedPost = (relatedPostContent.length > 0 && productData) ? {
+      id: relatedPostId,
+      product: {
+        id: productData.id || '',
+        name: productData.name || '',
+        subName: productData.subName || '',
+        image: toImageSource(productData.image) || require('@/assets/product/product_01.png'),
+        isOwned: productIsOwned,
+      },
+      content: relatedPostContent,
+      tags: postData.tags || [],
+      images: postData.images
+        ?.map((img: string) => toImageSource(img))
+        .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) || [],
+    } : undefined;
 
     return {
       id: postData.id,
@@ -517,27 +536,7 @@ const SurveyScreen: React.FC = () => {
         bookmarks: 0,
       },
       createdAt: postData.createdAt || '',
-      relatedPost: {
-        id: relatedPostId,
-        product: productData ? {
-          id: productData.id || '',
-          name: productData.name || '',
-          subName: productData.subName || '',
-          image: toImageSource(productData.image) || require('@/assets/product/product_01.png'),
-          isOwned: productIsOwned,
-        } : {
-          id: '',
-          name: '',
-          subName: '',
-          image: require('@/assets/product/product_01.png'),
-          isOwned: false,
-        },
-        content: relatedPostContent,
-        tags: postData.tags || [],
-        images: postData.images
-          ?.map((img: string) => toImageSource(img))
-          .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) || [],
-      },
+      relatedPost, // Optional olarak ekle
     };
   }, []);
 

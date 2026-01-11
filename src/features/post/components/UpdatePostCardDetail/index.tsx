@@ -246,9 +246,14 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
           )}
 
           {/* Content Cards - Map ile oluşturuluyor */}
-          {((relatedPostData?.content && relatedPostData.content.length > 0) || (data.relatedPost?.content && data.relatedPost.content.length > 0)) && (
+          {((relatedPostData?.content && Array.isArray(relatedPostData.content) && relatedPostData.content.length > 0) || 
+            (data.relatedPost?.content && Array.isArray(data.relatedPost.content) && data.relatedPost.content.length > 0)) && (
             <VStack px={16} space="md" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-              {(relatedPostData?.content || data.relatedPost?.content || []).map((contentItem: any, index: number) => (
+              {(
+                (Array.isArray(relatedPostData?.content) && relatedPostData.content.length > 0) 
+                  ? relatedPostData.content 
+                  : (Array.isArray(data.relatedPost?.content) ? data.relatedPost.content : [])
+              ).map((contentItem: any, index: number) => (
                 <Box
                   key={index}
                   bg={isDark ? '$backgroundDark800' : '#FAFAFA'}
@@ -316,9 +321,14 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
           )}
 
           {/* Tags Section */}
-          {((relatedPostData?.tags && relatedPostData.tags.length > 0) || (data.relatedPost?.tags && data.relatedPost.tags.length > 0)) && (
+          {((relatedPostData?.tags && Array.isArray(relatedPostData.tags) && relatedPostData.tags.length > 0) || 
+            (data.relatedPost?.tags && Array.isArray(data.relatedPost.tags) && data.relatedPost.tags.length > 0)) && (
               <HStack px={16} py={10} flexWrap="wrap" gap={4} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                {(relatedPostData?.tags || data.relatedPost?.tags || []).map((tag: string, index: number) => (
+                {(
+                  (Array.isArray(relatedPostData?.tags) && relatedPostData.tags.length > 0) 
+                    ? relatedPostData.tags 
+                    : (Array.isArray(data.relatedPost?.tags) ? data.relatedPost.tags : [])
+                ).map((tag: string, index: number) => (
                   <Box
                     key={index}
                     bg={isDark ? '$backgroundDark800' : '#FFFFFF'}

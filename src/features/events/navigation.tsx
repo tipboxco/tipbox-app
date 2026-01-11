@@ -10,7 +10,7 @@ import { EventProduct } from '@/src/mock/events/communityEvents/types';
 export type EventsStackParamList = {
   EventsScreen: undefined;
   EventDetail: { eventId: string };
-  RewardsBadges: undefined;
+  RewardsBadges: { eventId: string };
   EventCreatePost: { eventId?: string; eventType?: EventType; product?: EventProduct; productSource?: 'Catalog' | 'Inventory' } | undefined;
 };
 

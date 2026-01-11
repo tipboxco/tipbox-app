@@ -79,7 +79,8 @@ const EventDetailScreen: React.FC = () => {
     // Fetch event detail from API
     const { data: event, isLoading, error } = useEventDetail(eventId);
     
-    // Fetch event posts from API
+    // YENİ: Event posts endpoint kullan (Yeni Backend yapısı)
+    // NOT: Backend artık ContentPost tablosunu kullanıyor, /events/{eventId}/posts endpoint'i ile!
     const {
         data: postsData,
         fetchNextPage: fetchNextPostsPage,
@@ -94,7 +95,8 @@ const EventDetailScreen: React.FC = () => {
     const leaveEventMutation = useLeaveEvent();
     
     // Flatten all pages into a single array
-    const feedItems = useMemo(() => {
+    // Backend'den dönen post listesi artık normal Feed formatında (FeedApiItem)
+    const eventPosts = useMemo(() => {
         if (!postsData?.pages) return [];
         return postsData.pages.flatMap((page) => 
             (page.items && Array.isArray(page.items)) ? page.items : []
@@ -198,6 +200,28 @@ const EventDetailScreen: React.FC = () => {
               }
             : undefined;
 
+        // contextType'ı enum'a map et (backend uppercase, enum lowercase)
+        let mappedContextType: ProductInfoType | undefined = undefined;
+        if (item.contextType) {
+            const contextTypeUpper = typeof item.contextType === 'string' 
+                ? item.contextType.toUpperCase() 
+                : '';
+            
+            switch (contextTypeUpper) {
+                case 'PRODUCT':
+                    mappedContextType = ProductInfoType.PRODUCT;
+                    break;
+                case 'PRODUCT_GROUP':
+                    mappedContextType = ProductInfoType.PRODUCT_GROUP;
+                    break;
+                case 'SUB_CATEGORY':
+                    mappedContextType = ProductInfoType.SUB_CATEGORY;
+                    break;
+                default:
+                    mappedContextType = item.contextType as ProductInfoType;
+            }
+        }
+
         return {
             id: item.id,
             user: {
@@ -210,7 +234,7 @@ const EventDetailScreen: React.FC = () => {
             images,
             stats: item.stats,
             createdAt: item.createdAt,
-            contextType: item.contextType,
+            contextType: mappedContextType,
             contextData,
         };
     };
@@ -394,6 +418,7 @@ const EventDetailScreen: React.FC = () => {
 
     // Map Update to UpdateCardData (from FeedScreen)
     const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
+        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
         const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
         
         // ContextType'ı ProductInfoType'a çevir
@@ -404,60 +429,107 @@ const EventDetailScreen: React.FC = () => {
             productInfoType = ProductInfoType.SUB_CATEGORY;
         }
 
+        // relatedPost null check - eğer yoksa relatedPost olmadan döndür
+        if (!item.relatedPost) {
+            console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
+            // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+            const mappedImages = Array.isArray(item.images)
+                ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                : [];
+            const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+            // Return a safe default structure without relatedPost
+            return {
+                id: item.id,
+                user: {
+                    id: item.user.id,
+                    name: item.user.name,
+                    title: item.user.title,
+                    avatar: avatarSource,
+                },
+                stats: item.stats,
+                createdAt: item.createdAt,
+                contextType: productInfoType,
+                product: {
+                    id: '',
+                    name: '',
+                    subName: '',
+                    image: require('@/assets/inventory/product_01.png'),
+                    isOwned: false,
+                },
+                content: item.content || '',
+                images,
+                relatedPost: undefined, // relatedPost olmadığında undefined döndür
+            };
+        }
+
         // relatedPost.content formatını component'in beklediği formata çevir
         const relatedPostContent = (item.relatedPost?.content && Array.isArray(item.relatedPost.content))
-            ? item.relatedPost.content.map((contentItem) => {
-                // Rating'i number'dan number[]'e çevir (5 yıldız için)
-                const ratingArray: number[] = Array(5).fill(0);
-                const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5); // 0-100'den 0-5'e çevir
-                for (let i = 0; i < ratingValue; i++) {
-                    ratingArray[i] = 1;
-                }
+            ? item.relatedPost.content
+                .filter((contentItem) => contentItem != null) // Filter out null/undefined items
+                .map((contentItem) => {
+                    // Rating'i number'dan number[]'e çevir (5 yıldız için)
+                    const ratingArray: number[] = Array(5).fill(0);
+                    const ratingValue = Math.min(Math.max(Math.round((contentItem?.rating || 0) / 20), 0), 5); // 0-100'den 0-5'e çevir
+                    for (let i = 0; i < ratingValue; i++) {
+                        ratingArray[i] = 1;
+                    }
 
-                return {
-                    tag: {
-                        icon: 'tag',
-                        title: contentItem.title,
-                    },
-                    text: contentItem.content,
-                    rating: ratingArray,
-                };
-            })
+                    return {
+                        tag: {
+                            icon: 'tag',
+                            title: contentItem?.title || '',
+                        },
+                        text: contentItem?.content || '',
+                        rating: ratingArray,
+                    };
+                })
             : [];
 
+        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+        const mappedImages = Array.isArray(item.images)
+            ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+            : [];
+        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
         return {
-            id: item.id,
+            id: item.id || '',
             user: {
-                id: item.user.id,
-                name: item.user.name,
-                title: item.user.title,
+                id: item.user?.id || '',
+                name: item.user?.name || '',
+                title: item.user?.title || '',
                 avatar: avatarSource,
             },
             stats: item.stats,
             createdAt: item.createdAt,
             contextType: productInfoType,
             product: {
-                id: item.relatedPost.product.id,
-                name: item.relatedPost.product.name,
-                subName: item.relatedPost.product.subName,
-                image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
-                isOwned: item.relatedPost.product.isOwned,
+                id: item.relatedPost?.product?.id || '',
+                name: item.relatedPost?.product?.name || '',
+                subName: item.relatedPost?.product?.subName || '',
+                image: toImageSource(item.relatedPost?.product?.image) || require('@/assets/inventory/product_01.png'),
+                isOwned: item.relatedPost?.product?.isOwned || false,
             },
-            content: item.content,
-            images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
-            relatedPost: {
-                id: item.relatedPost.id,
+            content: item.content || '',
+            images,
+            relatedPost: item.relatedPost ? {
+                id: item.relatedPost.id || '',
                 product: {
-                    id: item.relatedPost.product.id,
-                    name: item.relatedPost.product.name,
-                    subName: item.relatedPost.product.subName,
+                    id: item.relatedPost.product?.id || '',
+                    name: item.relatedPost.product?.name || '',
+                    subName: item.relatedPost.product?.subName || '',
                     image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
-                    isOwned: item.relatedPost.product.isOwned,
+                    isOwned: item.relatedPost.product?.isOwned || false,
                 },
                 content: relatedPostContent,
-                tags: item.relatedPost.tags,
-                images: item.relatedPost.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
-            },
+                tags: (item.relatedPost.tags && Array.isArray(item.relatedPost.tags)) ? item.relatedPost.tags : [],
+                images: (() => {
+                    const relatedPostImages = (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
+                        ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                        : [];
+                    return relatedPostImages.length > 0 ? relatedPostImages : [defaultPostImage];
+                })(),
+            } : undefined,
         };
     };
 
@@ -853,7 +925,7 @@ const EventDetailScreen: React.FC = () => {
                         </Box>
                     </VStack>
 
-                    {/* Rewards & Badges Section */}
+                    {/* Rewards & Badges Section - EVENT_GUIDE.MD Section 2.4 */}
                     <VStack space="xs" mb="$3">
                         <HStack justifyContent="space-between" alignItems="center">
                             <Text
@@ -863,24 +935,25 @@ const EventDetailScreen: React.FC = () => {
                             >
                                 Rewards & Badges
                             </Text>
-                            <Pressable
-                                onPress={() => navigation.navigate('RewardsBadges')}
-                            >
-                                <Text
-                                    color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize={9}
-                                    fontWeight="$bold"
-                                    underline
-                                >
-                                    See All
-                                </Text>
-                            </Pressable>
+                            {/* See All Button */}
+                            {event.rewards && event.rewards.length > 0 && (
+                                <Pressable onPress={() => navigation.navigate('RewardsBadges', { eventId })}>
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                        fontSize={11}
+                                        fontWeight="$medium"
+                                        textDecorationLine="underline"
+                                    >
+                                        See All
+                                    </Text>
+                                </Pressable>
+                            )}
                         </HStack>
 
                         {/* Badge Cards - Horizontal Scroll */}
                         {event.rewards && event.rewards.length > 0 ? (
                             <FlatList
-                                data={event.rewards}
+                                data={event.rewards.slice(0, 5)}
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
                                 ItemSeparatorComponent={() => <Box width={6} />}
@@ -931,6 +1004,7 @@ const EventDetailScreen: React.FC = () => {
                                                 fontSize={10}
                                                 fontWeight="$bold"
                                                 textAlign="center"
+                                                numberOfLines={2}
                                             >
                                                 {item.title}
                                             </Text>
@@ -968,8 +1042,8 @@ const EventDetailScreen: React.FC = () => {
                             </Text>
                         </HStack>
 
-                        {/* Event Feed Cards */}
-                        {isPostsLoading && feedItems.length === 0 ? (
+                        {/* Event Feed Cards - Normal Feed Item'ları render et */}
+                        {isPostsLoading && eventPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                             </Box>
@@ -979,7 +1053,7 @@ const EventDetailScreen: React.FC = () => {
                                     Postlar yüklenirken bir hata oluştu
                                 </Text>
                             </Box>
-                        ) : feedItems.length === 0 ? (
+                        ) : eventPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize={12}>
                                     No posts yet
@@ -987,7 +1061,7 @@ const EventDetailScreen: React.FC = () => {
                             </Box>
                         ) : (
                             <VStack space="sm">
-                                {feedItems.map((item) => renderFeedItem(item))}
+                                {eventPosts.map((item) => renderFeedItem(item))}
                                 {isFetchingNextPostsPage && (
                                     <Box py="$4" alignItems="center">
                                         <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
@@ -999,8 +1073,9 @@ const EventDetailScreen: React.FC = () => {
                 </VStack>
             </ScrollView>
 
-            {/* Floating Action Button */}
-            {isJoined && (
+            {/* Floating Action Button - EVENT_GUIDE.MD Section 2.1 */}
+            {/* FAB sadece isJoined: true ise görünsün */}
+            {isJoined && event?.status === EventStatus.ACTIVE && (
                 <Box
                     position="absolute"
                     bottom={Platform.OS === 'ios' ? 34 + 8 : 45 + 8}

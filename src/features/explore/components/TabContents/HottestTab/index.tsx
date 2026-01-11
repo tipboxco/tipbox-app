@@ -243,22 +243,56 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
     productInfoType = ProductInfoType.SUB_CATEGORY;
   }
 
-  const relatedPostContent = item.relatedPost.content.map((contentItem) => {
-    const ratingArray: number[] = Array(5).fill(0);
-    const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5);
-    for (let i = 0; i < ratingValue; i++) {
-      ratingArray[i] = 1;
-    }
+  // relatedPost null check
+  if (!item.relatedPost) {
+    console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
+    const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
     return {
-      tag: {
-        icon: 'tag',
-        title: contentItem.title,
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
       },
-      text: contentItem.content,
-      rating: ratingArray,
+      stats: item.stats,
+      createdAt: item.createdAt,
+      contextType: productInfoType,
+      product: {
+        id: '',
+        name: '',
+        subName: '',
+        image: require('@/assets/inventory/product_01.png'),
+        isOwned: false,
+      },
+      content: item.content || '',
+      images,
+      relatedPost: undefined,
     };
-  });
+  }
+
+  const relatedPostContent = (item.relatedPost?.content && Array.isArray(item.relatedPost.content))
+    ? item.relatedPost.content
+        .filter((contentItem) => contentItem != null)
+        .map((contentItem) => {
+          const ratingArray: number[] = Array(5).fill(0);
+          const ratingValue = Math.min(Math.max(Math.round((contentItem?.rating || 0) / 20), 0), 5);
+          for (let i = 0; i < ratingValue; i++) {
+            ratingArray[i] = 1;
+          }
+
+          return {
+            tag: {
+              icon: 'tag',
+              title: contentItem?.title || '',
+            },
+            text: contentItem?.content || '',
+            rating: ratingArray,
+          };
+        })
+    : [];
 
   // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
   const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
@@ -276,27 +310,27 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
     createdAt: item.createdAt,
     contextType: productInfoType,
     product: {
-      id: item.relatedPost.product.id,
-      name: item.relatedPost.product.name,
-      subName: item.relatedPost.product.subName,
-      image: toImageSource(item.relatedPost.product.image)!,
-      isOwned: item.relatedPost.product.isOwned,
+      id: item.relatedPost?.product?.id || '',
+      name: item.relatedPost?.product?.name || '',
+      subName: item.relatedPost?.product?.subName || '',
+      image: toImageSource(item.relatedPost?.product?.image) || require('@/assets/inventory/product_01.png'),
+      isOwned: item.relatedPost?.product?.isOwned || false,
     },
     content: item.content,
     images,
-    relatedPost: {
+    relatedPost: item.relatedPost ? {
       id: item.relatedPost.id,
       product: {
-        id: item.relatedPost.product.id,
-        name: item.relatedPost.product.name,
-        subName: item.relatedPost.product.subName,
-        image: toImageSource(item.relatedPost.product.image)!,
-        isOwned: item.relatedPost.product.isOwned,
+        id: item.relatedPost.product?.id || '',
+        name: item.relatedPost.product?.name || '',
+        subName: item.relatedPost.product?.subName || '',
+        image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
+        isOwned: item.relatedPost.product?.isOwned || false,
       },
       content: relatedPostContent,
-      tags: item.relatedPost.tags,
+      tags: item.relatedPost.tags || [],
       images: item.relatedPost.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
-    },
+    } : undefined,
   };
 };
 

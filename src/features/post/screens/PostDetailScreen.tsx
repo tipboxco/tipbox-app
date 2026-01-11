@@ -228,12 +228,13 @@ export const PostDetailScreen = () => {
             <Header
                 title={
                     showRelatedPost ? "Related Post" :
+                    type === 'post' ? "Post Details" :
                     type === 'tipsAndTricks' ? "Tips & Tricks Details" : 
                     type === 'question' ? "Question Details" : 
                     type === 'benchmark' ? "Benchmark Details" :
                     type === 'experience' ? "Experience Details" :
                     type === 'update' ? "Update Details" :
-                    "Product Details"
+                    "Post Details"
                 }
                 showBackButton
                 onBackPress={() => navigation.goBack()}

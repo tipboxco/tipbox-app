@@ -89,3 +89,20 @@ export interface AchievementsApiResponse {
   };
 }
 
+// Event Badge Item - /events/:eventId/badges endpoint'inden gelen badge bilgisi
+export interface EventBadgeApiItem {
+  id: string;
+  title: string;
+  image: string;
+}
+
+// Event Badges API Response - /events/:eventId/badges endpoint'inden dönen response
+export interface EventBadgesApiResponse {
+  items: EventBadgeApiItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+

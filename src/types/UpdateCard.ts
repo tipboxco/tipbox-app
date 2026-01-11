@@ -20,7 +20,7 @@ export interface UpdateApiItem {
   };
   createdAt: string;
   contextType: 'product' | 'product_group' | 'sub_category';
-  relatedPost: {
+  relatedPost?: {
     id: string;
     product: {
       id: string;
@@ -29,7 +29,7 @@ export interface UpdateApiItem {
       image: string;
       isOwned: boolean;
     };
-    content: Array<{
+    content?: Array<{
       title: string;
       content: string;
       rating: number;
@@ -74,7 +74,7 @@ export interface UpdateCardData {
   };
   content: string;
   images?: any[];
-  relatedPost: {
+  relatedPost?: {
     id: string;
     product: {
       id: string;
@@ -83,7 +83,7 @@ export interface UpdateCardData {
       image: any;
       isOwned: boolean;
     };
-    content: Array<{
+    content?: Array<{
       tag: {
         icon: string;
         title: string;
