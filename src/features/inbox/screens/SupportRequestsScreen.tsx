@@ -235,11 +235,13 @@ const SupportRequestsScreen: React.FC = () => {
   return (
     <VStack flex={1} space="md" px="$4">
       {/* Filter Buttons */}
-      <SupportRequestFilterGroup
-        filters={filterOptions.map(f => ({ id: f.id, name: f.name, isActive: activeFilter === f.id }))}
-        activeFilter={activeFilter}
-        onFilterPress={handleFilterPress}
-      />
+      <Box mt="$4">
+        <SupportRequestFilterGroup
+          filters={filterOptions.map(f => ({ id: f.id, name: f.name, isActive: activeFilter === f.id }))}
+          activeFilter={activeFilter}
+          onFilterPress={handleFilterPress}
+        />
+      </Box>
 
       {/* Support Requests List - Full Width */}
       {isLoading && !supportRequests ? (

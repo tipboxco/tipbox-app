@@ -220,7 +220,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
           {data.content.map((item, index) => (
             <VStack key={index} py={8}>
               <HStack space="sm" alignItems="center">
-                <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
+                {item.tag.icon === 'tag' ? (
+                  <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                ) : (
+                  <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                )}
                 <Text
                   color={isDark ? '$textDark50' : '#000'}
                   fontSize={'$xs'}
@@ -304,12 +308,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       >
         <Pressable onPress={handleLike}>
         <HStack mr={10} alignItems="center">
-            <Feather
-              name="heart"
-              size={24}
-              color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-              fill={isLiked ? '#FF3040' : 'none'}
-            />
+            {isLiked ? (
+              <HeartIconSolid width={24} height={24} color="#FF3040" />
+            ) : (
+              <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+            )}
             <AnimatedCounter
               value={likesCount}
               color={isDark ? '$textDark50' : '#000'}
@@ -331,7 +334,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         </Pressable>
         <Pressable onPress={handleShare}>
         <HStack mr={10} alignItems="center">
-          <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+          <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
             <AnimatedCounter
               value={sharesCount}
               color={isDark ? '$textDark50' : '#000'}

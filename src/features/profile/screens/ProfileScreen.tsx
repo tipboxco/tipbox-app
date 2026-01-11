@@ -2,6 +2,13 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+  withTiming,
+} from 'react-native-reanimated';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -30,12 +37,27 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { LadderTab } from '../components/TabContents';
-import { Feather } from '@expo/vector-icons';
+import {
+  ArrowUpTrayIcon,
+  FlagIcon,
+  NoSymbolIcon,
+  ChevronLeftIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  GiftIcon,
+  PhoneIcon,
+  ChatBubbleLeftIcon,
+  BellIcon,
+  UserMinusIcon,
+  UserPlusIcon,
+} from 'react-native-heroicons/outline';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -285,7 +307,6 @@ interface TabPageProps {
   targetUserId: string;
   isDark: boolean;
   bottomPadding: number;
-  profileHeader: React.ReactElement | null;
 }
 
 // TabsBar Component
@@ -293,23 +314,150 @@ interface TabsBarProps {
   activeTab: TabKey;
   onChangeTab: (tab: TabKey) => void;
   isDark: boolean;
+  progress: ReturnType<typeof useSharedValue<number>>;
+  tabContainerRef: React.RefObject<any>;
+  onTabContainerLayout: (width: number) => void;
 }
 
-const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => {
+const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
+  const activeColor = isDark ? '#FFFFFF' : '#000000';
+  const inactiveColor = '#A3A3A3';
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffset = useSharedValue(0);
+  
+  // Tab genişliği: ekran genişliği / 4 (başlangıçta görünen tab sayısı)
+  const tabWidth = SCREEN_WIDTH / 4;
+  
+  // Her tab için animasyonlu stil - NotificationsScreen'deki gibi
+  const tab0Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [-0.5, 0, 0.5],
+      [activeColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+  
+  const tab1Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [0.5, 1, 1.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+  
+  const tab2Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [1.5, 2, 2.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+  
+  const tab3Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [2.5, 3, 3.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+  
+  const tab4Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [3.5, 4, 4.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+  
+  const tab5Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [4.5, 5, 5.5],
+      [inactiveColor, activeColor, activeColor]
+    );
+    return { color };
+  }, [isDark]);
+
+  const getTabStyle = (index: number) => {
+    switch (index) {
+      case 0: return tab0Style;
+      case 1: return tab1Style;
+      case 2: return tab2Style;
+      case 3: return tab3Style;
+      case 4: return tab4Style;
+      case 5: return tab5Style;
+      default: return tab0Style;
+    }
+  };
+
+  // Scroll offset hesaplama fonksiyonu
+  const calculateScrollOffset = useCallback((tabIndex: number): number => {
+    if (tabIndex < 3) return 0; // İlk 4 tab görünür
+    return (tabIndex - 2) * tabWidth; // İlk 2 tab gizlenir, aktif tab görünür
+  }, [tabWidth]);
+
+  // Aktif tab değiştiğinde otomatik scroll
+  useEffect(() => {
+    const tabIndex = TABS.findIndex(tab => tab.key === activeTab);
+    if (tabIndex === -1) return;
+    
+    const offset = calculateScrollOffset(tabIndex);
+    scrollOffset.value = withTiming(offset, { duration: 300 });
+    
+    // ScrollView'e scroll yap
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({
+        x: offset,
+        animated: true,
+      });
+    }
+  }, [activeTab, calculateScrollOffset, scrollOffset]);
+
+  // Indicator position animation
+  const indicatorWidth = tabWidth * 0.8;
+  
+  const indicatorStyle = useAnimatedStyle(() => {
+    const baseTranslateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+    const translateX = baseTranslateX + scrollOffset.value;
+    return {
+      transform: [{ translateX }],
+    };
+  }, [tabWidth, indicatorWidth]);
+
   return (
     <Box
       mb={16}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       borderBottomWidth={StyleSheet.hairlineWidth}
       borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+      position="relative"
     >
       <ScrollView
+        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
+        scrollEventThrottle={16}
+        scrollEnabled={false} // Programmatic scroll only
       >
-        <HStack space="xs" py={12}>
-          {TABS.map((tab) => {
+        <HStack
+          ref={tabContainerRef}
+          space="xs"
+          py={12}
+          position="relative"
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            onTabContainerLayout(width);
+          }}
+          style={{ position: 'relative' }}
+        >
+          {TABS.map((tab, index) => {
+            const tabStyle = getTabStyle(index);
             const isActive = activeTab === tab.key;
             return (
               <Pressable
@@ -319,42 +467,52 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
                 justifyContent="center"
                 pb="$1"
                 position="relative"
-                minWidth={75}
-                flexShrink={0}
-                mr={8}
+                width={tabWidth}
+                style={{ minWidth: tabWidth }}
               >
-                <Text
-                  textAlign="center"
-                  fontSize={12}
-                  fontWeight={isActive ? '$bold' : '$normal'}
-                  color={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
+                <Animated.Text
+                  style={[
+                    {
+                      textAlign: 'center',
+                      fontSize: 12,
+                      fontWeight: isActive ? 'bold' : 'normal',
+                    },
+                    tabStyle,
+                  ]}
                   numberOfLines={1}
-                  flexShrink={0}
+                  ellipsizeMode="tail"
                 >
                   {tab.title}
-                </Text>
-                {isActive && (
-                  <Box
-                    position="absolute"
-                    bottom={-1}
-                    left="15%"
-                    height={2}
-                    width="70%"
-                    borderRadius={999}
-                    bg={isDark ? '#FFFFFF' : '#000000'}
-                  />
-                )}
+                </Animated.Text>
               </Pressable>
             );
           })}
         </HStack>
       </ScrollView>
+      
+      {/* Animated Indicator */}
+      {tabWidth > 0 && (
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              bottom: 0,
+              left: 16,
+              width: indicatorWidth,
+              height: 2,
+              backgroundColor: isDark ? '#FFFFFF' : '#000000',
+            },
+            indicatorStyle,
+          ]}
+        />
+      )}
     </Box>
   );
 };
 
 // Tab Page Component - Her tab için ayrı bir sayfa
-const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding, profileHeader }) => {
+const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding }) => {
+
   // API hooks for each tab
   const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
   const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
@@ -471,7 +629,6 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        {profileHeader || null}
         <LadderTab />
       </ScrollView>
     );
@@ -486,7 +643,6 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
           {renderPostCard(item)}
         </Box>
       )}
-      ListHeaderComponent={profileHeader || null}
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.5}
       ListEmptyComponent={
@@ -568,42 +724,49 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const horizontalListRef = useRef<FlatList>(null);
-  const tabIndexRef = useRef(0);
+  const pagerRef = useRef<PagerView>(null);
+  const tabContainerRef = useRef<any>(null);
+  
+  // 🎯 CORE: Shared progress value for tab animations
+  const progress = useSharedValue(0);
   
   // Tab index'i bul
   const getTabIndex = useCallback((tabKey: TabKey) => {
     return TABS.findIndex(tab => tab.key === tabKey);
   }, []);
   
-  // Tab değiştiğinde yatay FlatList'i scroll et
+  // Tab değiştiğinde PagerView'i scroll et
   const handleTabChange = useCallback((tabKey: TabKey) => {
     const index = getTabIndex(tabKey);
-    if (index !== -1 && horizontalListRef.current) {
-      tabIndexRef.current = index;
-      horizontalListRef.current.scrollToIndex({ index, animated: true });
+    if (index !== -1 && pagerRef.current) {
+      pagerRef.current.setPage(index);
       setActiveTab(tabKey);
     }
   }, [getTabIndex]);
   
-  // Yatay scroll olduğunda aktif tab'ı güncelle
-  const handleHorizontalScroll = useCallback((event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / SCREEN_WIDTH);
-    if (index >= 0 && index < TABS.length && index !== tabIndexRef.current) {
-      tabIndexRef.current = index;
-      setActiveTab(TABS[index].key);
-    }
-  }, []);
+  // PagerView scroll handler - realtime progress güncelleme
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      progress.value = position + offset;
+    },
+    [progress]
+  );
+
+  // PagerView page selected handler - snap sonrası progress'i sync et
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
+      setActiveTab(TABS[position].key);
+    },
+    [progress]
+  );
   
-  // Scroll to index hatası için fallback
-  const handleScrollToIndexFailed = useCallback((info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
-    // Scroll hatası durumunda biraz bekle ve tekrar dene
-    setTimeout(() => {
-      if (horizontalListRef.current) {
-        horizontalListRef.current.scrollToIndex({ index: info.index, animated: false });
-      }
-    }, 100);
+  // Tab container width için callback
+  const handleTabContainerLayout = useCallback((width: number) => {
+    // Tab container width'i state'e kaydet (gerekirse)
   }, []);
   
   // Action button handlers
@@ -722,7 +885,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           py={16}
         >
           <HStack alignItems="center" space="md">
-            <Feather name="share-2" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <ArrowUpTrayIcon size={20} color={isDark ? '#FFFFFF' : '#000000'} />
             <Text
               color={isDark ? '$textLight0' : '$textDark950'}
               fontSize="$md"
@@ -743,7 +906,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           py={16}
         >
           <HStack alignItems="center" space="md">
-            <Feather name="flag" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <FlagIcon size={20} color={isDark ? '#FFFFFF' : '#000000'} />
             <Text
               color={isDark ? '$textLight0' : '$textDark950'}
               fontSize="$md"
@@ -764,7 +927,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           py={16}
         >
           <HStack alignItems="center" space="md">
-            <Feather name="slash" size={20} color="#FF3040" />
+            <NoSymbolIcon size={20} color="#FF3040" />
             <Text
               color="#FF3040"
               fontSize="$md"
@@ -785,8 +948,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, [isOwnProfile, userProfile, isDark, handleShare, handleReport, handleBlock, openBottomSheet, closeBottomSheet, insets.bottom]);
   
   // ListHeaderComponent: Banner + Profile Info
-  const renderProfileHeader = useCallback(() => {
+  const renderProfileHeader = useCallback((activeTab: TabKey, onChangeTab: (tab: TabKey) => void, isLoading: boolean): React.ReactElement | null => {
+    if (!userProfile && !isLoading) return null;
     if (!userProfile) return null;
+    
+    // TypeScript için: userProfile bu noktada kesinlikle tanımlı
+    const profile = userProfile;
     
     return (
       <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
@@ -797,7 +964,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           position="relative"
         >
           <Image
-            source={toImageSource(userProfile.bannerUrl) || require('@/assets/banner/banner_01.png')}
+            source={toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png')}
             alt="Profile Banner"
             style={{ width: '100%', height: '100%' }}
             resizeMode="cover"
@@ -835,7 +1002,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               }}
               style={{ zIndex: 2000 }}
             >
-              <Feather name="chevron-left" size={24} color="#fff" />
+              <ChevronLeftIcon size={24} color="#fff" />
             </Pressable>
 
             <Pressable
@@ -848,7 +1015,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               }}
               style={{ zIndex: 2000 }}
             >
-              <Feather name="more-vertical" size={24} color="#fff" />
+              <EllipsisVerticalIcon size={24} color="#fff" />
             </Pressable>
           </Box>
         </Box>
@@ -867,8 +1034,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               flexShrink={0}
             >
               <Image
-                source={toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png') }
-                alt={userProfile.name}
+                source={toImageSource(profile.avatar) || require('@/assets/avatar/default-useravatar.png') }
+                alt={profile.name}
                 w="100%"
                 h="100%"
               />
@@ -891,7 +1058,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     navigation.navigate('ProfileEdit');
                   }}
                 >
-                  <Feather name="edit-2" size={14} color="#000" />
+                  <PencilIcon size={14} color="#000" />
                   <Text
                     color="#000"
                     fontSize={10}
@@ -913,7 +1080,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handleSendTIPS}
                   >
-                    <Feather name="gift" size={14} color="#000" />
+                    <GiftIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -927,7 +1094,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handle1on1Request}
                   >
-                    <Feather name="headphones" size={14} color="#000" />
+                    <PhoneIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -941,7 +1108,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handleDM}
                   >
-                    <Feather name="message-circle" size={14} color="#000" />
+                    <ChatBubbleLeftIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -957,7 +1124,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       console.log('[ProfileScreen] Notification pressed');
                     }}
                   >
-                    <Feather name="bell" size={14} color="#000" />
+                    <BellIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -972,7 +1139,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     gap={2}
                     onPress={() => {
                       if (!targetUserId) return;
-                      if (userProfile.isTrusted) {
+                      if (profile.isTrusted) {
                         untrustUser(targetUserId);
                       } else {
                         trustUser(targetUserId);
@@ -981,17 +1148,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     disabled={isTrusting || isUntrusting}
                     opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
                   >
-                    <Feather
-                      name={userProfile.isTrusted ? "user-minus" : "user-plus"}
-                      size={14}
-                      color="#000"
-                    />
+                    {profile.isTrusted ? (
+                      <UserMinusIcon size={14} color="#000" />
+                    ) : (
+                      <UserPlusIcon size={14} color="#000" />
+                    )}
                     <Text
                       color="#000"
                       fontSize={10}
                       fontWeight="$semibold"
                     >
-                      {isTrusting ? "Ekleniyor..." : isUntrusting ? "Kaldırılıyor..." : (userProfile.isTrusted ? "Un Trust" : "Trust")}
+                      {isTrusting ? "Ekleniyor..." : isUntrusting ? "Kaldırılıyor..." : (profile.isTrusted ? "Un Trust" : "Trust")}
                     </Text>
                   </Pressable>
                 </>
@@ -1007,17 +1174,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             fontSize={14}
             fontWeight="$bold"
           >
-            {userProfile.name}
+            {profile.name}
           </Text>
 
-          {userProfile.biography && (
+          {profile.biography && (
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
               fontSize={10}
               lineHeight={15}
               mt={2}
             >
-              {userProfile.biography}
+              {profile.biography}
             </Text>
           )}
 
@@ -1028,7 +1195,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               fontSize={10}
               fontWeight="$bold"
             >
-              {userProfile.stats.posts}
+              {profile.stats.posts}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
@@ -1059,7 +1226,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize={10}
                   fontWeight="$bold"
                 >
-                  {userProfile.stats.trust}
+                  {profile.stats.trust}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1092,7 +1259,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize={10}
                   fontWeight="$bold"
                 >
-                  {userProfile.stats.truster > 999 ? `${Math.floor(userProfile.stats.truster / 1000)}K` : userProfile.stats.truster}
+                  {profile.stats.truster > 999 ? `${Math.floor(profile.stats.truster / 1000)}K` : profile.stats.truster}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1130,7 +1297,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               alignItems="center"
               onPress={() => {
                 navigation.navigate('InventoryList', {
-                  userId: userProfile.id,
+                  userId: profile.id,
                 });
               }}
             >
@@ -1140,14 +1307,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 fontWeight="$semibold"
                 textAlign="center"
               >
-                {userProfile.name}'s Inventory
+                {profile.name}'s Inventory
               </Text>
             </Pressable>
           </Box>
         </Box>
 
         {/* Badge Items */}
-        {userProfile.badges && userProfile.badges.length > 0 && (
+        {isProfileLoading ? (
           <Box mt={6} px={15} pb={16}>
             <Box
               borderRadius={5}
@@ -1155,53 +1322,90 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               h={130}
             >
               <HStack space="md" justifyContent="space-between">
-                {userProfile.badges.slice(0, 4).map((badge) => (
-                  <VStack key={badge.id} space="xs" alignItems="center">
+                {[0, 1, 2, 3].map((index) => (
+                  <VStack key={index} space="xs" alignItems="center" flex={1}>
                     <Box
                       w={70}
                       h={70}
                       borderRadius={5}
-                      borderWidth={0}
-                      overflow="hidden"
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <Image
-                        source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                        alt={badge.title}
-                        w={60}
-                        h={60}
-                        resizeMode="contain"
-                      />
-                    </Box>
-                    <Text
-                      color={isDark ? '$textDark400' : '#000000'}
-                      fontSize={8}
-                      fontWeight="$bold"
-                      textAlign="center"
-                    >
-                      {badge.title}
-                    </Text>
+                      bg={isDark ? '#404040' : '#E9E9E9'}
+                    />
+                    <Box
+                      w={50}
+                      h={10}
+                      borderRadius={3}
+                      bg={isDark ? '#404040' : '#E9E9E9'}
+                    />
                   </VStack>
                 ))}
               </HStack>
-              <Pressable
-                onPress={() => {
-                  navigation.navigate('Collections');
-                }}
-              >
-                <Text
-                  color={isDark ? '$textDark400' : '$textLight600'}
-                  fontSize={10}
-                  textAlign="center"
-                  mt="$4"
-                  fontWeight="$regular"
-                >
-                  See More Collections
-                </Text>
-              </Pressable>
+              <Box
+                w={120}
+                h={12}
+                borderRadius={3}
+                bg={isDark ? '#404040' : '#E9E9E9'}
+                alignSelf="center"
+                mt="$4"
+              />
             </Box>
           </Box>
+        ) : (
+          profile.badges && profile.badges.length > 0 && (
+            <Box mt={6} px={15} pb={16}>
+              <Box
+                borderRadius={5}
+                p={14}
+                h={130}
+              >
+                <HStack space="md" justifyContent="space-between">
+                  {profile.badges.slice(0, 4).map((badge) => (
+                    <VStack key={badge.id} space="xs" alignItems="center">
+                      <Box
+                        w={70}
+                        h={70}
+                        borderRadius={5}
+                        borderWidth={0}
+                        overflow="hidden"
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        <Image
+                          source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                          alt={badge.title}
+                          w={60}
+                          h={60}
+                          resizeMode="contain"
+                        />
+                      </Box>
+                      <Text
+                        color={isDark ? '$textDark400' : '#000000'}
+                        fontSize={8}
+                        fontWeight="$bold"
+                        textAlign="center"
+                      >
+                        {badge.title}
+                      </Text>
+                    </VStack>
+                  ))}
+                </HStack>
+                <Pressable
+                  onPress={() => {
+                    navigation.navigate('Collections');
+                  }}
+                >
+                  <Text
+                    color={isDark ? '$textDark400' : '$textLight600'}
+                    fontSize={10}
+                    textAlign="center"
+                    mt="$4"
+                    fontWeight="$regular"
+                  >
+                    See More Collections
+                  </Text>
+                </Pressable>
+              </Box>
+            </Box>
+          )
         )}
       </Box>
     );
@@ -1209,25 +1413,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
-  const profileHeader = useMemo(() => {
-    if (!userProfile) return null;
-    return renderProfileHeader();
-  }, [
-    userProfile, 
-    isDark, 
-    isOwnProfile, 
-    targetUserId, 
-    trustUser, 
-    untrustUser, 
-    isTrusting, 
-    isUntrusting, 
-    rootNavigation, 
-    user, 
-    navigation, 
-    handleShare, 
-    handleOpenActionSheet,
-    renderProfileHeader
-  ]);
+  // Not: profileHeader artık activeTab ve handleTabChange parametrelerini alıyor, bu yüzden her tab sayfasında ayrı oluşturulacak
   
   if (isProfileLoading) {
     return (
@@ -1251,47 +1437,53 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     );
   }
   
+  // Profile header'ı oluştur (sabit üst kısım için)
+  const profileHeader = useMemo(() => {
+    return renderProfileHeader(activeTab, handleTabChange, isProfileLoading);
+  }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading]);
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        {/* TabsBar - Header'da sabit */}
-        <TabsBar
-          activeTab={activeTab}
-          onChangeTab={handleTabChange}
-          isDark={isDark}
-        />
-        
-        {/* Yatay FlatList - Her tab bir sayfa */}
-        <FlatList
-          ref={horizontalListRef}
-          data={TABS}
-          keyExtractor={(item) => item.key}
-          renderItem={({ item }) => (
-            <Box width={SCREEN_WIDTH} flex={1}>
-              <TabPage
-                tabKey={item.key}
-                targetUserId={targetUserId || ''}
-                isDark={isDark}
-                bottomPadding={bottomPadding}
-                profileHeader={profileHeader}
-              />
-            </Box>
-          )}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleHorizontalScroll}
-          onScrollToIndexFailed={handleScrollToIndexFailed}
-          scrollEnabled={true}
-          decelerationRate="fast"
-          snapToInterval={SCREEN_WIDTH}
-          snapToAlignment="start"
-          getItemLayout={(data, index) => ({
-            length: SCREEN_WIDTH,
-            offset: SCREEN_WIDTH * index,
-            index,
-          })}
-        />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: bottomPadding }}
+          nestedScrollEnabled={true}
+        >
+          {/* Sabit Üst Kısım: Banner + Profile Info + Tabs Bar */}
+          {profileHeader}
+          <TabsBar 
+            activeTab={activeTab} 
+            onChangeTab={handleTabChange} 
+            isDark={isDark}
+            progress={progress}
+            tabContainerRef={tabContainerRef}
+            onTabContainerLayout={handleTabContainerLayout}
+          />
+          
+          {/* Yatay Kaydırılabilir İçerik: Tab Sayfaları - PagerView ile animasyonlu */}
+          <Box style={{ minHeight: Dimensions.get('window').height * 0.5 }}>
+            <AnimatedPagerView
+              ref={pagerRef}
+              style={{ height: Dimensions.get('window').height * 0.6 }}
+              initialPage={0}
+              onPageScroll={handlePageScroll}
+              onPageSelected={handlePageSelected}
+              scrollEnabled={true}
+            >
+              {TABS.map((tab) => (
+                <Box key={tab.key} flex={1}>
+                  <TabPage
+                    tabKey={tab.key}
+                    targetUserId={targetUserId || ''}
+                    isDark={isDark}
+                    bottomPadding={0}
+                  />
+                </Box>
+              ))}
+            </AnimatedPagerView>
+          </Box>
+        </ScrollView>
       </Box>
     </SafeAreaView>
   );

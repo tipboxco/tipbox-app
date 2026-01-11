@@ -94,113 +94,123 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
             </Pressable>
 
             {/* Header */}
-            <VStack px={12} py={8}>
-                <HStack alignItems="center" space="xs">
-                    <Image
-                        source={toImageSource(data.user.avatar)!}
-                        alt={data.user.name}
-                        mr={8}
-                        width={42}
-                        height={42}
-                        borderRadius={100}
-                    />
-                    <VStack flex={1}>
-                        <Text
-                            color={isDark ? '$textDark400' : '#C7C7C7'}
-                            fontSize="$xs"
-                            fontWeight="$semibold"
-                        >
-                            {data.user.action}
-                        </Text>
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize='$xs'
-                            fontWeight="$bold"
-                        >
-                            {data.user.name}
-                        </Text>
-                        <Text
-                            color={isDark ? '$textDark400' : '#787878'}
-                            fontSize="$xs"
-                            numberOfLines={1}
-                            maxWidth={250}
-                        >
-                            {data.user.title}
-                        </Text>
-                    </VStack>
-                </HStack>
-            </VStack>
-
-            {/* Product */}
-            <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
-                <ProductInfoCard
-                    size="small"
-                    type={ProductInfoType.PRODUCT}
-                    image={data.product.image}
-                    title={data.product.name}
-                    subName={data.product.subName}
-                />
-            </Box>
-
-            {/* Content */}
-            <VStack px={12} pb={8}>
-                {data.content.map((item, index) => (
-                    <VStack key={index} py={8}>
-                        <HStack space="sm" alignItems="center">
-                            <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
+            {data.user && (
+                <VStack px={12} py={8}>
+                    <HStack alignItems="center" space="xs">
+                        <Image
+                            source={toImageSource(data.user?.avatar)!}
+                            alt={data.user?.name || ''}
+                            mr={8}
+                            width={42}
+                            height={42}
+                            borderRadius={100}
+                        />
+                        <VStack flex={1}>
+                            <Text
+                                color={isDark ? '$textDark400' : '#C7C7C7'}
+                                fontSize="$xs"
+                                fontWeight="$semibold"
+                            >
+                                {data.user?.action}
+                            </Text>
                             <Text
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize={'$xs'}
+                                fontSize='$xs'
                                 fontWeight="$bold"
                             >
-                                {item.tag.title}
+                                {data.user?.name}
                             </Text>
-                        </HStack>
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$sm"
-                            ml={26}
-                        >
-                            {item.text}
-                        </Text>
-                        <HStack ml={26} mt={8}>
-                            {item.rating.map((star, idx) => (
-                                <Feather
-                                    key={idx}
-                                    name={star ? 'star' : 'star'}
-                                    size={12}
-                                    color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                                    fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                                />
-                            ))}
-                        </HStack>
-                    </VStack>
-                ))}
-            </VStack>
+                            <Text
+                                color={isDark ? '$textDark400' : '#787878'}
+                                fontSize="$xs"
+                                numberOfLines={1}
+                                maxWidth={250}
+                            >
+                                {data.user?.title}
+                            </Text>
+                        </VStack>
+                    </HStack>
+                </VStack>
+            )}
+
+            {/* Product */}
+            {data.product && (
+                <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                    <ProductInfoCard
+                        size="small"
+                        type={ProductInfoType.PRODUCT}
+                        image={data.product?.image}
+                        title={data.product?.name}
+                        subName={data.product?.subName}
+                    />
+                </Box>
+            )}
+
+            {/* Content */}
+            {data.content && data.content.length > 0 && (
+                <VStack px={12} pb={8}>
+                    {data.content.map((item, index) => (
+                        <VStack key={index} py={8}>
+                            <HStack space="sm" alignItems="center">
+                                <Feather name={item.tag?.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
+                                <Text
+                                    color={isDark ? '$textDark50' : '#000'}
+                                    fontSize={'$xs'}
+                                    fontWeight="$bold"
+                                >
+                                    {item.tag?.title}
+                                </Text>
+                            </HStack>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$sm"
+                                ml={26}
+                            >
+                                {item.text}
+                            </Text>
+                            {item.rating && item.rating.length > 0 && (
+                                <HStack ml={26} mt={8}>
+                                    {item.rating.map((star, idx) => (
+                                        <Feather
+                                            key={idx}
+                                            name={star ? 'star' : 'star'}
+                                            size={12}
+                                            color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
+                                            fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
+                                        />
+                                    ))}
+                                </HStack>
+                            )}
+                        </VStack>
+                    ))}
+                </VStack>
+            )}
 
             {/* Tags */}
-            <HStack px={12} py={8} flexWrap="wrap">
-                {data.tags.map((tag, index) => (
-                    <HStack
-                        key={index}
-                        bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
-                        borderWidth={1}
-                        borderColor={'#E9E9E9'}
-                        rounded={'$full'}
-                        px={16}
-                        py={6}
-                        mr={4}
-                    >
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$xs"
-                            fontWeight="$semibold"
+            {data.tags && data.tags.length > 0 && (
+                <HStack px={12} py={8} flexWrap="wrap">
+                    {data.tags.map((tag, index) => (
+                        <HStack
+                            key={index}
+                            bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
+                            borderWidth={1}
+                            borderColor={'#E9E9E9'}
+                            rounded={'$full'}
+                            px={16}
+                            py={6}
+                            mr={4}
                         >
-                            {tag}
-                        </Text>
-                    </HStack>
-                ))}
-            </HStack>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$xs"
+                                fontWeight="$semibold"
+                            >
+                                {tag}
+                            </Text>
+                        </HStack>
+                    ))}
+                </HStack>
+            )}
 
             {data.images?.length > 0 && (
                 <VStack px={12} >
@@ -209,54 +219,56 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
             )}
 
             {/* Stats */}
-            <HStack px={12} py={8}borderBottomWidth={1} borderColor="#E9E9E9">
-                <Pressable onPress={handleLike}>
-                    <HStack mr={10} alignItems="center">
-                        <Feather
-                            name="heart"
-                            size={24}
-                            color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                            fill={isLiked ? '#FF3040' : 'none'}
-                        />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.likes}
-                        </Text>
-                    </HStack>
-                </Pressable>
-                <Pressable 
-                    onPress={onCommentPress || undefined}
-                    disabled={!onCommentPress}
-                    opacity={onCommentPress ? 1 : 0.5}
-                >
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.comments}
-                        </Text>
-                    </HStack>
-                </Pressable>
-                <Pressable onPress={handleShare}>
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.shares}
-                        </Text>
-                    </HStack>
-                </Pressable>
-                <Pressable onPress={handleBookmark}>
-                    <HStack mr={10} alignItems="center">
-                        <Feather
-                            name="bookmark"
-                            size={24}
-                            color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                            fill={isBookmarked ? '#829905' : 'none'}
-                        />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.bookmarks}
-                        </Text>
-                    </HStack>
-                </Pressable>
-            </HStack>
+            {data.stats && (
+                <HStack px={12} py={8}borderBottomWidth={1} borderColor="#E9E9E9">
+                    <Pressable onPress={handleLike}>
+                        <HStack mr={10} alignItems="center">
+                            <Feather
+                                name="heart"
+                                size={24}
+                                color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
+                                fill={isLiked ? '#FF3040' : 'none'}
+                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.likes || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable 
+                        onPress={onCommentPress || undefined}
+                        disabled={!onCommentPress}
+                        opacity={onCommentPress ? 1 : 0.5}
+                    >
+                        <HStack mr={10} alignItems="center">
+                            <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.comments || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable onPress={handleShare}>
+                        <HStack mr={10} alignItems="center">
+                            <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.shares || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable onPress={handleBookmark}>
+                        <HStack mr={10} alignItems="center">
+                            <Feather
+                                name="bookmark"
+                                size={24}
+                                color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
+                                fill={isBookmarked ? '#829905' : 'none'}
+                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.bookmarks || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                </HStack>
+            )}
         </VStack>
     );
 };
