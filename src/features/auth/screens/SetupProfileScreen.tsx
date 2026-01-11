@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Image, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle, Camera, User } from 'lucide-react-native';
@@ -18,6 +19,10 @@ export const SetupProfileScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SetupProfileScreenNavigationProp>();
   const setupProfileMutation = useSetupProfile();
+  const insets = useSafeAreaInsets();
+  
+  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
+  const backgroundColor = '#FFFFFF';
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -67,12 +72,27 @@ export const SetupProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-        p="$4"
-      >
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Ana İçerik */}
+      <View style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          p="$4"
+        >
       <VStack flex={1} space="xl" pt="$16">
         <Text
           fontSize="$xl"
@@ -177,7 +197,7 @@ export const SetupProfileScreen = () => {
           py="$1"
           rounded="$lg"
           mt="auto"
-          mb="$4"
+          mb={insets.bottom + 16}
           onPress={handleNext}
           opacity={fullName && isUsernameValid && !setupProfileMutation.isPending ? 1 : 0.5}
           disabled={!fullName || !isUsernameValid || setupProfileMutation.isPending}
@@ -190,6 +210,20 @@ export const SetupProfileScreen = () => {
         </Button>
       </VStack>
       </Box>
-    </SafeAreaView>
+      </View>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };

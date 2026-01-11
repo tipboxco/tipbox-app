@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { register, login, setupProfile, updateUserInterests } from './authApi';
+import { register, login, setupProfile, updateUserInterests, googleLogin } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
 import type { RegisterResponse, ApiLoginResponse } from '../types';
 import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse } from './authApi';
@@ -174,6 +174,79 @@ export const useUpdateUserInterests = () => {
     },
     onError: (error) => {
       console.error('[useUpdateUserInterests] ❌ Update interests error:', error);
+    },
+  });
+};
+
+/**
+ * Google Login mutation hook
+ * Google OAuth ile giriş yapmak için React Query mutation hook'u
+ * 
+ * @example
+ * const googleLoginMutation = useGoogleLogin();
+ * googleLoginMutation.mutate('google-id-token');
+ */
+export const useGoogleLogin = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<ApiLoginResponse, Error, string>({
+    mutationFn: googleLogin,
+    onSuccess: async (data) => {
+      // App store'u güncelle - login fonksiyonu token'ları SecureStore'a kaydeder
+      await useAppStore.getState().login({
+        id: data.id,
+        fullName: data.fullName,
+        email: data.email,
+        avatar: data.avatar,
+        token: data.token,
+        refreshToken: data.refreshToken,
+      });
+
+      // Current user query'sini set et
+      queryClient.setQueryData(authKeys.currentUser(), {
+        id: data.id,
+        name: data.fullName,
+        email: data.email,
+        isGuest: false,
+      });
+
+      // ┌─────────────────────────────────────────┐
+      // │         GOOGLE LOGIN BAŞARILI            │
+      // └─────────────────┬───────────────────────┘
+      console.log('========================================');
+      console.log('✅ GOOGLE LOGIN BAŞARILI');
+      console.log('========================================');
+      console.log('   - User ID:', data.id);
+      console.log('   - Email:', data.email);
+      console.log('   - Full Name:', data.fullName);
+      console.log('   - Token Length:', data.token.length, 'characters');
+      console.log('   - Refresh Token Length:', data.refreshToken.length, 'characters');
+      
+      // Token kaydetme (login fonksiyonu içinde yapılıyor)
+      console.log('📋 Step 1: Token kaydediliyor...');
+      console.log('   - SecureStore\'a kaydediliyor');
+      
+      // Push token retry - Login sonrası pending token'ı tekrar dene
+      console.log('📋 Step 2: Pending push token retry...');
+      notificationService.retryPendingPushToken().catch((error) => {
+        console.warn('[useGoogleLogin] Failed to retry pending push token:', error);
+        // Hata olsa bile login devam etsin
+      });
+      
+      // Notification query'lerini invalidate et - login sonrası bildirimler yüklensin
+      console.log('📋 Step 3: Notification query\'leri invalidate ediliyor...');
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      console.log('✅ Notification query\'leri invalidate edildi');
+      
+      // Socket sistemi SocketProvider tarafından otomatik olarak yönetiliyor
+      // isAuthenticated=true olduğunda SocketProvider otomatik olarak bağlanacak
+      console.log('📋 Step 4: Socket bağlantısı SocketProvider tarafından otomatik yönetiliyor');
+      
+      console.log('========================================');
+    },
+    onError: (error) => {
+      // Hata durumunda işlemler burada yapılabilir
+      console.error('[useGoogleLogin] ❌ Google login error:', error);
     },
   });
 };
