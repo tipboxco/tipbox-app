@@ -986,7 +986,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose }) =>
                   {/* Search Bar */}
                   <HStack
                     alignItems="center"
-                    bg={isDark ? '#1C1C1E' : '#F2F2F7'}
+                    bg={isDark ? '#2A2A2A' : '#F2F2F2'}
                     borderRadius={12}
                     px="$3"
                     space="sm"

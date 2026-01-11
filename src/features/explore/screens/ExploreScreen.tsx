@@ -290,7 +290,7 @@ const ExploreScreen: React.FC = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   
   // PERFORMANCE FIX: Memoize background colors to prevent re-renders
-  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '$backgroundLight0', [isDark]);
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
   const tabHeaderBgColor = useMemo(() => isDark ? '#000' : '#FFF', [isDark]);
 
   // Debounce search query for API calls
@@ -352,18 +352,36 @@ const ExploreScreen: React.FC = () => {
 
   // See All Buttons - Navigation handlers
   const handleSeeAllEvents = useCallback(() => {
-    // Catalog tab'ına Event listesine git (Events tab'ına navigate et)
-    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen' as any, undefined);
+    console.log('[ExploreScreen] handleSeeAllEvents called');
+    try {
+      // Events tab'ına Event listesine git
+      navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen' as any, undefined);
+      console.log('[ExploreScreen] ✅ Navigated to EventsScreen');
+    } catch (error) {
+      console.error('[ExploreScreen] ❌ Error navigating to EventsScreen:', error);
+    }
   }, []);
 
   const handleSeeAllBrands = useCallback(() => {
-    // Catalog tab'ına Brand listesine git
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'brands' });
+    console.log('[ExploreScreen] handleSeeAllBrands called');
+    try {
+      // Catalog tab'ına Brand listesine git
+      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'brands' });
+      console.log('[ExploreScreen] ✅ Navigated to CatalogScreen with view: brands');
+    } catch (error) {
+      console.error('[ExploreScreen] ❌ Error navigating to CatalogScreen:', error);
+    }
   }, []);
 
   const handleSeeAllProducts = useCallback(() => {
-    // Catalog tab'ına Product listesine git
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'products' });
+    console.log('[ExploreScreen] handleSeeAllProducts called');
+    try {
+      // Catalog tab'ına Product listesine git
+      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'products' });
+      console.log('[ExploreScreen] ✅ Navigated to CatalogScreen with view: products');
+    } catch (error) {
+      console.error('[ExploreScreen] ❌ Error navigating to CatalogScreen:', error);
+    }
   }, []);
 
   // Item Press Handlers - Navigation
@@ -493,20 +511,22 @@ const ExploreScreen: React.FC = () => {
           leftAction="menu"
         />
 
-        <VStack flex={1} space="md">
+        <VStack flex={1}>
           {/* Search Bar - Fixed at top */}
           <VStack
+            space="md"
+            pb="$4"
             px="$4"
-            py="$2"
+            bg={backgroundColor}
             onLayout={handleSearchBarLayout}
           >
             <HStack
               alignItems="center"
-              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
               borderWidth={1}
               borderColor="#E9E9E9"
-              borderRadius={23}
-              px={12}
+              borderRadius={20}
+              px={14}
               space="sm"
             >
               <Feather
@@ -518,8 +538,8 @@ const ExploreScreen: React.FC = () => {
                 <InputField
                   placeholder="Select product group or search product name"
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                  color={isDark ? '#fff' : '#000'}
-                  fontSize={11}
+                  color={isDark ? '#000' : '#000'}
+                  fontSize="$xs"
                 />
               </Input>
             </HStack>
@@ -528,7 +548,7 @@ const ExploreScreen: React.FC = () => {
           {/* Category Tabs - Fixed */}
           <VStack
             bg={tabHeaderBgColor}
-            pt="$4"
+            pt={0}
             onLayout={handleTabsLayout}
           >
             <HStack

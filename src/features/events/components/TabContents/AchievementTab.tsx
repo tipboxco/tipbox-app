@@ -5,10 +5,7 @@ import {
   VStack,
   HStack,
   Text,
-  Input,
-  InputField,
 } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import LimitedTimeEventCard from '../LimitedTimeEventCard';
 import AchievementFilter from '../AchievementFilter';
@@ -128,60 +125,37 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const ListHeaderComponent = useMemo(() => (
     <VStack space="md" px="$4" pb="$4">
       {/* Limited Time Event Card */}
-      {isLimitedEventLoading && !limitedEvent ? (
-        <LimitedTimeEventSkeleton />
-      ) : limitedEventError ? (
-        <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
-          <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-            Hata: {limitedEventError.message}
-          </Text>
-        </Box>
-      ) : limitedEvent ? (
-        <LimitedTimeEventCard
-          data={limitedEvent}
-          onPress={() => {
-            // Limited time event'i SeeAllReward formatına map et
-            if (onRewardPress) {
-              const reward: SeeAllReward = {
-                id: limitedEvent.id,
-                title: limitedEvent.title || '',
-                image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/default-useravatar.png'),
-                description: limitedEvent.description || '',
-                category: '', // Limited event için category yok
-                isUnlocked: false, // Limited event için unlock durumu yok
-                completed: limitedEvent.userScore?.score || 0,
-                task: 0, // Limited event için target score yok
-              };
-              onRewardPress(reward);
-            }
-          }}
-        />
-      ) : null}
-
-      {/* Search Bar */}
-      <HStack
-        alignItems="center"
-        bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-        borderWidth={1}
-        borderColor="#E9E9E9"
-        borderRadius={20}
-        px={14}
-        space="sm"
-      >
-        <Feather
-          name="search"
-          size={24}
-          color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-        />
-        <Input flex={1} borderWidth={0} bg="transparent">
-          <InputField
-            placeholder="Select product group or search product name"
-            placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-            color={isDark ? '#000' : '#000'}
-            fontSize="$2xs"
+      <Box alignItems="center">
+        {isLimitedEventLoading && !limitedEvent ? (
+          <LimitedTimeEventSkeleton />
+        ) : limitedEventError ? (
+          <Box py="$4" alignItems="center" justifyContent="center" minHeight={230}>
+            <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+              Hata: {limitedEventError.message}
+            </Text>
+          </Box>
+        ) : limitedEvent ? (
+          <LimitedTimeEventCard
+            data={limitedEvent}
+            onPress={() => {
+              // Limited time event'i SeeAllReward formatına map et
+              if (onRewardPress) {
+                const reward: SeeAllReward = {
+                  id: limitedEvent.id,
+                  title: limitedEvent.title || '',
+                  image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/default-useravatar.png'),
+                  description: limitedEvent.description || '',
+                  category: '', // Limited event için category yok
+                  isUnlocked: false, // Limited event için unlock durumu yok
+                  completed: limitedEvent.userScore?.score || 0,
+                  task: 0, // Limited event için target score yok
+                };
+                onRewardPress(reward);
+              }
+            }}
           />
-        </Input>
-      </HStack>
+        ) : null}
+      </Box>
 
       {/* Achievement Filter */}
       <AchievementFilter
@@ -245,15 +219,6 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
       <VStack flex={1} px="$4" py="$4" space="md">
         {/* Limited Time Event Skeleton */}
         <LimitedTimeEventSkeleton />
-
-        {/* Search Bar Skeleton */}
-        <Box
-          bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-          borderWidth={1}
-          borderColor="#E9E9E9"
-          borderRadius={20}
-          height={40}
-        />
 
         {/* Filter Skeleton */}
         <HStack space="sm">

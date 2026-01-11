@@ -3,7 +3,6 @@ import { Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import { NotificationBadge } from '@/src/components/NotificationBadge';
 import { MessageBadge } from '@/src/components/MessageBadge';
@@ -14,6 +13,23 @@ import { useAppStore } from '@/src/store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { getHeavyTabFreezeRule } from './rules/freezeRules';
+// Heroicons imports
+import {
+  HomeIcon as HomeIconSolid,
+  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
+  Squares2X2Icon as Squares2X2IconSolid,
+  CalendarIcon as CalendarIconSolid,
+  BellIcon as BellIconSolid,
+  InboxIcon as InboxIconSolid,
+} from 'react-native-heroicons/solid';
+import {
+  HomeIcon as HomeIconOutline,
+  MagnifyingGlassIcon as MagnifyingGlassIconOutline,
+  Squares2X2Icon as Squares2X2IconOutline,
+  CalendarIcon as CalendarIconOutline,
+  BellIcon as BellIconOutline,
+  InboxIcon as InboxIconOutline,
+} from 'react-native-heroicons/outline';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -99,34 +115,45 @@ export const TabNavigator = () => {
     color: string;
     size: number;
   }) => {
-    let iconName: keyof typeof Feather.glyphMap = 'home';
+    // Heroicons: focused durumda solid, unfocused durumda outline kullan
+    const iconProps = {
+      color,
+      width: size,
+      height: size,
+    };
+
+    let IconComponent: React.ComponentType<any> | null = null;
 
     switch (route.name) {
       case 'FeedStack':
-        iconName = 'home';
+        IconComponent = focused ? HomeIconSolid : HomeIconOutline;
         break;
       case 'ExploreStack':
-        iconName = 'search';
+        IconComponent = focused ? MagnifyingGlassIconSolid : MagnifyingGlassIconOutline;
         break;
       case 'CatalogStack':
-        iconName = 'grid';
+        IconComponent = focused ? Squares2X2IconSolid : Squares2X2IconOutline;
         break;
       case 'EventsStack':
-        iconName = 'calendar';
+        IconComponent = focused ? CalendarIconSolid : CalendarIconOutline;
         break;
       case 'NotificationStack':
-        iconName = 'bell';
+        IconComponent = focused ? BellIconSolid : BellIconOutline;
         break;
       case 'InboxStack':
-        iconName = 'inbox';
+        IconComponent = focused ? InboxIconSolid : InboxIconOutline;
         break;
+    }
+
+    if (!IconComponent) {
+      return null;
     }
 
     // Notification icon için badge ekle
     if (route.name === 'NotificationStack') {
       return (
         <View style={{ position: 'relative' }}>
-          <Feather name={iconName} size={size} color={color} />
+          <IconComponent {...iconProps} />
           <NotificationBadge count={unreadCount} />
         </View>
       );
@@ -136,13 +163,13 @@ export const TabNavigator = () => {
     if (route.name === 'InboxStack') {
       return (
         <View style={{ position: 'relative' }}>
-          <Feather name={iconName} size={size} color={color} />
+          <IconComponent {...iconProps} />
           <MessageBadge hasUnread={hasUnreadMessages} />
         </View>
       );
     }
 
-    return <Feather name={iconName} size={size} color={color} />;
+    return <IconComponent {...iconProps} />;
   }, [unreadCount, hasUnreadMessages]);
 
   // PERFORMANCE FIX: Tab press handler'ını useCallback ile memoize et

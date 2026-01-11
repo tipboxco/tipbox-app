@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import type { ImageSourcePropType } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+// Heroicons imports
+import {
+  EllipsisHorizontalIcon,
+  TagIcon,
+  CubeIcon,
+  StarIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import {
+  StarIcon as StarIconSolid,
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
@@ -124,7 +139,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         right={15}
         zIndex={1}
       >
-        <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
+        <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
       </Pressable>
 
       {/* Header */}
@@ -224,13 +239,21 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               </Text>
               <HStack ml={26} mt={8}>
                 {item.rating.map((star, idx) => (
-                  <Feather
-                    key={idx}
-                    name={star ? 'star' : 'star'}
-                    size={12}
-                    color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                    fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                  />
+                  star ? (
+                    <StarIconSolid
+                      key={idx}
+                      width={12}
+                      height={12}
+                      color={isDark ? '#fff' : '#829905'}
+                    />
+                  ) : (
+                    <StarIcon
+                      key={idx}
+                      width={12}
+                      height={12}
+                      color={isDark ? '#7E7E7E' : '#E8E8E8'}
+                    />
+                  )
                 ))}
               </HStack>
             </VStack>
@@ -297,7 +320,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         </Pressable>
         <Pressable onPress={handleComment}>
         <HStack mr={10} alignItems="center">
-          <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+          <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
             <AnimatedCounter
               value={commentsCount}
               color={isDark ? '$textDark50' : '#000'}
@@ -319,12 +342,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         </Pressable>
         <Pressable onPress={handleBookmark}>
         <HStack mr={10} alignItems="center">
-            <Feather
-              name="bookmark"
-              size={24}
-              color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-              fill={isBookmarked ? '#829905' : 'none'}
-            />
+            {isBookmarked ? (
+              <BookmarkIconSolid width={24} height={24} color="#829905" />
+            ) : (
+              <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+            )}
             <AnimatedCounter
               value={bookmarksCount}
               color={isDark ? '$textDark50' : '#000'}

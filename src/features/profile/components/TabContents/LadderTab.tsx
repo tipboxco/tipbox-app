@@ -307,7 +307,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   }, [selectedFilter, ladderBadges]);
 
   // CACHE FIX: Only show loading when loading and no cached data
-  if (isLoading && !data?.pages?.[0]) {
+  if (isLoading && !ladderBadgesData?.pages?.[0]) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" py={20}>
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />

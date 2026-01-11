@@ -1,7 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect, useReducer } from 'react';
-import { Platform, Animated } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Pressable, Image, HStack, Input, InputField } from '@gluestack-ui/themed';
+import React, { useState, useRef, useCallback, useEffect, useReducer, useMemo } from 'react';
+import { Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Box, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,7 +10,6 @@ import { mock_user_profile } from '@/src/mock/common';
 import { Category } from '@/src/mock/catalog/productCatalog/types';
 import { ProductCatalogScreen } from './ProductCatalogScreen';
 import { BrandScreen } from './BrandScreen';
-import { Search } from 'lucide-react-native';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { CatalogStackParamList } from '../navigation';
@@ -71,10 +70,15 @@ const CatalogScreenComponent = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CatalogScreenNavigationProp>();
   const route = useRoute<CatalogScreenRouteProp>();
-  const insets = useSafeAreaInsets();
   
   // Get initial mode from route params
+  // CONTROL FIX: Added logging to debug route params
   const initialMode = route.params?.view === 'brands' ? 'brand-catalog' : 'product';
+  console.log('[CatalogScreen] Initial mode from route params:', {
+    routeParams: route.params,
+    view: route.params?.view,
+    initialMode,
+  });
   
   // PERFORMANCE FIX: Use reducer for related state management
   const [catalogState, dispatch] = useReducer(catalogScreenReducer, {
@@ -84,19 +88,30 @@ const CatalogScreenComponent = () => {
   const { currentMode, selectedCategory, selectedProductLocal, breadcrumbItems } = catalogState;
   
   // Update mode when route params change (not when currentMode changes)
+  // CONTROL FIX: Always update mode when route params change, regardless of current mode
+  // This ensures that when navigating from "See All Brands" or "See All Products",
+  // the correct mode is set immediately
   const routeView = route.params?.view;
   useEffect(() => {
+    console.log('[CatalogScreen] Route params changed:', {
+      routeParams: route.params,
+      view: routeView,
+      currentMode,
+    });
+    
     const newMode = routeView === 'brands' ? 'brand-catalog' : 'product';
-    // Only update if route params actually changed the mode requirement
-    if ((routeView === 'brands' && currentMode !== 'brand-catalog') || 
-        (routeView !== 'brands' && currentMode === 'brand-catalog')) {
+    
+    // CONTROL FIX: Always update mode when route params change
+    // This ensures correct mode is set when navigating from ExploreScreen
+    if (newMode !== currentMode) {
+      console.log('[CatalogScreen] Updating mode:', { from: currentMode, to: newMode });
       dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
+    } else {
+      console.log('[CatalogScreen] Mode unchanged:', currentMode);
     }
-  }, [routeView]); // Only depend on route params, not currentMode
+  }, [routeView, currentMode]); // CONTROL FIX: Added currentMode to dependencies to ensure updates
   
   // UI-specific state (keep as useState for simplicity)
-  const [searchQuery, setSearchQuery] = useState('');
-  const [headerHeight, setHeaderHeight] = useState(40); // Default header height
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
   
   // Global bottom sheet hook
@@ -118,11 +133,6 @@ const CatalogScreenComponent = () => {
   const setSelectedProductGroup = useCatalogUIStore((state) => state.setSelectedProductGroup);
   const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
   
-  // Scroll animasyonu için Animated.Value
-  const scrollY = useRef(new Animated.Value(0)).current;
-  
-  // Brand isminin pozisyonu (Header Info Box yüksekliği yaklaşık 80-100px)
-  const BRAND_TITLE_THRESHOLD = 80;
 
   const handleBrandCategorySelection = (category: Category) => {
     dispatch({ type: 'SET_SELECTED_CATEGORY', payload: category });
@@ -130,70 +140,10 @@ const CatalogScreenComponent = () => {
     // Kullanıcı floating button ile brand-selection moduna geçebilir
   };
 
-  const handleCreatePost = useCallback(() => {
-    console.log('Create a Post pressed');
-    // Reset bottom sheet key to remount component and reset view
-    setBottomSheetKey(prev => prev + 1);
-    
-    // Determine stage for bottom sheet
-    // Priority: Product > ProductGroup > SubCategory
-    let stageForBottomSheet: 'subcategories' | 'productgroups' | 'products' | undefined;
-    if (currentView === 'categories') {
-      stageForBottomSheet = undefined;
-    } else if (selectedProductId && currentView === 'products') {
-      // Product seçilmişse products stage'i
-      stageForBottomSheet = 'products';
-    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
-      // ProductGroup seçilmiş ama Product seçilmemişse productgroups stage'i (subcategories ile aynı seçenekler)
-      stageForBottomSheet = 'subcategories';
-    } else if (currentView === 'subcategories') {
-      // SubCategory seçilmişse subcategories stage'i
-      stageForBottomSheet = 'subcategories';
-    } else if (currentView === 'productgroups') {
-      // ProductGroups view'deyse subcategories stage'i (aynı seçenekler)
-      stageForBottomSheet = 'subcategories';
-    } else {
-      // Fallback
-      stageForBottomSheet = currentView as 'subcategories' | 'products';
-    }
-    
-    openBottomSheet(
-      <CreatePostBottomSheet
-        key={bottomSheetKey + 1}
-        onClose={closeBottomSheet}
-        onPostTypeSelect={handlePostTypeSelect}
-        onViewChange={handleViewChange}
-        stage={stageForBottomSheet}
-        selectedProduct={selectedProductLocal ? {
-          id: selectedProductLocal.id,
-          name: selectedProductLocal.name,
-          subName: selectedProductLocal.description || undefined,
-          image: selectedProductLocal.image,
-          hasDiscount: false,
-        } : undefined}
-      />,
-      {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableHandlePanningGesture: true,
-        enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
-        paddingBottom: bottomOffset,
-        handleIndicatorStyle: {
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        },
-        onChange: (index: number) => {
-    // Reset bottom sheet key when sheet closes to reset view state
-    if (index === -1) {
-      setBottomSheetKey(prev => prev + 1);
-    }
-        },
-      }
-    );
-  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProductLocal, isDark]);
+  const handleViewChange = useCallback((view: 'options' | 'experience' | 'product-selection') => {
+    console.log('BottomSheet view changed:', view);
+    // View change is handled internally by CreatePostBottomSheet
+  }, []);
 
   const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
     console.log('Post type selected:', type, 'experienceOption:', experienceOption);
@@ -319,10 +269,70 @@ const CatalogScreenComponent = () => {
     }
   }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId, selectedProductId]);
 
-  const handleViewChange = useCallback((view: 'options' | 'experience' | 'product-selection') => {
-    console.log('BottomSheet view changed:', view);
-    // View change is handled internally by CreatePostBottomSheet
-  }, []);
+  const handleCreatePost = useCallback(() => {
+    console.log('Create a Post pressed');
+    // Reset bottom sheet key to remount component and reset view
+    setBottomSheetKey(prev => prev + 1);
+    
+    // Determine stage for bottom sheet
+    // Priority: Product > ProductGroup > SubCategory
+    let stageForBottomSheet: 'subcategories' | 'productgroups' | 'products' | undefined;
+    if (currentView === 'categories') {
+      stageForBottomSheet = undefined;
+    } else if (selectedProductId && currentView === 'products') {
+      // Product seçilmişse products stage'i
+      stageForBottomSheet = 'products';
+    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+      // ProductGroup seçilmiş ama Product seçilmemişse productgroups stage'i (subcategories ile aynı seçenekler)
+      stageForBottomSheet = 'subcategories';
+    } else if (currentView === 'subcategories') {
+      // SubCategory seçilmişse subcategories stage'i
+      stageForBottomSheet = 'subcategories';
+    } else if (currentView === 'productgroups') {
+      // ProductGroups view'deyse subcategories stage'i (aynı seçenekler)
+      stageForBottomSheet = 'subcategories';
+    } else {
+      // Fallback
+      stageForBottomSheet = currentView as 'subcategories' | 'products';
+    }
+    
+    openBottomSheet(
+      <CreatePostBottomSheet
+        key={bottomSheetKey + 1}
+        onClose={closeBottomSheet}
+        onPostTypeSelect={handlePostTypeSelect}
+        onViewChange={handleViewChange}
+        stage={stageForBottomSheet}
+        selectedProduct={selectedProductLocal ? {
+          id: selectedProductLocal.id,
+          name: selectedProductLocal.name,
+          subName: selectedProductLocal.description || undefined,
+          image: selectedProductLocal.image,
+          hasDiscount: false,
+        } : undefined}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        paddingBottom: bottomOffset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+        onChange: (index: number) => {
+    // Reset bottom sheet key when sheet closes to reset view state
+    if (index === -1) {
+      setBottomSheetKey(prev => prev + 1);
+    }
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProductLocal, isDark, selectedProductId, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect, handleViewChange]);
 
   const handleFloatingButtonPress = () => {
     if (currentMode === 'brand-selection') {
@@ -332,13 +342,9 @@ const CatalogScreenComponent = () => {
       // Brand catalog modundan normal moda geri dön
       dispatch({ type: 'SET_CURRENT_MODE', payload: 'product' });
       dispatch({ type: 'SET_SELECTED_CATEGORY', payload: null });
-      // Scroll pozisyonunu sıfırla
-      scrollY.setValue(0);
     } else {
       // Normal moddan brand catalog moduna geç
       dispatch({ type: 'SET_CURRENT_MODE', payload: 'brand-catalog' });
-      // Scroll pozisyonunu sıfırla
-      scrollY.setValue(0);
     }
   };
 
@@ -371,39 +377,23 @@ const CatalogScreenComponent = () => {
     dispatch({ type: 'SET_BREADCRUMB_ITEMS', payload: data.breadcrumbItems });
   }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup]);
 
-  // PERFORMANCE FIX: Throttle scroll handler to reduce JS thread pressure
-  // Throttle to ~60fps (16ms) to prevent excessive Animated.Value updates
-  const lastScrollUpdateRef = useRef<number>(0);
-  const THROTTLE_MS = 16; // ~60fps
-  
-  const handleBrandScroll = useCallback((event: any) => {
-    const now = Date.now();
-    if (now - lastScrollUpdateRef.current < THROTTLE_MS) {
-      return; // Skip this update
-    }
-    lastScrollUpdateRef.current = now;
-    
-    const offsetY = event.nativeEvent.contentOffset.y;
-    scrollY.setValue(offsetY);
-  }, [scrollY]);
-
-  // Header opacity animasyonu: Brand ismini geçtikten sonra (80px'de başlar, 120px'de tamamen görünür)
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, BRAND_TITLE_THRESHOLD, BRAND_TITLE_THRESHOLD + 40],
-    outputRange: [0, 0, 1],
-    extrapolate: 'clamp',
-  });
-
   const renderContent = () => {
-    const paddingBottom = headerHeight + 12;
+    const paddingBottom = 52;
+    // CONTROL FIX: Log current mode and route params for debugging
+    console.log('[CatalogScreen] renderContent:', {
+      currentMode,
+      routeParams: route.params,
+      routeView: route.params?.view,
+    });
+    
     switch (currentMode) {
       case 'brand-catalog':
+        console.log('[CatalogScreen] Rendering BrandScreen');
         return (
           <BrandScreen
             selectedCategory={selectedCategory}
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
-            onScroll={handleBrandScroll}
             showHeader={false}
           />
         );
@@ -413,11 +403,11 @@ const CatalogScreenComponent = () => {
             selectedCategory={selectedCategory}
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
-            onScroll={handleBrandScroll}
             showHeader={false}
           />
         );
       default:
+        console.log('[CatalogScreen] Rendering ProductCatalogScreen');
         return (
           <ProductCatalogScreen
             onCreatePost={handleCreatePost}
@@ -428,95 +418,22 @@ const CatalogScreenComponent = () => {
     }
   };
 
+  // PERFORMANCE FIX: Memoize background color to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '#1A1A1A' : '#FAFAFA', [isDark]);
+
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '#1A1A1A' : '#FAFAFA'}
-        pt={insets.top}
-      >
-      {/* Görünmez Header - Yükseklik ölçümü için */}
-      <Box
-        position="absolute"
-        opacity={0}
-        pointerEvents="none"
-        top={insets.top}
-        onLayout={(event) => {
-          const { height } = event.nativeEvent.layout;
-          setHeaderHeight(height);
-        }}
-      >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg={backgroundColor}>
         <Header
           title={getTitle()}
           leftAction="menu"
         />
+
+        <VStack flex={1}>
+          {/* Content Area */}
+      <Box flex={1}>
+        {renderContent()}
       </Box>
-
-      {/* Sticky Animated Header */}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: insets.top,
-          left: 0,
-          right: 0,
-          zIndex: 9999,
-          elevation: 10,
-          width: '100%',
-          pointerEvents: 'box-none',
-        }}
-        collapsable={false}
-      >
-        <Animated.View
-          style={{
-            // Brand ve product katalog görünümlerinde header her zaman görünür olsun
-            opacity: 1,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            width: '100%',
-            zIndex: 9999,
-          }}
-        >
-          <Box 
-            bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-            width="100%"
-          >
-            <Header
-              title={getTitle()}
-              leftAction="menu"
-            />
-          </Box>
-        </Animated.View>
-      </Animated.View>
-
-      {/* Arama Çubuğu */}
-      <Box px="$4" pt={headerHeight > 0 ? headerHeight + 12 : '$3'}>
-        <Box
-          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-          borderRadius={20}
-          height={36}
-          px="$4"
-          justifyContent="center"
-        >
-          <HStack alignItems="center" space="sm">
-            <Search size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
-            <Input flex={1} borderWidth={0} bg="transparent">
-              <InputField
-                placeholder="Select product group or search product name"
-                placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={9}
-              />
-            </Input>
-          </HStack>
-        </Box>
-      </Box>
-
-      {/* Content Area */}
-      {renderContent()}
 
       {/* Floating Action Button */}
       <Pressable
@@ -538,7 +455,7 @@ const CatalogScreenComponent = () => {
           height={27}
         />
       </Pressable>
-
+        </VStack>
       </Box>
     </SafeAreaView>
   );

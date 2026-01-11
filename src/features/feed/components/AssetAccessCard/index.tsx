@@ -2,18 +2,24 @@ import React from 'react';
 import { Box, HStack, Text, Pressable } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface AssetAccessCardProps {
   onTabChange: (tab: 'wallet' | 'inventory') => void;
 }
 
 export const AssetAccessCard = ({ onTabChange }: AssetAccessCardProps) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  
   const handleTabPress = (tab: 'wallet' | 'inventory') => {
     onTabChange(tab);
   };
 
   return (
-    <Box px="$4" py="$2">
+    <Box px="$4" 
+    bg={isDark ? '$backgroundDark950' : '#FFFFFF'}  >
+    
       <HStack space="sm" alignItems="center">
         {/* Wallet Tab */}
         <Pressable

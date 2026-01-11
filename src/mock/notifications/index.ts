@@ -1,10 +1,10 @@
 import { NotificationItem, NotificationFilter } from './types';
 
 export const notification_filters: NotificationFilter[] = [
-  { id: 'all', label: 'All Notifications', isActive: true },
+  { id: 'all', label: 'All', isActive: true },
+  { id: 'tips', label: 'Tips', isActive: false },
+  { id: 'trust', label: 'Truster', isActive: false },
   { id: 'replies', label: 'Replies', isActive: false },
-  { id: 'trust', label: 'Trust - Truster', isActive: false },
-  { id: 'tips', label: 'TIPS', isActive: false },
 ];
 
 export const notification_mock: NotificationItem[] = [

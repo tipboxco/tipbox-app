@@ -601,9 +601,10 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     }
   };
 
-  const handleCreatePost = () => {
+  const handleCreatePost = useCallback(() => {
+    console.log('📝 [ProductCatalogScreen] Create Post button pressed');
     onCreatePost?.();
-  };
+  }, [onCreatePost]);
 
   const getCurrentData = () => {
     switch (currentView) {
@@ -630,8 +631,41 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
 
   const currentData = getCurrentData();
 
+  // PERFORMANCE FIX: Memoize background color to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
+
   return (
     <Box flex={1}>
+
+      {/* Search Bar - Fixed at top */}
+      <VStack
+        space="md"
+        pb="$4"
+        px="$4"
+        bg={backgroundColor}
+      >
+        <HStack
+          alignItems="center"
+          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          borderRadius={20}
+          px={14}
+          space="sm"
+        >
+          <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
+          <Input flex={1} borderWidth={0} bg="transparent">
+            <InputField
+              placeholder="Select product group or search product name"
+              placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+              color={isDark ? '#000' : '#000'}
+              fontSize="$xs"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </Input>
+        </HStack>
+      </VStack>
 
       {/* Breadcrumb */}
       <Breadcrumb

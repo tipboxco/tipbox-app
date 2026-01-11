@@ -6,13 +6,10 @@ import {
   HStack,
   Text,
   Pressable,
-  Input,
-  InputField,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Feather } from '@expo/vector-icons';
 import SupportRequestCard from '../components/SupportRequestCard/index';
 import SupportRequestFilterGroup from '../components/SupportRequestFilterGroup/index';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
@@ -34,7 +31,6 @@ const SupportRequestsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [activeFilter, setActiveFilter] = useState<string>('pending');
-  const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<SupportRequestsScreenNavigationProp>();
   const bottomInset = useSafeAreaValues('bottom');
@@ -54,7 +50,6 @@ const SupportRequestsScreen: React.FC = () => {
   // API params
   const apiParams = {
     status: filterStatusMap[activeFilter],
-    search: searchQuery || undefined,
     limit: 50,
   };
 
@@ -239,33 +234,6 @@ const SupportRequestsScreen: React.FC = () => {
 
   return (
     <VStack flex={1} space="md" px="$4">
-      {/* Search Bar */}
-      <HStack
-        alignItems="center"
-        bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-        borderWidth={1}
-        borderColor="#E9E9E9"
-        borderRadius={20}
-        px={14}
-        space="sm"
-      >
-        <Feather
-          name="search"
-          size={24}
-          color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-        />
-        <Input flex={1} borderWidth={0} bg="transparent">
-          <InputField
-            placeholder="Search in support requests"
-            placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-            color={isDark ? '#000' : '#000'}
-            fontSize={9}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </Input>
-      </HStack>
-
       {/* Filter Buttons */}
       <SupportRequestFilterGroup
         filters={filterOptions.map(f => ({ id: f.id, name: f.name, isActive: activeFilter === f.id }))}

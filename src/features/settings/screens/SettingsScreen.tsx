@@ -158,7 +158,7 @@ export const SettingsScreen = () => {
       <Box px="$4" py="$2">
         <HStack
           alignItems="center"
-          bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
           borderWidth={1}
           borderColor="#E9E9E9"
           borderRadius={23}

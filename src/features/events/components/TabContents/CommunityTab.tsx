@@ -5,10 +5,7 @@ import {
   VStack,
   HStack,
   Text,
-  Input,
-  InputField,
 } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import EventCard from '@/src/components/EventCard';
 import { useActiveEvents, useUpcomingEvents } from '../../api/hooks';
@@ -211,15 +208,6 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
   if (isInitialLoading && !activeEventsData && !upcomingEventsData) {
     return (
       <VStack flex={1} px="$4" py="$4" space="md">
-        {/* Search Bar Skeleton */}
-        <Box
-          bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-          borderWidth={1}
-          borderColor="#E9E9E9"
-          borderRadius={20}
-          height={40}
-        />
-
         {/* Active Events Section Skeleton */}
         <VStack space="sm">
           <Box
@@ -273,33 +261,6 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
         }
         ListHeaderComponent={
           <VStack space="md" pb="$4">
-            {/* Search Bar */}
-            <Box>
-              <HStack
-                alignItems="center"
-                bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-                borderWidth={1}
-                borderColor="#E9E9E9"
-                borderRadius={20}
-                px={14}
-                space="sm"
-              >
-                <Feather
-                  name="search"
-                  size={24}
-                  color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-                />
-                <Input flex={1} borderWidth={0} bg="transparent">
-                  <InputField
-                    placeholder="Select product group or search product name"
-                    placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                    color={isDark ? '#000' : '#000'}
-                    fontSize={9}
-                  />
-                </Input>
-              </HStack>
-            </Box>
-
             {/* Active Events Section - Horizontal Scroll */}
             <Box>
               <VStack space="sm">

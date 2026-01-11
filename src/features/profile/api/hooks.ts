@@ -357,7 +357,7 @@ export const useInventory = () => {
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserPosts('user-123', 3);
  */
-export const useUserPosts = (userId: string | undefined, limit: number = 3) => {
+export const useUserPosts = (userId: string | undefined, limit: number = 3, options?: { enabled?: boolean }) => {
   return useInfiniteQuery<UserFeedApiResponse, Error>({
     queryKey: userId ? [...profileKeys.userPosts(userId), limit] : ['profile', 'posts', 'disabled'],
     queryFn: ({ pageParam }) => {
@@ -382,7 +382,7 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3) => {
       // Bu durumda backend'in cursor desteği eklenmesi gerekir
       return lastPage.pagination.cursor;
     },
-    enabled: !!userId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -406,7 +406,7 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3) => {
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserReviews('user-123', 5);
  */
-export const useUserReviews = (userId: string | undefined, limit: number = 5) => {
+export const useUserReviews = (userId: string | undefined, limit: number = 5, options?: { enabled?: boolean }) => {
   return useInfiniteQuery<ProfileReviewsApiResponse, Error>({
     queryKey: userId ? profileKeys.userReviews(userId) : ['profile', 'reviews', 'disabled'],
     queryFn: ({ pageParam }) => {
@@ -423,7 +423,7 @@ export const useUserReviews = (userId: string | undefined, limit: number = 5) =>
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!userId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -447,7 +447,7 @@ export const useUserReviews = (userId: string | undefined, limit: number = 5) =>
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserBenchmarks('user-123', 5);
  */
-export const useUserBenchmarks = (userId: string | undefined, limit: number = 5) => {
+export const useUserBenchmarks = (userId: string | undefined, limit: number = 5, options?: { enabled?: boolean }) => {
   return useInfiniteQuery<ProfileBenchmarksApiResponse, Error>({
     queryKey: userId ? profileKeys.userBenchmarks(userId) : ['profile', 'benchmarks', 'disabled'],
     queryFn: ({ pageParam }) => {
@@ -464,7 +464,7 @@ export const useUserBenchmarks = (userId: string | undefined, limit: number = 5)
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!userId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -488,7 +488,7 @@ export const useUserBenchmarks = (userId: string | undefined, limit: number = 5)
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserTipsAndTricks('user-123', 5);
  */
-export const useUserTipsAndTricks = (userId: string | undefined, limit: number = 5) => {
+export const useUserTipsAndTricks = (userId: string | undefined, limit: number = 5, options?: { enabled?: boolean }) => {
   return useInfiniteQuery<ProfileTipsAndTricksApiResponse, Error>({
     queryKey: userId ? profileKeys.userTipsAndTricks(userId) : ['profile', 'tips', 'disabled'],
     queryFn: ({ pageParam }) => {
@@ -505,7 +505,7 @@ export const useUserTipsAndTricks = (userId: string | undefined, limit: number =
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!userId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -569,7 +569,7 @@ export const useUserLadderBadges = (userId: string | undefined, limit: number = 
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useUserReplies('user-123', 5);
  */
-export const useUserReplies = (userId: string | undefined, limit: number = 5) => {
+export const useUserReplies = (userId: string | undefined, limit: number = 5, options?: { enabled?: boolean }) => {
   return useInfiniteQuery<ProfileRepliesApiResponse, Error>({
     queryKey: userId ? profileKeys.userReplies(userId) : ['profile', 'replies', 'disabled'],
     queryFn: ({ pageParam }) => {
@@ -586,7 +586,7 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5) =>
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!userId,
+    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut

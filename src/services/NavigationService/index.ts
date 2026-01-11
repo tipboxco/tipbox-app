@@ -241,15 +241,20 @@ class NavigationService {
     screenName: string,
     params?: unknown
   ): void {
+    console.log('[NavigationService] navigateNested called:', { tabName, screenName, params });
+    
     if (!this.isReady()) {
+      console.warn('[NavigationService] ⚠️ Navigation is not ready');
       return;
     }
 
     try {
       // Route mapping pattern: Navigation tree'den bağımsız
       const routeMapping = getRouteMapping(tabName);
+      console.log('[NavigationService] Route mapping:', routeMapping);
       
       if (!routeMapping) {
+        console.error('[NavigationService] ❌ Route mapping not found for tab:', tabName);
         this.logger.error('Route mapping not found for tab:', tabName);
         return;
       }
@@ -271,10 +276,14 @@ class NavigationService {
         },
       };
       
+      console.log('[NavigationService] Navigation params:', JSON.stringify(navigationParams, null, 2));
+      
       // Navigate using root route from mapping
       (this.navigationRef!.current!.navigate as any)(routeMapping.root, navigationParams);
+      console.log('[NavigationService] ✅ Navigated nested:', tabName, screenName, params);
       this.logger.log('Navigated nested:', tabName, screenName, params);
     } catch (error) {
+      console.error('[NavigationService] ❌ Nested navigation error:', error);
       this.logger.error('Nested navigation error:', error);
       this.logger.error('Tab:', tabName, 'Screen:', screenName, 'Params:', params);
     }

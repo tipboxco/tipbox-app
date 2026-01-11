@@ -226,7 +226,7 @@ class GoogleService {
   private getRedirectUri(): string {
     // Web platform için
     if (Platform.OS === 'web') {
-      return AuthSession.makeRedirectUri({ useProxy: false });
+      return AuthSession.makeRedirectUri({});
     }
     
     // Hem development hem production için sabit HTTPS URL kullan

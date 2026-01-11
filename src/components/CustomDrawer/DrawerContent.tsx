@@ -538,19 +538,20 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       label: 'Settings',
       onPress: handleNavigateToSettings,
     },
-    {
-      id: 'more-schoise',
-      icon: 'more-horizontal',
-      label: 'MoreSchoise',
-      onPress: handleNavigateToMoreSchoise,
-    },
+    // MoreSchoise seçeneği şimdilik gizlendi
+    // {
+    //   id: 'more-schoise',
+    //   icon: 'more-horizontal',
+    //   label: 'MoreSchoise',
+    //   onPress: handleNavigateToMoreSchoise,
+    // },
   ], [
     handleNavigateToProfile,
     handleNavigateToWallet,
     handleNavigateToBookmarks,
     handleNavigateToMarketplace,
     handleNavigateToSettings,
-    handleNavigateToMoreSchoise,
+    // handleNavigateToMoreSchoise, // Şimdilik gizlendi
     handleCloseDrawer,
   ]);
 

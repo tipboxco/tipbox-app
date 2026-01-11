@@ -285,7 +285,7 @@ interface TabPageProps {
   targetUserId: string;
   isDark: boolean;
   bottomPadding: number;
-  profileHeader: React.ReactElement;
+  profileHeader: React.ReactElement | null;
 }
 
 // TabsBar Component
@@ -471,7 +471,7 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        {profileHeader}
+        {profileHeader || null}
         <LadderTab />
       </ScrollView>
     );
@@ -486,7 +486,7 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
           {renderPostCard(item)}
         </Box>
       )}
-      ListHeaderComponent={profileHeader}
+      ListHeaderComponent={profileHeader || null}
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.5}
       ListEmptyComponent={
@@ -1148,7 +1148,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
         {/* Badge Items */}
         {userProfile.badges && userProfile.badges.length > 0 && (
-          <Box mt={6} px={15}>
+          <Box mt={6} px={15} pb={16}>
             <Box
               borderRadius={5}
               p={14}
@@ -1192,7 +1192,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               >
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
-                  fontSize={8}
+                  fontSize={10}
                   textAlign="center"
                   mt="$4"
                   fontWeight="$regular"
@@ -1206,6 +1206,28 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       </Box>
     );
   }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet]);
+  
+  // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
+  // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
+  const profileHeader = useMemo(() => {
+    if (!userProfile) return null;
+    return renderProfileHeader();
+  }, [
+    userProfile, 
+    isDark, 
+    isOwnProfile, 
+    targetUserId, 
+    trustUser, 
+    untrustUser, 
+    isTrusting, 
+    isUntrusting, 
+    rootNavigation, 
+    user, 
+    navigation, 
+    handleShare, 
+    handleOpenActionSheet,
+    renderProfileHeader
+  ]);
   
   if (isProfileLoading) {
     return (
@@ -1228,23 +1250,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       </SafeAreaView>
     );
   }
-  
-  // Profile header'ı memoize et
-  const profileHeader = useMemo(() => renderProfileHeader(), [
-    userProfile, 
-    isDark, 
-    isOwnProfile, 
-    targetUserId, 
-    trustUser, 
-    untrustUser, 
-    isTrusting, 
-    isUntrusting, 
-    rootNavigation, 
-    user, 
-    navigation, 
-    handleShare, 
-    handleOpenActionSheet
-  ]);
   
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>

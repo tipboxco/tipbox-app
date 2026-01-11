@@ -270,14 +270,17 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
   };
 
   const handleSeeAllEvents = () => {
+    console.log('[NewsTab] handleSeeAllEvents called, onSeeAllEvents:', !!onSeeAllEvents);
     onSeeAllEvents?.();
   };
 
   const handleSeeAllBrands = () => {
+    console.log('[NewsTab] handleSeeAllBrands called, onSeeAllBrands:', !!onSeeAllBrands);
     onSeeAllBrands?.();
   };
 
   const handleSeeAllProducts = () => {
+    console.log('[NewsTab] handleSeeAllProducts called, onSeeAllProducts:', !!onSeeAllProducts);
     onSeeAllProducts?.();
   };
 

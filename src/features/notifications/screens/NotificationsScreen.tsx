@@ -1,7 +1,14 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Dimensions, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    interpolateColor,
+    withTiming,
+} from 'react-native-reanimated';
 import {
     Box,
     VStack,
@@ -36,8 +43,12 @@ import { notificationService } from '@/src/services/NotificationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { useAppStore } from '@/src/store/appStore';
+import { useDrawerStore } from '@/src/store/drawerStore';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 type NotificationsScreenNavigationProp = NativeStackNavigationProp<NotificationsStackParamList, 'NotificationsScreen'>;
 
@@ -207,38 +218,6 @@ const NotificationCard: React.FC<{
     );
 };
 
-const FilterButton: React.FC<{
-    filter: NotificationFilter;
-    onPress: (filter: NotificationFilter) => void;
-}> = ({ filter, onPress }) => {
-    const { colorMode } = useColorMode();
-    const isDark = colorMode === 'dark';
-
-    return (
-        <Pressable onPress={() => onPress(filter)}>
-            <Box
-                bg={filter.isActive ? '#F1F1F1' : 'transparent'}
-                borderWidth={1}
-                borderColor="#EFEFEF"
-                borderRadius={10}
-                px="$3"
-                py="$1"
-                minHeight={28}
-                justifyContent="center"
-                alignItems="center"
-            >
-                <Text
-                    color="#000000"
-                    fontSize="$xs"
-                    fontWeight="$semibold"
-                    textAlign="center"
-                >
-                    {filter.label}
-                </Text>
-            </Box>
-        </Pressable>
-    );
-};
 
 const NotificationsScreenComponent: React.FC = () => {
     const navigation = useNavigation<NotificationsScreenNavigationProp>();
@@ -246,14 +225,35 @@ const NotificationsScreenComponent: React.FC = () => {
     const isDark = colorMode === 'dark';
     const queryClient = useQueryClient();
     const { isAuthenticated } = useAppStore();
-    const [filters, setFilters] = useState<NotificationFilter[]>(notification_filters);
+    const pagerRef = useRef<PagerView>(null);
+    const tabContainerRef = useRef<any>(null);
+    const [tabContainerWidth, setTabContainerWidth] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [filters] = useState<NotificationFilter[]>(notification_filters);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     
+    // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
+    const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
+    
+    useFocusEffect(
+        useCallback(() => {
+            // Ekran focus aldığında drawer gesture'ı disable et
+            setGestureEnabled(false);
+            return () => {
+                // Ekran blur olduğunda drawer gesture'ı tekrar enable et
+                setGestureEnabled(true);
+            };
+        }, [setGestureEnabled])
+    );
+    
     // PERFORMANCE FIX: Memoize background colors to prevent re-renders
-    const backgroundColor = useMemo(() => isDark ? '#000000' : '#FAFAFA', [isDark]);
-    const searchBarBgColor = useMemo(() => isDark ? '#1A1A1A' : '#F2F2F2', [isDark]);
+    const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
+    const tabHeaderBgColor = useMemo(() => '#FFFFFF', []); // Tab header her zaman beyaz
+    
+    // 🎯 CORE: Shared progress value (0 = All, 1 = Replies, 2 = Trust, 3 = Tips)
+    const progress = useSharedValue(0);
 
     // Debounce search query for API calls
     useEffect(() => {
@@ -263,8 +263,10 @@ const NotificationsScreenComponent: React.FC = () => {
       return () => clearTimeout(timer);
     }, [searchQuery]);
 
+    // Get active filter based on current page
+    const activeFilter = filters[currentPage] || filters[0];
+    
     // API hooks
-    const activeFilter = filters.find(f => f.isActive);
     const unreadOnly = activeFilter?.id === 'unread';
     const { data: notificationsResponse, isLoading, error, refetch } = useNotifications({
         limit: 50,
@@ -275,15 +277,30 @@ const NotificationsScreenComponent: React.FC = () => {
 
     const notifications = notificationsResponse?.data || [];
     
+    // Tab press handler - PagerView native animasyonu ile geçiş
+    const handleTabPress = useCallback((index: number) => {
+        pagerRef.current?.setPage(index);
+    }, []);
 
-    const handleFilterPress = (selectedFilter: NotificationFilter) => {
-        setFilters(prev =>
-            prev.map(filter => ({
-                ...filter,
-                isActive: filter.id === selectedFilter.id
-            }))
-        );
-    };
+    // PagerView scroll handler - realtime progress güncelleme
+    const handlePageScroll = useCallback(
+        (e: any) => {
+            'worklet';
+            const { position, offset } = e.nativeEvent;
+            progress.value = position + offset;
+        },
+        [progress]
+    );
+
+    // PagerView page selected handler - snap sonrası progress'i sync et
+    const handlePageSelected = useCallback(
+        (e: any) => {
+            const position = e.nativeEvent.position;
+            progress.value = withTiming(position, { duration: 0 });
+            setCurrentPage(position);
+        },
+        [progress]
+    );
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -366,12 +383,13 @@ const NotificationsScreenComponent: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
     }, [queryClient]);
 
-    const getFilteredNotifications = (): Notification[] => {
+    // Get filtered notifications for a specific filter
+    const getFilteredNotificationsForFilter = useCallback((filter: NotificationFilter): Notification[] => {
         let filtered = notifications;
 
-        if (activeFilter?.id !== 'all' && activeFilter?.id !== 'unread') {
+        if (filter.id !== 'all' && filter.id !== 'unread') {
             filtered = notifications.filter(notification => {
-                switch (activeFilter?.id) {
+                switch (filter.id) {
                     case 'replies':
                         return notification.type === 'POST_COMMENTED' || 
                                notification.type === 'COMMENT_REPLIED' ||
@@ -397,16 +415,78 @@ const NotificationsScreenComponent: React.FC = () => {
         }
 
         return filtered;
-    };
-
-    const filteredNotifications = getFilteredNotifications();
+    }, [notifications, searchQuery]);
 
     // Asset pre-caching - notifications yüklendiğinde images'ı cache'le
     useEffect(() => {
-        if (filteredNotifications.length > 0) {
-            notificationAssetCache.cacheBatchNotifications(filteredNotifications);
+        if (notifications.length > 0) {
+            notificationAssetCache.cacheBatchNotifications(notifications);
         }
-    }, [filteredNotifications.length]);
+    }, [notifications.length]);
+
+    // Tab label color animations - her tab için ayrı style
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+
+    // Tab 0 (All Notifications)
+    const tab0Style = useAnimatedStyle(() => {
+        const color = interpolateColor(
+            progress.value,
+            [-0.5, 0, 0.5],
+            [activeColor, activeColor, inactiveColor]
+        );
+        return { color };
+    }, [isDark]);
+
+    // Tab 1 (Replies)
+    const tab1Style = useAnimatedStyle(() => {
+        const color = interpolateColor(
+            progress.value,
+            [0.5, 1, 1.5],
+            [inactiveColor, activeColor, inactiveColor]
+        );
+        return { color };
+    }, [isDark]);
+
+    // Tab 2 (Trust)
+    const tab2Style = useAnimatedStyle(() => {
+        const color = interpolateColor(
+            progress.value,
+            [1.5, 2, 2.5],
+            [inactiveColor, activeColor, inactiveColor]
+        );
+        return { color };
+    }, [isDark]);
+
+    // Tab 3 (Tips)
+    const tab3Style = useAnimatedStyle(() => {
+        const color = interpolateColor(
+            progress.value,
+            [2.5, 3, 3.5],
+            [inactiveColor, activeColor, activeColor]
+        );
+        return { color };
+    }, [isDark]);
+
+    const getTabStyle = (index: number) => {
+        switch (index) {
+            case 0: return tab0Style;
+            case 1: return tab1Style;
+            case 2: return tab2Style;
+            case 3: return tab3Style;
+            default: return tab0Style;
+        }
+    };
+
+    // Indicator position animation
+    const tabWidth = tabContainerWidth / filters.length || 0;
+    const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
+    const indicatorStyle = useAnimatedStyle(() => {
+        const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+        return {
+            transform: [{ translateX }],
+        };
+    });
 
     // FlatList renderItem - useCallback ile memoize et
     const renderNotificationItem = React.useCallback(({ item }: { item: Notification }) => {
@@ -428,6 +508,67 @@ const NotificationsScreenComponent: React.FC = () => {
     // Key extractor - unique ID kullan
     const keyExtractor = React.useCallback((item: Notification) => item.id, []);
 
+    // Render notifications list for a specific filter
+    const renderNotificationsList = useCallback((filterIndex: number) => {
+        const filter = filters[filterIndex];
+        const filtered = getFilteredNotificationsForFilter(filter);
+        
+        if (isLoading && !notifications.length) {
+            return (
+                <Box flex={1} justifyContent="center" alignItems="center">
+                    <Spinner size="large" />
+                </Box>
+            );
+        }
+        
+        if (error) {
+            return (
+                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
+                        Bildirimler yüklenirken bir hata oluştu.
+                    </Text>
+                    <Pressable onPress={() => refetch()} mt="$4" bg="#E8FF6B" px="$4" py="$2" borderRadius={10}>
+                        <Text color="#000000" fontSize={12} fontWeight="$semibold">
+                            Tekrar Dene
+                        </Text>
+                    </Pressable>
+                </Box>
+            );
+        }
+        
+        if (filtered.length === 0) {
+            return (
+                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
+                        {searchQuery ? 'No search results found.' : 'No notifications yet.'}
+                    </Text>
+                </Box>
+            );
+        }
+        
+        return (
+            <FlashList
+                data={filtered}
+                renderItem={renderNotificationItem}
+                keyExtractor={keyExtractor}
+                contentContainerStyle={{ 
+                    paddingHorizontal: 16,
+                    paddingTop: 8,
+                    paddingBottom: 20,
+                }}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+                    />
+                }
+                style={{ flex: 1 }}
+            />
+        );
+    }, [isLoading, notifications.length, error, searchQuery, isDark, renderNotificationItem, keyExtractor, refreshing, handleRefresh, refetch, filters, getFilteredNotificationsForFilter]);
+
     return (
         <SafeAreaView edges={['top']} style={{ flex: 1 }}>
         <Box flex={1} bg={backgroundColor}>
@@ -437,12 +578,16 @@ const NotificationsScreenComponent: React.FC = () => {
                 leftAction="menu"
             />
             
-            {/* Search and Filter Section */}
-            <VStack space="md" pb="$4" px="$4" bg={backgroundColor}>
-                {/* Search Bar */}
+            {/* Search Bar - Fixed at top */}
+            <VStack
+                space="md"
+                pb="$4"
+                px="$4"
+                bg={backgroundColor}
+            >
                 <HStack
                     alignItems="center"
-                    bg={searchBarBgColor}
+                    bg={isDark ? '#2A2A2A' : '#F2F2F2'}
                     borderWidth={1}
                     borderColor="#E9E9E9"
                     borderRadius={20}
@@ -465,64 +610,85 @@ const NotificationsScreenComponent: React.FC = () => {
                         />
                     </Input>
                 </HStack>
+            </VStack>
 
-                {/* Filter Buttons */}
-                <HStack space="xs" justifyContent="flex-start">
-                    {filters.map((filter) => (
-                        <FilterButton
-                            key={filter.id}
-                            filter={filter}
-                            onPress={handleFilterPress}
+            {/* Tab Header */}
+            <VStack pt={0} bg={tabHeaderBgColor}>
+                <HStack
+                    ref={tabContainerRef}
+                    borderBottomWidth={1}
+                    borderColor="#E9E9E9"
+                    p={0}
+                    mb="$2"
+                    position="relative"
+                    onLayout={(event) => {
+                        const width = event.nativeEvent.layout.width;
+                        setTabContainerWidth(width);
+                    }}
+                >
+                    {filters.map((filter, index) => {
+                        const tabStyle = getTabStyle(index);
+                        return (
+                            <Pressable
+                                key={filter.id}
+                                flex={1}
+                                onPress={() => handleTabPress(index)}
+                                alignItems="center"
+                                py="$1"
+                                px="$1"
+                            >
+                                <VStack alignItems="center" space="xs">
+                                    <Animated.Text
+                                        style={[
+                                            {
+                                                fontSize: 12,
+                                                fontWeight: 'bold',
+                                            },
+                                            tabStyle,
+                                        ]}
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail"
+                                    >
+                                        {filter.label}
+                                    </Animated.Text>
+                                </VStack>
+                            </Pressable>
+                        );
+                    })}
+
+                    {/* Animated Indicator */}
+                    {tabWidth > 0 && (
+                        <Animated.View
+                            style={[
+                                {
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    width: indicatorWidth,
+                                    height: 2,
+                                    backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                                },
+                                indicatorStyle,
+                            ]}
                         />
-                    ))}
+                    )}
                 </HStack>
             </VStack>
 
-            {/* Notifications List */}
-            {isLoading && !notifications.length ? (
-                <Box flex={1} justifyContent="center" alignItems="center">
-                    <Spinner size="large" />
-                </Box>
-            ) : error ? (
-                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
-                        Bildirimler yüklenirken bir hata oluştu.
-                    </Text>
-                    <Pressable onPress={() => refetch()} mt="$4" bg="#E8FF6B" px="$4" py="$2" borderRadius={10}>
-                        <Text color="#000000" fontSize={12} fontWeight="$semibold">
-                            Tekrar Dene
-                        </Text>
-                    </Pressable>
-                </Box>
-            ) : filteredNotifications.length === 0 ? (
-                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
-                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
-                        {searchQuery ? 'No search results found.' : 'No notifications yet.'}
-                    </Text>
-                </Box>
-            ) : (
-                <FlashList
-                    data={filteredNotifications}
-                    renderItem={renderNotificationItem}
-                    keyExtractor={keyExtractor}
-                    contentContainerStyle={{ 
-                        paddingHorizontal: 16,
-                        paddingTop: 8,
-                        paddingBottom: 20,
-                    }}
-                    showsVerticalScrollIndicator={false}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={handleRefresh}
-                            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
-                        />
-                    }
-                    // FlashList automatically handles removeClippedSubviews, maxToRenderPerBatch, initialNumToRender, windowSize
-                    // These props are not needed for FlashList
-                    style={{ flex: 1 }}
-                />
-            )}
+            {/* PagerView - Native swipe tab switching */}
+            <AnimatedPagerView
+                ref={pagerRef}
+                style={{ flex: 1 }}
+                initialPage={0}
+                onPageScroll={handlePageScroll}
+                onPageSelected={handlePageSelected}
+            >
+                {filters.map((filter, index) => (
+                    <Box key={filter.id} flex={1}>
+                        {renderNotificationsList(index)}
+                    </Box>
+                ))}
+            </AnimatedPagerView>
         </Box>
         </SafeAreaView>
     );

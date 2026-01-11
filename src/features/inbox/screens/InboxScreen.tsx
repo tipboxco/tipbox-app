@@ -12,7 +12,10 @@ import {
   VStack,
   HStack,
   Pressable,
+  Input,
+  InputField,
 } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -55,6 +58,7 @@ const InboxScreen: React.FC = () => {
   // 🎯 CORE: Shared progress value (0 = Messages, 1 = Support)
   const progress = useSharedValue(0);
   const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // PERFORMANCE FIX: Memoize background colors to prevent re-renders
   const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '$backgroundLight0', [isDark]);
@@ -144,9 +148,38 @@ const InboxScreen: React.FC = () => {
           leftAction="menu"
         />
 
-        <VStack flex={1} py="$2" space="md">
+        <VStack flex={1}>
+          {/* Search Bar - Fixed at top */}
+          <VStack space="md" pb="$4" px="$4" bg={backgroundColor}>
+            <HStack
+              alignItems="center"
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor="#E9E9E9"
+              borderRadius={20}
+              px={14}
+              space="sm"
+            >
+              <Feather
+                name="search"
+                size={24}
+                color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+              />
+              <Input flex={1} borderWidth={0} bg="transparent">
+                <InputField
+                  placeholder="Search in inbox"
+                  placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                  color={isDark ? '#000' : '#000'}
+                  fontSize="$xs"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </Input>
+            </HStack>
+          </VStack>
+
           {/* Tab Header */}
-          <VStack pt="$4" bg={tabHeaderBgColor}>
+          <VStack pt={0} bg={tabHeaderBgColor}>
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}

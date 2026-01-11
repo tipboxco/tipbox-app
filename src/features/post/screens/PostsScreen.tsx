@@ -303,7 +303,7 @@ export const PostsScreen = () => {
         </Box>
 
         {/* Feed Items */}
-        {isLoading && !data?.pages?.[0] ? (
+        {isLoading && feedItems.length === 0 ? (
           <FeedSkeleton count={5} />
         ) : error ? (
           <Box flex={1} justifyContent="center" alignItems="center" px="$4">
@@ -341,9 +341,13 @@ export const PostsScreen = () => {
                             title: (item.data as ProfilePost).user.title,
                             avatar: toImageSource((item.data as ProfilePost).user.avatar) || DEFAULT_USER_AVATAR,
                           },
-                          content: Array.isArray((item.data as ProfilePost).content)
-                            ? (item.data as ProfilePost).content.map((c: any) => c.content || '').join(' ')
-                            : ((item.data as ProfilePost).content || ''),
+                          content: (() => {
+                            const postContent = (item.data as ProfilePost).content;
+                            if (Array.isArray(postContent)) {
+                              return postContent.map((c: any) => c?.content || '').join(' ');
+                            }
+                            return typeof postContent === 'string' ? postContent : '';
+                          })(),
                           images: (item.data as ProfilePost).images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
                           stats: (item.data as ProfilePost).stats,
                           createdAt: (item.data as ProfilePost).createdAt,

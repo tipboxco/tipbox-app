@@ -231,7 +231,7 @@ const FeedScreenInner = React.memo(() => {
     openBottomSheet(
       <>
         {/* Header */}
-        <VStack space="md" pb={'$3'} mb={'$4'} borderBottomWidth={1} borderBottomColor="#D9D9D9">
+        <VStack space="md" borderBottomWidth={1} borderBottomColor="#D9D9D9">
           <HStack justifyContent="center" alignItems="center">
             <Text
               fontSize={16}
@@ -833,8 +833,14 @@ const FeedScreenInner = React.memo(() => {
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />
-        <AssetAccessCard onTabChange={handleTabChange} />
-        <FilterBarReanimated filters={filters} onFiltersChange={setFilters} />
+        <VStack>
+          <Box pb="$0">
+            <AssetAccessCard onTabChange={handleTabChange} />
+          </Box>
+          <Box pt={0}>
+            <FilterBarReanimated filters={filters} onFiltersChange={setFilters} />
+          </Box>
+        </VStack>
         <Box flex={1}>
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />

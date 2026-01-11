@@ -435,7 +435,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     const displayRows = rows;
 
     return (
-      <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%" mt="$4">
+      <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%" >
         {options.length === 0 ? (
           <VStack px={12} py="$2" alignItems="center" justifyContent="center" minHeight={50}>
             <RNText
@@ -571,7 +571,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           justifyContent="space-between"
           gap={4}
           px="$3"
-          my="$1"
+          
           bg={isActive ? '#E2FF46' : '#FDFDFD'}
           borderWidth={1}
           borderColor={isActive ? '#E2FF46' : '#E9E9E9'}

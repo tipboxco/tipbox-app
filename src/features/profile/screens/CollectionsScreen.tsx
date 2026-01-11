@@ -153,7 +153,7 @@ const CollectionsScreen: React.FC = () => {
       {/* Search Bar */}
       <Box px="$4" py="$2">
         <Box
-          bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
           borderRadius={20}
           height={36}
           px="$4"

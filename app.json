@@ -20,6 +20,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
+    "scheme": "tipboxapp",
     "assetBundlePatterns": [
       "**/*"
     ],
