@@ -17,6 +17,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 import { GoogleUser, GoogleAuthResult, GoogleServiceState } from './types';
+import { FIREBASE_WEB_CLIENT_ID, GOOGLE_WEB_CLIENT_ID } from '@env';
 
 // WebBrowser'ı tamamlandığında kapat
 WebBrowser.maybeCompleteAuthSession();
@@ -121,16 +122,16 @@ class GoogleService {
     // Firebase Authentication için Web Client ID kullanılır
     // Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration
     // Bu client ID tüm platformlar için çalışır
-    const { FIREBASE_WEB_CLIENT_ID } = require('@env');
+    const clientId = FIREBASE_WEB_CLIENT_ID || GOOGLE_WEB_CLIENT_ID;
     
-    if (!FIREBASE_WEB_CLIENT_ID) {
+    if (!clientId) {
       throw new Error(
-        'FIREBASE_WEB_CLIENT_ID environment variable tanımlı değil. ' +
+        'FIREBASE_WEB_CLIENT_ID veya GOOGLE_WEB_CLIENT_ID environment variable tanımlı değil. ' +
         'Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration\'dan alın.'
       );
     }
 
-    return FIREBASE_WEB_CLIENT_ID;
+    return clientId;
   }
 
   /**

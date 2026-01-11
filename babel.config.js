@@ -13,16 +13,8 @@ module.exports = function (api) {
     ],
 
     plugins: [
-      [
-        'module-resolver',
-        {
-          root: ['./'],
-          alias: {
-            '@': './',
-            'tailwind.config': './tailwind.config.js',
-          },
-        },
-      ],
+      // CRITICAL: react-native-dotenv MUST come before module-resolver
+      // Otherwise @env module won't be resolved correctly
       [
         'module:react-native-dotenv',
         {
@@ -32,6 +24,16 @@ module.exports = function (api) {
           whitelist: null,
           safe: false,
           allowUndefined: true,
+        },
+      ],
+      [
+        'module-resolver',
+        {
+          root: ['./'],
+          alias: {
+            '@': './',
+            'tailwind.config': './tailwind.config.js',
+          },
         },
       ],
       // PERFORMANCE FIX: Remove console.log in production builds
