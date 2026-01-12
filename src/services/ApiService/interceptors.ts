@@ -143,6 +143,15 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
         });
       }
 
+      // Log request details for /catalog endpoint
+      if (config.url?.includes('/catalog')) {
+        console.log('[ApiInterceptor] 📤 Request - /catalog:', {
+          url: config.url,
+          method: config.method,
+          fullURL: `${config.baseURL}${config.url}`,
+        });
+      }
+
       return config;
     },
     (error) => {
@@ -163,6 +172,17 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           headers: response.headers,
         });
       }
+      
+      // Log response details for /catalog endpoint
+      if (response.config.url?.includes('/catalog')) {
+        console.log('[ApiInterceptor] ✅ Response - /catalog:', {
+          url: response.config.url,
+          status: response.status,
+          dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
+          firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null,
+        });
+      }
+      
       return response;
     },
     async (error: AxiosError) => {

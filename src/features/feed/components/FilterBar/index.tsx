@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { Animated, Platform, Text as RNText, Easing } from 'react-native';
 import { HStack, Pressable, Text, Box, VStack, ScrollView } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { CheckIcon } from 'react-native-heroicons/solid';
 import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/catalog/api/hooks';
 import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 import type { FeedFilterParams } from '../../api/feedApi';
@@ -227,13 +227,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
     });
   }, [filters, onFiltersChange]);
 
-  // Category - single selection (panel stays open until Apply is pressed)
-  const handleCategorySelect = useCallback((categoryId: string) => {
+  // Category - multiple selection
+  const handleCategoryToggle = useCallback((categoryId: string) => {
+    const currentCategories = filters.category || [];
+    const newCategories = currentCategories.includes(categoryId)
+      ? currentCategories.filter((id) => id !== categoryId)
+      : [...currentCategories, categoryId];
+    
     onFiltersChange({
       ...filters,
-      category: filters.category === categoryId ? undefined : categoryId,
+      category: newCategories.length > 0 ? newCategories : undefined,
     });
-    // Panel stays open - user must press Apply to close
   }, [filters, onFiltersChange]);
 
   // Sort - single selection (panel stays open until Apply is pressed)
@@ -315,7 +319,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
       case 'tag':
         return filters.tags?.length || 0;
       case 'category':
-        return filters.category ? 1 : 0;
+        return filters.category?.length || 0;
       case 'sort':
         return filters.sort ? 1 : 0;
       default:
@@ -359,7 +363,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
         case 'tag':
           return filters.tags?.includes(value) || false;
         case 'category':
-          return filters.category === value;
+          return filters.category?.includes(value) || false;
         case 'sort':
           return filters.sort === value;
         default:
@@ -384,8 +388,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
         break;
       case 'category':
         options = allCategories.map(cat => ({ value: cat.id, label: cat.name }));
-        onSelect = handleCategorySelect;
-        isMultipleSelection = false;
+        onSelect = handleCategoryToggle;
+        isMultipleSelection = true;
         break;
       case 'sort':
         options = [...SORT_OPTIONS];
@@ -471,7 +475,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
                             flexShrink={0}
                           >
                             {selected && (
-                              <Feather name="check" size={12} color="#FFFFFF" />
+                              <CheckIcon width={12} height={12} color="#FFFFFF" />
                             )}
                           </Box>
                           {/* Label */}

@@ -272,6 +272,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
 
   // Tek görsel varsa sadece Image göster, carousel kullanma
   if (images.length === 1) {
+    const defaultPostImage = require('@/assets/defaultImages/default-post.png');
     return (
       <Box
         w={carouselWidth}
@@ -282,7 +283,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
         alignSelf="center"
       >
         <Image
-          source={images[0]}
+          source={images[0] || defaultPostImage}
           alt="Post image"
           resizeMode="cover"
           style={{
@@ -312,18 +313,21 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
           height={carouselHeight}
           data={images}
           onProgressChange={progress}
-          renderItem={({ index }) => (
-            <Image
-              source={images[index]}
-              alt="Post image"
-              resizeMode="cover"
-              style={{
-                width: carouselWidth - (carouselPadding * 2),
-                height: carouselHeight,
-                borderRadius: 8,
-              }}
-            />
-          )}
+          renderItem={({ index }) => {
+            const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+            return (
+              <Image
+                source={images[index] || defaultPostImage}
+                alt="Post image"
+                resizeMode="cover"
+                style={{
+                  width: carouselWidth - (carouselPadding * 2),
+                  height: carouselHeight,
+                  borderRadius: 8,
+                }}
+              />
+            );
+          }}
         />
 
         <CustomPagination
@@ -373,18 +377,21 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
             onProgressChange={progress}
             // NOTE: panGestureHandlerProps bu carousel versiyonunda mevcut değil
             // Gesture kontrolü wrapper View seviyesinde yapılıyor (GestureDetector ile)
-            renderItem={({ index }) => (
-              <Image
-                source={images[index]}
-                alt="Post image"
-                resizeMode="cover"
-                style={{
-                  width: carouselWidth - (carouselPadding * 2),
-                  height: carouselHeight,
-                  borderRadius: 8,
-                }}
-              />
-            )}
+            renderItem={({ index }) => {
+              const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+              return (
+                <Image
+                  source={images[index] || defaultPostImage}
+                  alt="Post image"
+                  resizeMode="cover"
+                  style={{
+                    width: carouselWidth - (carouselPadding * 2),
+                    height: carouselHeight,
+                    borderRadius: 8,
+                  }}
+                />
+              );
+            }}
           />
         </View>
       </GestureDetector>

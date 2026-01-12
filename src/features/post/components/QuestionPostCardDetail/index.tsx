@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  EllipsisHorizontalIcon,
+  QuestionMarkCircleIcon,
+  PaperAirplaneIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import {
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { QuestionPost } from '@/src/mock/profile/questions/types';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
@@ -18,6 +29,8 @@ import {
 } from '@/src/features/interactions/api/hooks';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface QuestionPostCardDetailProps {
     data: QuestionPost;
@@ -54,6 +67,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
     const unbookmarkPostMutation = useUnbookmarkPost();
     const sharePostMutation = useSharePost();
     const { data: postStatus } = usePostStatus(data.id);
+    const { openBottomSheet } = useGlobalBottomSheet();
 
     // Sync with post status from API
     useEffect(() => {
@@ -95,13 +109,23 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
         });
     };
 
+    const handleOptionsPress = () => {
+        openBottomSheet(
+            <PostOptionsMenu
+                postId={data.id}
+                postContent={data.content}
+                postAuthorName={data.user.name}
+            />
+        );
+    };
+
     return (
         <VStack
             bg={isDark ? '$backgroundDark900' : '$white'}
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8} >
+            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={toImageSource(data.user.avatar)!}
@@ -128,8 +152,8 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                             {data.user.title}
                         </Text>
                     </VStack>
-                    <Pressable>
-                        <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
+                    <Pressable onPress={handleOptionsPress}>
+                        <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
                     </Pressable>
                 </HStack>
             </VStack>
@@ -137,7 +161,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
             {/* Product */}
             {
                 data.category && data.category.product ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.PRODUCT}
@@ -147,7 +171,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         />
                     </Box>
                 ) : data.category ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.SUB_CATEGORY}
@@ -168,15 +192,17 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                     borderColor="#CFE556"
                     bgColor='#829905'
                     borderRadius={20}
-                    width={90}
+                    flex={0}
+                    flexShrink={1}
+                    minWidth={70}
                     px={10}
                     py={6}
                     mr={16}
                     flexDirection="row"
                     alignItems="center"
-                    justifyContent="space-evenly"
+                    justifyContent="center"
                 >
-                    <Feather name="help-circle" size={12} color={'#fff'} />
+                    <QuestionMarkCircleIcon width={12} height={12} color="#fff" />
                     <Text
                         fontSize="$xs"
                         fontWeight="$semibold"
@@ -193,14 +219,16 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         borderWidth={2}
                         borderColor="#E059AA"
                         borderRadius={20}
-                        width={90}
+                        flex={0}
+                        flexShrink={1}
+                        minWidth={70}
                         px={10}
                         py={6}
                         flexDirection="row"
                         alignItems="center"
-                        justifyContent="space-evenly"
+                        justifyContent="center"
                     >
-                        <Feather name="send" size={12} color="#fff" />
+                        <PaperAirplaneIcon width={12} height={12} color="#fff" />
                         <Text
                             fontSize="$xs"
                             fontWeight="$semibold"
@@ -229,7 +257,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                         <Text
                             color={isDark ? '$textDark200' : '#666'}
-                            fontSize="$2xl"
+                            fontSize="$sm"
                             fontStyle="italic"
                         >
                             {translatedContent}
@@ -251,7 +279,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                             />
                             <Text
                                 color="#829905"
-                                fontSize="$2xl"
+                                fontSize="$sm"
                                 textDecorationLine="underline"
                             >
                                 {isTranslating
@@ -283,12 +311,11 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                 <HStack>
                     <Pressable onPress={handleLike}>
                         <HStack mr={10} alignItems="center">
-                            <Feather
-                                name="heart"
-                                size={24}
-                                color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                                fill={isLiked ? '#FF3040' : 'none'}
-                            />
+                            {isLiked ? (
+                                <HeartIconSolid width={24} height={24} color="#FF3040" />
+                            ) : (
+                                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.likes}
                             </Text>
@@ -300,7 +327,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         opacity={onCommentPress ? 1 : 0.5}
                     >
                         <HStack mr={10} alignItems="center">
-                            <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+                            <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.comments}
                             </Text>
@@ -308,7 +335,7 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                     </Pressable>
                     <Pressable onPress={handleShare}>
                         <HStack mr={10} alignItems="center">
-                            <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+                            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.shares}
                             </Text>
@@ -316,12 +343,11 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
                         <HStack mr={10} alignItems="center">
-                            <Feather
-                                name="bookmark"
-                                size={24}
-                                color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                                fill={isBookmarked ? '#829905' : 'none'}
-                            />
+                            {isBookmarked ? (
+                                <BookmarkIconSolid width={24} height={24} color="#829905" />
+                            ) : (
+                                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.bookmarks}
                             </Text>

@@ -14,7 +14,9 @@ import { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard';
 import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
+// Horizontal card: Ekranın %55'i (kompakt ve peek effect güçlü)
+const HORIZONTAL_CARD_WIDTH = width * 0.55;
+// Grid card: 2'li grid düzeni
 const GRID_CARD_WIDTH = (width - 48) / 2; // 16px padding on each side + 16px gap between cards
 
 interface EventCardProps {
@@ -38,7 +40,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
         borderWidth={1}
         borderColor="#E9E9E9"
         borderRadius={10}
-        width={isGrid ? GRID_CARD_WIDTH : CARD_WIDTH}
+        width={isGrid ? GRID_CARD_WIDTH : HORIZONTAL_CARD_WIDTH}
         overflow="hidden"
         flexDirection="column"
       >
@@ -52,47 +54,18 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           overflow="hidden"
           padding='$2'
         >
-          {data.image ? (
-            (() => {
-              const imageSource = toImageSource(data.image);
-              return imageSource ? (
-                <Image
-                  source={imageSource}
-                  alt={data.title}
-                  style={{ width: '100%', height: '100%' }}
-                  borderRadius={5}
-                />
-              ) : (
-                <Box
-                  width="100%"
-                  height="100%"
-                  bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Feather
-                    name="image"
-                    size={32}
-                    color={isDark ? '#666' : '#999'}
-                  />
-                </Box>
-              );
-            })()
-          ) : (
-            <Box
-              width="100%"
-              height="100%"
-              bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Feather
-                name="image"
-                size={32}
-                color={isDark ? '#666' : '#999'}
+          {(() => {
+            const imageSource = data.image ? toImageSource(data.image) : null;
+            const defaultImage = require('@/assets/defaultImages/default-event.png');
+            return (
+              <Image
+                source={imageSource || defaultImage}
+                alt={data.title}
+                style={{ width: '100%', height: '100%' }}
+                borderRadius={5}
               />
-            </Box>
-          )}
+            );
+          })()}
           {/* Event Type Badge */}
           <Box
             position="absolute"

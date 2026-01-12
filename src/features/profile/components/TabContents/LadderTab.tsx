@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager, ActivityIndicator } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { CheckIcon } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useUserLadderBadges } from '../../api/hooks';
 import { useCurrentUserIdOrLogout } from '@/src/utils';
@@ -133,7 +133,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   const renderItem = ({ item: badge }: { item: ProfileLadderBadge }) => {
     const isCompleted = getIsCompleted(badge);
     const imageSource = badge.image ? toImageSource(badge.image) : undefined;
-    const defaultImage = require('@/assets/badges/badge_01.png');
+    const defaultImage = require('@/assets/defaultImages/default-badge.png');
 
     return (
       <TouchableOpacity onPress={() => handleBadgePress(badge)} activeOpacity={0.7}>
@@ -231,7 +231,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
                 justifyContent="center"
                 zIndex={10}
               >
-                <Feather name="check" size={16} color="#fff" />
+                <CheckIcon width={16} height={16} color="#fff" />
               </Box>
             </>
           )}
@@ -254,7 +254,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   }, [selectedFilter, ladderBadges]);
 
   // CACHE FIX: Only show loading when loading and no cached data
-  if (isLoading && !data?.pages?.[0]) {
+  if (isLoading && !ladderBadgesData?.pages?.[0]) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" py={20}>
         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
@@ -274,7 +274,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   if (!ladderBadges || ladderBadges.length === 0) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" py={20}>
-        <Text color={isDark ? '$textDark400' : '#797979'}>Henüz ladder badge bulunmuyor.</Text>
+        <Text color={isDark ? '$textDark400' : '#797979'}>No ladder badges yet.</Text>
       </Box>
     );
   }

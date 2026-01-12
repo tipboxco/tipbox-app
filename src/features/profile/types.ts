@@ -64,6 +64,25 @@ export interface TrusterUser {
 }
 
 /**
+ * Suggested User - API'den gelen önerilen kullanıcı tipi
+ * /users/suggested endpoint response'u
+ */
+export interface SuggestedUser {
+  id: string;
+  name: string;
+  title: string;
+  avatar: string | null;
+  /**
+   * Önerilen kullanıcıyı trust eden diğer kullanıcıların avatar'ları
+   * Overlapping avatars için kullanılır
+   */
+  mutualTrustAvatars?: Array<{
+    id: string;
+    avatar: string | null;
+  }>;
+}
+
+/**
  * Badge - Kullanıcı rozet bilgisi
  * API response:
  * {
@@ -324,5 +343,36 @@ export interface UserCollectionBridgesApiResponse {
     cursor?: string;
     hasMore: boolean;
     limit: number;
+  };
+}
+
+/**
+ * Suggested User - Önerilen kullanıcı tipi
+ * /users/suggested endpoint'inden dönen kullanıcı bilgisi
+ */
+export interface SuggestedUser {
+  id: string;
+  userName: string;
+  name: string;
+  avatar: string | null;
+  titles: string[];
+  isTrusted: boolean;
+  mutualTrustCount?: number;
+  stats?: {
+    posts: number;
+    trust: number;
+    truster: number;
+  };
+}
+
+/**
+ * Suggested Users API Response - Pagination ile birlikte
+ * /users/suggested endpoint'inden dönen response
+ */
+export interface SuggestedUsersApiResponse {
+  items: SuggestedUser[];
+  pagination: {
+    nextCursor: string | null;
+    hasMore: boolean;
   };
 }

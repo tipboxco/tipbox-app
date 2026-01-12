@@ -1,6 +1,7 @@
 import React from 'react';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext } from 'react-hook-form';
@@ -17,6 +18,7 @@ import { useCreateQuestionPost, useBoostOptions } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import { CustomToast } from '@/src/components/CustomToast';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { QuestionPostFormData } from '../schemas/questionPostSchema';
 import type { BoostOption } from '../api/postApi';
@@ -103,14 +105,16 @@ export const CreateQuestionPostScreen = () => {
       if (remainingSlots <= 0) {
         toast.show({
           placement: 'top',
+          duration: 3000,
           render: ({ id }: { id: string }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Limit Aşıldı</ToastTitle>
-                  <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
-                </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Limit aşıldı"
+                description="Maksimum 10 görsel seçebilirsiniz"
+                action="error"
+                duration={3000}
+              />
             );
           },
         });
@@ -130,14 +134,16 @@ export const CreateQuestionPostScreen = () => {
         } else {
           toast.show({
             placement: 'top',
+            duration: 3000,
             render: ({ id }: { id: string }) => {
               return (
-                <Box maxWidth="90%" alignSelf="center" px="$4">
-                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                    <ToastTitle>Hata</ToastTitle>
-                    <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
-                  </Toast>
-                </Box>
+                <CustomToast
+                  id={id}
+                  title="Hata"
+                  description="Seçilen görsellerin URI'leri bulunamadı"
+                  action="error"
+                  duration={3000}
+                />
               );
             },
           });
@@ -145,14 +151,16 @@ export const CreateQuestionPostScreen = () => {
       } else if (result.error) {
         toast.show({
           placement: 'top',
+          duration: 3000,
           render: ({ id }: { id: string }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Hata</ToastTitle>
-                  <ToastDescription>{result.error}</ToastDescription>
-                </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Hata"
+                description={result.error}
+                action="error"
+                duration={3000}
+              />
             );
           },
         });
@@ -162,14 +170,16 @@ export const CreateQuestionPostScreen = () => {
       const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }: { id: string }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Hata"
+              description={errorMessage}
+              action="error"
+              duration={3000}
+            />
           );
         },
       });
@@ -201,14 +211,16 @@ export const CreateQuestionPostScreen = () => {
     if (!contextType || !contextId) {
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }: { id: string }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
-              </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Hata"
+              description="Context bilgisi bulunamadı. Lütfen tekrar deneyin."
+              action="error"
+              duration={3000}
+            />
           );
         },
       });
@@ -225,14 +237,16 @@ export const CreateQuestionPostScreen = () => {
     if (!selectedBoostOptionId) {
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }: { id: string }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Boost option seçimi zorunludur.</ToastDescription>
-              </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Eksik bilgi"
+              description="Boost seçimi zorunludur"
+              action="error"
+              duration={3000}
+            />
           );
         },
       });
@@ -261,14 +275,16 @@ export const CreateQuestionPostScreen = () => {
       // Başarılı toast göster
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }: { id: string }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Post Oluşturuldu</ToastTitle>
-                <ToastDescription>Soru gönderiniz başarıyla oluşturuldu!</ToastDescription>
-              </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Soru gönderisi oluşturuldu"
+              description="Gönderiniz başarıyla paylaşıldı!"
+              action="success"
+              duration={3000}
+            />
           );
         },
       });
@@ -304,18 +320,20 @@ export const CreateQuestionPostScreen = () => {
       // Hata toast göster
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
-                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                          'Gönderi oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
       
       toast.show({
         placement: 'top',
+        duration: 4000,
         render: ({ id }: { id: string }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Hata"
+              description={errorMessage}
+              action="error"
+              duration={4000}
+            />
           );
         },
       });
@@ -328,6 +346,11 @@ export const CreateQuestionPostScreen = () => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <FormProvider {...methods}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
           {/* Header */}
           <Header
@@ -349,7 +372,7 @@ export const CreateQuestionPostScreen = () => {
           />
 
           {/* Content */}
-          <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+          <ScrollView flex={1} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <VStack space="md" pb={100}>
               {/* Product Info Card */}
               <Box px="$4" py="$2">
@@ -434,6 +457,7 @@ export const CreateQuestionPostScreen = () => {
             </VStack>
           </ScrollView>
         </Box>
+        </KeyboardAvoidingView>
       </FormProvider>
     </SafeAreaView>
   );

@@ -357,7 +357,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                     {/* Search Bar */}
                     <HStack
                         alignItems="center"
-                        bg={isDark ? '#2A2A2A' : '#FDFDFD'}
+                        bg={isDark ? '#2A2A2A' : '#F2F2F2'}
                         borderWidth={1}
                         borderColor={isDark ? '#404040' : '#E9E9E9'}
                         borderRadius={23}

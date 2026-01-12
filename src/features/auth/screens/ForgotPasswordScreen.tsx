@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
+import { CustomToast } from '@/src/components/CustomToast';
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
@@ -14,6 +16,10 @@ export const ForgotPasswordScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ForgotPasswordScreenNavigationProp>();
   const toast = useToast();
+  const insets = useSafeAreaInsets();
+  
+  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
+  const backgroundColor = '#FFFFFF';
 
   const [email, setEmail] = useState('');
   const [isEmailValid, setIsEmailValid] = useState(false);
@@ -29,14 +35,16 @@ export const ForgotPasswordScreen = () => {
     if (!isEmailValid) {
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Geçersiz E-posta</ToastTitle>
-              <ToastDescription>Lütfen geçerli bir e-posta adresi girin.</ToastDescription>
-            </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Geçersiz e-posta"
+              description="Lütfen geçerli bir e-posta adresi girin."
+              action="error"
+              duration={3000}
+            />
           );
         },
       });
@@ -47,21 +55,23 @@ export const ForgotPasswordScreen = () => {
     try {
       // TODO: Endpoint'e istek atılacak
       // const response = await forgotPasswordApi.sendCode({ email });
-      console.log('Forgot Password - Email gönderiliyor:', email);
+      console.log('Forgot Password - Sending email:', email);
 
       // Simüle edilmiş başarılı response
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>E-posta Gönderildi</ToastTitle>
-              <ToastDescription>Doğrulama kodu e-posta adresinize gönderildi.</ToastDescription>
-            </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="E-posta gönderildi"
+              description="Doğrulama kodu e-posta adresinize gönderildi."
+              action="success"
+              duration={3000}
+            />
           );
         },
       });
@@ -74,18 +84,23 @@ export const ForgotPasswordScreen = () => {
     } catch (error: any) {
       console.error('Forgot Password Error:', error);
       
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Bir hata oluştu. Lütfen tekrar deneyin.';
+      
       toast.show({
         placement: 'top',
+        duration: 4000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Hata</ToastTitle>
-              <ToastDescription>
-                {error?.response?.data?.message || error?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'}
-              </ToastDescription>
-            </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Hata"
+              description={errorMessage}
+              action="error"
+              duration={4000}
+            />
           );
         },
       });
@@ -95,12 +110,27 @@ export const ForgotPasswordScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-        p="$4"
-      >
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Ana İçerik */}
+      <View style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          p="$4"
+        >
         <VStack flex={1} space="xl" pt="$16">
           <Text
             fontSize="$2xl"
@@ -115,8 +145,8 @@ export const ForgotPasswordScreen = () => {
             color={isDark ? '$textDark300' : '$textLight600'}
             mb="$4"
           >
-            Şifrenizi sıfırlamak için e-posta adresinizi girin.{'\n'}
-            Size doğrulama kodu göndereceğiz.
+            Enter your email address to reset your password.{'\n'}
+            We will send you a verification code.
           </Text>
 
           <VStack space="md">
@@ -129,9 +159,10 @@ export const ForgotPasswordScreen = () => {
                 size="md"
                 bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
+                alignItems="center"
               >
                 <InputField 
-                  placeholder="E-posta adresiniz"
+                  placeholder="Your email address"
                   value={email}
                   onChangeText={validateEmail}
                   keyboardType="email-address"
@@ -141,14 +172,15 @@ export const ForgotPasswordScreen = () => {
                   as={CheckCircle} 
                   color={isEmailValid ? "$success500" : "$gray400"} 
                   size="md" 
-                  mr="$2" 
+                  mr="$2"
+                  alignSelf="center"
                 />
               </Input>
             </FormControl>
           </VStack>
 
           <Button
-            bg="$yellow400"
+            bg="$buttonPrimary"
             py="$1"
             rounded="$lg"
             mt="$4"
@@ -157,7 +189,7 @@ export const ForgotPasswordScreen = () => {
             disabled={!isEmailValid || isLoading}
           >
             <ButtonText color="$textLight900">
-              {isLoading ? 'Gönderiliyor...' : 'Kodu Gönder'}
+              {isLoading ? 'Sending...' : 'Send Code'}
             </ButtonText>
           </Button>
 
@@ -166,14 +198,28 @@ export const ForgotPasswordScreen = () => {
             color={isDark ? '$textDark300' : '$textLight600'}
             textAlign="center"
             mt="auto"
-            mb="$4"
+            mb={insets.bottom + 16}
             onPress={() => navigation.goBack()}
           >
-            Geri dön
+            Go Back
           </Text>
         </VStack>
       </Box>
-    </SafeAreaView>
+      </View>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };
 

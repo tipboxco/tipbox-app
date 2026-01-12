@@ -1,6 +1,6 @@
 // ARCHITECTURE FIX: Removed 'use client' directive - not needed for React Native
 // This directive was causing StyledProvider errors
-import { createConfig } from '@gluestack-ui/themed';
+import { createConfig } from '@gluestack-style/react';
 import { config as defaultConfig } from '@gluestack-ui/config';
 
 // ARCHITECTURE FIX: Safe token access - defaultConfig.tokens might be undefined
@@ -48,6 +48,9 @@ export const config = createConfig({
       textDark950: '#020617',
       primary500: '#818CF8',
       primary600: '#6366F1',
+      // Tipbox brand colors
+      tipboxPrimary: '#D0F205', // Tipbox primary button color
+      buttonPrimary: '#D0F205', // Primary button color (alias for tipboxPrimary)
     },
     space: {
       ...(defaultTokens?.space || {}),
@@ -75,11 +78,11 @@ export const config = createConfig({
     },
     fontSizes: {
       ...(defaultTokens?.fontSizes || {}),
-      '4xs': 9,
-      '3xs': 10,
-      '2xs': 11,
-      xs: 13,
-      sm: 14,
+      '4xs': 8,
+      '3xs': 9,
+      '2xs': 10,
+      xs: 12,
+      sm: 13,
       md: 16,
       lg: 18,
       xl: 20,

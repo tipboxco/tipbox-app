@@ -4,7 +4,11 @@ import { NavigationProvider, useNavigationRef } from '@/src/providers/Navigation
 import { RootNavigator } from './stacks/RootNavigator';
 import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
+import { StatusBar } from 'expo-status-bar';
+import { useColorMode } from '@/src/hooks/useColorMode';
+import { PortalHost } from '@gorhom/portal';
 // Drawer artık React Navigation DrawerNavigator içinde
+// FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için
 
 /**
  * Navigation Component (Inner)
@@ -26,7 +30,6 @@ const NavigationInner = () => {
         if (route) {
           // NavigationService kullan (type-safe)
           navigationService.navigate(route.screen as any, route.params as any);
-          console.log('[Navigation] ✅ Initial deep link navigated:', route);
         }
       }
     };
@@ -41,7 +44,6 @@ const NavigationInner = () => {
       if (route) {
         // NavigationService kullan (type-safe)
         navigationService.navigate(route.screen as any, route.params as any);
-        console.log('[Navigation] ✅ Deep link navigated:', route);
       }
     });
 
@@ -70,7 +72,6 @@ const NavigationInner = () => {
     const appState = useAppStore.getState();
     
     if (appState.isUserBusy) {
-      console.log('[Navigation] ⏳ User is busy, pending navigation not consumed:', appState.busyReason);
       return;
     }
 
@@ -107,12 +108,21 @@ const NavigationInner = () => {
   // This eliminates unnecessary CPU usage from 500ms intervals
   // Navigation ready is handled via onReady callback below
 
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+
   return (
     <>
+      {/* FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için */}
+      {/* Drawer SafeAreaView'lerin dışında kalır ve tam ekranı kaplar */}
+      <StatusBar 
+        style={isDark ? 'light' : 'dark'} 
+        backgroundColor={isDark ? '#000000' : '#FFFFFF'}
+        translucent={true}
+      />
       <NavigationContainer
         ref={navigationRef}
         onReady={() => {
-          console.log('[Navigation] ✅ NavigationContainer is ready');
           // ARCHITECTURE FIX: Event-driven navigation ready handling
           // Navigation ready olduğunda pending navigation queue'yu consume et
           checkAndConsumePendingNavigation();
@@ -130,6 +140,9 @@ const NavigationInner = () => {
         }}
       >
         <RootNavigator />
+        {/* ARCHITECTURE FIX: PortalHost ekle - GlobalBottomSheet bu host'a render edilecek */}
+        {/* Portal hostName: 'navigation' ile bottom sheet NavigationContainer içinde render edilir */}
+        <PortalHost name="navigation" />
       </NavigationContainer>
     </>
   );

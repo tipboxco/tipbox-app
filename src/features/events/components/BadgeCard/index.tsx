@@ -30,7 +30,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
         shadowRadius={3}
       >
         <Image
-          source={data.image}
+          source={data.image || require('@/assets/defaultImages/default-badge.png')}
           alt={data.title}
           h={150}
           w={150}

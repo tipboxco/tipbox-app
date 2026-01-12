@@ -8,13 +8,10 @@ import {
     HStack,
     Text,
     Pressable,
-    Input,
-    InputField,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Feather } from '@expo/vector-icons';
 import MessageCard from '../components/MessageCard/index';
 import MessagesFilterGroup from '../components/MessagesFilterGroup/index';
 import type { InboxStackParamList } from '../navigation';
@@ -27,6 +24,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { MessageSkeleton } from '@/src/components/Skeletons';
 
 type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamList>;
 
@@ -39,23 +37,10 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [activeCategory, setActiveCategory] = useState<string>('1');
-    const [searchQuery, setSearchQuery] = useState('');
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
-
-    // Debounce search query for API calls
-    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setDebouncedSearchQuery(searchQuery.trim());
-      }, 500);
-      return () => clearTimeout(timer);
-    }, [searchQuery]);
-    
-    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages({
-      search: debouncedSearchQuery || undefined,
-    });
+    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages();
     const queryClient = useQueryClient();
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();
@@ -373,14 +358,6 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             return timestampB - timestampA; // En yeni başta
         });
 
-        // Search query varsa filtrele
-        if (searchQuery) {
-            filtered = filtered.filter(message =>
-                message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                message.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
-
         return filtered;
     };
 
@@ -421,35 +398,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     />
                 </GestureDetector>
             )}
-            {/* Search + Filters */}
+            {/* Filters */}
             <VStack px="$4" space="md">
-                {/* Search Bar */}
-                <HStack
-                    alignItems="center"
-                    bg={isDark ? '#1A1A1A' : '#F2F2F2'}
-                    borderWidth={1}
-                    borderColor="#E9E9E9"
-                    borderRadius={20}
-                    px={14}
-                    space="sm"
-                >
-                    <Feather
-                        name="search"
-                        size={24}
-                        color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-                    />
-                    <Input flex={1} borderWidth={0} bg="transparent">
-                        <InputField
-                            placeholder="Mesajlarda Ara"
-                            placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                            color={isDark ? '#000' : '#000'}
-                            fontSize={9}
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                        />
-                    </Input>
-                </HStack>
-
                 {/* Filter Buttons - TODO: API'ye taşındığında categories de buradan gelecek */}
                 <MessagesFilterGroup
                     categories={[]}
@@ -459,10 +409,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             </VStack>
 
             {/* Messages List - Full Height */}
-            {isLoading ? (
-                <Box py={20} alignItems="center">
-                    <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
-                </Box>
+            {isLoading && !messages ? (
+                <MessageSkeleton count={5} />
             ) : error ? (
                 <Box py={20} alignItems="center">
                     <Text color="#CE4A4A">Hata: {error.message}</Text>

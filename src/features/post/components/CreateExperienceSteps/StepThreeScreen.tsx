@@ -10,7 +10,10 @@ import {
     TextareaInput,
     Image
 } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  TagIcon,
+  CubeIcon,
+} from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -155,7 +158,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                         <VStack px={16} py={8} space="xs">
                             <HStack alignItems="center" justifyContent="space-between">
                                 <HStack alignItems="center" space="xs">
-                                    <Feather name="tag" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+                                    <TagIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                                     <Text
                                         fontSize={11}
                                         fontWeight="$semibold"
@@ -231,7 +234,7 @@ export const StepThreeScreen: React.FC<StepThreeScreenProps> = ({
                         <VStack px={16} py={8} space="xs">
                             <HStack alignItems="center" justifyContent="space-between">
                                 <HStack alignItems="center" space="xs">
-                                    <Feather name="package" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+                                    <CubeIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                                     <Text
                                         fontSize={11}
                                         fontWeight="$semibold"

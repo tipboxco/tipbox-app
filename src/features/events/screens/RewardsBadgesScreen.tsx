@@ -10,59 +10,62 @@ import {
     Image,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import BadgeCard from '../components/BadgeCard';
 import BadgeDetailModal from '../components/BadgeDetailModal';
-import { useAchievements } from '../api/hooks';
-import type { AchievementApiItem } from '../types';
+import { useEventBadges } from '../api/hooks';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
 type RewardsBadgesScreenNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'RewardsBadges'>;
+type RewardsBadgesScreenRouteProp = RouteProp<EventsStackParamList, 'RewardsBadges'>;
 
 const RewardsBadgesScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<RewardsBadgesScreenNavigationProp>();
+    const route = useRoute<RewardsBadgesScreenRouteProp>();
+    const { eventId } = route.params;
     const [selectedReward, setSelectedReward] = useState<SeeAllReward | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
 
-    // API hook
-    const { data: achievementsData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useAchievements(20);
+    // API hook - event-specific badges
+    const { data: badgesData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useEventBadges(eventId, 20);
 
-    // Transform API achievements data to SeeAllReward format
+    // Transform API badges data to SeeAllReward format
     const rewards = useMemo(() => {
-        if (!achievementsData?.pages) {
+        if (!badgesData?.pages) {
             return [];
         }
-        const allAchievements: SeeAllReward[] = [];
-        achievementsData.pages.forEach((page) => {
+        const allBadges: SeeAllReward[] = [];
+        badgesData.pages.forEach((page) => {
             if (page.items) {
-                page.items.forEach((item: AchievementApiItem) => {
-                    // Map AchievementApiItem to SeeAllReward format
-                    // AchievementApiItem has: id, title, image, description, current, total, status
-                    // SeeAllReward needs: id, title, description, image, category, isUnlocked, completed, task
+                page.items.forEach((item) => {
+                    // Map EventBadgeApiItem to SeeAllReward format
+                    // EventDetailScreen'de de aynı default görsel kullanılıyor
+                    const imageSource = item.image ? toImageSource(item.image) : require('@/assets/defaultImages/default-badge.png');
+                    
                     const reward: SeeAllReward = {
                         id: item.id,
                         title: item.title || '',
-                        description: item.description || '',
-                        image: toImageSource(item.image) || require('@/assets/avatar/ozan.png'),
-                        category: '', // API'den gelmiyor, boş string
-                        isUnlocked: item.status === 'completed',
-                        completed: item.current,
-                        task: item.total,
+                        description: '', // Badge API'sinde description yok
+                        image: imageSource,
+                        category: '', // Badge API'sinde category yok
+                        isUnlocked: true, // Badge görünüyorsa unlocked kabul ediyoruz
+                        completed: 0, // Badge API'sinde progress yok
+                        task: 0, // Badge API'sinde task yok
                     };
-                    allAchievements.push(reward);
+                    allBadges.push(reward);
                 });
             }
         });
-        return allAchievements;
-    }, [achievementsData]);
+        return allBadges;
+    }, [badgesData]);
 
     const handleRewardPress = (reward: SeeAllReward) => {
         setSelectedReward(reward);

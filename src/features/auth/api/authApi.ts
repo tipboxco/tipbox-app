@@ -381,3 +381,37 @@ export const updateUserInterests = async (
   }
 };
 
+/**
+ * Google Login endpoint function
+ * Firebase Authentication ile Google OAuth ile giriş yapmak için API çağrısı
+ * 
+ * @param idToken - Firebase'den alınan ID token (Firebase Authentication ile doğrulanmış)
+ * @returns ApiLoginResponse - Backend'den gelen ham response (store'da kullanılacak)
+ */
+export interface GoogleLoginRequest {
+  idToken: string;
+}
+
+export const googleLogin = async (
+  idToken: string
+): Promise<ApiLoginResponse> => {
+  try {
+    const response = await apiService.getClient().post<ApiLoginResponse>(
+      '/auth/google',
+      { idToken }
+    );
+
+    // Backend'den gelen ham response'u direkt döndür (store'da transform edilecek)
+    return response.data;
+  } catch (error: any) {
+    console.error('[googleLogin] API Error:', {
+      url: '/auth/google',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+

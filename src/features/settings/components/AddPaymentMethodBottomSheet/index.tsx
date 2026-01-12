@@ -12,7 +12,10 @@ import {
     ScrollView,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import {
+  DevicePhoneMobileIcon,
+  CreditCardIcon,
+} from 'react-native-heroicons/outline';
 
 interface AddPaymentMethodBottomSheetProps {
     onClose: () => void;
@@ -123,7 +126,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Feather name="smartphone" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                    <DevicePhoneMobileIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                                 </Box>
                                 <Text
                                     fontSize={11}
@@ -156,7 +159,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                                         alignItems="center"
                                         justifyContent="center"
                                     >
-                                        <Feather name="credit-card" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                        <CreditCardIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                                     </Box>
                                     <Text
                                         fontSize={11}
@@ -230,7 +233,7 @@ export const AddPaymentMethodBottomSheet = ({ onClose }: AddPaymentMethodBottomS
                         >
                             <Input borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder="Ozan Mutluoğlu"
+                                    placeholder="John Doe"
                                     placeholderTextColor="#B9B9B9"
                                     value={nameOnCard}
                                     onChangeText={setNameOnCard}

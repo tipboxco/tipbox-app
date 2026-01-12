@@ -297,7 +297,7 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                                 minHeight={150}
                             >
                                 <TextareaInput
-                                    placeholder="Detaylı olarak sorunuzu veya talebinizi açıklayın..."
+                                    placeholder="Describe your problem or request in detail..."
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize={13}

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VStack, Text, HStack, Pressable, Box, Input, InputField } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronDownIcon,
+  PaperAirplaneIcon,
+} from 'react-native-heroicons/outline';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,7 +19,7 @@ import { UpdatePostCardDetail } from '../components/UpdatePostCardDetail';
 import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
-import { useSafeAreaValues, toImageSource, formatRelativeTime } from '@/src/utils';
+import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -30,36 +33,101 @@ export const PostDetailScreen = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<NativeStackNavigationProp<PostStackParamList>>();
     const route = useRoute<PostDetailScreenRouteProp>();
-    const { postData, type, showRelatedPost, relatedPostData } = route.params;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
-    const bottomInset = useSafeAreaValues('bottom');
-
-    // Get post ID from postData
-    const postId = postData.id;
+    const insets = useSafeAreaInsets();
+    
+    // FIX: route.params undefined kontrolü - güvenli erişim
+    // Deep link veya notification'dan gelen durumlarda params undefined olabilir
+    const params = route.params || {};
+    
+    // PostId'yi belirle: önce params.postId'den, sonra postData.id'den
+    // Deep link durumu: route.params.postId (linking.config.ts'de path: 'post/:postId' tanımlı)
+    // Normal navigation: params.postData.id
+    const postId = params?.postId || params?.postData?.id;
+    
+    // Normal navigation durumu: postData'dan postId al
+    const postData = params?.postData;
+    
+    // Type'ı belirle: params'dan veya default 'post'
+    const type = params?.type || 'post';
+    const showRelatedPost = params?.showRelatedPost;
+    const relatedPostData = params?.relatedPostData;
+    
+    // FIX: postId kontrolü - postId yoksa geri dön (sadece bir kez kontrol et)
+    useEffect(() => {
+        if (!postId) {
+            // Sadece development'ta log'la, production'da sessizce geri dön
+            if (__DEV__) {
+                console.warn('[PostDetailScreen] ⚠️ Missing postId. Route params:', params);
+            }
+            // Geri dönülecek ekran yoksa App (MainTabs) ekranına git
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            } else {
+                // Root navigator'a reset yap - PostStackParamList'te 'App' yok, Root navigator'a erişmek için any kullan
+                (navigation as any).getParent()?.reset({
+                    index: 0,
+                    routes: [{ name: 'App' }],
+                });
+            }
+        }
+    }, [postId, navigation]);
+    
+    if (!postId) {
+        return null;
+    }
 
     // Check if postData is complete (has stats, user, etc.) or just an ID
-    // Notification'dan gelen postData sadece { id: "..." } formatında olabilir
-    const isPostDataComplete = postData.stats !== undefined && postData.user !== undefined;
+    // Notification'dan veya deep link'ten gelen postData sadece { id: "..." } formatında olabilir veya hiç olmayabilir
+    const isPostDataComplete = postData && postData.stats !== undefined && postData.user !== undefined;
     
-    // Instagram gibi davranış: Bildirimlerden geldiğinde her zaman en güncel veriyi göster
-    // Notification'dan geldiğinde (postData sadece ID içeriyorsa) forceRefresh = true
+    // Instagram gibi davranış: Bildirimlerden veya deep link'ten geldiğinde her zaman en güncel veriyi göster
+    // Notification/deep link'ten geldiğinde (postData yoksa veya sadece ID içeriyorsa) forceRefresh = true
     // Bu sayede eski bildirimlere tıklandığında bile en güncel beğeni/yorum sayısı gösterilir
-    const isFromNotification = !isPostDataComplete;
+    const isFromNotificationOrDeepLink = !postData || !isPostDataComplete;
     
-    // Fetch post detail - Notification'dan geldiğinde her zaman en güncel veriyi fetch et
+    // Fetch post detail - Notification/deep link'ten geldiğinde her zaman en güncel veriyi fetch et
     const { data: fetchedPostData, isLoading: isLoadingPost } = usePostDetail(
       postId,
       true, // Her zaman enabled
-      isFromNotification // Notification'dan geldiğinde force refresh
+      isFromNotificationOrDeepLink // Notification/deep link'ten geldiğinde force refresh
     );
 
     // Use fetched post data if available, otherwise use the passed postData
-    // Notification'dan geldiğinde her zaman fetched data kullan (en güncel)
-    const finalPostData = isFromNotification 
-      ? (fetchedPostData || postData) // Notification'dan geldiğinde fetched data öncelikli
-      : (fetchedPostData || postData); // Feed'den geldiğinde de fetched data varsa onu kullan
-    const finalType = type || fetchedPostData?.type || 'post';
+    // Notification/deep link'ten geldiğinde her zaman fetched data kullan (en güncel)
+    // FIX: Category/contextData/product bilgilerini ve görsellerini koru - FeedScreen'den gelen postData'da bu bilgiler var ve görseller dönüştürülmüş
+    // Type assertion: PostDetailResponse tipinde bu alanlar yok ama API'den gelebilir veya postData'dan gelir
+    let finalPostData: any;
+    if (isFromNotificationOrDeepLink) {
+      // Notification/deep link'ten geldiğinde fetched data öncelikli
+      finalPostData = (fetchedPostData as any) || (postData as any) || { id: postId };
+    } else {
+      // Feed'den geldiğinde: fetched data varsa onu kullan, ama category/contextData/product bilgilerini postData'dan koru
+      const fetched = fetchedPostData as any;
+      const post = postData as any;
+      
+      if (fetched && post) {
+        // Fetched data'yı kullan, ama category/contextData/product bilgilerini postData'dan al (görseller zaten dönüştürülmüş)
+        finalPostData = {
+          ...fetched,
+          // Category bilgisi (Tips & Tricks, Question, Post için) - postData'dan öncelikli (görseller dönüştürülmüş)
+          category: post.category || fetched.category,
+          // ContextType ve ContextData bilgisi (Post, Experience için) - postData'dan öncelikli
+          contextType: post.contextType || fetched.contextType,
+          contextData: post.contextData || fetched.contextData,
+          // Product bilgisi (Update için) - postData'dan öncelikli
+          product: post.product || fetched.product,
+          // Products bilgisi (Benchmark için) - postData'dan öncelikli
+          products: post.products || fetched.products,
+          // RelatedPost bilgisi (Update için) - postData'dan öncelikli
+          relatedPost: post.relatedPost || fetched.relatedPost,
+        };
+      } else {
+        finalPostData = fetched || post;
+      }
+    }
+    const finalType = type || (fetchedPostData as any)?.type || 'post';
 
     // Fetch comments
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
@@ -129,9 +197,9 @@ export const PostDetailScreen = () => {
                 enableHandlePanningGesture: true,
                 enableContentPanningGesture: true,
                 enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
-                animateOnMount: true,
-                // Bottom sheet'in bottom uzaklığı klavye yüksekliği kadar olacak
-                paddingBottom: keyboardHeight, // Klavye yüksekliği kadar padding
+                animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+                // Bottom sheet'in bottom uzaklığı klavye yüksekliği + safe area bottom inset kadar olacak
+                paddingBottom: keyboardHeight + insets.bottom, // Klavye yüksekliği + safe area bottom inset
                 keyboardBehavior: 'extend', // Klavye açıldığında bottom sheet genişler
                 keyboardBlurBehavior: 'restore',
                 android_keyboardInputMode: 'adjustResize',
@@ -157,7 +225,7 @@ export const PostDetailScreen = () => {
                 id: item.comment.id,
                 userName: item.user.name || 'Anonymous',
                 userTitle: item.user.avatar ? '' : '', // API'de title yok, boş bırakıyoruz
-                avatar: item.user.avatar ? toImageSource(item.user.avatar) : require('@/assets/avatar/ozan.png'),
+                avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
                 timeAgo: formatRelativeTime(item.comment.createdAt),
                 content: item.comment.comment,
             });
@@ -170,7 +238,7 @@ export const PostDetailScreen = () => {
                         id: reply.id,
                         userName: item.user.name || 'Anonymous',
                         userTitle: '',
-                        avatar: item.user.avatar ? toImageSource(item.user.avatar) : require('@/assets/avatar/ozan.png'),
+                        avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
                         timeAgo: formatRelativeTime(reply.createdAt),
                         content: reply.comment,
                     });
@@ -184,18 +252,20 @@ export const PostDetailScreen = () => {
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
         <VStack flex={1} bg={isDark ? '#000000' : '#fff'}>
             {/* Status Bar & Header */}
             <Header
                 title={
                     showRelatedPost ? "Related Post" :
+                    type === 'post' ? "Post Details" :
                     type === 'tipsAndTricks' ? "Tips & Tricks Details" : 
                     type === 'question' ? "Question Details" : 
                     type === 'benchmark' ? "Benchmark Details" :
                     type === 'experience' ? "Experience Details" :
                     type === 'update' ? "Update Details" :
-                    "Product Details"
+                    "Post Details"
                 }
                 showBackButton
                 onBackPress={() => navigation.goBack()}
@@ -208,13 +278,14 @@ export const PostDetailScreen = () => {
             >
                 {/* Detail Card */}
                 {/* Loading state: Post detail fetch ediliyorsa göster */}
-                {isLoadingPost && !isPostDataComplete ? (
+                {/* Deep link veya notification'dan geldiğinde (postData yoksa) loading göster */}
+                {isLoadingPost && (!postData || !isPostDataComplete) ? (
                     <Box flex={1} justifyContent="center" alignItems="center" py="$8">
                         <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
                             Post yükleniyor...
                         </Text>
                     </Box>
-                ) : (
+                ) : finalPostData && finalPostData.id ? (
                     <>
                         {finalType === 'tipsAndTricks' ? (
                             <TipsAndTricksPostCardDetail data={finalPostData} onCommentPress={handleCommentInputPress} />
@@ -235,6 +306,12 @@ export const PostDetailScreen = () => {
                             <PostDetailCard data={finalPostData} onCommentPress={handleCommentInputPress} />
                         )}
                     </>
+                ) : (
+                    <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14}>
+                            Post bulunamadı.
+                        </Text>
+                    </Box>
                 )}
 
                 {/* Comments Header + Filter */}
@@ -270,9 +347,9 @@ export const PostDetailScreen = () => {
                         >
                             Newest
                         </Text>
-                        <Feather
-                            name="chevron-down"
-                            size={14}
+                        <ChevronDownIcon
+                            width={14}
+                            height={14}
                             color={isDark ? '#FFFFFF' : '#000000'}
                         />
                     </Pressable>
@@ -312,7 +389,7 @@ export const PostDetailScreen = () => {
                 px="$4"
                 py="$3"
                 style={{
-                    paddingBottom: Platform.OS === 'ios' ? bottomInset : 12,
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
                 }}
             >
                 <HStack space="sm" alignItems="center">
@@ -343,9 +420,9 @@ export const PostDetailScreen = () => {
                         alignItems="center"
                         justifyContent="center"
                     >
-                        <Feather
-                            name="send"
-                            size={18}
+                        <PaperAirplaneIcon
+                            width={18}
+                            height={18}
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                         />
                     </Box>

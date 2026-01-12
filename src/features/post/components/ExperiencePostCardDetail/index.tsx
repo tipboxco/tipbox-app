@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  EllipsisHorizontalIcon,
+  TagIcon,
+  CubeIcon,
+  StarIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import {
+  StarIcon as StarIconSolid,
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { PostCard as PostCardType } from '@/src/mock/profile/feed/types';
 import { Dimensions } from 'react-native';
@@ -26,7 +40,6 @@ interface ExperiencePostCardDetailProps {
 export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePostCardDetailProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const [isTranslated, setIsTranslated] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -91,138 +104,139 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                 right={15}
                 zIndex={1}
             >
-                <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
+                <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
             </Pressable>
 
             {/* Header */}
-            <VStack px={12} py={8}>
-                <HStack alignItems="center" space="xs">
-                    <Image
-                        source={toImageSource(data.user.avatar)!}
-                        alt={data.user.name}
-                        mr={8}
-                        width={42}
-                        height={42}
-                        borderRadius={100}
-                    />
-                    <VStack flex={1}>
-                        <Text
-                            color={isDark ? '$textDark400' : '#C7C7C7'}
-                            fontSize="$xs"
-                            fontWeight="$semibold"
-                        >
-                            {data.user.action}
-                        </Text>
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize='$xs'
-                            fontWeight="$bold"
-                        >
-                            {data.user.name}
-                        </Text>
-                        <Text
-                            color={isDark ? '$textDark400' : '#787878'}
-                            fontSize="$xs"
-                            numberOfLines={1}
-                            maxWidth={250}
-                        >
-                            {data.user.title}
-                        </Text>
-                    </VStack>
-                </HStack>
-            </VStack>
-
-            {/* Product */}
-            <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
-                <ProductInfoCard
-                    size="small"
-                    type={ProductInfoType.PRODUCT}
-                    image={data.product.image}
-                    title={data.product.name}
-                    subName={data.product.subName}
-                />
-            </Box>
-
-            {/* Content */}
-            <VStack px={12} pb={8}>
-                {data.content.map((item, index) => (
-                    <VStack key={index} py={8}>
-                        <HStack space="sm" alignItems="center">
-                            <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
-                            <Text
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize={'$xs'}
-                                fontWeight="$bold"
-                            >
-                                {item.tag.title}
-                            </Text>
-                        </HStack>
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$sm"
-                            ml={26}
-                        >
-                            {item.text}
-                        </Text>
-                        <HStack ml={26} mt={8}>
-                            {item.rating.map((star, idx) => (
-                                <Feather
-                                    key={idx}
-                                    name={star ? 'star' : 'star'}
-                                    size={12}
-                                    color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                                    fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                                />
-                            ))}
-                        </HStack>
-                    </VStack>
-                ))}
-            </VStack>
-
-            {/* Tags */}
-            <HStack px={12} py={8} flexWrap="wrap">
-                {data.tags.map((tag, index) => (
-                    <HStack
-                        key={index}
-                        bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
-                        borderWidth={1}
-                        borderColor={'#E9E9E9'}
-                        rounded={'$full'}
-                        px={16}
-                        py={6}
-                        mr={4}
-                    >
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$xs"
-                            fontWeight="$semibold"
-                        >
-                            {tag}
-                        </Text>
-                    </HStack>
-                ))}
-            </HStack>
-
-            {/* Translate Button */}
-            <Box pb="$3" px="$3">
-                <Pressable onPress={() => setIsTranslated(!isTranslated)}>
+            {data.user && (
+                <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                     <HStack alignItems="center" space="xs">
                         <Image
-                            source={require('@/assets/translate.png')}
-                            alt="translate"
-                            width={16}
-                            height={16}
+                            source={toImageSource(data.user?.avatar)!}
+                            alt={data.user?.name || ''}
+                            mr={8}
+                            width={42}
+                            height={42}
+                            borderRadius={100}
                         />
-                        <Text
-                            color="#829905"
-                            fontSize="$sm"
-                            textDecorationLine="underline"
-                        >
-                            {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-                        </Text>
+                        <VStack flex={1}>
+                            <Text
+                                color={isDark ? '$textDark400' : '#C7C7C7'}
+                                fontSize="$xs"
+                                fontWeight="$semibold"
+                            >
+                                {data.user?.action}
+                            </Text>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize='$xs'
+                                fontWeight="$bold"
+                            >
+                                {data.user?.name}
+                            </Text>
+                            <Text
+                                color={isDark ? '$textDark400' : '#787878'}
+                                fontSize="$xs"
+                                numberOfLines={1}
+                                maxWidth={250}
+                            >
+                                {data.user?.title}
+                            </Text>
+                        </VStack>
                     </HStack>
-                </Pressable>
-            </Box>
+                </VStack>
+            )}
+
+            {/* Product */}
+            {data.product && (
+                <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                    <ProductInfoCard
+                        size="small"
+                        type={ProductInfoType.PRODUCT}
+                        image={data.product?.image}
+                        title={data.product?.name}
+                        subName={data.product?.subName}
+                    />
+                </Box>
+            )}
+
+            {/* Content */}
+            {data.content && data.content.length > 0 && (
+                <VStack px={12} pb={8}>
+                    {data.content.map((item, index) => (
+                        <VStack key={index} py={8}>
+                            <HStack space="sm" alignItems="center">
+                                {item.tag?.icon === 'tag' ? (
+                                    <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                                ) : (
+                                    <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                                )}
+                                <Text
+                                    color={isDark ? '$textDark50' : '#000'}
+                                    fontSize={'$xs'}
+                                    fontWeight="$bold"
+                                >
+                                    {item.tag?.title}
+                                </Text>
+                            </HStack>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$sm"
+                                ml={26}
+                            >
+                                {item.text}
+                            </Text>
+                            {item.rating && item.rating.length > 0 && (
+                                <HStack ml={26} mt={8}>
+                                    {item.rating.map((star, idx) => (
+                                        star ? (
+                                            <StarIconSolid
+                                                key={idx}
+                                                width={12}
+                                                height={12}
+                                                color={isDark ? '#fff' : '#829905'}
+                                            />
+                                        ) : (
+                                            <StarIcon
+                                                key={idx}
+                                                width={12}
+                                                height={12}
+                                                color={isDark ? '#7E7E7E' : '#E8E8E8'}
+                                            />
+                                        )
+                                    ))}
+                                </HStack>
+                            )}
+                        </VStack>
+                    ))}
+                </VStack>
+            )}
+
+            {/* Tags */}
+            {data.tags && data.tags.length > 0 && (
+                <HStack px={12} py={8} flexWrap="wrap">
+                    {data.tags.map((tag, index) => (
+                        <HStack
+                            key={index}
+                            bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
+                            borderWidth={1}
+                            borderColor={'#E9E9E9'}
+                            rounded={'$full'}
+                            px={16}
+                            py={6}
+                            mr={4}
+                        >
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$xs"
+                                fontWeight="$semibold"
+                            >
+                                {tag}
+                            </Text>
+                        </HStack>
+                    ))}
+                </HStack>
+            )}
 
             {data.images?.length > 0 && (
                 <VStack px={12} >
@@ -231,54 +245,54 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
             )}
 
             {/* Stats */}
-            <HStack px={12} py={8}borderBottomWidth={1} borderColor="#E9E9E9">
-                <Pressable onPress={handleLike}>
-                    <HStack mr={10} alignItems="center">
-                        <Feather
-                            name="heart"
-                            size={24}
-                            color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                            fill={isLiked ? '#FF3040' : 'none'}
-                        />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.likes}
-                        </Text>
-                    </HStack>
-                </Pressable>
-                <Pressable 
-                    onPress={onCommentPress || undefined}
-                    disabled={!onCommentPress}
-                    opacity={onCommentPress ? 1 : 0.5}
-                >
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.comments}
-                        </Text>
-                    </HStack>
-                </Pressable>
-                <Pressable onPress={handleShare}>
-                    <HStack mr={10} alignItems="center">
-                        <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.shares}
-                        </Text>
-                    </HStack>
-                </Pressable>
-                <Pressable onPress={handleBookmark}>
-                    <HStack mr={10} alignItems="center">
-                        <Feather
-                            name="bookmark"
-                            size={24}
-                            color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                            fill={isBookmarked ? '#829905' : 'none'}
-                        />
-                        <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
-                            {data.stats.bookmarks}
-                        </Text>
-                    </HStack>
-                </Pressable>
-            </HStack>
+            {data.stats && (
+                <HStack px={12} py={8}borderBottomWidth={1} borderColor="#E9E9E9">
+                    <Pressable onPress={handleLike}>
+                        <HStack mr={10} alignItems="center">
+                            {isLiked ? (
+                                <HeartIconSolid width={24} height={24} color="#FF3040" />
+                            ) : (
+                                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.likes || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable 
+                        onPress={onCommentPress || undefined}
+                        disabled={!onCommentPress}
+                        opacity={onCommentPress ? 1 : 0.5}
+                    >
+                        <HStack mr={10} alignItems="center">
+                            <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.comments || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable onPress={handleShare}>
+                        <HStack mr={10} alignItems="center">
+                            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.shares || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                    <Pressable onPress={handleBookmark}>
+                        <HStack mr={10} alignItems="center">
+                            {isBookmarked ? (
+                                <BookmarkIconSolid width={24} height={24} color="#829905" />
+                            ) : (
+                                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={'$2xs'}>
+                                {data.stats?.bookmarks || 0}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                </HStack>
+            )}
         </VStack>
     );
 };

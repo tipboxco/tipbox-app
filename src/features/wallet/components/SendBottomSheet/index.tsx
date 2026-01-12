@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronLeftIcon,
+  CreditCardIcon,
+  DocumentDuplicateIcon,
+  PaperAirplaneIcon,
+  InformationCircleIcon,
+  ArrowsRightLeftIcon,
+  UserIcon,
+  UsersIcon,
+} from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 
 interface SendBottomSheetProps {
   onClose: () => void;
@@ -46,18 +55,18 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
   // Mock friends list
   const mockFriends = [
-    { id: '1', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '2', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '3', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '4', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '5', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '6', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '7', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '8', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '9', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '10', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '11', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
-    { id: '12', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: require('@/assets/avatar/ozan.png') },
+    { id: '1', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '2', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '3', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '4', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '5', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '6', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '7', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '8', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '9', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '10', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '11', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
+    { id: '12', name: 'Micheal Clark', title: 'Technology Enthuistant - Hardware Expert - Digital...', avatar: DEFAULT_USER_AVATAR },
   ];
 
   const handleWalletAddressSelect = () => {
@@ -188,7 +197,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Feather name="credit-card" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <CreditCardIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
@@ -227,7 +236,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Feather name="users" size={18} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <UsersIcon width={18} height={18} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
@@ -252,10 +261,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       {/* Header with back button */}
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={handleBack}>
-          <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+          <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
         <HStack flex={1} justifyContent="center" alignItems="center">
-          <Feather name="credit-card" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
             TIPS Gönder
           </Text>
@@ -291,7 +300,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             />
           </Input>
           <Pressable>
-            <Feather name="copy" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+            <DocumentDuplicateIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           </Pressable>
         </HStack>
       </Box>
@@ -313,7 +322,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               px="$2"
               rounded={6}
             >
-              <Feather name="credit-card" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
               <HStack flex={1} justifyContent="space-between">
                 <Text fontSize={14} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
                   {item.address}
@@ -361,10 +370,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             onViewChange?.('wallet-address');
           }
         }}>
-          <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+          <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
         <HStack flex={1} justifyContent="center" alignItems="center">
-          <Feather name="send" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+          <PaperAirplaneIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
             TIPS Gönder
           </Text>
@@ -471,7 +480,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           alignItems="center"
           justifyContent="center"
         >
-          <Feather name="info" size={12} color={isDark ? '#FFFFFF' : '#000000'} />
+          <InformationCircleIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
         </Box>
         <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1}>
           buraya uyarı mesajı yazılacak
@@ -513,7 +522,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           {/* Swap Icon - Right side, absolute positioned */}
           <Box position="absolute" right="$4" top="$4">
             <Pressable onPress={handleSwap}>
-              <Feather name="shuffle" size={24} color={isDark ? '#FFFFFF' : '#808080'} />
+              <ArrowsRightLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#808080'} />
             </Pressable>
           </Box>
         </Box>
@@ -608,10 +617,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           setView('amount');
           onViewChange?.('amount');
         }}>
-          <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+          <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
         <HStack flex={1} justifyContent="center" alignItems="center">
-          <Feather name="credit-card" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
             TIPS Gönder
           </Text>
@@ -659,9 +668,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           {/* Sender */}
           <HStack alignItems="center" space="sm" flex={1}>
             <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center" position="relative">
-              <Feather name="user" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              <UserIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
               <Box position="absolute" bottom={-2} right={-2} w={16} h={16} rounded="$full" bg="$backgroundLight0" $dark-bg="$backgroundDark800" borderWidth={1} borderColor="#D9D9D9" alignItems="center" justifyContent="center">
-                <Feather name="credit-card" size={12} color={isDark ? '#FFFFFF' : '#000000'} />
+                <CreditCardIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
             </Box>
             <VStack>
@@ -729,7 +738,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   </Text>
                 </VStack>
                 <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center">
-                  <Feather name="credit-card" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <CreditCardIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                 </Box>
               </>
             )}
@@ -748,7 +757,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           alignItems="center"
           justifyContent="center"
         >
-          <Feather name="info" size={12} color={isDark ? '#FFFFFF' : '#000000'} />
+          <InformationCircleIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
         </Box>
         <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1}>
           buraya uyarı mesajı gelecek

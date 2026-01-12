@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -12,7 +12,10 @@ import {
   VStack,
   HStack,
   Pressable,
+  Input,
+  InputField,
 } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -42,13 +45,11 @@ const InboxScreen: React.FC = () => {
       // Ekran focus aldığında drawer gesture'ı disable et
       setGestureEnabled(false);
       if (__DEV__) {
-        console.log('[InboxScreen] Drawer gesture disabled (horizontal swipe active)');
       }
       return () => {
         // Ekran blur olduğunda drawer gesture'ı tekrar enable et
         setGestureEnabled(true);
         if (__DEV__) {
-          console.log('[InboxScreen] Drawer gesture enabled (screen blurred)');
         }
       };
     }, [setGestureEnabled])
@@ -57,6 +58,11 @@ const InboxScreen: React.FC = () => {
   // 🎯 CORE: Shared progress value (0 = Messages, 1 = Support)
   const progress = useSharedValue(0);
   const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '$backgroundLight0', [isDark]);
+  const tabHeaderBgColor = useMemo(() => isDark ? '#000' : '#FFF', [isDark]);
 
   // Drawer açma fonksiyonu
   const openDrawer = useCallback(() => {
@@ -136,15 +142,44 @@ const InboxScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <Box flex={1} bg={backgroundColor}>
         <Header
           title="Inbox"
           leftAction="menu"
         />
 
-        <VStack flex={1} py="$2" space="md">
+        <VStack flex={1}>
+          {/* Search Bar - Fixed at top */}
+          <VStack space="md" pb="$4" px="$4" bg={backgroundColor}>
+            <HStack
+              alignItems="center"
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor="#E9E9E9"
+              borderRadius={20}
+              px={14}
+              space="sm"
+            >
+              <Feather
+                name="search"
+                size={24}
+                color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+              />
+              <Input flex={1} borderWidth={0} bg="transparent">
+                <InputField
+                  placeholder="Search in inbox"
+                  placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                  color={isDark ? '#000' : '#000'}
+                  fontSize="$xs"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </Input>
+            </HStack>
+          </VStack>
+
           {/* Tab Header */}
-          <VStack pt="$4" bg={isDark ? '#000' : '#FFF'}>
+          <VStack pt={0} bg={tabHeaderBgColor}>
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}
@@ -162,13 +197,13 @@ const InboxScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(0)}
                 alignItems="center"
-                py="$1"
+                pb={8}
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text
                     style={[
                       {
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: 'bold',
                       },
                       tab1Style,
@@ -184,13 +219,13 @@ const InboxScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(1)}
                 alignItems="center"
-                pb="$1"
+                pb={8}
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text
                     style={[
                       {
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: 'bold',
                       },
                       tab2Style,
@@ -246,4 +281,5 @@ const InboxScreen: React.FC = () => {
 
 InboxScreen.displayName = 'InboxScreen';
 
-export default InboxScreen;
+// PERFORMANCE FIX: Memoize InboxScreen to prevent unnecessary re-renders during tab transitions
+export default React.memo(InboxScreen);

@@ -1,7 +1,16 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList } from 'react-native';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+  interpolate,
+  withTiming,
+  useAnimatedScrollHandler,
+} from 'react-native-reanimated';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -30,10 +39,27 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { LadderTab } from '../components/TabContents';
-import { Feather } from '@expo/vector-icons';
+import {
+  ArrowUpTrayIcon,
+  FlagIcon,
+  NoSymbolIcon,
+  ChevronLeftIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  GiftIcon,
+  PhoneIcon,
+  ChatBubbleLeftIcon,
+  BellIcon,
+  UserMinusIcon,
+  UserPlusIcon,
+} from 'react-native-heroicons/outline';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedSkeleton } from '@/src/components/Skeletons';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 const TABS = [
   { key: 'feed',        title: 'Feed' },
@@ -62,19 +88,25 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
     ? post.content.map((item) => item?.content || '').join(' ')
     : (post?.content || '');
 
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const avatarSource = toImageSource(post.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = post.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
   return {
     id: post.id,
     user: {
       id: post.user.id,
       name: post.user.name || '',
       title: post.user.title || '',
-      avatar: toImageSource(post.user.avatar)!,
+      avatar: avatarSource,
     },
     content: contentString,
-    images:
-      post.images
-        ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    images,
     stats: {
       likes: post.stats.likes,
       comments: post.stats.comments || 0,
@@ -88,7 +120,7 @@ const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
           id: post.contextData.id,
           name: post.contextData.name || '',
           subName: post.contextData.subName || '',
-          image: contextImage || post.contextData.image,
+          image: contextImage || post.contextData?.image || require('@/assets/defaultImages/default-post.png'),
           isOwned: post.contextData.isOwned,
         }
       : undefined,
@@ -102,7 +134,7 @@ const mapExperienceToCardData = (review: ProfileReview): ReviewCardData | null =
   
   const avatarSource = review.user?.avatar
     ? toImageSource(review.user.avatar)!
-    : require('@/assets/avatar/ozan.png');
+      : require('@/assets/avatar/default-useravatar.png');
   
   const productImage = review.contextData?.image
     ? toImageSource(review.contextData.image)
@@ -152,14 +184,16 @@ const mapBenchmarkToCardData = (item: BenchmarkApiItem): BenchmarkCardData | nul
   }
   
   const avatarSource = toImageSource(item.user.avatar)!;
-  const products: BenchmarkProduct[] = (item?.products || []).map((p) => ({
-    id: p?.id || '',
-    name: p?.name || '',
-    subName: p?.subName || '',
-    image: toImageSource(p?.image)!,
-    isOwned: p?.isOwned || false,
-    choice: p?.choice || false,
-  }));
+  const products: BenchmarkProduct[] = (item?.products || [])
+    .filter((p) => p?.id) // Filter out invalid products
+    .map((p) => ({
+      id: p.id || '',
+      name: p?.name || '',
+      subName: p?.subName || '',
+      image: toImageSource(p?.image) || require('@/assets/inventory/product_01.png'),
+      isOwned: p?.isOwned || false,
+      choice: p?.choice || false,
+    }));
 
   return {
     id: item.id,
@@ -182,17 +216,18 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
   }
   
   const avatarSource = toImageSource(item?.user?.avatar)!;
+  const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: TipsProduct = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subName: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
   };
   const category: TipsCategory = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subCategory: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
     product,
   };
 
@@ -221,19 +256,27 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
   }
   
   const avatarSource = toImageSource(item?.user?.avatar)!;
+  const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: QuestionCardProduct = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subName: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
   };
   const category: QuestionCardCategory = {
     id: item.contextData.id,
     name: item.contextData.name || '',
     subCategory: item.contextData.subName || '',
-    image: toImageSource(item.contextData.image)!,
+    image: contextImage,
     product,
   };
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const mappedImages = item.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
   return {
     id: item.id,
@@ -246,9 +289,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
     category,
     content: item.content,
     isBoosted: item.isBoosted,
-    images: item.images
-      ?.map((img) => toImageSource(img))
-      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+    images,
     stats: item.stats,
     createdAt: item.createdAt,
   };
@@ -262,129 +303,302 @@ type MappedPost =
   | { type: 'tips'; id: string; data: TipsCardData }
   | { type: 'question'; id: string; data: QuestionCardData };
 
-// List item type
-type ListItem = 
-  | { type: 'TAB_BAR' }
-  | { type: 'POST'; id: string; data: MappedPost }
-  | { type: 'LADDER_CONTENT' };
+// Tab page props
+interface TabPageProps {
+  tabKey: TabKey;
+  targetUserId: string;
+  isDark: boolean;
+  bottomPadding: number;
+  listHeaderComponent?: React.ReactElement | null;
+  onRefresh?: () => void;
+  refreshing?: boolean;
+}
 
-// TabsBar Component
+// TabsBar Component - NotificationsScreen'deki gibi
 interface TabsBarProps {
   activeTab: TabKey;
   onChangeTab: (tab: TabKey) => void;
   isDark: boolean;
+  progress: ReturnType<typeof useSharedValue<number>>;
+  tabContainerRef: React.RefObject<any>;
+  onTabContainerLayout: (width: number) => void;
 }
 
-const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => {
+const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
+  const activeColor = isDark ? '#FFFFFF' : '#000000';
+  const inactiveColor = '#A3A3A3';
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  
+  // Her tab için genişlik ve pozisyon state'i (metin genişliğine göre)
+  const [tabWidths, setTabWidths] = useState<number[]>([]);
+  const [tabPositions, setTabPositions] = useState<number[]>([]);
+  const tabRefs = useRef<{ [key: string]: any }>({});
+  
+  // ScrollView scroll pozisyonunu takip et (indicator için)
+  const scrollViewOffset = useSharedValue(0);
+  
+  // ScrollView scroll handler
+  const handleScrollViewScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollViewOffset.value = event.contentOffset.x;
+    },
+  });
+  
+  // Tab genişliği hesaplama - aktif tab'ın genişliğini kullan
+  const getTabWidth = useCallback((index: number) => {
+    if (tabWidths[index]) {
+      return tabWidths[index];
+    }
+    return 80; // Default genişlik
+  }, [tabWidths]);
+  
+  // Aktif tab'ın genişliği (indicator için)
+  const activeTabIndex = TABS.findIndex(tab => tab.key === activeTab);
+  const activeTabWidth = activeTabIndex >= 0 ? getTabWidth(activeTabIndex) : 80;
+  
+  // Her tab için animasyonlu stil - NotificationsScreen'deki gibi
+  // Tab 0 (Feed)
+  const tab0Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [-0.5, 0, 0.5],
+      [activeColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+
+  // Tab 1 (Reviews)
+  const tab1Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [0.5, 1, 1.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+
+  // Tab 2 (Benchmarks)
+  const tab2Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [1.5, 2, 2.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+
+  // Tab 3 (Tips & Tricks)
+  const tab3Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [2.5, 3, 3.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+
+  // Tab 4 (Questions)
+  const tab4Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [3.5, 4, 4.5],
+      [inactiveColor, activeColor, inactiveColor]
+    );
+    return { color };
+  }, [isDark]);
+
+  // Tab 5 (Ladders)
+  const tab5Style = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [4.5, 5, 5.5],
+      [inactiveColor, activeColor, activeColor]
+    );
+    return { color };
+  }, [isDark]);
+
+  const getTabStyle = (index: number) => {
+    switch (index) {
+      case 0: return tab0Style;
+      case 1: return tab1Style;
+      case 2: return tab2Style;
+      case 3: return tab3Style;
+      case 4: return tab4Style;
+      case 5: return tab5Style;
+      default: return tab0Style;
+    }
+  };
+
+
+  // Tab genişliklerini ve pozisyonlarını shared value olarak tut (worklet context için)
+  const tabWidthsShared = useSharedValue<number[]>([]);
+  const tabPositionsShared = useSharedValue<number[]>([]);
+  
+  // Tab genişlikleri ve pozisyonları güncellendiğinde shared value'yu güncelle
+  useEffect(() => {
+    if (tabWidths.length === TABS.length) {
+      tabWidthsShared.value = tabWidths;
+    }
+  }, [tabWidths]);
+  
+  useEffect(() => {
+    if (tabPositions.length === TABS.length) {
+      tabPositionsShared.value = tabPositions;
+    }
+  }, [tabPositions]);
+  
+  // Indicator position animation - scroll offset'i dikkate al
+  // Indicator genişliği aktif tab'ın genişliğine göre
+  const indicatorStyle = useAnimatedStyle(() => {
+    'worklet';
+    const currentIndex = Math.floor(progress.value);
+    const nextIndex = Math.min(Math.ceil(progress.value), TABS.length - 1);
+    const offset = progress.value - currentIndex;
+    
+    // Tab genişliklerini ve pozisyonlarını al
+    const widths = tabWidthsShared.value;
+    const positions = tabPositionsShared.value;
+    
+    if (widths.length === 0 || positions.length === 0) {
+      return { transform: [{ translateX: 0 }], width: 0 };
+    }
+    
+    // Mevcut ve sonraki tab'ın genişliklerini ve pozisyonlarını al
+    const currentWidth = widths[currentIndex] || 80;
+    const nextWidth = widths[nextIndex] || currentWidth;
+    const currentPosition = positions[currentIndex] || 0;
+    const nextPosition = positions[nextIndex] || currentPosition;
+    
+    // Smooth geçiş için interpolate
+    const baseTranslateX = currentPosition + (nextPosition - currentPosition) * offset;
+    const baseWidth = currentWidth + (nextWidth - currentWidth) * offset;
+    const indicatorWidthAnimated = baseWidth * 0.8;
+    
+    // Indicator'ı tab'ın ortasına hizala (ScrollView scroll offset'ini dikkate al)
+    const translateX = baseTranslateX + (baseWidth - indicatorWidthAnimated) / 2 - scrollViewOffset.value;
+    
+    return {
+      transform: [{ translateX }],
+      width: indicatorWidthAnimated,
+    };
+  });
+
   return (
     <Box
       mb={16}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       borderBottomWidth={StyleSheet.hairlineWidth}
       borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+      position="relative"
     >
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
+        contentContainerStyle={{ 
+          paddingHorizontal: 16,
+        }}
+        scrollEventThrottle={16}
+        onScroll={handleScrollViewScroll}
+        scrollEnabled={true}
+        bounces={false}
       >
-        <HStack space="xs" py={12}>
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
+        <HStack
+          ref={tabContainerRef}
+          borderBottomWidth={1}
+          borderColor="#E9E9E9"
+          p={0}
+          mb="$2"
+          position="relative"
+          space="md"
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            onTabContainerLayout(width);
+          }}
+        >
+          {TABS.map((tab, index) => {
+            const tabStyle = getTabStyle(index);
             return (
               <Pressable
                 key={tab.key}
+                ref={(ref) => {
+                  if (ref) {
+                    tabRefs.current[tab.key] = ref;
+                  }
+                }}
                 onPress={() => onChangeTab(tab.key)}
                 alignItems="center"
-                justifyContent="center"
-                pb="$1"
-                position="relative"
-                minWidth={75}
-                flexShrink={0}
-                mr={8}
+                py="$1"
+                px="$2"
+                onLayout={(event) => {
+                  const { width, x } = event.nativeEvent.layout;
+                  setTabWidths((prev) => {
+                    const newWidths = [...prev];
+                    newWidths[index] = width;
+                    return newWidths;
+                  });
+                  setTabPositions((prev) => {
+                    const newPositions = [...prev];
+                    // X pozisyonu HStack içindeki relative pozisyon
+                    // ScrollView padding (16px) zaten indicator'ın left'inde var
+                    newPositions[index] = x;
+                    return newPositions;
+                  });
+                }}
               >
-                <Text
-                  textAlign="center"
-                  fontSize={12}
-                  fontWeight={isActive ? '$bold' : '$normal'}
-                  color={isActive ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
-                  numberOfLines={1}
-                  flexShrink={0}
-                >
-                  {tab.title}
-                </Text>
-                {isActive && (
-                  <Box
-                    position="absolute"
-                    bottom={-1}
-                    left="15%"
-                    height={2}
-                    width="70%"
-                    borderRadius={999}
-                    bg={isDark ? '#FFFFFF' : '#000000'}
-                  />
-                )}
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                      },
+                      tabStyle,
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {tab.title}
+                  </Animated.Text>
+                </VStack>
               </Pressable>
             );
           })}
+
+          {/* Animated Indicator */}
+          {activeTabWidth > 0 && tabPositions.length === TABS.length && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: 2,
+                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                },
+                indicatorStyle,
+              ]}
+            />
+          )}
         </HStack>
-      </ScrollView>
+      </Animated.ScrollView>
     </Box>
   );
 };
 
-const ProfileScreen = ({ route }: ProfileScreenProps) => {
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-  const { user } = useAppStore();
-  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
-  const rootNavigation = useNavigation<any>();
-  const safeAreaTop = useSafeAreaValues('top');
-  const safeAreaBottom = useSafeAreaValues('bottom');
-  const insets = useSafeAreaInsets();
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  
-  // Bottom padding for FlatList content
-  const bottomPadding = useBottomOffset({ includeTabBar: true, extraPadding: 16 });
-  
-  // Route params'tan userId al, yoksa store'daki user.id'yi kullan
-  const routeUserId = route.params?.userId;
-  const targetUserId = routeUserId || user?.id;
-  
-  // Profile API hook
-  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(targetUserId);
-  
-  // Trust mutations
-  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
-  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
-  
-  // Inbox mutations
-  const sendGiftMutation = useSendGift();
-  const createSupportRequestMutation = useCreateSupportRequest();
-  const sendDirectMessageMutation = useSendDirectMessage();
-  
-  // Report mutation
-  const { mutate: reportUser, isPending: isReporting } = useReportUser();
-  
-  // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
-  const isOwnProfile = user?.id === targetUserId;
-  
-  // Active tab state
-  const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const listRef = useRef<FlatList<ListItem>>(null);
-  
+// Tab Page Component - Her tab için ayrı bir sayfa
+const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding, listHeaderComponent, onRefresh, refreshing }) => {
+
   // API hooks for each tab
-  // PERFORMANCE FIX: Only enable queries for the active tab to prevent unnecessary API calls
-  // This reduces network overhead and improves performance when switching tabs
-  const feedQuery = useUserPosts(targetUserId, 5, { enabled: activeTab === 'feed' });
-  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: activeTab === 'reviews' });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: activeTab === 'benchmarks' });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: activeTab === 'tips' });
-  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: activeTab === 'replies' });
+  const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: tabKey === 'benchmarks' });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: tabKey === 'tips' });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: tabKey === 'replies' });
   
   // Get active tab query
   const activeTabQuery = useMemo(() => {
-    switch (activeTab) {
+    switch (tabKey) {
       case 'feed': return feedQuery;
       case 'reviews': return reviewsQuery;
       case 'benchmarks': return benchmarksQuery;
@@ -392,16 +606,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       case 'replies': return repliesQuery;
       default: return feedQuery;
     }
-  }, [activeTab, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]);
+  }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]) as typeof feedQuery;
   
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
-    if (!activeTabQuery.data?.pages) return [];
+    if (tabKey === 'ladders') return [];
     
-    const allItems = activeTabQuery.data.pages.flatMap((page) => page?.items ?? []) ?? [];
-    const validItems = allItems.filter((item) => item?.id);
-    const uniqueItems = validItems.filter((item, index, self) => 
-      index === self.findIndex((t) => t?.id === item?.id)
+    const queryData = activeTabQuery.data as any;
+    if (!queryData?.pages) return [];
+    
+    const allItems = queryData.pages.flatMap((page: any) => page?.items ?? []) ?? [];
+    const validItems = allItems.filter((item: any) => item?.id);
+    const uniqueItems = validItems.filter((item: any, index: number, self: any[]) => 
+      index === self.findIndex((t: any) => t?.id === item?.id)
     );
     
     const mapped: MappedPost[] = [];
@@ -455,79 +672,225 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
     
     return mapped;
-  }, [activeTabQuery.data]);
+  }, [activeTabQuery.data, tabKey]);
   
-  // FlatList data: [TAB_BAR, ...posts] veya [TAB_BAR, LADDER_CONTENT]
-  const listData = useMemo<ListItem[]>(() => {
-    if (activeTab === 'ladders') {
-      return [
-        { type: 'TAB_BAR' },
-        { type: 'LADDER_CONTENT' },
-      ];
+  // Handle load more
+  const handleLoadMore = useCallback(() => {
+    if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
+      activeTabQuery.fetchNextPage();
     }
-    return [
-      { type: 'TAB_BAR' },
-      ...mappedPosts.map((post) => ({ type: 'POST' as const, id: post.id, data: post })),
-    ];
-  }, [mappedPosts, activeTab]);
+  }, [activeTabQuery]);
   
-  // Render item
-  const renderItem = useCallback(({ item }: { item: ListItem }) => {
-    if (item.type === 'TAB_BAR') {
-      return (
-        <TabsBar
-          activeTab={activeTab}
-          onChangeTab={(tab) => {
-            setActiveTab(tab);
-            // TAB_BAR zaten sticky olduğu için scroll yapmaya gerek yok
-          }}
-          isDark={isDark}
-        />
-      );
+  // Render post card
+  const renderPostCard = useCallback((postData: MappedPost) => {
+    switch (postData.type) {
+      case 'experience':
+        return <ExperiencePostCard data={postData.data} />;
+      case 'benchmark':
+        return <BenchmarkPostCard data={postData.data} />;
+      case 'tips':
+        return <TipsAndTricksPostCard data={postData.data} />;
+      case 'question':
+        return <QuestionPostCard data={postData.data} />;
+      case 'post':
+      default:
+        return <PostCard data={postData.data} />;
     }
-    
-    // Render LadderTab content
-    if (item.type === 'LADDER_CONTENT') {
-      return <LadderTab />;
-    }
-    
-    // Render post card
-    if (item.type !== 'POST') return null;
-    const postData = item.data;
-    
-    // Post card'ları padding ile sarmala
-    const renderPostCard = () => {
-      switch (postData.type) {
-        case 'experience':
-          return <ExperiencePostCard data={postData.data} />;
-        case 'benchmark':
-          return <BenchmarkPostCard data={postData.data} />;
-        case 'tips':
-          return <TipsAndTricksPostCard data={postData.data} />;
-        case 'question':
-          return <QuestionPostCard data={postData.data} />;
-        case 'post':
-        default:
-          return <PostCard data={postData.data} />;
-      }
-    };
-    
+  }, []);
+  
+  // Render LadderTab
+  if (tabKey === 'ladders') {
     return (
-      <Box px={16}>
-        {renderPostCard()}
+      <Box flex={1}>
+        <LadderTab />
       </Box>
     );
-  }, [activeTab, isDark, listData]);
+  }
+
+  // Dikey FlatList kullan - her tab kendi scroll'unu yönetir
+  return (
+    <FlatList
+      data={mappedPosts}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={listHeaderComponent}
+      ListEmptyComponent={
+        activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
+          <FeedSkeleton count={3} />
+        ) : (
+          <Box py={20} alignItems="center">
+            <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+              No content found yet.
+            </Text>
+          </Box>
+        )
+      }
+      renderItem={({ item }) => (
+        <Box px={16}>
+          {renderPostCard(item)}
+        </Box>
+      )}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={
+        activeTabQuery.isFetchingNextPage ? (
+          <Box py={20} alignItems="center">
+            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        ) : null
+      }
+      contentContainerStyle={{
+        paddingBottom: bottomPadding,
+      }}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing || false}
+            onRefresh={onRefresh}
+            tintColor={isDark ? '#FFFFFF' : '#000000'}
+            colors={isDark ? ['#FFFFFF'] : ['#000000']}
+          />
+        ) : undefined
+      }
+      showsVerticalScrollIndicator={true}
+      scrollEnabled={true}
+      nestedScrollEnabled={false}
+      bounces={false}
+      alwaysBounceVertical={false}
+      scrollEventThrottle={16}
+    />
+  );
+};
+
+const ProfileScreen = ({ route }: ProfileScreenProps) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const { user } = useAppStore();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+  const rootNavigation = useNavigation<any>();
+  const safeAreaTop = useSafeAreaValues('top');
+  const safeAreaBottom = useSafeAreaValues('bottom');
+  const insets = useSafeAreaInsets();
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
-  // Key extractor
-  const keyExtractor = useCallback((item: ListItem, index: number) => {
-    if (item.type === 'TAB_BAR') {
-      return 'tab-bar';
+  // Bottom padding for FlatList content
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
+  
+  // Route params'tan userId al, yoksa store'daki user.id'yi kullan
+  const routeUserId = route.params?.userId;
+  const targetUserId = routeUserId || user?.id;
+  
+  // Profile API hook
+  const { data: userProfile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useUserProfile(targetUserId);
+  
+  // Pull to refresh state
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Pull to refresh handler
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Profile'ı refresh et
+      await refetchProfile();
+      
+      // Tüm tab query'lerini refresh et (invalidate ederek)
+      // TabPage içindeki query'ler otomatik refresh olacak
+    } catch (error) {
+      console.error('[ProfileScreen] Refresh error:', error);
+    } finally {
+      setRefreshing(false);
     }
-    if (item.type === 'LADDER_CONTENT') {
-      return 'ladder-content';
+  }, [refetchProfile]);
+  
+  // Avatar URL kontrolü için log
+  React.useEffect(() => {
+    if (userProfile) {
+      console.log('[ProfileScreen] User Profile Avatar:', {
+        userId: userProfile.id,
+        name: userProfile.name,
+        avatar: userProfile.avatar,
+        hasAvatar: !!userProfile.avatar,
+        avatarLength: userProfile.avatar?.length || 0,
+      });
     }
-    return item.id || `post-${index}`;
+  }, [userProfile]);
+  
+  // Trust mutations
+  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
+  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
+  
+  // Inbox mutations
+  const sendGiftMutation = useSendGift();
+  const createSupportRequestMutation = useCreateSupportRequest();
+  const sendDirectMessageMutation = useSendDirectMessage();
+  
+  // Report mutation
+  const { mutate: reportUser, isPending: isReporting } = useReportUser();
+  
+  // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
+  const isOwnProfile = user?.id === targetUserId;
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<TabKey>('feed');
+  const contentFlatListRef = useRef<FlatList>(null);
+  const tabContainerRef = useRef<any>(null);
+  
+  // 🎯 CORE: Shared progress value for tab animations
+  const progress = useSharedValue(0);
+  
+  // Tab index'i bul
+  const getTabIndex = useCallback((tabKey: TabKey) => {
+    return TABS.findIndex(tab => tab.key === tabKey);
+  }, []);
+  
+  // Tab değiştiğinde Content FlatList'i scroll et
+  const handleTabChange = useCallback((tabKey: TabKey) => {
+    const index = getTabIndex(tabKey);
+    if (index !== -1 && contentFlatListRef.current) {
+      progress.value = withTiming(index, { duration: 300 });
+      setActiveTab(tabKey);
+      
+      contentFlatListRef.current.scrollToOffset({
+        offset: index * SCREEN_WIDTH,
+        animated: true,
+      });
+    }
+  }, [getTabIndex, progress]);
+  
+  // Content FlatList scroll handler - realtime progress güncelleme
+  // Indicator realtime hareket eder, tab değişmez
+  const handleContentScroll = useCallback(
+    (event: any) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const currentIndex = offsetX / SCREEN_WIDTH;
+      
+      // Progress realtime güncelle (indicator animasyonu için)
+      progress.value = currentIndex;
+    },
+    [progress]
+  );
+
+  // Content FlatList scroll end handler - snap sonrası sync
+  // Scroll tamamlandıktan sonra tab değişir
+  const handleContentScrollEnd = useCallback(
+    (event: any) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / SCREEN_WIDTH);
+      
+      // Progress snap sonrası tam sayıya yuvarla
+      progress.value = withTiming(index, { duration: 0 });
+      
+      // Active tab'ı güncelle (sadece scroll tamamlandıktan sonra)
+      const tabKey = TABS[index]?.key;
+      if (tabKey) {
+        setActiveTab(tabKey);
+      }
+    },
+    [progress]
+  );
+  
+  // Tab container width için callback
+  const handleTabContainerLayout = useCallback((width: number) => {
+    // Tab container width'i state'e kaydet (gerekirse)
   }, []);
   
   // Action button handlers
@@ -646,7 +1009,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           py={16}
         >
           <HStack alignItems="center" space="md">
-            <Feather name="share-2" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <ArrowUpTrayIcon size={20} color={isDark ? '#FFFFFF' : '#000000'} />
             <Text
               color={isDark ? '$textLight0' : '$textDark950'}
               fontSize="$md"
@@ -667,7 +1030,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           py={16}
         >
           <HStack alignItems="center" space="md">
-            <Feather name="flag" size={20} color={isDark ? '#FFFFFF' : '#000000'} />
+            <FlagIcon size={20} color={isDark ? '#FFFFFF' : '#000000'} />
             <Text
               color={isDark ? '$textLight0' : '$textDark950'}
               fontSize="$md"
@@ -688,7 +1051,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           py={16}
         >
           <HStack alignItems="center" space="md">
-            <Feather name="slash" size={20} color="#FF3040" />
+            <NoSymbolIcon size={20} color="#FF3040" />
             <Text
               color="#FF3040"
               fontSize="$md"
@@ -708,16 +1071,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     });
   }, [isOwnProfile, userProfile, isDark, handleShare, handleReport, handleBlock, openBottomSheet, closeBottomSheet, insets.bottom]);
   
-  // Handle load more
-  const handleLoadMore = useCallback(() => {
-    if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
-      activeTabQuery.fetchNextPage();
-    }
-  }, [activeTabQuery]);
-  
   // ListHeaderComponent: Banner + Profile Info
-  const renderProfileHeader = useCallback(() => {
+  const renderProfileHeader = useCallback((activeTab: TabKey, onChangeTab: (tab: TabKey) => void, isLoading: boolean): React.ReactElement | null => {
+    if (!userProfile && !isLoading) return null;
     if (!userProfile) return null;
+    
+    // TypeScript için: userProfile bu noktada kesinlikle tanımlı
+    const profile = userProfile;
     
     return (
       <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
@@ -728,7 +1088,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           position="relative"
         >
           <Image
-            source={toImageSource(userProfile.bannerUrl) || require('@/assets/banner/banner_01.png')}
+            source={toImageSource(profile.bannerUrl) || require('@/assets/banner/banner_01.png')}
             alt="Profile Banner"
             style={{ width: '100%', height: '100%' }}
             resizeMode="cover"
@@ -766,7 +1126,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               }}
               style={{ zIndex: 2000 }}
             >
-              <Feather name="chevron-left" size={24} color="#fff" />
+              <ChevronLeftIcon size={24} color="#fff" />
             </Pressable>
 
             <Pressable
@@ -779,7 +1139,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               }}
               style={{ zIndex: 2000 }}
             >
-              <Feather name="more-vertical" size={24} color="#fff" />
+              <EllipsisVerticalIcon size={24} color="#fff" />
             </Pressable>
           </Box>
         </Box>
@@ -798,8 +1158,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               flexShrink={0}
             >
               <Image
-                source={toImageSource(userProfile.avatar) || require('@/assets/avatar/ozan.png')}
-                alt={userProfile.name}
+                source={toImageSource(profile.avatar) || require('@/assets/avatar/default-useravatar.png') }
+                alt={profile.name}
                 w="100%"
                 h="100%"
               />
@@ -822,7 +1182,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     navigation.navigate('ProfileEdit');
                   }}
                 >
-                  <Feather name="edit-2" size={14} color="#000" />
+                  <PencilIcon size={14} color="#000" />
                   <Text
                     color="#000"
                     fontSize={10}
@@ -844,7 +1204,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handleSendTIPS}
                   >
-                    <Feather name="gift" size={14} color="#000" />
+                    <GiftIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -858,7 +1218,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handle1on1Request}
                   >
-                    <Feather name="headphones" size={14} color="#000" />
+                    <PhoneIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -872,7 +1232,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handleDM}
                   >
-                    <Feather name="message-circle" size={14} color="#000" />
+                    <ChatBubbleLeftIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -888,7 +1248,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       console.log('[ProfileScreen] Notification pressed');
                     }}
                   >
-                    <Feather name="bell" size={14} color="#000" />
+                    <BellIcon size={14} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -903,7 +1263,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     gap={2}
                     onPress={() => {
                       if (!targetUserId) return;
-                      if (userProfile.isTrusted) {
+                      if (profile.isTrusted) {
                         untrustUser(targetUserId);
                       } else {
                         trustUser(targetUserId);
@@ -912,17 +1272,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     disabled={isTrusting || isUntrusting}
                     opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
                   >
-                    <Feather
-                      name={userProfile.isTrusted ? "user-minus" : "user-plus"}
-                      size={14}
-                      color="#000"
-                    />
+                    {profile.isTrusted ? (
+                      <UserMinusIcon size={14} color="#000" />
+                    ) : (
+                      <UserPlusIcon size={14} color="#000" />
+                    )}
                     <Text
                       color="#000"
                       fontSize={10}
                       fontWeight="$semibold"
                     >
-                      {isTrusting ? "Ekleniyor..." : isUntrusting ? "Kaldırılıyor..." : (userProfile.isTrusted ? "Un Trust" : "Trust")}
+                      {isTrusting ? "Ekleniyor..." : isUntrusting ? "Kaldırılıyor..." : (profile.isTrusted ? "Un Trust" : "Trust")}
                     </Text>
                   </Pressable>
                 </>
@@ -938,17 +1298,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             fontSize={14}
             fontWeight="$bold"
           >
-            {userProfile.name}
+            {profile.name}
           </Text>
 
-          {userProfile.biography && (
+          {profile.biography && (
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
               fontSize={10}
               lineHeight={15}
               mt={2}
             >
-              {userProfile.biography}
+              {profile.biography}
             </Text>
           )}
 
@@ -959,7 +1319,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               fontSize={10}
               fontWeight="$bold"
             >
-              {userProfile.stats.posts}
+              {profile.stats.posts}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
@@ -990,7 +1350,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize={10}
                   fontWeight="$bold"
                 >
-                  {userProfile.stats.trust}
+                  {profile.stats.trust}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1023,7 +1383,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize={10}
                   fontWeight="$bold"
                 >
-                  {userProfile.stats.truster > 999 ? `${Math.floor(userProfile.stats.truster / 1000)}K` : userProfile.stats.truster}
+                  {profile.stats.truster > 999 ? `${Math.floor(profile.stats.truster / 1000)}K` : profile.stats.truster}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1061,7 +1421,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               alignItems="center"
               onPress={() => {
                 navigation.navigate('InventoryList', {
-                  userId: userProfile.id,
+                  userId: profile.id,
                 });
               }}
             >
@@ -1071,134 +1431,188 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 fontWeight="$semibold"
                 textAlign="center"
               >
-                {userProfile.name}'s Inventory
+                {profile.name}'s Inventory
               </Text>
             </Pressable>
           </Box>
         </Box>
 
         {/* Badge Items */}
-        {userProfile.badges && userProfile.badges.length > 0 && (
-          <Box mt={6} px={15}>
+        {isProfileLoading ? (
+          <Box mt={6} px={15} pb={16}>
             <Box
               borderRadius={5}
               p={14}
               h={130}
             >
               <HStack space="md" justifyContent="space-between">
-                {userProfile.badges.slice(0, 4).map((badge) => (
-                  <VStack key={badge.id} space="xs" alignItems="center">
+                {[0, 1, 2, 3].map((index) => (
+                  <VStack key={index} space="xs" alignItems="center" flex={1}>
                     <Box
                       w={70}
                       h={70}
                       borderRadius={5}
-                      borderWidth={0}
-                      overflow="hidden"
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <Image
-                        source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
-                        alt={badge.title}
-                        w={60}
-                        h={60}
-                        resizeMode="contain"
-                      />
-                    </Box>
-                    <Text
-                      color={isDark ? '$textDark400' : '#000000'}
-                      fontSize={8}
-                      fontWeight="$bold"
-                      textAlign="center"
-                    >
-                      {badge.title}
-                    </Text>
+                      bg={isDark ? '#404040' : '#E9E9E9'}
+                    />
+                    <Box
+                      w={50}
+                      h={10}
+                      borderRadius={3}
+                      bg={isDark ? '#404040' : '#E9E9E9'}
+                    />
                   </VStack>
                 ))}
               </HStack>
-              <Pressable
-                onPress={() => {
-                  navigation.navigate('Collections');
-                }}
-              >
-                <Text
-                  color={isDark ? '$textDark400' : '$textLight600'}
-                  fontSize={8}
-                  textAlign="center"
-                  mt="$4"
-                  fontWeight="$regular"
-                >
-                  See More Collections
-                </Text>
-              </Pressable>
+              <Box
+                w={120}
+                h={12}
+                borderRadius={3}
+                bg={isDark ? '#404040' : '#E9E9E9'}
+                alignSelf="center"
+                mt="$4"
+              />
             </Box>
           </Box>
+        ) : (
+          profile.badges && profile.badges.length > 0 && (
+            <Box mt={6} px={15} pb={16}>
+              <Box
+                borderRadius={5}
+                p={14}
+                h={130}
+              >
+                <HStack space="md" justifyContent="space-between">
+                  {profile.badges.slice(0, 4).map((badge) => (
+                    <VStack key={badge.id} space="xs" alignItems="center">
+                      <Box
+                        w={70}
+                        h={70}
+                        borderRadius={5}
+                        borderWidth={0}
+                        overflow="hidden"
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        <Image
+                          source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                          alt={badge.title}
+                          w={60}
+                          h={60}
+                          resizeMode="contain"
+                        />
+                      </Box>
+                      <Text
+                        color={isDark ? '$textDark400' : '#000000'}
+                        fontSize={8}
+                        fontWeight="$bold"
+                        textAlign="center"
+                      >
+                        {badge.title}
+                      </Text>
+                    </VStack>
+                  ))}
+                </HStack>
+                <Pressable
+                  onPress={() => {
+                    navigation.navigate('Collections');
+                  }}
+                >
+                  <Text
+                    color={isDark ? '$textDark400' : '$textLight600'}
+                    fontSize={10}
+                    textAlign="center"
+                    mt="$4"
+                    fontWeight="$regular"
+                  >
+                    See More Collections
+                  </Text>
+                </Pressable>
+              </Box>
+            </Box>
+          )
         )}
       </Box>
     );
   }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet]);
   
+  // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
+  // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
+  const profileHeader = useMemo(() => {
+    return renderProfileHeader(activeTab, handleTabChange, isProfileLoading);
+  }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading]);
+  
   if (isProfileLoading) {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
-          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-        </Box>
-      </SafeAreaView>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
     );
   }
   
   if (profileError || !userProfile) {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
-          <Text color="#CE4A4A" fontSize="$sm">
-            {profileError?.message || 'Profil yüklenirken bir hata oluştu'}
-          </Text>
-        </Box>
-      </SafeAreaView>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
+        <Text color="#CE4A4A" fontSize="$sm">
+          {profileError?.message || 'Profil yüklenirken bir hata oluştu'}
+        </Text>
+      </Box>
     );
   }
-  
+
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        <FlatList
-          ref={listRef}
-          data={listData}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          ListHeaderComponent={renderProfileHeader}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListEmptyComponent={
-            // UX FIX: Show skeleton loader only when loading and no cached data
-            activeTabQuery.isLoading && !activeTabQuery.data?.pages?.[0] ? (
-              <FeedSkeleton count={3} />
-            ) : (
-              <Box py={20} alignItems="center">
-                <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-                  Henüz içerik bulunmuyor.
-                </Text>
-              </Box>
-            )
-          }
-          ListFooterComponent={
-            activeTabQuery.isFetchingNextPage ? (
-              <Box py={20} alignItems="center">
-                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-              </Box>
-            ) : null
-          }
-          contentContainerStyle={{ paddingBottom: bottomPadding }}
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      {/* Üst Kısım: Sabit (Profile Header + TabsBar) */}
+      <Box>
+        {profileHeader}
+        <TabsBar 
+          activeTab={activeTab} 
+          onChangeTab={handleTabChange} 
+          isDark={isDark}
+          progress={progress}
+          tabContainerRef={tabContainerRef}
+          onTabContainerLayout={handleTabContainerLayout}
         />
       </Box>
-    </SafeAreaView>
+      
+      {/* Alt Kısım: Yatay Kaydırılabilir Tab İçerikleri */}
+      <Box flex={1}>
+        <FlatList
+          ref={contentFlatListRef}
+          data={TABS}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={handleContentScroll}
+          onMomentumScrollEnd={handleContentScrollEnd}
+          keyExtractor={(item) => item.key}
+          getItemLayout={(data, index) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
+            index,
+          })}
+          scrollEnabled={true}
+          nestedScrollEnabled={false}
+          renderItem={({ item }) => (
+            <Box width={SCREEN_WIDTH} flex={1}>
+              <TabPage
+                tabKey={item.key}
+                targetUserId={targetUserId || ''}
+                isDark={isDark}
+                bottomPadding={bottomPadding}
+                listHeaderComponent={null}
+                onRefresh={handleRefresh}
+                refreshing={refreshing}
+              />
+            </Box>
+          )}
+          removeClippedSubviews={false}
+          windowSize={5}
+          maxToRenderPerBatch={2}
+          initialNumToRender={2}
+        />
+      </Box>
+    </Box>
   );
 };
 

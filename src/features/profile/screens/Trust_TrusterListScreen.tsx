@@ -21,9 +21,9 @@ import { TrustUser as ApiTrustUser, TrusterUser as ApiTrusterUser } from '@/src/
 import { TrustUserCard, TrustUserCardUser } from '../components/TrustUserCard';
 import { SuggestionCard } from '../components/SuggestionCard';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { useTrustList, useTrusterList } from '../api/hooks';
+import { useTrustList, useTrusterList, useUserProfile } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, DEFAULT_USER_AVATAR } from '@/src/utils';
 
 type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type TrustListScreenRouteProp = {
@@ -55,6 +55,9 @@ export const Trust_TrusterListScreen = () => {
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+
+    // Get user profile for header title
+    const { data: userProfile } = useUserProfile(userId);
 
     // Debounce search query - Trust sekmesi için API'ye istek atmadan önce 500ms bekle
     useEffect(() => {
@@ -297,7 +300,7 @@ export const Trust_TrusterListScreen = () => {
             <VStack flex={1} bg={isDark ? '#000' : '#FAFAFA'}>
                 {/* Header */}
                 <Header
-                    title="Micheal Clark"
+                    title={userProfile?.name || 'Loading...'}
                     showBackButton
                     onBackPress={() => navigation.goBack()}
                 />
@@ -363,7 +366,7 @@ export const Trust_TrusterListScreen = () => {
                         {/* Search Bar */}
                         <HStack
                             alignItems="center"
-                            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                            bg={isDark ? '#2A2A2A' : '#F2F2F2'}
                             borderWidth={1}
                             borderColor="#E9E9E9"
                             borderRadius={23}
@@ -414,17 +417,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 3'
                                     }
                                 ]}
@@ -479,17 +482,17 @@ export const Trust_TrusterListScreen = () => {
                                 avatars={[
                                     {
                                         id: '1',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 1'
                                     },
                                     {
                                         id: '2',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 2'
                                     },
                                     {
                                         id: '3',
-                                        source: require('@/assets/avatar/ozan.png'),
+                                        source: DEFAULT_USER_AVATAR,
                                         alt: 'User 3'
                                     }
                                 ]}

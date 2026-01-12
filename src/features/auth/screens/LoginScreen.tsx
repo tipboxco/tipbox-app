@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { CheckCircle } from 'lucide-react-native';
+import { CheckCircle, Mail, Eye, EyeOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
-import { useLogin } from '../api/hooks';
+import { useLogin, useGoogleLogin } from '../api/hooks';
+import { googleService } from '@/src/services/GoogleService';
+import { CustomToast } from '@/src/components/CustomToast';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -18,11 +21,18 @@ export const LoginScreen = () => {
   const { loginAsGuest } = useAppStore();
   const toast = useToast();
   const loginMutation = useLogin();
+  const googleLoginMutation = useGoogleLogin();
+  const insets = useSafeAreaInsets();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  
+  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
+  const backgroundColor = '#FFFFFF';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = (text: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -58,16 +68,15 @@ export const LoginScreen = () => {
         // Başarılı toast göster
         toast.show({
           placement: 'top',
+          duration: 3000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Giriş Başarılı</ToastTitle>
-                <ToastDescription>
-                    Hoş geldiniz, {result.fullName || result.email}!
-                </ToastDescription>
-              </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title={`Hoş geldin ${result.fullName || result.email?.split('@')[0] || 'Kullanıcı'}!`}
+                action="success"
+                duration={3000}
+              />
             );
           },
         });
@@ -88,18 +97,20 @@ export const LoginScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'Giriş işlemi sırasında bir hata oluştu';
+          'Giriş yapılırken bir hata oluştu';
 
         toast.show({
           placement: 'top',
+          duration: 4000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Giriş Hatası</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Giriş başarısız"
+                description={errorMessage}
+                action="error"
+                duration={4000}
+              />
             );
           },
         });
@@ -109,9 +120,9 @@ export const LoginScreen = () => {
 
   const handleGuestLogin = async () => {
     try {
-      console.log('Misafir girişi başlatılıyor...');
+      console.log('Starting guest login...');
       await loginAsGuest();
-      console.log('Misafir girişi tamamlandı!');
+      console.log('Guest login completed!');
       
       // Ana sayfaya yönlendir
       navigation.reset({
@@ -125,7 +136,7 @@ export const LoginScreen = () => {
         }],
       });
     } catch (error) {
-      console.error('Misafir girişi hatası:', error);
+      console.error('Guest login error:', error);
     }
   };
 
@@ -133,14 +144,86 @@ export const LoginScreen = () => {
     navigation.navigate('ForgotPassword' as never);
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setIsGoogleLoading(true);
+
+      // Google OAuth ile giriş yap
+      const googleResult = await googleService.login();
+
+      // Backend'e ID token gönder
+      await googleLoginMutation.mutateAsync(googleResult.idToken);
+
+      // Başarılı toast göster
+      toast.show({
+        placement: 'top',
+        duration: 3000,
+        render: ({ id }) => {
+          return (
+            <CustomToast
+              id={id}
+              title={`Hoş geldin ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'Kullanıcı'}!`}
+              action="success"
+              duration={3000}
+            />
+          );
+        },
+      });
+
+      // RootNavigator otomatik olarak isAuthenticated=true olduğunda
+      // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
+    } catch (error: any) {
+      console.error('[LoginScreen] ❌ Google login error:', error);
+
+      // Hata toast göster
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.message ||
+        'Google ile giriş yapılırken bir hata oluştu';
+
+      toast.show({
+        placement: 'top',
+        duration: 4000,
+        render: ({ id }) => {
+          return (
+            <CustomToast
+              id={id}
+              title="Google ile giriş başarısız"
+              description={errorMessage}
+              action="error"
+              duration={4000}
+            />
+          );
+        },
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-        p="$4"
-      >
-      <VStack flex={1} space="xl" pt="$16">
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Ana İçerik */}
+      <View style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          p="$4"
+        >
+        <VStack flex={1} space="xl" pt="$16">
         <Text
           fontSize="$2xl"
           fontWeight="$bold"
@@ -171,7 +254,7 @@ export const LoginScreen = () => {
               alignItems="center"
             >
               <InputField 
-                placeholder="E-posta adresiniz"
+                placeholder="Your email address"
                 value={email}
                 onChangeText={validateEmail}
               />
@@ -197,18 +280,20 @@ export const LoginScreen = () => {
               alignItems="center"
             >
               <InputField 
-                placeholder="Şifreniz" 
-                secureTextEntry
+                placeholder="Your password" 
+                secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={validatePassword}
               />
-              <Icon 
-                as={CheckCircle} 
-                color={isPasswordValid ? "$success500" : "$gray400"} 
-                size="md" 
-                mr="$2"
-                alignSelf="center"
-              />
+              <Pressable onPress={() => setShowPassword(!showPassword)}>
+                <Icon 
+                  as={showPassword ? EyeOff : Eye} 
+                  color={isDark ? '$textDark300' : '$textLight600'} 
+                  size="md" 
+                  mr="$2"
+                  alignSelf="center"
+                />
+              </Pressable>
             </Input>
             <Box flexDirection="row" justifyContent="flex-end" mt="$1">
               <Text
@@ -223,17 +308,8 @@ export const LoginScreen = () => {
           </FormControl>
         </VStack>
 
-        <Text
-          fontSize="$xs"
-          color={isDark ? '$textDark300' : '$textLight600'}
-          textAlign="center"
-          mt="$4"
-        >
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </Text>
-
         <Button
-          bg="$yellow400"
+          bg="$buttonPrimary"
           py="$1"
           rounded="$lg"
           mt="$4"
@@ -242,7 +318,7 @@ export const LoginScreen = () => {
           disabled={!isEmailValid || !isPasswordValid || loginMutation.isPending}
         >
           <ButtonText color="$textLight900">
-            {loginMutation.isPending ? 'Giriş yapılıyor...' : 'Confirm'}
+            {loginMutation.isPending ? 'Signing in...' : 'Confirm'}
           </ButtonText>
         </Button>
 
@@ -254,7 +330,31 @@ export const LoginScreen = () => {
           rounded="$lg"
           mt="$2"
         >
-          <ButtonText>Misafir Olarak Devam Et</ButtonText>
+          <ButtonText>Continue as Guest</ButtonText>
+        </Button>
+
+        <HStack w="$full" alignItems="center" justifyContent="center" space="md" mt="$4">
+          <Box flex={1} h={1} bg={isDark ? '$textDark300' : '$textLight600'} />
+          <Text color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold" fontSize="$xs">or</Text>
+          <Box flex={1} h={1} bg={isDark ? '$textDark300' : '$textLight600'} />
+        </HStack>
+
+        <Button
+          variant="outline"
+          h={44}
+          rounded="$lg"
+          borderColor="$gray400"
+          borderWidth={1}
+          onPress={handleGoogleLogin}
+          isDisabled={isGoogleLoading || googleLoginMutation.isPending}
+          opacity={isGoogleLoading || googleLoginMutation.isPending ? 0.5 : 1}
+        >
+          <HStack space="md" alignItems="center">
+            <Icon as={Mail} size="md" color={isDark ? '$textDark300' : '$textLight600'} />
+            <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">
+              {isGoogleLoading || googleLoginMutation.isPending ? 'Signing in...' : 'Continue with Google'}
+            </ButtonText>
+          </HStack>
         </Button>
 
         <Text
@@ -262,13 +362,27 @@ export const LoginScreen = () => {
           color={isDark ? '$textDark300' : '$textLight600'}
           textAlign="center"
           mt="auto"
-          mb="$4"
+          mb={insets.bottom + 16}
           onPress={() => navigation.navigate('Register')}
         >
-          Hesabınız yok mu? Sign Up
+          Don't have an account? Sign Up
         </Text>
       </VStack>
       </Box>
-    </SafeAreaView>
+      </View>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };

@@ -16,7 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -71,7 +71,7 @@ const mockMessageHistory: MessageDetailItem[] = [
     timestamp: '10:30',
     isSent: false,
     senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+    senderAvatar: DEFAULT_USER_AVATAR,
   },
   {
     id: '2',
@@ -85,7 +85,7 @@ const mockMessageHistory: MessageDetailItem[] = [
     timestamp: '10:33',
     isSent: false,
     senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+    senderAvatar: DEFAULT_USER_AVATAR,
   },
   {
     id: '4',
@@ -99,7 +99,7 @@ const mockMessageHistory: MessageDetailItem[] = [
     timestamp: '10:36',
     isSent: false,
     senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
+    senderAvatar: DEFAULT_USER_AVATAR,
   },
   {
     id: '6',
@@ -594,7 +594,7 @@ const MessageDetailScreen: React.FC = () => {
           // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
           setActiveThreadId(currentRecipientUserId);
         } else {
-          Alert.alert('Hata', 'Sohbet başlatılamadı. Lütfen tekrar deneyin.');
+          Alert.alert('Error', 'Failed to start chat. Please try again.');
         }
       }
     };
@@ -868,12 +868,12 @@ const MessageDetailScreen: React.FC = () => {
 
   const handleThreadJoinError = useCallback((error: { threadId: string; reason: string }) => {
     console.error('[MessageDetail] Thread join error:', error.reason);
-    Alert.alert('Hata', `Thread'e katılamadı: ${error.reason}`);
+    Alert.alert('Error', `Failed to join thread: ${error.reason}`);
   }, []);
 
   const handleMessageSendError = useCallback((error: { reason: string }) => {
     console.error('[MessageDetail] Message send error:', error.reason);
-    Alert.alert('Hata', `Mesaj gönderilemedi: ${error.reason}`);
+    Alert.alert('Error', `Failed to send message: ${error.reason}`);
   }, []);
 
   // Typing indicator handler
@@ -982,7 +982,7 @@ const MessageDetailScreen: React.FC = () => {
   // Bu fonksiyon handleSupportRequestAccepted'tan önce tanımlanmalı
   const handleGoToSupportChat = useCallback((supportThreadId: string, requestId: string) => {
     if (!supportThreadId) {
-      Alert.alert('Hata', 'Support thread ID bulunamadı');
+      Alert.alert('Error', 'Support thread ID not found');
       return;
     }
 
@@ -997,12 +997,12 @@ const MessageDetailScreen: React.FC = () => {
     // Şimdilik params'dan gelen bilgileri kullanıyoruz
     const expertName = params.senderName || 'Unknown';
     const expertTitle = params.senderTitle || '';
-    const expertAvatar = params.senderAvatar || require('@/assets/avatar/ozan.png');
+    const expertAvatar = params.senderAvatar || DEFAULT_USER_AVATAR;
     
     // Mevcut kullanıcının bilgileri (user store'dan alınabilir)
     const userName = user?.fullName || 'You';
     const userTitle = ''; // User interface'inde title yok
-    const userAvatar = user?.avatar ? toImageSource(user.avatar) : require('@/assets/avatar/ozan.png');
+    const userAvatar = user?.avatar ? toImageSource(user.avatar) : DEFAULT_USER_AVATAR;
 
     console.log('[MessageDetail] 🔗 Navigating to support chat:', { 
       threadId: supportThreadId, 
@@ -1232,7 +1232,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number, message?: string) => {
     if (!user?.id) {
-      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      Alert.alert('Error', 'User information not found');
       return;
     }
 
@@ -1242,21 +1242,21 @@ const MessageDetailScreen: React.FC = () => {
     const finalRecipientUserId = effectiveRecipientUserId || routeParams.recipientUserId;
 
     if (!finalRecipientUserId) {
-      Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı. Lütfen mesaj detayından tekrar deneyin.');
+      Alert.alert('Error', 'Recipient user information not found. Please try again from message detail.');
       console.error('[MessageDetail] recipientUserId not found for send tips:', { routeParams, effectiveRecipientUserId });
       return;
     }
 
     // Amount validation (minimum 0.01)
     if (amount <= 0 || amount < 0.01) {
-      Alert.alert('Hata', 'TIPS miktarı en az 0.01 olmalıdır');
+      Alert.alert('Error', 'TIPS amount must be at least 0.01');
       return;
     }
 
     // Message validation (boş string olamaz)
     const finalMessage = message?.trim() || '';
     if (finalMessage.length === 0) {
-      Alert.alert('Hata', 'Mesaj boş olamaz');
+      Alert.alert('Error', 'Message cannot be empty');
       return;
     }
 
@@ -1281,7 +1281,7 @@ const MessageDetailScreen: React.FC = () => {
       {
         onSuccess: () => {
           console.log('[MessageDetail] ✅ TIPS sent successfully');
-          Alert.alert('Başarılı', 'TIPS başarıyla gönderildi');
+          Alert.alert('Success', 'TIPS sent successfully');
           closeBottomSheet();
         },
         onError: (error: any) => {
@@ -1322,7 +1322,7 @@ const MessageDetailScreen: React.FC = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
         keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar
         keyboardBlurBehavior: 'restore',
@@ -1334,7 +1334,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Send Support Request
   const handleSendSupport = useCallback((supportType: string, message: string, amount: number) => {
     if (!user?.id) {
-      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      Alert.alert('Error', 'User information not found');
       return;
     }
 
@@ -1344,7 +1344,7 @@ const MessageDetailScreen: React.FC = () => {
     const finalRecipientUserId = effectiveRecipientUserId || routeParams.recipientUserId;
 
     if (!finalRecipientUserId) {
-      Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı. Lütfen mesaj detayından tekrar deneyin.');
+      Alert.alert('Error', 'Recipient user information not found. Please try again from message detail.');
       console.error('[MessageDetail] recipientUserId not found:', { routeParams, effectiveRecipientUserId });
       return;
     }
@@ -1360,13 +1360,13 @@ const MessageDetailScreen: React.FC = () => {
 
     // Amount validation
     if (amount <= 0) {
-      Alert.alert('Hata', 'TIPS miktarı 0\'dan büyük olmalıdır');
+      Alert.alert('Error', 'TIPS amount must be greater than 0');
       return;
     }
 
     // Message validation
     if (!message || message.trim().length === 0) {
-      Alert.alert('Hata', 'Mesaj boş olamaz');
+      Alert.alert('Error', 'Message cannot be empty');
       return;
     }
 
@@ -1413,11 +1413,11 @@ const MessageDetailScreen: React.FC = () => {
             safeScrollToEnd(true);
           }, 100);
 
-          Alert.alert('Başarılı', 'Destek talebi başarıyla gönderildi');
+          Alert.alert('Success', 'Support request sent successfully');
           closeBottomSheet();
         },
         onError: (error) => {
-          Alert.alert('Hata', error.message || 'Destek talebi gönderilirken bir hata oluştu');
+          Alert.alert('Error', error.message || 'An error occurred while sending the support request');
         },
       }
     );
@@ -1449,7 +1449,7 @@ const MessageDetailScreen: React.FC = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true, // Content boyutuna göre dinamik height
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
         keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar (klavye üzerinde)
         keyboardBlurBehavior: 'restore', // Klavye kapandığında eski haline döner
@@ -1468,7 +1468,7 @@ const MessageDetailScreen: React.FC = () => {
     }
 
     if (!user?.id) {
-      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      Alert.alert('Error', 'User information not found');
       return;
     }
 
@@ -1481,7 +1481,7 @@ const MessageDetailScreen: React.FC = () => {
     const effectiveThreadId = threadId || finalRecipientUserId;
     
     if (!effectiveThreadId || !finalRecipientUserId) {
-      Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı.');
+      Alert.alert('Error', 'Recipient user information not found.');
       return;
     }
 
@@ -1545,14 +1545,14 @@ const MessageDetailScreen: React.FC = () => {
               console.error('[MessageDetail] ❌ Message send error:', error);
               // Hata durumunda mesajı geri al
               setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
-              Alert.alert('Hata', error.message || 'Mesaj gönderilirken bir hata oluştu');
+              Alert.alert('Error', error.message || 'An error occurred while sending the message');
             },
           }
         );
       } else {
         // finalRecipientUserId yoksa optimistic mesajı geri al
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
-        Alert.alert('Hata', 'Alıcı kullanıcı bilgisi bulunamadı');
+        Alert.alert('Error', 'Recipient user information not found');
       }
     }
   }, [user?.id, threadId, effectiveRecipientUserId, route, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation, queryClient, refetchMessages, scrollByMessageHeight]);
@@ -1590,7 +1590,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Accept Support Request
   const handleAcceptSupportRequest = useCallback((requestId: string) => {
     if (!requestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
@@ -1604,7 +1604,7 @@ const MessageDetailScreen: React.FC = () => {
       acceptSupportRequestMutation.mutate(requestId, {
         onSuccess: (data) => {
           console.log('[MessageDetail] ✅ Support request accepted, threadId:', data.threadId);
-          Alert.alert('Başarılı', 'Destek talebi kabul edildi');
+          Alert.alert('Success', 'Support request accepted');
           // Support thread'e yönlendir
           if (data.threadId) {
             handleGoToSupportChat(data.threadId, requestId);
@@ -1612,7 +1612,7 @@ const MessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[MessageDetail] ❌ Support request accept error:', error);
-          Alert.alert('Hata', error.message || 'Destek talebi kabul edilemedi');
+          Alert.alert('Error', error.message || 'Support request could not be accepted');
         },
       });
     }
@@ -1621,7 +1621,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Reject Support Request
   const handleRejectSupportRequest = useCallback((requestId: string) => {
     if (!requestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
@@ -1644,11 +1644,11 @@ const MessageDetailScreen: React.FC = () => {
               rejectSupportRequestMutation.mutate(requestId, {
                 onSuccess: () => {
                   console.log('[MessageDetail] ✅ Support request rejected');
-                  Alert.alert('Başarılı', 'Destek talebi reddedildi');
+                  Alert.alert('Success', 'Support request rejected');
                 },
                 onError: (error: any) => {
                   console.error('[MessageDetail] ❌ Support request reject error:', error);
-                  Alert.alert('Hata', error.message || 'Destek talebi reddedilemedi');
+                  Alert.alert('Error', error.message || 'Support request could not be rejected');
                 },
               });
             }
@@ -1661,7 +1661,7 @@ const MessageDetailScreen: React.FC = () => {
   // Handle Cancel Support Request
   const handleCancelSupportRequest = useCallback((requestId: string) => {
     if (!requestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
@@ -1684,11 +1684,11 @@ const MessageDetailScreen: React.FC = () => {
               cancelSupportRequestMutation.mutate(requestId, {
                 onSuccess: () => {
                   console.log('[MessageDetail] ✅ Support request canceled');
-                  Alert.alert('Başarılı', 'Destek talebi iptal edildi');
+                  Alert.alert('Success', 'Support request cancelled');
                 },
                 onError: (error: any) => {
                   console.error('[MessageDetail] ❌ Support request cancel error:', error);
-                  Alert.alert('Hata', error.message || 'Destek talebi iptal edilemedi');
+                  Alert.alert('Error', error.message || 'Support request could not be cancelled');
                 },
               });
             }
@@ -1979,7 +1979,7 @@ const MessageDetailScreen: React.FC = () => {
             <Image
               source={
                 toImageSource(item.senderAvatar || params.senderAvatar) ||
-                require('@/assets/avatar/ozan.png')
+                DEFAULT_USER_AVATAR
               }
               alt={item.senderName || params.senderName || 'User'}
               width={24}
@@ -2191,7 +2191,7 @@ const MessageDetailScreen: React.FC = () => {
             <MessageInput
               onSendMessage={handleSendMessage}
               onAddImage={() => console.log('Görsel eklenecek')}
-              placeholder="Mesajınızı yazın..."
+              placeholder="Type your message..."
               threadId={threadId}
               onTypingStart={handleTypingStart}
               onTypingStop={handleTypingStop}

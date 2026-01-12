@@ -7,7 +7,7 @@ export const mock_tips_and_tricks_posts: TipsAndTricksPost[] = [
       id: '1',
       name: 'John Doe',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '1',
@@ -38,7 +38,7 @@ export const mock_tips_and_tricks_posts: TipsAndTricksPost[] = [
       id: '2',
       name: 'Jane Smith',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '2',
@@ -72,7 +72,7 @@ export const mock_tips_and_tricks_posts: TipsAndTricksPost[] = [
       id: '3',
       name: 'Jane Smith',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '3',

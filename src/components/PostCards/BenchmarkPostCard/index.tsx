@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { Platform } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+// Heroicons imports
+import {
+  EllipsisHorizontalIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import { PostContextMenu } from '@/src/components/PostContextMenu';
+import {
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import { useNavigation } from '@react-navigation/native';
 import { toImageSource } from '@/src/utils';
@@ -79,7 +92,6 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<any>();
-    const [isTranslated, setIsTranslated] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -194,9 +206,15 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                             {data.user.title}
                         </Text>
                     </VStack>
-                    <Pressable>
-                        <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
-                    </Pressable>
+                    <PostContextMenu
+                        postId={data.id}
+                        postContent={data.content}
+                        postAuthorName={data.user.name}
+                    >
+                        <Pressable>
+                            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+                        </Pressable>
+                    </PostContextMenu>
                 </HStack>
             </VStack>
 
@@ -217,27 +235,6 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                     </Text>
                 </VStack>
             </Pressable>
-
-            {/* Translate Button */}
-            <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                <Pressable onPress={() => setIsTranslated(!isTranslated)}>
-                    <HStack alignItems="center" space="xs">
-                        <Image
-                            source={require('@/assets/translate.png')}
-                            alt="translate"
-                            width={16}
-                            height={16}
-                        />
-                        <Text
-                            color="#829905"
-                            fontSize={10}
-                            textDecorationLine="underline"
-                        >
-                            {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-                        </Text>
-                    </HStack>
-                </Pressable>
-            </Box>
 
             {/* Product Comparison */}
             <Pressable onPress={() => {
@@ -277,7 +274,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
             {/* Stats */}
             <HStack
                 px={12}
-                py={8}
+                py={16}
                 borderRightWidth={1}
                 borderLeftWidth={1}
                 borderBottomWidth={1}
@@ -289,12 +286,11 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                 <HStack>
                     <Pressable onPress={handleLike}>
                     <HStack mr={10} alignItems="center">
-                            <Feather
-                                name="heart"
-                                size={24}
-                                color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                                fill={isLiked ? '#FF3040' : 'none'}
-                            />
+                            {isLiked ? (
+                                <HeartIconSolid width={24} height={24} color="#FF3040" />
+                            ) : (
+                                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
                             <AnimatedCounter
                                 value={likesCount}
                                 color={isDark ? '$textDark50' : '#000'}
@@ -305,7 +301,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                     </Pressable>
                     <Pressable onPress={handleComment}>
                     <HStack mr={10} alignItems="center">
-                        <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+                        <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <AnimatedCounter
                                 value={commentsCount}
                                 color={isDark ? '$textDark50' : '#000'}
@@ -316,7 +312,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                     </Pressable>
                     <Pressable onPress={handleShare}>
                     <HStack mr={10} alignItems="center">
-                        <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+                        <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <AnimatedCounter
                                 value={sharesCount}
                                 color={isDark ? '$textDark50' : '#000'}
@@ -327,12 +323,11 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
                     <HStack mr={10} alignItems="center">
-                            <Feather
-                                name="bookmark"
-                                size={24}
-                                color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                                fill={isBookmarked ? '#829905' : 'none'}
-                            />
+                            {isBookmarked ? (
+                                <BookmarkIconSolid width={24} height={24} color="#829905" />
+                            ) : (
+                                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
                             <AnimatedCounter
                                 value={bookmarksCount}
                                 color={isDark ? '$textDark50' : '#000'}

@@ -1,12 +1,10 @@
 // PERFORMANCE FIX: Removed Promise polyfill - Hermes engine already supports Promise natively
 // This reduces bundle size and startup time
 import React, { useEffect, useMemo } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import Navigation from '@/src/navigation';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { QueryProvider } from '@/src/providers/QueryProvider';
 import { useAuth } from '@/src/providers/AuthProvider';
@@ -19,29 +17,8 @@ import { TranslationCacheService } from '@/src/services/TranslationCacheService'
 // Prevents showing blank screen during initialization
 SplashScreen.preventAutoHideAsync();
 
-// PERFORMANCE FIX: Memoize status bar style to prevent unnecessary re-renders
-// CRITICAL: SafeAreaView backgroundColor transparent - ekranın kendi background'ı görünsün
-const StatusBarComponent = React.memo<{ isDark: boolean }>(({ isDark }) => (
-  <>
-    <SafeAreaView 
-      edges={['top']} 
-      style={{ 
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        backgroundColor: 'transparent' // CRITICAL: Transparent - ekranın background'ı görünsün
-      }} 
-    />
-    <StatusBar 
-      style={isDark ? 'light' : 'dark'} 
-      backgroundColor="transparent" // CRITICAL: Transparent - ekranın background'ı görünsün
-      translucent={true} // Android için translucent mode
-    />
-  </>
-));
-StatusBarComponent.displayName = 'StatusBarComponent';
+// FIX: SafeAreaView'ler NavigationContainer içine taşındı (src/navigation/index.tsx)
+// Bu sayede Drawer SafeAreaView'lerin üstünde görünür
 
 /**
  * ARCHITECTURE FIX: AppInner moved inside AppProviders
@@ -110,10 +87,9 @@ const AppInner = () => {
   }, [isAuthReady]);
 
   return (
-    <>
-      <StatusBarComponent isDark={isDark} />
+    <View style={{ flex: 1 }}>
       <Navigation />
-    </>
+    </View>
   );
 };
 

@@ -127,10 +127,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // AppState foreground değilse bağlanma
     if (!isForeground) {
-      console.log('[SocketProvider] ⏳ App in background, socket will not connect');
       // Eğer bağlıysa disconnect et
       if (isConnected) {
-        console.log('[SocketProvider] 🔌 Disconnecting socket (app in background)');
         disconnect();
       }
       return;
@@ -139,12 +137,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     // Tüm koşullar sağlandı: Auth ready + Authenticated + Foreground
     // Bağlantı zaten varsa tekrar bağlanma
     if (isConnected) {
-      console.log('[SocketProvider] ✅ Already connected, skipping connection attempt');
       return;
     }
 
     if (isConnecting) {
-      console.log('[SocketProvider] ⏳ Already connecting, skipping duplicate attempt');
       return;
     }
 
@@ -182,9 +178,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         }
         connectionErrorRef.current = true;
         
-        if (maxRetriesRef.current >= MAX_RETRIES && isAuthenticated && isAuthReady) {
-          console.log('[SocketProvider] ⛔ Max retries reached, will retry after', RETRY_COOLDOWN / 1000, 'seconds');
-        }
       })
       .finally(() => {
         connectionAttemptRef.current = false;
@@ -197,7 +190,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     if (!isAuthenticated) return;
 
     const handleConnect = () => {
-      console.log('[SocketProvider] ✅ Socket connected');
       setIsConnected(true);
       setIsConnecting(false);
       // Bağlantı başarılı olunca retry sayacını sıfırla
@@ -206,7 +198,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     };
 
     const handleDisconnect = () => {
-      console.log('[SocketProvider] ❌ Socket disconnected');
       setIsConnected(false);
       setIsConnecting(false);
     };

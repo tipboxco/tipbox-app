@@ -80,7 +80,7 @@ export interface TipsCategory {
 export interface TipsCardData {
   id: string;
   user: TipsUser;
-  category: TipsCategory;
+  category?: TipsCategory; // Optional: contextData yoksa undefined olabilir
   content: string;
   images?: ImageSourcePropType[];
   stats: TipsStats;

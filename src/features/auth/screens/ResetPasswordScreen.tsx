@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
@@ -18,6 +19,10 @@ export const ResetPasswordScreen = () => {
   const route = useRoute<ResetPasswordScreenRouteProp>();
   const { email } = route.params;
   const toast = useToast();
+  const insets = useSafeAreaInsets();
+  
+  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
+  const backgroundColor = '#FFFFFF';
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,9 +52,9 @@ export const ResetPasswordScreen = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Geçersiz Şifre</ToastTitle>
-                  <ToastDescription>
-                    Şifre en az 8 karakter olmalı ve şifreler eşleşmelidir.
+                  <ToastTitle fontSize="$sm">Invalid Password</ToastTitle>
+                  <ToastDescription fontSize="$sm">
+                    Password must be at least 8 characters and passwords must match.
                   </ToastDescription>
                 </Toast>
               </Box>
@@ -66,8 +71,8 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Şifreler Eşleşmiyor</ToastTitle>
-                <ToastDescription>Lütfen aynı şifreyi girin.</ToastDescription>
+                <ToastTitle fontSize="$sm">Passwords Don't Match</ToastTitle>
+                <ToastDescription fontSize="$sm">Please enter the same password.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -80,7 +85,7 @@ export const ResetPasswordScreen = () => {
     try {
       // TODO: Endpoint'e istek atılacak
       // const response = await forgotPasswordApi.resetPassword({ email, newPassword });
-      console.log('Reset Password - Yeni şifre ayarlanıyor:', { email, newPassword: '***' });
+      console.log('Reset Password - Setting new password:', { email, newPassword: '***' });
 
       // Simüle edilmiş başarılı response
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -91,8 +96,8 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Şifre Sıfırlandı</ToastTitle>
-                <ToastDescription>Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.</ToastDescription>
+                <ToastTitle fontSize="$sm">Password Reset</ToastTitle>
+                <ToastDescription fontSize="$sm">Your password has been successfully updated. You can now sign in.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -113,9 +118,9 @@ export const ResetPasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>
-                  {error?.response?.data?.message || error?.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'}
+                <ToastTitle fontSize="$sm">Error</ToastTitle>
+                <ToastDescription fontSize="$sm">
+                  {error?.response?.data?.message || error?.message || 'An error occurred. Please try again.'}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -128,12 +133,27 @@ export const ResetPasswordScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-        p="$4"
-      >
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Ana İçerik */}
+      <View style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          p="$4"
+        >
         <VStack flex={1} space="xl" pt="$16">
           <Text
             fontSize="$2xl"
@@ -148,8 +168,8 @@ export const ResetPasswordScreen = () => {
             color={isDark ? '$textDark300' : '$textLight600'}
             mb="$4"
           >
-            Yeni şifrenizi belirleyin.{'\n'}
-            Şifreniz en az 8 karakter olmalıdır.
+            Set your new password.{'\n'}
+            Your password must be at least 8 characters.
           </Text>
 
           <VStack space="md">
@@ -164,7 +184,7 @@ export const ResetPasswordScreen = () => {
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               >
                 <InputField 
-                  placeholder="Yeni şifreniz"
+                  placeholder="New password"
                   secureTextEntry
                   value={newPassword}
                   onChangeText={validateNewPassword}
@@ -189,7 +209,7 @@ export const ResetPasswordScreen = () => {
                 borderColor={isDark ? '$borderDark100' : '$borderLight100'}
               >
                 <InputField 
-                  placeholder="Şifrenizi tekrar girin"
+                  placeholder="Confirm your password"
                   secureTextEntry
                   value={confirmPassword}
                   onChangeText={validateConfirmPassword}
@@ -214,7 +234,7 @@ export const ResetPasswordScreen = () => {
             disabled={!isNewPasswordValid || !isConfirmPasswordValid || isLoading}
           >
             <ButtonText color="$textLight900">
-              {isLoading ? 'Kaydediliyor...' : 'Şifreyi Sıfırla'}
+              {isLoading ? 'Saving...' : 'Reset Password'}
             </ButtonText>
           </Button>
 
@@ -223,14 +243,28 @@ export const ResetPasswordScreen = () => {
             color={isDark ? '$textDark300' : '$textLight600'}
             textAlign="center"
             mt="auto"
-            mb="$4"
+            mb={insets.bottom + 16}
             onPress={() => navigation.goBack()}
           >
-            Geri dön
+            Go Back
           </Text>
         </VStack>
       </Box>
-    </SafeAreaView>
+      </View>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };
 

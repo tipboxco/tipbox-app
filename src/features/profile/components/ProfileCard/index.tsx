@@ -2,7 +2,15 @@ import React, { useState } from 'react';
 import { StyleSheet, Modal, TouchableWithoutFeedback, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronLeftIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  GiftIcon,
+  PhoneIcon,
+  ChatBubbleLeftIcon,
+  BellIcon,
+} from 'react-native-heroicons/outline';
 import { 
   Box, 
   VStack, 
@@ -17,7 +25,7 @@ import { ProfileStackParamList } from '../../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useAppStore } from '@/src/store/appStore';
 import type { UserProfile } from '../../types';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useSafeAreaValues, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useAddToTrustList, useRemoveFromTrustList } from '../../api/hooks';
 
 interface ProfileCardProps {
@@ -110,7 +118,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
         zIndex={2000}
       >
         <Pressable onPress={handleBackPress} style={{ zIndex: 2000 }}>
-          <Feather name="chevron-left" size={24} color="#fff" />
+          <ChevronLeftIcon width={24} height={24} color="#fff" />
         </Pressable>
 
         <Pressable
@@ -120,7 +128,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
           }}
           style={{ zIndex: 2000 }}
         >
-          <Feather name="more-vertical" size={24} color="#fff" />
+          <EllipsisVerticalIcon width={24} height={24} color="#fff" />
         </Pressable>
       </Box>
 
@@ -138,7 +146,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
             flexShrink={0}
           >
             <Image
-              source={toImageSource(userData.avatar) || require('@/assets/avatar/ozan.png')}
+              source={toImageSource(userData.avatar) || DEFAULT_USER_AVATAR }
               alt={userData.name}
               w="100%"
               h="100%"
@@ -161,7 +169,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                 gap={6}
                 onPress={handleEditProfile}
               >
-                <Feather name="edit-2" size={14} color="#000" />
+                <PencilIcon width={14} height={14} color="#000" />
                 <Text
                   color="#000"
                   fontSize={10}
@@ -188,7 +196,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] SendTIPS pressed');
                   }}
                 >
-                  <Feather name="gift" size={14} color="#000" />
+                  <GiftIcon width={14} height={14} color="#000" />
                 </Pressable>
                 
                 {/* 1-on-1 Request */}
@@ -206,7 +214,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] 1-on-1 Request pressed');
                   }}
                 >
-                  <Feather name="headphones" size={14} color="#000" />
+                  <PhoneIcon width={14} height={14} color="#000" />
                 </Pressable>
                 
                 {/* DM */}
@@ -224,7 +232,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] DM pressed');
                   }}
                 >
-                  <Feather name="message-circle" size={14} color="#000" />
+                  <ChatBubbleLeftIcon width={14} height={14} color="#000" />
                 </Pressable>
                 
                 {/* Notification */}
@@ -242,7 +250,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     console.log('[ProfileCard] Notification pressed');
                   }}
                 >
-                  <Feather name="bell" size={14} color="#000" />
+                  <BellIcon width={14} height={14} color="#000" />
                 </Pressable>
                 
                 {/* Trust / Un Trust */}
@@ -460,7 +468,7 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
                     alignItems="center"
                   >
                     <Image
-                      source={toImageSource(badge.image) || require('@/assets/badges/badge_01.png')}
+                      source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
                       alt={badge.title}
                       w={60}
                       h={60}

@@ -23,7 +23,7 @@ export const DraggableKeyboard: React.FC<DraggableKeyboardProps> = ({
   onSendMessage,
   onAddImage,
   onAddEmoji,
-  placeholder = "Mesajınızı yazın...",
+  placeholder = "Type your message...",
   initialMessage = '',
   minHeight = 140,
 }) => {

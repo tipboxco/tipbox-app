@@ -1,7 +1,23 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+// Heroicons imports
+import {
+  UserIcon,
+  UserPlusIcon,
+  UserMinusIcon,
+  FlagIcon,
+  NoSymbolIcon,
+  EllipsisHorizontalIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import {
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
@@ -30,6 +46,7 @@ import {
   useReportUser,
   useUserProfile,
 } from '@/src/features/profile/api/hooks';
+import { PostContextMenu } from '@/src/components/PostContextMenu';
 
 interface PostCardProps {
   data: PostCardData;
@@ -240,7 +257,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           py={16}
         >
           <HStack alignItems="center" space="md">
-            <Feather name="user" size={20} color={isDark ? '#fff' : '#000'} />
+            <UserIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
             <Text
               color={isDark ? '$textDark50' : '#000'}
               fontSize="$md"
@@ -265,11 +282,11 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
             >
               <HStack alignItems="center" space="md">
-                <Feather
-                  name={userProfile?.isTrusted ? 'user-minus' : 'user-plus'}
-                  size={20}
-                  color={isDark ? '#fff' : '#000'}
-                />
+                {userProfile?.isTrusted ? (
+                  <UserMinusIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                ) : (
+                  <UserPlusIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                )}
                 <Text
                   color={isDark ? '$textDark50' : '#000'}
                   fontSize="$md"
@@ -291,7 +308,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               opacity={isReporting ? 0.6 : 1}
             >
               <HStack alignItems="center" space="md">
-                <Feather name="flag" size={20} color={isDark ? '#fff' : '#000'} />
+                <FlagIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
                 <Text
                   color={isDark ? '$textDark50' : '#000'}
                   fontSize="$md"
@@ -311,7 +328,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               py={16}
             >
               <HStack alignItems="center" space="md">
-                <Feather name="slash" size={20} color="#FF3040" />
+                <NoSymbolIcon width={20} height={20} color="#FF3040" />
                 <Text
                   color="#FF3040"
                   fontSize="$md"
@@ -360,7 +377,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleAvatarPress}>
-            <VStack flex={1}>
+            <VStack flex={1} justifyContent="center">
               <Text
                 color={isDark ? '$textDark50' : '#000'}
                 fontSize="$xs"
@@ -378,8 +395,13 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               </Text>
             </VStack>
           </Pressable>
-          <Pressable onPress={handleMenuPress}>
-            <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
+          <Pressable
+            onPress={() => {
+              console.log('[PostCard] 3 nokta menüsü tıklandı - Post ID:', data.id);
+              handleMenuPress();
+            }}
+          >
+            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
           </Pressable>
         </HStack>
       </VStack>
@@ -534,12 +556,11 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         <HStack>
           <Pressable onPress={handleLike}>
             <HStack mr={10} alignItems="center">
-              <Feather
-                name={isLiked ? 'heart' : 'heart'}
-                size={24}
-                color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                fill={isLiked ? '#FF3040' : 'none'}
-              />
+              {isLiked ? (
+                <HeartIconSolid width={24} height={24} color="#FF3040" />
+              ) : (
+                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
               <AnimatedCounter
                 value={likesCount}
                 color={isDark ? '$textDark50' : '#000'}
@@ -550,7 +571,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           </Pressable>
           <Pressable onPress={handleComment}>
             <HStack mr={10} alignItems="center">
-              <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+              <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               <AnimatedCounter
                 value={commentsCount}
                 color={isDark ? '$textDark50' : '#000'}
@@ -561,7 +582,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           </Pressable>
           <Pressable onPress={handleShare}>
             <HStack mr={10} alignItems="center">
-              <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+              <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               <AnimatedCounter
                 value={sharesCount}
                 color={isDark ? '$textDark50' : '#000'}
@@ -572,12 +593,11 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
           </Pressable>
           <Pressable onPress={handleBookmark}>
             <HStack mr={10} alignItems="center">
-              <Feather
-                name="bookmark"
-                size={24}
-                color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                fill={isBookmarked ? '#829905' : 'none'}
-              />
+              {isBookmarked ? (
+                <BookmarkIconSolid width={24} height={24} color="#829905" />
+              ) : (
+                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
               <AnimatedCounter
                 value={bookmarksCount}
                 color={isDark ? '$textDark50' : '#000'}

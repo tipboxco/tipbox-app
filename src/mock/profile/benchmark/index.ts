@@ -7,7 +7,7 @@ export const mock_benchmark_posts: BenchmarkPost[] = [
             id: '1',
             name: 'Michael Clark',
             title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-            avatar: require('@/assets/avatar/ozan.png'),
+            avatar: require('@/assets/avatar/default-useravatar.png'),
         },
         products: [
             {
@@ -42,7 +42,7 @@ export const mock_benchmark_posts: BenchmarkPost[] = [
             id: '2',
             name: 'Sarah Johnson',
             title: 'Professional Photographer - Tech Reviewer',
-            avatar: require('@/assets/avatar/ozan.png'),
+            avatar: require('@/assets/avatar/default-useravatar.png'),
         },
         products: [
             {

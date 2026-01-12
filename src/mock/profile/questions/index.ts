@@ -7,7 +7,7 @@ export const mock_questions: QuestionPost[] = [
       id: '1',
       name: 'Michael Clark',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '1',
@@ -40,7 +40,7 @@ export const mock_questions: QuestionPost[] = [
       id: '2',
       name: 'Michael Clark',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '2',
@@ -70,7 +70,7 @@ export const mock_questions: QuestionPost[] = [
       id: '3',
       name: 'Michael Clark',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '3',

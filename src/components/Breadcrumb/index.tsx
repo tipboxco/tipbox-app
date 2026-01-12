@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
     HStack,
     Text,
     Pressable,
     Box,
-    ScrollView,
 } from '@gluestack-ui/themed';
+import { ScrollView } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
@@ -19,97 +19,130 @@ interface BreadcrumbProps {
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, onItemPress, rootLabel }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const scrollViewRef = useRef<ScrollView>(null);
 
-    const breadCrumbsHeight = 40;
+    // Scroll to end when content size changes (triggered when layout completes)
+    const handleContentSizeChange = (contentWidth: number, contentHeight: number) => {
+        // Scroll to end immediately when content changes
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+    };
 
     return (
-        <ScrollView
-            maxHeight={breadCrumbsHeight}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                alignItems: 'center'
-            }}
+        <Box 
+            position="relative"
+            bg={isDark ? '#000' : '#FFF'}
+            borderBottomWidth={1}
+            borderBottomColor="#E9E9E9"
+          
         >
-            <HStack alignItems="center" space="xs">
-                {rootLabel && (
-                    <>
-                        <Pressable
-                            onPress={() => onItemPress({ id: 'root', name: rootLabel, type: 'root' }, -1)}
-                            style={({ pressed }) => ({
-                                opacity: pressed ? 0.7 : 1,
-                                minWidth: 60,
-                                flexShrink: 0,
-                            })}
-                        >
-                            <Text
-                                color={items.length === 0 ? (isDark ? '#FFFFFF' : '#000000') : '#A3A3A3'}
-                                fontSize={12}
-                                fontWeight="$bold"
-                                numberOfLines={1}
+            <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                    paddingHorizontal: 16,
+                    paddingTop: 0,
+                    alignItems: 'center',
+                }}
+                onContentSizeChange={handleContentSizeChange}
+            >
+                <HStack alignItems="center" space="xs">
+                    {rootLabel && (
+                        <>
+                            <Pressable
+                                onPress={() => onItemPress({ id: 'root', name: rootLabel, type: 'root' }, -1)}
+                                style={({ pressed }) => ({
+                                    opacity: pressed ? 0.7 : 1,
+                                })}
                             >
-                                {rootLabel}
-                            </Text>
-                        </Pressable>
-                        <Box
-                            width={16}
-                            height={16}
-                            justifyContent="center"
-                            alignItems="center"
-                        >
-                            <ChevronRight
-                                size={12}
-                                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            />
-                        </Box>
-                    </>
-                )}
+                                <Box position="relative">
+                                    <Text
+                                        color={items.length === 0 ? (isDark ? '#FFFFFF' : '#1A1A1A') : '#8C8C8C'}
+                                        fontSize={14}
+                                        fontWeight={items.length === 0 ? '$bold' : '$normal'}
+                                        numberOfLines={1}
+                                        mb={8}
+                                    >
+                                        {rootLabel}
+                                    </Text>
+                                    {items.length === 0 && (
+                                        <Box
+                                            position="absolute"
+                                            bottom={0}
+                                            left={0}
+                                            right={0}
+                                            height={2}
+                                            bg={isDark ? '#FFFFFF' : '#1A1A1A'}
+                                        />
+                                    )}
+                                </Box>
+                            </Pressable>
+                            {items.length > 0 && (
+                                <Box alignItems="center" justifyContent="center" px={4}>
+                                    <ChevronRight
+                                             size={14}
+                                             color="#8C8C8C"
+                                             style={{ marginBottom: 7 }}
+                                             strokeWidth={2}
+                                    />
+                                </Box>
+                            )}
+                        </>
+                    )}
 
-                {items.map((item, index) => (
-                    <React.Fragment key={item.id}>
-                        <Pressable
-                            onPress={() => onItemPress(item, index)}
-                            style={({ pressed }) => ({
-                                opacity: pressed ? 0.7 : 1,
-                                minWidth: 60,
-                                flexShrink: 0,
-                            })}
-                        >
-                            <Text
-                                color={
-                                    index === items.length - 1
-                                        ? (isDark ? '#FFFFFF' : '#000000')
-                                        : (isDark ? '#8C8C8C' : '#8C8C8C')
-                                }
-                                fontSize={12}
-                                fontWeight={index === items.length - 1 ? '$bold' : '$normal'}
-                                numberOfLines={1}
-                            >
-                                {item.name}
-                            </Text>
-                        </Pressable>
+                    {items.map((item, index) => {
+                        const isLast = index === items.length - 1;
+                        return (
+                            <React.Fragment key={item.id}>
+                                <Pressable
+                                    onPress={() => onItemPress(item, index)}
+                                    style={({ pressed }) => ({
+                                        opacity: pressed ? 0.7 : 1,
+                                        justifyContent: 'center',
+                                    })}
+                                >
+                                    <Box position="relative">
+                                        <Text
+                                            color={isLast ? (isDark ? '#FFFFFF' : '#1A1A1A') : '#8C8C8C'}
+                                            fontSize={14}
+                                            fontWeight={isLast ? '$bold' : '$normal'}
+                                            numberOfLines={1}
+                                            mb={8}
+                                        >
+                                            {item.name}
+                                        </Text>
+                                        {isLast && (
+                                            <Box
+                                                position="absolute"
+                                                bottom={0}
+                                                left={0}
+                                                right={0}
+                                                height={2}
+                                                bg={isDark ? '#FFFFFF' : '#1A1A1A'}
+                                            />
+                                        )}
+                                    </Box>
+                                </Pressable>
 
-                        {index < items.length - 1 && (
-                            <Box
-                                width={16}
-                                height={16}
-                                justifyContent="center"
-                                alignItems="center"
-                            >
-                                <ChevronRight
-                                    size={12}
-                                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                />
-                            </Box>
-                        )}
-                    </React.Fragment>
-                ))}
-            </HStack>
-        </ScrollView>
+                                {!isLast && (
+                                    <Box alignItems="center" justifyContent="center" px={4}>
+                                        <ChevronRight
+                                            size={14}
+                                            color="#8C8C8C"
+                                            style={{ marginBottom: 7 }}
+                                            strokeWidth={2}
+                                        />
+                                    </Box>
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+                    {/* Spacer to ensure last item is fully visible */}
+                    <Box width={16} />
+                </HStack>
+            </ScrollView>
+        </Box>
     );
 };
 
 export default Breadcrumb;
-

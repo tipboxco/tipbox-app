@@ -158,7 +158,7 @@ export const SettingsScreen = () => {
       <Box px="$4" py="$2">
         <HStack
           alignItems="center"
-          bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
           borderWidth={1}
           borderColor="#E9E9E9"
           borderRadius={23}
@@ -172,7 +172,7 @@ export const SettingsScreen = () => {
           />
           <Input flex={1} borderWidth={0} bg="transparent">
             <InputField
-              placeholder="Ürün Grubu seçin veya ürün adı arayın"
+              placeholder="Select product group or search product name"
               placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
               color={isDark ? '#fff' : '#000'}
               fontSize={11}

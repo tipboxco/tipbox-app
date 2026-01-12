@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -12,7 +12,10 @@ import {
   VStack,
   HStack,
   Pressable,
+  Input,
+  InputField,
 } from '@gluestack-ui/themed';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -45,13 +48,11 @@ const EventsScreen: React.FC = () => {
       // Ekran focus aldığında drawer gesture'ı disable et
       setGestureEnabled(false);
       if (__DEV__) {
-        console.log('[EventsScreen] Drawer gesture disabled (horizontal swipe active)');
       }
       return () => {
         // Ekran blur olduğunda drawer gesture'ı tekrar enable et
         setGestureEnabled(true);
         if (__DEV__) {
-          console.log('[EventsScreen] Drawer gesture enabled (screen blurred)');
         }
       };
     }, [setGestureEnabled])
@@ -66,14 +67,17 @@ const EventsScreen: React.FC = () => {
   const [selectedReward, setSelectedReward] = useState<SeeAllReward | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
+  const tabHeaderBgColor = useMemo(() => '#FFFFFF', []); // Tab header her zaman beyaz
 
   const handleEventPress = (eventId: string) => {
     if (!eventId) {
       console.error('[EventsScreen] handleEventPress: eventId is missing');
       return;
     }
-    console.log('[EventsScreen] Navigating to EventDetail with eventId:', eventId);
     try {
       navigation.navigate('EventDetail', { eventId });
     } catch (error) {
@@ -154,16 +158,49 @@ const EventsScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <Box flex={1} bg={backgroundColor}>
         <Header
           title="Events"
-          showBackButton
-          onBackPress={() => navigation.goBack()}
+          leftAction="menu"
         />
 
-        <VStack flex={1} py="$2" space="md">
+        <VStack flex={1}>
+          {/* Search Bar - Above tabs */}
+          <VStack
+            space="md"
+            pb="$4"
+            px="$4"
+            bg={backgroundColor}
+          >
+            <HStack
+              alignItems="center"
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor="#E9E9E9"
+              borderRadius={20}
+              px={14}
+              space="sm"
+            >
+              <Feather
+                name="search"
+                size={24}
+                color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+              />
+              <Input flex={1} borderWidth={0} bg="transparent">
+                <InputField
+                  placeholder="Select product group or search product name"
+                  placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                  color={isDark ? '#000' : '#000'}
+                  fontSize="$xs"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </Input>
+            </HStack>
+          </VStack>
+
           {/* Tab Header */}
-          <VStack pt="$4" bg={isDark ? '#000' : '#FFF'}>
+          <VStack pt={0} pb="$4" bg={tabHeaderBgColor}>
             <HStack
               ref={tabContainerRef}
               borderBottomWidth={1}
@@ -181,7 +218,7 @@ const EventsScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(0)}
                 alignItems="center"
-                py="$1"
+                pb={8}
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text
@@ -203,7 +240,6 @@ const EventsScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(1)}
                 alignItems="center"
-                py="$1"
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text
@@ -277,4 +313,5 @@ const EventsScreen: React.FC = () => {
 
 EventsScreen.displayName = 'EventsScreen';
 
-export default EventsScreen;
+// PERFORMANCE FIX: Memoize EventsScreen to prevent unnecessary re-renders during tab transitions
+export default React.memo(EventsScreen);

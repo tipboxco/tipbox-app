@@ -1,6 +1,6 @@
 import { apiService } from '../../../services/ApiService';
 import type { EventApiItem, EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgesApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
@@ -305,43 +305,6 @@ export interface EventBadgesResponse {
 }
 
 /**
- * Get Event Badges endpoint function
- * Event'e ait badge'leri getirir (pagination ile)
- *
- * @param eventId - Event ID
- * @param cursor - Pagination cursor (opsiyonel)
- * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
- * @returns EventBadgesResponse - Event badges ve pagination bilgisi
- */
-export const getEventBadges = async (
-  eventId: string,
-  cursor?: string,
-  limit: number = 20
-): Promise<EventBadgesResponse> => {
-  const params = new URLSearchParams();
-  if (cursor) {
-    params.append('cursor', cursor);
-  }
-  params.append('limit', Math.min(limit, 50).toString());
-
-  try {
-    const response = await apiService.getClient().get<EventBadgesResponse>(
-      `/events/${eventId}/badges?${params.toString()}`
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('[getEventBadges] API Error:', {
-      url: `/events/${eventId}/badges?${params.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
-    throw error;
-  }
-};
-
-/**
  * Event Requirements Response - /events/{eventId}/requirements endpoint'inden dönen response
  */
 export interface EventRequirementsResponse {
@@ -392,6 +355,33 @@ export const joinEvent = async (
 };
 
 /**
+ * Leave Event endpoint function
+ * /events/{eventId}/leave endpoint'ine POST request göndererek etkinlikten ayrılır
+ *
+ * @param eventId - Event ID'si
+ * @returns EventDetailApiResponse - Güncellenmiş event detay bilgileri
+ */
+export const leaveEvent = async (
+  eventId: string
+): Promise<EventDetailApiResponse> => {
+  try {
+    const response = await apiService.getClient().post<EventDetailApiResponse>(
+      `/events/${eventId}/leave`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[leaveEvent] API Error:', {
+      url: `/events/${eventId}/leave`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
  * Get Event Requirements endpoint function
  * /events/{eventId}/requirements endpoint'inden etkinlik gereksinimleri ve ilerleme bilgilerini getirir
  *
@@ -409,6 +399,330 @@ export const getEventRequirements = async (
   } catch (error: any) {
     console.error('[getEventRequirements] API Error:', {
       url: `/events/${eventId}/requirements`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+
+/**
+ * Create EventPost endpoint function (YENİ - EVENT_GUIDE.MD Section 3.1)
+ * /events/{eventId}/posts endpoint'ine POST request göndererek event post oluşturur
+ * NOT: Artık /posts/free yerine /events/{eventId}/posts kullanılıyor!
+ *
+ * @param eventId - Event ID
+ * @param data - { title, body, productId? }
+ * @returns CreateEventPostResponse
+ */
+export interface CreateEventPostRequestNew {
+  title: string; // Max 200 char
+  body: string; // Max 2000 char
+  productId?: string; // Opsiyonel
+}
+
+export interface CreateEventPostResponseNew {
+  id: string;
+  eventId: string;
+  title: string;
+  body: string;
+  likesCount: number;
+  commentsCount: number;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  };
+  product: {
+    id: string;
+    name: string;
+    brand: string;
+    image: string | null;
+  } | null;
+}
+
+export const createEventPostNew = async (
+  eventId: string,
+  data: CreateEventPostRequestNew
+): Promise<CreateEventPostResponseNew> => {
+  try {
+    const response = await apiService.getClient().post<CreateEventPostResponseNew>(
+      `/events/${eventId}/posts`,
+      {
+        title: data.title,
+        body: data.body,
+        productId: data.productId,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[createEventPostNew] API Error:', {
+      url: `/events/${eventId}/posts`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get EventPost Detail endpoint function (YENİ - EVENT_GUIDE.MD Section 4.2)
+ * /events/{eventId}/posts/{postId} endpoint'inden event post detayını getirir
+ *
+ * @param eventId - Event ID
+ * @param postId - Post ID
+ * @returns EventPost objesi + event bilgisi
+ */
+export interface EventPostDetail extends CreateEventPostResponseNew {
+  event: {
+    id: string;
+    title: string;
+  };
+}
+
+export const getEventPostDetail = async (
+  eventId: string,
+  postId: string
+): Promise<EventPostDetail> => {
+  try {
+    const response = await apiService.getClient().get<EventPostDetail>(
+      `/events/${eventId}/posts/${postId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getEventPostDetail] API Error:', {
+      url: `/events/${eventId}/posts/${postId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Delete EventPost endpoint function (YENİ - EVENT_GUIDE.MD Section 4.3)
+ * /events/{eventId}/posts/{postId} endpoint'ine DELETE request göndererek post siler
+ * NOT: Sadece post sahibi silebilir
+ *
+ * @param eventId - Event ID
+ * @param postId - Post ID
+ * @returns void (204 No Content)
+ */
+export const deleteEventPost = async (
+  eventId: string,
+  postId: string
+): Promise<void> => {
+  try {
+    await apiService.getClient().delete(`/events/${eventId}/posts/${postId}`);
+  } catch (error: any) {
+    console.error('[deleteEventPost] API Error:', {
+      url: `/events/${eventId}/posts/${postId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Toggle EventPost Like endpoint function (YENİ - EVENT_GUIDE.MD Section 4.4)
+ * /events/{eventId}/posts/{postId}/like endpoint'ine POST request göndererek like toggle yapar
+ * NOT: Beğenilmişse kaldırır, beğenilmemişse ekler
+ *
+ * @param eventId - Event ID
+ * @param postId - Post ID
+ * @returns { liked: boolean }
+ */
+export interface ToggleLikeResponse {
+  liked: boolean;
+}
+
+export const toggleEventPostLike = async (
+  eventId: string,
+  postId: string
+): Promise<ToggleLikeResponse> => {
+  try {
+    const response = await apiService.getClient().post<ToggleLikeResponse>(
+      `/events/${eventId}/posts/${postId}/like`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[toggleEventPostLike] API Error:', {
+      url: `/events/${eventId}/posts/${postId}/like`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Add EventPost Comment endpoint function (YENİ - EVENT_GUIDE.MD Section 4.5)
+ * /events/{eventId}/posts/{postId}/comments endpoint'ine POST request göndererek yorum ekler
+ *
+ * @param eventId - Event ID
+ * @param postId - Post ID
+ * @param comment - Yorum metni (max 500 char)
+ * @returns Comment objesi
+ */
+export interface AddCommentRequest {
+  comment: string; // Max 500 char
+}
+
+export interface CommentResponse {
+  id: string;
+  postId: string;
+  comment: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  };
+}
+
+export const addEventPostComment = async (
+  eventId: string,
+  postId: string,
+  comment: string
+): Promise<CommentResponse> => {
+  try {
+    const response = await apiService.getClient().post<CommentResponse>(
+      `/events/${eventId}/posts/${postId}/comments`,
+      { comment }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[addEventPostComment] API Error:', {
+      url: `/events/${eventId}/posts/${postId}/comments`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get EventPost Comments endpoint function (YENİ - EVENT_GUIDE.MD Section 4.6)
+ * /events/{eventId}/posts/{postId}/comments endpoint'inden yorumları getirir
+ *
+ * @param eventId - Event ID
+ * @param postId - Post ID
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns Comments ve pagination bilgisi
+ */
+export interface CommentsResponse {
+  items: CommentResponse[];
+  pagination: {
+    cursor: string | null;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+export const getEventPostComments = async (
+  eventId: string,
+  postId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<CommentsResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', Math.min(limit, 50).toString());
+
+  try {
+    const response = await apiService.getClient().get<CommentsResponse>(
+      `/events/${eventId}/posts/${postId}/comments?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getEventPostComments] API Error:', {
+      url: `/events/${eventId}/posts/${postId}/comments?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Delete EventPost Comment endpoint function (YENİ - EVENT_GUIDE.MD Section 4.7)
+ * /events/{eventId}/posts/{postId}/comments/{commentId} endpoint'ine DELETE request göndererek yorum siler
+ * NOT: Sadece yorum sahibi silebilir
+ *
+ * @param eventId - Event ID
+ * @param postId - Post ID
+ * @param commentId - Comment ID
+ * @returns void (204 No Content)
+ */
+export const deleteEventPostComment = async (
+  eventId: string,
+  postId: string,
+  commentId: string
+): Promise<void> => {
+  try {
+    await apiService.getClient().delete(
+      `/events/${eventId}/posts/${postId}/comments/${commentId}`
+    );
+  } catch (error: any) {
+    console.error('[deleteEventPostComment] API Error:', {
+      url: `/events/${eventId}/posts/${postId}/comments/${commentId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Event Badges endpoint function
+ * Bir event'a ait badge'lerin listesini getirir (pagination ile)
+ *
+ * @param eventId - Event ID
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns EventBadgesApiResponse - Badge items ve pagination bilgisi
+ */
+export const getEventBadges = async (
+  eventId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<EventBadgesApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<EventBadgesApiResponse>(
+      `/events/${eventId}/badges?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getEventBadges] API Error:', {
+      url: `/events/${eventId}/badges?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

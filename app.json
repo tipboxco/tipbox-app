@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "tipbox-app",
+    "name": "Tipbox",
     "slug": "tipbox-app",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -10,15 +10,15 @@
       "enabled": true,
       "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD",
-      "url": "https://u.expo.dev/098fbee5-88e4-49ba-bb37-80601a5d47af"
+      "url": "https://u.expo.dev/e740cd51-8289-4b1d-af1d-a7159ea5bbc2"
     },
     "orientation": "portrait",
-    "icon": "./assets/tipbox_logo.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/tipbox-square-black.png",
     "splash": {
-      "image": "./assets/tipbox_logo.png",
+      "image": "./assets/splash-black.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "scheme": "tipboxapp",
     "assetBundlePatterns": [
@@ -26,11 +26,20 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.devkocmehmet.tipboxapp",
+      "bundleIdentifier": "com.tipboxapp",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",
         "NSMicrophoneUsageDescription": "Video kaydı için mikrofona ihtiyaç var.",
         "NSUserNotificationsUsageDescription": "Bildirimleri almak için izin gereklidir.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "tipboxapp",
+              "com.googleusercontent.apps.886406936506-j4u0lsdg6gnn7ggv5mda80rothf5tqr4"
+            ]
+          }
+        ],
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsArbitraryLoadsInWebContent": true,
@@ -40,7 +49,7 @@
               "NSExceptionAllowsInsecureHTTPLoads": true,
               "NSIncludesSubdomains": true,
               "NSExceptionRequiresForwardSecrecy": false,
-              "NSExceptionMinimumTLSVersion": "TLSv1.0"
+              "NSExceptionMinimumTLSVersion": "TLSv1.2"
             },
             "localhost": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
@@ -56,11 +65,11 @@
       }
     },
     "android": {
-      "package": "com.devkocmehmet.tipboxapp",
+      "package": "com.tipbox.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/tipbox_logo.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/tipbox-square-black.png",
+        "backgroundColor": "#000000"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -74,9 +83,17 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-black.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#000000"
+        }
+      ],
+      [
         "expo-notifications",
         {
-          "icon": "./assets/tipbox_logo.png",
+          "icon": "./assets/tipbox-white-logo.jpg",
           "color": "#ffffff"
         }
       ],
@@ -93,9 +110,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "098fbee5-88e4-49ba-bb37-80601a5d47af"
+        "projectId": "e740cd51-8289-4b1d-af1d-a7159ea5bbc2"
       }
-    }
+    },
+    "owner": "tipboxco"
   }
 }
-

@@ -5,11 +5,11 @@ import {
   HStack,
   Text,
   Pressable,
-  Image,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { formatRelativeTime, toImageSource } from '@/src/utils';
+import { formatRelativeTime, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { CachedImage } from '@/src/components/CachedImage';
 import type { InboxMessage } from '../../types';
 
 interface MessageCardProps {
@@ -29,6 +29,11 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
     }
   };
 
+  // Avatar yoksa default avatar kullan
+  const avatarSource = data.senderAvatar 
+    ? (toImageSource(data.senderAvatar) || DEFAULT_USER_AVATAR)
+    : DEFAULT_USER_AVATAR;
+
   return (
     <Pressable
       onPress={handlePress}
@@ -40,16 +45,17 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
     >
       <HStack space="md" alignItems="center">
         {/* Avatar */}
-        <Image
-          source={
-            data.senderAvatar
-              ? toImageSource(data.senderAvatar) || require('@/assets/avatar/ozan.png')
-              : require('@/assets/avatar/ozan.png')
-          }
-          alt={data.senderName}
-          width={48}
-          height={48}
-          borderRadius={24}
+        <CachedImage
+          source={avatarSource}
+          placeholder={DEFAULT_USER_AVATAR}
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+          }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="high"
         />
 
         {/* Message Content */}

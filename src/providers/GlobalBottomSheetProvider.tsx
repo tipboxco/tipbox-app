@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ReactNode } from 'react';
 import { GlobalBottomSheetContextType, BottomSheetOptions } from '@/src/components/GlobalBottomSheet/types';
-import { GlobalBottomSheet } from '@/src/components/GlobalBottomSheet';
 import { GlobalBottomSheetContext } from '@/src/components/GlobalBottomSheet/context'; // ARCHITECTURE FIX: Import from context.ts to break circular dependency
 
 interface GlobalBottomSheetProviderProps {
@@ -19,8 +18,8 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
 
   /**
    * Bottom sheet aç
-   * PERFORMANCE FIX: React 18 automatically batches state updates in event handlers
-   * All three state updates will be batched in a single render cycle, eliminating delays
+   * PERFORMANCE FIX: Removed InteractionManager - instant opening
+   * InteractionManager was causing 100-300ms delay, now opens instantly
    * FLICKER FIX: If bottom sheet is already open, just update content without closing
    * This prevents flicker and the open/close flicker issue
    */
@@ -34,7 +33,8 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
       setOptions(newOptions || null);
       // Keep isOpen as true - don't change it
     } else {
-      // PERFORMANCE FIX: React 18 auto-batches these state updates
+      // PERFORMANCE FIX: Instant opening - no InteractionManager delay
+      // React 18 auto-batches these state updates
       // All updates happen in a single render cycle, no delay
       setContent(newContent);
       setOptions(newOptions || null);
@@ -80,7 +80,8 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
   return (
     <GlobalBottomSheetContext.Provider value={contextValue}>
       {children}
-      <GlobalBottomSheet />
+      {/* ARCHITECTURE FIX: GlobalBottomSheet artık NavigationContainer içinde render ediliyor */}
+      {/* Bu sayede Portal NavigationContainer'ın içinde çalışır ve tüm ekranların üstünde görünür */}
     </GlobalBottomSheetContext.Provider>
   );
 };

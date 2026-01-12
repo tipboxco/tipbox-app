@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { Platform } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+// Heroicons imports
+import {
+  EllipsisHorizontalIcon,
+  QuestionMarkCircleIcon,
+  PaperAirplaneIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import { PostContextMenu } from '@/src/components/PostContextMenu';
+import {
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 import { QuestionPost } from '@/src/mock/profile/questions/types';
+import type { QuestionCardData } from '@/src/types/QuestionCard';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
@@ -22,7 +37,7 @@ import {
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface QuestionPostCardProps {
-  data: QuestionPost;
+  data: QuestionPost | QuestionCardData; // Accept both types for compatibility
   hideProduct?: boolean;
 }
 
@@ -145,9 +160,15 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
               {data.user.title}
             </Text>
           </VStack>
-          <Pressable>
-            <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
-          </Pressable>
+          <PostContextMenu
+            postId={data.id}
+            postContent={data.content}
+            postAuthorName={data.user.name}
+          >
+            <Pressable>
+              <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+            </Pressable>
+          </PostContextMenu>
         </HStack>
       </VStack>
 
@@ -158,7 +179,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             <ProductInfoCard
               size="small"
               type={ProductInfoType.PRODUCT}
-              image={toImageSource(data.category.product.image)}
+              image={toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png')}
               title={data.category.product.name}
               subName={data.category.product.subName}
               onPress={() => {
@@ -176,7 +197,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             <ProductInfoCard
               size="small"
               type={ProductInfoType.SUB_CATEGORY}
-              image={toImageSource(data.category.image)}
+              image={toImageSource(data.category.image) || require('@/assets/inventory/product_01.png')}
               title={data.category.name}
               subName={data.category.subCategory}
               onPress={() => {
@@ -204,7 +225,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
           alignItems="center"
           justifyContent="space-evenly"
         >
-          <Feather name="help-circle" size={12} color={'#fff'} />
+          <QuestionMarkCircleIcon width={12} height={12} color={'#fff'} />
           <Text
             fontSize={8}
             fontWeight="$semibold"
@@ -228,7 +249,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             alignItems="center"
             justifyContent="space-evenly"
           >
-            <Feather name="send" size={12} color="#fff" />
+            <PaperAirplaneIcon width={12} height={12} color="#fff" />
             <Text
               fontSize={8}
               fontWeight="$semibold"
@@ -260,20 +281,24 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       </Pressable>
 
       {/* Images */}
-      {data.images && data.images?.length > 0 && (
-        <Pressable
-          onPress={() => {
-            navigation.navigate('Post', {
-              screen: 'PostDetailScreen',
-              params: { postData: data, type: 'question' }
-            });
-          }}
-        >
+      <Pressable
+        onPress={() => {
+          navigation.navigate('Post', {
+            screen: 'PostDetailScreen',
+            params: { postData: data, type: 'question' }
+          });
+        }}
+      >
         <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-          <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
+          <CardImageCarousel 
+            images={
+              data.images && data.images.length > 0
+                ? data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+                : [require('@/assets/defaultImages/default-post.png')]
+            } 
+          />
         </VStack>
-        </Pressable>
-      )}
+      </Pressable>
 
       {/* Stats */}
       <HStack
@@ -290,12 +315,11 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
         <HStack>
           <Pressable onPress={handleLike}>
           <HStack mr={10} alignItems="center">
-              <Feather
-                name="heart"
-                size={24}
-                color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                fill={isLiked ? '#FF3040' : 'none'}
-              />
+              {isLiked ? (
+                <HeartIconSolid width={24} height={24} color="#FF3040" />
+              ) : (
+                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
               <AnimatedCounter
                 value={likesCount}
                 color={isDark ? '$textDark50' : '#000'}
@@ -306,7 +330,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
           </Pressable>
           <Pressable onPress={handleComment}>
           <HStack mr={10} alignItems="center">
-            <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+            <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               <AnimatedCounter
                 value={commentsCount}
                 color={isDark ? '$textDark50' : '#000'}
@@ -317,23 +341,16 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
           </Pressable>
           <Pressable onPress={handleShare}>
           <HStack mr={10} alignItems="center">
-            <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
-              <AnimatedCounter
-                value={sharesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
-                ml={4}
-              />
+            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
           </HStack>
           </Pressable>
           <Pressable onPress={handleBookmark}>
           <HStack mr={10} alignItems="center">
-              <Feather
-                name="bookmark"
-                size={24}
-                color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                fill={isBookmarked ? '#829905' : 'none'}
-              />
+              {isBookmarked ? (
+                <BookmarkIconSolid width={24} height={24} color="#829905" />
+              ) : (
+                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+              )}
               <AnimatedCounter
                 value={bookmarksCount}
                 color={isDark ? '$textDark50' : '#000'}

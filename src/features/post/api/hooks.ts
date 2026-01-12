@@ -25,6 +25,7 @@ import type {
   BoostOption,
 } from './postApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
+import { eventsKeys } from '@/src/features/events/api/hooks';
 
 /**
  * Query Keys - Post feature için cache key pattern'leri
@@ -92,6 +93,13 @@ export const useCreateFreePost = () => {
     onSuccess: (data, variables) => {
       // Context-based feed'i invalidate et
       invalidateContextFeed(queryClient, variables.contextType, variables.contextId);
+      
+      // Event ID varsa event posts'u da invalidate et (event'e bağlı post için)
+      if (variables.eventId) {
+        queryClient.invalidateQueries({ queryKey: eventsKeys.posts(variables.eventId) });
+        queryClient.invalidateQueries({ queryKey: eventsKeys.detail(variables.eventId) });
+        queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
+      }
       
       // Ana feed'i invalidate et ki yeni post görünsün
       queryClient.invalidateQueries({ queryKey: feedKeys.all });

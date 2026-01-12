@@ -318,7 +318,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                             >
                                 <TextareaInput
                                     ref={descriptionInputRef}
-                                    placeholder="Örn: Harika bir içerik için teşekkürler!"
+                                    placeholder="E.g.: Thanks for the great content!"
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize={13}

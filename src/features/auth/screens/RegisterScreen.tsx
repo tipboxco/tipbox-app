@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { CheckCircle } from 'lucide-react-native';
+import { CheckCircle, Eye, EyeOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useRegister } from '../api/hooks';
+import { CustomToast } from '@/src/components/CustomToast';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -16,11 +18,16 @@ export const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
   const toast = useToast();
   const registerMutation = useRegister();
+  const insets = useSafeAreaInsets();
+  
+  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
+  const backgroundColor = '#FFFFFF';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = (text: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,16 +60,16 @@ export const RegisterScreen = () => {
         // Başarılı toast göster
         toast.show({
           placement: 'top',
+          duration: 3000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Kayıt Başarılı</ToastTitle>
-                <ToastDescription>
-                  {result.message || 'Kayıt işlemi başarıyla tamamlandı!'}
-                </ToastDescription>
-              </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Kayıt başarılı"
+                description={result.message || 'Hesabınız başarıyla oluşturuldu!'}
+                action="success"
+                duration={3000}
+              />
             );
           },
         });
@@ -84,18 +91,20 @@ export const RegisterScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'Kayıt işlemi sırasında bir hata oluştu';
+          'Kayıt sırasında bir hata oluştu';
 
         toast.show({
           placement: 'top',
+          duration: 4000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Kayıt Hatası</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Kayıt başarısız"
+                description={errorMessage}
+                action="error"
+                duration={4000}
+              />
             );
           },
         });
@@ -104,13 +113,28 @@ export const RegisterScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-        p="$4"
-      >
-      <VStack flex={1} space="xl" pt="$16">
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Ana İçerik */}
+      <View style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          p="$4"
+        >
+        <VStack flex={1} space="xl" pt="$16">
         <Text
           fontSize="$2xl"
           fontWeight="$bold"
@@ -138,9 +162,10 @@ export const RegisterScreen = () => {
               size="md"
               bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
+              alignItems="center"
             >
               <InputField 
-                placeholder="E-posta adresiniz"
+                placeholder="Your email address"
                 value={email}
                 onChangeText={validateEmail}
               />
@@ -148,7 +173,8 @@ export const RegisterScreen = () => {
                 as={CheckCircle} 
                 color={isEmailValid ? "$success500" : "$gray400"} 
                 size="md" 
-                mr="$2" 
+                mr="$2"
+                alignSelf="center"
               />
             </Input>
           </FormControl>
@@ -162,34 +188,29 @@ export const RegisterScreen = () => {
               size="md"
               bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
               borderColor={isDark ? '$borderDark100' : '$borderLight100'}
+              alignItems="center"
             >
               <InputField 
-                placeholder="Şifreniz" 
-                secureTextEntry
+                placeholder="Your password" 
+                secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={validatePassword}
               />
-              <Icon 
-                as={CheckCircle} 
-                color={isPasswordValid ? "$success500" : "$gray400"} 
-                size="md" 
-                mr="$2" 
-              />
+              <Pressable onPress={() => setShowPassword(!showPassword)}>
+                <Icon 
+                  as={showPassword ? EyeOff : Eye} 
+                  color={isDark ? '$textDark300' : '$textLight600'} 
+                  size="md" 
+                  mr="$2"
+                  alignSelf="center"
+                />
+              </Pressable>
             </Input>
           </FormControl>
         </VStack>
 
-        <Text
-          fontSize="$xs"
-          color={isDark ? '$textDark300' : '$textLight600'}
-          textAlign="center"
-          mt="$4"
-        >
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </Text>
-
         <Button
-          bg="$yellow400"
+          bg="$buttonPrimary"
           py="$1"
           rounded="$lg"
           mt="$4"
@@ -198,7 +219,7 @@ export const RegisterScreen = () => {
           disabled={!isEmailValid || !isPasswordValid || registerMutation.isPending}
         >
           <ButtonText color="$textLight900">
-            {registerMutation.isPending ? 'Kaydediliyor...' : 'Confirm'}
+            {registerMutation.isPending ? 'Registering...' : 'Confirm'}
           </ButtonText>
         </Button>
 
@@ -207,13 +228,27 @@ export const RegisterScreen = () => {
           color={isDark ? '$textDark300' : '$textLight600'}
           textAlign="center"
           mt="auto"
-          mb="$4"
+          mb={insets.bottom + 16}
           onPress={() => navigation.navigate('Login')}
         >
-          Zaten bir hesabınız var mı? Sign In
+          Already have an account? Sign In
         </Text>
       </VStack>
       </Box>
-    </SafeAreaView>
+      </View>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };

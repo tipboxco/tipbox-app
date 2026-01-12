@@ -8,7 +8,7 @@ import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useUserPosts } from '../../api/hooks';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useCurrentUserIdOrLogout, toImageSource } from '@/src/utils';
+import { useCurrentUserIdOrLogout, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { CardType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
@@ -22,6 +22,7 @@ import type { QuestionApiItem } from '@/src/types/QuestionCard';
 
 // Map Post/Feed to PostCardData
 const mapPostToCardData = (post: ProfilePost): PostCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const contextImage = post.contextData?.image
     ? toImageSource(post.contextData.image)
     : undefined;
@@ -30,6 +31,13 @@ const mapPostToCardData = (post: ProfilePost): PostCardData => {
   const contentString = Array.isArray(post.content)
     ? post.content.map((item) => item.content || '').join(' ')
     : (post.content || '');
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = post.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
   return {
     id: post.id,
@@ -40,10 +48,7 @@ const mapPostToCardData = (post: ProfilePost): PostCardData => {
       avatar: toImageSource(post.user.avatar)!,
     },
     content: contentString,
-    images:
-      post.images
-        ?.map((img) => toImageSource(img))
-        .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    images,
     stats: {
       likes: post.stats.likes,
       comments: post.stats.comments || 0,
@@ -57,7 +62,7 @@ const mapPostToCardData = (post: ProfilePost): PostCardData => {
           id: post.contextData.id,
           name: post.contextData.name,
           subName: post.contextData.subName,
-          image: contextImage || post.contextData.image,
+          image: contextImage || post.contextData.image || defaultPostImage,
           isOwned: post.contextData.isOwned,
         }
       : undefined,
@@ -68,7 +73,7 @@ const mapPostToCardData = (post: ProfilePost): PostCardData => {
 const mapExperienceToCardData = (review: ProfileReview): ReviewCardData => {
   const avatarSource = review.user?.avatar
     ? toImageSource(review.user.avatar)!
-    : require('@/assets/avatar/ozan.png');
+    : DEFAULT_USER_AVATAR;
   
   const productImage = review.contextData?.image
     ? toImageSource(review.contextData.image)
@@ -197,6 +202,13 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData => {
     product,
   };
 
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const mappedImages = item.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
   return {
     id: item.id,
     user: {
@@ -208,9 +220,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData => {
     category,
     content: item.content,
     isBoosted: item.isBoosted,
-    images: item.images
-      ?.map((img) => toImageSource(img))
-      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+    images,
     stats: item.stats,
     createdAt: item.createdAt,
   };
@@ -421,7 +431,7 @@ const FeedTabComponent = () => {
     return (
       <VStack px={16} py={16}>
         <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-          Henüz feed içeriği bulunmuyor.
+          No feed content found yet.
         </Text>
       </VStack>
     );

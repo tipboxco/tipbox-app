@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, Alert } from 'react-native';
+import { ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Box, 
@@ -117,7 +117,7 @@ const ProfileEditScreen: React.FC = () => {
                   key={badge.id}
                   onPress={() => {
                     if (isUsedInOtherSlot) {
-                      Alert.alert('Uyarı', 'Bu badge zaten başka bir slotta kullanılıyor');
+                      Alert.alert('Warning', 'This badge is already used in another slot');
                       return;
                     }
                     if (slot === 1) setBadge1(badge.id);
@@ -164,13 +164,13 @@ const ProfileEditScreen: React.FC = () => {
   const handleSave = () => {
     // Validate name (min 2 characters)
     if (name.trim().length < 2) {
-      Alert.alert('Hata', 'İsim en az 2 karakter olmalıdır');
+      Alert.alert('Error', 'Name must be at least 2 characters');
       return;
     }
 
     // Validate biography (max 500 characters)
     if (bio.trim().length > 500) {
-      Alert.alert('Hata', 'Biyografi en fazla 500 karakter olabilir');
+      Alert.alert('Error', 'Biography can be at most 500 characters');
       return;
     }
 
@@ -215,8 +215,8 @@ const ProfileEditScreen: React.FC = () => {
     updateProfileMutation.mutate(updateData, {
       onSuccess: (data) => {
         console.log('[ProfileEditScreen] ✅ Profile updated successfully:', data);
-        Alert.alert('Başarılı', 'Profil başarıyla güncellendi!', [
-          { text: 'Tamam', onPress: () => navigation.goBack() }
+        Alert.alert('Success', 'Profile updated successfully!', [
+          { text: 'OK', onPress: () => navigation.goBack() }
         ]);
       },
       onError: (error: any) => {
@@ -257,6 +257,11 @@ const ProfileEditScreen: React.FC = () => {
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <Header
@@ -276,7 +281,7 @@ const ProfileEditScreen: React.FC = () => {
         }
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <VStack space="lg">
           {/* Banner Section */}
           <Box position="relative">
@@ -653,6 +658,7 @@ const ProfileEditScreen: React.FC = () => {
         </ModalContent>
       </Modal>
       </Box>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

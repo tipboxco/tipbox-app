@@ -1,20 +1,35 @@
 import React, { useMemo, useCallback } from 'react';
 import { Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
 import { NotificationBadge } from '@/src/components/NotificationBadge';
 import { MessageBadge } from '@/src/components/MessageBadge';
 import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/notifications/api/hooks';
 import { useMessages } from '@/src/features/inbox/api/hooks';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { getHeavyTabFreezeRule } from './rules/freezeRules';
+// Heroicons imports
+import {
+  HomeIcon as HomeIconSolid,
+  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
+  Squares2X2Icon as Squares2X2IconSolid,
+  CalendarIcon as CalendarIconSolid,
+  BellIcon as BellIconSolid,
+  InboxIcon as InboxIconSolid,
+} from 'react-native-heroicons/solid';
+import {
+  HomeIcon as HomeIconOutline,
+  MagnifyingGlassIcon as MagnifyingGlassIconOutline,
+  Squares2X2Icon as Squares2X2IconOutline,
+  CalendarIcon as CalendarIconOutline,
+  BellIcon as BellIconOutline,
+  InboxIcon as InboxIconOutline,
+} from 'react-native-heroicons/outline';
 
 import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
@@ -23,54 +38,13 @@ import { EventsNavigator } from '@/src/features/events/navigation';
 import { NotificationsNavigator } from '@/src/features/notifications/navigation';
 import { InboxNavigator } from '@/src/features/inbox/navigation';
 import type { TabParamList } from './types/tab.types';
-import type { MainStackParamList } from './types/main.types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
-const FeatureStack = createNativeStackNavigator<MainStackParamList>();
 
-// PERFORMANCE FIX: Stack Navigator'ları React.memo ile memoize et
-// Her TabNavigator render'ında yeni instance oluşturulmasını önler
-const FeedStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Feed" component={FeedNavigator} />
-  </FeatureStack.Navigator>
-));
-FeedStackNavigator.displayName = 'FeedStackNavigator';
-
-const ExploreStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Explore" component={ExploreNavigator} />
-  </FeatureStack.Navigator>
-));
-ExploreStackNavigator.displayName = 'ExploreStackNavigator';
-
-const CatalogStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Catalog" component={CatalogNavigator} />
-  </FeatureStack.Navigator>
-));
-CatalogStackNavigator.displayName = 'CatalogStackNavigator';
-
-const EventsStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Events" component={EventsNavigator} />
-  </FeatureStack.Navigator>
-));
-EventsStackNavigator.displayName = 'EventsStackNavigator';
-
-const NotificationStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Notification" component={NotificationsNavigator} />
-  </FeatureStack.Navigator>
-));
-NotificationStackNavigator.displayName = 'NotificationStackNavigator';
-
-const InboxStackNavigator = React.memo(() => (
-  <FeatureStack.Navigator screenOptions={{ headerShown: false }}>
-    <FeatureStack.Screen name="Inbox" component={InboxNavigator} />
-  </FeatureStack.Navigator>
-));
-InboxStackNavigator.displayName = 'InboxStackNavigator';
+// PERFORMANCE FIX: Removed unnecessary FeatureStack wrapper layer
+// Directly use FeedNavigator, ExploreNavigator, etc. - they already return StackNavigators
+// This eliminates one nesting level: Tab > FeatureStack > FeedNavigator → Tab > FeedNavigator
+// Reduces mounting time and React diffing complexity
 
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();
@@ -120,8 +94,8 @@ export const TabNavigator = () => {
     }
     
     return {
-      backgroundColor: '#FAFAFA',
-      borderTopColor: '#E9E9E9',
+      backgroundColor: isDark ? '#000000' : '#FAFAFA',
+      borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : '#E9E9E9',
       height: Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding,
       paddingTop: 4,
       paddingBottom: Platform.OS === 'ios' ? insets.bottom : androidBottomPadding,
@@ -131,7 +105,7 @@ export const TabNavigator = () => {
       right: 0,
       zIndex: 1000,
     };
-  }, [insets.bottom, isTabBarVisible]);
+  }, [insets.bottom, isTabBarVisible, isDark]);
 
   // PERFORMANCE FIX: Tab bar icon render fonksiyonunu useCallback ile memoize et
   // Her tab değişiminde tüm tab'lar için çalışmasını önler
@@ -141,34 +115,45 @@ export const TabNavigator = () => {
     color: string;
     size: number;
   }) => {
-    let iconName: keyof typeof Feather.glyphMap = 'home';
+    // Heroicons: focused durumda solid, unfocused durumda outline kullan
+    const iconProps = {
+      color,
+      width: size,
+      height: size,
+    };
+
+    let IconComponent: React.ComponentType<any> | null = null;
 
     switch (route.name) {
       case 'FeedStack':
-        iconName = 'home';
+        IconComponent = focused ? HomeIconSolid : HomeIconOutline;
         break;
       case 'ExploreStack':
-        iconName = 'search';
+        IconComponent = focused ? MagnifyingGlassIconSolid : MagnifyingGlassIconOutline;
         break;
       case 'CatalogStack':
-        iconName = 'grid';
+        IconComponent = focused ? Squares2X2IconSolid : Squares2X2IconOutline;
         break;
       case 'EventsStack':
-        iconName = 'calendar';
+        IconComponent = focused ? CalendarIconSolid : CalendarIconOutline;
         break;
       case 'NotificationStack':
-        iconName = 'bell';
+        IconComponent = focused ? BellIconSolid : BellIconOutline;
         break;
       case 'InboxStack':
-        iconName = 'inbox';
+        IconComponent = focused ? InboxIconSolid : InboxIconOutline;
         break;
+    }
+
+    if (!IconComponent) {
+      return null;
     }
 
     // Notification icon için badge ekle
     if (route.name === 'NotificationStack') {
       return (
         <View style={{ position: 'relative' }}>
-          <Feather name={iconName} size={size} color={color} />
+          <IconComponent {...iconProps} />
           <NotificationBadge count={unreadCount} />
         </View>
       );
@@ -178,13 +163,13 @@ export const TabNavigator = () => {
     if (route.name === 'InboxStack') {
       return (
         <View style={{ position: 'relative' }}>
-          <Feather name={iconName} size={size} color={color} />
+          <IconComponent {...iconProps} />
           <MessageBadge hasUnread={hasUnreadMessages} />
         </View>
       );
     }
 
-    return <Feather name={iconName} size={size} color={color} />;
+    return <IconComponent {...iconProps} />;
   }, [unreadCount, hasUnreadMessages]);
 
   // PERFORMANCE FIX: Tab press handler'ını useCallback ile memoize et
@@ -202,55 +187,92 @@ export const TabNavigator = () => {
   // Heavy tab'ler için freeze rule
   const heavyTabFreezeRule = getHeavyTabFreezeRule();
 
+  // ARCHITECTURE FIX: Edge-to-Edge Design Pattern
+  // Manual inset management for full-bleed design with controlled background colors
+  // Drawer can extend full height without SafeAreaView constraints
+  const backgroundColor = isDark ? '#000000' : '#FFFFFF';
+  const bottomBarColor = isDark ? '#1A1A1A' : '#FAFAFA';
+
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        // ARCHITECTURE FIX: Tab state persistence
-        // Prevent tabs from unmounting on blur to preserve scroll position and state
-        unmountOnBlur: false,
-        headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
-        tabBarActiveTintColor: '#758600',
-        tabBarInactiveTintColor: '#000000',
-        tabBarShowLabel: false,
-        tabBarStyle,
-      })}
-    >
-      <Tab.Screen
-        name="FeedStack"
-        component={FeedStackNavigator}
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
       />
-      <Tab.Screen
-        name="ExploreStack"
-        component={ExploreStackNavigator}
+
+      {/* Tab Navigator - Tam ekranı kaplar, Drawer buraya kadar uzanabilir */}
+      <View style={{ flex: 1 }}>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            // ARCHITECTURE FIX: Tab state persistence
+            // Prevent tabs from unmounting on blur to preserve scroll position and state
+            unmountOnBlur: false,
+            headerShown: false,
+            tabBarIcon: ({ focused, color, size }) => renderTabBarIcon({ route, focused, color, size }),
+            tabBarActiveTintColor: '#758600',
+            tabBarInactiveTintColor: isDark ? '#FFFFFF' : '#000000',
+            tabBarShowLabel: false,
+            tabBarStyle,
+          })}
+        >
+          <Tab.Screen
+            name="FeedStack"
+            component={FeedNavigator}
+          />
+          <Tab.Screen
+            name="ExploreStack"
+            component={ExploreNavigator}
+          />
+          <Tab.Screen
+            name="CatalogStack"
+            component={CatalogNavigator}
+            options={{
+              // Heavy tab: freeze on blur
+              freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
+            }}
+          />
+          <Tab.Screen
+            name="EventsStack"
+            component={EventsNavigator}
+            options={{
+              // Heavy tab: freeze on blur
+              freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
+            }}
+          />
+          <Tab.Screen
+            name="NotificationStack"
+            component={NotificationsNavigator}
+            listeners={{
+              tabPress: handleNotificationTabPress,
+            }}
+          />
+          <Tab.Screen
+            name="InboxStack"
+            component={InboxNavigator}
+          />
+        </Tab.Navigator>
+      </View>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını boyar (Tab Bar altı) */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor: bottomBarColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
       />
-      <Tab.Screen
-        name="CatalogStack"
-        component={CatalogStackNavigator}
-        options={{
-          // Heavy tab: freeze on blur
-          freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
-        }}
-      />
-      <Tab.Screen
-        name="EventsStack"
-        component={EventsStackNavigator}
-        options={{
-          // Heavy tab: freeze on blur
-          freezeOnBlur: heavyTabFreezeRule.freezeOnBlur,
-        }}
-      />
-      <Tab.Screen
-        name="NotificationStack"
-        component={NotificationStackNavigator}
-        listeners={{
-          tabPress: handleNotificationTabPress,
-        }}
-      />
-      <Tab.Screen
-        name="InboxStack"
-        component={InboxStackNavigator}
-      />
-    </Tab.Navigator>
+    </View>
   );
 };

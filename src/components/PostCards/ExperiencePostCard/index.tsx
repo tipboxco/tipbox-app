@@ -1,8 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import type { ImageSourcePropType } from 'react-native';
+import { Platform } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+// Heroicons imports
+import {
+  EllipsisHorizontalIcon,
+  TagIcon,
+  CubeIcon,
+  StarIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import { PostContextMenu } from '@/src/components/PostContextMenu';
+import {
+  StarIcon as StarIconSolid,
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
@@ -33,8 +50,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
-  const deviceLocale = useDeviceLocale();
-  const [isTranslated, setIsTranslated] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -120,14 +135,20 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       mb={16}
     >
       {/* Action Button */}
-      <Pressable
-        position="absolute"
-        top={12}
-        right={15}
-        zIndex={1}
+      <PostContextMenu
+        postId={data.id}
+        postContent={data.content && data.content.length > 0 ? data.content[0]?.text || '' : ''}
+        postAuthorName={data.user.name}
       >
-        <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
-      </Pressable>
+        <Pressable
+          position="absolute"
+          top={12}
+          right={15}
+          zIndex={1}
+        >
+          <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+        </Pressable>
+      </PostContextMenu>
 
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
@@ -207,7 +228,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
           {data.content.map((item, index) => (
             <VStack key={index} py={8}>
               <HStack space="sm" alignItems="center">
-                <Feather name={item.tag.icon === 'tag' ? 'tag' : 'package'} size={18} color={isDark ? '#fff' : '#000'} fill={isDark ? '#fff' : '#000'} />
+                {item.tag.icon === 'tag' ? (
+                  <TagIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                ) : (
+                  <CubeIcon width={18} height={18} color={isDark ? '#fff' : '#000'} />
+                )}
                 <Text
                   color={isDark ? '$textDark50' : '#000'}
                   fontSize={'$xs'}
@@ -226,13 +251,21 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               </Text>
               <HStack ml={26} mt={8}>
                 {item.rating.map((star, idx) => (
-                  <Feather
-                    key={idx}
-                    name={star ? 'star' : 'star'}
-                    size={12}
-                    color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                    fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                  />
+                  star ? (
+                    <StarIconSolid
+                      key={idx}
+                      width={12}
+                      height={12}
+                      color={isDark ? '#fff' : '#829905'}
+                    />
+                  ) : (
+                    <StarIcon
+                      key={idx}
+                      width={12}
+                      height={12}
+                      color={isDark ? '#7E7E7E' : '#E8E8E8'}
+                    />
+                  )
                 ))}
               </HStack>
             </VStack>
@@ -264,27 +297,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         ))}
       </HStack>
 
-      {/* Translate Button */}
-      <Box pb="$3" px="$3" borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-        <Pressable onPress={() => setIsTranslated(!isTranslated)}>
-          <HStack alignItems="center" space="xs">
-            <Image
-              source={require('@/assets/translate.png')}
-              alt="translate"
-              width={16}
-              height={16}
-            />
-            <Text
-              color="#829905"
-              fontSize={10}
-              textDecorationLine="underline"
-            >
-              {isTranslated ? 'Automatically translated from English.' : 'Translate'}
-            </Text>
-          </HStack>
-        </Pressable>
-      </Box>
-
       {data.images && data.images.length > 0 && (
         <Pressable
           onPress={() => {
@@ -304,12 +316,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       >
         <Pressable onPress={handleLike}>
         <HStack mr={10} alignItems="center">
-            <Feather
-              name="heart"
-              size={24}
-              color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-              fill={isLiked ? '#FF3040' : 'none'}
-            />
+            {isLiked ? (
+              <HeartIconSolid width={24} height={24} color="#FF3040" />
+            ) : (
+              <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+            )}
             <AnimatedCounter
               value={likesCount}
               color={isDark ? '$textDark50' : '#000'}
@@ -320,7 +331,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         </Pressable>
         <Pressable onPress={handleComment}>
         <HStack mr={10} alignItems="center">
-          <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+          <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
             <AnimatedCounter
               value={commentsCount}
               color={isDark ? '$textDark50' : '#000'}
@@ -331,7 +342,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         </Pressable>
         <Pressable onPress={handleShare}>
         <HStack mr={10} alignItems="center">
-          <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+          <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
             <AnimatedCounter
               value={sharesCount}
               color={isDark ? '$textDark50' : '#000'}
@@ -342,12 +353,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         </Pressable>
         <Pressable onPress={handleBookmark}>
         <HStack mr={10} alignItems="center">
-            <Feather
-              name="bookmark"
-              size={24}
-              color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-              fill={isBookmarked ? '#829905' : 'none'}
-            />
+            {isBookmarked ? (
+              <BookmarkIconSolid width={24} height={24} color="#829905" />
+            ) : (
+              <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+            )}
             <AnimatedCounter
               value={bookmarksCount}
               color={isDark ? '$textDark50' : '#000'}

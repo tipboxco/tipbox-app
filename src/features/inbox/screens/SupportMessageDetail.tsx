@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Alert, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Box,
@@ -15,8 +15,9 @@ import {
   ModalBody,
   Input,
   InputField,
+  Pressable,
 } from '@gluestack-ui/themed';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -70,64 +71,7 @@ interface SupportMessageDetailParams {
   recipientUserId?: string;
 }
 
-// Mock mesaj geçmişi verisi
-const mockMessageHistory: MessageDetailItem[] = [
-  {
-    id: '1',
-    text: 'Merhaba! Ürününüz hakkında bilgi almak istiyorum.',
-    timestamp: '10:30',
-    isSent: false,
-    senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
-  },
-  {
-    id: '2',
-    text: 'Tabii ki! Hangi konuda yardımcı olabilirim?',
-    timestamp: '10:32',
-    isSent: true,
-  },
-  {
-    id: '3',
-    text: 'Ürünün teknik özelliklerini ve garantisini öğrenmek istiyorum.',
-    timestamp: '10:33',
-    isSent: false,
-    senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
-  },
-  {
-    id: '4',
-    text: 'Ürünümüzün teknik özellikleri şunlardır:\n\n• İşlemci: Intel Core i7\n• RAM: 16GB DDR4\n• Depolama: 512GB SSD\n• Garanti: 2 yıl\n\nDaha fazla bilgi için web sitemizi ziyaret edebilirsiniz.',
-    timestamp: '10:35',
-    isSent: true,
-  },
-  {
-    id: '5',
-    text: 'Teşekkürler! Fiyat bilgisi de alabilir miyim?',
-    timestamp: '10:36',
-    isSent: false,
-    senderName: 'Mehmet Koç',
-    senderAvatar: require('@/assets/avatar/ozan.png'),
-  },
-  {
-    id: '6',
-    text: 'Tabii! Fiyat bilgisi için özel mesaj gönderebilirim.',
-    timestamp: '10:37',
-    isSent: true,
-  },
-  {
-    id: '7',
-    text: '',
-    timestamp: '10:40',
-    isSent: false,
-    type: 'support_request',
-    supportRequest: {
-      supportType: 'Product Authentication',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
-      amount: 150,
-      status: 'pending',
-    },
-  },
-];
+
 
 const SupportMessageDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -168,10 +112,10 @@ const SupportMessageDetailScreen: React.FC = () => {
   const params = (route.params as SupportMessageDetailParams) || {
     expertName: 'Mehmet Koç',
     expertTitle: 'Technology Enthusiast',
-    expertAvatar: require('@/assets/avatar/ozan.png'),
+    expertAvatar: DEFAULT_USER_AVATAR,
     userName: 'Trevor Nace',
     userTitle: 'Technology Enthusiast',
-    userAvatar: require('@/assets/avatar/ozan.png'),
+    userAvatar: DEFAULT_USER_AVATAR,
     requestId: undefined,
     status: 'pending',
     threadId: null,
@@ -463,7 +407,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleSendMessage = (messageText: string) => {
     if (!messageText.trim()) return;
     if (!threadId) {
-      Alert.alert('Hata', 'Thread ID bulunamadı');
+      Alert.alert('Error', 'Thread ID not found');
       return;
     }
 
@@ -486,7 +430,7 @@ const SupportMessageDetailScreen: React.FC = () => {
     if (isConnected && isSocketReady) {
       socketSendSupportMessage(threadId, messageText.trim());
     } else {
-      Alert.alert('Hata', 'Socket bağlantısı yok');
+      Alert.alert('Error', 'Socket connection not available');
       // Optimistic mesajı geri al
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
     }
@@ -509,7 +453,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleAcceptRequest = (acceptRequestId?: string) => {
     const targetRequestId = acceptRequestId || requestId;
     if (!targetRequestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
@@ -523,7 +467,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       acceptMutation.mutate(targetRequestId, {
         onSuccess: (data) => {
           console.log('[SupportMessageDetail] ✅ Support request accepted, threadId:', data.threadId);
-          Alert.alert('Başarılı', 'Destek talebi kabul edildi');
+          Alert.alert('Success', 'Support request accepted');
           // Inbox listesini invalidate et
           queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
           queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
@@ -534,7 +478,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Support request accept error:', error);
-          Alert.alert('Hata', error.message || 'Destek talebi kabul edilemedi');
+          Alert.alert('Error', error.message || 'Support request could not be accepted');
         },
       });
     }
@@ -544,7 +488,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleRejectRequest = (rejectRequestId?: string) => {
     const targetRequestId = rejectRequestId || requestId;
     if (!targetRequestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
@@ -567,7 +511,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               rejectMutation.mutate(targetRequestId, {
                 onSuccess: () => {
                   console.log('[SupportMessageDetail] ✅ Support request rejected');
-                  Alert.alert('Başarılı', 'Destek talebi reddedildi');
+                  Alert.alert('Success', 'Support request rejected');
                   // Inbox listesini invalidate et
                   queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
                   queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
@@ -578,7 +522,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                 },
                 onError: (error: any) => {
                   console.error('[SupportMessageDetail] ❌ Support request reject error:', error);
-                  Alert.alert('Hata', error.message || 'Destek talebi reddedilemedi');
+                  Alert.alert('Error', error.message || 'Support request could not be rejected');
                 },
               });
             }
@@ -592,7 +536,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleCancelRequest = (cancelRequestId?: string) => {
     const targetRequestId = cancelRequestId || requestId;
     if (!targetRequestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
@@ -613,7 +557,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               cancelMutation.mutate(targetRequestId, {
                 onSuccess: () => {
                   console.log('[SupportMessageDetail] ✅ Support request canceled');
-                  Alert.alert('Başarılı', 'Destek talebi iptal edildi');
+                  Alert.alert('Success', 'Support request cancelled');
                   // Inbox listesini invalidate et
                   queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
                   queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
@@ -624,7 +568,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                 },
                 onError: (error: any) => {
                   console.error('[SupportMessageDetail] ❌ Support request cancel error:', error);
-                  Alert.alert('Hata', error.message || 'Destek talebi iptal edilemedi');
+                  Alert.alert('Error', error.message || 'Support request could not be cancelled');
                 },
               });
             }
@@ -659,7 +603,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   // Handle confirm close request
   const handleConfirmClose = (rating: number) => {
     if (!requestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
@@ -676,7 +620,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       {
         onSuccess: () => {
           console.log('[SupportMessageDetail] ✅ Support request closed successfully');
-          Alert.alert('Başarılı', 'Destek talebi başarıyla kapatıldı');
+          Alert.alert('Success', 'Support request closed successfully');
           setIsCloseModalVisible(false);
           
           // Inbox listesini invalidate et
@@ -688,7 +632,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Close support request error:', error);
-          Alert.alert('Hata', error.message || 'Destek talebi kapatılırken bir hata oluştu');
+          Alert.alert('Error', error.message || 'An error occurred while closing the support request');
         },
       }
     );
@@ -707,12 +651,12 @@ const SupportMessageDetailScreen: React.FC = () => {
   // Handle confirm report
   const handleConfirmReport = () => {
     if (!requestId) {
-      Alert.alert('Hata', 'Request ID bulunamadı');
+      Alert.alert('Error', 'Request ID not found');
       return;
     }
 
     if (!reportReason || reportReason.trim().length === 0) {
-      Alert.alert('Hata', 'Lütfen bir neden belirtin');
+      Alert.alert('Error', 'Please specify a reason');
       return;
     }
 
@@ -729,7 +673,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       {
         onSuccess: () => {
           console.log('[SupportMessageDetail] ✅ Support request reported successfully');
-          Alert.alert('Başarılı', 'Destek talebi başarıyla raporlandı');
+          Alert.alert('Success', 'Support request reported successfully');
           setIsReportModalVisible(false);
           setReportReason('');
           
@@ -742,7 +686,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Report support request error:', error);
-          Alert.alert('Hata', error.message || 'Destek talebi raporlanırken bir hata oluştu');
+          Alert.alert('Error', error.message || 'An error occurred while reporting the support request');
         },
       }
     );
@@ -1088,8 +1032,8 @@ const SupportMessageDetailScreen: React.FC = () => {
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       {/* Header */}
       <MessageDetailHeader
-        senderName={params.expertName}
-        senderTitle={params.expertTitle}
+        senderName={params.expertName ?? 'Expert'}
+        senderTitle={params.expertTitle ?? ''}
         senderAvatar={params.expertAvatar}
         onBackPress={() => navigation.goBack()}
         onMenuPress={() => console.log('Menü tıklandı')}
@@ -1109,12 +1053,12 @@ const SupportMessageDetailScreen: React.FC = () => {
           ListHeaderComponent={
             params.status === 'active' && threadId ? (
               <SupportChatParticipants
-                user1Name={params.expertName}
-                user1Title={params.expertTitle}
+                user1Name={params.expertName ?? 'Expert'}
+                user1Title={params.expertTitle ?? ''}
                 user1Avatar={params.expertAvatar}
                 user2Name={params.userName || 'Trevor Nace'}
                 user2Title={params.userTitle || 'Technology Enthusiast'}
-                user2Avatar={params.userAvatar || require('@/assets/avatar/ozan.png')}
+                user2Avatar={params.userAvatar || DEFAULT_USER_AVATAR }
                 supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
                 tipsAmount={supportRequestInfo?.amount || 50}
                 requestDetails={supportRequestInfo?.message || ''}
@@ -1134,6 +1078,8 @@ const SupportMessageDetailScreen: React.FC = () => {
           }
           contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         />
       </KeyboardAvoidingView>
 
@@ -1190,7 +1136,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         <MessageInput
           onSendMessage={handleSendMessage}
           onAddImage={() => console.log('Görsel eklenecek')}
-          placeholder="Bir mesaj yaz..."
+          placeholder="Write a message..."
           threadId={threadId}
           onTypingStart={handleTypingStart}
           onTypingStop={handleTypingStop}
@@ -1201,43 +1147,45 @@ const SupportMessageDetailScreen: React.FC = () => {
       {params.status === 'pending' && (
         <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
           <HStack space="sm" justifyContent="space-between">
-            <Pressable
-              flex={1}
-              bg="#E8FF6B"
-              borderWidth={1}
-              borderColor="#D8FF08"
-              borderRadius={20}
-              px="$4"
-              py="$3"
-              onPress={handleAcceptRequest}
-            >
-              <Text
-                color="#000000"
-                fontSize={12}
-                fontWeight="$semibold"
-                textAlign="center"
+            <Pressable onPress={() => handleAcceptRequest()}>
+              <Box
+                flex={1}
+                bg="#E8FF6B"
+                borderWidth={1}
+                borderColor="#D8FF08"
+                borderRadius={20}
+                px="$4"
+                py="$3"
               >
-                Kabul Et
-              </Text>
+                <Text
+                  color="#000000"
+                  fontSize={12}
+                  fontWeight="$semibold"
+                  textAlign="center"
+                >
+                  Accept
+                </Text>
+              </Box>
             </Pressable>
-            <Pressable
-              flex={1}
-              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-              borderWidth={1}
-              borderColor={isDark ? '#3A3A3A' : '#E5E5E5'}
-              borderRadius={20}
-              px="$4"
-              py="$3"
-              onPress={handleRejectRequest}
-            >
-              <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={12}
-                fontWeight="$semibold"
-                textAlign="center"
+            <Pressable onPress={() => handleRejectRequest()}>
+              <Box
+                flex={1}
+                bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                borderWidth={1}
+                borderColor={isDark ? '#3A3A3A' : '#E5E5E5'}
+                borderRadius={20}
+                px="$4"
+                py="$3"
               >
-                Reddet
-              </Text>
+                <Text
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  fontSize={12}
+                  fontWeight="$semibold"
+                  textAlign="center"
+                >
+                  Reddet
+                </Text>
+              </Box>
             </Pressable>
           </HStack>
         </Box>
@@ -1247,23 +1195,24 @@ const SupportMessageDetailScreen: React.FC = () => {
       {/* Pending status'ta sender için Cancel butonu */}
       {params.status === 'pending' && user?.id && (
         <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
-          <Pressable
-            bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-            borderWidth={1}
-            borderColor={isDark ? '#3A3A3A' : '#E5E5E5'}
-            borderRadius={20}
-            px="$4"
-            py="$3"
-            onPress={handleCancelRequest}
-          >
-            <Text
-              color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={12}
-              fontWeight="$semibold"
-              textAlign="center"
+          <Pressable onPress={() => handleCancelRequest()}>
+            <Box
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor={isDark ? '#3A3A3A' : '#E5E5E5'}
+              borderRadius={20}
+              px="$4"
+              py="$3"
             >
-              Talebi İptal Et
-            </Text>
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize={12}
+                fontWeight="$semibold"
+                textAlign="center"
+              >
+                Talebi İptal Et
+              </Text>
+            </Box>
           </Pressable>
         </Box>
       )}
@@ -1274,8 +1223,8 @@ const SupportMessageDetailScreen: React.FC = () => {
         onClose={handleCancelClose}
         onConfirm={handleConfirmClose}
         onReport={handleReport}
-        userName={params.expertName}
-        userTitle={params.expertTitle}
+        userName={params.expertName ?? 'Expert'}
+        userTitle={params.expertTitle ?? ''}
         userAvatar={params.expertAvatar}
       />
 
@@ -1318,7 +1267,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                 isReadOnly={false}
               >
                 <InputField
-                  placeholder="Raporlama nedeni..."
+                  placeholder="Reason for reporting..."
                   value={reportReason}
                   onChangeText={setReportReason}
                   multiline

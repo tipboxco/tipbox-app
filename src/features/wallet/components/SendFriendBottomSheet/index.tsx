@@ -10,7 +10,7 @@ import {
   Input,
   InputField,
 } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface Friend {
@@ -47,7 +47,7 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
       {/* Header with back button */}
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={onBack}>
-          <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+          <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
         <HStack flex={1} justifyContent="center" alignItems="center">
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
@@ -74,7 +74,7 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
         />
         <Input flex={1} borderWidth={0} bg="transparent">
           <InputField
-            placeholder="Arkadaş ara"
+            placeholder="Search friend"
             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
             color={isDark ? '#fff' : '#000'}
             fontSize={11}

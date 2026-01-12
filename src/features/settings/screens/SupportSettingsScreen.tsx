@@ -11,15 +11,13 @@ import {
   Button,
   ButtonText,
   useToast,
-  Toast,
-  ToastTitle,
-  ToastDescription,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSupportSessionPrice, useUpdateSupportSessionPrice } from '../api/hooks';
+import { CustomToast } from '@/src/components/CustomToast';
 
 const MIN_PRICE = 50;
 const TIPS_TO_USD_RATIO = 10; // 10 TIPS = 1 USD
@@ -67,13 +65,15 @@ export const SupportSettingsScreen = () => {
     if (!price || price < MIN_PRICE) {
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }) => (
-          <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Geçersiz Fiyat</ToastTitle>
-              <ToastDescription>Minimum {MIN_PRICE} TIPS olmalıdır</ToastDescription>
-            </Toast>
-          </Box>
+          <CustomToast
+            id={id}
+            title="Geçersiz fiyat"
+            description={`Minimum ${MIN_PRICE} TIPS olmalıdır`}
+            action="error"
+            duration={3000}
+          />
         ),
       });
       return;
@@ -84,13 +84,15 @@ export const SupportSettingsScreen = () => {
       setHasChanges(false);
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }) => (
-          <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>Başarılı</ToastTitle>
-              <ToastDescription>Destek oturumu fiyatı güncellendi</ToastDescription>
-            </Toast>
-          </Box>
+          <CustomToast
+            id={id}
+            title="Fiyat güncellendi"
+            description="Destek oturumu fiyatı başarıyla güncellendi"
+            action="success"
+            duration={3000}
+          />
         ),
       });
     } catch (error: any) {
@@ -100,13 +102,15 @@ export const SupportSettingsScreen = () => {
                           'Fiyat güncellenirken bir hata oluştu';
       toast.show({
         placement: 'top',
+        duration: 4000,
         render: ({ id }) => (
-          <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Hata</ToastTitle>
-              <ToastDescription>{errorMessage}</ToastDescription>
-            </Toast>
-          </Box>
+          <CustomToast
+            id={id}
+            title="Hata"
+            description={errorMessage}
+            action="error"
+            duration={4000}
+          />
         ),
       });
     }

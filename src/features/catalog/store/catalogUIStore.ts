@@ -37,22 +37,34 @@ export const useCatalogUIStore = create<CatalogUIState>()(
       
       // Set selected product ID
       setSelectedProduct: (productId: string | undefined) => {
-        set({ selectedProductId: productId });
+        const current = get().selectedProductId;
+        if (current !== productId) {
+          set({ selectedProductId: productId });
+        }
       },
       
       // Set selected sub category ID
       setSelectedSubCategory: (subCategoryId: string | undefined) => {
-        set({ selectedSubCategoryId: subCategoryId });
+        const current = get().selectedSubCategoryId;
+        if (current !== subCategoryId) {
+          set({ selectedSubCategoryId: subCategoryId });
+        }
       },
       
       // Set selected product group ID
       setSelectedProductGroup: (productGroupId: string | undefined) => {
-        set({ selectedProductGroupId: productGroupId });
+        const current = get().selectedProductGroupId;
+        if (current !== productGroupId) {
+          set({ selectedProductGroupId: productGroupId });
+        }
       },
       
       // Set current view
       setCurrentView: (view: 'categories' | 'subcategories' | 'productgroups' | 'products') => {
-        set({ currentView: view });
+        const current = get().currentView;
+        if (current !== view) {
+          set({ currentView: view });
+        }
       },
       
       // Clear all selections

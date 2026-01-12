@@ -439,7 +439,7 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                         alignItems="center"
                     >
                         <Image
-                            source={require('@/assets/avatar/ozan.png')}
+                            source={require('@/assets/avatar/default-useravatar.png')}
                             alt="Expert Avatar"
                             width={42}
                             height={42}

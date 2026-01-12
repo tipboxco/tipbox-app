@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -65,7 +66,11 @@ export const SelectCategoriesScreen = () => {
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
   const { completeRegistration } = useAppStore();
   const updateInterestsMutation = useUpdateUserInterests();
+  const insets = useSafeAreaInsets();
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
+  
+  // Edge-to-Edge Design: Top ve bottom insets için beyaz background
+  const backgroundColor = '#FFFFFF';
 
   const handleSelectSubCategory = (subCategoryId: string) => {
     setSelectedSubCategories((prev) => {
@@ -97,20 +102,35 @@ export const SelectCategoriesScreen = () => {
         // isAuthenticated değişikliği otomatik olarak yeni stack'i render eder
       } catch (error: any) {
         // Hata durumunda kullanıcıya bilgi ver
-        const errorMessage = error.response?.data?.message || error.message || 'Kategoriler kaydedilirken bir hata oluştu.';
-        Alert.alert('Hata', errorMessage, [{ text: 'Tamam' }]);
+        const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving categories.';
+        Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
         console.error('[SelectCategoriesScreen] Update interests error:', error);
       }
     }
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-      p="$4"
-    >
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Ana İçerik */}
+      <View style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+          p="$4"
+        >
       <VStack flex={1} space="md">
         <Text
           fontSize="$2xl"
@@ -118,7 +138,7 @@ export const SelectCategoriesScreen = () => {
           color={isDark ? '$textDark50' : '$textLight900'}
           textAlign="center"
         >
-          İlgi Alanlarınızı Seçin
+          Select Your Interests
         </Text>
         
         <Text
@@ -127,7 +147,7 @@ export const SelectCategoriesScreen = () => {
           textAlign="center"
           mb="$4"
         >
-          Size özel içerikler sunabilmemiz için en az bir kategori seçin
+          Select at least one category so we can provide you with personalized content
         </Text>
 
         <ScrollView flex={1} showsVerticalScrollIndicator={false}>
@@ -147,6 +167,7 @@ export const SelectCategoriesScreen = () => {
           py="$1"
           rounded="$lg"
           mt="$4"
+          mb={insets.bottom + 16}
           onPress={handleNext}
           opacity={selectedSubCategories.length > 0 && !updateInterestsMutation.isPending ? 1 : 0.5}
           disabled={selectedSubCategories.length === 0 || updateInterestsMutation.isPending}
@@ -155,12 +176,26 @@ export const SelectCategoriesScreen = () => {
             <Spinner size="small" color="$textLight900" />
           ) : (
             <ButtonText color="$textLight900">
-              {`Devam Et (${selectedSubCategories.length} seçili)`}
+              {`Continue (${selectedSubCategories.length} selected)`}
             </ButtonText>
           )}
         </Button>
       </VStack>
       </Box>
-    </SafeAreaView>
+      </View>
+
+      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };

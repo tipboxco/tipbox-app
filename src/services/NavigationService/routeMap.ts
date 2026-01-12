@@ -6,38 +6,44 @@ import type { FeatureRouteMap } from './types';
  * Navigation tree yapısından bağımsız navigation için route mapping.
  * Navigation tree değişirse sadece bu mapping güncellenir.
  * 
- * Yapı: MainDrawer → Tabs → Tab → Feature Screen
+ * Yapı: App → MainTabs → TabStack → Feature Screen
+ * 
+ * Navigation Path:
+ * - Root: App (RootStackParamList)
+ * - TabContainer: MainTabs (DrawerParamList)
+ * - Tab: FeedStack, ExploreStack, CatalogStack, vb. (TabParamList)
+ * - Screen: Feed, Explore, Catalog, vb. (MainStackParamList)
  */
 export const FEATURE_ROUTE_MAP: FeatureRouteMap = {
   FEED: {
-    root: 'MainDrawer',
-    tabContainer: 'Tabs',
-    tab: 'Feed',
+    root: 'App',
+    tabContainer: 'MainTabs',
+    tab: 'FeedStack',
   },
   EXPLORE: {
-    root: 'MainDrawer',
-    tabContainer: 'Tabs',
-    tab: 'Explore',
+    root: 'App',
+    tabContainer: 'MainTabs',
+    tab: 'ExploreStack',
   },
   CATALOG: {
-    root: 'MainDrawer',
-    tabContainer: 'Tabs',
-    tab: 'Catalog',
+    root: 'App',
+    tabContainer: 'MainTabs',
+    tab: 'CatalogStack',
   },
   EVENTS: {
-    root: 'MainDrawer',
-    tabContainer: 'Tabs',
-    tab: 'Events',
+    root: 'App',
+    tabContainer: 'MainTabs',
+    tab: 'EventsStack',
   },
   NOTIFICATION: {
-    root: 'MainDrawer',
-    tabContainer: 'Tabs',
-    tab: 'Notification',
+    root: 'App',
+    tabContainer: 'MainTabs',
+    tab: 'NotificationStack',
   },
   INBOX: {
-    root: 'MainDrawer',
-    tabContainer: 'Tabs',
-    tab: 'Inbox',
+    root: 'App',
+    tabContainer: 'MainTabs',
+    tab: 'InboxStack',
   },
 } as const;
 

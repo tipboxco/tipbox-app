@@ -8,7 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
+import { BookOpenIcon } from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useNewsDetail } from '../api/hooks';
 
@@ -82,7 +82,7 @@ const NewsDetailScreen: React.FC = () => {
               <VStack space="md">
                 {/* Source and Date */}
                 <HStack alignItems="center" space="xs">
-                  <Feather name="book-open" size={12} color="#B9B9B9" />
+                  <BookOpenIcon width={12} height={12} color="#B9B9B9" />
                   <Text
                     color="#B9B9B9"
                     fontSize={9}

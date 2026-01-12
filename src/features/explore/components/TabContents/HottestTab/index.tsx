@@ -27,13 +27,30 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 
 interface HottestTabProps {
   searchQuery?: string;
+  headerComponent?: React.ReactElement | null;
 }
 
 // Map Feed to PostCardData
 const mapFeedToCardData = (item: ProfilePost): PostCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const contentString = Array.isArray(item.content)
     ? item.content.map((contentItem) => contentItem.content || '').join(' ')
     : (item.content || '');
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+  // contextData.image için fallback
+  const contextImage = item.contextData?.image
+    ? toImageSource(item.contextData.image)
+    : undefined;
+  const contextData = item.contextData
+    ? {
+        ...item.contextData,
+        image: contextImage || item.contextData.image || defaultPostImage,
+      }
+    : undefined;
 
   return {
     id: item.id,
@@ -44,16 +61,17 @@ const mapFeedToCardData = (item: ProfilePost): PostCardData => {
       avatar: toImageSource(item.user.avatar)!,
     },
     content: contentString,
-    images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+    images,
     stats: item.stats,
     createdAt: item.createdAt,
     contextType: item.contextType,
-    contextData: item.contextData,
+    contextData,
   };
 };
 
 // Map Experience (ReviewApiItem) to ReviewCardData
 const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): ReviewCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(item.user.avatar)!;
   const productImage = item.contextData?.image
     ? toImageSource(item.contextData.image)
@@ -69,6 +87,12 @@ const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): 
       .fill(false)
       .map((_, index) => index < (contentItem.rating || 0)),
   }));
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = item.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
   return {
     id: item.id,
@@ -88,9 +112,7 @@ const mapExperienceToCardData = (item: ReviewApiItem & { type: 'experience' }): 
     },
     content,
     tags: item.tags,
-    images: item.images
-      ?.map((img) => toImageSource(img))
-      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    images,
     stats: item.stats,
     createdAt: item.createdAt,
   };
@@ -126,6 +148,7 @@ const mapBenchmarkToCardData = (item: BenchmarkApiItem & { type: 'benchmark' }):
 
 // Map Tips to TipsCardData
 const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(item.user.avatar)!;
 
   const product: TipsProduct = {
@@ -143,6 +166,12 @@ const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsC
     product,
   };
 
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = item.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
   return {
     id: item.id,
     user: {
@@ -153,9 +182,7 @@ const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsC
     },
     category,
     content: item.content,
-    images: item.images
-      ?.map((img) => toImageSource(img))
-      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+    images,
     stats: item.stats,
     tag: item.tag,
     createdAt: item.createdAt,
@@ -164,6 +191,7 @@ const mapTipsToCardData = (item: TipsApiItem & { type: 'tipsAndTricks' }): TipsC
 
 // Map Question to QuestionCardData
 const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): QuestionCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(item.user.avatar)!;
 
   const product: QuestionCardProduct = {
@@ -181,6 +209,12 @@ const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): Qu
     product,
   };
 
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = item.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
   return {
     id: item.id,
     user: {
@@ -192,9 +226,7 @@ const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): Qu
     category,
     content: item.content,
     isBoosted: item.isBoosted,
-    images: item.images
-      ?.map((img) => toImageSource(img))
-      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+    images,
     stats: item.stats,
     createdAt: item.createdAt,
   };
@@ -202,6 +234,7 @@ const mapQuestionToCardData = (item: QuestionApiItem & { type: 'question' }): Qu
 
 // Map Update to UpdateCardData
 const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCardData => {
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
   const avatarSource = toImageSource(item.user.avatar)!;
   
   let productInfoType: ProductInfoType = ProductInfoType.PRODUCT;
@@ -211,22 +244,60 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
     productInfoType = ProductInfoType.SUB_CATEGORY;
   }
 
-  const relatedPostContent = item.relatedPost.content.map((contentItem) => {
-    const ratingArray: number[] = Array(5).fill(0);
-    const ratingValue = Math.min(Math.max(Math.round(contentItem.rating / 20), 0), 5);
-    for (let i = 0; i < ratingValue; i++) {
-      ratingArray[i] = 1;
-    }
+  // relatedPost null check
+  if (!item.relatedPost) {
+    console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
+    const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
+    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
     return {
-      tag: {
-        icon: 'tag',
-        title: contentItem.title,
+      id: item.id,
+      user: {
+        id: item.user.id,
+        name: item.user.name,
+        title: item.user.title,
+        avatar: avatarSource,
       },
-      text: contentItem.content,
-      rating: ratingArray,
+      stats: item.stats,
+      createdAt: item.createdAt,
+      contextType: productInfoType,
+      product: {
+        id: '',
+        name: '',
+        subName: '',
+        image: require('@/assets/inventory/product_01.png'),
+        isOwned: false,
+      },
+      content: item.content || '',
+      images,
+      relatedPost: undefined,
     };
-  });
+  }
+
+  const relatedPostContent = (item.relatedPost?.content && Array.isArray(item.relatedPost.content))
+    ? item.relatedPost.content
+        .filter((contentItem) => contentItem != null)
+        .map((contentItem) => {
+          const ratingArray: number[] = Array(5).fill(0);
+          const ratingValue = Math.min(Math.max(Math.round((contentItem?.rating || 0) / 20), 0), 5);
+          for (let i = 0; i < ratingValue; i++) {
+            ratingArray[i] = 1;
+          }
+
+          return {
+            tag: {
+              icon: 'tag',
+              title: contentItem?.title || '',
+            },
+            text: contentItem?.content || '',
+            rating: ratingArray,
+          };
+        })
+    : [];
+
+  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+  const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
 
   return {
     id: item.id,
@@ -240,31 +311,31 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
     createdAt: item.createdAt,
     contextType: productInfoType,
     product: {
-      id: item.relatedPost.product.id,
-      name: item.relatedPost.product.name,
-      subName: item.relatedPost.product.subName,
-      image: toImageSource(item.relatedPost.product.image)!,
-      isOwned: item.relatedPost.product.isOwned,
+      id: item.relatedPost?.product?.id || '',
+      name: item.relatedPost?.product?.name || '',
+      subName: item.relatedPost?.product?.subName || '',
+      image: toImageSource(item.relatedPost?.product?.image) || require('@/assets/inventory/product_01.png'),
+      isOwned: item.relatedPost?.product?.isOwned || false,
     },
     content: item.content,
-    images: item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
-    relatedPost: {
+    images,
+    relatedPost: item.relatedPost ? {
       id: item.relatedPost.id,
       product: {
-        id: item.relatedPost.product.id,
-        name: item.relatedPost.product.name,
-        subName: item.relatedPost.product.subName,
-        image: toImageSource(item.relatedPost.product.image)!,
-        isOwned: item.relatedPost.product.isOwned,
+        id: item.relatedPost.product?.id || '',
+        name: item.relatedPost.product?.name || '',
+        subName: item.relatedPost.product?.subName || '',
+        image: toImageSource(item.relatedPost.product?.image) || require('@/assets/inventory/product_01.png'),
+        isOwned: item.relatedPost.product?.isOwned || false,
       },
       content: relatedPostContent,
-      tags: item.relatedPost.tags,
+      tags: item.relatedPost.tags || [],
       images: item.relatedPost.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
-    },
+    } : undefined,
   };
 };
 
-const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
+const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerComponent }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -413,14 +484,14 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
     return (
       <Box py="$8" alignItems="center">
         <Text color={isDark ? '#FFFFFF' : '#000000'}>
-          Henüz içerik bulunmuyor.
+          No content found yet.
         </Text>
       </Box>
     );
   }
 
   return (
-    <Box px="$4" pt={0} mt={0}>
+    <Box flex={1} pt={0} mt={0}>
       <FlatList
         data={hottestItems}
         renderItem={({ item }) => renderHottestItem(item)}
@@ -428,13 +499,15 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery }) => {
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.1}
         removeClippedSubviews={true}
-        contentContainerStyle={{ paddingTop: 0, paddingBottom: bottomPadding }}
+        contentContainerStyle={{ paddingTop: 16, paddingBottom: bottomPadding, paddingHorizontal: 16 }}
         initialNumToRender={3}
         maxToRenderPerBatch={3}
         windowSize={5}
+        ListHeaderComponent={headerComponent}
         ListFooterComponent={LoadingFooter}
-        scrollEnabled={false}
-        nestedScrollEnabled={true}
+        scrollEnabled={true}
+        nestedScrollEnabled={false}
+        showsVerticalScrollIndicator={true}
       />
     </Box>
   );

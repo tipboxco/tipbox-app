@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   Box, 
   VStack, 
@@ -9,7 +9,7 @@ import {
   ButtonText,
   Pressable
 } from '@gluestack-ui/themed';
-import { TextInput } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 
@@ -35,6 +35,10 @@ export const VerifyCodeScreen = ({
 
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const insets = useSafeAreaInsets();
+
+  // Edge-to-Edge Design: Top insets için beyaz background
+  const backgroundColor = '#FFFFFF';
 
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [focusedIndex, setFocusedIndex] = useState(0);
@@ -81,8 +85,38 @@ export const VerifyCodeScreen = ({
   // Digit değişimi → sonraki input focus
   const handleCodeChange = (value: string, index: number) => {
     // Sadece rakamları kabul et
-    const digit = value.replace(/[^0-9]/g, '');
-    if (digit.length > 1) return;
+    const digits = value.replace(/[^0-9]/g, '');
+    
+    // Yapıştırma işlemi: Eğer birden fazla karakter varsa, tüm kodu dağıt
+    if (digits.length > 1) {
+      setCode((prevCode) => {
+        const newCode = [...prevCode];
+        // Mevcut pozisyondan başlayarak, kalan hücrelere karakterleri dağıt
+        let remainingDigits = digits.slice(0, 6); // Maksimum 6 karakter
+        let currentIndex = index;
+        
+        while (remainingDigits.length > 0 && currentIndex < 6) {
+          newCode[currentIndex] = remainingDigits[0];
+          remainingDigits = remainingDigits.slice(1);
+          currentIndex++;
+        }
+        
+        // Son doldurulan hücreye focus yap
+        const lastFilledIndex = Math.min(index + digits.length - 1, 5);
+        if (lastFilledIndex < 6) {
+          nextFocusIndexRef.current = lastFilledIndex;
+        } else {
+          // Tüm kod dolduruldu, focus'u kaldır
+          nextFocusIndexRef.current = null;
+        }
+        
+        return newCode;
+      });
+      return;
+    }
+    
+    // Tek karakter girişi (normal kullanım)
+    const digit = digits.slice(0, 1);
     
     // Functional update kullanarak güncel state'i garanti et
     setCode((prevCode) => {
@@ -129,8 +163,23 @@ export const VerifyCodeScreen = ({
   };
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+
+      {/* Ana İçerik */}
+      <View style={{ flex: 1 }}>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
 
       <Header
         title={headerTitle}
@@ -221,7 +270,8 @@ export const VerifyCodeScreen = ({
         </Button>
       </VStack>
       </Box>
-    </SafeAreaView>
+      </View>
+    </View>
   );
 };
 

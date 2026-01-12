@@ -135,7 +135,7 @@ const SelectNFTScreen = () => {
           ) : userNFTData.length === 0 ? (
             <Box flex={1} justifyContent="center" alignItems="center" px="$4">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Henüz NFT'niz bulunmuyor.
+                No NFTs found yet.
               </Text>
             </Box>
           ) : (

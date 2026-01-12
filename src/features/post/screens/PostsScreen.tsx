@@ -14,12 +14,18 @@ import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { useBottomOffset } from '@/src/utils';
+import { useCreatePostFlowStore } from '../store/createPostFlowStore';
+import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
+import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useFeed } from '@/src/features/feed/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
 import type { ProfilePost } from '@/src/features/profile/types';
-import { toImageSource } from '@/src/utils';
+import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
+import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
+import type { QuestionApiItem } from '@/src/types/QuestionCard';
+import type { ReviewApiItem } from '@/src/types/ReviewsCard';
+import type { UpdateApiItem } from '@/src/types/UpdateCard';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 
 const MEDUSA_BASE_URL =
@@ -229,7 +235,7 @@ export const PostsScreen = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: bottomOffset,
         onChange: (index: number) => {
           if (index === -1) {
@@ -399,9 +405,84 @@ export const PostsScreen = () => {
           )}
         </Box>
 
-        {/* Create Button - Sadece Product varsa göster */}
-        {product && (
-          <CreateButton onPress={handleCreatePress} />
+        {/* Feed Items */}
+        {isLoading && feedItems.length === 0 ? (
+          <FeedSkeleton count={5} />
+        ) : error ? (
+          <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+            <VStack space="md" alignItems="center">
+              <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
+                Feed Yüklenemedi
+              </Text>
+              <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" textAlign="center">
+                {error.message || 'Bilinmeyen bir hata oluştu'}
+              </Text>
+            </VStack>
+          </Box>
+        ) : feedItems.length === 0 ? (
+          <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+            <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
+              No posts found for this context yet.
+            </Text>
+          </Box>
+        ) : (
+          <FlatList
+            data={feedItems}
+            renderItem={({ item }) => {
+              // FeedScreen'deki render mantığını kullan
+              // Şimdilik basit bir render yapalım, daha sonra FeedScreen'deki mapping fonksiyonlarını ekleyebiliriz
+              switch (item.type) {
+                case 'post':
+                  return (
+                    <Box px={16} py={8}>
+                      <PostCard
+                        data={{
+                          id: (item.data as ProfilePost).id,
+                          user: {
+                            id: (item.data as ProfilePost).user.id,
+                            name: (item.data as ProfilePost).user.name,
+                            title: (item.data as ProfilePost).user.title,
+                            avatar: toImageSource((item.data as ProfilePost).user.avatar) || DEFAULT_USER_AVATAR,
+                          },
+                          content: (() => {
+                            const postContent = (item.data as ProfilePost).content;
+                            if (Array.isArray(postContent)) {
+                              return postContent.map((c: any) => c?.content || '').join(' ');
+                            }
+                            return typeof postContent === 'string' ? postContent : '';
+                          })(),
+                          images: (item.data as ProfilePost).images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img),
+                          stats: (item.data as ProfilePost).stats,
+                          createdAt: (item.data as ProfilePost).createdAt,
+                          contextType: (item.data as ProfilePost).contextType,
+                          contextData: (item.data as ProfilePost).contextData,
+                        }}
+                        hideProduct={true}
+                      />
+                    </Box>
+                  );
+                default:
+                  return null;
+              }
+            }}
+            keyExtractor={(item) => item.data.id}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.1}
+            ListFooterComponent={() => {
+              if (!isFetchingNextPage) return null;
+              return (
+                <Box py={20} alignItems="center">
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
+              );
+            }}
+            contentContainerStyle={{ paddingBottom: bottomOffset }}
+            showsVerticalScrollIndicator={false}
+          />
         )}
       </Box>
     </SafeAreaView>

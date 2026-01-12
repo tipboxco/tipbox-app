@@ -38,6 +38,8 @@ export const AppDrawerNavigator = () => {
         swipeEdgeWidth: 50, // CRITICAL: Edge swipe genişliği (default: 32)
         drawerStyle: {
           width: '75%', // Optimal drawer width
+          zIndex: 10000, // FIX: Drawer'ın SafeAreaView'in üstünde görünmesi için (SafeAreaView zIndex: 100)
+          elevation: 10000, // Android için elevation
         },
         // CRITICAL: Production-grade animation config - Twitter/X hızında
         drawerHideStatusBarOnOpen: false, // Status bar'ı gizleme (titreme önleme)

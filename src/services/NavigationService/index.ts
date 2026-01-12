@@ -173,7 +173,6 @@ class NavigationService {
     // ARCHITECTURE FIX: Navigation Queue Pattern
     // Navigation ready değilse queue'ya ekle, ready olduğunda consume edilir
     if (!this.isReady()) {
-      console.log('[NavigationService] ⏳ Navigation not ready, adding to queue:', routeName);
       this.pendingNavigationQueue.push({
         route: routeName as string,
         params,
@@ -242,36 +241,49 @@ class NavigationService {
     screenName: string,
     params?: unknown
   ): void {
+    console.log('[NavigationService] navigateNested called:', { tabName, screenName, params });
+    
     if (!this.isReady()) {
+      console.warn('[NavigationService] ⚠️ Navigation is not ready');
       return;
     }
 
     try {
       // Route mapping pattern: Navigation tree'den bağımsız
       const routeMapping = getRouteMapping(tabName);
+      console.log('[NavigationService] Route mapping:', routeMapping);
       
       if (!routeMapping) {
+        console.error('[NavigationService] ❌ Route mapping not found for tab:', tabName);
         this.logger.error('Route mapping not found for tab:', tabName);
         return;
       }
 
       // Build navigation params using route mapping
-      // Yapı: root → tabContainer → tab → screen
+      // Yapı: root → tabContainer → tabStack → feature → screen
+      // Örnek: App → MainTabs → FeedStack → Feed → ScreenName
       const navigationParams: any = {
-        screen: routeMapping.tabContainer || 'Tabs',
+        screen: routeMapping.tabContainer || 'MainTabs',
         params: {
           screen: routeMapping.tab,
           params: {
-            screen: screenName,
-            params: params,
+            screen: tabName, // MainStackParamList key'i (Feed, Explore, Catalog, vb.)
+            params: {
+              screen: screenName,
+              params: params,
+            },
           },
         },
       };
       
+      console.log('[NavigationService] Navigation params:', JSON.stringify(navigationParams, null, 2));
+      
       // Navigate using root route from mapping
       (this.navigationRef!.current!.navigate as any)(routeMapping.root, navigationParams);
+      console.log('[NavigationService] ✅ Navigated nested:', tabName, screenName, params);
       this.logger.log('Navigated nested:', tabName, screenName, params);
     } catch (error) {
+      console.error('[NavigationService] ❌ Nested navigation error:', error);
       this.logger.error('Nested navigation error:', error);
       this.logger.error('Tab:', tabName, 'Screen:', screenName, 'Params:', params);
     }
@@ -397,13 +409,11 @@ class NavigationService {
       return;
     }
 
-    console.log('[NavigationService] 🔄 Consuming pending navigation queue:', this.pendingNavigationQueue.length, 'items');
 
     // Queue'daki tüm navigation'ları FIFO sırasıyla consume et
     while (this.pendingNavigationQueue.length > 0) {
       const pending = this.pendingNavigationQueue.shift();
       if (pending) {
-        console.log('[NavigationService] 📍 Consuming queued navigation:', pending.route, pending.params);
         // Navigate et (bu sefer ready olduğu için direkt execute edilir)
         this.navigate(pending.route as any, pending.params, pending.options);
       }
@@ -415,7 +425,6 @@ class NavigationService {
    * Kullanıcı logout olduğunda veya navigation reset edildiğinde çağrılır
    */
   clearPendingNavigationQueue(): void {
-    console.log('[NavigationService] 🧹 Clearing pending navigation queue');
     this.pendingNavigationQueue = [];
   }
 }

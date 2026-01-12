@@ -35,7 +35,7 @@ import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateEventPost } from '../api/hooks';
+import { useCreateEventPostNew } from '../api/hooks';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventsStackParamList, 'EventCreatePost'>;
@@ -46,7 +46,8 @@ const EventCreatePost: React.FC = () => {
     const navigation = useNavigation<EventCreatePostNavigationProp>();
     const route = useRoute<EventCreatePostRouteProp>();
 
-    const [content, setContent] = useState('');
+    const [title, setTitle] = useState(''); // YENİ: Title field (max 200 char)
+    const [content, setContent] = useState(''); // Body field (max 2000 char)
     const [selectedProduct, setSelectedProduct] = useState<Category | null>(null);
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
@@ -66,8 +67,8 @@ const EventCreatePost: React.FC = () => {
     const eventProduct = route.params?.product;
     const routeProductSource = route.params?.productSource;
     
-    // Event post mutation hook
-    const createEventPostMutation = useCreateEventPost(eventId || '');
+    // YENİ: Event post mutation hook (/events/{eventId}/posts endpoint kullanır)
+    const createPostMutation = useCreateEventPostNew(eventId || '');
     
     // Auto-select product if eventType is TYPE2
     useEffect(() => {
@@ -111,7 +112,7 @@ const EventCreatePost: React.FC = () => {
                 enableHandlePanningGesture: true,
                 enableContentPanningGesture: true,
                 enableDynamicSizing: true,
-                animateOnMount: true,
+                animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
                 paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
             }
         );
@@ -255,7 +256,8 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            if (!content.trim()) {
+            // Title validation (max 200 char)
+            if (!title.trim()) {
                 toast.show({
                     placement: 'top',
                     render: ({ id }: { id: string }) => {
@@ -263,7 +265,7 @@ const EventCreatePost: React.FC = () => {
                             <Box maxWidth="90%" alignSelf="center" px="$4">
                                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
                                     <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>Post açıklaması gereklidir.</ToastDescription>
+                                    <ToastDescription>Başlık gereklidir.</ToastDescription>
                                 </Toast>
                             </Box>
                         );
@@ -272,14 +274,49 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Product ID'yi al (eğer product seçildiyse)
-            const productId = selectedProduct?.id;
+            // Body validation (max 2000 char)
+            if (!content.trim()) {
+                toast.show({
+                    placement: 'top',
+                    render: ({ id }: { id: string }) => {
+                        return (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastDescription>İçerik gereklidir.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        );
+                    },
+                });
+                return;
+            }
 
-            // API çağrısı
-            const response = await createEventPostMutation.mutateAsync({
-                description: content.trim(),
-                productId: productId,
-                images: selectedImages,
+            // Product seçimi opsiyonel (EVENT_GUIDE.MD'ye göre)
+            // Ancak mevcut UI flow'da product seçilmesi beklendiği için kontrol ekliyoruz
+            if (!selectedProduct) {
+                toast.show({
+                    placement: 'top',
+                    render: ({ id }: { id: string }) => {
+                        return (
+                            <Box maxWidth="90%" alignSelf="center" px="$4">
+                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastDescription>Lütfen bir ürün seçin.</ToastDescription>
+                                </Toast>
+                            </Box>
+                        );
+                    },
+                });
+                return;
+            }
+
+            // YENİ API çağrısı - /events/{eventId}/posts endpoint'ini kullan
+            // NOT: Artık /posts/free yerine /events/{eventId}/posts kullanılıyor!
+            const response = await createPostMutation.mutateAsync({
+                title: title.trim(),
+                body: content.trim(),
+                productId: selectedProduct?.id, // Opsiyonel
             });
 
             console.log('Event post created:', response);
@@ -304,9 +341,25 @@ const EventCreatePost: React.FC = () => {
         } catch (error: any) {
             console.error('Event post creation error:', error);
             
-            const errorMessage = error?.response?.data?.message || 
-                                error?.message || 
-                                'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+            // Backend hata mesajlarını parse et (EVENT_GUIDE.MD Section 7)
+            const errorCode = error?.response?.data?.error?.code;
+            const errorMessage = error?.response?.data?.error?.message;
+            
+            let displayMessage = 'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+            
+            switch (errorCode) {
+                case 'EVENT_NOT_FOUND':
+                    displayMessage = 'Event bulunamadı';
+                    break;
+                case 'NOT_JOINED':
+                    displayMessage = 'Bu event\'e post paylaşmak için önce katılmalısınız';
+                    break;
+                case 'VALIDATION_ERROR':
+                    displayMessage = errorMessage || 'Lütfen tüm alanları doldurun';
+                    break;
+                default:
+                    displayMessage = errorMessage || displayMessage;
+            }
             
             toast.show({
                 placement: 'top',
@@ -315,7 +368,7 @@ const EventCreatePost: React.FC = () => {
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
                                 <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>{errorMessage}</ToastDescription>
+                                <ToastDescription>{displayMessage}</ToastDescription>
                             </Toast>
                         </Box>
                     );
@@ -326,8 +379,9 @@ const EventCreatePost: React.FC = () => {
 
     // Check if share button should be enabled
     // TYPE2 event'lerde product zaten seçili, TYPE1'de product seçilmeli
-    // Her durumda content ve eventId gereklidir
+    // Her durumda title, content ve eventId gereklidir
     const isShareEnabled = !!eventId && 
+                           title.trim().length > 0 &&
                            content.trim().length > 0 && 
                            (eventType === EventType.TYPE2 || selectedProduct !== null);
 
@@ -374,6 +428,46 @@ const EventCreatePost: React.FC = () => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <VStack space="lg" p="$4">
+                    {/* Title Field - YENİ (EVENT_GUIDE.MD Section 3.1) */}
+                    <VStack space="xs">
+                        <Text
+                            color={isDark ? '$textDark200' : '#999999'}
+                            fontSize={14}
+                        >
+                            Post Başlığı
+                        </Text>
+                        <Textarea
+                            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                            borderWidth={1}
+                            borderColor={isDark ? '#333' : '#D9D9D9'}
+                            borderRadius={8}
+                            height={60}
+                        >
+                            <TextareaInput
+                                placeholder="Başlık giriniz... (max 200 karakter)"
+                                value={title}
+                                onChangeText={(text) => {
+                                    if (text.length <= 200) {
+                                        setTitle(text);
+                                    }
+                                }}
+                                color={isDark ? '$textDark50' : '$textLight900'}
+                                placeholderTextColor={isDark ? '#666' : '#999'}
+                                fontSize={15}
+                                multiline
+                            />
+                        </Textarea>
+                        <Text
+                            position="absolute"
+                            bottom={8}
+                            right={12}
+                            color="#CCCCCC"
+                            fontSize={12}
+                        >
+                            {title.length}/200
+                        </Text>
+                    </VStack>
+                    
                     {/* Select Product Button or Selected Product Card */}
                     {/* Show product selection if eventType is TYPE1 or undefined (default events) */}
                     {(eventType === EventType.TYPE1 || eventType === undefined) && (
@@ -427,13 +521,13 @@ const EventCreatePost: React.FC = () => {
                         />
                     )}
 
-                    {/* Post Description */}
+                    {/* Post Description (Body - max 2000 char) */}
                     <VStack space="xs">
                         <Text
                             color={isDark ? '$textDark200' : '#999999'}
                             fontSize={14}
                         >
-                            Post Description
+                            İçerik
                         </Text>
                         <Textarea
                             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -443,10 +537,10 @@ const EventCreatePost: React.FC = () => {
                             height={180}
                         >
                             <TextareaInput
-                                placeholder="Type your Post here..."
+                                placeholder="İçeriğinizi yazın... (max 2000 karakter)"
                                 value={content}
                                 onChangeText={(text) => {
-                                    if (text.length <= 500) {
+                                    if (text.length <= 2000) {
                                         setContent(text);
                                     }
                                 }}
@@ -463,11 +557,13 @@ const EventCreatePost: React.FC = () => {
                             color="#CCCCCC"
                             fontSize={12}
                         >
-                            {content.length}/500
+                            {content.length}/2000
                         </Text>
                     </VStack>
 
-                    {/* Images Section */}
+                    {/* Images Section - OPSIYONEL (şimdilik UI'da var ama yeni API'de image desteği yok) */}
+                    {/* YENİ API'de images field'ı yok, bu bölümü gizliyoruz */}
+                    {/* 
                     <VStack space="xs">
                         <Text
                             color={isDark ? '$textDark200' : '#999999'}
@@ -476,7 +572,6 @@ const EventCreatePost: React.FC = () => {
                             Images
                         </Text>
                         <HStack space="sm" flexWrap="wrap">
-                            {/* Display selected images */}
                             {selectedImages.map((imageUri, index) => (
                                 <Box
                                     key={index}
@@ -514,7 +609,6 @@ const EventCreatePost: React.FC = () => {
                                 </Box>
                             ))}
 
-                            {/* Add Image Button */}
                             {selectedImages.length < 10 && (
                                 <Pressable onPress={handleAddPhoto}>
                                     <Box
@@ -538,6 +632,7 @@ const EventCreatePost: React.FC = () => {
                             )}
                         </HStack>
                     </VStack>
+                    */}
                 </VStack>
             </ScrollView>
 

@@ -76,6 +76,7 @@ export interface GetNotificationsParams {
   unreadOnly?: boolean;
   type?: NotificationType;
   category?: NotificationCategory;
+  search?: string;
 }
 
 export interface GetNotificationsResponse {

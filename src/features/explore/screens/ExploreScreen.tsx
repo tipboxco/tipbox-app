@@ -35,6 +35,8 @@ import type { ExploreStackParamList } from '../navigation';
 import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { ProductInfoType } from '@/src/types/common';
 import * as Linking from 'expo-linking';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
@@ -60,6 +62,7 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
   // Tek banner varsa sadece göster, carousel kullanma
   if (banners.length === 1) {
     const imageSource = toImageSource(banners[0].imageUrl);
+    const defaultBannerImage = require('@/assets/defaultImages/default-banner.png');
     return (
       <Box
         w={carouselWidth}
@@ -69,78 +72,76 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
         position="relative"
         alignSelf="center"
       >
-        {imageSource && (
-          <Pressable
-            onPress={() => {
-              if (onBannerPress && banners[0].linkUrl) {
-                onBannerPress(banners[0].linkUrl);
-              }
-            }}
+        <Pressable
+          onPress={() => {
+            if (onBannerPress && banners[0].linkUrl) {
+              onBannerPress(banners[0].linkUrl);
+            }
+          }}
+          style={{
+            position: 'relative',
+          }}
+        >
+          <Image
+            source={imageSource || defaultBannerImage}
+            alt={banners[0].title}
+            resizeMode="cover"
+            width={itemWidth}
+            height={carouselHeight}
+            borderRadius={12}
+          />
+          {/* Gradient Overlay */}
+          <Box
+            position="absolute"
+            bottom={0}
+            left={0}
+            right={0}
+            height={80}
+            overflow="hidden"
             style={{
-              position: 'relative',
+              width: itemWidth,
+              borderBottomLeftRadius: 12,
+              borderBottomRightRadius: 12,
             }}
           >
-            <Image
-              source={imageSource}
-              alt={banners[0].title}
-              resizeMode="cover"
-              width={itemWidth}
-              height={carouselHeight}
-              borderRadius={12}
-            />
-            {/* Gradient Overlay */}
-            <Box
-              position="absolute"
-              bottom={0}
-              left={0}
-              right={0}
-              height={80}
-              overflow="hidden"
+            <LinearGradient
+              colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 0, y: 0 }}
               style={{
-                width: itemWidth,
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 80,
+                justifyContent: 'flex-end',
+                paddingBottom: 12,
+                paddingHorizontal: 16,
                 borderBottomLeftRadius: 12,
                 borderBottomRightRadius: 12,
               }}
             >
-              <LinearGradient
-                colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
-                start={{ x: 0, y: 1 }}
-                end={{ x: 0, y: 0 }}
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 80,
-                  justifyContent: 'flex-end',
-                  paddingBottom: 12,
-                  paddingHorizontal: 16,
-                  borderBottomLeftRadius: 12,
-                  borderBottomRightRadius: 12,
-                }}
-              >
-                <VStack space="xs">
-                  <Text
-                    color="#FFFFFF"
-                    fontSize={14}
-                    fontWeight="$bold"
-                    numberOfLines={1}
-                  >
-                    {banners[0].title}
-                  </Text>
-                  <Text
-                    color="#FFFFFF"
-                    fontSize={12}
-                    numberOfLines={2}
-                    opacity={0.9}
-                  >
-                    {banners[0].description}
-                  </Text>
-                </VStack>
-              </LinearGradient>
-            </Box>
-          </Pressable>
-        )}
+              <VStack space="xs">
+                <Text
+                  color="#FFFFFF"
+                  fontSize={14}
+                  fontWeight="$bold"
+                  numberOfLines={1}
+                >
+                  {banners[0].title}
+                </Text>
+                <Text
+                  color="#FFFFFF"
+                  fontSize={12}
+                  numberOfLines={2}
+                  opacity={0.9}
+                >
+                  {banners[0].description}
+                </Text>
+              </VStack>
+            </LinearGradient>
+          </Box>
+        </Pressable>
       </Box>
     );
   }
@@ -164,6 +165,7 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
         renderItem={({ index }) => {
           const item = banners[index];
           const imageSource = toImageSource(item.imageUrl);
+          const defaultBannerImage = require('@/assets/defaultImages/default-banner.png');
           return (
             <Box
               width={carouselWidth}
@@ -182,16 +184,14 @@ const BannerCarouselComponent: React.FC<BannerCarouselProps> = ({ banners, isDar
                   position: 'relative',
                 }}
               >
-                {imageSource && (
-                  <Image
-                    source={imageSource}
-                    alt={item.title}
-                    resizeMode="cover"
-                    width={itemWidth - itemSpacing}
-                    height={carouselHeight}
-                    borderRadius={12}
-                  />
-                )}
+                <Image
+                  source={imageSource || defaultBannerImage}
+                  alt={item.title}
+                  resizeMode="cover"
+                  width={itemWidth - itemSpacing}
+                  height={carouselHeight}
+                  borderRadius={12}
+                />
                 {/* Gradient Overlay */}
                 <Box
                   position="absolute"
@@ -288,6 +288,10 @@ const ExploreScreen: React.FC = () => {
   const [tabsHeight, setTabsHeight] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
+  const tabHeaderBgColor = useMemo(() => isDark ? '#000' : '#FFF', [isDark]);
 
   // Debounce search query for API calls
   useEffect(() => {
@@ -348,29 +352,65 @@ const ExploreScreen: React.FC = () => {
 
   // See All Buttons - Navigation handlers
   const handleSeeAllEvents = useCallback(() => {
-    // Events tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen' as any, undefined);
+    console.log('[ExploreScreen] handleSeeAllEvents called');
+    try {
+      // Events tab'ına Event listesine git
+      navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventsScreen' as any, undefined);
+      console.log('[ExploreScreen] ✅ Navigated to EventsScreen');
+    } catch (error) {
+      console.error('[ExploreScreen] ❌ Error navigating to EventsScreen:', error);
+    }
   }, []);
 
   const handleSeeAllBrands = useCallback(() => {
-    // Catalog tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
+    console.log('[ExploreScreen] handleSeeAllBrands called');
+    try {
+      // Catalog tab'ına Brand listesine git
+      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'brands' });
+      console.log('[ExploreScreen] ✅ Navigated to CatalogScreen with view: brands');
+    } catch (error) {
+      console.error('[ExploreScreen] ❌ Error navigating to CatalogScreen:', error);
+    }
   }, []);
 
   const handleSeeAllProducts = useCallback(() => {
-    // Catalog tab'ına navigate et
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
+    console.log('[ExploreScreen] handleSeeAllProducts called');
+    try {
+      // Catalog tab'ına Product listesine git
+      navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, { view: 'products' });
+      console.log('[ExploreScreen] ✅ Navigated to CatalogScreen with view: products');
+    } catch (error) {
+      console.error('[ExploreScreen] ❌ Error navigating to CatalogScreen:', error);
+    }
   }, []);
 
   // Item Press Handlers - Navigation
   const handleBrandPress = useCallback((brandId: string) => {
-    // BrandDetailScreen'e navigate et (Catalog stack içinde)
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandDetailScreen' as any, { brandId });
+    // BrandPostListScreen'e navigate et (Catalog stack içinde)
+    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandPostListScreen' as any, { brandId });
   }, []);
 
   const handleProductPress = useCallback((productId: string) => {
-    // BrandProductDetailScreen'e navigate et (Catalog stack içinde)
-    navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen' as any, { productId });
+    // PostsScreen'e navigate et (Post stack içinde, product context ile)
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'PostsScreen',
+      params: {
+        stage: 'Product',
+        name: '', // Product name API'den gelecek veya PostsScreen'de gösterilmeyecek
+        productInfo: {
+          image: require('@/assets/inventory/product_01.png'), // Placeholder, API'den gelecek
+          title: '', // Placeholder, API'den gelecek
+        },
+        selectedProduct: {
+          id: productId,
+          name: '', // Placeholder, API'den gelecek
+          description: '',
+          image: require('@/assets/inventory/product_01.png'), // Placeholder
+        },
+        contextType: ProductInfoType.PRODUCT,
+        contextId: productId, // Product ID'yi contextId olarak gönder
+      },
+    });
   }, []);
 
   // PERFORMANCE FIX: Memoize onLayout handlers to prevent unnecessary re-renders
@@ -465,26 +505,28 @@ const ExploreScreen: React.FC = () => {
   // For better performance, consider migrating HottestTab and NewsTab internal FlatLists to FlashList
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <Box flex={1} bg={backgroundColor}>
         <Header
           title="Explore"
           leftAction="menu"
         />
 
-        <VStack flex={1} space="md">
-          {/* Search Bar - Trust_TrusterListScreen style */}
+        <VStack flex={1}>
+          {/* Search Bar - Fixed at top */}
           <VStack
+            space="md"
+            pb="$4"
             px="$4"
-            py="$2"
+            bg={backgroundColor}
             onLayout={handleSearchBarLayout}
           >
             <HStack
               alignItems="center"
-              bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
               borderWidth={1}
               borderColor="#E9E9E9"
-              borderRadius={23}
-              px={12}
+              borderRadius={20}
+              px={14}
               space="sm"
             >
               <Feather
@@ -494,29 +536,20 @@ const ExploreScreen: React.FC = () => {
               />
               <Input flex={1} borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                  placeholder="Select product group or search product name"
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                  color={isDark ? '#fff' : '#000'}
-                  fontSize={11}
+                  color={isDark ? '#000' : '#000'}
+                  fontSize="$xs"
                 />
               </Input>
             </HStack>
           </VStack>
 
-          {/* Marketplace Banners Carousel - Full Width (CardImageCarousel style) */}
-          {!isLoadingBanners && banners && banners.length > 0 && (
-            <Box
-              mb="$4"
-              onLayout={handleBannerLayout}
-            >
-              <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
-            </Box>
-          )}
-
-          {/* Category Tabs */}
+          {/* Category Tabs - Fixed */}
           <VStack
-            bg={isDark ? '#000' : '#FFF'}
-            pt="$4"
+            bg={tabHeaderBgColor}
+            pt={0}
+            pb="$2"
             onLayout={handleTabsLayout}
           >
             <HStack
@@ -536,13 +569,13 @@ const ExploreScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(0)}
                 alignItems="center"
-                pb="$1"
+                pb={8}
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text
                     style={[
                       {
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: 'bold',
                       },
                       tab1Style,
@@ -558,7 +591,7 @@ const ExploreScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(1)}
                 alignItems="center"
-                pb="$1"
+                pb={8}
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text
@@ -604,32 +637,44 @@ const ExploreScreen: React.FC = () => {
           >
             {/* Hottest Tab */}
             <Box key="0" flex={1}>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: bottomInset }}
-                nestedScrollEnabled={true}
-              >
-                <HottestTab searchQuery={debouncedSearchQuery} />
-              </ScrollView>
+              <HottestTab 
+                searchQuery={debouncedSearchQuery}
+                headerComponent={
+                  /* Marketplace Banners Carousel - Scrollable */
+                  !isLoadingBanners && banners && banners.length > 0 ? (
+                    <Box
+                      mb="$4"
+                      onLayout={handleBannerLayout}
+                    >
+                      <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
+                    </Box>
+                  ) : null
+                }
+              />
             </Box>
 
             {/* News Tab */}
             <Box key="1" flex={1}>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: bottomInset }}
-                nestedScrollEnabled={true}
-              >
-                <NewsTab
-                  searchQuery={debouncedSearchQuery}
-                  onEventPress={handleEventPress}
-                  onBrandPress={handleBrandPress}
-                  onProductPress={handleProductPress}
-                  onSeeAllEvents={handleSeeAllEvents}
-                  onSeeAllBrands={handleSeeAllBrands}
-                  onSeeAllProducts={handleSeeAllProducts}
-                />
-              </ScrollView>
+              <NewsTab
+                searchQuery={debouncedSearchQuery}
+                onEventPress={handleEventPress}
+                onBrandPress={handleBrandPress}
+                onProductPress={handleProductPress}
+                onSeeAllEvents={handleSeeAllEvents}
+                onSeeAllBrands={handleSeeAllBrands}
+                onSeeAllProducts={handleSeeAllProducts}
+                headerComponent={
+                  /* Marketplace Banners Carousel - Scrollable */
+                  !isLoadingBanners && banners && banners.length > 0 ? (
+                    <Box
+                      mb="$4"
+                      onLayout={handleBannerLayout}
+                    >
+                      <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
+                    </Box>
+                  ) : null
+                }
+              />
             </Box>
           </AnimatedPagerView>
         </VStack>
@@ -640,4 +685,5 @@ const ExploreScreen: React.FC = () => {
 
 ExploreScreen.displayName = 'ExploreScreen';
 
-export default ExploreScreen;
+// PERFORMANCE FIX: Memoize ExploreScreen to prevent unnecessary re-renders during tab transitions
+export default React.memo(ExploreScreen);

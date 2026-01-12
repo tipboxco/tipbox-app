@@ -6,7 +6,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
 import { VStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { PencilSquareIcon } from 'react-native-heroicons/outline';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -87,7 +87,7 @@ const InventoryScreen = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8,
       }
     );
@@ -184,7 +184,7 @@ const InventoryScreen = () => {
           ListEmptyComponent={
             <Box flex={1} justifyContent="center" alignItems="center" py={40}>
               <Text color={isDark ? '$textDark400' : '$textLight600'}>
-                {searchQuery ? 'Arama sonucu bulunamadı' : 'Envanter boş'}
+                {searchQuery ? 'No search results found' : 'Inventory is empty'}
               </Text>
             </Box>
           }
@@ -212,7 +212,7 @@ const InventoryScreen = () => {
           shadowRadius={4.65}
           elevation={8}
         >
-          <Feather name="edit-3" size={24} color="#000000" />
+          <PencilSquareIcon width={24} height={24} color="#000000" />
         </Box>
       </Pressable>
       )}

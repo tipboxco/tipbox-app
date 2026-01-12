@@ -1,63 +1,27 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import {
-  Box, HStack, VStack, Text, Pressable, Image, Spinner,
-  Divider
-} from '@gluestack-ui/themed';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Filter as FilterIcon } from 'lucide-react-native';
+import { Search } from 'lucide-react-native';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
+import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts, useCatalogPrefetch } from '../api/hooks';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
 import { CategorySkeleton, ProductSkeleton } from '@/src/components/Skeletons';
-import FilterDialog from '../components/FilterDialog';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
+import { useBottomOffset } from '@/src/utils';
+import { useShallow } from 'zustand/react/shallow';
 
-// Infinitescroll için FlatList import et
-import { FlatList } from 'react-native';
-
-export const MAX_CATEGORY_LEVEL = 3;
-
-type MedusaCategory = {
-  id: string;
-  name: string;
-  parent_category_id: string | null;
-  image?: string;
-  metadata?: Record<string, any>;
-};
-
-type MedusaProduct = {
-  id: string;
-  title: string;
-  thumbnail?: string;
-  images?: { url: string }[];
-  handle?: string;
-  type?: any;
-  collection?: any;
-  categories?: MedusaCategory[];
-  [key: string]: any;
-};
-
-type FilterOptionItem = {
-  key: string;
-  name?: string;
-  values: { value: string; label: string }[];
-};
-
-type FilterableOptionsType = {
-  categories?: any[];
-  metadata?: Record<string, { values: string[]; label?: string }>;
-};
-
-type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<
-  CatalogStackParamList & RootStackParamList
-> & {
+type ProductCatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
 };
 
@@ -65,738 +29,955 @@ interface ProductCatalogScreenProps {
   onCreatePost?: () => void;
   onStateChange?: (data: {
     selectedProduct: any | null;
-    currentLevel: number;
-    parentPath: string[];
+    currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedSubCategoryId?: string;
+    selectedProductGroupId?: string;
     breadcrumbItems: BreadcrumbItem[];
   }) => void;
   scrollViewPaddingBottom?: number;
 }
 
-const MEDUSA_BASE_URL =
-  process.env.EXPO_PUBLIC_MEDUSA_URL || 'http://192.168.1.26:8090'; // fallback
-
-const MEDUSA_API_KEY =
-  process.env.EXPO_PUBLIC_MEDUSA_PUBLISHABLE_API_KEY ||
-  'pk_cfe68434d1ee0dd82890fcfe492a3472656dbea641266cb02f3dae8b204de65e';
-
-const PAGE_SIZE = 500;
-
-// --- Medusa API Fetch Helper Functions ---
-const CATEGORIES_ENDPOINT_BASE = `${MEDUSA_BASE_URL}/store/product-categories?`;
-async function fetchMedusaCategoriesByParent(
-  parentId: string | null
-): Promise<MedusaCategory[]> {
-  try {
-    let url = CATEGORIES_ENDPOINT_BASE;
-    if (parentId) {
-      url += `parent_category_id=${parentId}&`;
-    } else {
-      url += `parent_category_id=null&`;
-    }
-    url += `limit=${PAGE_SIZE}&include_descendants_tree=false`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-publishable-api-key': MEDUSA_API_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      console.error('[fetchMedusaCategoriesByParent] Error:', response.status);
-      return [];
-    }
-
-    const data = await response.json();
-    return data.product_categories || [];
-  } catch (error) {
-    console.error('[fetchMedusaCategoriesByParent] Exception:', error);
-    return [];
-  }
-}
-
-async function fetchFilterableProductsByCategoryIdPaged(
-  categoryId: string,
-  options: {
-    searchQuery?: string;
-    pageSize?: number;
-    offset?: number;
-    metadataFilters?: Record<string, string[]>;
-  } = {}
-): Promise<{
-  products: MedusaProduct[];
-  total: number;
-  filterable_options: FilterableOptionsType | null;
-}> {
-  const { searchQuery = '', pageSize = 30, offset = 0, metadataFilters } = options;
-
-  try {
-    let url = `${MEDUSA_BASE_URL}/store/custom/filterable-products?category_id=${categoryId}&limit=${pageSize}&offset=${offset}`;
-    
-    if (searchQuery) {
-      url += `&q=${encodeURIComponent(searchQuery)}`;
-    }
-
-    if (metadataFilters && Object.keys(metadataFilters).length > 0) {
-      Object.entries(metadataFilters).forEach(([key, values]) => {
-        if (values.length > 0) {
-          url += `&metadata[${key}]=${encodeURIComponent(values.join(','))}`;
-        }
-      });
-    }
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-publishable-api-key': MEDUSA_API_KEY,
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        products: data.products || [],
-        total: data.count || data.products?.length || 0,
-        filterable_options: data.filterable_options || null,
-      };
-    }
-
-    // Fallback
-    const fallbackUrl = `${MEDUSA_BASE_URL}/store/products?category_id[]=${categoryId}&limit=${pageSize}&offset=${offset}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ''}`;
-    
-    const fallbackResponse = await fetch(fallbackUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-publishable-api-key': MEDUSA_API_KEY,
-      },
-    });
-
-    if (!fallbackResponse.ok) {
-      console.error('[fetchFilterableProductsByCategoryIdPaged] Error:', fallbackResponse.status);
-      return { products: [], total: 0, filterable_options: null };
-    }
-
-    const fallbackData = await fallbackResponse.json();
-    return {
-      products: fallbackData.products || [],
-      total: fallbackData.count || fallbackData.products?.length || 0,
-      filterable_options: null,
-    };
-  } catch (error) {
-    console.error('[fetchFilterableProductsByCategoryIdPaged] Exception:', error);
-    return { products: [], total: 0, filterable_options: null };
-  }
-}
-
-type FlatCategoryNode = {
-  id: string;
-  name: string;
-  parent_category_id: string | null;
-  image?: string;
-  metadata?: Record<string, any>;
-  children: FlatCategoryNode[];
-  path: string[];
-  level: number;
-};
-
-export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
-  onCreatePost,
-  onStateChange,
-  scrollViewPaddingBottom = 52,
-}) => {
+export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCreatePost, onStateChange, scrollViewPaddingBottom = 52 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ProductCatalogScreenNavigationProp>();
-
-  // Medusa Kategorileri (flat array)
-  const [categories, setCategories] = useState<MedusaCategory[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  // ProductState
-  const [products, setProducts] = useState<MedusaProduct[]>([]);
-  const [productsTotal, setProductsTotal] = useState<number>(0);
-  const [productsOffset, setProductsOffset] = useState<number>(0);
-  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(false);
-  const [isLoadingMoreProducts, setIsLoadingMoreProducts] = useState<boolean>(false);
-  // Takip için
-  const [hasNextPage, setHasNextPage] = useState(false);
-
-  const PRODUCT_PAGE_SIZE = 30;
-
-  const [parentPath, setParentPath] = useState<string[]>([]);
-  const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
+  
+  // Create Post Flow Store
+  const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
+  
+  // PERFORMANCE FIX: Use shallow selector to prevent unnecessary re-renders
+  // Catalog UI Store - Actions (stable references)
+  const { 
+    setSelectedProduct, 
+    setSelectedSubCategory, 
+    setSelectedProductGroup, 
+    setCurrentView 
+  } = useCatalogUIStore(
+    useShallow((state) => ({
+      setSelectedProduct: state.setSelectedProduct,
+      setSelectedSubCategory: state.setSelectedSubCategory,
+      setSelectedProductGroup: state.setSelectedProductGroup,
+      setCurrentView: state.setCurrentView,
+    }))
+  );
+  
+  // PERFORMANCE FIX: Use shallow selector for values
+  const {
+    selectedSubCategoryId,
+    selectedProductGroupId,
+    currentView,
+  } = useCatalogUIStore(
+    useShallow((state) => ({
+      selectedSubCategoryId: state.selectedSubCategoryId,
+      selectedProductGroupId: state.selectedProductGroupId,
+      currentView: state.currentView,
+    }))
+  );
+  
+  // Seçili kategori ID'si (subcategories çekmek için) - Local state (API için)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+  
+  // Seçili alt kategori ID'si setter - Store'dan oku
+  const setSelectedSubCategoryId = useCatalogUIStore((state) => state.setSelectedSubCategory);
+  
+  // Seçili ürün grubu ID'si setter - Store'dan oku
+  const setSelectedProductGroupId = useCatalogUIStore((state) => state.setSelectedProductGroup);
+  
+  // Global bottom sheet hook - PERFORMANCE FIX: Direct access, no callback chain
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // Bottom offset for bottom sheet padding
+  const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+  
+  // Bottom sheet key for remounting
+  const [bottomSheetKey, setBottomSheetKey] = useState(0);
+  
+  // Prefetch helper
+  const { prefetchSubCategories, prefetchProductGroups, prefetchProducts } = useCatalogPrefetch();
+  
+  // API'den kategorileri getir
+  const { data: catalogCategories, isLoading: isLoadingCategories, isError } = useCatalogCategories();
+  
+  // API'den seçili kategoriye ait subcategories'i getir
+  const { data: catalogSubCategories, isLoading: isLoadingSubCategories } = useCatalogSubCategories(selectedCategoryId);
+  
+  // subcategories verisi takibi (debug mode'da aktif)
+  useEffect(() => {
+    if (__DEV__ && selectedCategoryId && catalogSubCategories) {
+      // Sadece development'ta ve veri yoksa log
+    }
+  }, [catalogSubCategories, selectedCategoryId, isLoadingSubCategories]);
+  
+  // API'den seçili alt kategoriye ait product groups'u getir
+  const { data: catalogProductGroups, isLoading: isLoadingProductGroups } = useCatalogProductGroups(selectedSubCategoryId);
+  
+  // Debounce search query for API calls
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // API'den seçili ürün grubuna ait products'ı getir (search ile)
+  const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
+    selectedProductGroupId,
+    debouncedSearchQuery || undefined
+  );
+  
+  // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
+  useEffect(() => {
+    if (catalogCategories && catalogCategories.length > 0) {
+      const firstThreeCategories = catalogCategories.slice(0, 3);
+      firstThreeCategories.forEach(category => {
+        prefetchSubCategories(category.categoryId);
+      });
+    }
+  }, [catalogCategories, prefetchSubCategories]);
+  
+  // API'den gelen kategorileri Category formatına dönüştür - useMemo ile cache'le
+  // CachedImage zaten toImageSource'u çağırıyor, bu yüzden image'ı direkt geçirebiliriz
+  const currentCategories = useMemo(() => {
+    if (!catalogCategories) return [];
+    
+    return catalogCategories.map(cat => {
+      if (!cat.image || cat.image.trim() === '') {
+        console.warn(`[ProductCatalogScreen] ⚠️ Category "${cat.name}" has no image URL`);
+      }
+      
+      return {
+        id: cat.categoryId,
+        name: cat.name,
+        icon: 'folder',
+        image: cat.image || undefined, // Boş string ise undefined yap
+        subCategories: [], // API'den subCategories gelmiyor, boş array
+      };
+    });
+  }, [catalogCategories]);
+
+  // API'den gelen subcategories'i formatla - useMemo ile cache'le
+  const currentSubCategories = useMemo(() => {
+    if (!catalogSubCategories) {
+      return [];
+    }
+    
+    return catalogSubCategories.map(subCat => ({
+      id: subCat.subCategoryId,
+      name: subCat.name,
+      image: subCat.image || undefined, // Boş string ise undefined yap
+      categoryId: subCat.categoryId,
+      productGroups: [], // API'den productGroups gelmiyor, boş array
+    }));
+  }, [catalogSubCategories, selectedCategoryId]);
+
+  // API'den gelen product groups'u formatla - useMemo ile cache'le
+  const currentProductGroups = useMemo(() => {
+    if (!catalogProductGroups) return [];
+    
+    return catalogProductGroups.map(productGroup => ({
+      id: productGroup.productGroupId,
+      name: productGroup.name,
+      image: productGroup.image || undefined, // Boş string ise undefined yap
+      subCategoryId: productGroup.subCategoryId,
+      products: [], // API'den products gelmiyor, boş array
+    }));
+  }, [catalogProductGroups]);
+
+  // API'den gelen products'ı formatla - useMemo ile cache'le
+  const currentProducts = useMemo(() => {
+    if (!catalogProducts) return [];
+    
+    return catalogProducts.map(product => ({
+      id: product.productId,
+      name: product.name,
+      image: product.image || undefined, // Boş string ise undefined yap
+      productGroupId: product.productId,
+      subCategoryId: product.subCategoryId,
+      description: '', // API'den description gelmiyor
+    }));
+  }, [catalogProducts]);
+  // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
-  // --- FILTER STATE ---
-  // Filter options state and modal visibility
-  const [showFilterModal, setShowFilterModal] = useState(false);
-
-  // In real use, filterOptions and selectedFilters would be populated from the backend or product fetch response
-  const [filterOptions, setFilterOptions] = useState<FilterableOptionsType | null>(null);
-  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-
-  const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
-  const setCurrentView = useCatalogUIStore((state) => state.setCurrentView);
-
-  // Kategorileri başlangıçta yükle
+  // PERFORMANCE FIX: Store onStateChange in ref to prevent infinite loops
+  // onStateChange prop may have a new reference on every render from parent
+  // Using ref ensures we always call the latest version without causing re-renders
+  const onStateChangeRef = useRef(onStateChange);
   useEffect(() => {
-    setIsLoading(true);
-    fetchMedusaCategoriesByParent(null)
-      .then(data => {
-        setCategories(data || []);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        setCategories([]);
-        setIsLoading(false);
-      });
-  }, []);
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
 
-  const fetchAndAppendChildren = useCallback(
-    async (categoryNode: MedusaCategory) => {
-      setIsLoading(true);
-      const children = await fetchMedusaCategoriesByParent(categoryNode.id);
-      setCategories((prev) => {
-        const all = [...prev];
-        for (const child of children) {
-          if (!all.find(c => c.id === child.id)) {
-            all.push(child);
-          }
-        }
-        return all;
-      });
-      setIsLoading(false);
-    },
-    []
+  // PERFORMANCE FIX: Track previous values to prevent unnecessary callbacks
+  // Only call onStateChange when values actually change
+  const prevStateRef = useRef<{
+    selectedProduct: any | null;
+    currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedSubCategoryId?: string;
+    selectedProductGroupId?: string;
+    breadcrumbItems: BreadcrumbItem[];
+  } | null>(null);
+
+  // State değişikliklerini parent'a bildir - sadece gerçekten değiştiğinde
+  useEffect(() => {
+    const currentState = {
+      selectedProduct,
+      currentView,
+      selectedSubCategoryId,
+      selectedProductGroupId,
+      breadcrumbItems,
+    };
+
+    // İlk render'da veya değerler gerçekten değiştiyse callback çağır
+    if (!prevStateRef.current) {
+      prevStateRef.current = currentState;
+      onStateChangeRef.current?.(currentState);
+      return;
+    }
+
+    const prev = prevStateRef.current;
+    const hasChanged = 
+      prev.selectedProduct !== currentState.selectedProduct ||
+      prev.currentView !== currentState.currentView ||
+      prev.selectedSubCategoryId !== currentState.selectedSubCategoryId ||
+      prev.selectedProductGroupId !== currentState.selectedProductGroupId ||
+      prev.breadcrumbItems.length !== currentState.breadcrumbItems.length ||
+      prev.breadcrumbItems.some((item, idx) => 
+        item.id !== currentState.breadcrumbItems[idx]?.id ||
+        item.type !== currentState.breadcrumbItems[idx]?.type
+      );
+
+    if (hasChanged) {
+      prevStateRef.current = currentState;
+      onStateChangeRef.current?.(currentState);
+    }
+  }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems]);
+
+  // Ekrana geri dönüldüğünde product breadcrumb'ını temizle
+  useFocusEffect(
+    useCallback(() => {
+      // Eğer breadcrumb'da product varsa, onu kaldır
+      const hasProductInBreadcrumb = breadcrumbItems.some(item => item.type === 'product');
+      if (hasProductInBreadcrumb) {
+        const filteredBreadcrumb = breadcrumbItems.filter(item => item.type !== 'product');
+        setBreadcrumbItems(filteredBreadcrumb);
+        setSelectedProductLocal(null);
+        setSelectedProduct(undefined);
+      }
+    }, [breadcrumbItems, setSelectedProduct])
   );
 
-  const buildCategoryTree = useCallback((cats: MedusaCategory[]): FlatCategoryNode[] => {
-    const idMap = new Map<string, FlatCategoryNode>();
-    cats.forEach(cat => {
-      let catImage: string | undefined = cat.image;
-      if (cat.metadata && cat.metadata.thumb_image) {
-        catImage = cat.metadata.thumb_image;
-      }
-      idMap.set(cat.id, {
-        ...cat,
-        image: catImage,
-        children: [],
-        path: [],
-        level: 0,
-      });
-    });
-    const rootNodes: FlatCategoryNode[] = [];
-    cats.forEach(cat => {
-      if (cat.parent_category_id && idMap.has(cat.parent_category_id)) {
-        const parent = idMap.get(cat.parent_category_id)!;
-        const current = idMap.get(cat.id)!;
-        parent.children.push(current);
-      } else {
-        rootNodes.push(idMap.get(cat.id)!);
-      }
-    });
-
-    function setMeta(node: FlatCategoryNode, parentPath: string[], level: number) {
-      node.path = [...parentPath, node.id];
-      node.level = level;
-      node.children.forEach(child => setMeta(child, node.path, level + 1));
-    }
-    rootNodes.forEach(n => setMeta(n, [], 0));
-    return rootNodes;
-  }, []);
-
-  const categoryRoots = useMemo(() => buildCategoryTree(categories), [categories, buildCategoryTree]);
-
-  const currentCategories = useMemo(() => {
-    let nodes: FlatCategoryNode[] = categoryRoots;
-    if (parentPath.length > 0) {
-      const findNodeByPath = (roots: FlatCategoryNode[], pathArr: string[]): FlatCategoryNode | null => {
-        let current: FlatCategoryNode | null = null;
-        let search = roots;
-        for (const id of pathArr) {
-          current = search.find(n => n.id === id) || null;
-          if (!current) return null;
-          search = current.children;
-        }
-        return current;
-      };
-      const lastNode = findNodeByPath(categoryRoots, parentPath);
-      nodes = lastNode ? lastNode.children : [];
-    }
-    return nodes.filter((n) => n.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [categoryRoots, parentPath, searchQuery]);
-
-  // currentLevel: 0=root, 1=alt, 2=alt, ...
-  const currentLevel = parentPath.length;
-  const isProductGroupLevel = currentLevel === MAX_CATEGORY_LEVEL;
-
-  useEffect(() => {
-    const crumbs: BreadcrumbItem[] = [];
-    let search = categoryRoots;
-    for (let i = 0; i < parentPath.length; i++) {
-      const id = parentPath[i];
-      const node = search.find(n => n.id === id);
-      if (node) {
-        crumbs.push({
-          id: node.id,
-          name: node.name,
-          type: isProductGroupLevel && i === MAX_CATEGORY_LEVEL ? 'productGroup' : 'category',
-          data: node,
-        });
-        search = node.children;
-      } else {
-        break;
-      }
-    }
-    setBreadcrumbItems(crumbs);
-  }, [parentPath, categoryRoots, isProductGroupLevel]);
-
-  useEffect(() => {
-    onStateChange?.({
-      selectedProduct,
-      currentLevel,
-      parentPath,
-      breadcrumbItems,
-    });
-  }, [selectedProduct, currentLevel, parentPath, breadcrumbItems, onStateChange]);
-
-  // -- INF. SCR. FETCH: ürünleri çek ve flatlist için "hasNextPage" ayarla --
-  useEffect(() => {
-    let cancelled = false;
-    const fetchProductsInCategory = async () => {
-      if (isProductGroupLevel && parentPath.length > 0) {
-        const lastCategoryId = parentPath[parentPath.length - 1];
-        setIsLoadingProducts(true);
-        setProductsOffset(0);
-        setFilterOptions(null);
-        setSelectedFilters({});
-        try {
-          const { products: newProducts, total, filterable_options } = await fetchFilterableProductsByCategoryIdPaged(
-            lastCategoryId,
-            { searchQuery, pageSize: PRODUCT_PAGE_SIZE, offset: 0 }
-          );
-          if (cancelled) return;
-          setFilterOptions(filterable_options);
-          setProducts(newProducts);
-          setProductsTotal(total);
-          setHasNextPage(newProducts.length < total);
-        } catch (err) {
-          if (cancelled) return;
-          setProducts([]);
-          setProductsTotal(0);
-          setFilterOptions(null);
-          setHasNextPage(false);
-        } finally {
-          if (!cancelled) setIsLoadingProducts(false);
-        }
-      } else {
-        setProducts([]);
-        setProductsTotal(0);
-        setFilterOptions(null);
-        setIsLoadingProducts(false);
-        setHasNextPage(false);
-      }
-    };
-    fetchProductsInCategory();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isProductGroupLevel, parentPath, searchQuery]);
-
-  // Infinitescroll ile daha fazla ürün çekme logic'i
-  const isLoadMoreTriggerRef = useRef(false); // reload için hızlıca tekrar çağırmasın diye
-
-  const handleLoadMoreProducts = useCallback(async () => {
-    if (!isProductGroupLevel || isLoadingMoreProducts || !hasNextPage) return;
-    if (isLoadMoreTriggerRef.current) return; // Bitişik tetiklemesin
-    isLoadMoreTriggerRef.current = true;
-
-    const lastCategoryId = parentPath[parentPath.length - 1];
-    if (!lastCategoryId) {
-      isLoadMoreTriggerRef.current = false;
-      return;
-    }
-    const nextOffset = products.length;
-    if (nextOffset >= productsTotal) {
-      setHasNextPage(false);
-      isLoadMoreTriggerRef.current = false;
-      return;
-    }
-    setIsLoadingMoreProducts(true);
-    try {
-      const { products: moreProducts } = await fetchFilterableProductsByCategoryIdPaged(
-        lastCategoryId,
-        { searchQuery, pageSize: PRODUCT_PAGE_SIZE, offset: nextOffset }
-      );
-      setProducts((prev) => {
-        // uniq merge
-        const seen: Record<string, boolean> = {};
-        prev.forEach(p => { seen[p.id] = true; });
-        moreProducts.forEach(p => { if (!seen[p.id]) prev.push(p); });
-        return [...prev];
-      });
-      setProductsOffset(nextOffset);
-      setHasNextPage(products.length + moreProducts.length < productsTotal);
-    } catch (err) {
-      // ignore
-    } finally {
-      setIsLoadingMoreProducts(false);
-      setTimeout(() => {
-        isLoadMoreTriggerRef.current = false;
-      }, 400);
-    }
-  }, [
-    isProductGroupLevel,
-    isLoadingMoreProducts,
-    hasNextPage,
-    parentPath,
-    products.length,
-    productsTotal,
-    searchQuery
-  ]);
-
-  // Kategori/altkategori/g içinde seçim basıldığında
-  const handleCategoryPress = async (categoryNode: FlatCategoryNode) => {
-    if (categoryNode.level === MAX_CATEGORY_LEVEL) {
-      setParentPath(categoryNode.path);
-      setCurrentView('productgroups');
-    } else {
-      setParentPath(categoryNode.path);
-      setCurrentView('categories');
-      if (categoryNode.children.length === 0) {
-        await fetchAndAppendChildren(categoryNode);
-      }
-    }
+  const resetToRoot = useCallback(() => {
+    setBreadcrumbItems([]);
+    setSelectedCategoryId(undefined);
+    setSelectedSubCategoryId(undefined);
+    setSelectedProductGroupId(undefined);
     setSelectedProductLocal(null);
+    setCurrentView('categories');
+  }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView, setSelectedProductLocal]);
+
+  const handleCategoryPress = (category: { id: string; name: string; image: any }) => {
+    // Seçili kategori ID'sini set et (subcategories API çağrısı için)
+    setSelectedCategoryId(category.id);
+    setSelectedSubCategoryId(undefined); // Subcategory'yi temizle
+    setSelectedProductGroupId(undefined); // ProductGroup'u temizle
+    setSelectedProductLocal(null);
+
+    setBreadcrumbItems([
+      {
+        id: category.id,
+        name: category.name,
+        type: 'category',
+        data: category,
+      },
+    ]);
+    setCurrentView('subcategories');
   };
 
-  // Breadcrumb'a tıklama
-  const handleBreadcrumbPress = async (item: BreadcrumbItem, index: number) => {
-    setParentPath(parentPath.slice(0, index + 1));
+  const handleSubCategoryPress = (subCategory: CatalogSubCategory & { id: string; image: any }) => {
+    
+    // Get the current category from breadcrumb
+    const currentCategory = breadcrumbItems.find(item => item.type === 'category');
+    const fallbackCategory =
+      currentCategories.find(cat => cat.id === subCategory.categoryId) || null;
+    const categoryBreadcrumb: BreadcrumbItem | null =
+      currentCategory ||
+      (fallbackCategory
+        ? {
+            id: fallbackCategory.id,
+            name: fallbackCategory.name,
+            type: 'category',
+            data: fallbackCategory,
+          }
+        : null);
+    
+    // Seçili alt kategori ID'sini set et (product groups API çağrısı için)
+    setSelectedSubCategoryId(subCategory.id);
+    setSelectedProductGroupId(undefined); // ProductGroup'u temizle
     setSelectedProductLocal(null);
-    setCurrentView(index === MAX_CATEGORY_LEVEL ? 'productgroups' : 'categories');
-    if (categoryRoots.length && index >= 0) {
-      let search = categoryRoots;
-      let node: FlatCategoryNode | null = null;
-      for (let i = 0; i <= index; i++) {
-        const id = parentPath[i];
-        node = search.find(n => n.id === id) || null;
-        if (!node) break;
-        search = node.children;
-      }
-      if (node && node.children.length === 0) {
-        await fetchAndAppendChildren(node);
-      }
+    
+    // Product groups'u prefetch et (hızlı yükleme için)
+    prefetchProductGroups(subCategory.id);
+
+    setBreadcrumbItems(
+      [
+        categoryBreadcrumb,
+        {
+          id: subCategory.id,
+          name: subCategory.name,
+          type: 'subCategory',
+          data: subCategory,
+        },
+      ].filter(Boolean) as BreadcrumbItem[]
+    );
+    setCurrentView('productgroups');
+  };
+
+  const handleProductGroupPress = (productGroup: CatalogProductGroup & { id: string; image: any }) => {
+    // Seçili ürün grubu ID'sini set et (products API çağrısı için)
+    setSelectedProductGroupId(productGroup.id);
+    setSelectedProductLocal(null);
+    
+    // Products'ı prefetch et (hızlı yükleme için)
+    prefetchProducts(productGroup.id);
+
+    const currentCategory = breadcrumbItems.find(item => item.type === 'category');
+    const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
+
+    setBreadcrumbItems(
+      [
+        currentCategory,
+        currentSubCategory,
+        {
+          id: productGroup.id,
+          name: productGroup.name,
+          type: 'productGroup',
+          data: productGroup,
+        },
+      ].filter(Boolean) as BreadcrumbItem[]
+    );
+    setCurrentView('products');
+  };
+
+  const handleProductPress = (product: CatalogProduct & { id: string; image: any; description?: string }) => {
+    // Get the current breadcrumb items (category, subcategory, productGroup, products)
+    const currentCategory = breadcrumbItems.find(item => item.type === 'category');
+    const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
+    const currentProductGroup = breadcrumbItems.find(item => item.type === 'productGroup');
+    
+    // Create product breadcrumb item
+    const productBreadcrumbItem: BreadcrumbItem = {
+      id: product.id,
+      name: product.name,
+      type: 'product',
+      data: product,
+    };
+
+    // Update breadcrumb items
+    setBreadcrumbItems(
+      [
+        currentCategory,
+        currentSubCategory,
+        currentProductGroup,
+        productBreadcrumbItem,
+      ].filter(Boolean) as BreadcrumbItem[]
+    );
+    
+    // Store selected product for CreatePostBottomSheet
+    setSelectedProductLocal(product);
+    // Store'a product ID'yi kaydet
+    setSelectedProduct(product.id);
+    
+    // Save to flow store for CreatePostScreen
+    setFlowContext(ProductInfoType.PRODUCT, product.id, {
+      image: product.image,
+      title: product.name,
+      subName: product.description || product.name,
+    });
+    
+    navigation.navigate('Post', {
+      screen: 'PostsScreen',
+      params: {
+        stage: 'Product',
+        name: product.name,
+        productInfo: {
+          image: product.image,
+          title: product.name, // Product name (top)
+          subName: product.description || product.name, // Product description or name (bottom)
+        },
+        selectedProduct: {
+          id: product.id, // product_id
+          name: product.name,
+          description: product.description || '',
+          image: product.image,
+        },
+      contextType: ProductInfoType.PRODUCT,
+      // contextId artık route params'tan gönderilmiyor, store'dan okunacak
+    },
+  });
+};
+
+const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
+  if (item.type === 'root' || index === -1) {
+    resetToRoot();
+    return;
+  }
+
+  if (item.type === 'category') {
+    setBreadcrumbItems([item]);
+    setSelectedCategoryId(item.id);
+    setSelectedSubCategoryId(undefined);
+    setSelectedProductGroupId(undefined);
+    setSelectedProductLocal(null);
+    setSelectedProduct(undefined);
+    setCurrentView('subcategories');
+    return;
+  }
+
+  if (item.type === 'subCategory') {
+    const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
+    const updated = [categoryItem, item].filter(Boolean) as BreadcrumbItem[];
+    setBreadcrumbItems(updated);
+    setSelectedCategoryId(categoryItem?.id);
+    setSelectedSubCategoryId(item.id);
+    setSelectedProductGroupId(undefined);
+    setSelectedProductLocal(null);
+    setSelectedProduct(undefined);
+    setCurrentView('productgroups');
+    return;
+  }
+
+  if (item.type === 'productGroup') {
+    const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
+    const subCategoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'subCategory');
+    const updated = [categoryItem, subCategoryItem, item].filter(Boolean) as BreadcrumbItem[];
+    setBreadcrumbItems(updated);
+    setSelectedCategoryId(categoryItem?.id);
+    setSelectedSubCategoryId(subCategoryItem?.id);
+    setSelectedProductGroupId(item.id);
+    setSelectedProductLocal(null);
+    setSelectedProduct(undefined);
+    setCurrentView('products');
+    return;
+  }
+
+  if (item.type === 'product') {
+      const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
+      const subCategoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'subCategory');
+      const productGroupItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'productGroup');
+      const updated = [categoryItem, subCategoryItem, productGroupItem, item].filter(Boolean) as BreadcrumbItem[];
+      setBreadcrumbItems(updated);
+      setSelectedCategoryId(categoryItem?.id);
+      setSelectedSubCategoryId(subCategoryItem?.id);
+      setSelectedProductGroupId(productGroupItem?.id);
+      setSelectedProductLocal(item.data || null);
+      // Store'a product ID'yi kaydet
+      setSelectedProduct(item.data?.id);
+      setCurrentView('products');
     }
   };
 
   const handleShowPosts = () => {
-    const lastCrumb = breadcrumbItems[breadcrumbItems.length - 1];
+    // Determine current stage and name from breadcrumbItems (prioritize most specific item)
+    let stage: 'SubCategories' | 'ProductGroup' | 'Product' = 'SubCategories';
+    let name = 'Subcategory Feed';
     let productInfo: { image: any; title: string; subName?: string } | null = null;
-    if (lastCrumb) {
-      let img = lastCrumb.data.image;
-      if (lastCrumb.data.metadata && lastCrumb.data.metadata.thumb_image) {
-        img = lastCrumb.data.metadata.thumb_image;
+
+    // Priority: Product > ProductGroup > SubCategory > Category
+    const productItem = breadcrumbItems.find(item => item.type === 'product');
+    const productGroupItem = breadcrumbItems.find(item => item.type === 'productGroup');
+    const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
+    const categoryItem = breadcrumbItems.find(item => item.type === 'category');
+
+    if (productItem && productGroupItem) {
+      // Product selected (with ProductGroup) - title=ProductGroup, subName=Product
+      stage = 'Product';
+      name = productItem.name;
+      const product = currentProducts.find(p => p.id === productItem.id);
+      // TODO: Implement when product groups API is available
+      if (product) {
+        productInfo = {
+          image: product.image,
+          title: product.name, // Product name (top)
+          subName: product.description || product.name, // Product description or name (bottom)
+        };
+      } else if (selectedProduct) {
+        productInfo = {
+          image: selectedProduct.image,
+          title: selectedProduct.name,
+          subName: selectedProduct.description || selectedProduct.name,
+        };
       }
-      productInfo = {
-        image: img,
-        title: lastCrumb.data.name,
-      };
+    } else if (productGroupItem && subCategoryItem) {
+      // ProductGroup selected (with SubCategory) - title=SubCategory, subName=ProductGroup
+      stage = 'ProductGroup';
+      name = productGroupItem.name;
+      const productGroup = currentProductGroups.find(pg => pg.id === productGroupItem.id);
+      if (productGroup) {
+        productInfo = {
+          image: productGroup.image,
+          title: productGroup.name,
+          subName: subCategoryItem.name,
+        };
+      } else {
+        // Fallback: SubCategory bilgisini kullan
+        const subCategory = currentSubCategories.find(sc => sc.id === subCategoryItem.id);
+        if (subCategory) {
+          productInfo = {
+            image: subCategory.image,
+            title: subCategory.name,
+            subName: productGroupItem.name,
+          };
+        }
+      }
+    } else if (subCategoryItem && categoryItem) {
+      // SubCategory selected (with Category) - title=Category, subName=SubCategory
+      stage = 'SubCategories';
+      name = subCategoryItem.name;
+      const subCategory = currentSubCategories.find(sc => sc.id === subCategoryItem.id);
+      if (subCategory) {
+        productInfo = {
+          image: subCategory.image,
+          title: subCategory.name,
+          subName: categoryItem.name,
+        };
+      } else {
+        // Fallback: Category bilgisini kullan
+        const category = currentCategories.find(cat => cat.id === categoryItem.id);
+        if (category) {
+          productInfo = {
+            image: category.image,
+            title: category.name,
+            subName: subCategoryItem.name,
+          };
+        }
+      }
+    } else if (categoryItem) {
+      // Category selected (fallback)
+      stage = 'SubCategories';
+      name = categoryItem.name;
+      const category = currentCategories.find(cat => cat.id === categoryItem.id);
+      if (category) {
+        productInfo = {
+          image: category.image,
+          title: category.name,
+        };
+      }
     }
-    if (lastCrumb) {
-      setFlowContext(
-        isProductGroupLevel ? ProductInfoType.PRODUCT_GROUP : ProductInfoType.CATEGORY,
-        lastCrumb.id,
-        productInfo || undefined
-      );
+
+    // Navigate to PostsScreen with parameters
+    // productInfo oluşturulamadıysa bile navigation yap (fallback productInfo ile)
+    if (!productInfo) {
+      // Fallback: En azından bir productInfo oluştur
+      const categoryItem = breadcrumbItems.find(item => item.type === 'category');
+      const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
+      const productGroupItem = breadcrumbItems.find(item => item.type === 'productGroup');
+      
+      if (productGroupItem) {
+        const productGroup = currentProductGroups.find(pg => pg.id === productGroupItem.id);
+        productInfo = {
+          image: productGroup?.image || (subCategoryItem ? currentSubCategories.find(sc => sc.id === subCategoryItem.id)?.image : undefined) || currentCategories[0]?.image,
+          title: productGroupItem.name,
+          subName: subCategoryItem?.name || categoryItem?.name,
+        };
+      } else if (subCategoryItem) {
+        const subCategory = currentSubCategories.find(sc => sc.id === subCategoryItem.id);
+        productInfo = {
+          image: subCategory?.image || (categoryItem ? currentCategories.find(cat => cat.id === categoryItem.id)?.image : undefined) || currentCategories[0]?.image,
+          title: subCategoryItem.name,
+          subName: categoryItem?.name,
+        };
+      } else if (categoryItem) {
+        const category = currentCategories.find(cat => cat.id === categoryItem.id);
+        productInfo = {
+          image: category?.image || currentCategories[0]?.image,
+          title: categoryItem.name,
+        };
+      }
+    }
+    
+    if (productInfo) {
+      // ContextType ve contextId'yi belirle
+      let contextType: ProductInfoType | undefined;
+      let contextId: string | undefined;
+      
+      if (productItem && selectedProduct) {
+        contextType = ProductInfoType.PRODUCT;
+        contextId = productItem.id;
+      } else if (productGroupItem && selectedProductGroupId) {
+        contextType = ProductInfoType.PRODUCT_GROUP;
+        contextId = productGroupItem.id;
+      } else if (subCategoryItem && selectedSubCategoryId) {
+        contextType = ProductInfoType.SUB_CATEGORY;
+        contextId = subCategoryItem.id;
+      }
+      
+      // Save to flow store for CreatePostScreen
+      if (contextType && contextId) {
+        setFlowContext(contextType, contextId, {
+          image: productInfo.image,
+          title: productInfo.title,
+          subName: productInfo.subName,
+        });
+      }
+      
+      // CatalogUIStore zaten güncellenmiş (handleCategoryPress, handleSubCategoryPress, handleProductGroupPress, handleProductPress içinde)
+      // Burada sadece navigation yapılıyor
+      
       navigation.navigate('Post', {
         screen: 'PostsScreen',
         params: {
-          stage: isProductGroupLevel ? 'ProductGroup' : 'Categories',
-          name: lastCrumb.name,
+          stage,
+          name,
           productInfo,
-          contextType: isProductGroupLevel ? ProductInfoType.PRODUCT_GROUP : ProductInfoType.CATEGORY,
+          contextType, // Sadece type gönderiliyor, ID store'dan okunacak
+          // contextId artık gönderilmiyor, store'dan okunacak
         },
       });
     }
   };
 
-  const handleCreatePost = () => {
-    onCreatePost?.();
-  };
-
-  // -- ÜRÜN tıklandığında bu fonksiyon yönlendirmeyi yapar (copy.tsx'e göre düzenlendi) --
-  const handleProductPress = (product: MedusaProduct) => {
-    setSelectedProductLocal(product);
-
-    // Breadcrumb'ın sonundaki isim
-    const lastCrumb = breadcrumbItems[breadcrumbItems.length - 1];
-    const categoryId = lastCrumb ? lastCrumb.id : undefined;
-    const categoryName = lastCrumb ? lastCrumb.name : undefined;
-
-    // Varsayılan productInfo: mümkün olan en iyi image + title
-    let productInfo: {
-      id: string;
-      image?: string;
-      title?: string;
-      subName?: string;
-      handle?: string;
-    } = {
-      id: product.id,
-      title: product.title,
-      handle: product.handle,
-    };
-
-    if (product.thumbnail) productInfo.image = product.thumbnail;
-    else if (product.images && product.images.length > 0) productInfo.image = product.images[0].url;
-
-    // Kategori adı (ürün hangi grupta gösteriliyordu)
-    if (categoryName) productInfo.subName = categoryName;
-
-    // Yönlendirme. Ürün detay sayfasına ProductInfoType.PRODUCT gidiyor.
-    setFlowContext(ProductInfoType.PRODUCT, product.id, productInfo);
-    navigation.navigate('Post', {
-      screen: 'PostsScreen',
-      params: {
-        stage: 'Product', // Ürün detayı aşaması
-        productId: product.id,
-        name: product.title,
-        productInfo,
-        contextType: ProductInfoType.PRODUCT,
+  // PERFORMANCE FIX: Direct bottom sheet access - no callback chain
+  // This eliminates the callback chain: ProductCatalogScreen -> CatalogScreen -> handleCreatePost
+  const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
+    // Close bottom sheet first
+    closeBottomSheet();
+    
+    // Get current store state
+    const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+    
+    // Determine contextType and contextId based on current selection
+    // Priority: Product > ProductGroup > SubCategory
+    let determinedContextType: ProductInfoType | undefined;
+    let determinedContextId: string | undefined;
+    let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
+    
+    // Determine context based on current view and selection (from store)
+    if (selectedProductId && currentView === 'products') {
+      determinedContextType = ProductInfoType.PRODUCT;
+      determinedContextId = selectedProductId;
+      if (selectedProduct) {
+        productInfoSnapshot = {
+          image: selectedProduct.image,
+          title: selectedProduct.name,
+          subName: selectedProduct.description,
+        };
       }
-    });
-  };
-
-  const handleFilterToggle = (key: string, value: string) => {
-    setSelectedFilters((prev) => {
-      const existing = prev[key] || [];
-      if (existing.includes(value)) {
-        return { ...prev, [key]: existing.filter((v) => v !== value) };
-      } else {
-        return { ...prev, [key]: [...existing, value] };
+    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+      determinedContextType = ProductInfoType.PRODUCT_GROUP;
+      determinedContextId = selectedProductGroupId;
+    } else if (selectedSubCategoryId) {
+      determinedContextType = ProductInfoType.SUB_CATEGORY;
+      determinedContextId = selectedSubCategoryId;
+    }
+    
+    // Navigate to appropriate screen based on post type
+    if (type === 'free') {
+      // Save to flow store if context is available
+      if (determinedContextType && determinedContextId) {
+        setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
       }
-    });
+      navigation.navigate('Post', {
+        screen: 'CreatePostScreen',
+      });
+    } else if (type === 'tips') {
+      navigation.navigate('Post', {
+        screen: 'CreateTipsAndTrickPostScreen',
+      });
+    } else if (type === 'question') {
+      navigation.navigate('Post', {
+        screen: 'CreateQuestionPostScreen',
+      });
+    } else if (type === 'experience') {
+      navigation.navigate('Post', {
+        screen: 'CreateExperiencePostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+            brand: selectedProduct.brand,
+          } : undefined,
+          fromInventory: experienceOption === 'own',
+          experienceOption: experienceOption,
+        },
+      });
+    } else if (type === 'comparison') {
+      navigation.navigate('Post', {
+        screen: 'CreateBenchmarkPostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+          } : undefined,
+        },
+      });
+    } else if (type === 'update') {
+      navigation.navigate('Post', {
+        screen: 'CreateUpdatePostScreen',
+        params: {
+          product: selectedProduct ? {
+            id: selectedProduct.id,
+            name: selectedProduct.name,
+            description: selectedProduct.description,
+            image: selectedProduct.image,
+            brand: selectedProduct.brand,
+          } : undefined,
+        },
+      });
+    }
+  }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId]);
+
+  const handleCreatePost = useCallback(() => {
+    // Reset bottom sheet key to remount component and reset view
+    setBottomSheetKey(prev => prev + 1);
+    
+    // Determine stage for bottom sheet
+    // Priority: Product > ProductGroup > SubCategory
+    let stageForBottomSheet: 'subcategories' | 'productgroups' | 'products' | undefined;
+    const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+    
+    if (currentView === 'categories') {
+      stageForBottomSheet = undefined;
+    } else if (selectedProductId && currentView === 'products') {
+      stageForBottomSheet = 'products';
+    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+      stageForBottomSheet = 'subcategories';
+    } else if (currentView === 'subcategories') {
+      stageForBottomSheet = 'subcategories';
+    } else if (currentView === 'productgroups') {
+      stageForBottomSheet = 'subcategories';
+    } else {
+      stageForBottomSheet = currentView as 'subcategories' | 'products';
+    }
+    
+    // PERFORMANCE FIX: Direct bottom sheet open - no callback chain
+    openBottomSheet(
+      <CreatePostBottomSheet
+        key={bottomSheetKey + 1}
+        onClose={closeBottomSheet}
+        onPostTypeSelect={handlePostTypeSelect}
+        onViewChange={(view) => {
+          console.log('BottomSheet view changed:', view);
+        }}
+        stage={stageForBottomSheet}
+        selectedProduct={selectedProduct ? {
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          subName: selectedProduct.description || undefined,
+          image: selectedProduct.image,
+          hasDiscount: false,
+        } : undefined}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        paddingBottom: bottomOffset,
+        onChange: (index: number) => {
+          // Reset bottom sheet key when sheet closes to reset view state
+          if (index === -1) {
+            setBottomSheetKey(prev => prev + 1);
+          }
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
+
+  const getCurrentData = () => {
+    const data = (() => {
+      switch (currentView) {
+        case 'categories':
+          return currentCategories.filter(category =>
+            category.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        case 'subcategories':
+          return currentSubCategories.filter(subCategory =>
+            subCategory.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        case 'productgroups':
+          return currentProductGroups.filter(productGroup =>
+            productGroup.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        case 'products':
+          return currentProducts.filter(product =>
+            product.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        default:
+          return [];
+      }
+    })();
+    
+    return data;
   };
 
-  const handleApplyFilters = () => {
-    setShowFilterModal(false);
-    // TODO: Integrate selectedFilters in fetch!
-    // Not yet implemented; will require update to dependency of product fetching.
-  };
+  const currentData = getCurrentData();
 
-  // --- UI: Category / Product Group lists ---
+  // PERFORMANCE FIX: Memoize background color to prevent re-renders
+  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
 
-  // Kategori görünümünü FlatList ile göstermeye gerek yok: sadece ürün listing için Infinitescroll
   return (
     <Box flex={1}>
+
+      {/* Search Bar - Fixed at top */}
+      <VStack
+        space="md"
+        pb="$4"
+        px="$4"
+        bg={backgroundColor}
+      >
+        <HStack
+          alignItems="center"
+          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          borderRadius={20}
+          px={14}
+          space="sm"
+        >
+          <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
+          <Input flex={1} borderWidth={0} bg="transparent">
+            <InputField
+              placeholder="Select product group or search product name"
+              placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+              color={isDark ? '#000' : '#000'}
+              fontSize="$xs"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </Input>
+        </HStack>
+      </VStack>
+
+      {/* Breadcrumb */}
       <Breadcrumb
         items={breadcrumbItems}
         onItemPress={handleBreadcrumbPress}
-        rootLabel="All Categories"
+        rootLabel="Categories"
       />
-      {isProductGroupLevel && (
+
+      {/* Action Buttons - Show for productgroups and products (after subcategory is selected) */}
+      {(currentView === 'productgroups' || currentView === 'products') && (
         <ActionButtons
           onShowPosts={handleShowPosts}
           onCreatePost={handleCreatePost}
+          categoryName={breadcrumbItems.length > 0 ? breadcrumbItems[breadcrumbItems.length - 1]?.name : undefined}
         />
       )}
 
-      {isProductGroupLevel && (
-        <HStack px="$4" pb="$2" justifyContent="flex-end">
-          <Pressable
-            onPress={() => setShowFilterModal(true)}
-            bg={isDark ? '#2A2A2A' : '#FFFFFF'}
-            borderWidth={1}
-            borderColor={isDark ? '#404040' : '#13459b'}
-            borderRadius={8}
-            px="$4"
-            py="$2"
-            flexDirection="row"
-            alignItems="center"
-            style={({ pressed }) => ({
-              opacity: pressed ? 0.7 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            })}
-            accessibilityLabel="Filtrele"
-          >
-            <FilterIcon color="#13459b" size={18} />
-            <Text color="#13459b" fontWeight="$semibold" fontSize={12} ml="$2">
-              Filtrele
-            </Text>
-          </Pressable>
-        </HStack>
-      )}
-
-      <FilterDialog
-        isOpen={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        filterOptions={filterOptions}
-        selectedFilters={selectedFilters}
-        onToggle={handleFilterToggle}
-        onApply={handleApplyFilters}
-      />
-
-      {isProductGroupLevel ? (
-        <Box flex={1} px="$4">
-          {/* Product Skeleton yükleniyor */}
-          {(isLoading || isLoadingProducts) ? (
-            <VStack space="md" pb={scrollViewPaddingBottom}>
+      {/* Dynamic Grid */}
+      <ScrollView flex={1} px="$4">
+        <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
+          {/* Loading skeleton */}
+          {(currentView === 'categories' && isLoadingCategories) ||
+          (currentView === 'subcategories' && isLoadingSubCategories) ||
+          (currentView === 'productgroups' && isLoadingProductGroups) ||
+          (currentView === 'products' && isLoadingProducts) ? (
+            currentView === 'products' ? (
               <ProductSkeleton count={9} />
-            </VStack>
-          ) : (
-            <FlatList
-              // Infinitescroll için FlatList
-              data={products}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              numColumns={3}
-              contentContainerStyle={{
-                paddingTop: 0,
-                paddingBottom: scrollViewPaddingBottom + 92,
-                paddingHorizontal: 0,
-              }}
-              renderItem={({ item, index }) => {
-                // grid için satır/kol
-                let thumb = item.thumbnail;
-                if (!thumb && Array.isArray(item.images) && item.images.length > 0)
-                  thumb = item.images[0].url;
-                return (
-                  <Box
-                    w="33.33%"
-                    flex={1}
-                    style={{ padding: 4, minHeight: 170 }}
-                  >
-                    <Pressable
-                      key={item.id}
-                      bg={selectedProduct?.id === item.id ? "$primary200" : "transparent"}
-                      borderRadius={12}
-                      alignItems="center"
-                      justifyContent="center"
-                      p="$2"
-                      mb="$1"
-                      onPress={() => handleProductPress(item)}
-                      style={{ minHeight: 120, marginHorizontal: 2 }}
-                    >
-                      <Box alignItems="center" w="100%">
-                        {thumb ? (
-                          <Image
-                            source={{ uri: thumb }}
-                            style={{ width: 128, height: 128, borderRadius: 8, backgroundColor: "#fff", objectFit: 'contain' }}
-                            alt={item.title}
-                          />
-                        ) : (
-                          <Box
-                            style={{
-                              width: 64,
-                              height: 64,
-                              borderRadius: 8,
-                              backgroundColor: '#eef',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                            alignItems="center"
-                            justifyContent="center"
-                          >
-                            <Text fontWeight="600" fontSize="$lg">
-                              {item.title && item.title.length > 1
-                                ? item.title[0].toUpperCase()
-                                : '?'}
-                            </Text>
-                          </Box>
-                        )}
-                        <Text pt={4} numberOfLines={2} fontSize="$sm" textAlign="center">
-                          {item.title}
-                        </Text>
-                      </Box>
-                    </Pressable>
-                  </Box>
-                );
-              }}
-              ListEmptyComponent={() => (
-                <Box pt="$8" alignItems="center">
-                  <Text color="$muted900" fontSize="$md">
-                    No products found in this product group.
-                  </Text>
-                </Box>
-              )}
-              // Infinitescroll trigger: aşağı end threshold'da yeni ürünleri al
-              onEndReachedThreshold={0.2}
-              onEndReached={() => {
-                if (!isLoadingProducts && !isLoadingMoreProducts && hasNextPage) {
-                  handleLoadMoreProducts();
-                }
-              }}
-              ListFooterComponent={() =>
-                (isLoadingMoreProducts ?
-                  <Box alignItems="center" mt="$2" mb="$6">
-                    <Spinner color="$muted800" size="lg" />
-                  </Box>
-                  : (
-                    (products.length > 0 && products.length < productsTotal) ?
-                      <Box alignItems="center" mt="$2" mb="$6">
-                        <Text fontSize="$sm" color="$muted600">
-                          {products.length} / {productsTotal}
-                        </Text>
-                      </Box>
-                      : null
-                  )
-                )
-              }
-            />
-          )}
-        </Box>
-      ) : (
-        // Kategoriler düz görünüm, eski gibi kalsın (kategori listing'te infinitescroll mantığı yok)
-        <Box flex={1}>
-          <VStack space="md" pb={scrollViewPaddingBottom} px="$4">
-            {/* Loading skeleton */}
-            {isLoading ? (
-              <CategorySkeleton count={9} />
             ) : (
-              <>
-                {Array.from({ length: Math.ceil(currentCategories.length / 3) }).map((_, rowIndex) => {
-                  const startIndex = rowIndex * 3;
-                  const rowItems = currentCategories.slice(startIndex, startIndex + 3);
-                  const priority = rowIndex < 3 ? 'high' : 'low';
-                  return (
-                    <HStack key={`row-${rowIndex}`} space="md" justifyContent="space-between">
-                      {[0, 1, 2].map((colIndex) => {
-                        const currentItem = rowItems[colIndex];
-                        if (!currentItem) {
-                          return <Box key={colIndex} flex={1} />;
-                        }
-                        let itemImage = currentItem.image;
-                        if (currentItem.metadata && currentItem.metadata.thumb_image) {
-                          itemImage = currentItem.metadata.thumb_image;
-                        }
-                        return (
-                          <CategoryCard
-                            key={currentItem.id}
-                            category={{
-                              id: currentItem.id,
-                              name: currentItem.name,
-                              icon: currentItem.level === MAX_CATEGORY_LEVEL ? 'package' : 'folder',
-                              image: itemImage,
-                              subCategories: [],
-                            } as any}
-                            onPress={() => handleCategoryPress(currentItem)}
-                            priority={priority}
-                          />
-                        );
-                      })}
-                    </HStack>
-                  );
+              <CategorySkeleton count={9} />
+            )
+          ) : (
+            <>
+          {/* currentData'yı gruplara böl - categories için 2'li, diğerleri için 3'lü */}
+          {Array.from({ length: Math.ceil(currentData.length / (currentView === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
+            const itemsPerRow = currentView === 'categories' ? 2 : 3;
+            const startIndex = rowIndex * itemsPerRow;
+            const rowItems = currentData.slice(startIndex, startIndex + itemsPerRow);
+            // İlk 3 satır için high priority - ilk ekranda görünen tüm görseller
+            // Diğerleri için low priority - scroll edildiğinde yüklenecek
+            const priority = rowIndex < 3 ? 'high' : 'low';
+            
+            return (
+              <HStack key={`row-${rowIndex}`} space="md">
+                {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
+                  const currentItem = rowItems[colIndex];
+                  
+                  if (!currentItem) {
+                    // Son satırda eksik item varsa invisible spacer kullan
+                    return <Box key={colIndex} flex={1} />;
+                  }
+                  
+                  // Render different components based on current view
+                  if (currentView === 'categories') {
+                    return (
+                      <CategoryCard
+                        key={currentItem.id}
+                        category={currentItem as any}
+                        onPress={handleCategoryPress}
+                        priority={priority}
+                        isLargeCard={true}
+                      />
+                    );
+                  } else if (currentView === 'subcategories') {
+                    const subCategoryItem = currentItem as unknown as CatalogSubCategory & { id: string; image: any };
+                    return (
+                      <CategoryCard
+                        key={currentItem.id}
+                        category={{
+                          id: subCategoryItem.id,
+                          name: subCategoryItem.name,
+                          icon: 'folder',
+                          image: subCategoryItem.image,
+                          subCategories: []
+                        } as any}
+                        onPress={() => handleSubCategoryPress(subCategoryItem)}
+                        priority={priority}
+                      />
+                    );
+                  } else if (currentView === 'productgroups') {
+                    const productGroupItem = currentItem as unknown as CatalogProductGroup & { id: string; image: any };
+                    return (
+                      <CategoryCard
+                        key={currentItem.id}
+                        category={{
+                          id: productGroupItem.id,
+                          name: productGroupItem.name,
+                          icon: 'package',
+                          image: productGroupItem.image,
+                          subCategories: []
+                        } as any}
+                        onPress={() => handleProductGroupPress(productGroupItem)}
+                        priority={priority}
+                      />
+                    );
+                  } else if (currentView === 'products') {
+                    const productItem = currentItem as unknown as CatalogProduct & { id: string; image: any };
+                    return (
+                      <CategoryCard
+                        key={currentItem.id}
+                        category={{
+                          id: productItem.id,
+                          name: productItem.name,
+                          icon: 'shopping-bag',
+                          image: productItem.image,
+                          subCategories: []
+                        } as any}
+                        onPress={() => handleProductPress(productItem)}
+                        priority={priority}
+                      />
+                    );
+                  }
+                  
+                  return null;
                 })}
-              </>
-            )}
-          </VStack>
-        </Box>
-      )}
+              </HStack>
+            );
+          })}
+            </>
+          )}
+        </VStack>
+      </ScrollView>
     </Box>
   );
 };

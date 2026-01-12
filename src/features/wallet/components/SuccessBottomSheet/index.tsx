@@ -1,6 +1,6 @@
 import React from 'react';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { CheckIcon } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface SuccessBottomSheetProps {
@@ -39,7 +39,7 @@ export const SuccessBottomSheet: React.FC<SuccessBottomSheetProps> = ({
                     alignItems="center"
                     justifyContent="center"
                 >
-                    <Feather name="check" size={80} color="#111111" />
+                    <CheckIcon width={80} height={80} color="#111111" />
                 </Box>
 
                 {/* Title and Message */}

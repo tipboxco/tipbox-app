@@ -1,7 +1,7 @@
 import React from 'react';
 import { HStack, VStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { BellIcon } from 'react-native-heroicons/outline';
 
 interface BrandInfoCardProps {
   onNotificationPress?: () => void;
@@ -69,7 +69,7 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
             onPress={onNotificationPress}
             p="$2"
           >
-            <Feather name="bell" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+            <BellIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           </Pressable>
         </HStack>
       </Box>
@@ -100,7 +100,7 @@ const BrandInfoCard: React.FC<BrandInfoCardProps> = ({
               overflow="hidden"
             >
               <Image
-                source={require('@/assets/avatar/ozan.png')}
+                source={require('@/assets/avatar/default-useravatar.png')}
                 alt="User Avatar"
                 style={{ width: 26, height: 26 }}
                 resizeMode="cover"

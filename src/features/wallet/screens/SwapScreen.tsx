@@ -1,7 +1,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, VStack, HStack, Text, Pressable, Input, InputField } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronLeftIcon,
+  CreditCardIcon,
+  ChevronDownIcon,
+  InformationCircleIcon,
+} from 'react-native-heroicons/outline';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -83,7 +88,7 @@ export const SwapScreen: React.FC = () => {
           {/* Header with back button */}
           <HStack alignItems="center" space="md" mb="$2">
             <Pressable onPress={closeBottomSheet}>
-              <Feather name="arrow-left" size={24} color={isDark ? '#FFFFFF' : '#000000'} />
+              <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
             </Pressable>
             <HStack flex={1} justifyContent="center" alignItems="center">
               <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
@@ -195,7 +200,7 @@ export const SwapScreen: React.FC = () => {
           enableHandlePanningGesture: true,
           enableContentPanningGesture: true,
           enableDynamicSizing: true,
-          animateOnMount: true,
+          animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
           handleIndicatorStyle: {
             backgroundColor: isDark ? '#333333' : '#B8B8B7',
             width: 70,
@@ -249,7 +254,7 @@ export const SwapScreen: React.FC = () => {
             enableHandlePanningGesture: true,
             enableContentPanningGesture: true,
             enableDynamicSizing: true,
-            animateOnMount: true,
+            animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
             handleIndicatorStyle: {
               backgroundColor: isDark ? '#333333' : '#B8B8B7',
               width: 70,
@@ -371,12 +376,12 @@ export const SwapScreen: React.FC = () => {
                           alignItems="center"
                           justifyContent="center"
                         >
-                          <Feather name="credit-card" size={14} color={isDark ? '#FFFFFF' : '#000000'} />
+                          <CreditCardIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                         </Box>
                         <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
                           {activeToken}
                         </Text>
-                        <Feather name="chevron-down" size={14} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <ChevronDownIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
                     </Pressable>
                   </HStack>
@@ -434,12 +439,12 @@ export const SwapScreen: React.FC = () => {
                         alignItems="center"
                         justifyContent="center"
                       >
-                        <Feather name="credit-card" size={14} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <CreditCardIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                       </Box>
                       <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
                         {activeToken === 'TIP' ? 'SOL' : 'TIP'}
                       </Text>
-                      <Feather name="chevron-down" size={14} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <ChevronDownIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                     </HStack>
                   </HStack>
                   
@@ -546,7 +551,7 @@ export const SwapScreen: React.FC = () => {
                         Pricing
                       </Text>
                       <Pressable>
-                        <Feather name="info" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                       </Pressable>
                     </HStack>
                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
@@ -564,7 +569,7 @@ export const SwapScreen: React.FC = () => {
                         Slippage
                       </Text>
                       <Pressable>
-                        <Feather name="info" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                       </Pressable>
                     </HStack>
                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
@@ -582,7 +587,7 @@ export const SwapScreen: React.FC = () => {
                         Price Impact
                       </Text>
                       <Pressable>
-                        <Feather name="info" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                       </Pressable>
                     </HStack>
                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
@@ -600,7 +605,7 @@ export const SwapScreen: React.FC = () => {
                         Fees
                       </Text>
                       <Pressable>
-                        <Feather name="info" size={16} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                       </Pressable>
                     </HStack>
                     <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">

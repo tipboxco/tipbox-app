@@ -27,7 +27,8 @@ export interface EventDetailApiResponse {
   eventType: string; // 'default' veya 'product'
   status: EventStatus; // 'active' veya 'upcoming'
   isJoined: boolean;
-  bannerImage?: string | null; // Banner image (ileride gelecek, şimdilik optional)
+  banner?: string | null; // API'den gelen banner field'ı (detail sayfası banner'ı)
+  image?: string | null; // Event card image (EventsScreen'de görünen)
   rewards: EventDetailReward[];
   participants?: Array<{
     userId: string;
@@ -82,6 +83,23 @@ export interface AchievementApiItem {
 // Achievements API Response - /events/achievements endpoint'inden dönen response
 export interface AchievementsApiResponse {
   items: AchievementApiItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+// Event Badge Item - /events/:eventId/badges endpoint'inden gelen badge bilgisi
+export interface EventBadgeApiItem {
+  id: string;
+  title: string;
+  image: string;
+}
+
+// Event Badges API Response - /events/:eventId/badges endpoint'inden dönen response
+export interface EventBadgesApiResponse {
+  items: EventBadgeApiItem[];
   pagination: {
     cursor?: string;
     hasMore: boolean;

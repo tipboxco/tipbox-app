@@ -1,16 +1,19 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SettingsScreen, PaymentAndSubscriptionScreen } from './screens';
-import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
-import ChangePasswordScreen from './screens/ChangePasswordScreen';
-import TwoFactorAuthScreen from './screens/TwoFactorAuthScreen';
-import GoogleAuthenticatorSetupScreen from './screens/GoogleAuthenticatorSetupScreen';
-import GoogleAuthenticatorVerifyScreen from './screens/GoogleAuthenticatorVerifyScreen';
-import SMSVerificationScreen from './screens/SMSVerificationScreen';
-import SMSVerifyCodeScreen from './screens/SMSVerifyCodeScreen';
-import NotificationSettingsScreen from './screens/NotificationSettingsScreen';
-import PrivacySettingsScreen from './screens/PrivacySettingsScreen';
-import SupportSettingsScreen from './screens/SupportSettingsScreen';
+import {
+  SettingsScreen,
+  PaymentAndSubscriptionScreen,
+  ForgotPasswordScreen,
+  ChangePasswordScreen,
+  TwoFactorAuthScreen,
+  GoogleAuthenticatorSetupScreen,
+  GoogleAuthenticatorVerifyScreen,
+  SMSVerificationScreen,
+  SMSVerifyCodeScreen,
+  NotificationSettingsScreen,
+  PrivacySettingsScreen,
+  SupportSettingsScreen,
+} from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 export type SettingsStackParamList = {

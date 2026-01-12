@@ -6,7 +6,13 @@ import { ProductInfoType } from '@/src/types/common';
 
 // Post Stack için type tanımlaması
 export type PostStackParamList = {
-  PostDetailScreen: { postData: any; type: 'post' | 'tipsAndTricks' | 'question' | 'benchmark' | 'experience' | 'update'; showRelatedPost?: boolean; relatedPostData?: any };
+  PostDetailScreen: { 
+    postData?: any; 
+    postId?: string; // Deep link veya notification'dan gelen postId
+    type?: 'post' | 'tipsAndTricks' | 'question' | 'benchmark' | 'experience' | 'update'; 
+    showRelatedPost?: boolean; 
+    relatedPostData?: any;
+  };
   PostsScreen: { 
     stage: 'SubCategories' | 'ProductGroup' | 'Product'; 
     name: string;

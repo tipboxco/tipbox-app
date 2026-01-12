@@ -65,12 +65,12 @@ export interface FeedFilterParams {
   tags?: string[];
   
   /** 
-   * Kategori - Tek bir kategori ID'si
+   * Kategori - Kategori ID'leri array'i
    * Backend'de interests ile birleştirilir (OR mantığı)
    * mainCategoryId ve subCategoryId alanlarında filtreleme yapılır
-   * Query: category=category-id
+   * Query: category[]=category-id-1&category[]=category-id-2
    */
-  category?: string;
+  category?: string[];
   
   /** 
    * Sıralama
@@ -123,18 +123,6 @@ export const getFeed = async (
       },
     };
     
-    // Debug: Log response for troubleshooting
-    console.log('[getFeed] ✅ Response:', {
-      url: `/feed?${params.toString()}`,
-      status: response.status,
-      itemsCount: safeResponse.items.length,
-      items: safeResponse.items.map((item) => ({
-        id: item?.data?.id || 'unknown',
-        type: item?.type || 'unknown',
-      })),
-      pagination: safeResponse.pagination,
-    });
-    
     return safeResponse;
   } catch (error: any) {
     console.error('[getFeed] API Error:', {
@@ -167,7 +155,7 @@ export const getFeed = async (
  * - Tüm filtreler: getFilteredFeed(undefined, 20, { interests: ['cat1'], tags: ['Review'], category: 'cat2', sort: 'top' })
  * - Sadece interests: getFilteredFeed(undefined, 20, { interests: ['cat1', 'cat2'] })
  * - Sadece tags: getFilteredFeed(undefined, 20, { tags: ['Review', 'Benchmark'] })
- * - Sadece category: getFilteredFeed(undefined, 20, { category: 'cat1' })
+ * - Sadece category: getFilteredFeed(undefined, 20, { category: ['cat1', 'cat2'] })
  * - Sadece sort: getFilteredFeed(undefined, 20, { sort: 'recent' })
  */
 export const getFilteredFeed = async (
@@ -203,11 +191,18 @@ export const getFilteredFeed = async (
     });
   }
   
-  // Kategori (Category) - Tek değer olarak gönderilir
+  // Kategori (Category) - Backend tek bir kategori ID bekliyor
   // Backend'de interests ile birleştirilir (OR mantığı)
-  // Query: category=category-id
-  if (filters?.category) {
-    params.append('category', filters.category);
+  // Query: category=category-id (tek değer)
+  // NOT: Backend'de Prisma sorgusu array'i desteklemiyor, bu yüzden sadece ilk kategori gönderiliyor
+  // TODO: Backend'de Prisma sorgusu düzeltilmeli: mainCategoryId: { in: categoryArray }
+  if (filters?.category && Array.isArray(filters.category) && filters.category.length > 0) {
+    // Backend tek bir değer bekliyor, ilk kategoriyi gönder
+    // Backend düzeltildiğinde array olarak gönderilebilir
+    const firstCategory = filters.category[0];
+    if (firstCategory) {
+      params.append('category', firstCategory);
+    }
   }
   
   // Sıralama (Sort) - 'recent' veya 'top'

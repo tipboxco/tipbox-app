@@ -9,10 +9,12 @@ import {
     Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import {
+  BoltIcon,
+  ClockIcon,
+} from 'react-native-heroicons/outline';
 import type { LimitedEventApiResponse } from '../../types';
-import { useCountdown } from '@/src/utils';
-import { toImageSource } from '@/src/utils';
+import { useCountdown, toImageSource } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -44,9 +46,9 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
         : '00:00:00';
     
     // Image sources - ERROR FIX: Null checks for image sources
-    const backgroundImageSource = toImageSource(data.backgroundImage) || require('@/assets/events/banner_02.png');
-    const eventImageSource = toImageSource(data.eventImage) || require('@/assets/events/image_01.png');
-    const userAvatarSource = toImageSource(data.userScore?.avatar) || require('@/assets/avatar/ozan.png');
+    const backgroundImageSource = toImageSource(data.backgroundImage) || require('@/assets/defaultImages/default-banner.png');
+    const eventImageSource = toImageSource(data.eventImage) || require('@/assets/defaultImages/default-event.png');
+    const userAvatarSource = toImageSource(data.userScore?.avatar) || require('@/assets/avatar/default-useravatar.png');
 
     return (
         <Box
@@ -60,7 +62,6 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
             shadowRadius={3}
             elevation={3}
             position="relative"
-            mt="$4"
         >
             {/* Background Image */}
             <Image
@@ -69,7 +70,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                 width={width - 32}
                 height={230}
                 position="absolute"
-                top={0}
+                top={10}
                 left={0}
                 resizeMode="cover"
             />
@@ -94,7 +95,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             alignItems="center"
                             space="xs"
                         >
-                            <Feather name="zap" size={14} color="#111111" />
+                            <BoltIcon width={14} height={14} color="#111111" />
                             <Text
                                 color="#111111"
                                 fontSize="$2xs"
@@ -112,7 +113,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             >
                                 {formattedCountdown}
                             </Text>
-                            <Feather name="clock" size={18} color="#FFFFFF" />
+                            <ClockIcon width={18} height={18} color="#FFFFFF" />
                         </HStack>
                     </HStack>
 
@@ -205,7 +206,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         {/* Other Users */}
                         <HStack space="xs" alignItems="flex-end">
                             {(data.leaderboardUsers || []).slice(0, 3).map((user, index) => {
-                                const avatarSource = toImageSource(user?.avatar) || require('@/assets/avatar/ozan.png');
+                                const avatarSource = toImageSource(user?.avatar) || require('@/assets/avatar/default-useravatar.png');
                                 return (
                                     <Box key={user?.id || index} ml={index === 0 ? 0 : -12}>
                                         <Image

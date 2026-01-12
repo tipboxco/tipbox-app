@@ -1,3 +1,5 @@
+import 'react-native';
+
 // Gluestack UI tip tanımlarını genişletme
 // Config'de tanımlanan 4xs ve 3xs font size'larını TypeScript tip sistemine ekliyoruz
 
@@ -21,13 +23,11 @@ type ExtendedFontSize =
   | '$9xl'
   | number;
 
-// React Native StyleSheet tip tanımlarını genişletme
-// Gluestack UI token'larını desteklemek için
 declare module 'react-native' {
-  namespace ReactNative {
-    interface TextStyle {
-      fontSize?: ExtendedFontSize;
-    }
+  // React Native StyleSheet tip tanımlarını genişletme
+  // Gluestack UI token'larını desteklemek için
+  interface TextStyle {
+    fontSize?: ExtendedFontSize;
   }
 }
 
@@ -45,4 +45,3 @@ declare module '@gluestack-ui/themed' {
     fontSize?: ExtendedFontSize;
   }
 }
-

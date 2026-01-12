@@ -6,7 +6,7 @@ export interface QuestionPost {
     title: string;
     avatar: any;
   };
-  category: QuestionCategory;
+  category?: QuestionCategory; // Optional: contextData yoksa undefined olabilir
   content: string;
   isBoosted?: boolean;
   images?: any[];

@@ -8,16 +8,15 @@ import {
     Image
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { CachedImage } from '@/src/components/CachedImage';
 
 interface SuggestedUserCardProps {
     id: string;
     name: string;
-    title: string;
-    avatars: Array<{
-        id: string;
-        source: any;
-        alt: string;
-    }>;
+    titles: string[];
+    avatar: string | null;
+    mutualTrustCount?: number;
+    isTrusted: boolean;
     onAddTrust: (userId: string) => void;
     showBorder?: boolean;
 }
@@ -25,13 +24,18 @@ interface SuggestedUserCardProps {
 export const SuggestedUserCard = ({ 
     id,
     name, 
-    title, 
-    avatars, 
+    titles, 
+    avatar,
+    mutualTrustCount,
+    isTrusted,
     onAddTrust,
     showBorder = true 
 }: SuggestedUserCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+
+    // Titles array'ini string'e çevir
+    const titleText = titles.join(' - ');
 
     return (
         <HStack 
@@ -43,46 +47,45 @@ export const SuggestedUserCard = ({
             borderBottomColor={isDark ? '#333' : '#E9E9E9'}
         >
             <HStack alignItems="center" space="md" maxWidth={240} flex={1}>
-                {/* Overlapping Avatars */}
-                <Box position="relative" width={50} height={50}>
-                    {avatars.map((avatar, index) => {
-                        const isLast = index === avatars.length - 1;
-                        const zIndex = avatars.length - index;
-                        const leftOffset = index * 8; // Her avatar 8px sola kaydırılmış
-                        
-                        return (
+                {/* Avatar */}
+                <Box
+                    width={50}
+                    height={50}
+                    borderRadius={25}
+                    bg="#CE4A4A"
+                    alignItems="center"
+                    justifyContent="center"
+                    borderWidth={2}
+                    borderColor={isDark ? '#000' : '#FAFAFA'}
+                >
+                    <Box
+                        width={46}
+                        height={46}
+                        borderRadius={23}
+                        overflow="hidden"
+                    >
+                        {avatar ? (
+                            <CachedImage
+                                source={{ uri: avatar }}
+                                alt={name}
+                                width={46}
+                                height={46}
+                                resizeMode="cover"
+                            />
+                        ) : (
                             <Box
-                                key={avatar.id}
-                                position="absolute"
-                                left={leftOffset}
-                                top={0}
-                                width={50}
-                                height={50}
-                                borderRadius={25}
-                                bg="#CE4A4A"
+                                width={46}
+                                height={46}
+                                bg="#8C8C8C"
                                 alignItems="center"
                                 justifyContent="center"
-                                zIndex={zIndex}
-                                borderWidth={2}
-                                borderColor={isDark ? '#000' : '#FAFAFA'}
                             >
-                                <Box
-                                    width={46}
-                                    height={46}
-                                    borderRadius={23}
-                                    overflow="hidden"
-                                >
-                                    <Image
-                                        source={avatar.source}
-                                        alt={avatar.alt}
-                                        width={46}
-                                        height={46}
-                                        resizeMode="cover"
-                                    />
-                                </Box>
+                                <Text color="#FFF" fontSize={18} fontWeight="$bold">
+                                    {name.charAt(0).toUpperCase()}
+                                </Text>
                             </Box>
-                        );
-                    })}
+                        )}
+                    </Box>
                 </Box>
 
                 {/* Text Content */}
@@ -101,15 +104,24 @@ export const SuggestedUserCard = ({
                         numberOfLines={2}
                         lineHeight={11}
                     >
-                        {title}
+                        {titleText}
                     </Text>
+                    {mutualTrustCount && mutualTrustCount > 0 ? (
+                        <Text
+                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                            fontSize={8}
+                            numberOfLines={1}
+                        >
+                            {mutualTrustCount} ortak arkadaş
+                        </Text>
+                    ) : null}
                 </VStack>
             </HStack>
 
             {/* Add Trust Button */}
             <Pressable 
-                onPress={() => onAddTrust(id)}
-                bg="#F1F1F1"
+                onPress={() => !isTrusted && onAddTrust(id)}
+                bg={isTrusted ? '#00C853' : '#F1F1F1'}
                 borderRadius={5}
                 px={12}
                 py={4}
@@ -117,13 +129,15 @@ export const SuggestedUserCard = ({
                 height={26}
                 alignItems="center"
                 justifyContent="center"
+                disabled={isTrusted}
+                opacity={isTrusted ? 1 : 1}
             >
                 <Text
-                    color={isDark ? '#000' : '#000'}
+                    color={isTrusted ? '#FFF' : '#000'}
                     fontSize={10}
                     fontWeight="$bold"
                 >
-                    Add Trust
+                    {isTrusted ? 'Added' : 'Add Trust'}
                 </Text>
             </Pressable>
         </HStack>

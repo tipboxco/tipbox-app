@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { VStack, Text, HStack, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import {
+  EllipsisHorizontalIcon,
+  InformationCircleIcon,
+  Squares2X2Icon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PaperAirplaneIcon,
+  BookmarkIcon,
+} from 'react-native-heroicons/outline';
+import {
+  HeartIcon as HeartIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
+} from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { TipsAndTricksPost } from '@/src/mock/profile/tipsAndTricks/types';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
@@ -18,6 +30,8 @@ import {
 } from '@/src/features/interactions/api/hooks';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface TipsAndTricksPostCardDetailProps {
     data: TipsAndTricksPost;
@@ -54,6 +68,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
     const unbookmarkPostMutation = useUnbookmarkPost();
     const sharePostMutation = useSharePost();
     const { data: postStatus } = usePostStatus(data.id);
+    const { openBottomSheet } = useGlobalBottomSheet();
 
     // Sync with post status from API
     useEffect(() => {
@@ -95,13 +110,23 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
         });
     };
 
+    const handleOptionsPress = () => {
+        openBottomSheet(
+            <PostOptionsMenu
+                postId={data.id}
+                postContent={data.content}
+                postAuthorName={data.user.name}
+            />
+        );
+    };
+
     return (
         <VStack
             bg={isDark ? '$backgroundDark900' : '$white'}
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8}>
+            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
                     <Image
                         source={toImageSource(data.user.avatar)!}
@@ -128,8 +153,8 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                             {data.user.title}
                         </Text>
                     </VStack>
-                    <Pressable>
-                        <Feather name="more-horizontal" size={16} color={isDark ? '#fff' : '#A3A3A3'} />
+                    <Pressable onPress={handleOptionsPress}>
+                        <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
                     </Pressable>
                 </HStack>
             </VStack>
@@ -137,7 +162,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
             {/* Product */}
             {
                 data.category && data.category.product ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.PRODUCT}
@@ -147,7 +172,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                         />
                     </Box>
                 ) : data.category ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.SUB_CATEGORY}
@@ -168,14 +193,16 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                     borderColor="#56CFE5"
                     bgColor='#059982'
                     borderRadius={20}
-                    width={100}
+                    flex={0}
+                    flexShrink={1}
+                    minWidth={70}
                     px={10}
                     py={6}
                     flexDirection="row"
                     alignItems="center"
-                    justifyContent="space-evenly"
+                    justifyContent="center"
                 >
-                    <Feather name="info" size={12} color={'#fff'} />
+                    <InformationCircleIcon width={12} height={12} color="#fff" />
                     <Text
                         fontSize="$xs"
                         fontWeight="$semibold"
@@ -198,9 +225,9 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                     >
                         {data.tag}
                     </Text>
-                    <Feather
-                        name="layers"
-                        size={16}
+                    <Squares2X2Icon
+                        width={16}
+                        height={16}
                         color={isDark ? '#fff' : '#666'}
                     />
                 </HStack>
@@ -222,7 +249,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                         <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
                         <Text
                             color={isDark ? '$textDark200' : '#666'}
-                            fontSize="$2xl"
+                            fontSize="$sm"
                             fontStyle="italic"
                         >
                             {translatedContent}
@@ -244,7 +271,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                             />
                             <Text
                                 color="#829905"
-                                fontSize="$2xl"
+                                fontSize="$sm"
                                 textDecorationLine="underline"
                             >
                                 {isTranslating
@@ -276,12 +303,11 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                 <HStack>
                     <Pressable onPress={handleLike}>
                         <HStack mr={10} alignItems="center">
-                            <Feather
-                                name="heart"
-                                size={24}
-                                color={isLiked ? '#FF3040' : isDark ? '#fff' : '#000'}
-                                fill={isLiked ? '#FF3040' : 'none'}
-                            />
+                            {isLiked ? (
+                                <HeartIconSolid width={24} height={24} color="#FF3040" />
+                            ) : (
+                                <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.likes}
                             </Text>
@@ -293,7 +319,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                         opacity={onCommentPress ? 1 : 0.5}
                     >
                         <HStack mr={10} alignItems="center">
-                            <Feather name="message-circle" size={24} color={isDark ? '#fff' : '#000'} />
+                            <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.comments}
                             </Text>
@@ -301,7 +327,7 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                     </Pressable>
                     <Pressable onPress={handleShare}>
                         <HStack mr={10} alignItems="center">
-                            <Feather name="send" size={24} color={isDark ? '#fff' : '#000'} />
+                            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.shares}
                             </Text>
@@ -309,12 +335,11 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
                         <HStack mr={10} alignItems="center">
-                            <Feather
-                                name="bookmark"
-                                size={24}
-                                color={isBookmarked ? '#829905' : isDark ? '#fff' : '#000'}
-                                fill={isBookmarked ? '#829905' : 'none'}
-                            />
+                            {isBookmarked ? (
+                                <BookmarkIconSolid width={24} height={24} color="#829905" />
+                            ) : (
+                                <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            )}
                             <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
                                 {data.stats.bookmarks}
                             </Text>

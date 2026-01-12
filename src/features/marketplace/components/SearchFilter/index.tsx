@@ -29,7 +29,7 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({ searchQuery, onSearc
         />
         <Input flex={1} borderWidth={0} bg="transparent">
           <InputField
-            placeholder="NFT adı veya açıklamasında ara"
+            placeholder="Search by NFT name or description"
             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
             color={isDark ? '#FFFFFF' : '#000000'}
             fontSize={9}

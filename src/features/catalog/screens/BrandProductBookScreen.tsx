@@ -17,7 +17,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
+} from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandProductBook } from '../api/hooks';
 import type { BrandProductGroup, BrandProduct } from '../types';
@@ -56,7 +59,7 @@ const BrandProductBookScreen: React.FC = () => {
 
     // Map BrandProduct to component format
     const mapProductToCardData = (product: BrandProduct) => {
-        const imageSource = toImageSource(product.image) || require('@/assets/avatar/ozan.png');
+        const imageSource = toImageSource(product.image) || require('@/assets/avatar/default-useravatar.png');
         
         return {
             id: product.productId,
@@ -199,7 +202,7 @@ const BrandProductBookScreen: React.FC = () => {
                 >
                     {productGroup.productGroupName}
                 </Text>
-                <Feather name="chevron-right" size={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
+                <ChevronRightIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
             </HStack>
 
             {/* Horizontal Scrollable Products */}
@@ -274,10 +277,10 @@ const BrandProductBookScreen: React.FC = () => {
                         justifyContent="center"
                     >
                         <HStack alignItems="center" space="sm">
-                            <Feather name="search" size={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
+                            <MagnifyingGlassIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#B9B9B9'} />
                             <Input flex={1} borderWidth={0} bg="transparent">
                                 <InputField
-                                    placeholder="Ürün Grubu seçin veya ürün adı arayın"
+                                    placeholder="Select product group or search product name"
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize={9}
@@ -305,7 +308,7 @@ const BrandProductBookScreen: React.FC = () => {
                         {allProductGroups.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
-                                    Henüz ürün bulunmuyor
+                                    No products yet
                                 </Text>
                             </Box>
                         ) : (

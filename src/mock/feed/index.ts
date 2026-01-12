@@ -8,7 +8,7 @@ export const mock_feed_data: FeedItem[] = [
     user: {
       id: '1',
       name: 'Georgia Green',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Everyday Consumer - Home Appliance Enthusiast - Product Reviewer',
       action: 'Added new product and experiences to inventory!'
     },
@@ -57,7 +57,7 @@ export const mock_feed_data: FeedItem[] = [
     user: {
       id: '1',
       name: 'Georgia Green',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       title: 'Everyday Consumer - Home Appliance Enthusiast - Product Reviewer',
       action: 'Added new product and experiences to inventory!'
     },
@@ -105,7 +105,7 @@ export const mock_feed_data: FeedItem[] = [
       id: '1',
       name: 'Michael Clark',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     products: [
       {
@@ -143,7 +143,7 @@ export const mock_feed_data: FeedItem[] = [
       id: '1',
       name: 'Michael Clark',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '1',
@@ -177,7 +177,7 @@ export const mock_feed_data: FeedItem[] = [
       id: '1',
       name: 'Michael Clark',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '1',
@@ -213,7 +213,7 @@ export const mock_feed_data: FeedItem[] = [
       id: '1',
       name: 'John Doe',
       title: 'Technology Enthuistant - Hardware Expert - Digital Surfer',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
     },
     category: {
       id: '1',
@@ -247,7 +247,7 @@ export const mock_feed_data: FeedItem[] = [
       id: '1',
       name: 'Sarah Johnson',
       title: 'Product Reviewer - Tech Enthusiast - Early Adopter',
-      avatar: require('@/assets/avatar/ozan.png'),
+      avatar: require('@/assets/avatar/default-useravatar.png'),
       action: 'Updated their post',
     },
     product: {

@@ -121,7 +121,7 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           >
             <Input borderWidth={0} bg="transparent">
               <InputField
-                placeholder="Kodu Gir"
+                placeholder="Enter code"
                 placeholderTextColor="#B9B9B9"
                 value={code}
                 onChangeText={(text) => {

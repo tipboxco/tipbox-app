@@ -1,7 +1,10 @@
 import React from 'react';
 import { Box, VStack, HStack, Text, Button, ButtonText, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import {
+  ClockIcon,
+  Squares2X2Icon,
+} from 'react-native-heroicons/outline';
 
 import type { Survey } from '../../types';
 
@@ -66,7 +69,7 @@ const SurveyCard: React.FC<SurveyCardProps> = ({ survey, onPress }) => {
             >
               {survey.duration}
             </Text>
-            <Feather name="clock" size={18} color="#686868" />
+            <ClockIcon width={18} height={18} color="#686868" />
           </HStack>
         </HStack>
 
@@ -110,7 +113,7 @@ const SurveyCard: React.FC<SurveyCardProps> = ({ survey, onPress }) => {
         <HStack justifyContent="space-between" alignItems="center" mt="$2">
           {/* Points */}
           <HStack alignItems="center" space="xs">
-            <Feather name="layers" size={24} color="#686868" />
+            <Squares2X2Icon width={24} height={24} color="#686868" />
             <Text
               color="#686868"
               fontSize={10}
