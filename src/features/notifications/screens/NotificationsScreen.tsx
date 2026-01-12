@@ -284,7 +284,10 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, isAuthenticated); // Sadece authenticated olduğunda query çalışsın
 
-    const notifications = notificationsResponse?.data || [];
+    // SAFETY FIX: Ensure notifications is always an array
+    const notifications = Array.isArray(notificationsResponse?.data) 
+        ? notificationsResponse.data 
+        : [];
     
     // Tab press handler - PagerView native animasyonu ile geçiş
     const handleTabPress = useCallback((index: number) => {
@@ -394,10 +397,21 @@ const NotificationsScreenComponent: React.FC = () => {
 
     // Get filtered notifications for a specific filter
     const getFilteredNotificationsForFilter = useCallback((filter: NotificationFilter): Notification[] => {
+        // SAFETY FIX: Ensure notifications is always an array before filtering
+        if (!Array.isArray(notifications)) {
+            console.warn('[NotificationsScreen] ⚠️ notifications is not an array:', notifications);
+            return [];
+        }
+
         let filtered = notifications;
 
         if (filter.id !== 'all' && filter.id !== 'unread') {
             filtered = notifications.filter(notification => {
+                // SAFETY FIX: Ensure notification is valid
+                if (!notification || typeof notification !== 'object') {
+                    return false;
+                }
+                
                 switch (filter.id) {
                     case 'replies':
                         return notification.type === 'POST_COMMENTED' || 
@@ -415,15 +429,26 @@ const NotificationsScreenComponent: React.FC = () => {
             });
         }
 
-        if (searchQuery) {
-            filtered = filtered.filter(notification =>
-                notification.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                notification.metadata?.userName?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
+        if (searchQuery && Array.isArray(filtered)) {
+            filtered = filtered.filter(notification => {
+                // SAFETY FIX: Ensure notification properties exist before accessing
+                if (!notification || typeof notification !== 'object') {
+                    return false;
+                }
+                
+                const message = notification.message?.toLowerCase() || '';
+                const title = notification.title?.toLowerCase() || '';
+                const userName = notification.metadata?.userName?.toLowerCase() || '';
+                const query = searchQuery.toLowerCase();
+                
+                return message.includes(query) || 
+                       title.includes(query) || 
+                       userName.includes(query);
+            });
         }
 
-        return filtered;
+        // SAFETY FIX: Ensure return value is always an array
+        return Array.isArray(filtered) ? filtered : [];
     }, [notifications, searchQuery]);
 
     // Asset pre-caching - notifications yüklendiğinde images'ı cache'le
@@ -521,6 +546,18 @@ const NotificationsScreenComponent: React.FC = () => {
     const renderNotificationsList = useCallback((filterIndex: number) => {
         const filter = filters[filterIndex];
         const filtered = getFilteredNotificationsForFilter(filter);
+        
+        // SAFETY FIX: Ensure filtered is always an array
+        if (!Array.isArray(filtered)) {
+            console.warn('[NotificationsScreen] ⚠️ filtered is not an array:', filtered);
+            return (
+                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
+                        Bildirimler yüklenirken bir hata oluştu.
+                    </Text>
+                </Box>
+            );
+        }
         
         if (isLoading && !notifications.length) {
             return (

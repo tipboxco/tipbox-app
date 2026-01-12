@@ -96,9 +96,33 @@ export const PostDetailScreen = () => {
 
     // Use fetched post data if available, otherwise use the passed postData
     // Notification/deep link'ten geldiğinde her zaman fetched data kullan (en güncel)
-    const finalPostData = isFromNotificationOrDeepLink 
-      ? (fetchedPostData || postData || { id: postId }) // Notification/deep link'ten geldiğinde fetched data öncelikli
-      : (fetchedPostData || postData); // Feed'den geldiğinde de fetched data varsa onu kullan
+    // FIX: Category/contextData/product bilgilerini koru - FeedScreen'den gelen postData'da bu bilgiler var
+    let finalPostData: any;
+    if (isFromNotificationOrDeepLink) {
+      // Notification/deep link'ten geldiğinde fetched data öncelikli
+      finalPostData = fetchedPostData || postData || { id: postId };
+    } else {
+      // Feed'den geldiğinde: fetched data varsa onu kullan, ama category/contextData/product bilgilerini postData'dan koru
+      if (fetchedPostData && postData) {
+        // Fetched data'yı kullan, ama category/contextData/product bilgilerini postData'dan al
+        finalPostData = {
+          ...fetchedPostData,
+          // Category bilgisi (Tips & Tricks, Question, Post için)
+          category: fetchedPostData.category || postData.category,
+          // ContextType ve ContextData bilgisi (Post, Experience için)
+          contextType: fetchedPostData.contextType || postData.contextType,
+          contextData: fetchedPostData.contextData || postData.contextData,
+          // Product bilgisi (Update için)
+          product: fetchedPostData.product || postData.product,
+          // Products bilgisi (Benchmark için)
+          products: fetchedPostData.products || postData.products,
+          // RelatedPost bilgisi (Update için)
+          relatedPost: fetchedPostData.relatedPost || postData.relatedPost,
+        };
+      } else {
+        finalPostData = fetchedPostData || postData;
+      }
+    }
     const finalType = type || fetchedPostData?.type || 'post';
 
     // Fetch comments

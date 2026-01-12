@@ -94,19 +94,8 @@ export const NotificationSettingsScreen = () => {
         }
     };
 
-    // Calculate "All Notifications" state - All individual notifications should be enabled
-    const allNotifications = useMemo(() => {
-        return notificationItems.every((item) => getSettingValue(item.code));
-    }, [localSettings]);
-
-    // Toggle all notifications
-    const handleAllNotificationsToggle = async (enabled: boolean) => {
-        await Promise.all(
-            notificationItems.map((item) => updateSetting(item.code, enabled))
-        );
-    };
-
     // Notification items based on the design
+    // FIX: Move notificationItems before useMemo to prevent "Cannot read property 'every' of undefined" error
     const notificationItems: NotificationItem[] = [
         {
             id: 'trust',
@@ -134,6 +123,25 @@ export const NotificationSettingsScreen = () => {
             title: 'Post Notifications',
         },
     ];
+
+    // Calculate "All Notifications" state - All individual notifications should be enabled
+    // FIX: Use notificationItems after it's defined, and add safety check
+    const allNotifications = useMemo(() => {
+        if (!Array.isArray(notificationItems) || notificationItems.length === 0) {
+            return false;
+        }
+        return notificationItems.every((item) => getSettingValue(item.code));
+    }, [localSettings, notificationItems]);
+
+    // Toggle all notifications
+    const handleAllNotificationsToggle = async (enabled: boolean) => {
+        if (!Array.isArray(notificationItems) || notificationItems.length === 0) {
+            return;
+        }
+        await Promise.all(
+            notificationItems.map((item) => updateSetting(item.code, enabled))
+        );
+    };
 
     // Filter notification items based on search query
     const filteredItems = useMemo(() => {
