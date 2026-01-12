@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ScrollView, Platform, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { ScrollView, View, Keyboard, KeyboardEvent, TextInput, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VStack, Text, HStack, Pressable, Box } from '@gluestack-ui/themed';
 import {
   ChevronDownIcon,
 } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,11 +22,39 @@ import CommentsCard from '@/src/components/CommentsCard';
 import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { usePostDetail } from '../api/hooks';
-import { CommentBottomSheet } from '../components/CommentBottomSheet';
 
 type PostDetailScreenRouteProp = RouteProp<PostStackParamList, 'PostDetailScreen'>;
+
+export const useKeyboard = () => {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    function onKeyboardDidShow(e: KeyboardEvent) {
+      // Remove type here if not using TypeScript
+      setKeyboardHeight(e.endCoordinates.height);
+    }
+
+    function onKeyboardDidHide() {
+      setKeyboardHeight(0);
+    }
+
+    const showSubscription = Keyboard.addListener(
+      "keyboardDidShow",
+      onKeyboardDidShow,
+    );
+    const hideSubscription = Keyboard.addListener(
+      "keyboardDidHide",
+      onKeyboardDidHide,
+    );
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  return keyboardHeight;
+};
 
 export const PostDetailScreen = () => {
     const { colorMode } = useColorMode();
@@ -34,7 +63,6 @@ export const PostDetailScreen = () => {
     const route = useRoute<PostDetailScreenRouteProp>();
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
-    const insets = useSafeAreaInsets();
     
     // FIX: route.params undefined kontrolü - güvenli erişim
     // Deep link veya notification'dan gelen durumlarda params undefined olabilir
@@ -132,119 +160,35 @@ export const PostDetailScreen = () => {
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
     const createCommentMutation = useCreateComment();
 
-    // Global bottom sheet hook
-    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+    // Keyboard height tracking
+    const keyboardHeight = useKeyboard();
+    const insets = useSafeAreaInsets();
 
-    // Bottom sheet açık mı kontrolü - sadece bir kez açılması için
-    const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
-    const hasOpenedBottomSheetRef = useRef(false); // Bottom sheet'in açılıp açılmadığını takip et
+    // Comment input state
+    const [commentText, setCommentText] = useState('');
+    const inputRef = useRef<TextInput>(null);
 
-    // Snap points hesaplama
-    const screenHeight = Dimensions.get('window').height;
-    const snapPoints = [60, screenHeight * 0.8]; // Min height ve %80
+    // Handle comment submit
+    const handleCommentSubmit = () => {
+        if (!commentText.trim() || createCommentMutation.isPending) return;
 
-    // Handle comment input press - bottom sheet'i aç
-    const handleCommentInputPress = useCallback(() => {
-        if (isBottomSheetOpen) {
-            // Bottom sheet zaten açıksa, snap point'i değiştir (genişlet)
-            openBottomSheet(
-                <CommentBottomSheet
-                    postId={postId}
-                    onCommentSubmit={(comment) => {
-                        createCommentMutation.mutate(
-                            {
-                                postId,
-                                comment,
-                            },
-                            {
-                                onSuccess: () => {
-                                    closeBottomSheet();
-                                    setIsBottomSheetOpen(false);
-                                },
-                                onError: (error) => {
-                                    console.error('[PostDetailScreen] Error creating comment:', error);
-                                },
-                            }
-                        );
-                    }}
-                    isSubmitting={createCommentMutation.isPending}
-                    autoFocus={true}
-                    onInputPress={handleCommentInputPress}
-                />,
-                {
-                    snapPoints,
-                    initialSnapIndex: 1, // %80'de başla
-                    backdropOpacity: 0,
-                    onChange: (index: number) => {
-                        if (index === -1) {
-                            setIsBottomSheetOpen(false);
-                        }
-                    },
-                }
-            );
-        }
-    }, [postId, isBottomSheetOpen, openBottomSheet, closeBottomSheet, createCommentMutation, snapPoints]);
-
-    // postId değiştiğinde ref'i reset et
-    useEffect(() => {
-        hasOpenedBottomSheetRef.current = false;
-    }, [postId]);
-
-    // Ekran açıldığında bottom sheet'i sadece input yüksekliği kadar aç (sadece bir kez)
-    useEffect(() => {
-        if (!postId || hasOpenedBottomSheetRef.current) return; // Zaten açıldıysa tekrar açma
-
-        // Bottom sheet'i aç
-        const commentBottomSheetContent = (
-            <CommentBottomSheet
-                postId={postId}
-                onCommentSubmit={(comment) => {
-                    createCommentMutation.mutate(
-                        {
-                            postId,
-                            comment,
-                        },
-                        {
-                            onSuccess: () => {
-                                closeBottomSheet();
-                                setIsBottomSheetOpen(false);
-                                hasOpenedBottomSheetRef.current = false; // Reset
-                            },
-                            onError: (error) => {
-                                console.error('[PostDetailScreen] Error creating comment:', error);
-                            },
-                        }
-                    );
-                }}
-                isSubmitting={createCommentMutation.isPending}
-                autoFocus={false} // Başlangıçta focus yapma, sadece input'a tıklandığında
-                onInputPress={handleCommentInputPress} // Input'a tıklandığında snap point'i değiştir
-            />
-        );
-
-        openBottomSheet(commentBottomSheetContent, {
-            snapPoints,
-            initialSnapIndex: 0, // Başlangıçta min height
-            backdropOpacity: 0, // Backdrop hiç kararmasın
-            onChange: (index: number) => {
-                // Snap point değiştiğinde (kullanıcı aşağı kaydırdığında veya kapattığında)
-                if (index === -1) {
-                    setIsBottomSheetOpen(false);
-                    hasOpenedBottomSheetRef.current = false; // Reset
-                }
+        createCommentMutation.mutate(
+            {
+                postId: postId!,
+                comment: commentText.trim(),
             },
-        });
-        setIsBottomSheetOpen(true);
-        hasOpenedBottomSheetRef.current = true; // İşaretle
+            {
+                onSuccess: () => {
+                    setCommentText('');
+                },
+            }
+        );
+    };
 
-        // Cleanup: Ekran kapanırken bottom sheet'i kapat
-        return () => {
-            closeBottomSheet();
-            setIsBottomSheetOpen(false);
-            hasOpenedBottomSheetRef.current = false; // Reset
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [postId, openBottomSheet, closeBottomSheet, createCommentMutation, handleCommentInputPress]); // Sadece postId değiştiğinde çalışsın
+    // Handle comment press - boş fonksiyon (bottom sheet kaldırıldı)
+    const handleCommentInputPress = () => {
+        // Bottom sheet kaldırıldı - boş fonksiyon
+    };
 
     // Flatten comments with replies for display
     const flattenedComments: Array<{
@@ -306,7 +250,7 @@ export const PostDetailScreen = () => {
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                contentContainerStyle={{ paddingBottom: 16 }}
                 keyboardShouldPersistTaps="handled"
             >
                 {/* Detail Card */}
@@ -412,6 +356,74 @@ export const PostDetailScreen = () => {
                     </VStack>
                 )}
             </ScrollView>
+
+            {/* Comment Input - Fixed at bottom */}
+            <View
+                style={{
+                    paddingHorizontal: 16,
+                    paddingTop: 12,
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
+                    backgroundColor: isDark ? '#000000' : '#FFFFFF',
+                    borderTopWidth: 1,
+                    borderTopColor: isDark ? '#1A1A1A' : '#E5E5E5',
+                }}
+            >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TextInput
+                        ref={inputRef}
+                        value={commentText}
+                        onChangeText={setCommentText}
+                        placeholder="Write a comment..."
+                        placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        style={{
+                            flex: 1,
+                            height: 40,
+                            borderRadius: 20,
+                            paddingHorizontal: 12,
+                            backgroundColor: isDark ? '#2A2A2A' : '#F2F2F2',
+                            color: isDark ? '#FFFFFF' : '#000000',
+                            fontSize: 14,
+                        }}
+                        multiline={false}
+                        returnKeyType="send"
+                        onSubmitEditing={handleCommentSubmit}
+                    />
+
+                    {/* Send Button */}
+                    <Pressable
+                        onPress={handleCommentSubmit}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: commentText.trim() && !createCommentMutation.isPending
+                                ? '#6366F1'
+                                : isDark
+                                ? '#2A2A2A'
+                                : '#F2F2F2',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                        disabled={!commentText.trim() || createCommentMutation.isPending}
+                    >
+                        {createCommentMutation.isPending ? (
+                            <Text style={{ color: isDark ? '#8C8C8C' : '#8C8C8C' }}>...</Text>
+                        ) : (
+                            <Feather
+                                name="send"
+                                size={18}
+                                color={
+                                    commentText.trim()
+                                        ? '#FFFFFF'
+                                        : isDark
+                                        ? '#8C8C8C'
+                                        : '#8C8C8C'
+                                }
+                            />
+                        )}
+                    </Pressable>
+                </View>
+            </View>
         </VStack>
         </SafeAreaView>
     );

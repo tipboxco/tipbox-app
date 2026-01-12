@@ -41,9 +41,10 @@ interface UpdatePostCardDetailProps {
   showRelatedPost?: boolean;
   relatedPostData?: any;
   onCommentPress?: () => void;
+  disableBottomSheet?: boolean;
 }
 
-export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, onCommentPress }: UpdatePostCardDetailProps) => {
+export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, onCommentPress, disableBottomSheet = false }: UpdatePostCardDetailProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   

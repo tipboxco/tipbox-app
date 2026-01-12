@@ -10,7 +10,7 @@ import {
   Input,
   InputField,
 } from '@gluestack-ui/themed';
-import { ChevronLeftIcon } from 'react-native-heroicons/outline';
+import { ChevronLeftIcon, MagnifyingGlassIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface Friend {
@@ -67,10 +67,8 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
         px={12}
         space="sm"
       >
-        <Feather 
-          name="search" 
-          size={24} 
-          color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} 
+        <MagnifyingGlassIcon width={24} height={24}
+          color={isDark ? '#8E8E93' : '#8E8E93'} 
         />
         <Input flex={1} borderWidth={0} bg="transparent">
           <InputField

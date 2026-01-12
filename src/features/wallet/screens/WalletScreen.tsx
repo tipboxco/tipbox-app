@@ -112,9 +112,8 @@ export const WalletScreen: React.FC = () => {
           // Bottom sheet will handle its own state change
         }}
         onFriendPress={() => {
-          closeBottomSheet();
-          setSendSheetView('options');
-          // Navigate to friend selection screen
+          // Friend selection is handled within SendBottomSheet
+          // No need to close bottom sheet - it will show friend selection view
         }}
         onViewChange={handleSendViewChange}
         onSuccess={handleSendSuccess}
