@@ -46,11 +46,13 @@ export interface Transaction {
     id: string;
     name: string;
     avatar: string | null;
+    walletAddress?: string | null; // Backend'den gelen wallet adresi (opsiyonel - Web3 için)
   } | null;
   to: {
     id: string;
     name: string;
     avatar: string | null;
+    walletAddress?: string | null; // Backend'den gelen wallet adresi (opsiyonel - Web3 için)
   } | null;
   reason: string | null;
   status: 'created' | 'pending' | 'confirmed' | 'failed';

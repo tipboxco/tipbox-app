@@ -43,21 +43,21 @@ export const WalletCardInfo: React.FC<WalletCardInfoProps> = ({
     >
       <HStack alignItems="center" justifyContent="space-between" space="md">
         <HStack alignItems="center" space="md" flex={1}>
-          <Box
-            w={24}
-            h={24}
-            bg="$backgroundLight0"
-            $dark-bg="$backgroundDark800"
-            rounded={6}
-            alignItems="center"
-            justifyContent="center"
-          >
-            <CreditCardIcon width={24} height={24} color="#000000" />
-          </Box>
-          <VStack flex={1}>
-            <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-              {name}
-            </Text>
+        <Box
+          w={24}
+          h={24}
+          bg="$backgroundLight0"
+          $dark-bg="$backgroundDark800"
+          rounded={6}
+          alignItems="center"
+          justifyContent="center"
+        >
+          <CreditCardIcon width={24} height={24} color="#000000" />
+        </Box>
+        <VStack flex={1}>
+          <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+            {name}
+          </Text>
             <Text fontSize={9} color="$textLight500" numberOfLines={1}>
               {truncatedAddress}
             </Text>
@@ -65,9 +65,9 @@ export const WalletCardInfo: React.FC<WalletCardInfoProps> = ({
         </HStack>
         
         {/* Kopyalama Butonu - Sağa yaslanmış ve büyük */}
-        <Pressable onPress={onCopyPress}>
+            <Pressable onPress={onCopyPress}>
           <DocumentDuplicateIcon width={20} height={20} color="#000000" />
-        </Pressable>
+            </Pressable>
       </HStack>
     </Box>
   );
