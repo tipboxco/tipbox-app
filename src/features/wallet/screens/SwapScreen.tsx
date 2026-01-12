@@ -8,6 +8,7 @@ import {
   InformationCircleIcon,
   ArrowsRightLeftIcon,
 } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -286,33 +287,36 @@ export const SwapScreen: React.FC = () => {
   const transactions = [
     {
       type: 'TIPS Claim',
-      description: 'Toplu TIPS Claim Edildi.',
+      description: 'Bulk TIPS Claimed.',
       amount: '370 TIPS',
       amountColor: '#3CA241',
     },
     {
-      type: 'Bahşiş Gönderimi',
+      type: 'Tips Sent',
       description: 'Ömer Faruk Demiral',
       amount: '-50 TIPS',
       amountColor: '#A23C3C',
     },
     {
       type: 'TIPS Claim',
-      description: 'Toplu TIPS Claim Edildi.',
+      description: 'Bulk TIPS Claimed.',
       amount: '370 TIPS',
       amountColor: '#3CA241',
     },
     {
       type: 'TIPS Claim',
-      description: 'Toplu TIPS Claim Edildi.',
+      description: 'Bulk TIPS Claimed.',
       amount: '370 TIPS',
       amountColor: '#3CA241',
     },
   ];
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
+    <SafeAreaView 
+      edges={['top', 'bottom', 'left', 'right']} 
+      style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
+    >
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header title="Swap" showBackButton onBackPress={() => navigation.goBack()} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -641,7 +645,7 @@ export const SwapScreen: React.FC = () => {
         </VStack>
       </ScrollView>
 
-      </Box>
+      </VStack>
     </SafeAreaView>
   );
 };

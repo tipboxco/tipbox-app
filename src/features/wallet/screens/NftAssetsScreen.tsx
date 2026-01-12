@@ -75,7 +75,7 @@ export const NftAssetsScreen: React.FC = () => {
           <Pressable>
             <VStack alignItems="center" space="xs">
               <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                NFT Varlıklar
+                NFT Assets
               </Text>
               <Box w={86} h={2} bg="$backgroundLight300" $dark-bg="$backgroundDark600" rounded={2} />
             </VStack>
@@ -90,11 +90,11 @@ export const NftAssetsScreen: React.FC = () => {
           {/* Wallet Card */}
           <WalletCardInfo />
 
-          {/* NFT Varlıklar Header */}
+          {/* NFT Assets Header */}
           <VStack space="md">
             <HStack justifyContent="space-between" alignItems="center">
               <Text fontSize={14} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-                NFT Varlıklar
+                NFT Assets
               </Text>
               <HStack space="xs" alignItems="center">
                 {/* Filtrele Button */}

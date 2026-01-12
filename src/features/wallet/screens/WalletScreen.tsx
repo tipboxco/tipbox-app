@@ -1,9 +1,16 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, Clipboard } from 'react-native';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+  withTiming,
+} from 'react-native-reanimated';
 import { Header } from '@/src/components/Header';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   QrCodeIcon,
   PaperAirplaneIcon,
@@ -17,32 +24,75 @@ import {
 import { WalletCardInfo } from '../components/WalletCardInfo';
 import { HistoryCard } from '../components/HistoryCard';
 import { SendBottomSheet } from '../components/SendBottomSheet';
-import { ClaimBottomSheet } from '../components/ClaimBottomSheet';
 import { ReceiveBottomSheet } from '../components/ReceiveBottomSheet';
+import { ClaimBottomSheet } from '../components/ClaimBottomSheet';
 import { SwapBottomSheet } from '../components/SwapBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
 import { useSafeAreaValues } from '@/src/utils';
-import { useWalletBalance, useWalletTransactions } from '../api/hooks';
+import { useWalletBalance, useWalletTransactions, useWalletInfo } from '../api/hooks';
 import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
+import { useAppStore } from '@/src/store/appStore';
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 export const WalletScreen: React.FC = () => {
       const navigation = useNavigation<any>();
       const { colorMode } = useColorMode();
       const isDark = colorMode === 'dark';
-      const [activeTab, setActiveTab] = React.useState<'tips' | 'nft'>('tips');
+      const [activeTab, setActiveTab] = useState<'tips' | 'nft'>('tips');
       const bottomInset = useSafeAreaValues('bottom');
-
+      const pagerRef = useRef<PagerView>(null);
+      const tabContainerRef = useRef<any>(null);
+      const [tabContainerWidth, setTabContainerWidth] = useState(0);
+      const [currentPage, setCurrentPage] = useState(0);
+      
+      // Shared progress value for realtime tab animations (0 = TIPS, 1 = NFT)
+      const progress = useSharedValue(0);
+      
+      // Track if user is trying to swipe left on first page (to go back)
+      const isSwipingBack = useRef(false);
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
+  // App Store
+  const user = useAppStore((state) => state.user);
+  
   // API hooks
+  const { data: walletInfo, isLoading: isLoadingWalletInfo, error: walletInfoError } = useWalletInfo();
   const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
   const { data: transactionsData, isLoading: isLoadingTransactions } = useWalletTransactions();
   const { data: nftsData, isLoading: isLoadingNFTs } = useMyNFTs();
+  
+  // Debug: Log wallet info
+  React.useEffect(() => {
+    console.log('[WalletScreen] 🔍 Wallet Info Debug:', {
+      isLoading: isLoadingWalletInfo,
+      hasError: !!walletInfoError,
+      error: walletInfoError,
+      data: walletInfo,
+      walletIdentifier: walletInfo?.walletIdentifier,
+      user: user?.fullName,
+    });
+  }, [walletInfo, isLoadingWalletInfo, walletInfoError, user]);
+  
+  // Enable/disable navigation gesture based on current page
+  // When on first page (TIPS), allow swipe back to FeedScreen
+  // When on other pages, disable navigation gesture to prevent conflict with PagerView
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: currentPage === 0, // Only enable on first page
+    });
+  }, [currentPage, navigation]);
+  const handleCopyAddress = useCallback(() => {
+    if (walletInfo?.walletIdentifier) {
+      Clipboard.setString(walletInfo.walletIdentifier);
+      Alert.alert('Copied', 'Wallet address copied to clipboard');
+    }
+  }, [walletInfo?.walletIdentifier]);
   
   const [sendSheetView, setSendSheetView] = React.useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>('options');
   const [successTransactionDetails, setSuccessTransactionDetails] = React.useState<{
@@ -136,29 +186,6 @@ export const WalletScreen: React.FC = () => {
     );
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendViewChange, handleSendSuccess]);
 
-  const handleReceivePress = useCallback(() => {
-    console.log('[WalletScreen] Receive button pressed');
-    openBottomSheet(
-      <ReceiveBottomSheet
-        onClose={closeBottomSheet}
-      />,
-      {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableHandlePanningGesture: true,
-        enableContentPanningGesture: true,
-        enableDynamicSizing: true,
-        animateOnMount: true,
-        paddingBottom: bottomInset,
-        handleIndicatorStyle: {
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        },
-      }
-    );
-  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
-
   const handleSwapPress = useCallback(() => {
     console.log('[WalletScreen] Swap button pressed');
     openBottomSheet(
@@ -205,6 +232,101 @@ export const WalletScreen: React.FC = () => {
     );
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
+  const handleReceivePress = useCallback(() => {
+    console.log('[WalletScreen] Receive button pressed');
+    openBottomSheet(
+      <ReceiveBottomSheet
+        onClose={closeBottomSheet}
+        walletAddress={walletInfo?.walletIdentifier || ''}
+        userName={user?.fullName || 'User'}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomInset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, walletInfo?.walletIdentifier, user?.fullName]);
+
+  // Tab press handler - PagerView native animasyonu ile geçiş
+  const handleTabPress = useCallback((index: number) => {
+    pagerRef.current?.setPage(index);
+  }, []);
+
+  // PagerView scroll handler - realtime progress güncelleme
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      const currentProgress = position + offset;
+      progress.value = currentProgress;
+      
+      // Detect swipe back gesture on first page (TIPS tab)
+      // If user is on page 0 and tries to swipe left (negative offset), trigger navigation back
+      if (position === 0 && offset < -0.1) {
+        // User is swiping left on first page - enable back gesture
+        isSwipingBack.current = true;
+      } else {
+        isSwipingBack.current = false;
+      }
+    },
+    [progress]
+  );
+
+  // PagerView page selected handler
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
+      setActiveTab(position === 0 ? 'tips' : 'nft');
+      setCurrentPage(position);
+    },
+    [progress]
+  );
+  
+  // Tab 1 (TIPS) label color animation
+  const tab1Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1],
+      [activeColor, inactiveColor]
+    );
+    return { color };
+  });
+
+  // Tab 2 (NFT) label color animation
+  const tab2Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1],
+      [inactiveColor, activeColor]
+    );
+    return { color };
+  });
+
+  // Indicator position animation
+  const tabWidth = tabContainerWidth / 2 || 0;
+  const indicatorWidth = tabWidth * 0.5; // Tab genişliğinin %50'si
+  const indicatorStyle = useAnimatedStyle(() => {
+    const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+    return {
+      transform: [{ translateX }],
+    };
+  });
+
 
   // Transform API transactions data to match component format
   const transactions = useMemo(() => {
@@ -250,72 +372,144 @@ export const WalletScreen: React.FC = () => {
   }, [nftsData]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
-      <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
+    <SafeAreaView 
+      edges={['top', 'bottom', 'left', 'right']} 
+      style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
+    >
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        <VStack flex={1}>
+        <Header 
+          title="Wallet" 
+          showBackButton 
+          onBackPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('Feed');
+            }
+          }} 
+        />
       {/* Tabs */}
-      <VStack bg={isDark ? '#000' : '#FFF'}>
-        <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
+      <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
+        <HStack 
+          ref={tabContainerRef}
+          borderBottomWidth={1} 
+          borderColor="#E9E9E9" 
+          p={0} 
+          m={0}
+          position="relative"
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            setTabContainerWidth(width);
+          }}
+        >
           <Pressable
-            onPress={() => setActiveTab('tips')}
+            onPress={() => handleTabPress(0)}
             flex={1}
             alignItems="center"
-            pb="$1"
+            pb={8}
             position="relative"
           >
             <VStack alignItems="center" space="xs">
-              <Text
-                fontSize={12}
-                fontWeight="$bold"
-                color={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+              <Animated.Text
+                style={[
+                  {
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                  },
+                  tab1Style,
+                ]}
               >
                 TIPS
-              </Text>
+              </Animated.Text>
             </VStack>
-            <Box
-              position="absolute"
-              bottom={-1}
-              left="25%"
-              height={2}
-              width="50%"
-              borderRadius={999}
-              bg={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-            />
           </Pressable>
           <Pressable
-            onPress={() => setActiveTab('nft')}
+            onPress={() => handleTabPress(1)}
             flex={1}
             alignItems="center"
-            pb="$1"
+            pb={8}
             position="relative"
           >
             <VStack alignItems="center" space="xs">
-              <Text
-                fontSize={12}
-                fontWeight="$bold"
-                color={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+              <Animated.Text
+                style={[
+                  {
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                  },
+                  tab2Style,
+                ]}
               >
-                NFT Varlıklar
-              </Text>
+                NFT Assets
+              </Animated.Text>
             </VStack>
-            <Box
-              position="absolute"
-              bottom={-1}
-              left="20%"
-              height={2}
-              width="60%"
-              borderRadius={999}
-              bg={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-            />
           </Pressable>
+          
+          {/* Animated Indicator */}
+          {tabWidth > 0 && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: indicatorWidth,
+                  height: 2,
+                  borderRadius: 999,
+                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                },
+                indicatorStyle,
+              ]}
+            />
+          )}
         </HStack>
       </VStack>
-      <VStack flex={1} px="$4" py="$4" space="lg">
-        {activeTab === 'tips' && (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomInset, flexGrow: 1 }}>
+      
+      {/* PagerView - Native swipe tab switching */}
+      <AnimatedPagerView
+        ref={pagerRef}
+        style={{ flex: 1 }}
+        initialPage={0}
+        onPageScroll={handlePageScroll}
+        onPageSelected={handlePageSelected}
+        scrollEnabled={true}
+        overScrollMode="never"
+      >
+        {/* TIPS Tab */}
+        <Box key="0" flex={1}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={{ 
+              paddingHorizontal: 16,
+              paddingVertical: 16,
+              paddingBottom: 16
+            }}
+          >
             <VStack space="lg">
               {/* Wallet Card */}
-              <WalletCardInfo />
+              {isLoadingWalletInfo ? (
+                <Box 
+                  bg="$backgroundLight0" 
+                  $dark-bg="$backgroundDark900" 
+                  borderWidth={1} 
+                  borderColor="$borderLight200" 
+                  $dark-borderColor="$borderDark600" 
+                  rounded={5} 
+                  p="$4"
+                  h={80}
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
+              ) : (
+                <WalletCardInfo 
+                  name={user?.fullName || 'Kullanıcı'}
+                  address={walletInfo?.walletIdentifier || 'Adres bulunamadı'}
+                  onCopyPress={handleCopyAddress}
+                />
+              )}
 
               {/* Balance Card */}
               <Box bg="$backgroundLight0" $dark-bg="$backgroundDark900" borderWidth={1} borderColor="$borderLight200" $dark-borderColor="$borderDark600" rounded={5} p="$4">
@@ -407,10 +601,19 @@ export const WalletScreen: React.FC = () => {
                       {transactions.today.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`today-${index}`}
-                          type={transaction.type || transaction.description || 'Transaction'}
-                          description={transaction.description || transaction.message || ''}
-                          amount={transaction.amount || '0 TIPS'}
+                          type={transaction.description || transaction.actionType || 'Transaction'}
+                          description={transaction.reason || ''}
+                          amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          transactionType={
+                            transaction.status === 'failed' 
+                              ? 'failed' 
+                              : transaction.actionType === 'CLAIM_REWARD' || transaction.actionType === 'CLAIM_BADGE'
+                              ? 'claim'
+                              : transaction.actionType === 'AIRDROP'
+                              ? 'airdrop'
+                              : transaction.type
+                          }
                         />
                       ))}
                     </VStack>
@@ -425,10 +628,19 @@ export const WalletScreen: React.FC = () => {
                       {transactions.yesterday.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`yesterday-${index}`}
-                          type={transaction.type || transaction.description || 'Transaction'}
-                          description={transaction.description || transaction.message || ''}
-                          amount={transaction.amount || '0 TIPS'}
+                          type={transaction.description || transaction.actionType || 'Transaction'}
+                          description={transaction.reason || ''}
+                          amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          transactionType={
+                            transaction.status === 'failed' 
+                              ? 'failed' 
+                              : transaction.actionType === 'CLAIM_REWARD' || transaction.actionType === 'CLAIM_BADGE'
+                              ? 'claim'
+                              : transaction.actionType === 'AIRDROP'
+                              ? 'airdrop'
+                              : transaction.type
+                          }
                         />
                       ))}
                     </VStack>
@@ -443,10 +655,19 @@ export const WalletScreen: React.FC = () => {
                       {transactions.lastWeek.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`lastWeek-${index}`}
-                          type={transaction.type || transaction.description || 'Transaction'}
-                          description={transaction.description || transaction.message || ''}
-                          amount={transaction.amount || '0 TIPS'}
+                          type={transaction.description || transaction.actionType || 'Transaction'}
+                          description={transaction.reason || ''}
+                          amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          transactionType={
+                            transaction.status === 'failed' 
+                              ? 'failed' 
+                              : transaction.actionType === 'CLAIM_REWARD' || transaction.actionType === 'CLAIM_BADGE'
+                              ? 'claim'
+                              : transaction.actionType === 'AIRDROP'
+                              ? 'airdrop'
+                              : transaction.type
+                          }
                         />
                       ))}
                     </VStack>
@@ -461,10 +682,19 @@ export const WalletScreen: React.FC = () => {
                       {transactions.lastMonth.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`lastMonth-${index}`}
-                          type={transaction.type || transaction.description || 'Transaction'}
-                          description={transaction.description || transaction.message || ''}
-                          amount={transaction.amount || '0 TIPS'}
+                          type={transaction.description || transaction.actionType || 'Transaction'}
+                          description={transaction.reason || ''}
+                          amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          transactionType={
+                            transaction.status === 'failed' 
+                              ? 'failed' 
+                              : transaction.actionType === 'CLAIM_REWARD' || transaction.actionType === 'CLAIM_BADGE'
+                              ? 'claim'
+                              : transaction.actionType === 'AIRDROP'
+                              ? 'airdrop'
+                              : transaction.type
+                          }
                         />
                       ))}
                     </VStack>
@@ -485,21 +715,51 @@ export const WalletScreen: React.FC = () => {
               )}
             </VStack>
           </ScrollView>
-        )}
-        {activeTab === 'nft' && (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomInset }}>
+        </Box>
+
+        {/* NFT Tab */}
+        <Box key="1" flex={1}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={{ 
+              paddingHorizontal: 16,
+              paddingVertical: 16,
+              paddingBottom: 16
+            }}
+          >
             <VStack space="lg">
               {/* Wallet Card */}
-              <WalletCardInfo />
+              {isLoadingWalletInfo ? (
+                <Box 
+                  bg="$backgroundLight0" 
+                  $dark-bg="$backgroundDark900" 
+                  borderWidth={1} 
+                  borderColor="$borderLight200" 
+                  $dark-borderColor="$borderDark600" 
+                  rounded={5} 
+                  p="$4"
+                  h={80}
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                </Box>
+              ) : (
+                <WalletCardInfo 
+                  name={user?.fullName || 'User'}
+                  address={walletInfo?.walletIdentifier || 'Address not found'}
+                  onCopyPress={handleCopyAddress}
+                />
+              )}
 
-              {/* NFT Varlıklar Header */}
+              {/* NFT Assets Header */}
               <VStack space="md">
                 <HStack justifyContent="space-between" alignItems="center">
                   <Text fontSize={14} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-                    NFT Varlıklar
+                    NFT Assets
                   </Text>
                   <HStack space="xs" alignItems="center">
-                    {/* Filtrele Button */}
+                    {/* Filter Button */}
                     <Pressable
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
@@ -512,12 +772,12 @@ export const WalletScreen: React.FC = () => {
                     >
                       <HStack alignItems="center" space="xs">
                         <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                          Filtrele
+                          Filter
                         </Text>
                         <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
                     </Pressable>
-                    {/* Sırala Button */}
+                    {/* Sort Button */}
                     <Pressable
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
@@ -530,7 +790,7 @@ export const WalletScreen: React.FC = () => {
                     >
                       <HStack alignItems="center" space="xs">
                         <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                          Sırala
+                          Sort
                         </Text>
                         <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
@@ -619,9 +879,10 @@ export const WalletScreen: React.FC = () => {
               </VStack>
             </VStack>
           </ScrollView>
-        )}
-      </VStack>
+        </Box>
+      </AnimatedPagerView>
 
+        </VStack>
       </Box>
     </SafeAreaView>
   );
