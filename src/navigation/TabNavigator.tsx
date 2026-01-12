@@ -32,7 +32,7 @@ import {
   InboxIcon as InboxIconOutline,
 } from 'react-native-heroicons/outline';
 
-import { FeedScreen } from '@/src/features/feed/screens';
+import { FeedNavigator } from '@/src/features/feed/navigation';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
 import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { EventsNavigator } from '@/src/features/events/navigation';
@@ -247,7 +247,7 @@ export const TabNavigator = () => {
         >
           <Tab.Screen
             name="FeedScreen"
-            component={FeedScreen}
+            component={FeedNavigator}
             listeners={{
               tabPress: handleFeedTabPress,
             }}

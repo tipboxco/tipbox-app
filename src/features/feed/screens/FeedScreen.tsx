@@ -56,7 +56,7 @@ type FeedScreenNavigationProp = NativeStackNavigationProp<FeedStackParamList & R
 const FeedScreenInner = React.memo(() => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<FeedScreenNavigationProp>();
   const { user } = useAppStore();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const queryClient = useQueryClient();
@@ -252,10 +252,8 @@ const FeedScreenInner = React.memo(() => {
 
   const handleTabChange = (tab: 'wallet' | 'inventory') => {
     if (tab === 'wallet') {
-      // Wallet ekranına git - WalletNavigator otomatik olarak bağlantı durumuna göre WalletConnection veya WalletScreen'i gösterir
-      (navigation as any).navigate('Wallet', {
-        screen: 'WalletScreen',
-      });
+      // Wallet ekranına git - FeedStack içinde olduğu için global bottom sheet çalışır
+      navigation.navigate('WalletScreen');
     } else if (tab === 'inventory') {
       if (user?.id) {
         // Inventory ekranına git - InventoryScreen mount olduğunda useInventory hook'u otomatik olarak /inventory endpoint'ine GET isteği atacak
