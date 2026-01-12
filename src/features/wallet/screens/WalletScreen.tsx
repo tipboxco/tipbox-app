@@ -348,23 +348,23 @@ export const WalletScreen: React.FC = () => {
   }, [nftsData]);
 
   return (
-    <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
-      <SafeAreaView 
-        edges={['top']} 
-        style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
-      >
-        <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Header 
-        title="Wallet" 
-        showBackButton 
-        onBackPress={() => {
-          if (navigation.canGoBack()) {
-            navigation.goBack();
-          } else {
-            navigation.navigate('Feed');
-          }
-        }} 
-      />
+    <SafeAreaView 
+      edges={['top', 'bottom', 'left', 'right']} 
+      style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
+    >
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        <VStack flex={1}>
+        <Header 
+          title="Wallet" 
+          showBackButton 
+          onBackPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('Feed');
+            }
+          }} 
+        />
       {/* Tabs */}
       <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
         <HStack 
@@ -858,9 +858,9 @@ export const WalletScreen: React.FC = () => {
         </Box>
       </AnimatedPagerView>
 
-      </VStack>
-      </SafeAreaView>
-    </Box>
+        </VStack>
+      </Box>
+    </SafeAreaView>
   );
 };
 
