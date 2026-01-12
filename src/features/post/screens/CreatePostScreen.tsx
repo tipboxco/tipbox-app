@@ -15,6 +15,9 @@ import { useCreateFreePost } from '../api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
+import { useAppStore } from '@/src/store/appStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { CameraScreen } from '../components/CameraScreen';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
@@ -35,6 +38,8 @@ export const CreatePostScreen = () => {
   const { handleSubmit, formState, watch, trigger, getValues } = methods;
   const createPostMutation = useCreateFreePost();
   const toast = useToast();
+  const { user } = useAppStore();
+  const queryClient = useQueryClient();
   const [showCamera, setShowCamera] = useState(false);
   const [lastPhotoUri, setLastPhotoUri] = useState<string | null>(null);
   
@@ -210,19 +215,29 @@ export const CreatePostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Catalog screen if can't go back
-      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → CatalogStack → Catalog → CatalogScreen
-      navigation.navigate('App', {
-        screen: 'MainTabs',
-        params: {
-          screen: 'CatalogStack',
-          params: {
-            screen: 'Catalog',
-            params: {
-              screen: 'CatalogScreen',
+      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → CatalogStack → CatalogScreen
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'App',
+              state: {
+                routes: [
+                  {
+                    name: 'MainTabs',
+                    state: {
+                      routes: [{ name: 'CatalogStack' }],
+                      index: 0,
+                    },
+                  },
+                ],
+                index: 0,
+              },
             },
-          },
-        },
-      });
+          ],
+        })
+      );
     }
   };
 
@@ -324,30 +339,45 @@ export const CreatePostScreen = () => {
       // Clear flow context on successful submit
       clearFlow();
       
-      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
-      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'App',
-              state: {
-                routes: [
-                  {
-                    name: 'MainTabs',
-                    state: {
-                      routes: [{ name: 'FeedScreen' }],
-                      index: 0,
+      // Başarılı olursa ProfileScreen'e yönlendir
+      if (user?.id) {
+        // Profil verilerini invalidate et - yeni post görünsün
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userPosts(user.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+        });
+        
+        navigation.navigate('Profile', {
+          screen: 'ProfileMain',
+          params: { userId: user.id },
+        });
+      } else {
+        // Fallback: Feed ekranına yönlendir
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'App',
+                state: {
+                  routes: [
+                    {
+                      name: 'MainTabs',
+                      state: {
+                        routes: [{ name: 'FeedScreen' }],
+                        index: 0,
+                      },
                     },
-                  },
-                ],
-                index: 0,
+                  ],
+                  index: 0,
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          })
+        );
+      }
     } catch (error: any) {
       console.error('[CreatePostScreen] ❌ API Error:', error);
       console.log('[CreatePostScreen] ====================================');

@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Platform, FlatList, ActivityIndicator, Share, Dimensions, ScrollView } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { Platform, FlatList, ActivityIndicator, Share, Dimensions, ScrollView, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
@@ -620,6 +620,23 @@ const EventDetailScreen: React.FC = () => {
 
     // Banner yüksekliği
     const BANNER_HEIGHT = 250;
+    
+    // Parallax header için animated value
+    const scrollY = useRef(new Animated.Value(0)).current;
+    
+    // Header opacity - scroll pozisyonuna göre 0'dan 1'e animate olacak
+    // Banner'ın yarısına gelince header görünür olacak
+    const headerOpacity = scrollY.interpolate({
+        inputRange: [0, BANNER_HEIGHT / 2, BANNER_HEIGHT],
+        outputRange: [0, 0.5, 1],
+        extrapolate: 'clamp',
+    });
+    
+    // Scroll handler
+    const handleScroll = Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: true }
+    );
 
     // Loading state
     if (isLoading) {
@@ -664,17 +681,20 @@ const EventDetailScreen: React.FC = () => {
 
     return (
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            {/* Header */}
-            <Box
-                position="absolute"
-                top={0}
-                left={0}
-                right={0}
-                zIndex={1000}
-                bg={isDark ? '#000000' : '#FFFFFF'}
-                pt={insets.top}
-                pb={10}
-                px={16}
+            {/* Header - Parallax efekt ile scroll yapınca görünecek */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    backgroundColor: isDark ? '#000000' : '#FFFFFF',
+                    paddingTop: insets.top,
+                    paddingBottom: 10,
+                    paddingHorizontal: 16,
+                    opacity: headerOpacity,
+                }}
             >
                 <HStack justifyContent="space-between" alignItems="center">
                     <Pressable
@@ -712,16 +732,18 @@ const EventDetailScreen: React.FC = () => {
                         <ArrowTopRightOnSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
                     </Pressable>
                 </HStack>
-            </Box>
+            </Animated.View>
 
             {/* ScrollView */}
-            <ScrollView
+            <Animated.ScrollView
                 bounces={false}
                 overScrollMode="never"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{
                     paddingTop: insets.top + 60, // Header height
                 }}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 onMomentumScrollEnd={(event) => {
                     // Infinite scroll için scroll pozisyonunu kontrol et
                     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
@@ -1070,7 +1092,7 @@ const EventDetailScreen: React.FC = () => {
                         )}
                     </VStack>
                 </VStack>
-            </ScrollView>
+            </Animated.ScrollView>
 
             {/* Floating Action Button - EVENT_GUIDE.MD Section 2.1 */}
             {/* FAB sadece isJoined: true ise görünsün */}

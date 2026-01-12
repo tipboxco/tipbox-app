@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
-import { FormProvider, Controller, useFormContext } from 'react-hook-form';
+import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
@@ -17,6 +17,9 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateQuestionPost, useBoostOptions } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
+import { useAppStore } from '@/src/store/appStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { CustomToast } from '@/src/components/CustomToast';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -69,10 +72,13 @@ export const CreateQuestionPostScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateQuestionPostScreenNavigationProp>();
   const methods = useQuestionPostForm();
-  const { handleSubmit, formState, getValues, setValue } = methods;
+  const { formState, getValues, setValue } = methods;
+  const handleSubmit = methods.handleSubmit;
   const availableTips = 250;
   const toast = useToast();
   const createQuestionPostMutation = useCreateQuestionPost();
+  const { user } = useAppStore();
+  const queryClient = useQueryClient();
   
   // Boost options'ı API'den çek
   const { data: boostOptions = [], isLoading: isLoadingBoostOptions, error: boostOptionsError } = useBoostOptions();
@@ -88,12 +94,29 @@ export const CreateQuestionPostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Feed screen
-      navigation.navigate('Main', {
-        screen: 'Feed',
-        params: {
-          screen: 'FeedScreen',
-        },
-      });
+      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'App',
+              state: {
+                routes: [
+                  {
+                    name: 'MainTabs',
+                    state: {
+                      routes: [{ name: 'FeedScreen' }],
+                      index: 0,
+                    },
+                  },
+                ],
+                index: 0,
+              },
+            },
+          ],
+        })
+      );
     }
   };
 
@@ -204,7 +227,7 @@ export const CreateQuestionPostScreen = () => {
     return null;
   };
 
-  const onSubmit = async (data: QuestionPostFormData) => {
+  const onSubmit: SubmitHandler<QuestionPostFormData> = async (data) => {
     console.log('[CreateQuestionPostScreen] Form submitted:', data);
     
     // ContextType ve contextId kontrolü
@@ -292,30 +315,48 @@ export const CreateQuestionPostScreen = () => {
       // Clear flow context on successful submit
       clearFlow();
       
-      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
-      navigation.dispatch(
-        // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'App',
-              state: {
-                routes: [
-                  {
-                    name: 'MainTabs',
-                    state: {
-                      routes: [{ name: 'FeedScreen' }],
-                      index: 0,
+      // Başarılı olursa ProfileScreen'e yönlendir
+      if (user?.id) {
+        // Profil verilerini invalidate et - yeni post görünsün
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userPosts(user.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userReplies(user.id),
+        });
+        
+        navigation.navigate('Profile', {
+          screen: 'ProfileMain',
+          params: { userId: user.id },
+        });
+      } else {
+        // Fallback: Feed ekranına yönlendir
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'App',
+                state: {
+                  routes: [
+                    {
+                      name: 'MainTabs',
+                      state: {
+                        routes: [{ name: 'FeedScreen' }],
+                        index: 0,
+                      },
                     },
-                  },
-                ],
-                index: 0,
+                  ],
+                  index: 0,
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          })
+        );
+      }
     } catch (error: any) {
       console.error('[CreateQuestionPostScreen] ❌ API Error:', error);
       
@@ -369,7 +410,7 @@ export const CreateQuestionPostScreen = () => {
               borderRadius: 25,
               paddingX: 24,
               paddingY: 8,
-              onPress: handleSubmit(onSubmit),
+              onPress: methods.handleSubmit(onSubmit),
             }}
           />
 

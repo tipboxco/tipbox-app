@@ -108,21 +108,22 @@ export const CustomToast: React.FC<CustomToastProps> = ({
     <Box
       bg="$white"
       borderRadius="$lg"
-      p="$4"
+      px={12}
+      py={8}
       shadowColor="$black"
       shadowOffset={{ width: 0, height: 2 }}
       shadowOpacity={0.1}
       shadowRadius={8}
       elevation={5}
-      width="100%"
-      maxWidth={400}
+      width={358}
+      height={48}
       overflow="hidden"
     >
-      <HStack space="md" alignItems="center" position="relative">
+      <HStack space="sm" alignItems="center" position="relative" flex={1}>
         {/* Sol tarafta dairesel ikon */}
         <Box
-          width={40}
-          height={40}
+          width={24}
+          height={24}
           borderRadius="$full"
           bg={config.iconBgColor}
           alignItems="center"
@@ -131,13 +132,13 @@ export const CustomToast: React.FC<CustomToastProps> = ({
             shadowColor: config.iconRingColor,
             shadowOffset: { width: 0, height: 0 },
             shadowOpacity: 0.3,
-            shadowRadius: 8,
+            shadowRadius: 6,
             elevation: 4,
           }}
         >
           <IconComponent
-            width={20}
-            height={20}
+            width={12}
+            height={12}
             color={config.iconColor}
           />
         </Box>
@@ -145,18 +146,19 @@ export const CustomToast: React.FC<CustomToastProps> = ({
         {/* Orta kısım - Mesaj metni */}
         <Box flex={1}>
           <Text
-            fontSize="$sm"
+            fontSize={9}
             fontWeight="$medium"
             color={config.textColor}
-            mb={description ? '$1' : 0}
+            numberOfLines={1}
           >
             {title}
           </Text>
           {description && (
             <Text
-              fontSize="$xs"
+              fontSize={9}
               color={config.textColor}
               opacity={0.8}
+              numberOfLines={1}
             >
               {description}
             </Text>
@@ -169,8 +171,8 @@ export const CustomToast: React.FC<CustomToastProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <X
-            width={18}
-            height={18}
+            width={14}
+            height={14}
             color="#9CA3AF"
           />
         </Pressable>
@@ -178,10 +180,12 @@ export const CustomToast: React.FC<CustomToastProps> = ({
 
       {/* Alt kısım - Progress bar */}
       <Box
-        height={3}
+        position="absolute"
+        bottom={0}
+        left={0}
+        right={0}
+        height={2}
         bg={config.progressBgColor}
-        borderRadius="$full"
-        mt="$3"
         overflow="hidden"
       >
         <Animated.View
@@ -189,7 +193,6 @@ export const CustomToast: React.FC<CustomToastProps> = ({
             height: '100%',
             width: progressWidth,
             backgroundColor: config.progressColor,
-            borderRadius: 999,
           }}
         />
       </Box>

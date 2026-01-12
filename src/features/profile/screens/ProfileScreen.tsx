@@ -817,15 +817,35 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
   
-  // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının profil postlarını refetch et
+  // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
   useFocusEffect(
     useCallback(() => {
       // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
       if (targetUserId && user?.id && targetUserId === user.id) {
-        // Mevcut kullanıcının profil postlarını refetch et
+        // Tüm profil verilerini refetch et - yeni post, review, benchmark, tips, replies görünsün
         queryClient.refetchQueries({ 
           queryKey: profileKeys.userPosts(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.profile(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userReviews(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userBenchmarks(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userTipsAndTricks(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userReplies(targetUserId),
           exact: false 
         });
       }
@@ -834,19 +854,44 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
+    if (!targetUserId) return;
+    
     setRefreshing(true);
     try {
-      // Profile'ı refresh et
-      await refetchProfile();
+      // Tüm profil verilerini backend'den yeniden çek
+      await Promise.all([
+        // Profile bilgilerini refresh et
+        refetchProfile(),
+        // Tüm tab query'lerini refresh et
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userPosts(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userReviews(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userBenchmarks(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userTipsAndTricks(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userReplies(targetUserId),
+          exact: false,
+        }),
+      ]);
       
-      // Tüm tab query'lerini refresh et (invalidate ederek)
-      // TabPage içindeki query'ler otomatik refresh olacak
+      console.log('[ProfileScreen] ✅ Pull to refresh completed');
     } catch (error) {
-      console.error('[ProfileScreen] Refresh error:', error);
+      console.error('[ProfileScreen] ❌ Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [refetchProfile]);
+  }, [targetUserId, refetchProfile, queryClient]);
   
   // Avatar URL kontrolü için log
   React.useEffect(() => {
