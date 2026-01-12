@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { InformationCircleIcon } from 'react-native-heroicons/outline';
 import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -483,9 +483,9 @@ export const CreateQuestionPostScreen = () => {
 
                 {/* TIPS Available Info */}
                 <HStack alignItems="center" space="xs">
-                  <Feather
-                    name="info"
-                    size={18}
+                  <InformationCircleIcon
+                    width={18}
+                    height={18}
                     color={isDark ? '#FFFFFF' : '#A3A3A3'}
                   />
                   <Text

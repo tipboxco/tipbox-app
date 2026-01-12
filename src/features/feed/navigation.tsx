@@ -3,7 +3,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FeedScreen } from './screens';
 import { WalletScreen } from '@/src/features/wallet/screens/WalletScreen';
 import { WalletConnection } from '@/src/features/wallet/screens/WalletConnection';
-import { WalletService } from '@/src/services/WalletService';
+import { SwapScreen } from '@/src/features/wallet/screens/SwapScreen';
+import { NftAssetsScreen } from '@/src/features/wallet/screens/NftAssetsScreen';
+import { NftAssetDetailScreen } from '@/src/features/wallet/screens/NftAssetDetailScreen';
+import type { NftItem } from '@/src/features/wallet/navigation';
 //import { ReviewDetail } from '@/src/components/ReviewDetail';
 
 export type FeedStackParamList = {
@@ -12,6 +15,9 @@ export type FeedStackParamList = {
   CreatePost: undefined;
   WalletConnection: undefined;
   WalletScreen: undefined;
+  SwapScreen: undefined;
+  NftAssetsScreen: undefined;
+  NftAssetDetailScreen: { nft: NftItem };
 };
 
 const FeedStack = createNativeStackNavigator<FeedStackParamList>();
@@ -37,6 +43,18 @@ export const FeedNavigator = () => {
       <FeedStack.Screen
         name="WalletScreen"
         component={WalletScreen}
+      />
+      <FeedStack.Screen
+        name="SwapScreen"
+        component={SwapScreen}
+      />
+      <FeedStack.Screen
+        name="NftAssetsScreen"
+        component={NftAssetsScreen}
+      />
+      <FeedStack.Screen
+        name="NftAssetDetailScreen"
+        component={NftAssetDetailScreen}
       />
       {/* <FeedStack.Screen
         name="ReviewDetail"

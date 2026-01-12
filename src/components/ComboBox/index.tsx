@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable } from 'react-native';
 import { Box, Text, VStack } from '@gluestack-ui/themed';
-import { Feather } from '@expo/vector-icons';
+import { ChevronUpIcon, ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface ComboBoxProps {
@@ -38,11 +38,11 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
           >
             {value || label}
           </Text>
-          <Feather
-            name={isOpen ? 'chevron-up' : 'chevron-right'}
-            size={20}
-            color={isDark ? '#666666' : '#999999'}
-          />
+          {isOpen ? (
+            <ChevronUpIcon width={20} height={20} color={isDark ? '#666666' : '#999999'} />
+          ) : (
+            <ChevronRightIcon width={20} height={20} color={isDark ? '#666666' : '#999999'} />
+          )}
         </Box>
       </Pressable>
 

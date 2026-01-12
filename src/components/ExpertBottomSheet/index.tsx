@@ -8,7 +8,14 @@ import {
     Image,
 } from '@gluestack-ui/themed';
 import { TextInput } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import {
+  ChevronDownIcon,
+  PlusIcon,
+  ClockIcon,
+  QuestionMarkCircleIcon,
+  ChatBubbleLeftIcon,
+  FlagIcon,
+} from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import CongratsModal from '../CongratsModal';
 
@@ -91,9 +98,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             >
                                 {selectedCategory}
                             </Text>
-                            <Feather
-                                name="chevron-down"
-                                size={18}
+                            <ChevronDownIcon
+                                width={18}
+                                height={18}
                                 color={isDark ? '#FFFFFF' : '#000000'}
                             />
                         </HStack>
@@ -158,9 +165,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                         alignItems="center"
                         bg={isDark ? '#2A2A2A' : '#F5F5F5'}
                     >
-                        <Feather
-                            name="plus"
-                            size={28}
+                        <PlusIcon
+                            width={28}
+                            height={28}
                             color={isDark ? '#C1BEBF' : '#C1BEBF'}
                         />
                     </Pressable>
@@ -254,9 +261,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                     py="$1"
                 >
                     <HStack alignItems="center" space="sm">
-                        <Feather
-                            name="clock"
-                            size={18}
+                        <ClockIcon
+                            width={18}
+                            height={18}
                             color="#000"
                         />
                         <Text
@@ -293,9 +300,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
             {/* Question Display */}
             <VStack space="sm" px="$4" width="100%">
                 <HStack alignItems="center" space="sm">
-                    <Feather
-                        name="help-circle"
-                        size={24}
+                    <QuestionMarkCircleIcon
+                        width={24}
+                        height={24}
                         color={isDark ? '#FFFFFF' : '#000000'}
                     />
                     <Text
@@ -321,9 +328,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
             {/* Answer Section */}
             <VStack space="sm" px="$4" width="100%">
                 <HStack alignItems="center" space="sm">
-                    <Feather
-                        name="message-circle"
-                        size={24}
+                    <ChatBubbleLeftIcon
+                        width={24}
+                        height={24}
                         color={isDark ? '#FFFFFF' : '#000000'}
                     />
                     <Text
@@ -373,9 +380,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
             {/* Question Display */}
             <VStack space="sm" px="$4" width="100%">
                 <HStack alignItems="center" space="sm">
-                    <Feather
-                        name="help-circle"
-                        size={24}
+                    <QuestionMarkCircleIcon
+                        width={24}
+                        height={24}
                         color={isDark ? '#FFFFFF' : '#000000'}
                     />
                     <Text
@@ -401,9 +408,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
             {/* Expert Answer */}
             <VStack space="sm" px="$4" width="100%">
                 <HStack alignItems="center" space="sm">
-                    <Feather
-                        name="message-circle"
-                        size={24}
+                    <ChatBubbleLeftIcon
+                        width={24}
+                        height={24}
                         color={isDark ? '#FFFFFF' : '#000000'}
                     />
                     <Text
@@ -517,9 +524,9 @@ const ExpertBottomSheet: React.FC<ExpertBottomSheetProps> = ({ onClose }) => {
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <Feather
-                                name="flag"
-                                size={20}
+                            <FlagIcon
+                                width={20}
+                                height={20}
                                 color={isDark ? '#9E9E9E' : '#9E9E9E'}
                             />
                         </Pressable>
