@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '@gluestack-ui/themed';
 import {
   ChevronLeftIcon,
@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useWalletTransactions } from '../../api/hooks';
 
 interface SendBottomSheetProps {
   onClose: () => void;
@@ -47,11 +48,84 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   const TIPS_TO_USD_RATE = 0.01;
   const USD_TO_TIPS_RATE = 100;
 
-  // Mock recent addresses
-  const recentAddresses = [
-    { address: 'F4184fc596......0e9', lastUsed: '11 ay önce kullanıldı' },
-    { address: 'F4184fc596......0e9', lastUsed: '11 ay önce kullanıldı' },
-    { address: 'F4184fc596......0e9', lastUsed: '11 ay önce kullanıldı' },
+  // Fetch wallet transactions
+  const { data: transactionsData } = useWalletTransactions();
+
+  // Truncate wallet address for display (crypto-style)
+  const truncateAddress = (address: string, startLength = 6, endLength = 4) => {
+    if (!address) return '';
+    if (address.length <= startLength + endLength) return address;
+    return `${address.substring(0, startLength)}****${address.substring(address.length - endLength)}`;
+  };
+
+  // Calculate relative time (e.g., "2 days ago", "3 hours ago")
+  const getRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffYears > 0) {
+      return `${diffYears} ${diffYears === 1 ? 'year' : 'years'} ago`;
+    } else if (diffMonths > 0) {
+      return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`;
+    } else if (diffDays > 0) {
+      return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+    } else {
+      return 'Just now';
+    }
+  };
+
+  // Get recent sent transactions (unique addresses)
+  const recentAddresses = useMemo(() => {
+    if (!transactionsData) return [];
+
+    // Combine all transactions from all time periods
+    const allTransactions = [
+      ...(transactionsData.today || []),
+      ...(transactionsData.yesterday || []),
+      ...(transactionsData.lastWeek || []),
+      ...(transactionsData.lastMonth || []),
+    ];
+
+    // Filter only 'sent' transactions with valid 'to' addresses
+    const sentTransactions = allTransactions
+      .filter((tx: any) => tx.type === 'sent' && tx.to)
+      .sort((a: any, b: any) => {
+        // Sort by date descending (most recent first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+    // Get unique addresses (only first occurrence of each address)
+    const uniqueAddresses = new Map();
+    sentTransactions.forEach((tx: any) => {
+      if (!uniqueAddresses.has(tx.to)) {
+        uniqueAddresses.set(tx.to, {
+          address: tx.to,
+          lastUsed: getRelativeTime(tx.createdAt),
+          fullAddress: tx.to,
+        });
+      }
+    });
+
+    // Return top 3 recent addresses
+    return Array.from(uniqueAddresses.values()).slice(0, 3);
+  }, [transactionsData]);
+
+  // Mock recent addresses (fallback if no transactions)
+  const mockRecentAddresses = [
+    { address: 'F4184fc596******0e9', lastUsed: '11 months ago', fullAddress: 'F4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9' },
+    { address: 'F4184fc596******0e9', lastUsed: '11 months ago', fullAddress: 'F4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9' },
+    { address: 'F4184fc596******0e9', lastUsed: '11 months ago', fullAddress: 'F4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9' },
   ];
 
   // Mock friends list
@@ -244,7 +318,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                     Send to Friend
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
-                    TIPS Yollamak istediğiniz arkadaşınızı arkadaş listesinden seçerek gönderim sağlayın.
+                    Select a friend from your friend list to send TIPS.
                   </Text>
                 </VStack>
               </HStack>
@@ -311,10 +385,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <Text fontSize={12} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
           Recent
         </Text>
-        {recentAddresses.map((item, index) => (
+        {(recentAddresses.length > 0 ? recentAddresses : mockRecentAddresses).map((item, index) => (
           <Pressable
             key={index}
-            onPress={() => setWalletAddress(item.address)}
+            onPress={() => setWalletAddress(item.fullAddress || item.address)}
           >
             <HStack
               alignItems="center"
@@ -326,7 +400,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
               <HStack flex={1} justifyContent="space-between">
                 <Text fontSize={14} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
-                  {item.address}
+                  {truncateAddress(item.fullAddress || item.address)}
                 </Text>
                 <Text fontSize={9} color="#B9B9B9" $dark-color="$textDark400">
                   {item.lastUsed}
