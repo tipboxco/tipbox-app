@@ -1,8 +1,14 @@
-import React, { useMemo, useCallback, useRef } from 'react';
+import React, { useMemo, useCallback, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, Clipboard } from 'react-native';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
 import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+  withTiming,
+} from 'react-native-reanimated';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -29,13 +35,20 @@ import { useWalletBalance, useWalletTransactions, useWalletInfo } from '../api/h
 import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
+
 export const WalletScreen: React.FC = () => {
       const navigation = useNavigation<any>();
       const { colorMode } = useColorMode();
       const isDark = colorMode === 'dark';
-      const [activeTab, setActiveTab] = React.useState<'tips' | 'nft'>('tips');
+      const [activeTab, setActiveTab] = useState<'tips' | 'nft'>('tips');
       const bottomInset = useSafeAreaValues('bottom');
       const pagerRef = useRef<PagerView>(null);
+      const tabContainerRef = useRef<any>(null);
+      const [tabContainerWidth, setTabContainerWidth] = useState(0);
+      
+      // Shared progress value for realtime tab animations (0 = TIPS, 1 = NFT)
+      const progress = useSharedValue(0);
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -214,14 +227,59 @@ export const WalletScreen: React.FC = () => {
     pagerRef.current?.setPage(index);
   }, []);
 
+  // PagerView scroll handler - realtime progress güncelleme
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      progress.value = position + offset;
+    },
+    [progress]
+  );
+
   // PagerView page selected handler
   const handlePageSelected = useCallback(
     (e: any) => {
       const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
       setActiveTab(position === 0 ? 'tips' : 'nft');
     },
-    []
+    [progress]
   );
+  
+  // Tab 1 (TIPS) label color animation
+  const tab1Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1],
+      [activeColor, inactiveColor]
+    );
+    return { color };
+  });
+
+  // Tab 2 (NFT) label color animation
+  const tab2Style = useAnimatedStyle(() => {
+    const activeColor = isDark ? '#FFFFFF' : '#000000';
+    const inactiveColor = '#8C8C8C';
+    const color = interpolateColor(
+      progress.value,
+      [0, 1],
+      [inactiveColor, activeColor]
+    );
+    return { color };
+  });
+
+  // Indicator position animation
+  const tabWidth = tabContainerWidth / 2 || 0;
+  const indicatorWidth = tabWidth * 0.5; // Tab genişliğinin %50'si
+  const indicatorStyle = useAnimatedStyle(() => {
+    const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+    return {
+      transform: [{ translateX }],
+    };
+  });
 
 
   // Transform API transactions data to match component format
@@ -274,84 +332,104 @@ export const WalletScreen: React.FC = () => {
         style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
       >
         <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        <Header 
-          title="Wallet" 
-          showBackButton 
-          onBackPress={() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              navigation.navigate('Feed');
-            }
-          }} 
-        />
-        {/* Tabs */}
-        <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
-          <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
-            <Pressable
-              onPress={() => handleTabPress(0)}
-              flex={1}
-              alignItems="center"
-              pb={8}
-              position="relative"
-            >
-              <VStack alignItems="center" space="xs">
-                <Text
-                  fontSize={14}
-                  fontWeight="$bold"
-                  color={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                >
-                  TIPS
-                </Text>
-              </VStack>
-              <Box
-                position="absolute"
-                bottom={-1}
-                left="25%"
-                height={2}
-                width="50%"
-                borderRadius={999}
-                bg={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-              />
-            </Pressable>
-            <Pressable
-              onPress={() => handleTabPress(1)}
-              flex={1}
-              alignItems="center"
-              pb={8}
-              position="relative"
-            >
-              <VStack alignItems="center" space="xs">
-                <Text
-                  fontSize={14}
-                  fontWeight="$bold"
-                  color={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                >
-                  NFT Varlıklar
-                </Text>
-              </VStack>
-              <Box
-                position="absolute"
-                bottom={-1}
-                left="20%"
-                height={2}
-                width="60%"
-                borderRadius={999}
-                bg={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-              />
-            </Pressable>
-          </HStack>
-        </VStack>
-        
-        {/* PagerView - Native swipe tab switching */}
-        <PagerView
-          ref={pagerRef}
-          style={{ flex: 1 }}
-          initialPage={0}
-          onPageSelected={handlePageSelected}
-          scrollEnabled={true}
-          overScrollMode="never"
+      <Header 
+        title="Wallet" 
+        showBackButton 
+        onBackPress={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.navigate('Feed');
+          }
+        }} 
+      />
+      {/* Tabs */}
+      <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
+        <HStack 
+          ref={tabContainerRef}
+          borderBottomWidth={1} 
+          borderColor="#E9E9E9" 
+          p={0} 
+          m={0}
+          position="relative"
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            setTabContainerWidth(width);
+          }}
         >
+          <Pressable
+            onPress={() => handleTabPress(0)}
+            flex={1}
+            alignItems="center"
+            pb={8}
+            position="relative"
+          >
+            <VStack alignItems="center" space="xs">
+              <Animated.Text
+                style={[
+                  {
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                  },
+                  tab1Style,
+                ]}
+              >
+                TIPS
+              </Animated.Text>
+            </VStack>
+          </Pressable>
+          <Pressable
+            onPress={() => handleTabPress(1)}
+            flex={1}
+            alignItems="center"
+            pb={8}
+            position="relative"
+          >
+            <VStack alignItems="center" space="xs">
+              <Animated.Text
+                style={[
+                  {
+                    fontSize: 14,
+                    fontWeight: 'bold',
+                  },
+                  tab2Style,
+                ]}
+              >
+                NFT Varlıklar
+              </Animated.Text>
+            </VStack>
+          </Pressable>
+          
+          {/* Animated Indicator */}
+          {tabWidth > 0 && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: indicatorWidth,
+                  height: 2,
+                  borderRadius: 999,
+                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                },
+                indicatorStyle,
+              ]}
+            />
+          )}
+        </HStack>
+      </VStack>
+      
+      {/* PagerView - Native swipe tab switching */}
+      <AnimatedPagerView
+        ref={pagerRef}
+        style={{ flex: 1 }}
+        initialPage={0}
+        onPageScroll={handlePageScroll}
+        onPageSelected={handlePageSelected}
+        scrollEnabled={true}
+        overScrollMode="never"
+      >
         {/* TIPS Tab */}
         <Box key="0" flex={1}>
           <ScrollView 
