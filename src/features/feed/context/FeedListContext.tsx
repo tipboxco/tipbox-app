@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef } from 'react';
 import type { FlatList } from 'react-native';
 
 interface FeedListContextType {
-  feedListRef: React.RefObject<FlatList<any>>;
+  feedListRef: React.RefObject<FlatList<any> | null>;
 }
 
 const FeedListContext = createContext<FeedListContextType | undefined>(undefined);

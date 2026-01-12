@@ -22,12 +22,14 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFeed, useFeedFiltered } from '../api/hooks';
+import { getFeed, getFilteredFeed } from '../api/feedApi';
 import { CardType, ProductInfoType } from '@/src/types/common';
 import type { FeedFilterParams } from '../api/feedApi';
 import { toImageSource, useBottomOffset } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import type { FeedApiItem } from '../api/feedApi';
+import { useQueryClient } from '@tanstack/react-query';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { ProfilePost } from '@/src/features/profile/types';
@@ -56,6 +58,11 @@ const FeedScreenInner = React.memo(() => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAppStore();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const queryClient = useQueryClient();
+  
+  // FEATURE: Pull-to-refresh için son görülen post ID'sini takip et
+  // Kullanıcı en alta geldiğinde bu ID güncellenir, refresh'te cursor olarak kullanılır
+  const [lastSeenPostId, setLastSeenPostId] = useState<string | undefined>(undefined);
 
   // FeedListContext'ten feedListRef'i al
   // FeedScreenInner FeedListProvider içinde render edildiği için context her zaman tanımlıdır
@@ -119,6 +126,13 @@ const FeedScreenInner = React.memo(() => {
       });
     }
   }, [filters.interests]);
+
+  // FEATURE: Log lastSeenPostId changes
+  useEffect(() => {
+    if (lastSeenPostId) {
+      console.log('[FeedScreen] 🆔 lastSeenPostId changed:', lastSeenPostId);
+    }
+  }, [lastSeenPostId]);
 
   // Filtre aktif mi kontrolü
   // Herhangi bir filtre seçilmişse filtered feed API'sini kullan
@@ -198,6 +212,19 @@ const FeedScreenInner = React.memo(() => {
     // Convert Map to array (single allocation)
     return Array.from(uniqueItemsMap.values());
   }, [data?.pages]);
+
+  // FEATURE: feedItems her değiştiğinde son item'ın ID'sini güncelle
+  // Bu sayede kullanıcı aşağı scroll etmeden de pull-to-refresh yapabilir
+  useEffect(() => {
+    if (feedItems.length > 0) {
+      const lastItem = feedItems[feedItems.length - 1];
+      if (lastItem?.data?.id) {
+        const postId = String(lastItem.data.id);
+        setLastSeenPostId(postId);
+        console.log('[FeedScreen] 🔄 Auto-updated lastSeenPostId:', postId, 'Total items:', feedItems.length);
+      }
+    }
+  }, [feedItems.length]); // Sadece item sayısı değiştiğinde çalış (performans için)
 
   const handleSearchPress = () => {
     setIsSearchVisible(true);
@@ -793,9 +820,15 @@ const FeedScreenInner = React.memo(() => {
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
+      console.log('[FeedScreen] 📥 Loading more... Current items count:', feedItems.length);
       fetchNextPage();
+    } else {
+      console.log('[FeedScreen] 🚫 Load more skipped:', {
+        hasNextPage,
+        isFetchingNextPage,
+      });
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, feedItems.length]);
 
   // PERFORMANCE FIX: Memoize renderFooter to prevent unnecessary re-renders
   const renderFooter = useCallback(() => {
@@ -806,6 +839,83 @@ const FeedScreenInner = React.memo(() => {
       </Box>
     );
   }, [isFetchingNextPage, isDark]);
+
+  // FEATURE: Pull-to-refresh handler - ESKİ listeyi temizleyip, son görülen ID'den başlayan YENİ bir liste başlat
+  const handleRefresh = useCallback(async () => {
+    console.log('[FeedScreen] 🔄 Pull-to-refresh triggered!');
+    console.log('[FeedScreen] 📊 Current state:', {
+      lastSeenPostId,
+      feedItemsCount: feedItems.length,
+      hasNextPage,
+      isFetchingNextPage,
+    });
+    
+    if (!lastSeenPostId) {
+      console.log('[FeedScreen] ⚠️ No lastSeenPostId, doing normal refetch');
+      // İlk yüklemede normal refetch yap
+      await refetch();
+      return;
+    }
+    
+    try {
+      console.log('[FeedScreen] ✅ Fetching next items with cursor:', lastSeenPostId);
+      
+      // Son görülen post ID'sini cursor olarak kullanarak sonraki sayfayı getir
+      let newData;
+      if (hasActiveFilters) {
+        console.log('[FeedScreen] 📊 Using filtered feed API with filters:', filters);
+        newData = await getFilteredFeed(lastSeenPostId, 10, filters);
+      } else {
+        console.log('[FeedScreen] 📊 Using normal feed API');
+        newData = await getFeed(lastSeenPostId, 10);
+      }
+      
+      console.log('[FeedScreen] ✅ New data received:', {
+        newItemsCount: newData.items.length,
+        hasMore: newData.pagination.hasMore,
+      });
+      
+      if (newData.items.length > 0) {
+        // ESKİ query cache'ini tamamen temizle ve YENİ veriyi set et
+        console.log('[FeedScreen] 🗑️ Resetting query cache and setting new data...');
+        
+        const queryKey = hasActiveFilters 
+          ? ['feed', 'filtered', undefined, 10, filters]
+          : ['feed', undefined, 10, undefined, undefined];
+        
+        // Query cache'ini yeni veri ile değiştir (eski veriler silinir)
+        queryClient.setQueryData(queryKey, {
+          pages: [newData],
+          pageParams: [undefined],
+        });
+        
+        // YENİ listedeki son item ID'sini lastSeenPostId olarak güncelle
+        const lastItem = newData.items[newData.items.length - 1];
+        if (lastItem?.data?.id) {
+          const newLastSeenPostId = String(lastItem.data.id);
+          console.log('[FeedScreen] 🆔 Updating lastSeenPostId:', {
+            old: lastSeenPostId,
+            new: newLastSeenPostId,
+          });
+          setLastSeenPostId(newLastSeenPostId);
+        }
+        
+        // Scroll'u en üste götür
+        if (feedListRef?.current) {
+          console.log('[FeedScreen] ⬆️ Scrolling to top...');
+          feedListRef.current.scrollToOffset({ offset: 0, animated: true });
+        }
+        
+        console.log('[FeedScreen] ✅ Pull-to-refresh completed! Feed replaced with new items.');
+      } else {
+        console.log('[FeedScreen] ℹ️ No new items available.');
+      }
+    } catch (error) {
+      console.error('[FeedScreen] ❌ Pull-to-refresh error:', error);
+      // Hata durumunda normal refetch yap
+      await refetch();
+    }
+  }, [lastSeenPostId, feedItems.length, hasNextPage, isFetchingNextPage, hasActiveFilters, filters, queryClient, refetch, feedListRef]);
 
   // PERFORMANCE FIX: Memoize keyExtractor to prevent unnecessary re-renders
   const keyExtractor = useCallback((item: FeedApiItem, index: number) => {
@@ -821,6 +931,18 @@ const FeedScreenInner = React.memo(() => {
     () => ({ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }),
     [bottomPadding]
   );
+
+  // FEATURE: Handle scrollToIndex failures - fallback to scrollToOffset
+  const handleScrollToIndexFailed = useCallback((info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
+    console.warn('[FeedScreen] ⚠️ scrollToIndex failed:', info);
+    // Fallback: Use scrollToOffset
+    if (feedListRef?.current) {
+      setTimeout(() => {
+        feedListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        console.log('[FeedScreen] ✅ Fallback scrollToOffset executed');
+      }, 100);
+    }
+  }, [feedListRef]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -905,8 +1027,11 @@ const FeedScreenInner = React.memo(() => {
               scrollEnabled={isScrollEnabled}
               // PERFORMANCE FIX: extraData ile FlatList'e ne zaman re-render yapması gerektiğini söyle
               extraData={feedItems.length}
+              // FEATURE: Pull-to-refresh - Son görülen post ID'sini cursor olarak kullanarak yeni içerikleri getir
               refreshing={isRefetching}
-              onRefresh={() => refetch()}
+              onRefresh={handleRefresh}
+              // FEATURE: scrollToIndex failed handler - fallback to scrollToOffset
+              onScrollToIndexFailed={handleScrollToIndexFailed}
             />
           )}
         </Box>

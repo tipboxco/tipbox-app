@@ -8,7 +8,7 @@ import { NotificationBadge } from '@/src/components/NotificationBadge';
 import { MessageBadge } from '@/src/components/MessageBadge';
 import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/notifications/api/hooks';
 import { useMessages } from '@/src/features/inbox/api/hooks';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';

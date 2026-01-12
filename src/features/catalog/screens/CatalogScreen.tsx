@@ -72,13 +72,7 @@ const CatalogScreenComponent = () => {
   const route = useRoute<CatalogScreenRouteProp>();
   
   // Get initial mode from route params
-  // CONTROL FIX: Added logging to debug route params
   const initialMode = route.params?.view === 'brands' ? 'brand-catalog' : 'product';
-  console.log('[CatalogScreen] Initial mode from route params:', {
-    routeParams: route.params,
-    view: route.params?.view,
-    initialMode,
-  });
   
   // PERFORMANCE FIX: Use reducer for related state management
   const [catalogState, dispatch] = useReducer(catalogScreenReducer, {
@@ -93,21 +87,12 @@ const CatalogScreenComponent = () => {
   // the correct mode is set immediately
   const routeView = route.params?.view;
   useEffect(() => {
-    console.log('[CatalogScreen] Route params changed:', {
-      routeParams: route.params,
-      view: routeView,
-      currentMode,
-    });
-    
     const newMode = routeView === 'brands' ? 'brand-catalog' : 'product';
     
     // CONTROL FIX: Always update mode when route params change
     // This ensures correct mode is set when navigating from ExploreScreen
     if (newMode !== currentMode) {
-      console.log('[CatalogScreen] Updating mode:', { from: currentMode, to: newMode });
       dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
-    } else {
-      console.log('[CatalogScreen] Mode unchanged:', currentMode);
     }
   }, [routeView, currentMode]); // CONTROL FIX: Added currentMode to dependencies to ensure updates
   
@@ -141,27 +126,15 @@ const CatalogScreenComponent = () => {
   };
 
   const handleViewChange = useCallback((view: 'options' | 'experience' | 'product-selection') => {
-    console.log('BottomSheet view changed:', view);
     // View change is handled internally by CreatePostBottomSheet
   }, []);
 
   const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
-    console.log('Post type selected:', type, 'experienceOption:', experienceOption);
-    
     // Close bottom sheet first
     closeBottomSheet();
     
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
-      // Debug: Store durumunu logla
-      console.log('🔍 [CatalogScreen] Store State:', {
-        selectedProductId,
-        selectedSubCategoryId,
-        selectedProductGroupId,
-        currentView,
-        selectedProductLocal: selectedProductLocal ? { id: selectedProductLocal.id, name: selectedProductLocal.name } : null,
-      });
-      
       // Determine contextType and contextId based on current selection
       // Priority: Product > ProductGroup > SubCategory
       let determinedContextType: ProductInfoType | undefined;
@@ -182,37 +155,20 @@ const CatalogScreenComponent = () => {
             subName: selectedProductLocal.description,
           };
         }
-        console.log('✅ [CatalogScreen] Context determined: PRODUCT', { determinedContextId });
       } else if (selectedProductGroupId && currentView === 'productgroups') {
         // ProductGroup selected
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
         determinedContextId = selectedProductGroupId;
-        // TODO: Get productGroup info from API if needed for snapshot
-        console.log('✅ [CatalogScreen] Context determined: PRODUCT_GROUP', { determinedContextId });
       } else if (selectedSubCategoryId) {
         // SubCategory selected - Check if SubCategory is selected (currentView can be 'subcategories' or 'productgroups')
         // If we're in productgroups view but have a selectedSubCategoryId, it means SubCategory was selected
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = selectedSubCategoryId;
-        // TODO: Get subCategory info from API if needed for snapshot
-        console.log('✅ [CatalogScreen] Context determined: SUB_CATEGORY', { determinedContextId, currentView });
       }
       
       // Save to flow store if context is available
       if (determinedContextType && determinedContextId) {
-        console.log('💾 [CatalogScreen] Saving to flow store:', {
-          contextType: determinedContextType,
-          contextId: determinedContextId,
-          hasSnapshot: !!productInfoSnapshot,
-        });
         setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
-      } else {
-        console.error('❌ [CatalogScreen] Cannot determine context:', {
-          selectedProductId,
-          selectedSubCategoryId,
-          selectedProductGroupId,
-          currentView,
-        });
       }
       
       navigation.navigate('Post', {

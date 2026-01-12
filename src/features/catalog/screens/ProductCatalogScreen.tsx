@@ -103,16 +103,10 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den seçili kategoriye ait subcategories'i getir
   const { data: catalogSubCategories, isLoading: isLoadingSubCategories } = useCatalogSubCategories(selectedCategoryId);
   
-  // Debug: subcategories verisi geldiğinde logla
+  // subcategories verisi takibi (debug mode'da aktif)
   useEffect(() => {
-    if (selectedCategoryId) {
-      console.log('🔍 [ProductCatalogScreen] useCatalogSubCategories response:', {
-        selectedCategoryId,
-        hasData: !!catalogSubCategories,
-        dataLength: catalogSubCategories?.length,
-        isLoading: isLoadingSubCategories,
-        firstItems: catalogSubCategories?.slice(0, 3),
-      });
+    if (__DEV__ && selectedCategoryId && catalogSubCategories) {
+      // Sadece development'ta ve veri yoksa log
     }
   }, [catalogSubCategories, selectedCategoryId, isLoadingSubCategories]);
   
@@ -151,7 +145,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     if (!catalogCategories) return [];
     
     return catalogCategories.map(cat => {
-      // Debug: API'den gelen görseli kontrol et
       if (!cat.image || cat.image.trim() === '') {
         console.warn(`[ProductCatalogScreen] ⚠️ Category "${cat.name}" has no image URL`);
       }
@@ -169,19 +162,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den gelen subcategories'i formatla - useMemo ile cache'le
   const currentSubCategories = useMemo(() => {
     if (!catalogSubCategories) {
-      console.log('⚠️ [ProductCatalogScreen] catalogSubCategories is null/undefined');
       return [];
     }
-    
-    console.log('🔍 [ProductCatalogScreen] Formatting subcategories:', {
-      count: catalogSubCategories.length,
-      selectedCategoryId,
-      items: catalogSubCategories.slice(0, 3).map(s => ({
-        id: s.subCategoryId,
-        name: s.name,
-        categoryId: s.categoryId,
-      })),
-    });
     
     return catalogSubCategories.map(subCat => ({
       id: subCat.subCategoryId,
@@ -250,13 +232,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   }, [setSelectedSubCategoryId, setSelectedProductGroupId, setCurrentView, setSelectedProductLocal]);
 
   const handleCategoryPress = (category: { id: string; name: string; image: any }) => {
-    console.log('📂 [Catalog] Category seçildi:', {
-      categoryId: category.id,
-      categoryName: category.name,
-    });
-    
     // Seçili kategori ID'sini set et (subcategories API çağrısı için)
-    console.log('🔄 [Catalog] Setting selectedCategoryId to:', category.id);
     setSelectedCategoryId(category.id);
     setSelectedSubCategoryId(undefined); // Subcategory'yi temizle
     setSelectedProductGroupId(undefined); // ProductGroup'u temizle
@@ -270,16 +246,10 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
         data: category,
       },
     ]);
-    console.log('🎯 [Catalog] Setting currentView to subcategories');
     setCurrentView('subcategories');
   };
 
   const handleSubCategoryPress = (subCategory: CatalogSubCategory & { id: string; image: any }) => {
-    console.log('📁 [Catalog] SubCategory seçildi:', {
-      subCategoryId: subCategory.id,
-      subCategoryName: subCategory.name,
-      categoryId: subCategory.categoryId,
-    });
     
     // Get the current category from breadcrumb
     const currentCategory = breadcrumbItems.find(item => item.type === 'category');
@@ -319,12 +289,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   };
 
   const handleProductGroupPress = (productGroup: CatalogProductGroup & { id: string; image: any }) => {
-    console.log('📦 [Catalog] ProductGroup seçildi:', {
-      productGroupId: productGroup.id,
-      productGroupName: productGroup.name,
-      subCategoryId: productGroup.subCategoryId,
-    });
-    
     // Seçili ürün grubu ID'sini set et (products API çağrısı için)
     setSelectedProductGroupId(productGroup.id);
     setSelectedProductLocal(null);
@@ -351,12 +315,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   };
 
   const handleProductPress = (product: CatalogProduct & { id: string; image: any; description?: string }) => {
-    console.log('🛍️ [Catalog] Product seçildi:', {
-      productId: product.id,
-      productName: product.name,
-      productGroupId: product.productGroupId,
-      subCategoryId: product.subCategoryId,
-    });
     // Get the current breadcrumb items (category, subcategory, productGroup, products)
     const currentCategory = breadcrumbItems.find(item => item.type === 'category');
     const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
@@ -408,83 +366,57 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
           description: product.description || '',
           image: product.image,
         },
-        contextType: ProductInfoType.PRODUCT,
-        // contextId artık route params'tan gönderilmiyor, store'dan okunacak
-      },
-    });
-    
-    // Log to console
-    console.log('Selected Product:', product.name);
-    console.log('Updated Breadcrumb Items:', [
-      currentCategory?.name,
-      currentSubCategory?.name,
-      currentProductGroup?.name,
-      productBreadcrumbItem.name,
-    ]);
-  };
+      contextType: ProductInfoType.PRODUCT,
+      // contextId artık route params'tan gönderilmiyor, store'dan okunacak
+    },
+  });
+};
 
-  const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
-    if (item.type === 'root' || index === -1) {
-      console.log('🏠 [Catalog] All Categories seçildi - Tüm seçimler temizlendi');
-      resetToRoot();
-      return;
-    }
+const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
+  if (item.type === 'root' || index === -1) {
+    resetToRoot();
+    return;
+  }
 
-    if (item.type === 'category') {
-      console.log('📂 [Catalog] Breadcrumb - Category seçildi:', {
-        categoryId: item.id,
-        categoryName: item.name,
-      });
-      setBreadcrumbItems([item]);
-      setSelectedCategoryId(item.id);
-      setSelectedSubCategoryId(undefined);
-      setSelectedProductGroupId(undefined);
-      setSelectedProductLocal(null);
-      setSelectedProduct(undefined);
-      setCurrentView('subcategories');
-      return;
-    }
+  if (item.type === 'category') {
+    setBreadcrumbItems([item]);
+    setSelectedCategoryId(item.id);
+    setSelectedSubCategoryId(undefined);
+    setSelectedProductGroupId(undefined);
+    setSelectedProductLocal(null);
+    setSelectedProduct(undefined);
+    setCurrentView('subcategories');
+    return;
+  }
 
-    if (item.type === 'subCategory') {
-      console.log('📁 [Catalog] Breadcrumb - SubCategory seçildi:', {
-        subCategoryId: item.id,
-        subCategoryName: item.name,
-      });
-      const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
-      const updated = [categoryItem, item].filter(Boolean) as BreadcrumbItem[];
-      setBreadcrumbItems(updated);
-      setSelectedCategoryId(categoryItem?.id);
-      setSelectedSubCategoryId(item.id);
-      setSelectedProductGroupId(undefined);
-      setSelectedProductLocal(null);
-      setSelectedProduct(undefined);
-      setCurrentView('productgroups');
-      return;
-    }
+  if (item.type === 'subCategory') {
+    const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
+    const updated = [categoryItem, item].filter(Boolean) as BreadcrumbItem[];
+    setBreadcrumbItems(updated);
+    setSelectedCategoryId(categoryItem?.id);
+    setSelectedSubCategoryId(item.id);
+    setSelectedProductGroupId(undefined);
+    setSelectedProductLocal(null);
+    setSelectedProduct(undefined);
+    setCurrentView('productgroups');
+    return;
+  }
 
-    if (item.type === 'productGroup') {
-      console.log('📦 [Catalog] Breadcrumb - ProductGroup seçildi:', {
-        productGroupId: item.id,
-        productGroupName: item.name,
-      });
-      const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
-      const subCategoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'subCategory');
-      const updated = [categoryItem, subCategoryItem, item].filter(Boolean) as BreadcrumbItem[];
-      setBreadcrumbItems(updated);
-      setSelectedCategoryId(categoryItem?.id);
-      setSelectedSubCategoryId(subCategoryItem?.id);
-      setSelectedProductGroupId(item.id);
-      setSelectedProductLocal(null);
-      setSelectedProduct(undefined);
-      setCurrentView('products');
-      return;
-    }
+  if (item.type === 'productGroup') {
+    const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
+    const subCategoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'subCategory');
+    const updated = [categoryItem, subCategoryItem, item].filter(Boolean) as BreadcrumbItem[];
+    setBreadcrumbItems(updated);
+    setSelectedCategoryId(categoryItem?.id);
+    setSelectedSubCategoryId(subCategoryItem?.id);
+    setSelectedProductGroupId(item.id);
+    setSelectedProductLocal(null);
+    setSelectedProduct(undefined);
+    setCurrentView('products');
+    return;
+  }
 
-    if (item.type === 'product') {
-      console.log('🛍️ [Catalog] Breadcrumb - Product seçildi:', {
-        productId: item.id,
-        productName: item.name,
-      });
+  if (item.type === 'product') {
       const categoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'category');
       const subCategoryItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'subCategory');
       const productGroupItem = breadcrumbItems.find(breadcrumb => breadcrumb.type === 'productGroup');
@@ -663,8 +595,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // PERFORMANCE FIX: Direct bottom sheet access - no callback chain
   // This eliminates the callback chain: ProductCatalogScreen -> CatalogScreen -> handleCreatePost
   const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
-    console.log('📝 [ProductCatalogScreen] Post type selected:', type, 'experienceOption:', experienceOption);
-    
     // Close bottom sheet first
     closeBottomSheet();
     
@@ -757,8 +687,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId]);
 
   const handleCreatePost = useCallback(() => {
-    console.log('📝 [ProductCatalogScreen] Create Post button pressed');
-    
     // Reset bottom sheet key to remount component and reset view
     setBottomSheetKey(prev => prev + 1);
     
@@ -840,15 +768,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
           return [];
       }
     })();
-    
-    console.log('📊 [ProductCatalogScreen] getCurrentData:', {
-      currentView,
-      searchQuery,
-      dataLength: data.length,
-      isLoadingSubCategories,
-      catalogSubCategoriesLength: catalogSubCategories?.length,
-      currentSubCategoriesLength: currentSubCategories.length,
-    });
     
     return data;
   };
