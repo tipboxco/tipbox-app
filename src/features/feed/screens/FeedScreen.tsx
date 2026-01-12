@@ -797,23 +797,6 @@ const FeedScreenInner = React.memo(() => {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, feedItems.length]);
 
-  // PERFORMANCE: Memoized callbacks and styles
-  const handleRefresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
-
-  const keyExtractor = useCallback((item: FeedApiItem, index: number) => {
-    if (item?.data?.id) {
-      return String(item.data.id);
-    }
-    return `feed-item-${index}`;
-  }, []);
-
-  const contentContainerStyle = useMemo(() => ({
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: bottomPadding,
-  }), [bottomPadding]);
 
   const renderFooter = useCallback(() => {
     if (!isFetchingNextPage) return null;

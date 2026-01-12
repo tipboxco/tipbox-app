@@ -19,30 +19,6 @@ import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlow
 import { useCatalogUIStore } from '../store/catalogUIStore';
 import { useBottomOffset } from '@/src/utils';
 
-// Yeni: sunucudan gelen placeholder url
-const PLACEHOLDER_CATEGORY_IMAGE_URL = 'http://192.168.1.26:8090/static/category-placeholder.png';
-const FETCH_API_BASE = 'http://192.168.1.26:8090';
-
-function getCategoryImageSource(category: Category | null): any {
-  // categoriye ait image verisi, itemin, metada verisinin içinde; thumb_image değerinde saklanıyor.
-  // yoksa sunucudan gelen placeholder image gösterilmesini sağla.
-  // thumb_image verisi, https:// domain baglantısı olmayabilir.  /static/1767431911074--.webp şeklinde gelebiliyor.
-  // bunun için böyle gelirse, fetch api url verisi ile birleştirme yaparak çalış
-  // ayrıca thumb_image alanı hiç yoksa veya boşsa, sunucu url'li placeholder göster
-  if (!category || !category.metadata || !category?.metadata?.thumb_image || category.metadata.thumb_image === '') {
-    return { uri: PLACEHOLDER_CATEGORY_IMAGE_URL };
-  }
-  const thumb_image = category.metadata.thumb_image;
-  if (typeof thumb_image === 'string') {
-    if (thumb_image.startsWith('http://') || thumb_image.startsWith('https://')) {
-      return { uri: thumb_image };
-    } else if (thumb_image.startsWith('/')) {
-      return { uri: `${FETCH_API_BASE}${thumb_image}` };
-    }
-  }
-  return { uri: PLACEHOLDER_CATEGORY_IMAGE_URL };
-}
-
 type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
   navigate: (name: any, params?: any) => void;
 };
@@ -126,13 +102,13 @@ const CatalogScreenComponent = () => {
   
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-
+  
   // Bottom offset for bottom sheet padding
   const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
-
+  
   // Create Post Flow Store
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
-
+  
   // Catalog UI Store
   // PERFORMANCE FIX: Use getState() in callbacks instead of subscribing to prevent re-renders
   // Only subscribe to values that are needed for rendering
@@ -155,7 +131,7 @@ const CatalogScreenComponent = () => {
   const handlePostTypeSelect = useCallback((type: string, experienceOption?: 'own' | 'tried') => {
     // Close bottom sheet first
     closeBottomSheet();
-
+    
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
       // PERFORMANCE FIX: Get store state directly instead of subscribing
@@ -166,7 +142,7 @@ const CatalogScreenComponent = () => {
       let determinedContextType: ProductInfoType | undefined;
       let determinedContextId: string | undefined;
       let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
-
+      
       // Determine context based on current view and selection (from store)
       // Priority order: Product > ProductGroup > SubCategory
       if (storeState.selectedProductId && storeState.currentView === 'products') {
@@ -191,12 +167,12 @@ const CatalogScreenComponent = () => {
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = storeState.selectedSubCategoryId;
       }
-
+      
       // Save to flow store if context is available
       if (determinedContextType && determinedContextId) {
         setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
       }
-
+      
       navigation.navigate('Post', {
         screen: 'CreatePostScreen',
       });
@@ -395,7 +371,6 @@ const CatalogScreenComponent = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             showHeader={false}
-            getCategoryImageSource={getCategoryImageSource}
           />
         );
       case 'brand-selection':
@@ -405,7 +380,6 @@ const CatalogScreenComponent = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             showHeader={false}
-            getCategoryImageSource={getCategoryImageSource}
           />
         );
       default:
@@ -413,7 +387,6 @@ const CatalogScreenComponent = () => {
           <ProductCatalogScreen
             onStateChange={handleProductCatalogStateChange}
             scrollViewPaddingBottom={paddingBottom}
-            getCategoryImageSource={getCategoryImageSource}
           />
         );
     }
