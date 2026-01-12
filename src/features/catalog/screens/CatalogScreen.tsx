@@ -226,7 +226,6 @@ const CatalogScreenComponent = () => {
   }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId, selectedProductId]);
 
   const handleCreatePost = useCallback(() => {
-    console.log('Create a Post pressed');
     // Reset bottom sheet key to remount component and reset view
     setBottomSheetKey(prev => prev + 1);
     
