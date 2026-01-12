@@ -56,13 +56,22 @@ export interface UserNFTApiItem {
   title: string;
   username: string;
   image: string;
+  description?: string;
+  type?: string; // "Kozmetik", "Sandık", "Rozet"
+  rarity?: string; // "Yaygın", "Nadir", "Epik"
 }
 
 /**
  * User NFTs API Response
- * Endpoint direkt array döndürüyor
+ * Backend { items: [...], pagination: {...} } formatında döndürüyor
  */
-export type UserNFTsApiResponse = UserNFTApiItem[];
+export interface UserNFTsApiResponse {
+  items: UserNFTApiItem[];
+  pagination: {
+    hasMore: boolean;
+    limit: number;
+  };
+}
 
 /**
  * UserNFTCard Component Data

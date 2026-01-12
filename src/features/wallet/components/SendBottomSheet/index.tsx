@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '@gluestack-ui/themed';
-import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView } from 'react-native';
+import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
   ChevronLeftIcon,
   CreditCardIcon,
@@ -17,6 +18,139 @@ import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useWalletTransactions, useWalletBalance, useSendTips } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
+import { useTrusterList } from '@/src/features/profile/api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+
+// Truster List Component for Bottom Sheet
+const TrusterListContent: React.FC<{
+  trusterList: any[];
+  isLoadingTrusters: boolean;
+  onTrusterSelect: (truster: any) => void;
+  onClose: () => void;
+  isDark: boolean;
+}> = ({ trusterList, isLoadingTrusters, onTrusterSelect, onClose, isDark }) => {
+  console.log('[TrusterList] 🎨 Rendering with', trusterList?.length || 0, 'trusters');
+  
+  return (
+    <VStack h="100%" w="100%">
+      {/* Header - Fixed */}
+      <HStack alignItems="center" space="md" mb="$2" px="$4" pt="$4">
+        <Pressable onPress={onClose}>
+          <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+        </Pressable>
+        <HStack flex={1} justifyContent="center" alignItems="center">
+          <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+            Select Friend
+          </Text>
+        </HStack>
+        <Box w={24} />
+      </HStack>
+
+      {/* Truster List - Scrollable */}
+      <Box flex={1}>
+        <BottomSheetScrollView 
+          contentContainerStyle={{ 
+            paddingHorizontal: 16, 
+            paddingTop: 8,
+            paddingBottom: 16
+          }}
+          showsVerticalScrollIndicator={true}
+          nestedScrollEnabled={true}
+        >
+          {isLoadingTrusters ? (
+            <VStack alignItems="center" justifyContent="center" py="$8">
+              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+              <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" mt="$4">
+                Loading friends...
+              </Text>
+            </VStack>
+          ) : trusterList && trusterList.length > 0 ? (
+            <VStack space="md">
+              {trusterList.map((truster, index) => {
+                console.log(`[TrusterList] 🎨 Rendering truster ${index + 1}/${trusterList.length}:`, truster.name);
+                
+                return (
+                  <Pressable
+                    key={truster.id}
+                    onPress={() => {
+                      console.log('[TrusterList] 🔵 Truster clicked:', truster.name);
+                      console.log('[TrusterList] 🔵 Calling onTrusterSelect directly');
+                      onTrusterSelect(truster);
+                    }}
+                  >
+                    <Box
+                      bg="$backgroundLight0"
+                      $dark-bg="$backgroundDark800"
+                      borderWidth={1}
+                      borderColor="$borderLight200"
+                      $dark-borderColor="$borderDark600"
+                      rounded={10}
+                      p="$4"
+                    >
+                      <HStack space="md" alignItems="center">
+                        <Box w={48} h={48} rounded="$full" overflow="hidden" bg="$backgroundLight200" $dark-bg="$backgroundDark700">
+                          <Image
+                            source={toImageSource(truster.avatar, DEFAULT_USER_AVATAR)}
+                            alt={truster.name}
+                            style={{ width: 48, height: 48 }}
+                            resizeMode="cover"
+                          />
+                        </Box>
+
+                        <VStack flex={1} space="xs">
+                          <Text 
+                            fontSize={14} 
+                            fontWeight="$bold" 
+                            color="$textLight900" 
+                            $dark-color="$textDark50"
+                          >
+                            {truster.name}
+                          </Text>
+                          <Text 
+                            fontSize={12} 
+                            color="$textLight500" 
+                            $dark-color="$textDark400"
+                          >
+                            @{truster.userName}
+                          </Text>
+                          {truster.titles && truster.titles.length > 0 && (
+                            <Text 
+                              fontSize={11} 
+                              color="$textLight400" 
+                              $dark-color="$textDark500"
+                            >
+                              {truster.titles[0]}
+                            </Text>
+                          )}
+                        </VStack>
+
+                        {truster.isTrusted && (
+                          <Box bg="#C2E607" rounded={6} px="$2" py="$1">
+                            <Text fontSize={10} fontWeight="$bold" color="#111111">Trusted</Text>
+                          </Box>
+                        )}
+                      </HStack>
+                    </Box>
+                  </Pressable>
+                );
+              })}
+            </VStack>
+          ) : (
+            <VStack alignItems="center" justifyContent="center" py="$8">
+              <UsersIcon width={64} height={64} color={isDark ? '#666666' : '#CCCCCC'} />
+              <Text fontSize={16} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400" mt="$4">
+                No Friends Found
+              </Text>
+              <Text fontSize={12} color="$textLight400" $dark-color="$textDark500" mt="$2" textAlign="center">
+                You don't have any friends in your trust list yet.
+              </Text>
+            </VStack>
+          )}
+        </BottomSheetScrollView>
+      </Box>
+    </VStack>
+  );
+};
 
 interface SendBottomSheetProps {
   onClose: () => void;
@@ -46,6 +180,15 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   const [isSwapped, setIsSwapped] = useState(false); // false = TIPS mode, true = USD mode
   const [selectedFriend, setSelectedFriend] = useState<{ id: string; name: string; title?: string; bio?: string; avatar: any } | null>(null);
   
+  // Global bottom sheet
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // Debug: Log view changes
+  React.useEffect(() => {
+    console.log('[SendBottomSheet] 📱 View changed to:', view);
+    console.log('[SendBottomSheet] 📱 Selected friend:', selectedFriend?.name || 'none');
+  }, [view, selectedFriend]);
+  
   // Input accessory view ID for keyboard toolbar
   const inputAccessoryViewID = 'amountInputAccessory';
   
@@ -64,6 +207,77 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
   // Send TIPS mutation hook
   const { mutate: sendTips, isPending: isSending } = useSendTips();
+  
+  // Fetch Truster List
+  const { data: trusterList, isLoading: isLoadingTrusters } = useTrusterList(user?.id);
+
+  // Function to open Truster list bottom sheet
+  const openTrusterListBottomSheet = () => {
+    // Callback for when a truster is selected
+    const handleTrusterSelect = (truster: any) => {
+      console.log('[SendBottomSheet] 🟢 handleTrusterSelect called:', truster.name);
+      
+      // FIRST: Set the friend data and view
+      const friendData = {
+        id: truster.id,
+        name: truster.name,
+        title: truster.titles?.[0],
+        bio: truster.userName,
+        avatar: truster.avatar,
+      };
+      
+      console.log('[SendBottomSheet] 🟢 Setting selectedFriend:', friendData);
+      setSelectedFriend(friendData);
+      
+      console.log('[SendBottomSheet] 🟢 Setting view to friend-selection');
+      setView('friend-selection');
+      onViewChange?.('friend-selection');
+      
+      // THEN: Close the truster list bottom sheet with a small delay
+      setTimeout(() => {
+        console.log('[SendBottomSheet] 🟢 Closing truster list bottom sheet');
+        closeBottomSheet();
+      }, 100);
+    };
+    
+    console.log('[SendBottomSheet] 🎯 Opening Truster List Bottom Sheet');
+    console.log('[SendBottomSheet] 🎯 Total trusters:', trusterList?.length || 0);
+    
+    // Only show first 4 trusters
+    const limitedTrusterList = (trusterList || []).slice(0, 4);
+    console.log('[SendBottomSheet] 🎯 Showing limited trusters:', limitedTrusterList.length);
+    
+    openBottomSheet(
+      <TrusterListContent
+        trusterList={limitedTrusterList}
+        isLoadingTrusters={isLoadingTrusters}
+        onTrusterSelect={handleTrusterSelect}
+        onClose={closeBottomSheet}
+        isDark={isDark}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: false, // ❌ Disable handle panning to prevent sheet drag
+        enableContentPanningGesture: false, // ❌ Disable content panning to prevent sheet drag
+        enableDynamicSizing: false, // ❌ DISABLE dynamic sizing
+        snapPoints: ['70%'], // ✅ Fixed at 70%
+        index: 0, // ✅ Always open at first snap point (70%)
+        animateOnMount: true,
+        activeOffsetY: [-999, 999], // ✅ Very high threshold - prevents sheet movement
+        failOffsetX: [-5, 5], // ✅ Prevents horizontal pan
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+        style: {
+          // Force height based on snap point, not content
+        },
+      }
+    );
+    console.log('[SendBottomSheet] 🎯 Bottom sheet opened at fixed 70% snap point');
+  };
 
   // Truncate wallet address for display (crypto-style)
   const truncateAddress = (address: string | undefined, startLength = 6, endLength = 4) => {
@@ -373,9 +587,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
           {/* Friend Option */}
           <Pressable onPress={() => {
-            setView('friend-selection');
-            onViewChange?.('friend-selection');
-            onFriendPress?.();
+            openTrusterListBottomSheet();
           }}>
             <Box
               bg="$backgroundLight0"
@@ -535,6 +747,128 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     );
   }
 
+  if (view === 'friend-selection') {
+    // Friend Selection View - Shows selected friend with confirm button
+    return (
+    <VStack px="$4" py="$4" space="md" flex={1}>
+      {/* Header with back button */}
+      <HStack alignItems="center" space="md" mb="$2">
+        <Pressable onPress={handleBack}>
+          <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+        </Pressable>
+        <HStack flex={1} justifyContent="center" alignItems="center">
+          <UsersIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+          <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
+            Send TIPS
+          </Text>
+        </HStack>
+        <Box w={24} />
+      </HStack>
+
+      {/* Selected Friend Display */}
+      {selectedFriend && (
+        <Box
+          bg="$backgroundLight0"
+          $dark-bg="$backgroundDark800"
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          $dark-borderColor="$borderDark600"
+          rounded={10}
+          p="$4"
+        >
+          <VStack space="md">
+            <Text fontSize={11} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
+              To:
+            </Text>
+            
+            <HStack alignItems="center" space="md">
+              {/* Friend Avatar */}
+              <Box position="relative">
+                <Box
+                  width={60}
+                  height={60}
+                  borderRadius={100}
+                  bg="#CE4A4A"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Box
+                    width={56}
+                    height={56}
+                    borderRadius={28}
+                    overflow="hidden"
+                  >
+                    <Image
+                      source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR)}
+                      alt={selectedFriend.name}
+                      width={56}
+                      height={56}
+                      resizeMode="cover"
+                    />
+                  </Box>
+                </Box>
+              </Box>
+              
+              {/* Friend Info */}
+              <VStack flex={1} space="xs">
+                <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+                  {selectedFriend.name}
+                </Text>
+                {selectedFriend.bio && (
+                  <Text fontSize={12} fontWeight="$medium" color="#8C8C8C" $dark-color="$textDark400">
+                    @{selectedFriend.bio}
+                  </Text>
+                )}
+                {selectedFriend.title && (
+                  <Text fontSize={11} color="#B9B9B9" $dark-color="$textDark500">
+                    {selectedFriend.title}
+                  </Text>
+                )}
+              </VStack>
+            </HStack>
+          </VStack>
+        </Box>
+      )}
+
+      {/* Info Message */}
+      <HStack alignItems="center" space="sm" mt="$2">
+        <Box
+          w={16}
+          h={16}
+          rounded="$full"
+          bg="$backgroundLight200"
+          $dark-bg="$backgroundDark700"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <InformationCircleIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
+        </Box>
+        <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1} lineHeight={12}>
+          You are about to send TIPS to this friend from your trust list.
+        </Text>
+      </HStack>
+
+      {/* Confirm Button */}
+      <Pressable
+        onPress={() => {
+          console.log('[SendBottomSheet] ✅ Friend confirmed, moving to amount');
+          setView('amount');
+          onViewChange?.('amount');
+        }}
+        bg="#D8FF08"
+        $dark-bg="#D8FF08"
+        rounded={8}
+        py="$3"
+        mt="auto"
+      >
+        <Text fontSize={14} fontWeight="$bold" color="#111111" textAlign="center">
+          Confirm
+        </Text>
+      </Pressable>
+    </VStack>
+    );
+  }
+
   if (view === 'amount') {
     // Amount View
     return (
@@ -545,13 +879,11 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={() => {
           Keyboard.dismiss();
-          if (selectedFriend) {
-            setView('friend-selection');
-            onViewChange?.('friend-selection');
-          } else {
-            setView('wallet-address');
-            onViewChange?.('wallet-address');
-          }
+          // Back to options view
+          setView('options');
+          onViewChange?.('options');
+          // Clear selected friend
+          setSelectedFriend(null);
         }}>
           <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
@@ -596,7 +928,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   overflow="hidden"
                 >
                   <Image
-                    source={toImageSource(selectedFriend.avatar)!}
+                    source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR)}
                     alt={selectedFriend.name}
                     width={46}
                     height={46}
@@ -618,7 +950,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   $dark-color="$textDark400"
                   numberOfLines={1}
                 >
-                  {selectedFriend.title || selectedFriend.bio}
+                  {selectedFriend.bio ? `@${selectedFriend.bio}` : selectedFriend.title}
                 </Text>
               )}
             </VStack>
@@ -716,8 +1048,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   blurOnSubmit={false}
                   fontSize={44}
                   fontWeight="$bold"
-                  color="#DDDDDD"
-                  $dark-color="$textDark400"
+                  color={amount ? "$textLight900" : "#DDDDDD"}
+                  $dark-color={amount ? "$textDark50" : "#666666"}
                   textAlign="center"
                   placeholder={isSwapped ? "200" : "20.000"}
                   placeholderTextColor="#DDDDDD"
@@ -882,7 +1214,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center" position="relative">
               {user?.avatar ? (
                 <Image
-                  source={toImageSource(user.avatar)!}
+                  source={toImageSource(user.avatar, DEFAULT_USER_AVATAR)}
                   alt={user.fullName || 'User'}
                   width={29}
                   height={29}
@@ -923,7 +1255,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   </Text>
                   {(selectedFriend.title || selectedFriend.bio) && (
                     <Text fontSize={9} fontWeight="$medium" color="#8C8C8C" $dark-color="$textDark400" textAlign="right" numberOfLines={1}>
-                      {selectedFriend.title || selectedFriend.bio}
+                      {selectedFriend.bio ? `@${selectedFriend.bio}` : selectedFriend.title}
                     </Text>
                   )}
                 </VStack>
@@ -943,7 +1275,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                       overflow="hidden"
                     >
                       <Image
-                        source={toImageSource(selectedFriend.avatar)!}
+                        source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR)}
                         alt={selectedFriend.name}
                         width={25}
                         height={25}
@@ -1033,6 +1365,14 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           });
 
           // Call API to send TIPS - Backend hem recipientId hem walletAddress destekliyor
+          console.log('[SendBottomSheet] Sending TIPS:', {
+            recipientId,
+            walletAddress,
+            amount: tipsAmount,
+            hasRecipientId: !!recipientId,
+            hasWalletAddress: !!walletAddress,
+          });
+          
           sendTips(
             {
               ...(recipientId && { recipientId }),           // Friend ise recipientId gönder
@@ -1043,7 +1383,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             {
               onSuccess: (response) => {
                 console.log('[SendBottomSheet] Send successful:', response);
-                
+
                 // Call onSuccess callback with transaction details
                 onSuccess?.({
                   sentAmount: `${tipsAmount.toLocaleString()} TIPS`,
@@ -1051,7 +1391,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   remainingBalance: `${transactionDetails.remainingBalance.toLocaleString()} TIPS`,
                   transactionId: response.transactionId,
                 });
-                
+
                 // Close bottom sheet
                 onClose();
               },
