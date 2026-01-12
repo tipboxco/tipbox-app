@@ -951,8 +951,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             ) : (
               <>
                 <VStack alignItems="flex-end" flex={1}>
-                  <Text fontSize={10} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
-                    {truncateAddress(walletAddress || '0x', 10, 8)}
+                  <Text fontSize={10} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right" numberOfLines={1}>
+                    {truncateAddress(walletAddress || '0x', 6, 4)}
                   </Text>
                 </VStack>
                 <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center">
