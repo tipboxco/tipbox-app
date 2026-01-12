@@ -59,33 +59,19 @@ export const useMarketplaceListings = (params: MarketplaceListingsParams = {}) =
 };
 
 /**
- * Get My NFTs infinite query hook
- * Kullanıcıya ait NFT'leri infinite scroll ile getirir
+ * Get My NFTs query hook
+ * Kullanıcıya ait NFT'leri getirir
  *
- * @param limit - Her sayfada getirilecek NFT sayısı (default: 12)
- * @returns React Query infinite query hook result
+ * @param limit - Getirilecek NFT sayısı (default: 50)
+ * @returns React Query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyNFTs(12);
+ * const { data, isLoading } = useMyNFTs(50);
  */
-export const useMyNFTs = (limit: number = 12) => {
-  return useInfiniteQuery<UserNFTsApiResponse, Error>({
+export const useMyNFTs = (limit: number = 50) => {
+  return useQuery<UserNFTsApiResponse, Error>({
     queryKey: marketplaceKeys.myNFTs(),
-    queryFn: ({ pageParam }) => {
-      const offset = pageParam as number;
-      return getMyNFTs(offset, limit);
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      // Eğer son sayfadaki item sayısı limit'ten azsa, daha fazla veri yok
-      if (lastPage.length < limit) {
-        return undefined;
-      }
-      
-      // Bir sonraki offset'i hesapla
-      const currentOffset = allPages.reduce((sum, page) => sum + page.length, 0);
-      return currentOffset;
-    },
+    queryFn: () => getMyNFTs(limit),
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
