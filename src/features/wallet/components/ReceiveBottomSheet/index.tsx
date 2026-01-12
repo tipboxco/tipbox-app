@@ -20,6 +20,13 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
+  // Truncate wallet address for display (crypto-style)
+  const truncateAddress = (address: string, startLength = 12, endLength = 10) => {
+    if (!address) return '';
+    if (address.length <= startLength + endLength) return address;
+    return `${address.substring(0, startLength)}****${address.substring(address.length - endLength)}`;
+  };
+
   const handleCopyAddress = () => {
     Clipboard.setString(walletAddress);
     Alert.alert('Copied', 'Wallet address copied to clipboard');
@@ -105,9 +112,9 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
               fontSize={11} 
               color={isDark ? '$textDark50' : '$textLight900'} 
               fontFamily="$mono"
-              numberOfLines={2}
+              numberOfLines={1}
             >
-              {walletAddress}
+              {truncateAddress(walletAddress)}
             </Text>
           </VStack>
         </Box>
