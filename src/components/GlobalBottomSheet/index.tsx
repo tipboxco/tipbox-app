@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
@@ -12,6 +12,7 @@ import { useContext } from 'react';
 import { GlobalBottomSheetContext } from './context';
 import { DEFAULT_BOTTOM_SHEET_OPTIONS } from './types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboard } from '@/src/hooks/useKeyboard';
 
 /**
  * Global Bottom Sheet Component
@@ -22,6 +23,7 @@ export const GlobalBottomSheet: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboard();
   
   const context = useContext(GlobalBottomSheetContext);
   if (!context) {
@@ -161,6 +163,9 @@ export const GlobalBottomSheet: React.FC = () => {
           }}
         >
           {content}
+          {keyboardHeight > 0 && (
+            <View style={{ height: keyboardHeight }} />
+          )}
         </BottomSheetView>
       </BottomSheet>
   );

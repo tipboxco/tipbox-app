@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -30,11 +30,16 @@ const InventoryDetailScreen = () => {
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
-  // API'den inventory listesini al
-  const { data: inventoryItems, isLoading, error } = useInventory();
+  // API'den inventory listesini al (pagination ile)
+  const { data, isLoading, error } = useInventory(20);
 
-  // itemId'ye göre item'ı bul
-  const item = inventoryItems?.find((item) => item.id === itemId);
+  // Tüm sayfalardaki item'ları birleştir ve itemId'ye göre item'ı bul
+  const allInventoryItems = useMemo(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap((page) => page.items);
+  }, [data]);
+
+  const item = allInventoryItems.find((item) => item.id === itemId);
 
   // Create Button'u sadece kendi envanteri ise göster
   const currentUserId = user?.id;

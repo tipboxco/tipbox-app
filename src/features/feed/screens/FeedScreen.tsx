@@ -310,16 +310,14 @@ const FeedScreenInner = React.memo(() => {
         .join(' ')
       : (item.content || '');
 
-    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+    // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
     const mappedImages = Array.isArray(item.images)
       ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
       : [];
     
-    // FIX: contextData.image null olduğunda default görseli images array'ine ekle (content'in altındaki büyük görsel alanına)
-    // images array'i boşsa veya contextData.image null ise, default görseli images array'ine ekle
-    const images = mappedImages.length > 0 
-      ? mappedImages 
-      : [defaultPostImage]; // images array'i boşsa default görsel ekle (content'in altındaki büyük görsel alanına)
+    // Görseli olmayan postlar için boş array döndür (default görsel ekleme)
+    const images = mappedImages;
 
     // contextData.image için fallback - null/undefined/empty string durumunda default görsel kullan
     const contextImage = item.contextData?.image
@@ -373,13 +371,14 @@ const FeedScreenInner = React.memo(() => {
         }))
       : [];
 
-    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+    // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
     const mappedImages = Array.isArray(item.images)
       ? item.images
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+    const images = mappedImages;
 
     return {
       id: item.id || '',
@@ -446,13 +445,14 @@ const FeedScreenInner = React.memo(() => {
     if (!item.contextData) {
       console.warn('[mapTipsToCardData] Missing contextData for item:', item.id);
       // Güvenli default değerler döndür
-      // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+      // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+      // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
       const mappedImages = Array.isArray(item.images)
         ? item.images
             .map((img) => toImageSource(img))
             .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
         : [];
-      const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+      const images = mappedImages;
 
       return {
         id: item.id || '',
@@ -499,13 +499,14 @@ const FeedScreenInner = React.memo(() => {
       product,
     };
 
-    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+    // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
     const mappedImages = Array.isArray(item.images)
       ? item.images
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+    const images = mappedImages;
 
     return {
       id: item.id || '',
@@ -533,13 +534,14 @@ const FeedScreenInner = React.memo(() => {
     if (!item.contextData) {
       console.warn('[mapQuestionToCardData] Missing contextData for item:', item.id);
       // Güvenli default değerler döndür
-      // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+      // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+      // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
       const mappedImages = Array.isArray(item.images)
         ? item.images
             .map((img) => toImageSource(img))
             .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
         : [];
-      const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+      const images = mappedImages;
 
       return {
         id: item.id || '',
@@ -587,13 +589,14 @@ const FeedScreenInner = React.memo(() => {
       product,
     };
 
-    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+    // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
     const mappedImages = Array.isArray(item.images)
       ? item.images
           .map((img) => toImageSource(img))
           .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource)
       : [];
-    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+    const images = mappedImages;
 
     return {
       id: item.id || '',
@@ -628,11 +631,12 @@ const FeedScreenInner = React.memo(() => {
     // relatedPost null check - eğer yoksa relatedPost olmadan döndür
     if (!item.relatedPost) {
       console.warn('[mapUpdateToCardData] Missing relatedPost for item:', item.id);
-      // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+      // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+      // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
       const mappedImages = Array.isArray(item.images)
         ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
         : [];
-      const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+      const images = mappedImages;
 
       // Return a safe default structure without relatedPost
       return {
@@ -682,11 +686,12 @@ const FeedScreenInner = React.memo(() => {
         })
       : [];
 
-    // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+    // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+    // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
     const mappedImages = Array.isArray(item.images)
       ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
       : [];
-    const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+    const images = mappedImages;
 
     return {
       id: item.id || '',

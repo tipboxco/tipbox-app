@@ -2,6 +2,7 @@ import { apiService } from '../../../services/ApiService';
 import type {
   UserProfile,
   InventoryItem,
+  InventoryApiResponse,
   ProfilePost,
   ProfileReview,
   ProfileReviewsApiResponse,
@@ -325,16 +326,94 @@ export const addInventoryItem = async (
 
 /**
  * Get Inventory endpoint function
- * Kullanıcının envanter ürünlerini getirir
+ * Kullanıcının envanter ürünlerini getirir (pagination ile)
  * Token'dan user_id otomatik olarak alınır
  * 
- * @returns InventoryItem[] - Envanter ürün listesi
+ * @param cursor - Cursor pagination için son item ID'si (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns InventoryApiResponse - Envanter ürün listesi ve pagination bilgisi
  */
-export const getInventory = async (): Promise<InventoryItem[]> => {
-  const response = await apiService.getClient().get<InventoryItem[]>(
-    '/inventory'
-  );
-  return response.data;
+export const getInventory = async (
+  cursor?: string,
+  limit: number = 20
+): Promise<InventoryApiResponse> => {
+  try {
+    const params = new URLSearchParams();
+    if (cursor) {
+      params.append('cursor', cursor);
+    }
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
+    
+    const queryString = params.toString();
+    const url = queryString ? `/inventory?${queryString}` : '/inventory';
+    
+    const response = await apiService.getClient().get<InventoryItem[] | InventoryApiResponse>(url);
+    const responseData = response.data;
+    
+    // Eğer direkt array döndürüyorsa, pagination objesi oluştur
+    if (Array.isArray(responseData)) {
+      const items = responseData;
+      const hasMore = items.length >= limit;
+      const lastItem = items.length > 0 ? items[items.length - 1] : null;
+      
+      return {
+        items,
+        pagination: {
+          hasMore,
+          cursor: lastItem?.id,
+          limit,
+        },
+      };
+    }
+    
+    // Eğer zaten doğru formatta döndürüyorsa (items ve pagination ile)
+    if (responseData && typeof responseData === 'object' && 'items' in responseData) {
+      const items = responseData.items || [];
+      if (!responseData.pagination) {
+        const hasMore = items.length >= limit;
+        const lastItem = items.length > 0 ? items[items.length - 1] : null;
+        
+        return {
+          items,
+          pagination: {
+            hasMore,
+            cursor: lastItem?.id,
+            limit,
+          },
+        };
+      }
+      
+      // Zaten doğru formatta - backend'den gelen pagination'ı kullan
+      return {
+        items,
+        pagination: {
+          hasMore: responseData.pagination?.hasMore ?? false,
+          cursor: responseData.pagination?.cursor,
+          limit: responseData.pagination?.limit ?? limit,
+        },
+      };
+    }
+    
+    // Fallback: Boş response
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getInventory] API Error:', {
+      url: '/inventory',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**

@@ -682,9 +682,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
           {/* Arrow Icon */}
           <Box mx="$2" position="relative">
-            <Feather 
-              name="send" 
-              size={24} 
+            <PaperAirplaneIcon 
+              width={24} 
+              height={24} 
               color={isDark ? '#FFFFFF' : '#000000'}
               style={{ transform: [{ rotate: '45deg' }] }}
             />

@@ -6,13 +6,11 @@ import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
 import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { PortalProvider, PortalHost } from '@gorhom/portal';
-import { GlobalUIHost } from '@/src/components/GlobalUIHost';
 import { ScrollProvider } from '@/src/providers/ScrollProvider';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
-import { GluestackProvider } from '@/src/components/ui';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { GlobalBottomSheet } from '@/src/components/GlobalBottomSheet';
 // Drawer artık React Navigation DrawerNavigator içinde
 // FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için
 
@@ -126,54 +124,38 @@ const NavigationInner = () => {
         backgroundColor={isDark ? '#000000' : '#FFFFFF'}
         translucent={true}
       />
-      {/* BLUEPRINT FIX: Provider hierarchy OUTSIDE NavigationContainer */}
-      {/* CRITICAL ORDER: GluestackProvider -> BottomSheetModalProvider -> PortalProvider -> GlobalBottomSheetProvider -> KeyboardProvider */}
-      {/* PortalProvider MUST be after BottomSheetModalProvider (gesture context) but before GlobalBottomSheetProvider */}
-      {/* KeyboardProvider MUST be after GlobalBottomSheetProvider so bottom sheets can use keyboard context */}
-      {/* This ensures Portal-rendered bottom sheets have gesture context and keyboard support */}
-      <GluestackProvider>
-        <BottomSheetModalProvider>
-          <PortalProvider>
+      {/* CRITICAL FIX: Provider hierarchy - NavigationContainer içinde */}
+      {/* CRITICAL ORDER: NavigationContainer -> BottomSheetModalProvider -> GlobalBottomSheetProvider -> KeyboardProvider */}
+      <ScrollProvider>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={() => {
+            // ARCHITECTURE FIX: Event-driven navigation ready handling
+            // Navigation ready olduğunda pending navigation queue'yu consume et
+            checkAndConsumePendingNavigation();
+            // NavigationService queue'sunu da consume et
+            navigationService.consumePendingNavigationQueue();
+          }}
+          onStateChange={(state) => {
+            // ARCHITECTURE FIX: Navigation state change event listener
+            // Navigation state değiştiğinde pending navigation'ı tekrar kontrol et
+            // (race condition önlemek için)
+            if (navigationRef.current?.isReady()) {
+              checkAndConsumePendingNavigation();
+              navigationService.consumePendingNavigationQueue();
+            }
+          }}
+        >
+          <BottomSheetModalProvider>
             <GlobalBottomSheetProvider>
               <KeyboardProvider>
-                <ScrollProvider>
-                <NavigationContainer
-                ref={navigationRef}
-                onReady={() => {
-                  // ARCHITECTURE FIX: Event-driven navigation ready handling
-                  // Navigation ready olduğunda pending navigation queue'yu consume et
-                  checkAndConsumePendingNavigation();
-                  // NavigationService queue'sunu da consume et
-                  navigationService.consumePendingNavigationQueue();
-                }}
-                onStateChange={(state) => {
-                  // ARCHITECTURE FIX: Navigation state change event listener
-                  // Navigation state değiştiğinde pending navigation'ı tekrar kontrol et
-                  // (race condition önlemek için)
-                  if (navigationRef.current?.isReady()) {
-                    checkAndConsumePendingNavigation();
-                    navigationService.consumePendingNavigationQueue();
-                  }
-                }}
-              >
                 <RootNavigator />
-              </NavigationContainer>
-              
-              {/* BLUEPRINT FIX: PortalHost OUTSIDE NavigationContainer */}
-              {/* Portal hostName: 'root' ile global UI NavigationContainer dışında render edilir */}
-              <PortalHost name="root" />
-              
-              {/* BLUEPRINT FIX: GlobalUIHost OUTSIDE NavigationContainer */}
-              {/* Instagram/Twitter-style global UI overlay architecture */}
-              {/* All global UI components (BottomSheet, ContextMenu, Toast) are rendered here */}
-              {/* This ensures UI is always accessible regardless of active screen or navigation state */}
-                <GlobalUIHost />
-              </ScrollProvider>
+                <GlobalBottomSheet />
               </KeyboardProvider>
             </GlobalBottomSheetProvider>
-          </PortalProvider>
-        </BottomSheetModalProvider>
-      </GluestackProvider>
+          </BottomSheetModalProvider>
+        </NavigationContainer>
+      </ScrollProvider>
     </>
   );
 };

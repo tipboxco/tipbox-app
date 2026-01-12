@@ -35,6 +35,19 @@ export interface InventoryItem {
 }
 
 /**
+ * Inventory API Response - Pagination ile birlikte
+ * /inventory endpoint'inden dönen response
+ */
+export interface InventoryApiResponse {
+  items: InventoryItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
  * Trust User - API'den gelen trust listesi kullanıcı tipi
  */
 export interface TrustUser {

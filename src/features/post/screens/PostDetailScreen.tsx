@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform, Keyboard, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ScrollView, Platform, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VStack, Text, HStack, Pressable, Box } from '@gluestack-ui/themed';
 import {
@@ -137,81 +137,16 @@ export const PostDetailScreen = () => {
 
     // Bottom sheet açık mı kontrolü - sadece bir kez açılması için
     const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+    const hasOpenedBottomSheetRef = useRef(false); // Bottom sheet'in açılıp açılmadığını takip et
 
-    // Input yüksekliği + padding + safe area = yaklaşık 60-70px
-    const inputMinHeight = 60 + insets.bottom;
-    
-    // Ekran yüksekliğinin %80'i - klavyeden bağımsız
+    // Snap points hesaplama
     const screenHeight = Dimensions.get('window').height;
-    const snapPoint80Percent = screenHeight * 0.8;
+    const snapPoints = [60, screenHeight * 0.8]; // Min height ve %80
 
-    // Handle comment input press - bottom sheet'i %80'e çıkar (klavyeden bağımsız)
+    // Handle comment input press - bottom sheet'i aç
     const handleCommentInputPress = useCallback(() => {
-        // Input'a tıklandığında bottom sheet'i %80'e çıkar
-        // Bottom sheet'i kapatıp yeniden aç (snap point değişikliği için)
         if (isBottomSheetOpen) {
-            closeBottomSheet();
-            setIsBottomSheetOpen(false);
-            
-            // Kısa bir delay ile yeniden aç (snap point %80)
-            setTimeout(() => {
-                console.log('[PostDetailScreen] 📝 Opening bottom sheet with snap point:', snapPoint80Percent, 'input height:', inputMinHeight);
-                
-                openBottomSheet(
-                    <CommentBottomSheet
-                        postId={postId}
-                        onCommentSubmit={(comment) => {
-                            createCommentMutation.mutate(
-                                {
-                                    postId,
-                                    comment,
-                                },
-                                {
-                                    onSuccess: () => {
-                                        closeBottomSheet();
-                                        Keyboard.dismiss();
-                                        setIsBottomSheetOpen(false);
-                                    },
-                                    onError: (error) => {
-                                        console.error('[PostDetailScreen] Error creating comment:', error);
-                                    },
-                                }
-                            );
-                        }}
-                        isSubmitting={createCommentMutation.isPending}
-                        autoFocus={true} // Input'a focus yap ve klavyeyi aç
-                        onInputPress={handleCommentInputPress}
-                    />,
-                    {
-                        enablePanDownToClose: true,
-                        enableOverDrag: false,
-                        enableHandlePanningGesture: true,
-                        enableContentPanningGesture: true,
-                        enableDynamicSizing: false,
-                        snapPoints: [inputMinHeight, snapPoint80Percent], // Min height ve %80
-                        initialSnapIndex: 1, // %80'de başla
-                        animateOnMount: true,
-                        paddingBottom: insets.bottom,
-                        keyboardBehavior: 'extend', // Klavye bottom sheet'in gerisinde açılsın (z-index düşük)
-                        keyboardBlurBehavior: 'restore',
-                        android_keyboardInputMode: 'adjustResize',
-                        backdropOpacity: 0,
-                        onChange: (index) => {
-                            // Snap point değiştiğinde (kullanıcı aşağı kaydırdığında)
-                            if (index === -1) {
-                                setIsBottomSheetOpen(false);
-                            }
-                        },
-                    }
-                );
-                setIsBottomSheetOpen(true);
-            }, 100);
-        }
-    }, [postId, isBottomSheetOpen, openBottomSheet, closeBottomSheet, createCommentMutation, inputMinHeight, snapPoint80Percent, insets.bottom]);
-
-    // Ekran açıldığında bottom sheet'i sadece input yüksekliği kadar aç (sadece bir kez)
-    useEffect(() => {
-        if (postId && !isBottomSheetOpen) {
+            // Bottom sheet zaten açıksa, snap point'i değiştir (genişlet)
             openBottomSheet(
                 <CommentBottomSheet
                     postId={postId}
@@ -224,7 +159,6 @@ export const PostDetailScreen = () => {
                             {
                                 onSuccess: () => {
                                     closeBottomSheet();
-                                    Keyboard.dismiss();
                                     setIsBottomSheetOpen(false);
                                 },
                                 onError: (error) => {
@@ -234,42 +168,83 @@ export const PostDetailScreen = () => {
                         );
                     }}
                     isSubmitting={createCommentMutation.isPending}
-                    autoFocus={false} // Başlangıçta focus yapma, sadece input'a tıklandığında
-                    onInputPress={handleCommentInputPress} // Input'a tıklandığında snap point'i değiştir
+                    autoFocus={true}
+                    onInputPress={handleCommentInputPress}
                 />,
                 {
-                    enablePanDownToClose: true,
-                    enableOverDrag: false,
-                    enableHandlePanningGesture: true,
-                    enableContentPanningGesture: true,
-                    enableDynamicSizing: false, // Snap points kullanıyoruz
-                    snapPoints: [inputMinHeight, snapPoint80Percent], // İki snap point: min height ve %80
-                    initialSnapIndex: 0, // Başlangıçta min height (0)
-                    animateOnMount: true,
-                    paddingBottom: insets.bottom,
-                    keyboardBehavior: 'extend', // Klavye bottom sheet'in gerisinde açılsın (z-index düşük)
-                    keyboardBlurBehavior: 'restore',
-                    android_keyboardInputMode: 'adjustResize',
-                    backdropOpacity: 0, // Backdrop hiç kararmasın
-                    onChange: (index) => {
-                        // Snap point değiştiğinde (kullanıcı aşağı kaydırdığında veya kapattığında)
+                    snapPoints,
+                    initialSnapIndex: 1, // %80'de başla
+                    backdropOpacity: 0,
+                    onChange: (index: number) => {
                         if (index === -1) {
                             setIsBottomSheetOpen(false);
                         }
                     },
                 }
             );
-            setIsBottomSheetOpen(true);
         }
+    }, [postId, isBottomSheetOpen, openBottomSheet, closeBottomSheet, createCommentMutation, snapPoints]);
+
+    // postId değiştiğinde ref'i reset et
+    useEffect(() => {
+        hasOpenedBottomSheetRef.current = false;
+    }, [postId]);
+
+    // Ekran açıldığında bottom sheet'i sadece input yüksekliği kadar aç (sadece bir kez)
+    useEffect(() => {
+        if (!postId || hasOpenedBottomSheetRef.current) return; // Zaten açıldıysa tekrar açma
+
+        // Bottom sheet'i aç
+        const commentBottomSheetContent = (
+            <CommentBottomSheet
+                postId={postId}
+                onCommentSubmit={(comment) => {
+                    createCommentMutation.mutate(
+                        {
+                            postId,
+                            comment,
+                        },
+                        {
+                            onSuccess: () => {
+                                closeBottomSheet();
+                                setIsBottomSheetOpen(false);
+                                hasOpenedBottomSheetRef.current = false; // Reset
+                            },
+                            onError: (error) => {
+                                console.error('[PostDetailScreen] Error creating comment:', error);
+                            },
+                        }
+                    );
+                }}
+                isSubmitting={createCommentMutation.isPending}
+                autoFocus={false} // Başlangıçta focus yapma, sadece input'a tıklandığında
+                onInputPress={handleCommentInputPress} // Input'a tıklandığında snap point'i değiştir
+            />
+        );
+
+        openBottomSheet(commentBottomSheetContent, {
+            snapPoints,
+            initialSnapIndex: 0, // Başlangıçta min height
+            backdropOpacity: 0, // Backdrop hiç kararmasın
+            onChange: (index: number) => {
+                // Snap point değiştiğinde (kullanıcı aşağı kaydırdığında veya kapattığında)
+                if (index === -1) {
+                    setIsBottomSheetOpen(false);
+                    hasOpenedBottomSheetRef.current = false; // Reset
+                }
+            },
+        });
+        setIsBottomSheetOpen(true);
+        hasOpenedBottomSheetRef.current = true; // İşaretle
 
         // Cleanup: Ekran kapanırken bottom sheet'i kapat
         return () => {
-            if (isBottomSheetOpen) {
-                closeBottomSheet();
-                setIsBottomSheetOpen(false);
-            }
+            closeBottomSheet();
+            setIsBottomSheetOpen(false);
+            hasOpenedBottomSheetRef.current = false; // Reset
         };
-    }, [postId]); // Sadece postId değiştiğinde çalışsın, isBottomSheetOpen dependency'ye ekleme (sonsuz döngü olmasın)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [postId, openBottomSheet, closeBottomSheet, createCommentMutation, handleCommentInputPress]); // Sadece postId değiştiğinde çalışsın
 
     // Flatten comments with replies for display
     const flattenedComments: Array<{
@@ -312,11 +287,6 @@ export const PostDetailScreen = () => {
 
     return (
         <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
         <VStack flex={1} bg={isDark ? '#000000' : '#fff'}>
             {/* Status Bar & Header */}
             <Header
@@ -443,7 +413,6 @@ export const PostDetailScreen = () => {
                 )}
             </ScrollView>
         </VStack>
-        </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

@@ -32,6 +32,7 @@ import type {
   TrusterUser,
   UserProfile,
   InventoryItem,
+  InventoryApiResponse,
   ProfilePost,
   ProfileReview,
   ProfileReviewsApiResponse,
@@ -322,27 +323,44 @@ export const useUserProfile = (userId: string | undefined) => {
 };
 
 /**
- * Get Inventory query hook
- * Kullanıcının envanter ürünlerini getirir
+ * Get Inventory infinite query hook
+ * Kullanıcının envanter ürünlerini infinite scroll ile getirir
  * 
- * Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+ * List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
  * Token'dan user_id otomatik olarak alınır
  * 
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
  * 
  * @example
- * const { data, isLoading, error, refetch } = useInventory();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInventory(20);
  */
-export const useInventory = () => {
-  return useQuery<InventoryItem[], Error>({
-    queryKey: profileKeys.inventory(),
-    queryFn: () => getInventory(),
-    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
+export const useInventory = (limit: number = 20) => {
+  return useInfiniteQuery<InventoryApiResponse, Error>({
+    queryKey: [...profileKeys.inventory(), limit],
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | undefined;
+      return getInventory(cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      // Eğer hasMore false ise veya items boşsa, daha fazla sayfa yok
+      if (!lastPage.pagination.hasMore || lastPage.items.length === 0) {
+        return undefined;
+      }
+      
+      // Son item'ın id'sini cursor olarak kullan
+      return lastPage.pagination.cursor;
+    },
+    // List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
+    // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
+    // isFetchingNextPage değişiklikleri render tetiklemez
+    notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
   });
 };
 

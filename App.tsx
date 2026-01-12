@@ -1,18 +1,21 @@
 // PERFORMANCE FIX: Removed Promise polyfill - Hermes engine already supports Promise natively
 // This reduces bundle size and startup time
 import React, { useEffect, useMemo } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { PortalProvider, PortalHost } from '@gorhom/portal';
+import { GluestackProvider } from '@/src/components/ui';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import Navigation from '@/src/navigation';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { QueryProvider } from '@/src/providers/QueryProvider';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { AppProviders } from '@/src/providers/ComposedProviders';
-import { ScrollProvider } from '@/src/providers/ScrollProvider';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
+import { GlobalUIHost } from '@/src/components/GlobalUIHost';
 import { TranslationCacheService } from '@/src/services/TranslationCacheService';
 
 
@@ -90,11 +93,17 @@ const AppInner = () => {
     }
   }, [isAuthReady]);
 
-  // BLUEPRINT FIX: GestureHandlerRootView EN DIŞTA olmalı
+  // CRITICAL FIX: GestureHandlerRootView EN DIŞTA olmalı
   // Provider'lar NavigationContainer dışında ama GestureHandlerRootView içinde
+  // Bu sayede gesture handler hatası çözülür
+  // CRITICAL ORDER: GluestackProvider -> PortalProvider -> NavigationContainer -> BottomSheetModalProvider -> GlobalBottomSheetProvider
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Navigation />
+      <GluestackProvider>
+        <PortalProvider>
+          <Navigation />
+        </PortalProvider>
+      </GluestackProvider>
     </GestureHandlerRootView>
   );
 };

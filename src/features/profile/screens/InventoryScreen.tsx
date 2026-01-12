@@ -56,14 +56,28 @@ const InventoryScreen = () => {
   // Create Button'u sadece kendi envanteri ise göster
   const showCreateButton = currentUserId === userId;
 
-  // API'den envanter ürünlerini getir
-  const { data: inventoryItems, isLoading, isError } = useInventory();
+  // API'den envanter ürünlerini getir (pagination ile)
+  const LIMIT = 20;
+  const { 
+    data, 
+    isLoading, 
+    isError, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = useInventory(LIMIT);
+
+  // Tüm sayfalardaki item'ları birleştir
+  const allInventoryItems = useMemo(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap((page) => page.items);
+  }, [data]);
 
   // API'den gelen verileri filtrele
   const filteredInventory = useMemo(() => {
-    if (!inventoryItems) return [];
+    if (!allInventoryItems || allInventoryItems.length === 0) return [];
 
-    return inventoryItems.filter((item) => {
+    return allInventoryItems.filter((item) => {
       if (!searchQuery.trim()) return true;
       const query = searchQuery.toLowerCase();
       return (
@@ -72,7 +86,14 @@ const InventoryScreen = () => {
         item.brand.specs.toLowerCase().includes(query)
       );
     });
-  }, [inventoryItems, searchQuery]);
+  }, [allInventoryItems, searchQuery]);
+
+  // Infinite scroll handler
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleCreatePress = () => {
     console.log('Create button pressed');
@@ -183,12 +204,21 @@ const InventoryScreen = () => {
           }}
           columnWrapperStyle={{ gap: CARD_GAP }}
           showsVerticalScrollIndicator={false}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
           ListEmptyComponent={
             <Box flex={1} justifyContent="center" alignItems="center" py={40}>
               <Text color={isDark ? '$textDark400' : '$textLight600'}>
                 {searchQuery ? 'No search results found' : 'Inventory is empty'}
               </Text>
             </Box>
+          }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <Box py={20} alignItems="center">
+                <InventorySkeleton count={3} cardWidth={CARD_WIDTH} />
+              </Box>
+            ) : null
           }
         />
       )}
