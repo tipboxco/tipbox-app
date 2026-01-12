@@ -123,7 +123,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
 
   // ListHeaderComponent - Limited Event, Search Bar ve Filter
   const ListHeaderComponent = useMemo(() => (
-    <VStack space="md" px="$4" pb="$4">
+    <VStack space="md" px="$4" pb="$1">
       {/* Limited Time Event Card */}
       <Box alignItems="center">
         {isLimitedEventLoading && !limitedEvent ? (
@@ -251,7 +251,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
         data={getFilteredAchievements}
         numColumns={numColumns}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: hasItems ? 16 : 0, paddingBottom: bottomInset + 24 }}
+        contentContainerStyle={{ paddingTop: 0, paddingHorizontal: hasItems ? 16 : 0, paddingBottom: bottomInset + 24 }}
         ItemSeparatorComponent={hasItems ? () => <Box height={12} /> : undefined}
         columnWrapperStyle={hasItems ? { gap: 12 } : undefined}
         ListHeaderComponent={ListHeaderComponent}

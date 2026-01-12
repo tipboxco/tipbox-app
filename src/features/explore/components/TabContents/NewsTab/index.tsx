@@ -322,7 +322,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       contentContainerStyle={{ paddingBottom: 16 }}
     >
       {headerComponent}
-      <VStack space="md" mb="$4" pt={0} mt={0}>
+      <VStack space="md" mb="$4" pt={16} mt={0}>
         {/* New Community Events Section */}
       {(isLoadingEvents || events.length > 0) && (
         <Box pl="$4">

@@ -9,40 +9,51 @@ export interface CategoryCardCategory {
   image: any;
 }
 
-interface CategoryCardProps {
+export interface CategoryCardProps {
   category: CategoryCardCategory;
   onPress: (category: CategoryCardCategory) => void;
   priority?: 'low' | 'normal' | 'high';
+  isLargeCard?: boolean;
+  style?: any;
 }
 
-const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority = 'normal' }) => {
+const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority = 'normal', isLargeCard = false, style }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
   // Placeholder görseli
   const placeholder = require('@/assets/inventory/product_01.png');
 
+  // Boyutlar - large card için daha büyük
+  const cardHeight = isLargeCard ? 160 : 132;
+  const imageSize = isLargeCard ? 120 : 86;
+  const fontSize = isLargeCard ? 12 : 8;
+  const lineHeight = isLargeCard ? 16 : 10;
+
   return (
     <Pressable
       onPress={() => onPress(category)}
-      width={114}
-      height={132}
+      height={cardHeight}
+      flex={1}
       borderRadius={5}
       bg={isDark ? '#2A2A2A' : '#FDFDFD'}
       borderWidth={1}
       borderColor={isDark ? '#404040' : '#E9E9E9'}
       justifyContent="center"
       alignItems="center"
-      style={({ pressed }) => ({
-        transform: [{ scale: pressed ? 0.95 : 1 }],
-        opacity: pressed ? 0.8 : 1,
-      })}
+      style={[
+        ({ pressed }) => ({
+          transform: [{ scale: pressed ? 0.95 : 1 }],
+          opacity: pressed ? 0.8 : 1,
+        }),
+        style,
+      ]}
     >
       <VStack alignItems="center" space="sm" flex={1} justifyContent="center">
         {/* Category Icon */}
         <Box
-          width={86}
-          height={86}
+          width={imageSize}
+          height={imageSize}
           borderRadius={5}
           bg="transparent"
           justifyContent="center"
@@ -69,12 +80,12 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority
         {/* Category Name */}
         <Text
           color={isDark ? '#FFFFFF' : '#000000'}
-          fontSize={8}
+          fontSize={fontSize}
           fontWeight="$bold"
           textAlign="center"
           numberOfLines={2}
-          px="$1"
-          lineHeight={10}
+          px="$2"
+          lineHeight={lineHeight}
         >
           {category.name}
         </Text>

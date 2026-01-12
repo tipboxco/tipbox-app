@@ -62,7 +62,6 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
             shadowRadius={3}
             elevation={3}
             position="relative"
-            mt="$4"
         >
             {/* Background Image */}
             <Image
@@ -71,7 +70,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                 width={width - 32}
                 height={230}
                 position="absolute"
-                top={0}
+                top={10}
                 left={0}
                 resizeMode="cover"
             />

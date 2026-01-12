@@ -12,14 +12,15 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 interface ActionButtonsProps {
     onShowPosts: () => void;
     onCreatePost: () => void;
+    categoryName?: string;
 }
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost }) => {
+const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost, categoryName = 'Category' }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
     return (
-        <HStack space="sm" px="$4" py="$2">
+        <HStack space="sm" px="$4" pt="$4" pb="$2">
             {/* Show Posts Button */}
             <Pressable
                 onPress={onShowPosts}
@@ -69,8 +70,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                             fontSize={9}
                             fontWeight="$semibold"
                             textAlign="left"
+                            numberOfLines={1}
                         >
-                            Technology
+                            {categoryName}
                         </Text>
                     </VStack>
                 </HStack>
@@ -125,8 +127,9 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                             fontSize={9}
                             fontWeight="$semibold"
                             textAlign="left"
+                            numberOfLines={1}
                         >
-                            Technology
+                            {categoryName}
                         </Text>
                     </VStack>
                 </HStack>
