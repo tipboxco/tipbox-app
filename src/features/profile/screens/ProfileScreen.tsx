@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions, RefreshControl } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
 import PagerView from 'react-native-pager-view';
@@ -1745,6 +1746,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <StatusBar style="light" />
       <Animated.ScrollView
         ref={scrollViewRef}
         onScroll={handleScroll}
