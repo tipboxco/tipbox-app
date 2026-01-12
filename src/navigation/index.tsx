@@ -6,6 +6,7 @@ import { deepLinkService } from '@/src/services/DeepLinkService';
 import { navigationService } from '@/src/services/NavigationService';
 import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { PortalHost } from '@gorhom/portal';
 // Drawer artık React Navigation DrawerNavigator içinde
 // FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için
 
@@ -139,6 +140,9 @@ const NavigationInner = () => {
         }}
       >
         <RootNavigator />
+        {/* ARCHITECTURE FIX: PortalHost ekle - GlobalBottomSheet bu host'a render edilecek */}
+        {/* Portal hostName: 'navigation' ile bottom sheet NavigationContainer içinde render edilir */}
+        <PortalHost name="navigation" />
       </NavigationContainer>
     </>
   );

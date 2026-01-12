@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 // Heroicons imports
 import {
   UserIcon,
@@ -46,6 +46,7 @@ import {
   useReportUser,
   useUserProfile,
 } from '@/src/features/profile/api/hooks';
+import { PostContextMenu } from '@/src/components/PostContextMenu';
 
 interface PostCardProps {
   data: PostCardData;
@@ -394,8 +395,13 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               </Text>
             </VStack>
           </Pressable>
-          <Pressable onPress={handleMenuPress}>
-            <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
+          <Pressable
+            onPress={() => {
+              console.log('[PostCard] 3 nokta menüsü tıklandı - Post ID:', data.id);
+              handleMenuPress();
+            }}
+          >
+            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
           </Pressable>
         </HStack>
       </VStack>

@@ -133,7 +133,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
     return (
         <VStack bg={isDark ? '$backgroundDark900' : '$white'}>
             {/* Header */}
-            <VStack px={12} py={8}>
+            <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
                     {data.user?.avatar && (
                         <Image
@@ -165,7 +165,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                         )}
                     </VStack>
                     <Pressable>
-                        <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
+                        <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
                     </Pressable>
                 </HStack>
             </VStack>
@@ -173,7 +173,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
             {/* Product */}
             {
                 data.category && data.category.product ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.PRODUCT}
@@ -183,7 +183,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                         />
                     </Box>
                 ) : data.category ? (
-                    <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                    <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.SUB_CATEGORY}

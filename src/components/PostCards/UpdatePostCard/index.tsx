@@ -1,5 +1,6 @@
 import React, { memo, useState, useEffect } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { Platform } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -10,6 +11,7 @@ import {
   PaperAirplaneIcon,
   BookmarkIcon,
 } from 'react-native-heroicons/outline';
+import { PostContextMenu } from '@/src/components/PostContextMenu';
 import {
   HeartIcon as HeartIconSolid,
   BookmarkIcon as BookmarkIconSolid,
@@ -168,9 +170,15 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
               {data.user.title}
             </Text>
           </VStack>
-          <Pressable>
-            <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
-          </Pressable>
+          <PostContextMenu
+            postId={data.id}
+            postContent={data.content}
+            postAuthorName={data.user.name}
+          >
+            <Pressable>
+              <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+            </Pressable>
+          </PostContextMenu>
         </HStack>
       </VStack>
 

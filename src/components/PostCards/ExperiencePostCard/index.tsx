@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ImageSourcePropType } from 'react-native';
+import { Platform } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
@@ -13,6 +14,7 @@ import {
   PaperAirplaneIcon,
   BookmarkIcon,
 } from 'react-native-heroicons/outline';
+import { PostContextMenu } from '@/src/components/PostContextMenu';
 import {
   StarIcon as StarIconSolid,
   HeartIcon as HeartIconSolid,
@@ -133,14 +135,20 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       mb={16}
     >
       {/* Action Button */}
-      <Pressable
-        position="absolute"
-        top={12}
-        right={15}
-        zIndex={1}
+      <PostContextMenu
+        postId={data.id}
+        postContent={data.content && data.content.length > 0 ? data.content[0]?.text || '' : ''}
+        postAuthorName={data.user.name}
       >
-        <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
-      </Pressable>
+        <Pressable
+          position="absolute"
+          top={12}
+          right={15}
+          zIndex={1}
+        >
+          <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+        </Pressable>
+      </PostContextMenu>
 
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">

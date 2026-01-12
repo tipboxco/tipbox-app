@@ -104,12 +104,12 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
                 right={15}
                 zIndex={1}
             >
-                <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
+                <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
             </Pressable>
 
             {/* Header */}
             {data.user && (
-                <VStack px={12} py={8}>
+                <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                     <HStack alignItems="center" space="xs">
                         <Image
                             source={toImageSource(data.user?.avatar)!}
@@ -149,7 +149,7 @@ export const ExperiencePostCardDetail = ({ data, onCommentPress }: ExperiencePos
 
             {/* Product */}
             {data.product && (
-                <Box px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9">
+                <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
                     <ProductInfoCard
                         size="small"
                         type={ProductInfoType.PRODUCT}

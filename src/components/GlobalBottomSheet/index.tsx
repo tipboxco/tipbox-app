@@ -260,11 +260,21 @@ export const GlobalBottomSheet: React.FC = () => {
   // FLICKER FIX: Reset isExpandingRef when ref is null (component unmounts)
   const setRef = useCallback((ref: BottomSheet | null) => {
     bottomSheetRef.current = ref;
-    if (ref && isOpen && content && !isExpandingRef.current) {
+    if (ref && isOpen && content) {
+      // Reset isExpandingRef if it's stuck
+      if (isExpandingRef.current) {
+        console.log('[GlobalBottomSheet] ⚠️ isExpandingRef is true in setRef, resetting...');
+        isExpandingRef.current = false;
+      }
+      
       try {
         isExpandingRef.current = true;
         // PERFORMANCE FIX: Direct expand() call - instant opening
         // @gorhom/bottom-sheet ref is ready when setRef is called
+        console.log('[GlobalBottomSheet] 🚀 Calling expand() on ref set', {
+          isOpen,
+          hasContent: !!content,
+        });
         ref.expand();
       } catch (error) {
         console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet:', error);
@@ -273,8 +283,46 @@ export const GlobalBottomSheet: React.FC = () => {
     } else if (!ref) {
       // FLICKER FIX: Reset isExpandingRef when ref is null (component unmounts)
       isExpandingRef.current = false;
+    } else {
+      console.log('[GlobalBottomSheet] ⏸️ Not expanding in setRef:', {
+        hasRef: !!ref,
+        isOpen,
+        hasContent: !!content,
+        isExpanding: isExpandingRef.current,
+      });
     }
   }, [isOpen, content]); // PERFORMANCE FIX: Removed mergedOptions from dependencies
+
+  // ARCHITECTURE FIX: Also expand when isOpen changes after ref is set
+  // This handles the case where isOpen changes but ref was already set
+  useEffect(() => {
+    if (bottomSheetRef.current && isOpen && content) {
+      // Reset isExpandingRef if it's stuck
+      if (isExpandingRef.current) {
+        console.log('[GlobalBottomSheet] ⚠️ isExpandingRef is true, resetting...');
+        isExpandingRef.current = false;
+      }
+      
+      try {
+        isExpandingRef.current = true;
+        console.log('[GlobalBottomSheet] 🚀 Calling expand() on isOpen change', {
+          hasRef: !!bottomSheetRef.current,
+          isOpen,
+          hasContent: !!content,
+        });
+        bottomSheetRef.current.expand();
+      } catch (error) {
+        console.error('[GlobalBottomSheet] ❌ Error expanding bottom sheet in useEffect:', error);
+        isExpandingRef.current = false;
+      }
+    } else {
+      console.log('[GlobalBottomSheet] ⏸️ Not expanding:', {
+        hasRef: !!bottomSheetRef.current,
+        isOpen,
+        hasContent: !!content,
+      });
+    }
+  }, [isOpen, content]);
 
   // ARCHITECTURE FIX: No need to wrap content with GluestackProvider
   // GlobalBottomSheet is already inside AppProviders which includes GluestackProvider
@@ -306,11 +354,10 @@ export const GlobalBottomSheet: React.FC = () => {
     hasSnapPoints: !!mergedOptions.snapPoints,
   });
 
-  // PERFORMANCE FIX: Always start at -1 (closed) and use expand() to open
-  // This eliminates the two-stage opening (mount at initialIndex → expand)
-  // Direct expand() is faster than mount → initialIndex → expand
-  // ARCHITECTURE FIX: Bottom sheet always starts closed, expand() opens it instantly
-  const initialIndex = -1;
+  // ARCHITECTURE FIX: Use index prop based on isOpen state
+  // enableDynamicSizing ile birlikte index prop kullanmak daha güvenilir
+  // isOpen true ise 0 (açık), false ise -1 (kapalı)
+  const bottomSheetIndex = isOpen ? 0 : -1;
 
   // PERFORMANCE FIX: Use Portal to render Bottom Sheet outside navigation hierarchy
   // This prevents navigation re-renders from affecting Bottom Sheet performance
@@ -318,7 +365,7 @@ export const GlobalBottomSheet: React.FC = () => {
   const bottomSheetContent = (
     <BottomSheet
       ref={setRef}
-      index={initialIndex}
+      index={bottomSheetIndex}
       snapPoints={mergedOptions.snapPoints}
       enableDynamicSizing={mergedOptions.snapPoints ? false : (mergedOptions.enableDynamicSizing ?? true)}
       enablePanDownToClose={mergedOptions.enablePanDownToClose ?? true}
@@ -335,13 +382,21 @@ export const GlobalBottomSheet: React.FC = () => {
       keyboardBlurBehavior={mergedOptions.keyboardBlurBehavior || 'restore'}
       android_keyboardInputMode={mergedOptions.android_keyboardInputMode || 'adjustResize'}
       // Z-index: Tab bar'dan yüksek
+      // ARCHITECTURE FIX: NavigationContainer içinde render edildiği için
+      // position: 'absolute' ve zIndex ile tüm ekran stack'lerinin üstünde görünür
       style={{ 
         zIndex: 10000,
         position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        pointerEvents: isOpen ? 'auto' : 'none',
       }}
       containerStyle={{
         zIndex: 10000,
         elevation: 10000,
+        position: 'absolute',
       }}
     >
       <BottomSheetView style={{ paddingBottom }}>
@@ -350,12 +405,11 @@ export const GlobalBottomSheet: React.FC = () => {
     </BottomSheet>
   );
 
-  // ARCHITECTURE FIX: Use Portal to render outside navigation hierarchy
-  // This improves performance by isolating Bottom Sheet from navigation re-renders
-  // FIX: Remove hostName to use default Portal host (root level)
-  // This ensures bottom sheet renders above TabNavigator (zIndex: 1000)
+  // ARCHITECTURE FIX: Portal kullanarak NavigationContainer içindeki Portal.Host'a render et
+  // Portal hostName: 'navigation' NavigationContainer içinde tanımlı
+  // Bu sayede bottom sheet NavigationContainer içinde ama tüm ekran stack'lerinin üstünde görünür
   return (
-    <Portal>
+    <Portal hostName="navigation">
       {bottomSheetContent}
     </Portal>
   );

@@ -549,6 +549,7 @@ const ExploreScreen: React.FC = () => {
           <VStack
             bg={tabHeaderBgColor}
             pt={0}
+            pb="$2"
             onLayout={handleTabsLayout}
           >
             <HStack

@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ReactNode } from 'react';
 import { GlobalBottomSheetContextType, BottomSheetOptions } from '@/src/components/GlobalBottomSheet/types';
-import { GlobalBottomSheet } from '@/src/components/GlobalBottomSheet';
 import { GlobalBottomSheetContext } from '@/src/components/GlobalBottomSheet/context'; // ARCHITECTURE FIX: Import from context.ts to break circular dependency
 
 interface GlobalBottomSheetProviderProps {
@@ -81,7 +80,8 @@ export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps>
   return (
     <GlobalBottomSheetContext.Provider value={contextValue}>
       {children}
-      <GlobalBottomSheet />
+      {/* ARCHITECTURE FIX: GlobalBottomSheet artık NavigationContainer içinde render ediliyor */}
+      {/* Bu sayede Portal NavigationContainer'ın içinde çalışır ve tüm ekranların üstünde görünür */}
     </GlobalBottomSheetContext.Provider>
   );
 };

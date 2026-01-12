@@ -166,7 +166,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
             </Text>
           </VStack>
           <Pressable onPress={handleOptionsPress}>
-            <EllipsisHorizontalIcon width={16} height={16} color={isDark ? '#fff' : '#A3A3A3'} />
+            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
           </Pressable>
         </HStack>
       </VStack>
