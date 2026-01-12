@@ -228,7 +228,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                 <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize={10}
+                        fontSize="$xs"
                         numberOfLines={3}
                     >
                         {data.content}

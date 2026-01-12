@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Platform, Keyboard } from 'react-native';
 import {
   VStack,
   HStack,
@@ -10,7 +9,6 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 interface CommentBottomSheetProps {
@@ -18,6 +16,7 @@ interface CommentBottomSheetProps {
   onCommentSubmit: (comment: string) => void;
   isSubmitting?: boolean;
   autoFocus?: boolean; // Otomatik focus için prop
+  onInputPress?: () => void; // Input'a tıklandığında çağrılacak callback
 }
 
 export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
@@ -25,10 +24,10 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
   onCommentSubmit,
   isSubmitting = false,
   autoFocus = true, // Varsayılan olarak true
+  onInputPress,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const insets = useSafeAreaInsets();
   const { closeBottomSheet } = useGlobalBottomSheet();
   const [commentText, setCommentText] = useState('');
   const textInputRef = useRef<any>(null);
@@ -117,6 +116,12 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
             value={commentText}
             onChangeText={setCommentText}
             multiline={false}
+            onFocus={() => {
+              // Input'a focus olduğunda (tıklandığında) snap point'i %75'e çıkar
+              if (onInputPress) {
+                onInputPress();
+              }
+            }}
           />
         </Input>
 

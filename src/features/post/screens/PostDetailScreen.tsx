@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ScrollView, KeyboardAvoidingView, Platform, Keyboard, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { VStack, Text, HStack, Pressable, Box, Input, InputField } from '@gluestack-ui/themed';
+import { VStack, Text, HStack, Pressable, Box } from '@gluestack-ui/themed';
 import {
   ChevronDownIcon,
-  PaperAirplaneIcon,
 } from 'react-native-heroicons/outline';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -136,77 +135,141 @@ export const PostDetailScreen = () => {
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
-    // Klavye yüksekliği için state
-    const [keyboardHeight, setKeyboardHeight] = useState(Platform.OS === 'ios' ? 300 : 250);
+    // Bottom sheet açık mı kontrolü - sadece bir kez açılması için
+    const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
 
-    // Klavye event listener'ları - klavye yüksekliğini güncellemek için
-    useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            (event) => {
-                const height = event.endCoordinates.height;
-                setKeyboardHeight(height);
-                console.log('[PostDetailScreen] Keyboard opened, height:', height);
-            }
-        );
+    // Input yüksekliği + padding + safe area = yaklaşık 60-70px
+    const inputMinHeight = 60 + insets.bottom;
+    
+    // Ekran yüksekliğinin %80'i - klavyeden bağımsız
+    const screenHeight = Dimensions.get('window').height;
+    const snapPoint80Percent = screenHeight * 0.8;
 
-        const keyboardDidHideListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            () => {
-                setKeyboardHeight(Platform.OS === 'ios' ? 300 : 250); // Default değere dön
-                console.log('[PostDetailScreen] Keyboard closed');
-            }
-        );
-
-        return () => {
-            keyboardDidShowListener.remove();
-            keyboardDidHideListener.remove();
-        };
-    }, []);
-
-    // Handle comment input press - bottom sheet'i aç ve input'a focus yap
-    const handleCommentInputPress = () => {
-        // ARCHITECTURE FIX: Use enableDynamicSizing instead of snapPoints
-        // Dynamic sizing adapts to content height automatically
-        openBottomSheet(
-            <CommentBottomSheet
-                postId={postId}
-                onCommentSubmit={(comment) => {
-                    createCommentMutation.mutate(
-                        {
-                            postId,
-                            comment,
+    // Handle comment input press - bottom sheet'i %80'e çıkar (klavyeden bağımsız)
+    const handleCommentInputPress = useCallback(() => {
+        // Input'a tıklandığında bottom sheet'i %80'e çıkar
+        // Bottom sheet'i kapatıp yeniden aç (snap point değişikliği için)
+        if (isBottomSheetOpen) {
+            closeBottomSheet();
+            setIsBottomSheetOpen(false);
+            
+            // Kısa bir delay ile yeniden aç (snap point %80)
+            setTimeout(() => {
+                console.log('[PostDetailScreen] 📝 Opening bottom sheet with snap point:', snapPoint80Percent, 'input height:', inputMinHeight);
+                
+                openBottomSheet(
+                    <CommentBottomSheet
+                        postId={postId}
+                        onCommentSubmit={(comment) => {
+                            createCommentMutation.mutate(
+                                {
+                                    postId,
+                                    comment,
+                                },
+                                {
+                                    onSuccess: () => {
+                                        closeBottomSheet();
+                                        Keyboard.dismiss();
+                                        setIsBottomSheetOpen(false);
+                                    },
+                                    onError: (error) => {
+                                        console.error('[PostDetailScreen] Error creating comment:', error);
+                                    },
+                                }
+                            );
+                        }}
+                        isSubmitting={createCommentMutation.isPending}
+                        autoFocus={true} // Input'a focus yap ve klavyeyi aç
+                        onInputPress={handleCommentInputPress}
+                    />,
+                    {
+                        enablePanDownToClose: true,
+                        enableOverDrag: false,
+                        enableHandlePanningGesture: true,
+                        enableContentPanningGesture: true,
+                        enableDynamicSizing: false,
+                        snapPoints: [inputMinHeight, snapPoint80Percent], // Min height ve %80
+                        initialSnapIndex: 1, // %80'de başla
+                        animateOnMount: true,
+                        paddingBottom: insets.bottom,
+                        keyboardBehavior: 'extend', // Klavye bottom sheet'in gerisinde açılsın (z-index düşük)
+                        keyboardBlurBehavior: 'restore',
+                        android_keyboardInputMode: 'adjustResize',
+                        backdropOpacity: 0,
+                        onChange: (index) => {
+                            // Snap point değiştiğinde (kullanıcı aşağı kaydırdığında)
+                            if (index === -1) {
+                                setIsBottomSheetOpen(false);
+                            }
                         },
-                        {
-                            onSuccess: () => {
-                                closeBottomSheet();
-                                Keyboard.dismiss();
+                    }
+                );
+                setIsBottomSheetOpen(true);
+            }, 100);
+        }
+    }, [postId, isBottomSheetOpen, openBottomSheet, closeBottomSheet, createCommentMutation, inputMinHeight, snapPoint80Percent, insets.bottom]);
+
+    // Ekran açıldığında bottom sheet'i sadece input yüksekliği kadar aç (sadece bir kez)
+    useEffect(() => {
+        if (postId && !isBottomSheetOpen) {
+            openBottomSheet(
+                <CommentBottomSheet
+                    postId={postId}
+                    onCommentSubmit={(comment) => {
+                        createCommentMutation.mutate(
+                            {
+                                postId,
+                                comment,
                             },
-                            onError: (error) => {
-                                console.error('[PostDetailScreen] Error creating comment:', error);
-                            },
+                            {
+                                onSuccess: () => {
+                                    closeBottomSheet();
+                                    Keyboard.dismiss();
+                                    setIsBottomSheetOpen(false);
+                                },
+                                onError: (error) => {
+                                    console.error('[PostDetailScreen] Error creating comment:', error);
+                                },
+                            }
+                        );
+                    }}
+                    isSubmitting={createCommentMutation.isPending}
+                    autoFocus={false} // Başlangıçta focus yapma, sadece input'a tıklandığında
+                    onInputPress={handleCommentInputPress} // Input'a tıklandığında snap point'i değiştir
+                />,
+                {
+                    enablePanDownToClose: true,
+                    enableOverDrag: false,
+                    enableHandlePanningGesture: true,
+                    enableContentPanningGesture: true,
+                    enableDynamicSizing: false, // Snap points kullanıyoruz
+                    snapPoints: [inputMinHeight, snapPoint80Percent], // İki snap point: min height ve %80
+                    initialSnapIndex: 0, // Başlangıçta min height (0)
+                    animateOnMount: true,
+                    paddingBottom: insets.bottom,
+                    keyboardBehavior: 'extend', // Klavye bottom sheet'in gerisinde açılsın (z-index düşük)
+                    keyboardBlurBehavior: 'restore',
+                    android_keyboardInputMode: 'adjustResize',
+                    backdropOpacity: 0, // Backdrop hiç kararmasın
+                    onChange: (index) => {
+                        // Snap point değiştiğinde (kullanıcı aşağı kaydırdığında veya kapattığında)
+                        if (index === -1) {
+                            setIsBottomSheetOpen(false);
                         }
-                    );
-                }}
-                isSubmitting={createCommentMutation.isPending}
-                autoFocus={true} // Bottom sheet açıldığında input'a focus yap ve klavyeyi aç
-            />,
-            {
-                enablePanDownToClose: true,
-                enableOverDrag: false,
-                enableHandlePanningGesture: true,
-                enableContentPanningGesture: true,
-                enableDynamicSizing: true, // ARCHITECTURE FIX: Use dynamic sizing instead of snapPoints
-                animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
-                // Bottom sheet'in bottom uzaklığı klavye yüksekliği + safe area bottom inset kadar olacak
-                paddingBottom: keyboardHeight + insets.bottom, // Klavye yüksekliği + safe area bottom inset
-                keyboardBehavior: 'extend', // Klavye açıldığında bottom sheet genişler
-                keyboardBlurBehavior: 'restore',
-                android_keyboardInputMode: 'adjustResize',
-                backdropOpacity: 0, // Backdrop hiç kararmasın
+                    },
+                }
+            );
+            setIsBottomSheetOpen(true);
+        }
+
+        // Cleanup: Ekran kapanırken bottom sheet'i kapat
+        return () => {
+            if (isBottomSheetOpen) {
+                closeBottomSheet();
+                setIsBottomSheetOpen(false);
             }
-        );
-    };
+        };
+    }, [postId]); // Sadece postId değiştiğinde çalışsın, isBottomSheetOpen dependency'ye ekleme (sonsuz döngü olmasın)
 
     // Flatten comments with replies for display
     const flattenedComments: Array<{
@@ -379,55 +442,6 @@ export const PostDetailScreen = () => {
                     </VStack>
                 )}
             </ScrollView>
-
-            {/* Comment Input Button - Opens Bottom Sheet */}
-            <Pressable
-                onPress={handleCommentInputPress}
-                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-                borderTopWidth={1}
-                borderColor={isDark ? '#333' : '#E9E9E9'}
-                px="$4"
-                py="$3"
-                style={{
-                    paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
-                }}
-            >
-                <HStack space="sm" alignItems="center">
-                    {/* Comment Input Placeholder */}
-                    <Input
-                        flex={1}
-                        bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-                        borderWidth={0}
-                        borderRadius={20}
-                        height={40}
-                        pointerEvents="none"
-                    >
-                        <InputField
-                            placeholder="Write a comment..."
-                            placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={14}
-                            editable={false}
-                        />
-                    </Input>
-
-                    {/* Send Button (disabled - opens bottom sheet) */}
-                    <Box
-                        width={40}
-                        height={40}
-                        borderRadius={20}
-                        bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-                        alignItems="center"
-                        justifyContent="center"
-                    >
-                        <PaperAirplaneIcon
-                            width={18}
-                            height={18}
-                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                        />
-                    </Box>
-                </HStack>
-            </Pressable>
         </VStack>
         </KeyboardAvoidingView>
         </SafeAreaView>

@@ -538,32 +538,11 @@ export const getUserPosts = async (
     
     const responseData = response.data;
     
-    // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserPosts] API Response Detay:', {
-      url: `/users/${userId}/feed?${params.toString()}`,
-      cursor,
-      limit,
-      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
-      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
-      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
-      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
-      allItemIds: Array.isArray(responseData) 
-        ? responseData.map((item: any) => item?.id).filter(Boolean)
-        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
-    });
-    
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
     const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
-      
-      console.log('[getUserPosts] Normalized Response:', {
-        itemsCount: items.length,
-        hasMore,
-        cursor: cursorValue,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean),
-      });
       
       return {
         items,
@@ -582,13 +561,6 @@ export const getUserPosts = async (
         const items = Array.isArray(responseData.items) ? responseData.items : [];
         const hasMore = items.length >= limit;
         
-        console.log('[getUserPosts] Normalized Response (object format):', {
-          itemsCount: items.length,
-          hasMore,
-          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
-          itemIds: items.map((item: any) => item?.id).filter(Boolean),
-        });
-    
     return {
       items,
       pagination: {
@@ -600,18 +572,10 @@ export const getUserPosts = async (
       }
       
       // Zaten doğru formatta
-      console.log('[getUserPosts] Response (already formatted):', {
-        itemsCount: responseData.items?.length || 0,
-        hasMore: responseData.pagination?.hasMore,
-        cursor: responseData.pagination?.cursor,
-        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
-      });
-      
       return responseData as UserFeedApiResponse;
     }
     
     // Beklenmeyen format
-    console.warn('[getUserPosts] Unexpected response format:', responseData);
     return {
       items: [],
       pagination: {

@@ -18,6 +18,8 @@ import { WalletCardInfo } from '../components/WalletCardInfo';
 import { HistoryCard } from '../components/HistoryCard';
 import { SendBottomSheet } from '../components/SendBottomSheet';
 import { ClaimBottomSheet } from '../components/ClaimBottomSheet';
+import { ReceiveBottomSheet } from '../components/ReceiveBottomSheet';
+import { SwapBottomSheet } from '../components/SwapBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -133,6 +135,52 @@ export const WalletScreen: React.FC = () => {
       }
     );
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendViewChange, handleSendSuccess]);
+
+  const handleReceivePress = useCallback(() => {
+    console.log('[WalletScreen] Receive button pressed');
+    openBottomSheet(
+      <ReceiveBottomSheet
+        onClose={closeBottomSheet}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomInset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
+
+  const handleSwapPress = useCallback(() => {
+    console.log('[WalletScreen] Swap button pressed');
+    openBottomSheet(
+      <SwapBottomSheet
+        onClose={closeBottomSheet}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomInset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
   const handleClaimPress = useCallback(() => {
     console.log('[WalletScreen] Claim button pressed');
@@ -291,9 +339,9 @@ export const WalletScreen: React.FC = () => {
                 {/* Quick Actions */}
                 <HStack mt="$4" space="md">
                   {[
-                    { icon: QrCodeIcon, label: 'Receive' as const, onPress: () => {} },
+                    { icon: QrCodeIcon, label: 'Receive' as const, onPress: handleReceivePress },
                     { icon: PaperAirplaneIcon, label: 'Send' as const, onPress: handleSendPress },
-                    { icon: ArrowsRightLeftIcon, label: 'Swap' as const, onPress: () => navigation.navigate('SwapScreen') },
+                    { icon: ArrowsRightLeftIcon, label: 'Swap' as const, onPress: handleSwapPress },
                     { icon: GiftIcon, label: 'Claim' as const, onPress: handleClaimPress },
                   ].map((action) => {
                     const IconComponent = action.icon;

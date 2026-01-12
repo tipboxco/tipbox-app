@@ -6,6 +6,7 @@ import {
   CreditCardIcon,
   ChevronDownIcon,
   InformationCircleIcon,
+  ArrowsRightLeftIcon,
 } from 'react-native-heroicons/outline';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
@@ -477,11 +478,10 @@ export const SwapScreen: React.FC = () => {
                 borderColor="#FFFFFF"
                 $dark-borderColor="#FFFFFF"
               >
-                <Feather 
-                  name="shuffle" 
-                  size={24} 
+                <ArrowsRightLeftIcon 
+                  width={24} 
+                  height={24} 
                   color="#000000"
-                  style={{ transform: [{ rotate: '90deg' }] }}
                 />
               </Pressable>
             </Box>

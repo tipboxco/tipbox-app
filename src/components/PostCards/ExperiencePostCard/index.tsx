@@ -245,7 +245,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
               <Text
                 color={isDark ? '$textDark50' : '#000'}
                 numberOfLines={data.images && data.images!.length > 0 ? 3 : 6}
-                fontSize={'$2xs'}
+                fontSize="$xs"
                 ml={26}
               >
                 {item.text}

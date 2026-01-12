@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   Box, 
@@ -26,6 +26,9 @@ import { mock_user_card } from '@/src/mock/profile/userCardData';
 import { useUpdateProfile } from '../api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
+import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { uploadAvatar, uploadBanner } from '../api/profileApi';
+import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
 import type { ProfileStackParamList } from '../navigation';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
@@ -54,9 +57,14 @@ const ProfileEditScreen: React.FC = () => {
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [selectedAvatarType, setSelectedAvatarType] = useState<'picture' | 'cosmetic'>('picture');
   const [selectedBadgeSlot, setSelectedBadgeSlot] = useState<1 | 2 | 3 | null>(null);
+  const [selectedAvatarUri, setSelectedAvatarUri] = useState<string | null>(null);
+  const [selectedBannerUri, setSelectedBannerUri] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   // Update Profile mutation
   const updateProfileMutation = useUpdateProfile();
+  const toast = useToast();
 
   // Badge seçimi için bottom sheet aç
   const handleBadgeSelect = useCallback((slot: 1 | 2 | 3) => {
@@ -203,11 +211,15 @@ const ProfileEditScreen: React.FC = () => {
       updateData.badge = badgeIds;
     }
 
-    // TODO: Add avatar, banner, cosmetic when image picker is implemented
-    // Şimdilik null göndermiyoruz
+    // Avatar - eğer seçildiyse ve upload edildiyse (URL formatında)
+    if (selectedAvatarUri && selectedAvatarUri.startsWith('http')) {
+      updateData.avatar = selectedAvatarUri;
+    }
 
-    // TODO: Add avatar, banner, cosmetic when image picker is implemented
-    // For now, we'll only update name, biography, and badges
+    // Banner - eğer seçildiyse ve upload edildiyse (URL formatında)
+    if (selectedBannerUri && selectedBannerUri.startsWith('http')) {
+      updateData.banner = selectedBannerUri;
+    }
 
     // Request data'yı logla
     console.log('[ProfileEditScreen] Sending update request:', JSON.stringify(updateData, null, 2));
@@ -240,19 +252,258 @@ const ProfileEditScreen: React.FC = () => {
     });
   };
 
-  const handleAvatarChange = () => {
-    setIsAvatarModalVisible(true);
+  const handleAvatarChange = async () => {
+    try {
+      const result = await imagePickerService.pickFromGallery();
+      
+      if (result.success && result.asset) {
+        setIsUploadingAvatar(true);
+        try {
+          // Avatar'ı direkt upload et
+          const uploadResponse = await uploadAvatar(result.asset.uri);
+          
+          if (uploadResponse.success && uploadResponse.data.avatarUrl) {
+            setSelectedAvatarUri(uploadResponse.data.avatarUrl);
+            
+            toast.show({
+              placement: 'top',
+              render: ({ id }: { id: string }) => {
+                return (
+                  <Box maxWidth="90%" alignSelf="center" px="$4">
+                    <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                      <ToastTitle>Başarılı</ToastTitle>
+                      <ToastDescription>Avatar değiştirildi. Değişiklikleri kaydetmek için Save butonuna basın.</ToastDescription>
+                    </Toast>
+                  </Box>
+                );
+              },
+            });
+          } else {
+            throw new Error('Avatar yüklenemedi');
+          }
+        } catch (error: any) {
+          console.error('[ProfileEditScreen] Avatar upload error:', error);
+          toast.show({
+            placement: 'top',
+            render: ({ id }: { id: string }) => {
+              return (
+                <Box maxWidth="90%" alignSelf="center" px="$4">
+                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                    <ToastTitle>Hata</ToastTitle>
+                    <ToastDescription>{error?.message || 'Avatar yüklenirken bir hata oluştu'}</ToastDescription>
+                  </Toast>
+                </Box>
+              );
+            },
+          });
+        } finally {
+          setIsUploadingAvatar(false);
+        }
+      } else {
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Hata</ToastTitle>
+                  <ToastDescription>{result.error || 'Fotoğraf seçilirken bir hata oluştu'}</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('[ProfileEditScreen] Image picker error:', error);
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>Fotoğraf seçilirken bir hata oluştu</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
-  const handleSaveAvatarChange = () => {
-    setIsAvatarModalVisible(false);
-    // TODO: Implement avatar change
-    console.log('Save avatar change:', selectedAvatarType);
+  const handlePickAvatarFromGallery = async () => {
+    try {
+      const result = await imagePickerService.pickFromGallery();
+      
+      if (result.success && result.asset) {
+        setSelectedAvatarUri(result.asset.uri);
+        console.log('[ProfileEditScreen] Avatar selected:', result.asset.uri);
+      } else {
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Hata</ToastTitle>
+                  <ToastDescription>{result.error || 'Fotoğraf seçilirken bir hata oluştu'}</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('[ProfileEditScreen] Image picker error:', error);
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>Fotoğraf seçilirken bir hata oluştu</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
-  const handleBannerChange = () => {
-    // TODO: Implement image picker
-    console.log('Change banner');
+  const handleSaveAvatarChange = async () => {
+    if (!selectedAvatarUri) {
+      // Eğer fotoğraf seçilmediyse sadece modal'ı kapat
+      setIsAvatarModalVisible(false);
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      // Önce avatar'ı upload et
+      const uploadResponse = await uploadAvatar(selectedAvatarUri);
+      
+      if (uploadResponse.success && uploadResponse.data.avatarUrl) {
+        // Avatar URL'ini state'e kaydet (handleSave'de kullanılacak)
+        setSelectedAvatarUri(uploadResponse.data.avatarUrl);
+        
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                  <ToastTitle>Başarılı</ToastTitle>
+                  <ToastDescription>Avatar yüklendi. Değişiklikleri kaydetmek için Save butonuna basın.</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+        
+        setIsAvatarModalVisible(false);
+      } else {
+        throw new Error('Avatar yüklenemedi');
+      }
+    } catch (error: any) {
+      console.error('[ProfileEditScreen] Avatar upload error:', error);
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>{error?.message || 'Avatar yüklenirken bir hata oluştu'}</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleBannerChange = async () => {
+    try {
+      const result = await imagePickerService.pickFromGallery();
+      
+      if (result.success && result.asset) {
+        setIsUploadingBanner(true);
+        try {
+          // Banner'ı direkt upload et
+          const uploadResponse = await uploadBanner(result.asset.uri);
+          
+          if (uploadResponse.success && uploadResponse.data.bannerUrl) {
+            setSelectedBannerUri(uploadResponse.data.bannerUrl);
+            
+            toast.show({
+              placement: 'top',
+              render: ({ id }: { id: string }) => {
+                return (
+                  <Box maxWidth="90%" alignSelf="center" px="$4">
+                    <Toast nativeID={`toast-${id}`} action="success" variant="solid">
+                      <ToastTitle>Başarılı</ToastTitle>
+                      <ToastDescription>Banner değiştirildi. Değişiklikleri kaydetmek için Save butonuna basın.</ToastDescription>
+                    </Toast>
+                  </Box>
+                );
+              },
+            });
+          } else {
+            throw new Error('Banner yüklenemedi');
+          }
+        } catch (error: any) {
+          console.error('[ProfileEditScreen] Banner upload error:', error);
+          toast.show({
+            placement: 'top',
+            render: ({ id }: { id: string }) => {
+              return (
+                <Box maxWidth="90%" alignSelf="center" px="$4">
+                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                    <ToastTitle>Hata</ToastTitle>
+                    <ToastDescription>{error?.message || 'Banner yüklenirken bir hata oluştu'}</ToastDescription>
+                  </Toast>
+                </Box>
+              );
+            },
+          });
+        } finally {
+          setIsUploadingBanner(false);
+        }
+      } else {
+        toast.show({
+          placement: 'top',
+          render: ({ id }: { id: string }) => {
+            return (
+              <Box maxWidth="90%" alignSelf="center" px="$4">
+                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                  <ToastTitle>Hata</ToastTitle>
+                  <ToastDescription>{result.error || 'Fotoğraf seçilirken bir hata oluştu'}</ToastDescription>
+                </Toast>
+              </Box>
+            );
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error('[ProfileEditScreen] Image picker error:', error);
+      toast.show({
+        placement: 'top',
+        render: ({ id }: { id: string }) => {
+          return (
+            <Box maxWidth="90%" alignSelf="center" px="$4">
+              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
+                <ToastTitle>Hata</ToastTitle>
+                <ToastDescription>Fotoğraf seçilirken bir hata oluştu</ToastDescription>
+              </Toast>
+            </Box>
+          );
+        },
+      });
+    }
   };
 
   return (
@@ -287,7 +538,7 @@ const ProfileEditScreen: React.FC = () => {
           <Box position="relative">
             <Box h={160} overflow="hidden">
               <Image
-                source={require('@/assets/banner/banner_01.png')}
+                source={selectedBannerUri ? { uri: selectedBannerUri } : require('@/assets/banner/banner_01.png')}
                 alt="Profile Banner"
                 w="100%"
                 h="100%"
@@ -306,14 +557,19 @@ const ProfileEditScreen: React.FC = () => {
               justifyContent="center"
               alignItems="center"
               onPress={handleBannerChange}
+              disabled={isUploadingBanner}
             >
-              <Image
-                source={require('@/assets/icons/camera_plus.png')}
-                alt="Change Banner"
-                w={24}
-                h={24}
-                resizeMode="contain"
-              />
+              {isUploadingBanner ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Image
+                  source={require('@/assets/icons/camera_plus.png')}
+                  alt="Change Banner"
+                  w={24}
+                  h={24}
+                  resizeMode="contain"
+                />
+              )}
             </Pressable>
 
             {/* Avatar Section */}
@@ -329,7 +585,7 @@ const ProfileEditScreen: React.FC = () => {
               borderColor={isDark ? '$backgroundDark950' : '$backgroundLight0'}
             >
               <Image
-                source={mock_user_card.avatar}
+                source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
                 alt={name}
                 w="100%"
                 h="100%"
@@ -346,14 +602,19 @@ const ProfileEditScreen: React.FC = () => {
                 justifyContent="center"
                 alignItems="center"
                 onPress={handleAvatarChange}
+                disabled={isUploadingAvatar}
               >
-                <Image
-                  source={require('@/assets/icons/camera_plus.png')}
-                  alt="Change Avatar"
-                  w={24}
-                  h={24}
-                  resizeMode="contain"
-                />
+                {isUploadingAvatar ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Image
+                    source={require('@/assets/icons/camera_plus.png')}
+                    alt="Change Avatar"
+                    w={24}
+                    h={24}
+                    resizeMode="contain"
+                  />
+                )}
               </Pressable>
             </Box>
           </Box>
@@ -524,7 +785,7 @@ const ProfileEditScreen: React.FC = () => {
                   overflow="hidden"
                 >
                   <Image
-                    source={mock_user_card.avatar}
+                    source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
                     alt={name}
                     style={{ width: '100%', height: '100%' }}
                     resizeMode="cover"
@@ -548,7 +809,10 @@ const ProfileEditScreen: React.FC = () => {
               <HStack space="lg" justifyContent="center" px="$6">
                 {/* Profile Picture Option */}
                 <Pressable
-                  onPress={() => setSelectedAvatarType('picture')}
+                  onPress={async () => {
+                    setSelectedAvatarType('picture');
+                    await handlePickAvatarFromGallery();
+                  }}
                   alignItems="center"
                   flex={1}
                 >
@@ -561,7 +825,7 @@ const ProfileEditScreen: React.FC = () => {
                       bg={isDark ? '#2A2A2A' : '#F5F5F5'}
                     >
                       <Image
-                        source={mock_user_card.avatar}
+                        source={selectedAvatarUri ? { uri: selectedAvatarUri } : mock_user_card.avatar}
                         alt="Profile Picture"
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
@@ -639,18 +903,23 @@ const ProfileEditScreen: React.FC = () => {
                 <Pressable
                   onPress={handleSaveAvatarChange}
                   flex={2}
-                  bg="#E8FF6B"
+                  bg={isUploadingAvatar ? '#CCCCCC' : "#E8FF6B"}
                   borderRadius={12}
                   py="$3"
                   alignItems="center"
+                  disabled={isUploadingAvatar}
                 >
-                  <Text
-                    fontSize={12}
-                    fontWeight="$bold"
-                    color="#000000"
-                  >
-                    Save
-                  </Text>
+                  {isUploadingAvatar ? (
+                    <ActivityIndicator size="small" color="#000000" />
+                  ) : (
+                    <Text
+                      fontSize={12}
+                      fontWeight="$bold"
+                      color="#000000"
+                    >
+                      Save
+                    </Text>
+                  )}
                 </Pressable>
               </HStack>
             </VStack>

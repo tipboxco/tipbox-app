@@ -242,9 +242,18 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
 
   const handleNavigateToWallet = useCallback(() => {
     console.log('[DrawerContent] 🎯 handleNavigateToWallet called');
-    console.log('[DrawerContent] ✅ Navigating to Wallet...');
+    console.log('[DrawerContent] ✅ Navigating to Wallet (FeedNavigator)...');
     handleCloseDrawer();
-    navigationService.navigate('Wallet', undefined);
+    // FeedNavigator içindeki WalletScreen'e navigate et - FeedStack içinde olduğu için global bottom sheet çalışır
+    navigationService.navigate('App', {
+      screen: 'MainTabs',
+      params: {
+        screen: 'FeedScreen',
+        params: {
+          screen: 'WalletScreen',
+        },
+      },
+    } as any);
     console.log('[DrawerContent] ✅ Navigation called');
   }, [handleCloseDrawer]);
 

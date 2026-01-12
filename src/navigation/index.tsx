@@ -12,6 +12,7 @@ import { ScrollProvider } from '@/src/providers/ScrollProvider';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GlobalBottomSheetProvider } from '@/src/providers/GlobalBottomSheetProvider';
 import { GluestackProvider } from '@/src/components/ui';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 // Drawer artık React Navigation DrawerNavigator içinde
 // FIX: SafeAreaView'ler TabNavigator içine taşındı - Drawer full height olabilmesi için
 
@@ -126,14 +127,16 @@ const NavigationInner = () => {
         translucent={true}
       />
       {/* BLUEPRINT FIX: Provider hierarchy OUTSIDE NavigationContainer */}
-      {/* CRITICAL ORDER: GluestackProvider -> BottomSheetModalProvider -> PortalProvider -> GlobalBottomSheetProvider */}
+      {/* CRITICAL ORDER: GluestackProvider -> BottomSheetModalProvider -> PortalProvider -> GlobalBottomSheetProvider -> KeyboardProvider */}
       {/* PortalProvider MUST be after BottomSheetModalProvider (gesture context) but before GlobalBottomSheetProvider */}
-      {/* This ensures Portal-rendered bottom sheets have gesture context */}
+      {/* KeyboardProvider MUST be after GlobalBottomSheetProvider so bottom sheets can use keyboard context */}
+      {/* This ensures Portal-rendered bottom sheets have gesture context and keyboard support */}
       <GluestackProvider>
         <BottomSheetModalProvider>
           <PortalProvider>
             <GlobalBottomSheetProvider>
-              <ScrollProvider>
+              <KeyboardProvider>
+                <ScrollProvider>
                 <NavigationContainer
                 ref={navigationRef}
                 onReady={() => {
@@ -166,6 +169,7 @@ const NavigationInner = () => {
               {/* This ensures UI is always accessible regardless of active screen or navigation state */}
                 <GlobalUIHost />
               </ScrollProvider>
+              </KeyboardProvider>
             </GlobalBottomSheetProvider>
           </PortalProvider>
         </BottomSheetModalProvider>

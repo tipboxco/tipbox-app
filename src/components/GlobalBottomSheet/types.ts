@@ -69,6 +69,11 @@ export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'on
   animateOnMount: true,
   backdropOpacity: 0.5,
   backdropPressBehavior: 'close',
+  // KEYBOARD FIX: Klavye bottom sheet'in altında açılacak şekilde ayarla
+  // 'extend' klavyenin bottom sheet'i yukarı itmesini sağlar, böylece klavye bottom sheet'in altında kalır
+  keyboardBehavior: 'extend',
+  keyboardBlurBehavior: 'restore',
+  android_keyboardInputMode: 'adjustResize',
 };
 
 /**

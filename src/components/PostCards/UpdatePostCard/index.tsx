@@ -240,7 +240,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
         }}>
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize={10}
+            fontSize="$xs"
             numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
           >
             {data.content}

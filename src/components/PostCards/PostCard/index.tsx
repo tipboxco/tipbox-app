@@ -408,7 +408,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         <VStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
           <Text
             color={isDark ? '$textDark50' : '#000'}
-            fontSize="$sm"
+            fontSize="$xs"
             numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
           >
             {data.content}

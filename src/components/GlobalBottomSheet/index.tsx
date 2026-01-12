@@ -150,9 +150,9 @@ export const GlobalBottomSheet: React.FC = () => {
         backgroundStyle={backgroundStyle}
         handleStyle={handleStyle}
         handleIndicatorStyle={handleIndicatorStyle}
-        keyboardBehavior={mergedOptions.keyboardBehavior || 'interactive'}
-        keyboardBlurBehavior={mergedOptions.keyboardBlurBehavior || 'restore'}
-        android_keyboardInputMode={mergedOptions.android_keyboardInputMode || 'adjustResize'}
+        keyboardBehavior={mergedOptions.keyboardBehavior ?? 'extend'}
+        keyboardBlurBehavior={mergedOptions.keyboardBlurBehavior ?? 'restore'}
+        android_keyboardInputMode={mergedOptions.android_keyboardInputMode ?? 'adjustResize'}
       >
         <BottomSheetView 
           style={{ 

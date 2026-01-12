@@ -1264,6 +1264,23 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             bg="rgba(0, 0, 0, 0.5)"
           />
           
+          {/* Pull to Refresh Loading Overlay - Banner'ın üstünde */}
+          {refreshing && (
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg="rgba(0, 0, 0, 0.3)"
+              justifyContent="center"
+              alignItems="center"
+              zIndex={3000}
+            >
+              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#FFFFFF'} />
+            </Box>
+          )}
+          
           {/* Banner Controls */}
           <Box
             position="absolute"
@@ -1694,13 +1711,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet, refreshing]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
   const profileHeader = useMemo(() => {
     return renderProfileHeader(activeTab, handleTabChange, isProfileLoading);
-  }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading]);
+  }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading, refreshing]);
   
   if (isProfileLoading) {
     return (
