@@ -1,7 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, Clipboard } from 'react-native';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
+import PagerView from 'react-native-pager-view';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -34,6 +35,7 @@ export const WalletScreen: React.FC = () => {
       const isDark = colorMode === 'dark';
       const [activeTab, setActiveTab] = React.useState<'tips' | 'nft'>('tips');
       const bottomInset = useSafeAreaValues('bottom');
+      const pagerRef = useRef<PagerView>(null);
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -207,6 +209,20 @@ export const WalletScreen: React.FC = () => {
     );
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, walletInfo?.walletIdentifier, user?.fullName]);
 
+  // Tab press handler - PagerView native animasyonu ile geçiş
+  const handleTabPress = useCallback((index: number) => {
+    pagerRef.current?.setPage(index);
+  }, []);
+
+  // PagerView page selected handler
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      setActiveTab(position === 0 ? 'tips' : 'nft');
+    },
+    []
+  );
+
 
   // Transform API transactions data to match component format
   const transactions = useMemo(() => {
@@ -262,7 +278,7 @@ export const WalletScreen: React.FC = () => {
       <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
         <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
           <Pressable
-            onPress={() => setActiveTab('tips')}
+            onPress={() => handleTabPress(0)}
             flex={1}
             alignItems="center"
             pb={8}
@@ -288,7 +304,7 @@ export const WalletScreen: React.FC = () => {
             />
           </Pressable>
           <Pressable
-            onPress={() => setActiveTab('nft')}
+            onPress={() => handleTabPress(1)}
             flex={1}
             alignItems="center"
             pb={8}
@@ -316,7 +332,15 @@ export const WalletScreen: React.FC = () => {
         </HStack>
       </VStack>
       
-        {activeTab === 'tips' && (
+      {/* PagerView - Native swipe tab switching */}
+      <PagerView
+        ref={pagerRef}
+        style={{ flex: 1 }}
+        initialPage={0}
+        onPageSelected={handlePageSelected}
+      >
+        {/* TIPS Tab */}
+        <Box key="0" flex={1}>
           <ScrollView 
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={{ 
@@ -554,8 +578,10 @@ export const WalletScreen: React.FC = () => {
               )}
             </VStack>
           </ScrollView>
-        )}
-        {activeTab === 'nft' && (
+        </Box>
+
+        {/* NFT Tab */}
+        <Box key="1" flex={1}>
           <ScrollView 
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={{ 
@@ -716,7 +742,8 @@ export const WalletScreen: React.FC = () => {
               </VStack>
             </VStack>
           </ScrollView>
-        )}
+        </Box>
+      </PagerView>
 
       </VStack>
     </SafeAreaView>

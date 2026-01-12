@@ -311,8 +311,11 @@ export const SwapScreen: React.FC = () => {
   ];
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box flex={1} bg="$backgroundLight0" $dark-bg="$backgroundDark950">
+    <SafeAreaView 
+      edges={['top', 'bottom', 'left', 'right']} 
+      style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
+    >
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header title="Swap" showBackButton onBackPress={() => navigation.goBack()} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -642,7 +645,7 @@ export const SwapScreen: React.FC = () => {
         </VStack>
       </ScrollView>
 
-      </Box>
+      </VStack>
     </SafeAreaView>
   );
 };
