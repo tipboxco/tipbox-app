@@ -85,7 +85,7 @@ export interface QuestionCardCategory {
 export interface QuestionCardData {
   id: string;
   user: QuestionCardUser;
-  category: QuestionCardCategory;
+  category?: QuestionCardCategory; // Optional: contextData yoksa undefined olabilir
   content: string;
   isBoosted?: boolean;
   images?: ImageSourcePropType[];

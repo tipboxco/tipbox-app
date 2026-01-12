@@ -171,7 +171,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.PRODUCT}
-                            image={toImageSource(data.category.product.image)}
+                            image={toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png')}
                             title={data.category.product.name}
                             subName={data.category.product.subName}
                             onPress={() => {
@@ -189,7 +189,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                         <ProductInfoCard
                             size="small"
                             type={ProductInfoType.SUB_CATEGORY}
-                            image={toImageSource(data.category.image)}
+                            image={toImageSource(data.category.image) || require('@/assets/inventory/product_01.png')}
                             title={data.category.name}
                             subName={data.category.subCategory}
                             onPress={() => {

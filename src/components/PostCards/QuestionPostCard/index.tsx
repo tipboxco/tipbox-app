@@ -15,6 +15,7 @@ import {
   BookmarkIcon as BookmarkIconSolid,
 } from 'react-native-heroicons/solid';
 import { QuestionPost } from '@/src/mock/profile/questions/types';
+import type { QuestionCardData } from '@/src/types/QuestionCard';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
@@ -34,7 +35,7 @@ import {
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface QuestionPostCardProps {
-  data: QuestionPost;
+  data: QuestionPost | QuestionCardData; // Accept both types for compatibility
   hideProduct?: boolean;
 }
 
@@ -170,7 +171,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             <ProductInfoCard
               size="small"
               type={ProductInfoType.PRODUCT}
-              image={toImageSource(data.category.product.image)}
+              image={toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png')}
               title={data.category.product.name}
               subName={data.category.product.subName}
               onPress={() => {
@@ -188,7 +189,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             <ProductInfoCard
               size="small"
               type={ProductInfoType.SUB_CATEGORY}
-              image={toImageSource(data.category.image)}
+              image={toImageSource(data.category.image) || require('@/assets/inventory/product_01.png')}
               title={data.category.name}
               subName={data.category.subCategory}
               onPress={() => {
