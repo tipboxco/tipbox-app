@@ -29,9 +29,7 @@ import {
   ArrowRightStartOnRectangleIcon,
 } from 'react-native-heroicons/outline';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
-import { getUserProfile } from '@/src/features/profile/api/profileApi';
-import { profileKeys } from '@/src/features/profile/api/hooks';
+import { useUserProfile } from '@/src/features/profile/api/hooks';
 import { toImageSource, useBottomOffset  } from '@/src/utils';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 
@@ -93,188 +91,26 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const insets = useSafeAreaInsets();
   const bottomPadding = useBottomOffset({ extraPadding: 16 });
   
-  // PERFORMANCE FIX: Drawer açılırken titreme/kasma önlemek için optimized render
-  // Drawer kapalıyken ağır query'leri ve ScrollView render'ını optimize et
-  // Content her zaman render edilir ama ağır işlemler drawer açıldığında yapılır
-  const [isDrawerReady, setIsDrawerReady] = useState(false);
-  
-  // Drawer açıldığında ağır işlemleri başlat, kapanırken durdur (animasyon optimize)
-  // PERFORMANCE FIX: Drawer animasyonu bitene kadar ağır işlemleri ertele (kasma önleme)
-  useEffect(() => {
-    if (isOpen) {
-      // CRITICAL: Animasyon bitene kadar bekle (150ms spring animasyon süresi)
-      // Bu sayede drawer açılırken kasma olmaz
-      const timer = setTimeout(() => {
-        setIsDrawerReady(true);
-      }, 200); // 200ms delay - animasyon bitene kadar ağır işlemleri ertele
-      return () => clearTimeout(timer);
-    } else {
-      // Drawer kapalıyken flag'i resetle (bir sonraki açılışta tekrar başlat)
-      setIsDrawerReady(false);
-    }
-  }, [isOpen]);
-  
-  // Store'daki user değişikliğini takip et (sonsuz döngüyü önlemek için)
-  const previousUserRef = useRef<{ id?: string; fullName?: string; avatar?: string } | null>(null);
-  const isUpdatingFromProfileRef = useRef(false);
-  const isRefetchingFromUserChangeRef = useRef(false);
-  const updateUserTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Profile bilgilerini getir (screen-based caching ile)
-  // PERFORMANCE FIX: Drawer açılırken titreme/kasma önlemek için query'yi drawer açıldığında enable et
-  const { data: userProfile, refetch } = useQuery({
-    queryKey: user?.id ? profileKeys.profile(user.id) : ['profile', 'profile', 'disabled'],
-    queryFn: () => {
-      if (!user?.id) {
-        throw new Error('User ID is required');
-      }
-      return getUserProfile(user.id);
-    },
-    enabled: !!user?.id && isDrawerReady, // PERFORMANCE FIX: Drawer açıldığında query'yi enable et
-    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 5 * 60 * 1000,  // 5 dakika - ekran değişimlerinde anında göster
-    gcTime: 15 * 60 * 1000,    // 15 dakika - cache'de tut
-    refetchOnMount: false,      // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
-    retry: 1,
-  });
-  
-  // Store'daki user değişikliğini dinle ve profile query'sini yeniden fetch et
-  // SADECE user.id değiştiğinde veya profile'dan kaynaklanmayan değişikliklerde
-  useEffect(() => {
-    if (!user?.id) {
-      previousUserRef.current = null;
-      return;
-    }
-
-    const currentUser = {
-      id: user.id,
-      fullName: user.fullName,
-      avatar: user.avatar,
-    };
-    
-    const previousUser = previousUserRef.current;
-    
-    // İlk render veya user.id değiştiyse - sadece ref'i güncelle, refetch yapma
-    if (!previousUser || previousUser.id !== currentUser.id) {
-      previousUserRef.current = currentUser;
-      return;
-    }
-    
-    // User değiştiğinde (fullName veya avatar) ve bu değişiklik userProfile'dan kaynaklanmadıysa
-    // Profile query'sini yeniden fetch et
-    const userChanged = 
-      previousUser.fullName !== currentUser.fullName || 
-      previousUser.avatar !== currentUser.avatar;
-    
-    // Eğer user değişti ve bu değişiklik profile'dan kaynaklanmadıysa
-    if (userChanged && !isUpdatingFromProfileRef.current && !isRefetchingFromUserChangeRef.current) {
-      // Store'dan gelen değişiklik - profile query'sini yeniden fetch et
-      isRefetchingFromUserChangeRef.current = true;
-      refetch().finally(() => {
-        // Flag'i resetle
-        setTimeout(() => {
-          isRefetchingFromUserChangeRef.current = false;
-        }, 500);
-      });
-    }
-    
-    previousUserRef.current = currentUser;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.fullName, user?.avatar]);
-  
-  // Profile bilgisi geldiğinde store'daki user'ı güncelle (sadece değişiklik varsa)
-  const previousProfileRef = useRef<{ name?: string; avatar?: string } | null>(null);
-  
-  useEffect(() => {
-    // Cleanup: Önceki timeout'u temizle
-    if (updateUserTimeoutRef.current) {
-      clearTimeout(updateUserTimeoutRef.current);
-      updateUserTimeoutRef.current = null;
-    }
-
-    if (!userProfile || !user?.id) {
-      return;
-    }
-
-    const currentProfile = {
-      name: userProfile.name,
-      avatar: userProfile.avatar,
-    };
-    
-    const previousProfile = previousProfileRef.current;
-    
-    // İlk render - sadece ref'i güncelle ve store'u sync et
-    if (!previousProfile) {
-      previousProfileRef.current = currentProfile;
-      // İlk yüklemede store'u güncelle (sadece farklıysa)
-      const needsUpdate = 
-        user.fullName !== currentProfile.name ||
-        user.avatar !== currentProfile.avatar;
-      
-      if (needsUpdate && !isRefetchingFromUserChangeRef.current) {
-        isUpdatingFromProfileRef.current = true;
-        updateUser({
-          fullName: currentProfile.name,
-          avatar: currentProfile.avatar,
-        });
-        // Flag'i resetle (debounce ile)
-        updateUserTimeoutRef.current = setTimeout(() => {
-          isUpdatingFromProfileRef.current = false;
-        }, 200);
-      }
-      return;
-    }
-    
-    // Sadece değerler gerçekten değiştiyse güncelle
-    const hasChanged = 
-      previousProfile.name !== currentProfile.name ||
-      previousProfile.avatar !== currentProfile.avatar;
-    
-    if (hasChanged) {
-      // Store'daki mevcut değerlerle karşılaştır - sadece farklıysa güncelle
-      const needsUpdate = 
-        user.fullName !== currentProfile.name ||
-        user.avatar !== currentProfile.avatar;
-      
-      if (needsUpdate && !isRefetchingFromUserChangeRef.current) {
-        // Profile'dan gelen güncelleme olduğunu işaretle (sonsuz döngüyü önlemek için)
-        isUpdatingFromProfileRef.current = true;
-        
-        updateUser({
-          fullName: currentProfile.name,
-          avatar: currentProfile.avatar,
-        });
-        
-        // Flag'i resetle (debounce ile)
-        updateUserTimeoutRef.current = setTimeout(() => {
-          isUpdatingFromProfileRef.current = false;
-        }, 200);
-      }
-      
-      previousProfileRef.current = currentProfile;
-    }
-
-    // Cleanup function
-    return () => {
-      if (updateUserTimeoutRef.current) {
-        clearTimeout(updateUserTimeoutRef.current);
-        updateUserTimeoutRef.current = null;
-      }
-    };
-    // user?.fullName ve user?.avatar dependency'den kaldırıldı çünkü updateUser() bunları değiştiriyor
-    // ve bu sonsuz döngüye neden oluyor. Sadece userProfile değişikliklerini dinliyoruz.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile?.name, userProfile?.avatar, user?.id]);
+  // CRITICAL FIX: useUserProfile hook'unu kullan - ProfileScreen ile aynı cache logic
+  // Bu sayede ProfileScreen'de olan veriler DrawerContent'te de olur
+  const { data: userProfile, isLoading: isProfileLoading } = useUserProfile(user?.id);
   
   // PERFORMANCE FIX: Computed değerleri useMemo ile memoize et
-  // Avatar source - profile'dan gelen avatar URL'i veya store'dan veya default avatar
-  const initialAvatarSource = useMemo(() => 
-    toImageSource(userProfile?.avatar) ||
-    toImageSource(user?.avatar || null) ||
-    DEFAULT_USER_AVATAR,
-    [userProfile?.avatar, user?.avatar]
-  );
+  // Avatar source - profile'dan gelen avatar URL'i veya fallback
+  const initialAvatarSource = useMemo(() => {
+    // İlk olarak userProfile'dan avatar al (API'den gelen güncel veri)
+    if (userProfile?.avatar) {
+      const profileAvatar = toImageSource(userProfile.avatar);
+      if (profileAvatar) return profileAvatar;
+    }
+    // Yoksa store'dan avatar al (persist edilmiş veri)
+    if (user?.avatar) {
+      const storeAvatar = toImageSource(user.avatar);
+      if (storeAvatar) return storeAvatar;
+    }
+    // Hiçbiri yoksa default avatar
+    return DEFAULT_USER_AVATAR;
+  }, [userProfile?.avatar, user?.avatar]);
   
   // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
   const [avatarSource, setAvatarSource] = useState(initialAvatarSource);
@@ -283,9 +119,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   
   // Avatar değiştiğinde state'i güncelle ve load durumunu resetle
   useEffect(() => {
-    const newSource = toImageSource(userProfile?.avatar) ||
-      toImageSource(user?.avatar || null) ||
-      DEFAULT_USER_AVATAR;
+    // Yeni avatar source'u hesapla
+    let newSource = DEFAULT_USER_AVATAR;
+    if (userProfile?.avatar) {
+      const profileAvatar = toImageSource(userProfile.avatar);
+      if (profileAvatar) newSource = profileAvatar;
+    } else if (user?.avatar) {
+      const storeAvatar = toImageSource(user.avatar);
+      if (storeAvatar) newSource = storeAvatar;
+    }
     
     // Önceki timeout'u temizle
     if (avatarLoadTimeoutRef.current) {
@@ -356,20 +198,23 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     }
   }, [user?.id, avatarSource]);
   
-  // Kullanıcı adı - profile'dan gelen name veya store'dan gelen fullName veya email
-  const displayName = useMemo(() => 
-    userProfile?.name || user?.fullName || user?.email || 'Kullanıcı',
-    [userProfile?.name, user?.fullName, user?.email]
-  );
+  // Kullanıcı adı - profile'dan gelen name veya fallback
+  const displayName = useMemo(() => {
+    if (isProfileLoading) return user?.fullName || user?.email || 'Yükleniyor...';
+    return userProfile?.name || user?.fullName || user?.email || 'Kullanıcı';
+  }, [userProfile?.name, user?.fullName, user?.email, isProfileLoading]);
   
   // Tagler (titles) - profile'dan gelen titles
-  const tags = useMemo(() => userProfile?.titles || [], [userProfile?.titles]);
+  const tags = useMemo(() => {
+    if (isProfileLoading) return [];
+    return userProfile?.titles || [];
+  }, [userProfile?.titles, isProfileLoading]);
   
   // Stats - profile'dan gelen stats
-  const stats = useMemo(() => 
-    userProfile?.stats || { posts: 0, trust: 0, truster: 0 },
-    [userProfile?.stats]
-  );
+  const stats = useMemo(() => {
+    if (isProfileLoading) return { posts: 0, trust: 0, truster: 0 };
+    return userProfile?.stats || { posts: 0, trust: 0, truster: 0 };
+  }, [userProfile?.stats, isProfileLoading]);
 
   // PERFORMANCE FIX: Navigation handler'larını useCallback ile memoize et
   // CRITICAL FIX: NavigationService kullan - root navigator ref'ine direkt erişir
