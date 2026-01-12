@@ -65,54 +65,39 @@ class GoogleService {
       console.log('[GoogleService] 🔍 Redirect URI:', redirectUri);
       console.log('[GoogleService] 🔍 Client ID:', clientId.substring(0, 20) + '...');
 
-      // Nonce oluştur - id_token response type için zorunlu (güvenlik için)
-      // Cryptographically secure random string (32+ karakter)
-      const nonce = 
-        Math.random().toString(36).substring(2, 15) + 
-        Math.random().toString(36).substring(2, 15) + 
-        Date.now().toString(36) +
-        Math.random().toString(36).substring(2, 15);
+      // Authorization Code flow ile devam et (en güvenli ve desteklenen yöntem)
+      // PKCE (Proof Key for Code Exchange) kullan (mobil uygulamalar için önerilen)
       
-      console.log('[GoogleService] 🔐 Generated nonce:', nonce.substring(0, 20) + '...');
+      console.log('[GoogleService] 🔐 Generating PKCE code challenge...');
 
-      // AuthRequest oluştur - IdToken response type kullan
-      // id_token flow: Direkt ID token al (token exchange gerekmez)
+      // AuthRequest oluştur - Code flow + PKCE kullan
       const request = new AuthSession.AuthRequest({
         clientId,
         scopes: ['openid', 'profile', 'email'],
         redirectUri,
-        responseType: AuthSession.ResponseType.IdToken, // IdToken flow kullan
-        usePKCE: false,
-        extraParams: {
-          nonce: nonce, // id_token için zorunlu
-        },
+        responseType: AuthSession.ResponseType.Code, // Authorization Code flow
+        usePKCE: true, // PKCE kullan (mobil için önerilen) - otomatik code challenge oluşturur
       });
 
       // OAuth akışını başlat - promptAsync kullan
       console.log('[GoogleService] 🚀 Starting OAuth flow...');
       console.log('[GoogleService] 🔗 Redirect URI:', redirectUri);
       console.log('[GoogleService] 🔗 Client ID:', clientId.substring(0, 30) + '...');
+      console.log('[GoogleService] 🔒 Using PKCE with Code flow');
       
-      // Timeout ile promptAsync (30 saniye)
+      // Timeout ile promptAsync (60 saniye - kullanıcı hesap seçimi için daha uzun süre)
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
-          reject(new Error('OAuth flow timeout - 30 saniye içinde tamamlanmadı'));
-        }, 30000);
+          reject(new Error('OAuth flow timeout - 60 saniye içinde tamamlanmadı'));
+        }, 60000);
       });
 
       const result = await Promise.race([
         request.promptAsync(googleDiscovery),
         timeoutPromise,
-      ]) as any;
+      ]) as AuthSession.AuthSessionResult;
 
-      console.log('[GoogleService] 📥 OAuth result:', {
-        type: result.type,
-        hasParams: !!result.params,
-        paramsKeys: result.params ? Object.keys(result.params) : [],
-        params: result.params, // Tüm params'ı logla
-        error: result.type === 'error' ? result.error : null,
-        fullResult: JSON.stringify(result, null, 2), // Tüm result'ı logla
-      });
+      console.log('[GoogleService] 📥 OAuth result type:', result.type);
 
       // Kullanıcı iptal ettiyse
       if (result.type === 'cancel' || result.type === 'dismiss') {
@@ -126,39 +111,66 @@ class GoogleService {
         throw new Error(result.error?.message || 'Google girişi sırasında bir hata oluştu');
       }
 
-      // Başarılı - ID token'ı direkt al (token exchange gerekmez)
-      if (result.type === 'success' && result.params?.id_token) {
-        console.log('[GoogleService] ✅ OAuth success, ID token received');
-        console.log('[GoogleService] 📋 Result params keys:', Object.keys(result.params || {}));
+      // Başarılı - Authorization code al ve token exchange yap
+      if (result.type === 'success') {
+        console.log('[GoogleService] ✅ OAuth success, authorization code received');
         
-        const idToken = result.params.id_token;
-        const accessToken = result.params.access_token;
-
-        // Nonce doğrulaması (güvenlik için)
-        // Not: ID token içindeki nonce'u decode edip kontrol etmek gerekir
-        // Şimdilik basit kontrol yapıyoruz
-        console.log('[GoogleService] 🔐 Verifying nonce in ID token...');
+        // Authorization code'u al
+        const authCode = result.params?.code;
         
-        // ID token'ı decode et (JWT format) - nonce doğrulaması için
-        // Not: React Native'de Buffer yok, bu yüzden atlıyoruz
-        // Firebase Authentication zaten ID token'ı doğrular
-        console.log('[GoogleService] 📦 ID token received, length:', idToken.length);
-
-        if (!idToken) {
-          console.error('[GoogleService] ❌ ID token missing in result:', result.params);
-          throw new Error('ID token alınamadı - OAuth result\'da id_token yok');
+        if (!authCode) {
+          console.error('[GoogleService] ❌ Authorization code missing in result:', result.params);
+          throw new Error('Authorization code alınamadı');
         }
 
+        console.log('[GoogleService] 🔄 Exchanging authorization code for tokens...');
+
+        // Authorization code'u token'a çevir
+        const tokenResponse = await AuthSession.exchangeCodeAsync(
+          {
+            clientId,
+            code: authCode,
+            redirectUri,
+            extraParams: {
+              code_verifier: request.codeVerifier, // PKCE code verifier
+            },
+          },
+          googleDiscovery
+        );
+
+        console.log('[GoogleService] ✅ Token exchange successful');
+        console.log('[GoogleService] 📋 Token response keys:', Object.keys(tokenResponse || {}));
+
+        const idToken = tokenResponse.idToken;
+        const accessToken = tokenResponse.accessToken;
+
+        if (!idToken) {
+          console.error('[GoogleService] ❌ ID token missing after exchange');
+          throw new Error('ID token alınamadı - Token exchange başarısız');
+        }
+
+        console.log('[GoogleService] 📦 ID token received, length:', idToken.length);
+
         // Firebase Authentication ile credential oluştur
+        console.log('[GoogleService] 🔥 Creating Firebase credential...');
         const credential = GoogleAuthProvider.credential(idToken, accessToken);
 
         // Firebase ile giriş yap
+        console.log('[GoogleService] 🔥 Signing in with Firebase...');
         const auth = getFirebaseAuth();
         const userCredential = await signInWithCredential(auth, credential);
         const firebaseUser = userCredential.user;
 
+        console.log('[GoogleService] ✅ Firebase sign-in successful');
+        console.log('[GoogleService] 👤 User:', {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+        });
+
         // Firebase'den ID token al (backend'e göndermek için)
         const firebaseIdToken = await firebaseUser.getIdToken();
+        console.log('[GoogleService] 🎫 Firebase ID token obtained');
 
         // Kullanıcı bilgilerini çıkar
         const user: GoogleUser = {
@@ -172,6 +184,8 @@ class GoogleService {
         this.state.user = user;
         this.state.isLoading = false;
 
+        console.log('[GoogleService] ✅ Login completed successfully');
+
         return {
           idToken: firebaseIdToken, // Backend'e gönderilecek Firebase ID token
           accessToken: accessToken || '',
@@ -182,8 +196,6 @@ class GoogleService {
       // Başarılı değilse
       console.error('[GoogleService] ❌ OAuth flow failed - unexpected result type:', {
         resultType: result.type,
-        hasParams: !!result.params,
-        params: result.params,
         fullResult: JSON.stringify(result, null, 2),
       });
       throw new Error(`Google girişi başarısız: Beklenmeyen result type: ${result.type}`);

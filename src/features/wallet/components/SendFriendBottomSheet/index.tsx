@@ -43,7 +43,7 @@ export const SendFriendBottomSheet: React.FC<SendFriendBottomSheetProps> = ({
   );
 
   return (
-    <VStack px="$4" py="$4" space="md" flex={1}>
+    <VStack px="$4" py="$4" space="md" flex={1} minHeight={600}>
       {/* Header with back button */}
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={onBack}>

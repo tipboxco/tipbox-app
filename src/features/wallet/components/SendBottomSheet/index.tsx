@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '@gluestack-ui/themed';
+import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView } from 'react-native';
 import {
   ChevronLeftIcon,
   CreditCardIcon,
@@ -10,9 +11,12 @@ import {
   UserIcon,
   UsersIcon,
 } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
+import { useWalletTransactions, useWalletBalance, useSendTips } from '../../api/hooks';
+import { useAppStore } from '@/src/store/appStore';
 
 interface SendBottomSheetProps {
   onClose: () => void;
@@ -42,15 +46,133 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   const [isSwapped, setIsSwapped] = useState(false); // false = TIPS mode, true = USD mode
   const [selectedFriend, setSelectedFriend] = useState<{ id: string; name: string; title?: string; bio?: string; avatar: any } | null>(null);
   
+  // Input accessory view ID for keyboard toolbar
+  const inputAccessoryViewID = 'amountInputAccessory';
+  
   // Conversion rate: 1 TIPS = $0.01 (20,000 TIPS = $200)
   const TIPS_TO_USD_RATE = 0.01;
   const USD_TO_TIPS_RATE = 100;
 
-  // Mock recent addresses
-  const recentAddresses = [
-    { address: 'F4184fc596......0e9', lastUsed: '11 ay önce kullanıldı' },
-    { address: 'F4184fc596......0e9', lastUsed: '11 ay önce kullanıldı' },
-    { address: 'F4184fc596......0e9', lastUsed: '11 ay önce kullanıldı' },
+  // Fetch wallet transactions
+  const { data: transactionsData } = useWalletTransactions();
+  
+  // Fetch wallet balance
+  const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
+  
+  // Get current user info
+  const user = useAppStore((state) => state.user);
+
+  // Send TIPS mutation hook
+  const { mutate: sendTips, isPending: isSending } = useSendTips();
+
+  // Truncate wallet address for display (crypto-style)
+  const truncateAddress = (address: string | undefined, startLength = 6, endLength = 4) => {
+    if (!address || typeof address !== 'string') return '';
+    if (address.length <= startLength + endLength) return address;
+    return `${address.substring(0, startLength)}****${address.substring(address.length - endLength)}`;
+  };
+
+  // Calculate relative time (e.g., "2 days ago", "3 hours ago")
+  const getRelativeTime = (dateString: string | undefined): string => {
+    if (!dateString) return 'Recently';
+    
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) return 'Recently';
+      
+      const diffMs = now.getTime() - date.getTime();
+      const diffSeconds = Math.floor(diffMs / 1000);
+      const diffMinutes = Math.floor(diffSeconds / 60);
+      const diffHours = Math.floor(diffMinutes / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      const diffMonths = Math.floor(diffDays / 30);
+      const diffYears = Math.floor(diffDays / 365);
+
+      if (diffYears > 0) {
+        return `${diffYears} ${diffYears === 1 ? 'year' : 'years'} ago`;
+      } else if (diffMonths > 0) {
+        return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`;
+      } else if (diffDays > 0) {
+        return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+      } else if (diffHours > 0) {
+        return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+      } else if (diffMinutes > 0) {
+        return `${diffMinutes} ${diffMinutes === 1 ? 'minute' : 'minutes'} ago`;
+      } else {
+        return 'Just now';
+      }
+    } catch (error) {
+      console.error('[SendBottomSheet] Error calculating relative time:', error);
+      return 'Recently';
+    }
+  };
+
+  // Get recent sent transactions (unique addresses)
+  const recentAddresses = useMemo(() => {
+    if (!transactionsData) {
+      console.log('[SendBottomSheet] No transaction data available');
+      return [];
+    }
+
+    // Combine all transactions from all time periods
+    const allTransactions = [
+      ...(transactionsData.today || []),
+      ...(transactionsData.yesterday || []),
+      ...(transactionsData.lastWeek || []),
+      ...(transactionsData.lastMonth || []),
+    ];
+
+    console.log('[SendBottomSheet] Total transactions:', allTransactions.length);
+
+    // Debug: Log first transaction to see structure
+    if (allTransactions.length > 0) {
+      console.log('[SendBottomSheet] First transaction sample:', JSON.stringify(allTransactions[0], null, 2));
+    }
+
+    // Filter only 'sent' transactions with valid 'to' addresses
+    const sentTransactions = allTransactions
+      .filter((tx: any) => {
+        const isSent = tx.type === 'sent';
+        // Check if 'to.walletAddress' exists (new field from backend)
+        const hasWalletAddress = tx.to?.walletAddress && typeof tx.to.walletAddress === 'string' && tx.to.walletAddress.length > 0;
+        return isSent && hasWalletAddress;
+      })
+      .sort((a: any, b: any) => {
+        // Sort by date descending (most recent first)
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+
+    console.log('[SendBottomSheet] Sent transactions with addresses:', sentTransactions.length);
+
+    // Get unique addresses (only first occurrence of each address)
+    const uniqueAddresses = new Map();
+    sentTransactions.forEach((tx: any) => {
+      const walletAddress = tx.to?.walletAddress;
+      if (walletAddress && !uniqueAddresses.has(walletAddress)) {
+        uniqueAddresses.set(walletAddress, {
+          address: walletAddress,
+          lastUsed: getRelativeTime(tx.createdAt),
+          fullAddress: walletAddress,
+        });
+      }
+    });
+
+    const result = Array.from(uniqueAddresses.values()).slice(0, 3);
+    console.log('[SendBottomSheet] Recent unique addresses:', result.length);
+    
+    return result;
+  }, [transactionsData]);
+
+  // Mock recent addresses (fallback if no transactions)
+  const mockRecentAddresses = [
+    { address: 'F4184fc596******0e9', lastUsed: '11 months ago', fullAddress: 'F4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9' },
+    { address: 'F4184fc596******0e9', lastUsed: '11 months ago', fullAddress: 'F4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9' },
+    { address: 'F4184fc596******0e9', lastUsed: '11 months ago', fullAddress: 'F4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9' },
   ];
 
   // Mock friends list
@@ -113,7 +235,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     const usdAmount = isSwapped ? inputValue : (tipsAmount * TIPS_TO_USD_RATE);
     // Transaction fee: 0.001% of the amount in USD
     const transactionFee = usdAmount * 0.00001;
-    const remainingBalance = 20000 - tipsAmount; // 20000 TIPS - sent amount
+    const currentBalance = walletBalance?.balance || 0;
+    const remainingBalance = currentBalance - tipsAmount;
     
     return {
       tipsAmount,
@@ -124,10 +247,13 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   };
 
   const handleMaxPress = () => {
+    const maxTips = walletBalance?.balance || 0;
     if (isSwapped) {
-      setAmount('200'); // Max USD = $200
+      // Convert TIPS to USD
+      const maxUSD = (maxTips * TIPS_TO_USD_RATE).toFixed(2);
+      setAmount(maxUSD);
     } else {
-      setAmount('20000'); // Max TIPS = 20,000
+      setAmount(maxTips.toString());
     }
   };
 
@@ -145,6 +271,40 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     
     setAmount(newValue);
     setIsSwapped(!isSwapped);
+  };
+
+  // Input Accessory View (Keyboard Toolbar with Done button) - Modern & Clean Design
+  const renderInputAccessoryView = () => {
+    if (Platform.OS !== 'ios') return null;
+    
+    return (
+      <InputAccessoryView nativeID={inputAccessoryViewID}>
+        <Box
+          bg={isDark ? '#1C1C1E' : '#F2F2F7'}
+          borderTopWidth={0.5}
+          borderTopColor={isDark ? '#38383A' : '#C6C6C8'}
+          px="$4"
+          py="$3"
+          w="100%"
+        >
+          <HStack justifyContent="flex-end" alignItems="center" w="100%">
+            <Pressable
+              onPress={() => Keyboard.dismiss()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text 
+                fontSize={17} 
+                fontWeight="$semibold" 
+                color="#007AFF"
+                letterSpacing={-0.4}
+              >
+                Done
+              </Text>
+            </Pressable>
+          </HStack>
+        </Box>
+      </InputAccessoryView>
+    );
   };
 
   // Calculate display value for the bottom section
@@ -170,7 +330,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         {/* Title */}
         <HStack justifyContent="center" alignItems="center">
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            TIPS Gönder
+            Send TIPS
           </Text>
         </HStack>
 
@@ -201,7 +361,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    Cüzdan Adresine Gönder
+                    Send to Wallet Address
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
                     TIPS Yollamak istediğiniz cüzdan adresini yapıştırarak gönderim sağlayın.
@@ -240,10 +400,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    Arkadaşına Gönder
+                    Send to Friend
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
-                    TIPS Yollamak istediğiniz arkadaşınızı arkadaş listesinden seçerek gönderim sağlayın.
+                    Select a friend from your friend list to send TIPS.
                   </Text>
                 </VStack>
               </HStack>
@@ -266,7 +426,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
                   <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            TIPS Gönder
+            Send TIPS
           </Text>
         </HStack>
         <Box w={24} />
@@ -274,31 +434,43 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 
       {/* Input Field */}
       <Box
-        bg="#FDFDFD"
+        bg="$backgroundLight0"
         $dark-bg="$backgroundDark800"
         borderWidth={1}
         borderColor="#E9E9E9"
         $dark-borderColor="$borderDark600"
         rounded={10}
-        px="$4"
-        py="$1"
+        p="$4"
       >
         <HStack alignItems="center" space="md">
-          <Text fontSize={10} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
+          <Text fontSize={11} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
             To:
           </Text>
-          <Input flex={1} variant="outline" borderWidth={0}>
-            <InputField
-              placeholder="Wallet Address..."
-              placeholderTextColor="#D9D9D9"
-              value={walletAddress}
-              onChangeText={setWalletAddress}
-              fontSize={10}
-              fontWeight="$bold"
-              color="$textLight900"
+          {walletAddress && walletAddress !== '0x' ? (
+            <Text 
+              fontSize={13} 
+              fontWeight="$semibold" 
+              color="$textLight900" 
               $dark-color="$textDark50"
-            />
-          </Input>
+              flex={1}
+              numberOfLines={1}
+            >
+              {truncateAddress(walletAddress, 10, 8)}
+            </Text>
+          ) : (
+            <Input flex={1} variant="outline" borderWidth={0}>
+              <InputField
+                placeholder="Wallet Address..."
+                placeholderTextColor="#D9D9D9"
+                value={walletAddress}
+                onChangeText={setWalletAddress}
+                fontSize={13}
+                fontWeight="$semibold"
+                color="$textLight900"
+                $dark-color="$textDark50"
+              />
+            </Input>
+          )}
           <Pressable>
             <DocumentDuplicateIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           </Pressable>
@@ -310,30 +482,38 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <Text fontSize={12} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
           Recent
         </Text>
-        {recentAddresses.map((item, index) => (
-          <Pressable
-            key={index}
-            onPress={() => setWalletAddress(item.address)}
-          >
-            <HStack
-              alignItems="center"
-              space="md"
-              py="$3"
-              px="$2"
-              rounded={6}
+        {(recentAddresses.length > 0 ? recentAddresses : mockRecentAddresses).map((item, index) => {
+          const addressToShow = item.fullAddress || item.address || '';
+          const addressToUse = item.fullAddress || item.address || '';
+          
+          // Skip rendering if no valid address
+          if (!addressToShow) return null;
+          
+          return (
+            <Pressable
+              key={`${addressToShow}-${index}`}
+              onPress={() => setWalletAddress(addressToUse)}
             >
-                  <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
-              <HStack flex={1} justifyContent="space-between">
-                <Text fontSize={14} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
-                  {item.address}
-                </Text>
-                <Text fontSize={9} color="#B9B9B9" $dark-color="$textDark400">
-                  {item.lastUsed}
-                </Text>
+              <HStack
+                alignItems="center"
+                space="md"
+                py="$3"
+                px="$2"
+                rounded={6}
+              >
+                <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+                <HStack flex={1} justifyContent="space-between">
+                  <Text fontSize={14} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
+                    {truncateAddress(addressToShow)}
+                  </Text>
+                  <Text fontSize={9} color="#B9B9B9" $dark-color="$textDark400">
+                    {item.lastUsed || 'Recently'}
+                  </Text>
+                </HStack>
               </HStack>
-            </HStack>
-          </Pressable>
-        ))}
+            </Pressable>
+          );
+        })}
       </VStack>
 
       {/* Confirm Button */}
@@ -358,10 +538,13 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   if (view === 'amount') {
     // Amount View
     return (
-    <VStack px="$4" py="$4" space="md" flex={1}>
+    <>
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <VStack px="$4" py="$4" space="md" flex={1}>
       {/* Header with back button */}
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={() => {
+          Keyboard.dismiss();
           if (selectedFriend) {
             setView('friend-selection');
             onViewChange?.('friend-selection');
@@ -375,7 +558,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
           <PaperAirplaneIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            TIPS Gönder
+            Send TIPS
           </Text>
         </HStack>
         <Box w={24} />
@@ -452,19 +635,19 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           p="$4"
         >
           <HStack alignItems="center" space="md">
-            <Text fontSize={10} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
+            <Text fontSize={11} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
               To:
             </Text>
-            <Input flex={1} variant="outline" borderWidth={0} isDisabled={true}>
-              <InputField
-                value={walletAddress || '0x'}
-                editable={false}
-                fontSize={10}
-                fontWeight="$medium"
-                color="$textLight900"
-                $dark-color="$textDark50"
-              />
-            </Input>
+            <Text 
+              fontSize={13} 
+              fontWeight="$semibold" 
+              color="$textLight900" 
+              $dark-color="$textDark50"
+              flex={1}
+              numberOfLines={1}
+            >
+              {truncateAddress(walletAddress || '0x', 10, 8)}
+            </Text>
           </HStack>
         </Box>
       )}
@@ -482,8 +665,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         >
           <InformationCircleIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
         </Box>
-        <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1}>
-          buraya uyarı mesajı yazılacak
+        <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1} lineHeight={12}>
+          TIPS token is calculated based on the current USD exchange rate.
         </Text>
       </HStack>
 
@@ -505,9 +688,32 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   onChangeText={(text) => {
                     // Remove non-numeric characters except decimal point
                     const numericValue = text.replace(/[^0-9.]/g, '');
-                    setAmount(numericValue);
+                    const inputValue = parseFloat(numericValue) || 0;
+                    
+                    // Get max balance
+                    const maxTips = walletBalance?.balance || 0;
+                    const maxUSD = maxTips * TIPS_TO_USD_RATE;
+                    
+                    // Check if input exceeds max balance
+                    if (isSwapped) {
+                      // USD mode: check against max USD
+                      if (inputValue > maxUSD) {
+                        setAmount(maxUSD.toFixed(2));
+                      } else {
+                        setAmount(numericValue);
+                      }
+                    } else {
+                      // TIPS mode: check against max TIPS
+                      if (inputValue > maxTips) {
+                        setAmount(maxTips.toString());
+                      } else {
+                        setAmount(numericValue);
+                      }
+                    }
                   }}
                   keyboardType="decimal-pad"
+                  inputAccessoryViewID={inputAccessoryViewID}
+                  blurOnSubmit={false}
                   fontSize={44}
                   fontWeight="$bold"
                   color="#DDDDDD"
@@ -551,11 +757,14 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       {/* Available Balance Section */}
       <HStack justifyContent="space-between" alignItems="center" px="$0" mt="$2">
         <VStack>
-          <Text fontSize={10} fontWeight="$bold" color="#D9D9D9" $dark-color="$textDark400">
+          <Text fontSize={11} fontWeight="$bold" color="#8C8C8C" $dark-color="$textDark300">
             Available Balance
           </Text>
-          <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            20.000 TIPS
+          <Text fontSize={20} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+            {isLoadingBalance 
+              ? 'Loading...' 
+              : `${walletBalance?.balance?.toLocaleString('en-US') || '0'} TIPS`
+            }
           </Text>
         </VStack>
         <Pressable
@@ -601,6 +810,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         );
       })()}
     </VStack>
+    </TouchableWithoutFeedback>
+    {renderInputAccessoryView()}
+    </>
     );
   }
 
@@ -620,9 +832,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
         <HStack flex={1} justifyContent="center" alignItems="center">
-                  <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
-          <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            TIPS Gönder
+        <PaperAirplaneIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
+        <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
+            Send TIPS
           </Text>
         </HStack>
         <Box w={24} />
@@ -668,14 +880,25 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           {/* Sender */}
           <HStack alignItems="center" space="sm" flex={1}>
             <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center" position="relative">
-              <UserIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              {user?.avatar ? (
+                <Image
+                  source={toImageSource(user.avatar)!}
+                  alt={user.fullName || 'User'}
+                  width={29}
+                  height={29}
+                  borderRadius={100}
+                  resizeMode="cover"
+                />
+              ) : (
+                <UserIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
+              )}
               <Box position="absolute" bottom={-2} right={-2} w={16} h={16} rounded="$full" bg="$backgroundLight0" $dark-bg="$backgroundDark800" borderWidth={1} borderColor="#D9D9D9" alignItems="center" justifyContent="center">
                 <CreditCardIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
               </Box>
             </Box>
             <VStack>
               <Text fontSize={10} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                Ozan Mutluoğlu
+                {user?.fullName || 'User'}
               </Text>
             </VStack>
           </HStack>
@@ -732,9 +955,9 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               </>
             ) : (
               <>
-                <VStack alignItems="flex-end">
-                  <Text fontSize={10} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
-                    {walletAddress || 'F418496......0e9'}
+                <VStack alignItems="flex-end" flex={1}>
+                  <Text fontSize={10} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right" numberOfLines={1}>
+                    {truncateAddress(walletAddress || '0x', 6, 4)}
                   </Text>
                 </VStack>
                 <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center">
@@ -759,8 +982,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         >
           <InformationCircleIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
         </Box>
-        <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1}>
-          buraya uyarı mesajı gelecek
+        <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" flex={1} lineHeight={12}>
+          TIPS token is calculated based on the current USD exchange rate.
         </Text>
       </HStack>
 
@@ -768,21 +991,21 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <Box h={1} bg="#D9D9D9" my="$2" />
 
       {/* Transaction Details */}
-      <VStack space="xs">
+      <VStack space="sm">
         <HStack justifyContent="space-between" alignItems="center" w="100%">
-          <Text fontSize={9} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
-            İşlem Ücreti:
+          <Text fontSize={11} fontWeight="$semibold" color="#6B6B6B" $dark-color="$textDark300">
+            Transaction Fee:
           </Text>
-          <Text fontSize={9} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
+          <Text fontSize={11} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
             ${transactionDetails.transactionFee}
           </Text>
         </HStack>
         <HStack justifyContent="space-between" alignItems="center" w="100%">
-          <Text fontSize={9} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
-            İşlem Sonrası Bakiye:
+          <Text fontSize={11} fontWeight="$semibold" color="#6B6B6B" $dark-color="$textDark300">
+            Remaining Balance:
           </Text>
-          <Text fontSize={9} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400" textAlign="right">
-            ${transactionDetails.usdAmount} - {transactionDetails.tipsAmount.toLocaleString()} TIPS
+          <Text fontSize={11} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
+            {transactionDetails.remainingBalance.toLocaleString()} TIPS
           </Text>
         </HStack>
       </VStack>
@@ -790,27 +1013,67 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       {/* Send Button */}
       <Pressable
         onPress={() => {
-          console.log('Sending transaction:', { walletAddress, amount: transactionDetails.tipsAmount });
-          // Generate transaction ID (mock - in real app this would come from backend)
-          const transactionId = `0x${Math.random().toString(16).substr(2, 64)}`;
+          console.log('[SendBottomSheet] Send button pressed');
           
-          // Call onSuccess callback with transaction details
-          onSuccess?.({
-            sentAmount: `${transactionDetails.tipsAmount.toLocaleString()} TIPS`,
-            transactionFee: `$${transactionDetails.transactionFee}`,
-            remainingBalance: `${transactionDetails.remainingBalance.toLocaleString()} TIPS`,
-            transactionId: transactionId,
+          // Validate recipient - recipientId VEYA walletAddress olmalı
+          const recipientId = selectedFriend?.id;
+          if (!recipientId && !walletAddress) {
+            console.error('[SendBottomSheet] No recipient selected');
+            // TODO: Show error toast to user
+            return;
+          }
+
+          const tipsAmount = transactionDetails.tipsAmount;
+          
+          console.log('[SendBottomSheet] Sending transaction:', {
+            recipientId: recipientId || undefined,
+            walletAddress: walletAddress || undefined,
+            amount: tipsAmount,
+            message: 'TIPS transfer',
           });
-          onClose();
+
+          // Call API to send TIPS - Backend hem recipientId hem walletAddress destekliyor
+          sendTips(
+            {
+              ...(recipientId && { recipientId }),           // Friend ise recipientId gönder
+              ...(walletAddress && { walletAddress }),       // Wallet address ise walletAddress gönder
+              amount: tipsAmount,
+              message: 'TIPS transfer',
+            },
+            {
+              onSuccess: (response) => {
+                console.log('[SendBottomSheet] Send successful:', response);
+                
+                // Call onSuccess callback with transaction details
+                onSuccess?.({
+                  sentAmount: `${tipsAmount.toLocaleString()} TIPS`,
+                  transactionFee: `$${transactionDetails.transactionFee}`,
+                  remainingBalance: `${transactionDetails.remainingBalance.toLocaleString()} TIPS`,
+                  transactionId: response.transactionId,
+                });
+                
+                // Close bottom sheet
+                onClose();
+              },
+              onError: (error: any) => {
+                console.error('[SendBottomSheet] Send failed:', error);
+                // TODO: Show error toast to user
+                const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+                console.error('[SendBottomSheet] Error details:', errorMessage);
+              },
+            }
+          );
         }}
         bg="#D8FF08"
         $dark-bg="#D8FF08"
         rounded={8}
         py="$3"
         mt="auto"
+        opacity={isSending ? 0.6 : 1}
+        disabled={isSending}
       >
         <Text fontSize={14} fontWeight="$bold" color="#111111" $dark-color="#111111" textAlign="center">
-          Send
+          {isSending ? 'Sending...' : 'Send'}
         </Text>
       </Pressable>
     </VStack>

@@ -47,11 +47,28 @@ export const WalletNavigator: React.FC = () => {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        animation: 'slide_from_right',
+      }}
+    >
       {!isConnected && (
         <Stack.Screen name="WalletConnection" component={WalletConnection} />
       )}
-      <Stack.Screen name="WalletScreen" component={WalletScreen} />
+      <Stack.Screen 
+        name="WalletScreen" 
+        component={WalletScreen}
+        options={{
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          // Swipe back gesture'ı ekranın sol kenarından başlatmak için
+          // Bu sayede PagerView'in swipe'ı ile çakışmaz
+          gestureResponseDistance: 50, // Sol 50px'den swipe yapılırsa back gesture tetiklenir
+        }}
+      />
       <Stack.Screen name="SwapScreen" component={SwapScreen} />
       <Stack.Screen name="NftAssetsScreen" component={NftAssetsScreen} />
       <Stack.Screen name="NftAssetDetailScreen" component={NftAssetDetailScreen} />

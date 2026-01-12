@@ -12,7 +12,7 @@
 - **Kullanılan Hook'lar:**
   - `useWalletBalance` - Cüzdan bakiyesi
   - `useWalletTransactions` - İşlem geçmişi
-  - `useMyNFTs` - NFT varlıkları
+  - `useMyNFTs` - NFT Assetsı
 - **Not:** Mock data kaldırıldı, gerçek API kullanılıyor
 
 ### 2. SearchModal ✅

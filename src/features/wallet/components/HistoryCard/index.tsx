@@ -1,6 +1,11 @@
 import React from 'react';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
-import { DocumentDuplicateIcon } from 'react-native-heroicons/outline';
+import { 
+  ArrowDownIcon,
+  ArrowUpIcon,
+  XMarkIcon,
+  GiftIcon,
+} from 'react-native-heroicons/outline';
 
 interface HistoryCardProps {
   type: string;
@@ -8,9 +13,56 @@ interface HistoryCardProps {
   amount: string;
   amountColor?: string;
   date?: string;
-  icon?: React.ComponentType<{ width?: number; height?: number; color?: string }>;
+  transactionType?: 'sent' | 'received' | 'failed' | 'claim' | 'airdrop';
   onCopyPress?: () => void;
 }
+
+/**
+ * Transaction type'a göre icon ve renk döndürür
+ */
+const getTransactionIcon = (type: string, transactionType?: 'sent' | 'received' | 'failed' | 'claim' | 'airdrop') => {
+  // Type string'inden transaction type'ı çıkar
+  const typeString = type.toLowerCase();
+  
+  // Failed durumu kontrolü
+  if (typeString.includes('failed') || transactionType === 'failed') {
+    return {
+      Icon: XMarkIcon,
+      iconColor: '#FFFFFF',
+      bgColor: '#CE4A4A', // Kırmızı
+    };
+  }
+  
+  // Sent durumu kontrolü
+  if (typeString.includes('sent') || transactionType === 'sent') {
+    return {
+      Icon: ArrowUpIcon,
+      iconColor: '#FFFFFF',
+      bgColor: '#CE4A4A', // Kırmızı
+    };
+  }
+  
+  // Claim ve Airdrop durumu kontrolü
+  if (
+    typeString.includes('claim') || 
+    typeString.includes('airdrop') ||
+    transactionType === 'claim' ||
+    transactionType === 'airdrop'
+  ) {
+    return {
+      Icon: GiftIcon,
+      iconColor: '#FFFFFF',
+      bgColor: '#4CAF50', // Yeşil
+    };
+  }
+  
+  // Received durumu (default)
+  return {
+    Icon: ArrowDownIcon,
+    iconColor: '#FFFFFF',
+    bgColor: '#4CAF50', // Yeşil
+  };
+};
 
 export const HistoryCard: React.FC<HistoryCardProps> = ({
   type,
@@ -18,9 +70,10 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
   amount,
   amountColor = '#3CA241',
   date,
-  icon,
+  transactionType,
   onCopyPress,
 }) => {
+  const { Icon, iconColor, bgColor } = getTransactionIcon(type, transactionType);
   return (
     <Box
       bg="$backgroundLight0"
@@ -32,7 +85,18 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
       p="$4"
     >
       <HStack alignItems="center" space="md">
-        <Box w={42} h={42} rounded={6} bg="$backgroundLight200" />
+        {/* Icon Box */}
+        <Box 
+          w={42} 
+          h={42} 
+          rounded={6} 
+          bg={bgColor}
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Icon width={20} height={20} color={iconColor} />
+        </Box>
+        
         <VStack flex={1}>
           <Text fontSize={12} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
             {type}
@@ -51,15 +115,11 @@ export const HistoryCard: React.FC<HistoryCardProps> = ({
             </HStack>
           )}
         </VStack>
+        
         <VStack alignItems="flex-end" space="xs">
           <Text fontSize={12} fontWeight="$bold" color={amountColor}>
             {amount}
           </Text>
-          {onCopyPress && (
-            <Pressable onPress={onCopyPress}>
-              <DocumentDuplicateIcon width={12} height={12} color="#000000" />
-            </Pressable>
-          )}
         </VStack>
       </HStack>
     </Box>

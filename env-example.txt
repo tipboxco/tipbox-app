@@ -1,0 +1,117 @@
+# ===========================================
+# ENVIRONMENT VARIABLES TEMPLATE
+# ===========================================
+# Bu dosyayı kopyalayıp .env adıyla kaydedin
+# Gerçek değerleri Firebase Console ve Google Cloud Console'dan alın
+#
+# UYARI: .env dosyasını asla Git'e commit etmeyin!
+# ===========================================
+
+# ============================================
+# FIREBASE CONFIGURATION
+# ============================================
+# Firebase Console > Project Settings > General
+# https://console.firebase.google.com/
+
+# Firebase Web API Key
+FIREBASE_API_KEY=AIzaSy...
+
+# Firebase Authentication Domain
+FIREBASE_AUTH_DOMAIN=tipbox-app.firebaseapp.com
+
+# Firebase Project ID
+FIREBASE_PROJECT_ID=tipbox-app
+
+# Firebase Storage Bucket
+FIREBASE_STORAGE_BUCKET=tipbox-app.appspot.com
+
+# Firebase Cloud Messaging Sender ID
+FIREBASE_MESSAGING_SENDER_ID=886406936506
+
+# Firebase App ID (iOS veya Android)
+FIREBASE_APP_ID=1:886406936506:ios:...
+
+
+# ============================================
+# GOOGLE OAUTH CONFIGURATION
+# ============================================
+# Google Cloud Console > APIs & Services > Credentials
+# https://console.cloud.google.com/apis/credentials
+
+# Web Client ID (OAuth 2.0 Client ID - Web application)
+# Bu ID tüm platformlar için kullanılır (iOS, Android, Web)
+FIREBASE_WEB_CLIENT_ID=886406936506-j4u0lsdg6gnn7ggv5mda80rothf5tqr4.apps.googleusercontent.com
+GOOGLE_WEB_CLIENT_ID=886406936506-j4u0lsdg6gnn7ggv5mda80rothf5tqr4.apps.googleusercontent.com
+
+# iOS Client ID (Reversed format)
+# GoogleService-Info.plist > REVERSED_CLIENT_ID değerinden alın
+# Format: com.googleusercontent.apps.[CLIENT_ID_FIRST_PART]
+GOOGLE_IOS_CLIENT_ID=com.googleusercontent.apps.886406936506-j4u0lsdg6gnn7ggv5mda80rothf5tqr4
+
+# Android Client ID (Eğer Web Client ID'den farklıysa)
+# Genellikle Web Client ID ile aynıdır, gerek duymaz
+# GOOGLE_ANDROID_CLIENT_ID=...
+
+
+# ============================================
+# API CONFIGURATION (Backend)
+# ============================================
+# Backend API Base URL
+
+# Development (Local)
+API_BASE_URL=http://192.168.0.198:3000
+
+# Production
+# API_BASE_URL=https://api.tipbox.co
+
+
+# ============================================
+# EXPO CONFIGURATION
+# ============================================
+# Expo Account Owner (app.json > expo.owner ile aynı olmalı)
+EXPO_OWNER=tipboxco
+
+# Expo App Slug (app.json > expo.slug ile aynı olmalı)
+EXPO_SLUG=tipbox-app
+
+
+# ============================================
+# NOTLAR
+# ============================================
+#
+# 1. FIREBASE_WEB_CLIENT_ID:
+#    - Google Cloud Console'dan OAuth 2.0 Web Client ID
+#    - "Web application" type'ında oluşturulmalı
+#    - Authorized redirect URIs: https://auth.expo.io/@tipboxco/tipbox-app
+#
+# 2. GOOGLE_IOS_CLIENT_ID:
+#    - GoogleService-Info.plist dosyasından REVERSED_CLIENT_ID değeri
+#    - app.json > ios.infoPlist.CFBundleURLSchemes içinde de tanımlı olmalı
+#
+# 3. Redirect URI Format:
+#    - Expo: https://auth.expo.io/@{EXPO_OWNER}/{EXPO_SLUG}
+#    - Custom: {APP_SCHEME}://oauth/redirect
+#
+# 4. Google Cloud Console Checklist:
+#    ✅ OAuth Consent Screen yapılandırıldı
+#    ✅ Scopes eklendi (openid, email, profile)
+#    ✅ Test users eklendi
+#    ✅ Authorized domains (auth.expo.io) eklendi
+#    ✅ OAuth 2.0 Client ID (Web) oluşturuldu
+#    ✅ Authorized redirect URIs eklendi
+#
+# 5. Firebase Console Checklist:
+#    ✅ Google Sign-In provider enabled
+#    ✅ Web Client ID ve Secret girildi
+#    ✅ Authorized domains (auth.expo.io) eklendi
+#    ✅ iOS app eklendi, GoogleService-Info.plist indirildi
+#    ✅ Android app eklendi, google-services.json indirildi
+#
+# 6. Güvenlik:
+#    ⚠️  .env dosyasını ASLA Git'e commit etmeyin!
+#    ⚠️  API keys'leri public repolar'da paylaşmayın
+#    ⚠️  Production ve development için farklı Firebase projeleri kullanın
+#
+# ============================================
+
+
