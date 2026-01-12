@@ -32,7 +32,13 @@ import { ToastHost } from '@/src/components/overlays/ToastHost';
  */
 export const GlobalUIHost: React.FC = () => {
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <View 
+      style={[
+        StyleSheet.absoluteFill,
+        { zIndex: 9999, elevation: 9999 }
+      ]} 
+      pointerEvents="box-none"
+    >
       <BottomSheetHost />
       <ContextMenuHost />
       <ToastHost />
