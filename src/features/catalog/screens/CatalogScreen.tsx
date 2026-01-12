@@ -334,16 +334,9 @@ const CatalogScreenComponent = () => {
 
   const renderContent = () => {
     const paddingBottom = 52;
-    // CONTROL FIX: Log current mode and route params for debugging
-    console.log('[CatalogScreen] renderContent:', {
-      currentMode,
-      routeParams: route.params,
-      routeView: route.params?.view,
-    });
     
     switch (currentMode) {
       case 'brand-catalog':
-        console.log('[CatalogScreen] Rendering BrandScreen');
         return (
           <BrandScreen
             selectedCategory={selectedCategory}
@@ -362,7 +355,6 @@ const CatalogScreenComponent = () => {
           />
         );
       default:
-        console.log('[CatalogScreen] Rendering ProductCatalogScreen');
         return (
           <ProductCatalogScreen
             onStateChange={handleProductCatalogStateChange}
