@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef, useState } from 'react';
+import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, Clipboard } from 'react-native';
 import { Box, VStack, Text, HStack, Pressable, Image } from '@gluestack-ui/themed';
@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Header } from '@/src/components/Header';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
   QrCodeIcon,
   PaperAirplaneIcon,
@@ -46,9 +46,13 @@ export const WalletScreen: React.FC = () => {
       const pagerRef = useRef<PagerView>(null);
       const tabContainerRef = useRef<any>(null);
       const [tabContainerWidth, setTabContainerWidth] = useState(0);
+      const [currentPage, setCurrentPage] = useState(0);
       
       // Shared progress value for realtime tab animations (0 = TIPS, 1 = NFT)
       const progress = useSharedValue(0);
+      
+      // Track if user is trying to swipe left on first page (to go back)
+      const isSwipingBack = useRef(false);
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -74,7 +78,14 @@ export const WalletScreen: React.FC = () => {
     });
   }, [walletInfo, isLoadingWalletInfo, walletInfoError, user]);
   
-  // Copy wallet address handler
+  // Enable/disable navigation gesture based on current page
+  // When on first page (TIPS), allow swipe back to FeedScreen
+  // When on other pages, disable navigation gesture to prevent conflict with PagerView
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: currentPage === 0, // Only enable on first page
+    });
+  }, [currentPage, navigation]);
   const handleCopyAddress = useCallback(() => {
     if (walletInfo?.walletIdentifier) {
       Clipboard.setString(walletInfo.walletIdentifier);
@@ -232,7 +243,17 @@ export const WalletScreen: React.FC = () => {
     (e: any) => {
       'worklet';
       const { position, offset } = e.nativeEvent;
-      progress.value = position + offset;
+      const currentProgress = position + offset;
+      progress.value = currentProgress;
+      
+      // Detect swipe back gesture on first page (TIPS tab)
+      // If user is on page 0 and tries to swipe left (negative offset), trigger navigation back
+      if (position === 0 && offset < -0.1) {
+        // User is swiping left on first page - enable back gesture
+        isSwipingBack.current = true;
+      } else {
+        isSwipingBack.current = false;
+      }
     },
     [progress]
   );
@@ -243,6 +264,7 @@ export const WalletScreen: React.FC = () => {
       const position = e.nativeEvent.position;
       progress.value = withTiming(position, { duration: 0 });
       setActiveTab(position === 0 ? 'tips' : 'nft');
+      setCurrentPage(position);
     },
     [progress]
   );
