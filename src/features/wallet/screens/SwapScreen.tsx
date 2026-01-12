@@ -7,6 +7,7 @@ import {
   ChevronDownIcon,
   InformationCircleIcon,
 } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
