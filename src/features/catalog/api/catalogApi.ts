@@ -33,9 +33,16 @@ export const getCatalogCategories = async (): Promise<CatalogCategory[]> => {
 export const getCatalogSubCategories = async (
   categoryId: string
 ): Promise<CatalogSubCategory[]> => {
+  console.log('📡 [catalogApi] Fetching subcategories for categoryId:', categoryId);
   const response = await apiService.getClient().get<CatalogSubCategory[]>(
     `/catalog/categories/${categoryId}/sub-categories`
   );
+  console.log('✅ [catalogApi] Subcategories response:', {
+    count: response.data.length,
+    categoryId,
+    firstItem: response.data[0],
+    allCategoryIds: [...new Set(response.data.map(item => item.categoryId))],
+  });
   return response.data;
 };
 
