@@ -89,7 +89,7 @@ export const WalletScreen: React.FC = () => {
   const handleCopyAddress = useCallback(() => {
     if (walletInfo?.walletIdentifier) {
       Clipboard.setString(walletInfo.walletIdentifier);
-      Alert.alert('Kopyalandı', 'Wallet adresi panoya kopyalandı');
+      Alert.alert('Copied', 'Wallet address copied to clipboard');
     }
   }, [walletInfo?.walletIdentifier]);
   
@@ -214,7 +214,7 @@ export const WalletScreen: React.FC = () => {
       <ReceiveBottomSheet
         onClose={closeBottomSheet}
         walletAddress={walletInfo?.walletIdentifier || ''}
-        userName={user?.fullName || 'Kullanıcı'}
+        userName={user?.fullName || 'User'}
       />,
       {
         enablePanDownToClose: true,
@@ -722,8 +722,8 @@ export const WalletScreen: React.FC = () => {
                 </Box>
               ) : (
                 <WalletCardInfo 
-                  name={user?.fullName || 'Kullanıcı'}
-                  address={walletInfo?.walletIdentifier || 'Adres bulunamadı'}
+                  name={user?.fullName || 'User'}
+                  address={walletInfo?.walletIdentifier || 'Address not found'}
                   onCopyPress={handleCopyAddress}
                 />
               )}
@@ -735,7 +735,7 @@ export const WalletScreen: React.FC = () => {
                     NFT Assets
                   </Text>
                   <HStack space="xs" alignItems="center">
-                    {/* Filtrele Button */}
+                    {/* Filter Button */}
                     <Pressable
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
@@ -748,12 +748,12 @@ export const WalletScreen: React.FC = () => {
                     >
                       <HStack alignItems="center" space="xs">
                         <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                          Filtrele
+                          Filter
                         </Text>
                         <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
                     </Pressable>
-                    {/* Sırala Button */}
+                    {/* Sort Button */}
                     <Pressable
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
@@ -766,7 +766,7 @@ export const WalletScreen: React.FC = () => {
                     >
                       <HStack alignItems="center" space="xs">
                         <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                          Sırala
+                          Sort
                         </Text>
                         <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>

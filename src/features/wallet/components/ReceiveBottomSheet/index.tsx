@@ -22,14 +22,14 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
 
   const handleCopyAddress = () => {
     Clipboard.setString(walletAddress);
-    Alert.alert('Kopyalandı', 'Wallet adresi panoya kopyalandı');
+    Alert.alert('Copied', 'Wallet address copied to clipboard');
   };
 
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `${userName}'in Wallet Adresi:\n${walletAddress}`,
-        title: 'Wallet Adresi Paylaş',
+        message: `${userName}'s Wallet Address:\n${walletAddress}`,
+        title: 'Share Wallet Address',
       });
     } catch (error) {
       console.error('Share error:', error);
@@ -84,7 +84,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
             {userName}
           </Text>
           <Text fontSize={12} color={isDark ? '$textDark400' : '$textLight500'} textAlign="center">
-            Bu QR kodu taratarak size TIPS gönderebilirler
+            Scan this QR code to send TIPS
           </Text>
         </VStack>
 
@@ -99,7 +99,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
         >
           <VStack space="sm">
             <Text fontSize={12} fontWeight="$semibold" color={isDark ? '$textDark400' : '$textLight500'}>
-              Wallet Adresi
+              Wallet Address
             </Text>
             <Text 
               fontSize={11} 
@@ -128,7 +128,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
             <HStack space="sm" alignItems="center" justifyContent="center">
               <DocumentDuplicateIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
               <Text fontSize={14} fontWeight="$semibold" color={isDark ? '$textDark50' : '$textLight900'}>
-                Kopyala
+                Copy
               </Text>
             </HStack>
           </Pressable>
@@ -145,7 +145,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
             <HStack space="sm" alignItems="center" justifyContent="center">
               <ShareIcon width={20} height={20} color="#000000" />
               <Text fontSize={14} fontWeight="$semibold" color="#000000">
-                Paylaş
+                Share
               </Text>
             </HStack>
           </Pressable>
@@ -161,7 +161,7 @@ export const ReceiveBottomSheet: React.FC<ReceiveBottomSheetProps> = ({
           w="100%"
         >
           <Text fontSize={11} color={isDark ? '$textDark300' : '$textLight700'}>
-            💡 Bu adresi sadece TIPS almak için kullanın. Başka kripto para göndermeyin.
+            💡 Use this address only to receive TIPS. Do not send other cryptocurrencies.
           </Text>
         </Box>
       </VStack>

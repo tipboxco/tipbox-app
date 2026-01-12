@@ -25,7 +25,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
   const [rewards, setRewards] = useState<RewardItem[]>([
     {
       id: '1',
-      title: 'Ladder Ödülleri',
+      title: 'Ladder Rewards',
       amount: 370,
       claimed: false,
       details: [
@@ -43,7 +43,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
     },
     {
       id: '2',
-      title: 'Bahşişler',
+      title: 'Tips',
       amount: 370,
       claimed: false,
       details: [
@@ -61,7 +61,7 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
     },
     {
       id: '3',
-      title: 'Birebir Destek Ödülleri',
+      title: 'Support Rewards',
       amount: 370,
       claimed: false,
       details: [

@@ -286,25 +286,25 @@ export const SwapScreen: React.FC = () => {
   const transactions = [
     {
       type: 'TIPS Claim',
-      description: 'Toplu TIPS Claim Edildi.',
+      description: 'Bulk TIPS Claimed.',
       amount: '370 TIPS',
       amountColor: '#3CA241',
     },
     {
-      type: 'Bahşiş Gönderimi',
+      type: 'Tips Sent',
       description: 'Ömer Faruk Demiral',
       amount: '-50 TIPS',
       amountColor: '#A23C3C',
     },
     {
       type: 'TIPS Claim',
-      description: 'Toplu TIPS Claim Edildi.',
+      description: 'Bulk TIPS Claimed.',
       amount: '370 TIPS',
       amountColor: '#3CA241',
     },
     {
       type: 'TIPS Claim',
-      description: 'Toplu TIPS Claim Edildi.',
+      description: 'Bulk TIPS Claimed.',
       amount: '370 TIPS',
       amountColor: '#3CA241',
     },
