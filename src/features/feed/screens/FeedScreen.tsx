@@ -2,10 +2,11 @@ import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Platform, ActivityIndicator, FlatList } from 'react-native';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FeedStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
+import { ScrollRegistry } from '@/src/services/ScrollRegistry';
 import { FilterBarReanimated } from '../components/FilterBar/FilterBarReanimated';
 import { AssetAccessCard } from '../components/AssetAccessCard';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -72,6 +73,26 @@ const FeedScreenInner = React.memo(() => {
   }
   const { feedListRef } = feedListContext;
 
+  // ARCHITECTURE FIX: Instagram/Twitter-style scroll-to-top pattern
+  // 1. useScrollToTop hook'u (React Navigation built-in) - aktif tab için
+  // 2. ScrollRegistry (global fallback) - hangi tab aktif olursa olsun çalışır
+  useScrollToTop(feedListRef);
+
+  // CRITICAL FIX: Register scrollable in global registry
+  // This ensures scroll-to-top works even when FeedScreen is not the active tab
+  // or when detail screens are open on top
+  useFocusEffect(
+    useCallback(() => {
+      // Register when screen is focused
+      ScrollRegistry.register('feed', feedListRef);
+      
+      return () => {
+        // Unregister when screen is unfocused (optional - can keep registered)
+        // ScrollRegistry.unregister('feed');
+      };
+    }, [feedListRef])
+  );
+
   // Safe area and tab bar insets
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -127,12 +148,7 @@ const FeedScreenInner = React.memo(() => {
     }
   }, [filters.interests]);
 
-  // FEATURE: Log lastSeenPostId changes
-  useEffect(() => {
-    if (lastSeenPostId) {
-      console.log('[FeedScreen] 🆔 lastSeenPostId changed:', lastSeenPostId);
-    }
-  }, [lastSeenPostId]);
+  // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
   // Filtre aktif mi kontrolü
   // Herhangi bir filtre seçilmişse filtered feed API'sini kullan
@@ -469,9 +485,7 @@ const FeedScreenInner = React.memo(() => {
     }
 
     const productImage = toImageSource(item.contextData.image);
-    if (!productImage) {
-      console.warn('[mapTipsToCardData] Missing product image for item:', item.id);
-    }
+    // Missing product image warning removed for performance
     const product: TipsProduct = {
       id: item.contextData.id || '',
       name: item.contextData.name || '',
@@ -558,9 +572,7 @@ const FeedScreenInner = React.memo(() => {
     }
 
     const productImage = toImageSource(item.contextData.image);
-    if (!productImage) {
-      console.warn('[mapQuestionToCardData] Missing product image for item:', item.id);
-    }
+    // Missing product image warning removed for performance
 
     const product: QuestionCardProduct = {
       id: item.contextData.id || '',
@@ -747,9 +759,7 @@ const FeedScreenInner = React.memo(() => {
             />
           );
         }
-        if (__DEV__) {
-          console.warn(`[FeedScreen] EXPERIENCE item ${itemId} failed validation checks`);
-        }
+        // EXPERIENCE validation warning removed for performance
         return null;
       case CardType.POST:
       case 'post':
@@ -1019,7 +1029,9 @@ const FeedScreenInner = React.memo(() => {
               ListFooterComponent={renderFooter}
               contentContainerStyle={contentContainerStyle}
               showsVerticalScrollIndicator={false}
-              removeClippedSubviews={true}
+              // CRITICAL FIX: removeClippedSubviews={false} - scrollToOffset çalışması için gerekli
+              // removeClippedSubviews={true} olduğunda native view detached olabilir ve scroll çalışmaz
+              removeClippedSubviews={false}
               maxToRenderPerBatch={10}
               windowSize={10}
               initialNumToRender={10}
@@ -1032,6 +1044,21 @@ const FeedScreenInner = React.memo(() => {
               onRefresh={handleRefresh}
               // FEATURE: scrollToIndex failed handler - fallback to scrollToOffset
               onScrollToIndexFailed={handleScrollToIndexFailed}
+              // CRITICAL FIX: onLayout - FlatList render olduğunda ScrollRegistry'yi güncelle
+              // Bu, timing problemi nedeniyle scroll'un çalışmamasını önler
+              onLayout={() => {
+                // FlatList layout tamamlandığında ref'i tekrar register et
+                if (feedListRef?.current) {
+                  ScrollRegistry.register('feed', feedListRef);
+                }
+              }}
+              // CRITICAL FIX: onContentSizeChange - Content size değiştiğinde scroll pozisyonunu kontrol et
+              onContentSizeChange={() => {
+                // Content size değiştiğinde ref'i güncelle
+                if (feedListRef?.current) {
+                  ScrollRegistry.register('feed', feedListRef);
+                }
+              }}
             />
           )}
         </Box>

@@ -19,6 +19,8 @@ import {
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import type { UpdateCardData } from '@/src/types/UpdateCard';
@@ -122,7 +124,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
   };
 
   const handleComment = () => {
-    navigation.navigate('Post', {
+    navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'update' },
     });
@@ -175,9 +177,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
             postContent={data.content}
             postAuthorName={data.user.name}
           >
-            <Pressable>
-              <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-            </Pressable>
+            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
           </PostContextMenu>
         </HStack>
       </VStack>
@@ -193,7 +193,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
             subName={product.subName}
             isOwned={product.isOwned}
             onPress={() => {
-              navigation.navigate('Post', {
+              navigationService.navigate(ROOT_ROUTES.POST, {
                 screen: 'PostDetailScreen',
                 params: { postData: data, type: 'update' }
               });
@@ -230,7 +230,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         <Pressable onPress={() => {
           // Navigate to PostDetailScreen
-          navigation.navigate('Post', {
+          navigationService.navigate(ROOT_ROUTES.POST, {
             screen: 'PostDetailScreen',
             params: { 
               postData: data, 
@@ -252,7 +252,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
           <Pressable 
             onPress={() => {
               // Detay sayfasına yönlendir (related post detay sayfasında açılacak)
-              navigation.navigate('Post', {
+              navigationService.navigate(ROOT_ROUTES.POST, {
                 screen: 'PostDetailScreen',
                 params: { 
                   postData: data, 
@@ -278,7 +278,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       {data.images && data.images.length > 0 && (
         <Pressable
           onPress={() => {
-            navigation.navigate('Post', {
+            navigationService.navigate(ROOT_ROUTES.POST, {
               screen: 'PostDetailScreen',
               params: { postData: data, type: 'update' }
             });

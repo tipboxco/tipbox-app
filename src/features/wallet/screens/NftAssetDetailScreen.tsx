@@ -8,6 +8,8 @@ import {
 } from 'react-native-heroicons/outline';
 import { Header } from '@/src/components/Header';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
 
@@ -149,12 +151,12 @@ export const NftAssetDetailScreen: React.FC = () => {
                                     isSelected: false,
                                 };
                                 // Navigate to Marketplace NFTDetailScreen (sale page)
-                                navigation.navigate('Marketplace' as never, {
+                                navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
                                     screen: 'NFTDetailScreen',
                                     params: {
                                         nftData: userNFT,
                                     },
-                                } as never);
+                                });
                             }}
                         >
                             <HStack alignItems="center" space="xs">

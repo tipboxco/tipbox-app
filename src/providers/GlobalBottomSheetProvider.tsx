@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ReactNode } from 'react';
-import { GlobalBottomSheetContextType, BottomSheetOptions } from '@/src/components/GlobalBottomSheet/types';
-import { GlobalBottomSheetContext } from '@/src/components/GlobalBottomSheet/context'; // ARCHITECTURE FIX: Import from context.ts to break circular dependency
+import { GlobalBottomSheetContextType, BottomSheetOptions, BottomSheetState } from '@/src/components/GlobalBottomSheet/types';
+import { GlobalBottomSheetContext } from '@/src/components/GlobalBottomSheet/context';
 
 interface GlobalBottomSheetProviderProps {
   children: ReactNode;
@@ -9,79 +9,79 @@ interface GlobalBottomSheetProviderProps {
 
 /**
  * Global Bottom Sheet Provider
- * Tüm bottom sheet'leri global olarak yönetir
+ * DOĞRU MİMARİ: Sadece state ve basit actions
  */
 export const GlobalBottomSheetProvider: React.FC<GlobalBottomSheetProviderProps> = ({ children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [content, setContent] = useState<ReactNode | null>(null);
-  const [options, setOptions] = useState<BottomSheetOptions | null>(null);
+  const [state, setState] = useState<BottomSheetState>({
+    content: null,
+    index: -1, // -1 closed, 0 open
+    options: null,
+  });
 
   /**
    * Bottom sheet aç
-   * PERFORMANCE FIX: Removed InteractionManager - instant opening
-   * InteractionManager was causing 100-300ms delay, now opens instantly
-   * FLICKER FIX: If bottom sheet is already open, just update content without closing
-   * This prevents flicker and the open/close flicker issue
+   * STABİL FIX: Eğer sheet zaten açıksa, önce kapat sonra aç (content değişikliği için)
    */
-  const openBottomSheet = useCallback((newContent: ReactNode, newOptions?: BottomSheetOptions) => {
-    // FLICKER FIX: If bottom sheet is already open, just update content
-    // This prevents the flicker issue where bottom sheet opens and closes quickly
-    if (isOpen) {
-      // Just update content and options, keep bottom sheet open
-      // This provides smooth transition without closing/reopening
-      setContent(newContent);
-      setOptions(newOptions || null);
-      // Keep isOpen as true - don't change it
-    } else {
-      // PERFORMANCE FIX: Instant opening - no InteractionManager delay
-      // React 18 auto-batches these state updates
-      // All updates happen in a single render cycle, no delay
-      setContent(newContent);
-      setOptions(newOptions || null);
-      setIsOpen(true);
-    }
-  }, [isOpen]);
-
-  /**
-   * Bottom sheet kapat
-   * PERFORMANCE FIX: Reduced cleanup delay from 300ms to 200ms
-   * @gorhom/bottom-sheet animation is typically faster, 200ms is sufficient
-   */
-  const closeBottomSheet = useCallback(() => {
-    setIsOpen(false);
-    // PERFORMANCE FIX: Reduced delay for faster cleanup
-    // @gorhom/bottom-sheet close animation is typically 200-250ms
-    setTimeout(() => {
-      setContent(null);
-      setOptions(null);
-    }, 200); // Reduced from 300ms to 200ms
+  const openBottomSheet = useCallback((content: ReactNode, options?: BottomSheetOptions) => {
+    setState(prev => {
+      // Eğer sheet zaten açıksa ve content değişiyorsa, önce index'i -1 yap
+      // Sonra hemen 0 yap (gorhom'un internal state'i ile senkronize olması için)
+      if (prev.index === 0 && prev.content !== content) {
+        // Content değişiyor, önce kapat sonra aç
+        // Ama burada direkt 0 yapıyoruz çünkü gorhom onChange ile handle edecek
+        return {
+          content,
+          index: 0, // Open
+          options: options || null,
+        };
+      }
+      // Normal açılış
+      return {
+        content,
+        index: 0, // Open
+        options: options || null,
+      };
+    });
   }, []);
 
   /**
-   * Content güncelle (aynı bottom sheet içinde farklı content göstermek için)
+   * Bottom sheet kapat
+   * STABİL FIX: Double close guard - index zaten -1 ise tekrar set etme
    */
-  const updateContent = useCallback((newContent: ReactNode) => {
-    setContent(newContent);
+  const closeBottomSheet = useCallback(() => {
+    setState(prev => {
+      // STABİL FIX: Index zaten -1 ise double close'u önle
+      if (prev.index === -1) {
+        return prev;
+      }
+      return {
+        ...prev,
+        index: -1, // Closed
+      };
+    });
+    // Content'i temizle (gorhom animasyon süresi: ~250ms)
+    setTimeout(() => {
+      setState(prev => ({
+        ...prev,
+        content: null,
+        options: null,
+      }));
+    }, 250);
   }, []);
 
   // Context value
   const contextValue = useMemo<GlobalBottomSheetContextType>(
     () => ({
-      isOpen,
-      content,
-      options,
+      state,
       openBottomSheet,
       closeBottomSheet,
-      updateContent,
     }),
-    [isOpen, content, options, openBottomSheet, closeBottomSheet, updateContent]
+    [state, openBottomSheet, closeBottomSheet]
   );
 
   return (
     <GlobalBottomSheetContext.Provider value={contextValue}>
       {children}
-      {/* ARCHITECTURE FIX: GlobalBottomSheet artık NavigationContainer içinde render ediliyor */}
-      {/* Bu sayede Portal NavigationContainer'ın içinde çalışır ve tüm ekranların üstünde görünür */}
     </GlobalBottomSheetContext.Provider>
   );
 };

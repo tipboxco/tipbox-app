@@ -1,13 +1,8 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
-import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
+import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { Alert, Platform } from 'react-native';
 // Heroicons imports
 import {
-  UserIcon,
-  UserPlusIcon,
-  UserMinusIcon,
-  FlagIcon,
-  NoSymbolIcon,
   EllipsisHorizontalIcon,
   HeartIcon,
   ChatBubbleLeftIcon,
@@ -38,7 +33,6 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
 import {
   useAddToTrustList,
@@ -58,7 +52,6 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   const [isLiked, setIsLiked] = useState(data.isLiked ?? false);
   const [isBookmarked, setIsBookmarked] = useState(data.isBookmarked ?? false);
@@ -154,7 +147,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   };
 
   const handleComment = () => {
-    navigation.navigate('Post', {
+    navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'post' },
     });
@@ -171,29 +164,16 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
 
   // User actions menu handlers
   const handleViewProfile = useCallback(() => {
-    closeBottomSheet();
     if (data.user.id) {
       navigationService.navigate(ROOT_ROUTES.PROFILE, {
         screen: 'ProfileMain',
         params: { userId: data.user.id },
       });
     }
-  }, [closeBottomSheet, data.user.id]);
-
-  const handleTrust = useCallback(() => {
-    if (!targetUserId) return;
-    closeBottomSheet();
-    
-    if (userProfile?.isTrusted) {
-      untrustUser(targetUserId);
-    } else {
-      trustUser(targetUserId);
-    }
-  }, [targetUserId, userProfile?.isTrusted, trustUser, untrustUser, closeBottomSheet]);
+  }, [data.user.id]);
 
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
-    closeBottomSheet();
     
     Alert.alert(
       'Kullanıcıyı Raporla',
@@ -219,11 +199,10 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         },
       ]
     );
-  }, [user?.id, targetUserId, reportUser, closeBottomSheet]);
+  }, [user?.id, targetUserId, reportUser]);
 
   const handleBlock = useCallback(() => {
     if (!targetUserId) return;
-    closeBottomSheet();
     
     Alert.alert(
       'Kullanıcıyı Engelle',
@@ -243,111 +222,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         },
       ]
     );
-  }, [targetUserId, closeBottomSheet]);
-
-  const handleMenuPress = useCallback(() => {
-    if (!targetUserId) return;
-
-    const menuContent = (
-      <VStack bg={isDark ? '$backgroundDark900' : '$white'} pb={20}>
-        {/* Profili Görüntüle */}
-        <Pressable
-          onPress={handleViewProfile}
-          px={20}
-          py={16}
-        >
-          <HStack alignItems="center" space="md">
-            <UserIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-            <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize="$md"
-              fontWeight="$medium"
-            >
-              Profili Görüntüle
-            </Text>
-          </HStack>
-        </Pressable>
-
-        {/* Kendi profili değilse diğer seçenekleri göster */}
-        {!isOwnProfile && (
-          <>
-            <Divider bg={isDark ? '$backgroundDark800' : '#E9E9E9'} />
-            
-            {/* Trust/UnTrust */}
-            <Pressable
-              onPress={handleTrust}
-              px={20}
-              py={16}
-              disabled={isTrusting || isUntrusting}
-              opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
-            >
-              <HStack alignItems="center" space="md">
-                {userProfile?.isTrusted ? (
-                  <UserMinusIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                ) : (
-                  <UserPlusIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                )}
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize="$md"
-                  fontWeight="$medium"
-                >
-                  {isTrusting ? 'Ekleniyor...' : isUntrusting ? 'Kaldırılıyor...' : (userProfile?.isTrusted ? 'Un Trust' : 'Trust')}
-                </Text>
-              </HStack>
-            </Pressable>
-
-            <Divider bg={isDark ? '$backgroundDark800' : '#E9E9E9'} />
-            
-            {/* Raporla */}
-            <Pressable
-              onPress={handleReport}
-              px={20}
-              py={16}
-              disabled={isReporting}
-              opacity={isReporting ? 0.6 : 1}
-            >
-              <HStack alignItems="center" space="md">
-                <FlagIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                <Text
-                  color={isDark ? '$textDark50' : '#000'}
-                  fontSize="$md"
-                  fontWeight="$medium"
-                >
-                  {isReporting ? 'Raporlanıyor...' : 'Raporla'}
-                </Text>
-              </HStack>
-            </Pressable>
-
-            <Divider bg={isDark ? '$backgroundDark800' : '#E9E9E9'} />
-            
-            {/* Engelle */}
-            <Pressable
-              onPress={handleBlock}
-              px={20}
-              py={16}
-            >
-              <HStack alignItems="center" space="md">
-                <NoSymbolIcon width={20} height={20} color="#FF3040" />
-                <Text
-                  color="#FF3040"
-                  fontSize="$md"
-                  fontWeight="$medium"
-                >
-                  Engelle
-                </Text>
-              </HStack>
-            </Pressable>
-          </>
-        )}
-      </VStack>
-    );
-
-    openBottomSheet(menuContent, {
-      enablePanDownToClose: true,
-      enableDynamicSizing: true,
-    });
-  }, [targetUserId, isOwnProfile, isDark, userProfile, isTrusting, isUntrusting, isReporting, handleViewProfile, handleTrust, handleReport, handleBlock, openBottomSheet]);
+  }, [targetUserId]);
 
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
@@ -395,14 +270,32 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
               </Text>
             </VStack>
           </Pressable>
-          <Pressable
-            onPress={() => {
-              console.log('[PostCard] 3 nokta menüsü tıklandı - Post ID:', data.id);
-              handleMenuPress();
+          <PostContextMenu
+            postId={data.id}
+            postContent={data.content}
+            postAuthorName={data.user.name}
+            userId={data.user.id}
+            isOwnProfile={isOwnProfile}
+            isTrusted={userProfile?.isTrusted ?? false}
+            isTrusting={isTrusting}
+            isUntrusting={isUntrusting}
+            isReporting={isReporting}
+            onViewProfile={handleViewProfile}
+            onTrust={() => {
+              if (targetUserId) {
+                trustUser(targetUserId);
+              }
             }}
+            onUntrust={() => {
+              if (targetUserId) {
+                untrustUser(targetUserId);
+              }
+            }}
+            onReportUser={handleReport}
+            onBlock={handleBlock}
           >
             <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-          </Pressable>
+          </PostContextMenu>
         </HStack>
       </VStack>
 
@@ -420,7 +313,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
                 title={context.name}
                 subName={context.subName}
                 onPress={() => {
-                  navigation.navigate('Post', {
+                  navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostDetailScreen',
                     params: {
                       postData: data,
@@ -507,7 +400,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
 
       {/* Content */}
       <Pressable onPress={() => {
-        navigation.navigate('Post', {
+        navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostDetailScreen',
           params: { postData: data, type: 'post' }
         });
@@ -528,7 +421,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         data.images && data.images?.length > 0 && (
           <Pressable
             onPress={() => {
-              navigation.navigate('Post', {
+              navigationService.navigate(ROOT_ROUTES.POST, {
                 screen: 'PostDetailScreen',
                 params: { postData: data, type: 'post' }
               });

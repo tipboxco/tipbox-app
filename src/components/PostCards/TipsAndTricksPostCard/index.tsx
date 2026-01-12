@@ -21,6 +21,7 @@ import {
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -119,7 +120,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
     };
 
     const handleComment = () => {
-        navigation.navigate('Post', {
+        navigationService.navigate(ROOT_ROUTES.POST, {
             screen: 'PostDetailScreen',
             params: { postData: data, type: 'tipsAndTricks' },
         });
@@ -165,9 +166,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
                         postContent={data.content}
                         postAuthorName={data.user.name}
                     >
-                        <Pressable>
-                            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-                        </Pressable>
+                        <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
                     </PostContextMenu>
                 </HStack>
             </VStack>
@@ -257,7 +256,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
 
             {/* Content */}
             <Pressable onPress={() => {
-                navigation.navigate('Post', {
+                navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostDetailScreen',
                     params: { postData: data, type: 'tipsAndTricks' }
                 });
@@ -277,7 +276,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
             {data.images && data.images?.length > 0 && (
                 <Pressable
                     onPress={() => {
-                        navigation.navigate('Post', {
+                        navigationService.navigate(ROOT_ROUTES.POST, {
                             screen: 'PostDetailScreen',
                             params: { postData: data, type: 'tipsAndTricks' }
                         });

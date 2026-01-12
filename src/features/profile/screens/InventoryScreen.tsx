@@ -4,6 +4,8 @@ import { FlatList, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Search } from 'lucide-react-native';
 import { VStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
 import { PencilSquareIcon } from 'react-native-heroicons/outline';
@@ -101,7 +103,7 @@ const InventoryScreen = () => {
     
     // Navigate to CreateExperiencePostScreen
     if (type === 'experience') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateExperiencePostScreen',
         params: {
           product: undefined,

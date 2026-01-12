@@ -62,10 +62,22 @@ export const RootNavigator = () => {
         <RootStack.Screen name="Auth" component={AuthNavigator} />
       ) : (
         <>
+          {/* CRITICAL ARCHITECTURE FIX: Instagram/Twitter Model */}
+          {/* App (Drawer + Tabs) MUST be FIRST in stack - this is the base layer */}
+          {/* Detail screens are pushed ON TOP of App, but App is always the foundation */}
+          {/* This ensures tab bar events always reach the active tab, regardless of detail screens */}
+          <RootStack.Screen 
+            name="App" 
+            component={AppDrawerNavigator}
+            options={{
+              headerShown: false,
+            }}
+          />
+          
           {/* DetailsGroup - Context-free content drill-down screens */}
-          {/* Bu ekranlar hangi tab açık olursa olsun Root'tan açılır */}
+          {/* Bu ekranlar App'in ÜSTÜNE push edilir (card presentation) */}
+          {/* App (tabs/drawer) her zaman altta kalır, event'ler App'e ulaşır */}
           {/* CRITICAL: Native Stack kullanıldığı için swipe back gesture native hissiyat verir */}
-          {/* PERFORMANCE: Lazy loaded navigators reduce initial bundle size */}
           <RootStack.Group 
             screenOptions={{ 
               presentation: 'card',
@@ -134,17 +146,6 @@ export const RootNavigator = () => {
               component={MoreSchoiseNavigator}
             />
           </RootStack.Group>
-          
-          {/* Main Application - AppDrawerNavigator (Drawer → Tab hierarchy) */}
-          {/* FIX: Drawer'ı en son ekle - stack'te en üstte olması için */}
-          {/* Drawer açıldığında SafeAreaView'lerin üstünde görünmesi için stack sırası önemli */}
-          <RootStack.Screen 
-            name="App" 
-            component={AppDrawerNavigator}
-            options={{
-              headerShown: false,
-            }}
-          />
         </>
       )}
     </RootStack.Navigator>

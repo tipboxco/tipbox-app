@@ -31,11 +31,11 @@ export const AppDrawerNavigator = () => {
     <Drawer.Navigator
       screenOptions={{
         headerShown: false,
-        drawerType: 'front', // CRITICAL: 'front' drawer'ı ekranın üzerinde overlay olarak açar, ekranı kaydırmaz
+        drawerType: 'slide', // ARCHITECTURE FIX: 'slide' drawer'ı ekranı kaydırarak açar, gesture conflicts'i azaltır
         drawerPosition: 'left',
         overlayColor: 'rgba(0,0,0,0.5)',
         swipeEnabled: true,
-        swipeEdgeWidth: 50, // CRITICAL: Edge swipe genişliği (default: 32)
+        swipeEdgeWidth: 25, // ARCHITECTURE FIX: Edge-only swipe (20-30 range) prevents conflicts with horizontal/vertical gestures
         drawerStyle: {
           width: '75%', // Optimal drawer width
           zIndex: 10000, // FIX: Drawer'ın SafeAreaView'in üstünde görünmesi için (SafeAreaView zIndex: 100)
@@ -46,7 +46,7 @@ export const AppDrawerNavigator = () => {
         keyboardDismissMode: 'on-drag', // Keyboard'u drawer açılırken dismiss et (UX iyileştirmesi)
         // React Navigation DrawerNavigator'ın kendi animasyonu kullanılır
         // Native driver ile optimize edilmiş, hızlı ve smooth
-        // drawerType: 'front' → Drawer ekranın üzerinde overlay olarak açılır, ekran yerinde kalır
+        // drawerType: 'slide' → Drawer ekranı kaydırarak açar, gesture ownership daha net
       }}
       drawerContent={renderDrawerContent}
     >

@@ -13,6 +13,7 @@ import { useAppStore } from '@/src/store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { getHeavyTabFreezeRule } from './rules/freezeRules';
+import { ScrollRegistry } from '@/src/services/ScrollRegistry';
 // Heroicons imports
 import {
   HomeIcon as HomeIconSolid,
@@ -31,7 +32,7 @@ import {
   InboxIcon as InboxIconOutline,
 } from 'react-native-heroicons/outline';
 
-import { FeedNavigator } from '@/src/features/feed/navigation';
+import { FeedScreen } from '@/src/features/feed/screens';
 import { ExploreNavigator } from '@/src/features/explore/navigation';
 import { CatalogNavigator } from '@/src/features/catalog/navigation';
 import { EventsNavigator } from '@/src/features/events/navigation';
@@ -125,7 +126,7 @@ export const TabNavigator = () => {
     let IconComponent: React.ComponentType<any> | null = null;
 
     switch (route.name) {
-      case 'FeedStack':
+      case 'FeedScreen':
         IconComponent = focused ? HomeIconSolid : HomeIconOutline;
         break;
       case 'ExploreStack':
@@ -184,6 +185,27 @@ export const TabNavigator = () => {
     }
   }, [unreadCount, markAllAsReadMutation]);
 
+  // CRITICAL FIX: Instagram-style scroll-to-top handler
+  // Home icon'a tıklandığında Feed'i en üste scroll et
+  // React Navigation'ın useScrollToTop hook'u sadece aktif tab için çalışır
+  // Bu handler hem aktif hem inactive durumda çalışır
+  // 
+  // IMPORTANT: Tab press event'i zaten FeedScreen'e navigate edecek
+  // Bu handler sadece scroll yapmak için - navigation otomatik
+  const handleFeedTabPress = useCallback(() => {
+    // CRITICAL FIX: Double requestAnimationFrame - native view'in mount olmasını bekle
+    // React Navigation tab press event'i FeedScreen'e navigate edecek
+    // Navigate tamamlandıktan sonra scroll yapmak için delay ekle
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        // Ekstra delay - screen transition tamamlanmasını bekle
+        setTimeout(() => {
+          ScrollRegistry.scrollToTop('feed', true);
+        }, 50);
+      });
+    });
+  }, []);
+
   // Heavy tab'ler için freeze rule
   const heavyTabFreezeRule = getHeavyTabFreezeRule();
 
@@ -224,8 +246,11 @@ export const TabNavigator = () => {
           })}
         >
           <Tab.Screen
-            name="FeedStack"
-            component={FeedNavigator}
+            name="FeedScreen"
+            component={FeedScreen}
+            listeners={{
+              tabPress: handleFeedTabPress,
+            }}
           />
           <Tab.Screen
             name="ExploreStack"

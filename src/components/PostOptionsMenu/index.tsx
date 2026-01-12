@@ -67,7 +67,12 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   }, [postId, closeBottomSheet]);
 
   return (
-    <VStack bg={isDark ? '$backgroundDark900' : '$white'} pb={20}>
+    <VStack 
+      bg={isDark ? '$backgroundDark900' : '$white'} 
+      pb={20}
+      pt={8}
+      minHeight={120}
+    >
       {/* External Share */}
       <Pressable
         onPress={handleExternalShare}

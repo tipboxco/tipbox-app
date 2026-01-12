@@ -337,9 +337,7 @@ const EventDetailScreen: React.FC = () => {
         const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
 
         const productImage = toImageSource(item.contextData?.image);
-        if (!productImage) {
-            console.warn('[mapTipsToCardData] Missing product image for item:', item.id);
-        }
+        // Missing product image warning removed for performance
 
         const product: TipsProduct = {
             id: item.contextData.id,
@@ -380,9 +378,7 @@ const EventDetailScreen: React.FC = () => {
             const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
 
         const productImage = toImageSource(item.contextData?.image);
-        if (!productImage) {
-            console.warn('[mapQuestionToCardData] Missing product image for item:', item.id);
-        }
+        // Missing product image warning removed for performance
 
         const product: QuestionCardProduct = {
             id: item.contextData.id,

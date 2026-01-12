@@ -35,6 +35,7 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 
 interface QuestionPostCardProps {
   data: QuestionPost | QuestionCardData; // Accept both types for compatibility
@@ -119,7 +120,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
   };
 
   const handleComment = () => {
-    navigation.navigate('Post', {
+    navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'question' },
     });
@@ -165,9 +166,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             postContent={data.content}
             postAuthorName={data.user.name}
           >
-            <Pressable>
-              <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-            </Pressable>
+            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
           </PostContextMenu>
         </HStack>
       </VStack>
@@ -264,7 +263,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
 
       {/* Content */}
       <Pressable onPress={() => {
-        navigation.navigate('Post', {
+        navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostDetailScreen',
           params: { postData: data, type: 'question' }
         });
@@ -283,7 +282,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       {/* Images */}
       <Pressable
         onPress={() => {
-          navigation.navigate('Post', {
+          navigationService.navigate(ROOT_ROUTES.POST, {
             screen: 'PostDetailScreen',
             params: { postData: data, type: 'question' }
           });

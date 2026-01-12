@@ -17,6 +17,8 @@ import {
 } from 'react-native-heroicons/solid';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import { useNavigation } from '@react-navigation/native';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { toImageSource } from '@/src/utils';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import {
@@ -165,7 +167,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
     };
 
     const handleComment = () => {
-        navigation.navigate('Post', {
+        navigationService.navigate(ROOT_ROUTES.POST, {
             screen: 'PostDetailScreen',
             params: { postData: data, type: 'benchmark' },
         });
@@ -211,16 +213,14 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                         postContent={data.content}
                         postAuthorName={data.user.name}
                     >
-                        <Pressable>
-                            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-                        </Pressable>
+                        <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
                     </PostContextMenu>
                 </HStack>
             </VStack>
 
             {/* Content */}
             <Pressable onPress={() => {
-                navigation.navigate('Post', {
+                navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostDetailScreen',
                     params: { postData: data, type: 'benchmark' }
                 });
@@ -238,7 +238,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
 
             {/* Product Comparison */}
             <Pressable onPress={() => {
-                navigation.navigate('Post', {
+                navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostDetailScreen',
                     params: { postData: data, type: 'benchmark' }
                 });
