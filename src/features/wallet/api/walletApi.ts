@@ -90,9 +90,10 @@ export interface TransactionsResponse {
  * Send Tip Request
  */
 export interface SendTipRequest {
-  recipientId: string;
-  amount: number;
-  message?: string;
+  recipientId?: string;      // User ID (friend-to-friend için) - opsiyonel
+  walletAddress?: string;    // Wallet address (external wallet için) - opsiyonel
+  amount: number;            // TIPS miktarı - zorunlu
+  message?: string;          // Opsiyonel mesaj
 }
 
 /**

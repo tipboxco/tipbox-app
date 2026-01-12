@@ -1010,36 +1010,30 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         onPress={() => {
           console.log('[SendBottomSheet] Send button pressed');
           
-          // Validate recipient
+          // Validate recipient - recipientId VEYA walletAddress olmalı
           const recipientId = selectedFriend?.id;
           if (!recipientId && !walletAddress) {
             console.error('[SendBottomSheet] No recipient selected');
-            return;
-          }
-
-          // API expects recipientId (user ID), not wallet address
-          // If sending to wallet address, we need to resolve it to a user ID
-          // For now, we'll only support friend-to-friend transfers
-          if (!recipientId) {
-            console.error('[SendBottomSheet] Cannot send to wallet address yet - backend requires recipientId');
-            // TODO: Show error to user
+            // TODO: Show error toast to user
             return;
           }
 
           const tipsAmount = transactionDetails.tipsAmount;
           
           console.log('[SendBottomSheet] Sending transaction:', {
-            recipientId,
+            recipientId: recipientId || undefined,
+            walletAddress: walletAddress || undefined,
             amount: tipsAmount,
-            message: 'TIPS transfer', // Optional message
+            message: 'TIPS transfer',
           });
 
-          // Call API to send TIPS
+          // Call API to send TIPS - Backend hem recipientId hem walletAddress destekliyor
           sendTips(
             {
-              recipientId,
+              ...(recipientId && { recipientId }),           // Friend ise recipientId gönder
+              ...(walletAddress && { walletAddress }),       // Wallet address ise walletAddress gönder
               amount: tipsAmount,
-              message: 'TIPS transfer', // Optional message
+              message: 'TIPS transfer',
             },
             {
               onSuccess: (response) => {
@@ -1058,8 +1052,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               },
               onError: (error: any) => {
                 console.error('[SendBottomSheet] Send failed:', error);
-                // TODO: Show error message to user
-                // For now, just log the error
+                // TODO: Show error toast to user
                 const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
                 console.error('[SendBottomSheet] Error details:', errorMessage);
               },
