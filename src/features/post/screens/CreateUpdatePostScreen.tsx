@@ -220,17 +220,19 @@ export const CreateUpdatePostScreen = () => {
       
       // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
       navigation.dispatch(
+        // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
         CommonActions.reset({
           index: 0,
           routes: [
             {
-              name: 'Main',
+              name: 'App',
               state: {
                 routes: [
                   {
-                    name: 'Feed',
+                    name: 'MainTabs',
                     state: {
                       routes: [{ name: 'FeedScreen' }],
+                      index: 0,
                     },
                   },
                 ],

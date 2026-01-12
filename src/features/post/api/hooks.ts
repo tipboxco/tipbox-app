@@ -26,6 +26,8 @@ import type {
 } from './postApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 import { eventsKeys } from '@/src/features/events/api/hooks';
+import { profileKeys } from '@/src/features/profile/api/hooks';
+import { useAppStore } from '@/src/store/appStore';
 
 /**
  * Query Keys - Post feature için cache key pattern'leri
@@ -87,6 +89,7 @@ const invalidateContextFeed = (
  */
 export const useCreateFreePost = () => {
   const queryClient = useQueryClient();
+  const userId = useAppStore((state) => state.user?.id);
   
   return useMutation<CreatePostResponse, Error, CreatePostRequest>({
     mutationFn: createFreePost,
@@ -105,8 +108,19 @@ export const useCreateFreePost = () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       // Post listesini de invalidate et
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      // Profil feed'lerini de invalidate et (kullanıcı kendi gönderisini görebilsin)
+      
+      // Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
+        // Tüm limit varyasyonlarını da invalidate et
+        queryClient.invalidateQueries({ 
+          queryKey: ['profile', 'posts', userId],
+          exact: false 
+        });
+      }
     },
   });
 };
@@ -130,6 +144,7 @@ export const useCreateFreePost = () => {
  */
 export const useCreateBenchmarkPost = () => {
   const queryClient = useQueryClient();
+  const userId = useAppStore((state) => state.user?.id);
   
   return useMutation<CreatePostResponse, Error, CreateBenchmarkPostRequest>({
     mutationFn: createBenchmarkPost,
@@ -141,8 +156,18 @@ export const useCreateBenchmarkPost = () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       // Post listesini de invalidate et
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      // Profil feed'lerini de invalidate et (kullanıcı kendi gönderisini görebilsin)
+      
+      // Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
+        queryClient.invalidateQueries({ 
+          queryKey: ['profile', 'posts', userId],
+          exact: false 
+        });
+      }
     },
   });
 };
@@ -152,6 +177,7 @@ export const useCreateBenchmarkPost = () => {
  */
 export const useCreateTipsAndTricksPost = () => {
   const queryClient = useQueryClient();
+  const userId = useAppStore((state) => state.user?.id);
   
   return useMutation<CreatePostResponse, Error, CreateTipsAndTricksPostRequest>({
     mutationFn: createTipsAndTricksPost,
@@ -162,6 +188,15 @@ export const useCreateTipsAndTricksPost = () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
+        queryClient.invalidateQueries({ 
+          queryKey: ['profile', 'posts', userId],
+          exact: false 
+        });
+      }
     },
   });
 };
@@ -171,6 +206,7 @@ export const useCreateTipsAndTricksPost = () => {
  */
 export const useCreateQuestionPost = () => {
   const queryClient = useQueryClient();
+  const userId = useAppStore((state) => state.user?.id);
   
   return useMutation<CreatePostResponse, Error, CreateQuestionPostRequest>({
     mutationFn: createQuestionPost,
@@ -181,6 +217,15 @@ export const useCreateQuestionPost = () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
+        queryClient.invalidateQueries({ 
+          queryKey: ['profile', 'posts', userId],
+          exact: false 
+        });
+      }
     },
   });
 };
@@ -190,6 +235,7 @@ export const useCreateQuestionPost = () => {
  */
 export const useCreateUpdatePost = () => {
   const queryClient = useQueryClient();
+  const userId = useAppStore((state) => state.user?.id);
   
   return useMutation<CreatePostResponse, Error, CreateUpdatePostRequest>({
     mutationFn: createUpdatePost,
@@ -200,6 +246,15 @@ export const useCreateUpdatePost = () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
+        queryClient.invalidateQueries({ 
+          queryKey: ['profile', 'posts', userId],
+          exact: false 
+        });
+      }
     },
   });
 };
@@ -245,6 +300,7 @@ export const useSplitExperience = () => {
  */
 export const useCreateExperiencePost = () => {
   const queryClient = useQueryClient();
+  const userId = useAppStore((state) => state.user?.id);
   
   return useMutation<CreatePostResponse, Error, CreateExperiencePostRequest>({
     mutationFn: createExperiencePost,
@@ -255,6 +311,15 @@ export const useCreateExperiencePost = () => {
       queryClient.invalidateQueries({ queryKey: feedKeys.all });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
+        queryClient.invalidateQueries({ 
+          queryKey: ['profile', 'posts', userId],
+          exact: false 
+        });
+      }
     },
   });
 };

@@ -22,6 +22,7 @@ export const ROOT_ROUTES = {
   WALLET: 'Wallet',
   BOOKMARKS: 'Bookmarks',
   MARKETPLACE: 'Marketplace',
+  EVENT: 'Event',
   MESSAGE_DETAIL: 'MessageDetail',
   SUPPORT_MESSAGE_DETAIL: 'SupportMessageDetail',
 } as const;

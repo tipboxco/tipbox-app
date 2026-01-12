@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, VStack, ActivityIndicator, Text } from '@gluestack-ui/themed';
+import { ScrollView, VStack, Text } from '@gluestack-ui/themed';
+import { ActivityIndicator } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,9 +9,10 @@ import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import EventCard from '../components/EventCard';
-import { useSafeAreaValues } from '@/src/utils';
+import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandEvents } from '../api/hooks';
 import type { Event } from '../types';
+import { EventStatus } from '../types';
 import type { EventCardData } from '../components/EventCard';
 import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
@@ -39,16 +41,45 @@ const BrandEventsScreen: React.FC = () => {
     eventsData.pages.forEach((page) => {
       if (page.items) {
         page.items.forEach((item: Event) => {
+          // Format date range from startDate and endDate
+          const formatDateRange = (startDate: string, endDate: string): string => {
+            try {
+              const start = new Date(startDate);
+              const end = new Date(endDate);
+              const formatDate = (date: Date): string => {
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = date.toLocaleDateString('tr-TR', { month: 'short' });
+                return `${day} ${month}`;
+              };
+              return `${formatDate(start)} - ${formatDate(end)}`;
+            } catch {
+              return '';
+            }
+          };
+
+          // Map EventStatus to EventCardData status
+          const mapStatus = (status: EventStatus): 'joined' | 'join' | 'completed' => {
+            switch (status) {
+              case EventStatus.JOINED:
+                return 'joined';
+              case EventStatus.JOIN:
+                return 'join';
+              default:
+                return 'join';
+            }
+          };
+
+          // Convert image string to ImageSourcePropType
+          const imageSource = item.image ? toImageSource(item.image) : null;
+          const defaultImage = require('@/assets/defaultImages/default-event.png');
+
           const eventCard: EventCardData = {
             id: item.id,
             title: item.title || '',
             description: item.description || '',
-            image: item.image || null,
-            startDate: item.startDate || '',
-            endDate: item.endDate || '',
-            status: item.status || 'upcoming',
-            participants: item.participants || 0,
-            rewards: item.rewards || [],
+            dateRange: formatDateRange(item.startDate || '', item.endDate || ''),
+            status: mapStatus(item.status),
+            image: imageSource || defaultImage,
           };
           allEvents.push(eventCard);
         });
@@ -100,8 +131,11 @@ const BrandEventsScreen: React.FC = () => {
                     key={event.id}
                     event={event}
                     onPress={() => {
-                      // EventDetailScreen'e yönlendir (Events tab'ı içinde)
-                      navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail', { eventId: event.id });
+                      // RootNavigator'dan EventDetailScreen'e navigate et (full screen banner için)
+                      navigationService.navigate('Event', { 
+                        screen: 'EventDetailScreen', 
+                        params: { eventId: event.id } 
+                      });
                     }}
                   />
                 ))}

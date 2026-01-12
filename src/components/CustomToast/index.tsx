@@ -1,6 +1,7 @@
-import React from 'react';
-import { Box, Text, HStack, Icon, Pressable } from '@gluestack-ui/themed';
-import { CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
+import React, { useEffect, useRef } from 'react';
+import { Box, Text, HStack, Pressable, VStack } from '@gluestack-ui/themed';
+import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react-native';
+import { Animated } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface CustomToastProps {
@@ -15,18 +16,38 @@ interface CustomToastProps {
 /**
  * CustomToast Component
  * 
- * Gluestack UI toast sisteminde kullanılan custom toast component'i.
- * Success, error, warning ve info action'larını destekler.
+ * Figma tasarımına göre güncellenmiş toast component'i.
+ * - Beyaz arka plan
+ * - Sol tarafta dairesel ikon (koyu renk, etrafında açık renk halka, içinde beyaz ikon)
+ * - Orta kısımda mesaj metni
+ * - Sağ üstte kapatma butonu
+ * - Alt kısımda progress bar
  */
 export const CustomToast: React.FC<CustomToastProps> = ({
   id,
   title,
   description,
   action,
+  duration = 3000,
   onClose,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const progressAnim = useRef(new Animated.Value(1)).current;
+
+  // Progress bar animasyonu
+  useEffect(() => {
+    if (duration > 0) {
+      progressAnim.setValue(1);
+      Animated.timing(progressAnim, {
+        toValue: 0,
+        duration,
+        useNativeDriver: false,
+      }).start(() => {
+        onClose?.();
+      });
+    }
+  }, [duration, onClose]);
 
   // Action'a göre icon ve renk belirle
   const getActionConfig = () => {
@@ -34,35 +55,43 @@ export const CustomToast: React.FC<CustomToastProps> = ({
       case 'success':
         return {
           icon: CheckCircle,
-          iconColor: '#10B981', // green-500
-          bgColor: isDark ? '#064E3B' : '#D1FAE5', // green-50 / green-900
-          borderColor: isDark ? '#047857' : '#10B981', // green-500 / green-700
-          textColor: isDark ? '#D1FAE5' : '#065F46', // green-900 / green-50
+          iconBgColor: '#065F46', // koyu yeşil
+          iconRingColor: '#10B981', // açık yeşil halka
+          iconColor: '#FFFFFF', // beyaz ikon
+          textColor: '#10B981', // hafif soluk yeşil
+          progressColor: '#065F46', // koyu yeşil
+          progressBgColor: '#E5E7EB', // açık gri
         };
       case 'error':
         return {
           icon: XCircle,
-          iconColor: '#EF4444', // red-500
-          bgColor: isDark ? '#7F1D1D' : '#FEE2E2', // red-50 / red-900
-          borderColor: isDark ? '#991B1B' : '#EF4444', // red-500 / red-700
-          textColor: isDark ? '#FEE2E2' : '#991B1B', // red-900 / red-50
+          iconBgColor: '#991B1B', // koyu kırmızı
+          iconRingColor: '#EF4444', // açık kırmızı halka
+          iconColor: '#FFFFFF', // beyaz ikon
+          textColor: '#EF4444', // hafif soluk kırmızı
+          progressColor: '#991B1B', // koyu kırmızı
+          progressBgColor: '#E5E7EB', // açık gri
         };
       case 'warning':
         return {
           icon: AlertCircle,
-          iconColor: '#F59E0B', // amber-500
-          bgColor: isDark ? '#78350F' : '#FEF3C7', // amber-50 / amber-900
-          borderColor: isDark ? '#92400E' : '#F59E0B', // amber-500 / amber-700
-          textColor: isDark ? '#FEF3C7' : '#92400E', // amber-900 / amber-50
+          iconBgColor: '#92400E', // koyu amber
+          iconRingColor: '#F59E0B', // açık amber halka
+          iconColor: '#FFFFFF', // beyaz ikon
+          textColor: '#F59E0B', // hafif soluk amber
+          progressColor: '#92400E', // koyu amber
+          progressBgColor: '#E5E7EB', // açık gri
         };
       case 'info':
       default:
         return {
           icon: AlertCircle,
-          iconColor: '#3B82F6', // blue-500
-          bgColor: isDark ? '#1E3A8A' : '#DBEAFE', // blue-50 / blue-900
-          borderColor: isDark ? '#1E40AF' : '#3B82F6', // blue-500 / blue-700
-          textColor: isDark ? '#DBEAFE' : '#1E40AF', // blue-900 / blue-50
+          iconBgColor: '#1E40AF', // koyu mavi
+          iconRingColor: '#3B82F6', // açık mavi halka
+          iconColor: '#FFFFFF', // beyaz ikon
+          textColor: '#3B82F6', // hafif soluk mavi
+          progressColor: '#1E40AF', // koyu mavi
+          progressBgColor: '#E5E7EB', // açık gri
         };
     }
   };
@@ -70,53 +99,100 @@ export const CustomToast: React.FC<CustomToastProps> = ({
   const config = getActionConfig();
   const IconComponent = config.icon;
 
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
-    <Pressable
-      onPress={onClose}
-      style={{
-        width: '100%',
-        maxWidth: 400,
-      }}
+    <Box
+      bg="$white"
+      borderRadius="$lg"
+      p="$4"
+      shadowColor="$black"
+      shadowOffset={{ width: 0, height: 2 }}
+      shadowOpacity={0.1}
+      shadowRadius={8}
+      elevation={5}
+      width="100%"
+      maxWidth={400}
+      overflow="hidden"
     >
-      <Box
-        bg={config.bgColor}
-        borderWidth={1}
-        borderColor={config.borderColor}
-        borderRadius="$lg"
-        p="$4"
-        shadowColor="$black"
-        shadowOffset={{ width: 0, height: 2 }}
-        shadowOpacity={0.1}
-        shadowRadius={4}
-        elevation={5}
-      >
-        <HStack space="md" alignItems="center">
-          <Icon
-            as={IconComponent}
+      <HStack space="md" alignItems="center" position="relative">
+        {/* Sol tarafta dairesel ikon */}
+        <Box
+          width={40}
+          height={40}
+          borderRadius="$full"
+          bg={config.iconBgColor}
+          alignItems="center"
+          justifyContent="center"
+          style={{
+            shadowColor: config.iconRingColor,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 4,
+          }}
+        >
+          <IconComponent
+            width={20}
+            height={20}
             color={config.iconColor}
-            size="lg"
           />
-          <Box flex={1}>
+        </Box>
+
+        {/* Orta kısım - Mesaj metni */}
+        <Box flex={1}>
+          <Text
+            fontSize="$sm"
+            fontWeight="$medium"
+            color={config.textColor}
+            mb={description ? '$1' : 0}
+          >
+            {title}
+          </Text>
+          {description && (
             <Text
-              fontSize="$sm"
-              fontWeight="$semibold"
+              fontSize="$xs"
               color={config.textColor}
-              mb={description ? '$1' : 0}
+              opacity={0.8}
             >
-              {title}
+              {description}
             </Text>
-            {description && (
-              <Text
-                fontSize="$xs"
-                color={config.textColor}
-                opacity={0.9}
-              >
-                {description}
-              </Text>
-            )}
-          </Box>
-        </HStack>
+          )}
+        </Box>
+
+        {/* Sağ üstte kapatma butonu */}
+        <Pressable
+          onPress={onClose}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <X
+            width={18}
+            height={18}
+            color="#9CA3AF"
+          />
+        </Pressable>
+      </HStack>
+
+      {/* Alt kısım - Progress bar */}
+      <Box
+        height={3}
+        bg={config.progressBgColor}
+        borderRadius="$full"
+        mt="$3"
+        overflow="hidden"
+      >
+        <Animated.View
+          style={{
+            height: '100%',
+            width: progressWidth,
+            backgroundColor: config.progressColor,
+            borderRadius: 999,
+          }}
+        />
       </Box>
-    </Pressable>
+    </Box>
   );
 };

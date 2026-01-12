@@ -10,6 +10,7 @@ import { ProfileNavigator } from '@/src/features/profile/navigation';
 import { WalletNavigator } from '@/src/features/wallet';
 import { BookmarksNavigator } from '@/src/features/bookmarks/navigation';
 import { MarketplaceNavigator } from '@/src/features/marketplace/navigation';
+import { EventNavigator } from '@/src/features/events/EventNavigator';
 import MessageDetailScreen from '@/src/features/inbox/screens/MessageDetail';
 import SupportMessageDetailScreen from '@/src/features/inbox/screens/SupportMessageDetail';
 import type { RootStackParamList } from '../types/root.types';
@@ -104,6 +105,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="Marketplace"
               component={MarketplaceNavigator}
+            />
+            <RootStack.Screen
+              name="Event"
+              component={EventNavigator}
             />
             <RootStack.Screen
               name="MessageDetail"

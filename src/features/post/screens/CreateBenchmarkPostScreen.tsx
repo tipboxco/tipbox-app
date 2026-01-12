@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, Toast, ToastTitle, ToastDescription, useToast } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
-import { FormProvider, Controller, useFormContext } from 'react-hook-form';
+import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -333,8 +333,8 @@ export const CreateBenchmarkPostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Feed screen
-      navigation.navigate('Main', {
-        screen: 'Feed',
+      navigation.navigate('App', {
+        screen: 'MainTabs',
         params: {
           screen: 'FeedScreen',
         },
@@ -342,7 +342,7 @@ export const CreateBenchmarkPostScreen = () => {
     }
   };
 
-  const onSubmit = async (data: BenchmarkPostFormData) => {
+  const onSubmit: SubmitHandler<BenchmarkPostFormData> = async (data) => {
     console.log('[CreateBenchmarkPostScreen] Form submitted:', data);
     
     // ContextType ve contextId kontrolü
@@ -429,17 +429,19 @@ export const CreateBenchmarkPostScreen = () => {
       
       // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
       navigation.dispatch(
+        // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
         CommonActions.reset({
           index: 0,
           routes: [
             {
-              name: 'Main',
+              name: 'App',
               state: {
                 routes: [
                   {
-                    name: 'Feed',
+                    name: 'MainTabs',
                     state: {
                       routes: [{ name: 'FeedScreen' }],
+                      index: 0,
                     },
                   },
                 ],
@@ -496,7 +498,12 @@ export const CreateBenchmarkPostScreen = () => {
               borderRadius: 25,
               paddingX: 24,
               paddingY: 8,
-              onPress: handleSubmit(onSubmit),
+              onPress: () => {
+                // TypeScript type inference issue with react-hook-form handleSubmit
+                // useBenchmarkPostForm already uses BenchmarkPostFormData, so this is safe
+                const submitHandler = handleSubmit as unknown as (callback: SubmitHandler<BenchmarkPostFormData>) => () => void;
+                submitHandler(onSubmit)();
+              },
             }}
           />
 

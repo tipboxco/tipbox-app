@@ -310,7 +310,11 @@ const ExploreScreen: React.FC = () => {
   // Callback fonksiyonlarını useCallback ile sarmalayarak referanslarını stabilize et
   const handleEventPress = useCallback((eventId: string) => {
     // Events stack'ine navigate et
-    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail' as any, { eventId });
+    // RootNavigator'dan EventDetailScreen'e navigate et (full screen banner için)
+    navigationService.navigate('Event', { 
+      screen: 'EventDetailScreen', 
+      params: { eventId } 
+    });
   }, []);
 
   // Banner navigation handler

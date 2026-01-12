@@ -210,10 +210,17 @@ export const CreatePostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Catalog screen if can't go back
-      navigation.navigate('Main', {
-        screen: 'Catalog',
+      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → CatalogStack → Catalog → CatalogScreen
+      navigation.navigate('App', {
+        screen: 'MainTabs',
         params: {
-          screen: 'CatalogScreen',
+          screen: 'CatalogStack',
+          params: {
+            screen: 'Catalog',
+            params: {
+              screen: 'CatalogScreen',
+            },
+          },
         },
       });
     }
@@ -318,18 +325,20 @@ export const CreatePostScreen = () => {
       clearFlow();
       
       // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
+      // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
           routes: [
             {
-              name: 'Main',
+              name: 'App',
               state: {
                 routes: [
                   {
-                    name: 'Feed',
+                    name: 'MainTabs',
                     state: {
                       routes: [{ name: 'FeedScreen' }],
+                      index: 0,
                     },
                   },
                 ],

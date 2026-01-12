@@ -8,6 +8,7 @@ import { PostStackParamList } from '@/src/features/post/navigation';
 import { WalletStackParamList } from '@/src/features/wallet/navigation';
 import { BookmarksStackParamList } from '@/src/features/bookmarks/navigation';
 import { MarketplaceStackParamList } from '@/src/features/marketplace/navigation';
+import { EventStackParamList } from '@/src/features/events/EventNavigator';
 import { InboxStackParamList } from '@/src/features/inbox/navigation';
 import { DrawerParamList } from './drawer.types';
 
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   Wallet: NavigatorScreenParams<WalletStackParamList>;
   Bookmarks: NavigatorScreenParams<BookmarksStackParamList>;
   Marketplace: NavigatorScreenParams<MarketplaceStackParamList>;
+  Event: NavigatorScreenParams<EventStackParamList>;
   
   // MessageDetail - Inbox'tan bağımsız, global screen
   MessageDetail: {

@@ -20,6 +20,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
+import { navigationService } from '@/src/services/NavigationService';
 import { Header } from '@/src/components/Header';
 import BadgeDetailModal from '../components/BadgeDetailModal';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
@@ -79,7 +80,11 @@ const EventsScreen: React.FC = () => {
       return;
     }
     try {
-      navigation.navigate('EventDetail', { eventId });
+      // RootNavigator'dan EventDetailScreen'e navigate et (full screen banner için)
+      navigationService.navigate('Event', { 
+        screen: 'EventDetailScreen', 
+        params: { eventId } 
+      });
     } catch (error) {
       console.error('[EventsScreen] Navigation error:', error);
     }

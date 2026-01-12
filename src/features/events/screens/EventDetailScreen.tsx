@@ -1,7 +1,6 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { Platform, FlatList, ActivityIndicator, Share } from 'react-native';
-import { ScrollView, Dimensions, Animated } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Platform, FlatList, ActivityIndicator, Share, Dimensions, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -16,7 +15,9 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { EventsStackParamList } from '../navigation';
+import type { EventStackParamList } from '../EventNavigator';
+import { navigationService } from '@/src/services/NavigationService';
+import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { Header } from '@/src/components/Header';
 import {
   ChevronLeftIcon,
@@ -51,35 +52,35 @@ import { ProductInfoType } from '@/src/types/common';
 
 const { width } = Dimensions.get('window');
 
-type EventDetailScreenNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventDetail'>;
-type EventDetailScreenRouteProp = RouteProp<EventsStackParamList, 'EventDetail'>;
+// EventDetailScreen artık sadece EventNavigator'dan çağrılır
+type EventDetailScreenNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventDetailScreen'>;
+type EventDetailScreenRouteProp = RouteProp<EventStackParamList, 'EventDetailScreen'>;
 
 const EventDetailScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const insets = useSafeAreaInsets();
     const navigation = useNavigation<EventDetailScreenNavigationProp>();
     const route = useRoute<EventDetailScreenRouteProp>();
-    const scrollY = useRef(new Animated.Value(0)).current;
 
-    const { eventId } = route.params || {};
+    // EventDetailScreen artık sadece EventNavigator'dan çağrılır
+    const eventId = route.params?.eventId;
 
     // Validate eventId
     if (!eventId) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-                    <Header
-                        title="Event Not Found"
-                        showBackButton={true}
-                        onBackPress={() => navigation.goBack()}
-                    />
-                    <Box flex={1} alignItems="center" justifyContent="center">
-                        <Text color={isDark ? '#FFFFFF' : '#000000'}>
-                            Event ID bulunamadı
-                        </Text>
-                    </Box>
+            <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} pt={insets.top}>
+                <Header
+                    title="Event Not Found"
+                    showBackButton={true}
+                    onBackPress={() => navigation.goBack()}
+                />
+                <Box flex={1} alignItems="center" justifyContent="center">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>
+                        Event ID bulunamadı
+                    </Text>
                 </Box>
-            </SafeAreaView>
+            </Box>
         );
     }
 
@@ -617,59 +618,40 @@ const EventDetailScreen: React.FC = () => {
         }
     }, [event, eventId]);
 
-    // Banner yüksekliği ve içerik başlangıç noktası
+    // Banner yüksekliği
     const BANNER_HEIGHT = 250;
-    const CONTENT_OFFSET = 20; // mt={-20} nedeniyle içerik banner'ın 20px üstünde başlıyor
-    const CONTENT_START = BANNER_HEIGHT - CONTENT_OFFSET; // 230px
-
-    const handleScroll = Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: false }
-    );
-
-    // Header animasyonu: İçeriğin başlangıç noktasına yaklaştığında açılır
-    // 180px'de başlar, 230px'de (içerik başlangıcı) tamamen görünür olur
-    const headerOpacity = scrollY.interpolate({
-        inputRange: [180, CONTENT_START],
-        outputRange: [0, 1],
-        extrapolate: 'clamp',
-    });
 
     // Loading state
     if (isLoading) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-                    <Header
-                        title="Loading..."
-                        showBackButton={true}
-                        onBackPress={() => navigation.goBack()}
-                    />
-                    <Box flex={1} alignItems="center" justifyContent="center">
-                        <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
-                    </Box>
+            <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} pt={insets.top}>
+                <Header
+                    title="Loading..."
+                    showBackButton={true}
+                    onBackPress={() => navigation.goBack()}
+                />
+                <Box flex={1} alignItems="center" justifyContent="center">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
                 </Box>
-            </SafeAreaView>
+            </Box>
         );
     }
 
     // Error state
     if (error || !event) {
         return (
-            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-                <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-                    <Header
-                        title="Event Not Found"
-                        showBackButton={true}
-                        onBackPress={() => navigation.goBack()}
-                    />
-                    <Box flex={1} alignItems="center" justifyContent="center">
-                        <Text color={isDark ? '#FFFFFF' : '#000000'}>
-                            {error ? 'Event yüklenirken bir hata oluştu' : 'Event bulunamadı'}
-                        </Text>
-                    </Box>
+            <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} pt={insets.top}>
+                <Header
+                    title="Event Not Found"
+                    showBackButton={true}
+                    onBackPress={() => navigation.goBack()}
+                />
+                <Box flex={1} alignItems="center" justifyContent="center">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'}>
+                        {error ? 'Event yüklenirken bir hata oluştu' : 'Event bulunamadı'}
+                    </Text>
                 </Box>
-            </SafeAreaView>
+            </Box>
         );
     }
 
@@ -681,31 +663,66 @@ const EventDetailScreen: React.FC = () => {
     const participantAvatars = event.participants?.map(p => p.avatar) || [];
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            {/* Sticky Animated Header */}
-            <Animated.View
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 1000,
-                    opacity: headerOpacity,
-                }}
+            {/* Header */}
+            <Box
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                zIndex={1000}
+                bg={isDark ? '#000000' : '#FFFFFF'}
+                pt={insets.top}
+                pb={10}
+                px={16}
             >
-                <Header
-                    title={event.title}
-                    showBackButton={true}
-                    onBackPress={() => navigation.goBack()}
-                    showShare={true}
-                    onSharePress={handleShare}
-                />
-            </Animated.View>
+                <HStack justifyContent="space-between" alignItems="center">
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        width={36}
+                        height={36}
+                        borderRadius={18}
+                        bg="rgba(0, 0, 0, 0.1)"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <ChevronLeftIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                    </Pressable>
 
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={16}
+                        fontWeight="$bold"
+                        flex={1}
+                        textAlign="center"
+                        mx={16}
+                    >
+                        {event.title}
+                    </Text>
+
+                    <Pressable
+                        onPress={handleShare}
+                        width={36}
+                        height={36}
+                        borderRadius={18}
+                        bg="rgba(0, 0, 0, 0.1)"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <ArrowTopRightOnSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                    </Pressable>
+                </HStack>
+            </Box>
+
+            {/* ScrollView */}
             <ScrollView
-                onScroll={(event) => {
-                    handleScroll(event);
+                bounces={false}
+                overScrollMode="never"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                    paddingTop: insets.top + 60, // Header height
+                }}
+                onMomentumScrollEnd={(event) => {
                     // Infinite scroll için scroll pozisyonunu kontrol et
                     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
                     const paddingToBottom = 20;
@@ -715,16 +732,11 @@ const EventDetailScreen: React.FC = () => {
                         handleLoadMore();
                     }
                 }}
-                scrollEventThrottle={16}
-                bounces={false}
-                overScrollMode="never"
-                showsVerticalScrollIndicator={false}
             >
-                {/* Banner Image */}
+                {/* Banner */}
                 <Box
-                    width={width}
-                    height={250}
-                    position="relative"
+                    width="100%"
+                    height={BANNER_HEIGHT}
                     overflow="hidden"
                 >
                     <Image
@@ -733,8 +745,6 @@ const EventDetailScreen: React.FC = () => {
                         style={{ width: '100%', height: '100%' }}
                         resizeMode="cover"
                     />
-
-                    {/* Gradient Overlay */}
                     <Box
                         position="absolute"
                         top={0}
@@ -743,40 +753,6 @@ const EventDetailScreen: React.FC = () => {
                         bottom={0}
                         bg="rgba(0, 0, 0, 0.6)"
                     />
-
-                    {/* Back and Share Buttons */}
-                    <HStack
-                        position="absolute"
-                        top={25}
-                        left={16}
-                        right={16}
-                        justifyContent="space-between"
-                        alignItems="center"
-                    >
-                        <Pressable
-                            onPress={() => navigation.goBack()}
-                            width={36}
-                            height={36}
-                            borderRadius={18}
-                            bg="rgba(0, 0, 0, 0.6)"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
-                        </Pressable>
-
-                        <Pressable
-                            onPress={handleShare}
-                            width={36}
-                            height={36}
-                            borderRadius={18}
-                            bg="rgba(0, 0, 0, 0.6)"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
-                        </Pressable>
-                    </HStack>
                 </Box>
 
                 {/* Content */}
@@ -784,10 +760,13 @@ const EventDetailScreen: React.FC = () => {
                     bg={isDark ? '#000000' : '#FAFAFA'}
                     borderTopLeftRadius={20}
                     borderTopRightRadius={20}
-                    mt={-20}
                     flex={1}
                     px={15}
                     pt={15}
+                    style={{
+                        backgroundColor: isDark ? '#000000' : '#FAFAFA',
+                        minHeight: '100%',
+                    }}
                 >
                     {/* Event Type Badge */}
                     <Box mb="$2">
@@ -946,7 +925,22 @@ const EventDetailScreen: React.FC = () => {
                             </Text>
                             {/* See All Button */}
                             {event.rewards && event.rewards.length > 0 && (
-                                <Pressable onPress={() => navigation.navigate('RewardsBadges', { eventId })}>
+                                <Pressable onPress={() => {
+                                    // RewardsBadges EventsStack içinde, bu yüzden App → MainTabs → EventsStack → RewardsBadges path'ini kullan
+                                    (navigationService.navigate as any)('App', {
+                                        screen: 'MainTabs',
+                                        params: {
+                                            screen: 'EventsStack',
+                                            params: {
+                                                screen: 'Events',
+                                                params: {
+                                                    screen: 'RewardsBadges',
+                                                    params: { eventId },
+                                                },
+                                            },
+                                        },
+                                    });
+                                }}>
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#000000'}
                                         fontSize={11}
@@ -1083,7 +1077,7 @@ const EventDetailScreen: React.FC = () => {
             {isJoined && event?.status === EventStatus.ACTIVE && (
                 <Box
                     position="absolute"
-                    bottom={Platform.OS === 'ios' ? 34 + 8 : 45 + 8}
+                    bottom={insets.bottom + (Platform.OS === 'ios' ? 34 + 8 : 8)}
                     right={16}
                     zIndex={1000}
                 >
@@ -1118,10 +1112,25 @@ const EventDetailScreen: React.FC = () => {
                                 ? 'Type2' as any // EventType.TYPE2
                                 : undefined;
                             
-                            navigation.navigate('EventCreatePost', {
-                                eventId: eventId, // Event ID'yi gönder
-                                eventType: eventTypeForNav,
-                                product: product,
+                            // EventDetailScreen artık RootNavigator'dan çağrılıyor
+                            // EventCreatePost EventsStack içinde, bu yüzden App → MainTabs → EventsStack → EventCreatePost path'ini kullan
+                            // navigateNested EventsStack'in initial route'una (EventsScreen) gidiyor, bu yüzden direkt nested navigation kullan
+                            (navigationService.navigate as any)('App', {
+                                screen: 'MainTabs',
+                                params: {
+                                    screen: 'EventsStack',
+                                    params: {
+                                        screen: 'Events',
+                                        params: {
+                                            screen: 'EventCreatePost',
+                                            params: {
+                                                eventId: eventId,
+                                                eventType: eventTypeForNav,
+                                                product: product,
+                                            },
+                                        },
+                                    },
+                                },
                             });
                         }}
                     >
@@ -1130,7 +1139,6 @@ const EventDetailScreen: React.FC = () => {
                 </Box>
             )}
         </Box>
-        </SafeAreaView>
     );
 };
 
