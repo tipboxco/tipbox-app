@@ -65,25 +65,32 @@ export const DEFAULT_BOTTOM_SHEET_OPTIONS: Required<Omit<BottomSheetOptions, 'on
   enableOverDrag: false,
   enableHandlePanningGesture: true,
   enableContentPanningGesture: true,
-  // PERFORMANCE FIX: Disable animateOnMount by default for instant opening
-  // @gorhom/bottom-sheet handles animation internally, no need for extra animation
-  animateOnMount: false,
+  // SMOOTH FIX: Enable animateOnMount for smooth opening animation
+  animateOnMount: true,
   backdropOpacity: 0.5,
   backdropPressBehavior: 'close',
 };
 
 /**
+ * Global Bottom Sheet State
+ * DOĞRU MİMARİ: Sadece content ve index
+ */
+export type BottomSheetState = {
+  content: ReactNode | null;
+  index: number; // -1 closed, 0 open
+  options: BottomSheetOptions | null;
+};
+
+/**
  * Global Bottom Sheet Context Type
+ * DOĞRU MİMARİ: Sadece state ve basit actions
  */
 export interface GlobalBottomSheetContextType {
   // State
-  isOpen: boolean;
-  content: ReactNode | null;
-  options: BottomSheetOptions | null;
+  state: BottomSheetState;
   
   // Actions
   openBottomSheet: (content: ReactNode, options?: BottomSheetOptions) => void;
   closeBottomSheet: () => void;
-  updateContent: (content: ReactNode) => void;
 }
 

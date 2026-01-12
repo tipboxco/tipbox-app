@@ -10,6 +10,8 @@ import Animated, {
   interpolate,
   withTiming,
   useAnimatedScrollHandler,
+  useAnimatedRef,
+  runOnJS,
 } from 'react-native-reanimated';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -892,6 +894,38 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const handleTabContainerLayout = useCallback((width: number) => {
     // Tab container width'i state'e kaydet (gerekirse)
   }, []);
+
+  // Scroll pozisyonunu takip et (bounce kontrolü için)
+  const [scrollY, setScrollY] = useState(0);
+  const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
+
+  // Scroll handler - scroll pozisyonunu takip et
+  const handleScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      'worklet';
+      const offsetY = event.contentOffset.y;
+      // Scroll pozisyonunu güncelle (negatif değerleri 0'a çevir)
+      runOnJS(setScrollY)(Math.max(0, offsetY));
+    },
+  });
+
+  // Scroll bittiğinde pozisyonu kontrol et ve 0'dan küçükse 0'a çek
+  const handleScrollEndDrag = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    if (offsetY < 0 && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, []);
+
+  const handleMomentumScrollEnd = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    if (offsetY < 0 && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, []);
+
+  // Bounce kontrolü - scroll pozisyonu 0 olduğunda bounce disable
+  const shouldBounce = scrollY > 0;
   
   // Action button handlers
   const handleSendTIPS = useCallback(() => {
@@ -1559,59 +1593,76 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     );
   }
 
+  // Ekran yüksekliğini hesapla
+  const screenHeight = Dimensions.get('window').height;
+  
+  // Tab içerikleri için minimum yükseklik (profile header + tabs bar yüksekliği yaklaşık 400px)
+  const tabContentHeight = screenHeight - 400;
+
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      {/* Üst Kısım: Sabit (Profile Header + TabsBar) */}
-      <Box>
-        {profileHeader}
-        <TabsBar 
-          activeTab={activeTab} 
-          onChangeTab={handleTabChange} 
-          isDark={isDark}
-          progress={progress}
-          tabContainerRef={tabContainerRef}
-          onTabContainerLayout={handleTabContainerLayout}
-        />
-      </Box>
-      
-      {/* Alt Kısım: Yatay Kaydırılabilir Tab İçerikleri */}
-      <Box flex={1}>
-        <FlatList
-          ref={contentFlatListRef}
-          data={TABS}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={handleContentScroll}
-          onMomentumScrollEnd={handleContentScrollEnd}
-          keyExtractor={(item) => item.key}
-          getItemLayout={(data, index) => ({
-            length: SCREEN_WIDTH,
-            offset: SCREEN_WIDTH * index,
-            index,
-          })}
-          scrollEnabled={true}
-          nestedScrollEnabled={false}
-          renderItem={({ item }) => (
-            <Box width={SCREEN_WIDTH} flex={1}>
-              <TabPage
-                tabKey={item.key}
-                targetUserId={targetUserId || ''}
-                isDark={isDark}
-                bottomPadding={bottomPadding}
-                listHeaderComponent={null}
-                onRefresh={handleRefresh}
-                refreshing={refreshing}
-              />
-            </Box>
-          )}
-          removeClippedSubviews={false}
-          windowSize={5}
-          maxToRenderPerBatch={2}
-          initialNumToRender={2}
-        />
-      </Box>
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={shouldBounce}
+        alwaysBounceVertical={false}
+        scrollEnabled={true}
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        {/* Üst Kısım: Profile Header + TabsBar */}
+        <Box>
+          {profileHeader}
+          <TabsBar 
+            activeTab={activeTab} 
+            onChangeTab={handleTabChange} 
+            isDark={isDark}
+            progress={progress}
+            tabContainerRef={tabContainerRef}
+            onTabContainerLayout={handleTabContainerLayout}
+          />
+        </Box>
+        
+        {/* Alt Kısım: Yatay Kaydırılabilir Tab İçerikleri */}
+        <Box style={{ minHeight: tabContentHeight }}>
+          <FlatList
+            ref={contentFlatListRef}
+            data={TABS}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={handleContentScroll}
+            onMomentumScrollEnd={handleContentScrollEnd}
+            keyExtractor={(item) => item.key}
+            getItemLayout={(data, index) => ({
+              length: SCREEN_WIDTH,
+              offset: SCREEN_WIDTH * index,
+              index,
+            })}
+            scrollEnabled={true}
+            nestedScrollEnabled={true}
+            renderItem={({ item }) => (
+              <Box width={SCREEN_WIDTH} style={{ minHeight: tabContentHeight }}>
+                <TabPage
+                  tabKey={item.key}
+                  targetUserId={targetUserId || ''}
+                  isDark={isDark}
+                  bottomPadding={bottomPadding}
+                  listHeaderComponent={null}
+                  onRefresh={handleRefresh}
+                  refreshing={refreshing}
+                />
+              </Box>
+            )}
+            removeClippedSubviews={false}
+            windowSize={5}
+            maxToRenderPerBatch={2}
+            initialNumToRender={2}
+          />
+        </Box>
+      </Animated.ScrollView>
     </Box>
   );
 };

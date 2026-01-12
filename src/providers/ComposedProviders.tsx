@@ -2,14 +2,11 @@ import React, { ReactNode } from 'react';
 import { QueryProvider } from './QueryProvider';
 import { AuthProvider } from './AuthProvider';
 import { AppStateProvider } from './AppStateProvider';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { PortalProvider } from '@gorhom/portal';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { GlobalBottomSheetProvider } from './GlobalBottomSheetProvider';
+// BLUEPRINT FIX: PortalProvider moved to Navigation/index.tsx (after BottomSheetModalProvider)
+// import { PortalProvider } from '@gorhom/portal';
 import { NotificationProvider } from './NotificationProvider';
 import { SocketProvider } from './SocketProvider';
-import { GluestackProvider } from '@/src/components/ui';
 
 /**
  * ARCHITECTURE FIX: Provider Composition Pattern
@@ -45,20 +42,21 @@ const composeProviders = (
  * All providers are composed into a single provider tree
  * 
  * ARCHITECTURE FIX: Provider order matters!
- * - GluestackProvider must come BEFORE GlobalBottomSheetProvider
- *   because GlobalBottomSheet content uses Gluestack UI components
  * - reduceRight wraps from right to left, so order is reversed
+ * 
+ * NEW ARCHITECTURE: 
+ * - GestureHandlerRootView, BottomSheetModalProvider, GlobalBottomSheetProvider, GluestackProvider
+ *   artık NavigationContainer içinde (src/navigation/index.tsx'te) olacak, burada değil.
+ * - Bu sayede navigation hierarchy içindeki tüm component'ler Gluestack context'ine erişebilir
  */
 export const AppProviders = composeProviders(
   QueryProvider,
   AuthProvider,
   AppStateProvider,
-  GestureHandlerRootView,
   SafeAreaProvider,
-  PortalProvider,
-  BottomSheetModalProvider,
-  GluestackProvider, // ARCHITECTURE FIX: Moved before GlobalBottomSheetProvider
-  GlobalBottomSheetProvider, // GlobalBottomSheet needs GluestackProvider context
+  // BLUEPRINT FIX: PortalProvider moved to Navigation/index.tsx
+  // PortalProvider must be AFTER BottomSheetModalProvider but BEFORE GlobalBottomSheetProvider
+  // PortalProvider, // REMOVED - moved to Navigation/index.tsx
   NotificationProvider,
   SocketProvider
 );

@@ -5,6 +5,8 @@ import { Box, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Header } from '@/src/components/Header';
 import { mock_user_profile } from '@/src/mock/common';
 import { Category } from '@/src/mock/catalog/productCatalog/types';
@@ -173,19 +175,24 @@ const CatalogScreenComponent = () => {
         setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
       }
       
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreatePostScreen',
+        params: {
+          contextType: determinedContextType,
+          contextId: determinedContextId,
+          productInfo: productInfoSnapshot,
+        },
       });
     } else if (type === 'tips') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateTipsAndTrickPostScreen',
       });
     } else if (type === 'question') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateQuestionPostScreen',
       });
     } else if (type === 'experience') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateExperiencePostScreen',
         params: {
           product: selectedProductLocal ? {
@@ -200,7 +207,7 @@ const CatalogScreenComponent = () => {
         },
       });
     } else if (type === 'comparison') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateBenchmarkPostScreen',
         params: {
           product: selectedProductLocal ? {
@@ -212,7 +219,7 @@ const CatalogScreenComponent = () => {
         },
       });
     } else if (type === 'update') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateUpdatePostScreen',
         params: {
           product: selectedProductLocal ? {

@@ -24,6 +24,7 @@ import {
 import CardImageCarousel from '../../CardImageCarousel';
 import { useNavigation } from '@react-navigation/native';
 import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
@@ -123,7 +124,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   };
 
   const handleComment = () => {
-    navigation.navigate('Post', {
+    navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'experience' },
     });
@@ -140,14 +141,14 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
         postContent={data.content && data.content.length > 0 ? data.content[0]?.text || '' : ''}
         postAuthorName={data.user.name}
       >
-        <Pressable
+        <Box
           position="absolute"
           top={12}
           right={15}
           zIndex={1}
         >
           <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-        </Pressable>
+        </Box>
       </PostContextMenu>
 
       {/* Header */}
@@ -219,7 +220,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
 
       {/* Content */}
       <Pressable onPress={() => {
-        navigation.navigate('Post', {
+        navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostDetailScreen',
           params: { postData: data, type: 'experience' }
         });
@@ -300,7 +301,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       {data.images && data.images.length > 0 && (
         <Pressable
           onPress={() => {
-            navigation.navigate('Post', {
+            navigationService.navigate(ROOT_ROUTES.POST, {
               screen: 'PostDetailScreen',
               params: { postData: data, type: 'experience' }
             });

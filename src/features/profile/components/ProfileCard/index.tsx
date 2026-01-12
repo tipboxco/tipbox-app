@@ -11,6 +11,7 @@ import {
   ChatBubbleLeftIcon,
   BellIcon,
 } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { 
   Box, 
   VStack, 
@@ -69,7 +70,10 @@ export const ProfileCard = ({ userData, userId }: ProfileCardProps) => {
     } else {
       console.log('[ProfileCard] Cannot go back, navigating to Main...');
       // Eğer geri gidilemiyorsa, Main tab'a dön
-      rootNavigation.navigate('Main' as never);
+      // Eğer geri gidilemiyorsa, App tab'a dön (MainDrawer → TabNavigator)
+      // NavigationService kullanarak type-safe navigation
+      const { navigationService } = require('@/src/services/NavigationService');
+      navigationService.navigate('App' as any);
     }
   };
 

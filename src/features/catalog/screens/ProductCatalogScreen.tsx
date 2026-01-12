@@ -8,6 +8,8 @@ import Breadcrumb from '@/src/components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts, useCatalogPrefetch } from '../api/hooks';
@@ -398,7 +400,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       subName: product.description || product.name,
     });
     
-    navigation.navigate('Post', {
+    navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostsScreen',
       params: {
         stage: 'Product',
@@ -627,7 +629,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       // CatalogUIStore zaten güncellenmiş (handleCategoryPress, handleSubCategoryPress, handleProductGroupPress, handleProductPress içinde)
       // Burada sadece navigation yapılıyor
       
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'PostsScreen',
         params: {
           stage,
@@ -680,19 +682,24 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       if (determinedContextType && determinedContextId) {
         setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
       }
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreatePostScreen',
+        params: {
+          contextType: determinedContextType,
+          contextId: determinedContextId,
+          productInfo: productInfoSnapshot,
+        },
       });
     } else if (type === 'tips') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateTipsAndTrickPostScreen',
       });
     } else if (type === 'question') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateQuestionPostScreen',
       });
     } else if (type === 'experience') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateExperiencePostScreen',
         params: {
           product: selectedProduct ? {
@@ -707,7 +714,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         },
       });
     } else if (type === 'comparison') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateBenchmarkPostScreen',
         params: {
           product: selectedProduct ? {
@@ -719,7 +726,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         },
       });
     } else if (type === 'update') {
-      navigation.navigate('Post', {
+      navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateUpdatePostScreen',
         params: {
           product: selectedProduct ? {
@@ -757,7 +764,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       stageForBottomSheet = currentView as 'subcategories' | 'products';
     }
     
-    // PERFORMANCE FIX: Direct bottom sheet open - no callback chain
+    // STABİL FIX: animateOnMount: true ile smooth açılış
     openBottomSheet(
       <CreatePostBottomSheet
         key={bottomSheetKey + 1}
@@ -781,7 +788,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
-        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        animateOnMount: true, // STABİL FIX: Smooth açılış animasyonu
         paddingBottom: bottomOffset,
         onChange: (index: number) => {
           // Reset bottom sheet key when sheet closes to reset view state

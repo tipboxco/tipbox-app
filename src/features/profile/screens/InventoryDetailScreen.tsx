@@ -3,6 +3,8 @@ import { ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Tag, Package, Star, Layers } from 'lucide-react-native';
 import { VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { PencilSquareIcon } from 'react-native-heroicons/outline';
@@ -100,7 +102,7 @@ const InventoryDetailScreen = () => {
         onPostTypeSelect={(type, experienceOption) => {
           closeBottomSheet();
           if (type === 'experience') {
-            navigation.navigate('Post', {
+            navigationService.navigate(ROOT_ROUTES.POST, {
               screen: 'CreateExperiencePostScreen',
               params: {
                 product: {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     Box,
     VStack,
@@ -109,8 +109,9 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
     const isDark = colorMode === 'dark';
     const [currentView, setCurrentView] = useState<ViewType>(showExperienceOptionsDirectly ? 'experience' : 'options');
 
-    // Filter post options based on stage
-    const getFilteredPostOptions = (): PostOption[] => {
+    // PERFORMANCE FIX: useMemo ile filter işlemini cache'le
+    // Bu sayede her render'da yeniden hesaplanmaz
+    const filteredPostOptions = useMemo((): PostOption[] => {
         if (!stage) {
             // If no stage specified, show all options
             return postOptions;
@@ -137,9 +138,16 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
             default:
                 return postOptions;
         }
-    };
+    }, [stage]);
 
-    const filteredPostOptions = getFilteredPostOptions();
+    // CRITICAL DEBUG: Log filtered options
+    console.log('[CreatePostBottomSheet] 📋 Filtered post options:', {
+      stage,
+      filteredCount: filteredPostOptions.length,
+      options: filteredPostOptions.map(o => o.id),
+      currentView,
+      showExperienceOptionsDirectly,
+    });
 
     const handlePostTypePress = (type: PostType) => {
         console.log('Selected post type:', type);
@@ -176,7 +184,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
     // Render experience options view
     if (currentView === 'experience') {
         return (
-            <Box flex={1} bg="#FDFDFB" $dark-bg="$backgroundDark950">
+            <Box bg="#FDFDFB" $dark-bg="$backgroundDark950" minHeight={300} width="100%">
                 {/* Header with back button - only show if not showing directly */}
                 {!showExperienceOptionsDirectly && (
                     <VStack space="sm" mb="$4" px="$4" pt="$4">
@@ -299,7 +307,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
 
     // Render options view (default)
     return (
-        <Box flex={1} bg="#FDFDFB" $dark-bg="$backgroundDark950">
+        <Box bg="#FDFDFB" $dark-bg="$backgroundDark950" minHeight={300} width="100%">
             {/* Header */}
             <VStack space="md" mb="$4" px="$4" pt="$4">
                 <HStack justifyContent="center" alignItems="center" w="100%">

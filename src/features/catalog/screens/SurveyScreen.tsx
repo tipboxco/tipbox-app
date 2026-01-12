@@ -325,7 +325,7 @@ const SurveyScreen: React.FC = () => {
     
     // Data validation: postData ve contextData kontrolü
     if (!postData || !postData.contextData) {
-      console.warn('[mapTipsToCardData] Missing postData or contextData:', { item, postData });
+      // Missing data warning removed for performance
       throw new Error('Missing required data: postData or contextData');
     }
     
@@ -375,7 +375,7 @@ const SurveyScreen: React.FC = () => {
     
     // Data validation: postData ve contextData kontrolü
     if (!postData || !postData.contextData) {
-      console.warn('[mapQuestionToCardData] Missing postData or contextData:', { item, postData });
+      // Missing data warning removed for performance
       throw new Error('Missing required data: postData or contextData');
     }
     
