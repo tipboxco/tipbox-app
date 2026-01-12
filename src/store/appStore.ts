@@ -71,6 +71,11 @@ interface AppState {
   user: User | null;
   accessToken: string | null;
   
+  // Wallet State (Web2-Ready)
+  walletId: string | null;
+  walletIdentifier: string | null;
+  walletBalance: number | null;
+  
   // Theme State
   colorMode: ColorMode;
   
@@ -118,6 +123,11 @@ export const useAppStore = create<AppState>()(
         user: null,
         accessToken: null,
         
+        // Initial Wallet State
+        walletId: null,
+        walletIdentifier: null,
+        walletBalance: null,
+        
         // Initial Theme State
         colorMode: 'light',
         
@@ -164,19 +174,48 @@ export const useAppStore = create<AppState>()(
             // PERFORMANCE FIX: Update token cache for API interceptor
             updateTokenCache(userData.token);
             
-            // User bilgilerini store'a kaydet
-            set({
-              user: {
-                id: userData.id,
-                fullName: userData.fullName,
-                email: userData.email,
-                avatar: userData.avatar,
-              },
-              accessToken: userData.token,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null,
-            });
+            // Wallet oluştur (eğer yoksa)
+            console.log('[AppStore] 📋 Wallet oluşturuluyor...');
+            try {
+              const walletStartTime = Date.now();
+              const wallet = await WalletService.createWallet(userData.id);
+              const walletTime = Date.now() - walletStartTime;
+              console.log('[AppStore] ✅ Wallet oluşturuldu');
+              console.log('[AppStore]    - Wallet ID:', wallet.walletId);
+              console.log('[AppStore]    - Wallet Identifier:', wallet.walletIdentifier);
+              console.log('[AppStore]    - Wallet Time:', walletTime, 'ms');
+              
+              // User bilgilerini ve wallet bilgilerini store'a kaydet
+              set({
+                user: {
+                  id: userData.id,
+                  fullName: userData.fullName,
+                  email: userData.email,
+                  avatar: userData.avatar,
+                },
+                accessToken: userData.token,
+                walletId: wallet.walletId,
+                walletIdentifier: wallet.walletIdentifier,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+              });
+            } catch (walletError) {
+              console.error('[AppStore] ⚠️ Wallet oluşturulamadı, ama login devam ediyor:', walletError);
+              // Wallet oluşturulamazsa da login devam etsin
+              set({
+                user: {
+                  id: userData.id,
+                  fullName: userData.fullName,
+                  email: userData.email,
+                  avatar: userData.avatar,
+                },
+                accessToken: userData.token,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+              });
+            }
             
             const loginTime = Date.now() - loginStartTime;
             console.log('[AppStore] ✅ Login işlemi tamamlandı');
@@ -227,6 +266,9 @@ export const useAppStore = create<AppState>()(
               isAuthenticated: false,
               user: null,
               accessToken: null,
+              walletId: null,
+              walletIdentifier: null,
+              walletBalance: null,
               isLoading: false,
               error: null,
             });
@@ -245,9 +287,9 @@ export const useAppStore = create<AppState>()(
             Promise.all([
               (async () => {
                 try {
-                  console.log('📋 Step 2: Wallet bağlantısı temizleniyor (arka plan)...');
-                  await WalletService.clearWalletConnection();
-                  console.log('✅ Wallet bağlantısı temizlendi');
+                  console.log('📋 Step 2: Wallet temizleniyor (arka plan)...');
+                  await WalletService.clearWallet();
+                  console.log('✅ Wallet temizlendi');
                 } catch (error) {
                   console.error('⚠️ Wallet temizleme hatası:', error);
                 }
@@ -273,6 +315,7 @@ export const useAppStore = create<AppState>()(
             console.log('   - isAuthenticated: false');
             console.log('   - User: null');
             console.log('   - Access Token: null');
+            console.log('   - Wallet: null');
             console.log('   - Login ekranı gösterilecek');
             console.log('========================================');
           } catch (error) {
@@ -282,6 +325,9 @@ export const useAppStore = create<AppState>()(
               isAuthenticated: false,
               user: null,
               accessToken: null,
+              walletId: null,
+              walletIdentifier: null,
+              walletBalance: null,
               isLoading: false,
               error: error as Error,
             });
@@ -321,6 +367,9 @@ export const useAppStore = create<AppState>()(
           user: state.user,
           accessToken: state.accessToken,
           colorMode: state.colorMode,
+          walletId: state.walletId,
+          walletIdentifier: state.walletIdentifier,
+          walletBalance: state.walletBalance,
         }),
       }
     ),

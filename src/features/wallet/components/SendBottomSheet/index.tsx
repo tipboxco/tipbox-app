@@ -10,6 +10,7 @@ import {
   UserIcon,
   UsersIcon,
 } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SendFriendBottomSheet } from '../SendFriendBottomSheet';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
