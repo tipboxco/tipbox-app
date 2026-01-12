@@ -273,7 +273,7 @@ export const WalletScreen: React.FC = () => {
       style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
     >
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Header title="Varlıklar" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header title="Wallet" showBackButton onBackPress={() => navigation.goBack()} />
       {/* Tabs */}
       <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
         <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
