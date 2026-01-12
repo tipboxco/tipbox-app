@@ -73,12 +73,6 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
                   Events: {
                     screens: {
                       EventsScreen: 'events',
-                      EventDetailScreen: {
-                        path: 'event/:eventId',
-                        parse: {
-                          eventId: (eventId: string) => eventId,
-                        },
-                      },
                     },
                   },
                 },
@@ -132,7 +126,7 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
       },
       Bookmarks: {
         screens: {
-          BookmarksScreen: 'bookmarks',
+          BookMarksScreen: 'bookmarks',
         },
       },
       Marketplace: {
@@ -143,6 +137,16 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
       Wallet: {
         screens: {
           WalletScreen: 'wallet',
+        },
+      },
+      Event: {
+        screens: {
+          EventDetailScreen: {
+            path: 'event/:eventId',
+            parse: {
+              eventId: (eventId: string) => eventId,
+            },
+          },
         },
       },
       MessageDetail: {

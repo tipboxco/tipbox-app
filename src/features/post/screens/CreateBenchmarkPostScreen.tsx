@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, Toast, ToastTitle, ToastDescription, useToast } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
-import { FormProvider, Controller, useFormContext } from 'react-hook-form';
+import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -18,6 +18,9 @@ import { DashedProductCard } from '../components/DashedProductCard';
 import { useCreateBenchmarkPost } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
+import { useAppStore } from '@/src/store/appStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 import type { PostStackParamList } from '../navigation';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -302,6 +305,8 @@ export const CreateBenchmarkPostScreen = () => {
   const { handleSubmit, formState, setValue } = methods;
   const toast = useToast();
   const createBenchmarkPostMutation = useCreateBenchmarkPost();
+  const { user } = useAppStore();
+  const queryClient = useQueryClient();
   
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
@@ -333,8 +338,8 @@ export const CreateBenchmarkPostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Feed screen
-      navigation.navigate('Main', {
-        screen: 'Feed',
+      navigation.navigate('App', {
+        screen: 'MainTabs',
         params: {
           screen: 'FeedScreen',
         },
@@ -342,7 +347,7 @@ export const CreateBenchmarkPostScreen = () => {
     }
   };
 
-  const onSubmit = async (data: BenchmarkPostFormData) => {
+  const onSubmit: SubmitHandler<BenchmarkPostFormData> = async (data) => {
     console.log('[CreateBenchmarkPostScreen] Form submitted:', data);
     
     // ContextType ve contextId kontrolü
@@ -427,28 +432,48 @@ export const CreateBenchmarkPostScreen = () => {
       // Clear flow context on successful submit
       clearFlow();
       
-      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'Main',
-              state: {
-                routes: [
-                  {
-                    name: 'Feed',
-                    state: {
-                      routes: [{ name: 'FeedScreen' }],
+      // Başarılı olursa ProfileScreen'e yönlendir
+      if (user?.id) {
+        // Profil verilerini invalidate et - yeni post görünsün
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userPosts(user.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userBenchmarks(user.id),
+        });
+        
+        navigation.navigate('Profile', {
+          screen: 'ProfileMain',
+          params: { userId: user.id },
+        });
+      } else {
+        // Fallback: Feed ekranına yönlendir
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'App',
+                state: {
+                  routes: [
+                    {
+                      name: 'MainTabs',
+                      state: {
+                        routes: [{ name: 'FeedScreen' }],
+                        index: 0,
+                      },
                     },
-                  },
-                ],
-                index: 0,
+                  ],
+                  index: 0,
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          })
+        );
+      }
     } catch (error: any) {
       console.error('[CreateBenchmarkPostScreen] ❌ API Error:', error);
       
@@ -496,7 +521,12 @@ export const CreateBenchmarkPostScreen = () => {
               borderRadius: 25,
               paddingX: 24,
               paddingY: 8,
-              onPress: handleSubmit(onSubmit),
+              onPress: () => {
+                // TypeScript type inference issue with react-hook-form handleSubmit
+                // useBenchmarkPostForm already uses BenchmarkPostFormData, so this is safe
+                const submitHandler = handleSubmit as unknown as (callback: SubmitHandler<BenchmarkPostFormData>) => () => void;
+                submitHandler(onSubmit)();
+              },
             }}
           />
 

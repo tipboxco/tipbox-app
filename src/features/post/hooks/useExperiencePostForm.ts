@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { experiencePostSchema, ExperiencePostFormData } from '../schemas/experiencePostSchema';
 
@@ -17,7 +17,7 @@ const getStepFields = (step: number): (keyof ExperiencePostFormData)[] => {
   }
 };
 
-export const useExperiencePostForm = (initialValues?: Partial<ExperiencePostFormData>) => {
+export const useExperiencePostForm = (initialValues?: Partial<ExperiencePostFormData>): UseFormReturn<ExperiencePostFormData> & { validateStep: (step: number) => Promise<boolean> } => {
   const form = useForm<ExperiencePostFormData>({
     resolver: zodResolver(experiencePostSchema),
     defaultValues: {

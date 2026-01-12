@@ -13,14 +13,14 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { EventsStackParamList } from '../../navigation';
+import type { EventStackParamList } from '../../EventNavigator';
 import CategoryCard, { Category } from '../CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { catalogData } from '@/src/mock/catalog/productCatalog';
 import { Category as CatalogCategory } from '@/src/mock/catalog/productCatalog/types';
 
-type CreateEventPostBottomSheetNavigationProp = NativeStackNavigationProp<EventsStackParamList>;
+type CreateEventPostBottomSheetNavigationProp = NativeStackNavigationProp<EventStackParamList>;
 
 interface CreateEventPostBottomSheetProps {
     onClose: () => void;

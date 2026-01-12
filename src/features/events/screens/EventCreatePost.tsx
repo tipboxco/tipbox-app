@@ -19,7 +19,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import type { EventsStackParamList } from '../navigation';
+import type { EventStackParamList } from '../EventNavigator';
 import { Feather } from '@expo/vector-icons';
 import { CreateEventPostBottomSheet } from '../components/CreateEventPostBottomSheet';
 import { Category } from '../components/CategoryCard';
@@ -33,12 +33,11 @@ import { Product } from '@/src/mock/catalog/productCatalog/types';
 import { InventoryItem } from '@/src/mock/inventory/types';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateEventPostNew } from '../api/hooks';
 
-type EventCreatePostNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'EventCreatePost'>;
-type EventCreatePostRouteProp = RouteProp<EventsStackParamList, 'EventCreatePost'>;
+type EventCreatePostNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventCreatePost'>;
+type EventCreatePostRouteProp = RouteProp<EventStackParamList, 'EventCreatePost'>;
 
 const EventCreatePost: React.FC = () => {
     const { colorMode } = useColorMode();
@@ -57,9 +56,8 @@ const EventCreatePost: React.FC = () => {
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
     const toast = useToast();
     
-    // Safe area and tab bar insets
+    // Safe area insets (tab bar yok, EventNavigator RootNavigator'ın DetailsGroup'unda)
     const insets = useSafeAreaInsets();
-    const tabBarHeight = useBottomTabBarHeight();
     
     // Get eventId, eventType, product, and productSource from route params
     const eventId = route.params?.eventId;
@@ -113,7 +111,7 @@ const EventCreatePost: React.FC = () => {
                 enableContentPanningGesture: true,
                 enableDynamicSizing: true,
                 animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
-                paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : tabBarHeight + 8,
+                paddingBottom: insets.bottom + 8,
             }
         );
     }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation]);
@@ -164,8 +162,8 @@ const EventCreatePost: React.FC = () => {
                         return (
                             <Box maxWidth="90%" alignSelf="center" px="$4">
                                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Limit Aşıldı</ToastTitle>
-                                    <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
+                                    <ToastTitle>Limit Exceeded</ToastTitle>
+                                    <ToastDescription>You can select a maximum of 10 images.</ToastDescription>
                                 </Toast>
                             </Box>
                         );
@@ -190,8 +188,8 @@ const EventCreatePost: React.FC = () => {
                             return (
                                 <Box maxWidth="90%" alignSelf="center" px="$4">
                                     <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                        <ToastTitle>Hata</ToastTitle>
-                                        <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
+                                        <ToastTitle>Error</ToastTitle>
+                                        <ToastDescription>Could not find URIs of selected images.</ToastDescription>
                                     </Toast>
                                 </Box>
                             );
@@ -205,7 +203,7 @@ const EventCreatePost: React.FC = () => {
                         return (
                             <Box maxWidth="90%" alignSelf="center" px="$4">
                                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
+                                    <ToastTitle>Error</ToastTitle>
                                     <ToastDescription>{result.error}</ToastDescription>
                                 </Toast>
                             </Box>
@@ -215,14 +213,14 @@ const EventCreatePost: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Image picker error:', error);
-            const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
+            const errorMessage = error?.message || 'An error occurred while selecting images';
             toast.show({
                 placement: 'top',
                 render: ({ id }: { id: string }) => {
                     return (
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
+                                <ToastTitle>Error</ToastTitle>
                                 <ToastDescription>{errorMessage}</ToastDescription>
                             </Toast>
                         </Box>
@@ -246,8 +244,8 @@ const EventCreatePost: React.FC = () => {
                         return (
                             <Box maxWidth="90%" alignSelf="center" px="$4">
                                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>Event ID bulunamadı.</ToastDescription>
+                                    <ToastTitle>Error</ToastTitle>
+                                    <ToastDescription>Event ID not found.</ToastDescription>
                                 </Toast>
                             </Box>
                         );
@@ -264,8 +262,8 @@ const EventCreatePost: React.FC = () => {
                         return (
                             <Box maxWidth="90%" alignSelf="center" px="$4">
                                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>Başlık gereklidir.</ToastDescription>
+                                    <ToastTitle>Error</ToastTitle>
+                                    <ToastDescription>Title is required.</ToastDescription>
                                 </Toast>
                             </Box>
                         );
@@ -282,8 +280,8 @@ const EventCreatePost: React.FC = () => {
                         return (
                             <Box maxWidth="90%" alignSelf="center" px="$4">
                                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>İçerik gereklidir.</ToastDescription>
+                                    <ToastTitle>Error</ToastTitle>
+                                    <ToastDescription>Content is required.</ToastDescription>
                                 </Toast>
                             </Box>
                         );
@@ -301,8 +299,8 @@ const EventCreatePost: React.FC = () => {
                         return (
                             <Box maxWidth="90%" alignSelf="center" px="$4">
                                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>Lütfen bir ürün seçin.</ToastDescription>
+                                    <ToastTitle>Error</ToastTitle>
+                                    <ToastDescription>Please select a product.</ToastDescription>
                                 </Toast>
                             </Box>
                         );
@@ -328,8 +326,8 @@ const EventCreatePost: React.FC = () => {
                     return (
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                                <ToastTitle>Başarılı</ToastTitle>
-                                <ToastDescription>Post başarıyla oluşturuldu!</ToastDescription>
+                                <ToastTitle>Success</ToastTitle>
+                                <ToastDescription>Post created successfully!</ToastDescription>
                             </Toast>
                         </Box>
                     );
@@ -345,17 +343,17 @@ const EventCreatePost: React.FC = () => {
             const errorCode = error?.response?.data?.error?.code;
             const errorMessage = error?.response?.data?.error?.message;
             
-            let displayMessage = 'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+            let displayMessage = 'An error occurred while creating the post. Please try again.';
             
             switch (errorCode) {
                 case 'EVENT_NOT_FOUND':
-                    displayMessage = 'Event bulunamadı';
+                    displayMessage = 'Event not found';
                     break;
                 case 'NOT_JOINED':
-                    displayMessage = 'Bu event\'e post paylaşmak için önce katılmalısınız';
+                    displayMessage = 'You must join this event before sharing a post';
                     break;
                 case 'VALIDATION_ERROR':
-                    displayMessage = errorMessage || 'Lütfen tüm alanları doldurun';
+                    displayMessage = errorMessage || 'Please fill in all fields';
                     break;
                 default:
                     displayMessage = errorMessage || displayMessage;
@@ -367,7 +365,7 @@ const EventCreatePost: React.FC = () => {
                     return (
                         <Box maxWidth="90%" alignSelf="center" px="$4">
                             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
+                                <ToastTitle>Error</ToastTitle>
                                 <ToastDescription>{displayMessage}</ToastDescription>
                             </Toast>
                         </Box>
@@ -380,10 +378,27 @@ const EventCreatePost: React.FC = () => {
     // Check if share button should be enabled
     // TYPE2 event'lerde product zaten seçili, TYPE1'de product seçilmeli
     // Her durumda title, content ve eventId gereklidir
-    const isShareEnabled = !!eventId && 
-                           title.trim().length > 0 &&
-                           content.trim().length > 0 && 
-                           (eventType === EventType.TYPE2 || selectedProduct !== null);
+    const hasEventId = !!eventId;
+    const hasTitle = title.trim().length > 0;
+    const hasContent = content.trim().length > 0;
+    // For TYPE2 events, product is auto-selected, so we don't need to check
+    // For TYPE1 or undefined events, product must be selected
+    const hasProductIfNeeded = eventType === EventType.TYPE2 ? true : selectedProduct !== null;
+    
+    const isShareEnabled = hasEventId && hasTitle && hasContent && hasProductIfNeeded;
+    
+    // Debug log (can be removed later)
+    if (__DEV__) {
+        console.log('Share button state:', {
+            hasEventId,
+            hasTitle,
+            hasContent,
+            hasProductIfNeeded,
+            eventType,
+            selectedProduct: selectedProduct ? 'selected' : 'null',
+            isShareEnabled,
+        });
+    }
 
     // Show product selector if productSource is set
     if (showProductSelector && productSource) {
@@ -423,6 +438,7 @@ const EventCreatePost: React.FC = () => {
                     paddingX: 24,
                     paddingY: 8,
                     onPress: handleShare,
+                    disabled: !isShareEnabled,
                 }}
             />
 
@@ -434,7 +450,7 @@ const EventCreatePost: React.FC = () => {
                             color={isDark ? '$textDark200' : '#999999'}
                             fontSize={14}
                         >
-                            Post Başlığı
+                            Post Title
                         </Text>
                         <Textarea
                             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -444,7 +460,7 @@ const EventCreatePost: React.FC = () => {
                             height={60}
                         >
                             <TextareaInput
-                                placeholder="Başlık giriniz... (max 200 karakter)"
+                                placeholder="Enter title... (max 200 characters)"
                                 value={title}
                                 onChangeText={(text) => {
                                     if (text.length <= 200) {
@@ -527,7 +543,7 @@ const EventCreatePost: React.FC = () => {
                             color={isDark ? '$textDark200' : '#999999'}
                             fontSize={14}
                         >
-                            İçerik
+                            Content
                         </Text>
                         <Textarea
                             bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -537,7 +553,7 @@ const EventCreatePost: React.FC = () => {
                             height={180}
                         >
                             <TextareaInput
-                                placeholder="İçeriğinizi yazın... (max 2000 karakter)"
+                                placeholder="Write your content... (max 2000 characters)"
                                 value={content}
                                 onChangeText={(text) => {
                                     if (text.length <= 2000) {

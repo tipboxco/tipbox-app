@@ -17,6 +17,9 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateUpdatePost } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
+import { useAppStore } from '@/src/store/appStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 import type { PostStackParamList } from '../navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -35,6 +38,8 @@ export const CreateUpdatePostScreen = () => {
   const { handleSubmit, formState, getValues, setValue, watch } = methods;
   const toast = useToast();
   const createUpdatePostMutation = useCreateUpdatePost();
+  const { user } = useAppStore();
+  const queryClient = useQueryClient();
   
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
@@ -218,28 +223,45 @@ export const CreateUpdatePostScreen = () => {
       // Clear flow context on successful submit
       clearFlow();
       
-      // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'Main',
-              state: {
-                routes: [
-                  {
-                    name: 'Feed',
-                    state: {
-                      routes: [{ name: 'FeedScreen' }],
+      // Başarılı olursa ProfileScreen'e yönlendir
+      if (user?.id) {
+        // Profil verilerini invalidate et - yeni post görünsün
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.userPosts(user.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+        });
+        
+        navigation.navigate('Profile', {
+          screen: 'ProfileMain',
+          params: { userId: user.id },
+        });
+      } else {
+        // Fallback: Feed ekranına yönlendir
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'App',
+                state: {
+                  routes: [
+                    {
+                      name: 'MainTabs',
+                      state: {
+                        routes: [{ name: 'FeedScreen' }],
+                        index: 0,
+                      },
                     },
-                  },
-                ],
-                index: 0,
+                  ],
+                  index: 0,
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          })
+        );
+      }
     } catch (error: any) {
       console.error('[CreateUpdatePostScreen] ❌ API Error:', error);
       

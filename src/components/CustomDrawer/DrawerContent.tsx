@@ -439,6 +439,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           flex: 1,
           width: '100%',
         }}
+        scrollEnabled={false}
+        bounces={false}
+        overScrollMode="never"
+        alwaysBounceVertical={false}
       >
         <Box 
           flex={1} 

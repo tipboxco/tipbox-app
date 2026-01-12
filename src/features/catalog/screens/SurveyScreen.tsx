@@ -739,7 +739,11 @@ const SurveyScreen: React.FC = () => {
                 event={item}
                 onPress={() => {
                   // EventDetailScreen'e yönlendir (Events tab'ı içinde)
-                  navigationService.navigateNested(TAB_ROUTES.EVENTS, 'EventDetail', { eventId: item.id });
+                  // RootNavigator'dan EventDetailScreen'e navigate et (full screen banner için)
+                  navigationService.navigate('Event', { 
+                    screen: 'EventDetailScreen', 
+                    params: { eventId: item.id } 
+                  });
                 }}
               />
             )}

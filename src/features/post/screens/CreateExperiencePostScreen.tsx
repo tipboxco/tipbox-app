@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator } from 'react-native';
 import { Box, useToast, Toast, ToastTitle, ToastDescription, VStack, Text } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
-import { FormProvider } from 'react-hook-form';
+import { FormProvider, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { StepOneScreen } from '../components/CreateExperienceSteps/StepOneScreen';
@@ -15,6 +15,9 @@ import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateExperiencePost, useSplitExperience } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
+import { useAppStore } from '@/src/store/appStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { profileKeys } from '@/src/features/profile/api/hooks';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { PostStackParamList } from '../navigation';
@@ -49,6 +52,8 @@ export const CreateExperiencePostScreen = () => {
     const toast = useToast();
     const createExperiencePostMutation = useCreateExperiencePost();
     const splitExperienceMutation = useSplitExperience();
+    const { user } = useAppStore();
+    const queryClient = useQueryClient();
     
     // Flow store'dan context bilgilerini al
     const contextType = useCreatePostFlowStore((state) => state.contextType);
@@ -80,27 +85,46 @@ export const CreateExperiencePostScreen = () => {
                 setCurrentStep(0);
             } else {
                 // Navigate to Feed screen
-                navigation.navigate('Main', {
-                    screen: 'Feed',
-                    params: {
-                        screen: 'FeedScreen',
-                    },
-                });
+                // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [
+                            {
+                                name: 'App',
+                                state: {
+                                    routes: [
+                                        {
+                                            name: 'MainTabs',
+                                            state: {
+                                                routes: [{ name: 'FeedScreen' }],
+                                                index: 0,
+                                            },
+                                        },
+                                    ],
+                                    index: 0,
+                                },
+                            },
+                        ],
+                    })
+                );
             }
         } else if (currentStep === 0) {
             // Navigate to Feed screen
             navigation.dispatch(
+                // ARCHITECTURE FIX: Doğru navigation yapısı: App → MainTabs → FeedScreen
                 CommonActions.reset({
                     index: 0,
                     routes: [
                         {
-                            name: 'Main',
+                            name: 'App',
                             state: {
                                 routes: [
                                     {
-                                        name: 'Feed',
+                                        name: 'MainTabs',
                                         state: {
                                             routes: [{ name: 'FeedScreen' }],
+                                            index: 0,
                                         },
                                     },
                                 ],
@@ -244,7 +268,7 @@ export const CreateExperiencePostScreen = () => {
         return value;
     };
 
-    const onSubmit = async (data: ExperiencePostFormData) => {
+    const onSubmit: SubmitHandler<ExperiencePostFormData> = async (data) => {
         console.log('[CreateExperiencePostScreen] Form submitted:', data);
         
         // ContextType ve contextId kontrolü
@@ -441,29 +465,45 @@ export const CreateExperiencePostScreen = () => {
             // Clear flow context on successful submit
             clearFlow();
             
-            // Başarılı olursa Feed ekranına yönlendir ki kullanıcı gönderisini görebilsin
-            // CommonActions.reset kullanarak navigation stack'i temizle
-            navigation.dispatch(
-                CommonActions.reset({
-                    index: 0,
-                    routes: [
-                        {
-                            name: 'Main',
-                            state: {
-                                routes: [
-                                    {
-                                        name: 'Feed',
-                                        state: {
-                                            routes: [{ name: 'FeedScreen' }],
+            // Başarılı olursa ProfileScreen'e yönlendir
+            if (user?.id) {
+                // Profil verilerini invalidate et - yeni post görünsün
+                queryClient.invalidateQueries({
+                    queryKey: profileKeys.userPosts(user.id),
+                });
+                queryClient.invalidateQueries({
+                    queryKey: profileKeys.profile(user.id),
+                });
+                
+                navigation.navigate('Profile', {
+                    screen: 'ProfileMain',
+                    params: { userId: user.id },
+                });
+            } else {
+                // Fallback: Feed ekranına yönlendir
+                navigation.dispatch(
+                    CommonActions.reset({
+                        index: 0,
+                        routes: [
+                            {
+                                name: 'App',
+                                state: {
+                                    routes: [
+                                        {
+                                            name: 'MainTabs',
+                                            state: {
+                                                routes: [{ name: 'FeedScreen' }],
+                                                index: 0,
+                                            },
                                         },
-                                    },
-                                ],
-                                index: 0,
+                                    ],
+                                    index: 0,
+                                },
                             },
-                        },
-                    ],
-                })
-            );
+                        ],
+                    })
+                );
+            }
         } catch (error: any) {
             console.error('[CreateExperiencePostScreen] ❌ API Error:', error);
             

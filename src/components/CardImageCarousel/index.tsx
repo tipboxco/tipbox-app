@@ -121,6 +121,8 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
   // GESTURE ARBITRATION: Direction lock mekanizması (UI thread'de, SharedValue ile)
   // RULE 1: Gesture state asla React state ile tutulmaz, sadece SharedValue
   const gestureDirection = useSharedValue<'none' | 'horizontal' | 'vertical'>('none');
+  // CRITICAL FIX: runOnJS spam'ini önlemek için disableFeedScroll'un çağrılıp çağrılmadığını track et
+  const feedScrollDisabled = useSharedValue(false);
   // Threshold'u düşürdük: Carousel'ın gesture'ından önce devreye girmek için daha agresif
   const DIRECTION_THRESHOLD = 8; // px - İlk hareket yönü tespiti için threshold (düşürüldü)
   const ACTIVE_OFFSET = 5; // px - Gesture'ın aktif olması için minimum offset (daha agresif)
@@ -130,6 +132,7 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
 
   // Feed scroll control: Native thread'den JS thread'e geçiş (sadece gesture bittiğinde)
   // RULE 2: setNativeProps sadece gesture bittiğinde çağrılır, gesture sırasında değil
+  // CRITICAL FIX: runOnJS frame bazlı event'lerde (onUpdate) ASLA kullanılmamalı
   // Bu fonksiyonlar worklet callback'lerinde çağrılır, useCallback ile memoize edilir
   // REANIMATED FIX: feedListRef'i worklet'e geçirmemek için, ref'i closure'da yakalıyoruz
   const disableFeedScroll = useCallback(() => {
@@ -157,10 +160,13 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
         .onBegin(() => {
           'worklet';
           gestureDirection.value = 'none';
+          feedScrollDisabled.value = false;
         })
         .onUpdate((event) => {
           'worklet';
           // Direction lock: İlk hareket yönüne göre kilitle (daha hızlı tespit)
+          // CRITICAL FIX: onUpdate frame bazlı event - runOnJS ASLA kullanılmamalı
+          // Bunun yerine sadece SharedValue flag set et, onBegin'de kontrol et
           if (gestureDirection.value === 'none') {
             const absX = Math.abs(event.translationX);
             const absY = Math.abs(event.translationY);
@@ -169,19 +175,22 @@ export const CardImageCarousel = ({ images, paddingHorizontal }: CardImageCarous
             if (absX > DIRECTION_THRESHOLD || absY > DIRECTION_THRESHOLD) {
               if (absX > absY) {
                 gestureDirection.value = 'horizontal';
-                // Feed scroll'u devre dışı bırak (sadece horizontal tespit edildiğinde)
-                // runOnJS ile JS thread'e geçiş yap
-                // REANIMATED FIX: feedListRef kontrolünü worklet dışında yap (runOnJS callback'inde)
-                runOnJS(disableFeedScroll)();
+                // CRITICAL FIX: runOnJS onUpdate'te ASLA kullanılmamalı (frame bazlı spam)
+                // Bunun yerine flag set et, onBegin'de kontrol et veya sadece onEnd'de handle et
+                // Feed scroll disable işlemi onEnd'de yapılacak (tek seferlik, doğru yer)
+                feedScrollDisabled.value = true;
               }
             }
           }
         })
         .onEnd(() => {
           'worklet';
-          if (gestureDirection.value === 'horizontal') {
+          // CRITICAL FIX: onEnd tek seferlik event - runOnJS burada DOĞRU kullanım
+          // Gesture bittiğinde feed scroll'u tekrar aktif et
+          if (gestureDirection.value === 'horizontal' || feedScrollDisabled.value) {
             // REANIMATED FIX: feedListRef kontrolünü worklet dışında yap (runOnJS callback'inde)
             runOnJS(enableFeedScroll)();
+            feedScrollDisabled.value = false;
           }
           gestureDirection.value = 'none';
         })

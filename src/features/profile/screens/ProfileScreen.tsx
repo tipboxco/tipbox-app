@@ -11,18 +11,20 @@ import Animated, {
   withTiming,
   useAnimatedScrollHandler,
   useAnimatedRef,
+  useAnimatedReaction,
   runOnJS,
 } from 'react-native-reanimated';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser } from '../api/hooks';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, profileKeys } from '../api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Share } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { ProfileStackParamList } from '../navigation';
 import { toImageSource, useSafeAreaValues, useBottomOffset } from '@/src/utils';
 import { CardType } from '@/src/types/common';
@@ -590,6 +592,10 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
 
 // Tab Page Component - Her tab için ayrı bir sayfa
 const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding, listHeaderComponent, onRefresh, refreshing }) => {
+  // Scroll position state - en üstteyken pull-to-refresh'i engellemek için
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [isAtTop, setIsAtTop] = useState(true);
+  const flatListRef = useRef<FlatList>(null);
 
   // API hooks for each tab
   const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
@@ -682,6 +688,25 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
       activeTabQuery.fetchNextPage();
     }
   }, [activeTabQuery]);
+
+  // Handle scroll - scroll position'ı track et
+  const handleScroll = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setScrollOffset(offsetY);
+    // ARCHITECTURE FIX: En üstte olup olmadığını kontrol et (küçük bir threshold ile)
+    // 5px threshold - küçük scroll hatalarını göz ardı et
+    setIsAtTop(offsetY <= 5);
+  }, []);
+
+  // Handle refresh - sadece en üstte değilse refresh yap
+  const handleRefresh = useCallback(() => {
+    // ARCHITECTURE FIX: En üstteyken (isAtTop === true) pull-to-refresh'i engelle
+    // Kullanıcı zaten en üstte olduğu için görünecek bir şey yok
+    // Sadece aşağı scroll edilmişse (isAtTop === false) refresh yap
+    if (!isAtTop && onRefresh) {
+      onRefresh();
+    }
+  }, [isAtTop, onRefresh]);
   
   // Render post card
   const renderPostCard = useCallback((postData: MappedPost) => {
@@ -712,6 +737,7 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
   // Dikey FlatList kullan - her tab kendi scroll'unu yönetir
   return (
     <FlatList
+      ref={flatListRef}
       data={mappedPosts}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={listHeaderComponent}
@@ -743,11 +769,13 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
       contentContainerStyle={{
         paddingBottom: bottomPadding,
       }}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
       refreshControl={
         onRefresh ? (
           <RefreshControl
             refreshing={refreshing || false}
-            onRefresh={onRefresh}
+            onRefresh={handleRefresh}
             tintColor={isDark ? '#FFFFFF' : '#000000'}
             colors={isDark ? ['#FFFFFF'] : ['#000000']}
           />
@@ -758,7 +786,6 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
       nestedScrollEnabled={false}
       bounces={false}
       alwaysBounceVertical={false}
-      scrollEventThrottle={16}
     />
   );
 };
@@ -781,27 +808,90 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const routeUserId = route.params?.userId;
   const targetUserId = routeUserId || user?.id;
   
+  // Query client for manual refetch
+  const queryClient = useQueryClient();
+  
   // Profile API hook
   const { data: userProfile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useUserProfile(targetUserId);
   
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
   
+  // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
+  // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
+  useFocusEffect(
+    useCallback(() => {
+      // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
+      if (targetUserId && user?.id && targetUserId === user.id) {
+        // Tüm profil verilerini refetch et - yeni post, review, benchmark, tips, replies görünsün
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userPosts(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.profile(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userReviews(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userBenchmarks(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userTipsAndTricks(targetUserId),
+          exact: false 
+        });
+        queryClient.refetchQueries({ 
+          queryKey: profileKeys.userReplies(targetUserId),
+          exact: false 
+        });
+      }
+    }, [targetUserId, user?.id, queryClient])
+  );
+  
   // Pull to refresh handler
   const handleRefresh = useCallback(async () => {
+    if (!targetUserId) return;
+    
     setRefreshing(true);
     try {
-      // Profile'ı refresh et
-      await refetchProfile();
+      // Tüm profil verilerini backend'den yeniden çek
+      await Promise.all([
+        // Profile bilgilerini refresh et
+        refetchProfile(),
+        // Tüm tab query'lerini refresh et
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userPosts(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userReviews(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userBenchmarks(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userTipsAndTricks(targetUserId),
+          exact: false,
+        }),
+        queryClient.refetchQueries({
+          queryKey: profileKeys.userReplies(targetUserId),
+          exact: false,
+        }),
+      ]);
       
-      // Tüm tab query'lerini refresh et (invalidate ederek)
-      // TabPage içindeki query'ler otomatik refresh olacak
+      console.log('[ProfileScreen] ✅ Pull to refresh completed');
     } catch (error) {
-      console.error('[ProfileScreen] Refresh error:', error);
+      console.error('[ProfileScreen] ❌ Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [refetchProfile]);
+  }, [targetUserId, refetchProfile, queryClient]);
   
   // Avatar URL kontrolü için log
   React.useEffect(() => {
@@ -896,18 +986,54 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, []);
 
   // Scroll pozisyonunu takip et (bounce kontrolü için)
-  const [scrollY, setScrollY] = useState(0);
+  // CRITICAL FIX: runOnJS frame bazlı event'lerde (onScroll) ASLA kullanılmamalı
+  // Bunun yerine SharedValue kullan ve useAnimatedReaction ile throttled state update
+  const scrollYShared = useSharedValue(0);
+  const [shouldBounce, setShouldBounce] = useState(false);
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
 
-  // Scroll handler - scroll pozisyonunu takip et
+  // Scroll handler - scroll pozisyonunu takip et (UI thread'de, SharedValue ile)
   const handleScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
       'worklet';
       const offsetY = event.contentOffset.y;
-      // Scroll pozisyonunu güncelle (negatif değerleri 0'a çevir)
-      runOnJS(setScrollY)(Math.max(0, offsetY));
+      // CRITICAL FIX: runOnJS onScroll'da ASLA kullanılmamalı (frame bazlı spam)
+      // Bunun yerine SharedValue'ya yaz, useAnimatedReaction ile throttled state update
+      // En üstteyken yukarı scroll'u engelle - pozisyonu 0'da tut
+      const clampedY = Math.max(0, offsetY);
+      scrollYShared.value = clampedY;
     },
   });
+
+  // CRITICAL FIX: SharedValue değişikliğini throttled bir şekilde state'e yaz
+  // Bu sayede frame bazlı runOnJS spam'i önlenir
+  // Sadece 0'dan büyük/küçük geçişinde state'e yaz (low-frequency event)
+  useAnimatedReaction(
+    () => scrollYShared.value > 0,
+    (currentShouldBounce, previousShouldBounce) => {
+      'worklet';
+      // Sadece değiştiğinde state'e yaz (low-frequency event - threshold geçildiğinde)
+      // runOnJS burada DOĞRU kullanım - low-frequency event (sadece 0'dan büyük/küçük geçişinde)
+      // Bu çok düşük frequency (sadece threshold geçildiğinde), frame bazlı değil
+      if (previousShouldBounce !== null && currentShouldBounce !== previousShouldBounce) {
+        runOnJS(setShouldBounce)(currentShouldBounce);
+      }
+    },
+    []
+  );
+
+  // Scroll başladığında yukarı scroll'u engelle (en üstteyken)
+  const handleScrollBeginDrag = useCallback((event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    
+    // Eğer scroll pozisyonu 0 veya 0'a yakınsa, yukarı scroll'u engelle
+    // Scroll pozisyonunu 0'da tut (bounce'u engelle)
+    if (offsetY <= 10) {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: false });
+      }
+    }
+  }, []);
 
   // Scroll bittiğinde pozisyonu kontrol et ve 0'dan küçükse 0'a çek
   const handleScrollEndDrag = useCallback((event: any) => {
@@ -925,7 +1051,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, []);
 
   // Bounce kontrolü - scroll pozisyonu 0 olduğunda bounce disable
-  const shouldBounce = scrollY > 0;
+  // CRITICAL FIX: SharedValue'dan direkt hesapla (state yerine)
+  // Ama ScrollView'in bounces prop'u JS thread'de olmalı, bu yüzden state gerekiyor
   
   // Action button handlers
   const handleSendTIPS = useCallback(() => {
@@ -1604,6 +1731,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       <Animated.ScrollView
         ref={scrollViewRef}
         onScroll={handleScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
         scrollEventThrottle={16}
         bounces={shouldBounce}
         alwaysBounceVertical={false}
