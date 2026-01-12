@@ -40,9 +40,10 @@ import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 interface TipsAndTricksPostCardProps {
     data: TipsCardData;
     hideProduct?: boolean;
+    isDetailMode?: boolean;
 }
 
-const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostCardProps) => {
+const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false }: TipsAndTricksPostCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<any>();
@@ -120,6 +121,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
     };
 
     const handleComment = () => {
+        if (isDetailMode) return; // Detay modunda navigation yapma
         navigationService.navigate(ROOT_ROUTES.POST, {
             screen: 'PostDetailScreen',
             params: { postData: data, type: 'tipsAndTricks' },
@@ -256,6 +258,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
 
             {/* Content */}
             <Pressable onPress={() => {
+                if (isDetailMode) return; // Detay modunda navigation yapma
                 navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostDetailScreen',
                     params: { postData: data, type: 'tipsAndTricks' }
@@ -276,6 +279,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false }: TipsAndTricksPostC
             {data.images && data.images?.length > 0 && (
                 <Pressable
                     onPress={() => {
+                        if (isDetailMode) return; // Detay modunda navigation yapma
                         navigationService.navigate(ROOT_ROUTES.POST, {
                             screen: 'PostDetailScreen',
                             params: { postData: data, type: 'tipsAndTricks' }

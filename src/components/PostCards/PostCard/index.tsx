@@ -45,9 +45,10 @@ import { PostContextMenu } from '@/src/components/PostContextMenu';
 interface PostCardProps {
   data: PostCardData;
   hideProduct?: boolean;
+  isDetailMode?: boolean;
 }
 
-const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
+const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
@@ -147,6 +148,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
   };
 
   const handleComment = () => {
+    if (isDetailMode) return; // Detay modunda navigation yapma
     navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'post' },
@@ -400,6 +402,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
 
       {/* Content */}
       <Pressable onPress={() => {
+        if (isDetailMode) return; // Detay modunda navigation yapma
         navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostDetailScreen',
           params: { postData: data, type: 'post' }
@@ -421,6 +424,7 @@ const PostCard = ({ data, hideProduct = false }: PostCardProps) => {
         data.images && data.images?.length > 0 && (
           <Pressable
             onPress={() => {
+              if (isDetailMode) return; // Detay modunda navigation yapma
               navigationService.navigate(ROOT_ROUTES.POST, {
                 screen: 'PostDetailScreen',
                 params: { postData: data, type: 'post' }

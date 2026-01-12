@@ -19,7 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
-import { toImageSource } from '@/src/utils';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import {
   useLikePost,
@@ -30,18 +30,24 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
+import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
+import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 
 interface BenchmarkPostCardProps {
     data: BenchmarkCardData;
+    onCommentPress?: () => void;
+    isDetailMode?: boolean;
 }
 
-const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark: boolean; }) => {
-    const productImageSource = toImageSource(product.image);
+const renderProduct = ({ product, isDark, isDetailMode = false }: { product: BenchmarkProduct; isDark: boolean; isDetailMode?: boolean; }) => {
+    const productImageSource = product.image 
+        ? toImageSource(product.image) || require('@/assets/inventory/product_01.png')
+        : require('@/assets/inventory/product_01.png');
+    
     return (
     <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : '#E9E9E9'} borderRadius={10} position="relative">
         <VStack padding={6} flex={1} >
             <Box position="relative" w={'$full'} overflow='hidden'>
-                {productImageSource && (
                 <Image
                     w={'$full'}
                     h={'$full'}
@@ -51,7 +57,6 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
                     alt={product.name}
                     resizeMode='cover'
                 />
-                )}
                 {product.isOwned && (
                     <Box
                         position="absolute"
@@ -72,14 +77,14 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
             <VStack flex={1} pt={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={9}
+                    fontSize={isDetailMode ? "$xs" : 9}
                     fontWeight="$bold"
                 >
                     {product.name}
                 </Text>
                 <Text
                     color={isDark ? '$textDark50' : '#000'}
-                    fontSize={8}
+                    fontSize={isDetailMode ? "$xs" : 8}
                     fontWeight="$semibold"
                 >
                     {product.subName}
@@ -90,7 +95,7 @@ const renderProduct = ({ product, isDark }: { product: BenchmarkProduct; isDark:
     );
 };
 
-export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
+export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }: BenchmarkPostCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<any>();
@@ -103,6 +108,22 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
     const [commentsCount, setCommentsCount] = useState(data.stats.comments);
     const [sharesCount, setSharesCount] = useState(data.stats.shares);
     const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
+
+    // Translation hooks (only in detail mode)
+    const deviceLocale = useDeviceLocale();
+    const {
+        translatedContent,
+        isTranslating,
+        showTranslation,
+        toggleTranslation,
+        shouldTranslate,
+    } = usePostTranslation({
+        postId: data.id,
+        originalContent: data.content,
+        targetLanguage: deviceLocale,
+        sourceLanguage: 'en',
+        enabled: isDetailMode, // Only enable translation in detail mode
+    });
 
     // Interaction hooks
     const likePostMutation = useLikePost();
@@ -167,10 +188,14 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
     };
 
     const handleComment = () => {
-        navigationService.navigate(ROOT_ROUTES.POST, {
-            screen: 'PostDetailScreen',
-            params: { postData: data, type: 'benchmark' },
-        });
+        if (isDetailMode && onCommentPress) {
+            onCommentPress();
+        } else {
+            navigationService.navigate(ROOT_ROUTES.POST, {
+                screen: 'PostDetailScreen',
+                params: { postData: data, type: 'benchmark' },
+            });
+        }
     };
 
     return (
@@ -179,18 +204,16 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
             mb={16}
         >
             {/* Header */}
-            <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
+            <VStack px={12} py={8} borderRightWidth={isDetailMode ? 0 : 1} borderLeftWidth={isDetailMode ? 0 : 1} borderTopWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
-                    {toImageSource(data.user.avatar) && (
-                        <Image
-                            source={toImageSource(data.user.avatar)!}
-                            alt={data.user.name}
-                            mr={8}
-                            width={42}
-                            height={42}
-                            borderRadius={100}
-                        />
-                    )}
+                    <Image
+                        source={toImageSource(data.user.avatar) || DEFAULT_USER_AVATAR}
+                        alt={data.user.name}
+                        mr={8}
+                        width={42}
+                        height={42}
+                        borderRadius={100}
+                    />
                     <VStack flex={1}>
                         <Text
                             color={isDark ? '$textDark50' : '#000'}
@@ -201,7 +224,7 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={9}
+                            fontSize={isDetailMode ? "$xs" : 9}
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -219,122 +242,232 @@ export const BenchmarkPostCard = ({ data }: BenchmarkPostCardProps) => {
             </VStack>
 
             {/* Content */}
-            <Pressable onPress={() => {
-                navigationService.navigate(ROOT_ROUTES.POST, {
-                    screen: 'PostDetailScreen',
-                    params: { postData: data, type: 'benchmark' }
-                });
-            }}>
-                <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
+            {isDetailMode ? (
+                <VStack px={12} py={8} borderTopWidth={1} borderColor="#E9E9E9" space="sm">
+                    {/* Original Content */}
                     <Text
                         color={isDark ? '$textDark50' : '#000'}
-                        fontSize="$xs"
-                        numberOfLines={3}
+                        fontSize="$sm"
                     >
                         {data.content}
                     </Text>
+                    
+                    {/* Translated Content */}
+                    {showTranslation && translatedContent && (
+                        <VStack space="xs" mt="$2">
+                            <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} />
+                            <Text
+                                color={isDark ? '$textDark200' : '#666'}
+                                fontSize="$sm"
+                                fontStyle="italic"
+                            >
+                                {translatedContent}
+                            </Text>
+                        </VStack>
+                    )}
                 </VStack>
-            </Pressable>
+            ) : (
+                <Pressable onPress={() => {
+                    navigationService.navigate(ROOT_ROUTES.POST, {
+                        screen: 'PostDetailScreen',
+                        params: { postData: data, type: 'benchmark' }
+                    });
+                }}>
+                    <VStack px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderTopWidth={1} borderColor="#E9E9E9">
+                        <Text
+                            color={isDark ? '$textDark50' : '#000'}
+                            fontSize="$xs"
+                            numberOfLines={3}
+                        >
+                            {data.content}
+                        </Text>
+                    </VStack>
+                </Pressable>
+            )}
+
+            {/* Translate Button (only in detail mode) */}
+            {isDetailMode && shouldTranslate && (
+                <Box pb="$3" px="$3">
+                    <Pressable onPress={toggleTranslation}>
+                        <HStack alignItems="center" space="xs">
+                            <Image
+                                source={require('@/assets/translate.png')}
+                                alt="translate"
+                                width={16}
+                                height={16}
+                            />
+                            <Text
+                                color="#829905"
+                                fontSize="$sm"
+                                textDecorationLine="underline"
+                            >
+                                {isTranslating
+                                    ? 'Çeviriliyor...'
+                                    : showTranslation
+                                    ? 'Hide Translation'
+                                    : 'Translate'}
+                            </Text>
+                        </HStack>
+                    </Pressable>
+                </Box>
+            )}
 
             {/* Product Comparison */}
-            <Pressable onPress={() => {
-                navigationService.navigate(ROOT_ROUTES.POST, {
-                    screen: 'PostDetailScreen',
-                    params: { postData: data, type: 'benchmark' }
-                });
-            }}>
-                <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                <Box position="relative" width="100%">
-                    <HStack justifyContent="space-between" width="100%">
-                        {data.products.map((product, index) => (
-                            <Box key={product.id} flex={1} mx={4}>
-                                {renderProduct({ product, isDark })}
-                            </Box>
-                        ))}
-                    </HStack>
-                    <Box
-                        position="absolute"
-                        top="50%"
-                        left="50%"
-                        transform={[{ translateX: -20 }, { translateY: -20 }]}
-                        width={40}
-                        height={40}
-                    >
-                        <Image
-                            source={require('@/assets/common/benchmarks.png')}
-                            alt="benchmarks"
+            {isDetailMode ? (
+                <VStack px={12} pb={8}>
+                    <Box position="relative" width="100%">
+                        <HStack justifyContent="space-between" width="100%">
+                            {data.products.map((product, index) => (
+                                <Box key={product.id} flex={1} mx={4}>
+                                    {renderProduct({ product, isDark, isDetailMode })}
+                                </Box>
+                            ))}
+                        </HStack>
+                        <Box
+                            position="absolute"
+                            top="50%"
+                            left="50%"
+                            transform={[{ translateX: -20 }, { translateY: -20 }]}
                             width={40}
                             height={40}
-                        />
+                        >
+                            <Image
+                                source={require('@/assets/common/benchmarks.png')}
+                                alt="benchmarks"
+                                width={40}
+                                height={40}
+                            />
+                        </Box>
                     </Box>
-                </Box>
                 </VStack>
-            </Pressable>
+            ) : (
+                <Pressable onPress={() => {
+                    navigationService.navigate(ROOT_ROUTES.POST, {
+                        screen: 'PostDetailScreen',
+                        params: { postData: data, type: 'benchmark' }
+                    });
+                }}>
+                    <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                        <Box position="relative" width="100%">
+                            <HStack justifyContent="space-between" width="100%">
+                                {data.products.map((product, index) => (
+                                    <Box key={product.id} flex={1} mx={4}>
+                                        {renderProduct({ product, isDark, isDetailMode })}
+                                    </Box>
+                                ))}
+                            </HStack>
+                            <Box
+                                position="absolute"
+                                top="50%"
+                                left="50%"
+                                transform={[{ translateX: -20 }, { translateY: -20 }]}
+                                width={40}
+                                height={40}
+                            >
+                                <Image
+                                    source={require('@/assets/common/benchmarks.png')}
+                                    alt="benchmarks"
+                                    width={40}
+                                    height={40}
+                                />
+                            </Box>
+                        </Box>
+                    </VStack>
+                </Pressable>
+            )}
 
             {/* Stats */}
             <HStack
                 px={12}
-                py={16}
-                borderRightWidth={1}
-                borderLeftWidth={1}
+                py={isDetailMode ? 8 : 16}
+                borderRightWidth={isDetailMode ? 0 : 1}
+                borderLeftWidth={isDetailMode ? 0 : 1}
                 borderBottomWidth={1}
-                borderBottomRightRadius={5}
-                borderBottomLeftRadius={5}
+                borderBottomRightRadius={isDetailMode ? 0 : 5}
+                borderBottomLeftRadius={isDetailMode ? 0 : 5}
                 borderColor="#E9E9E9"
                 justifyContent="space-between"
             >
                 <HStack>
                     <Pressable onPress={handleLike}>
-                    <HStack mr={10} alignItems="center">
+                        <HStack mr={10} alignItems="center">
                             {isLiked ? (
                                 <HeartIconSolid width={24} height={24} color="#FF3040" />
                             ) : (
                                 <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            <AnimatedCounter
-                                value={likesCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
-                                ml={4}
-                            />
-                    </HStack>
+                            {isDetailMode ? (
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                    {data.stats.likes}
+                                </Text>
+                            ) : (
+                                <AnimatedCounter
+                                    value={likesCount}
+                                    color={isDark ? '$textDark50' : '#000'}
+                                    fontSize="$2xs"
+                                    ml={4}
+                                />
+                            )}
+                        </HStack>
                     </Pressable>
-                    <Pressable onPress={handleComment}>
-                    <HStack mr={10} alignItems="center">
-                        <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            <AnimatedCounter
-                                value={commentsCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
-                                ml={4}
-                            />
-                    </HStack>
+                    <Pressable 
+                        onPress={handleComment}
+                        disabled={isDetailMode && !onCommentPress}
+                        opacity={isDetailMode && !onCommentPress ? 0.5 : 1}
+                    >
+                        <HStack mr={10} alignItems="center">
+                            <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            {isDetailMode ? (
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                    {data.stats.comments}
+                                </Text>
+                            ) : (
+                                <AnimatedCounter
+                                    value={commentsCount}
+                                    color={isDark ? '$textDark50' : '#000'}
+                                    fontSize="$2xs"
+                                    ml={4}
+                                />
+                            )}
+                        </HStack>
                     </Pressable>
                     <Pressable onPress={handleShare}>
-                    <HStack mr={10} alignItems="center">
-                        <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            <AnimatedCounter
-                                value={sharesCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
-                                ml={4}
-                            />
-                    </HStack>
+                        <HStack mr={10} alignItems="center">
+                            <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
+                            {isDetailMode ? (
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                    {data.stats.shares}
+                                </Text>
+                            ) : (
+                                <AnimatedCounter
+                                    value={sharesCount}
+                                    color={isDark ? '$textDark50' : '#000'}
+                                    fontSize="$2xs"
+                                    ml={4}
+                                />
+                            )}
+                        </HStack>
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
-                    <HStack mr={10} alignItems="center">
+                        <HStack mr={10} alignItems="center">
                             {isBookmarked ? (
                                 <BookmarkIconSolid width={24} height={24} color="#829905" />
                             ) : (
                                 <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            <AnimatedCounter
-                                value={bookmarksCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
-                                ml={4}
-                            />
-                    </HStack>
+                            {isDetailMode ? (
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                    {data.stats.bookmarks}
+                                </Text>
+                            ) : (
+                                <AnimatedCounter
+                                    value={bookmarksCount}
+                                    color={isDark ? '$textDark50' : '#000'}
+                                    fontSize="$2xs"
+                                    ml={4}
+                                />
+                            )}
+                        </HStack>
                     </Pressable>
                 </HStack>
                 <Box>

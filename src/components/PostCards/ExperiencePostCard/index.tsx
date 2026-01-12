@@ -45,9 +45,10 @@ import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 interface PostCardProps {
   data: ReviewCardData;
   hideProduct?: boolean;
+  isDetailMode?: boolean;
 }
 
-export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps) => {
+export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
@@ -124,6 +125,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
   };
 
   const handleComment = () => {
+    if (isDetailMode) return; // Detay modunda navigation yapma
     navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'experience' },
@@ -220,6 +222,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
 
       {/* Content */}
       <Pressable onPress={() => {
+        if (isDetailMode) return; // Detay modunda navigation yapma
         navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostDetailScreen',
           params: { postData: data, type: 'experience' }
@@ -301,6 +304,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false }: PostCardProps)
       {data.images && data.images.length > 0 && (
         <Pressable
           onPress={() => {
+            if (isDetailMode) return; // Detay modunda navigation yapma
             navigationService.navigate(ROOT_ROUTES.POST, {
               screen: 'PostDetailScreen',
               params: { postData: data, type: 'experience' }

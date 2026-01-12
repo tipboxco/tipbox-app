@@ -4,6 +4,7 @@ import { ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoType } from '@/src/types/common';
 import { toImageSource, cleanNewlines } from '@/src/utils';
+import { CheckIcon } from 'react-native-heroicons/solid';
 
 interface ProductInfoCardProps {
   // Product information
@@ -109,9 +110,9 @@ export const ProductInfoCard = ({
                 alignItems="center"
                 bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
               >
-                <Feather
-                  name="check"
-                  size={10}
+                <CheckIcon
+                  width={10}
+                  height={10}
                   color={isDark ? '#FFFFFF' : '#000000'}
                 />
               </Box>

@@ -228,7 +228,12 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
                         alignItems="center"
                         justifyContent="center"
                     >
-                        <PaperAirplaneIcon width={12} height={12} color="#fff" />
+                        <Image
+                            source={require('@/assets/boost.svg')}
+                            alt="boost"
+                            width={12}
+                            height={12}
+                        />
                         <Text
                             fontSize="$xs"
                             fontWeight="$semibold"

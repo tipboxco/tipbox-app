@@ -40,9 +40,10 @@ import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 interface QuestionPostCardProps {
   data: QuestionPost | QuestionCardData; // Accept both types for compatibility
   hideProduct?: boolean;
+  isDetailMode?: boolean;
 }
 
-export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCardProps) => {
+export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = false }: QuestionPostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
@@ -120,6 +121,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
   };
 
   const handleComment = () => {
+    if (isDetailMode) return; // Detay modunda navigation yapma
     navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'question' },
@@ -248,7 +250,12 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
             alignItems="center"
             justifyContent="space-evenly"
           >
-            <PaperAirplaneIcon width={12} height={12} color="#fff" />
+            <Image
+              source={require('@/assets/boost.svg')}
+              alt="boost"
+              width={12}
+              height={12}
+            />
             <Text
               fontSize={8}
               fontWeight="$semibold"
@@ -263,6 +270,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
 
       {/* Content */}
       <Pressable onPress={() => {
+        if (isDetailMode) return; // Detay modunda navigation yapma
         navigationService.navigate(ROOT_ROUTES.POST, {
           screen: 'PostDetailScreen',
           params: { postData: data, type: 'question' }
@@ -283,6 +291,7 @@ export const QuestionPostCard = ({ data, hideProduct = false }: QuestionPostCard
       {data.images && data.images.length > 0 && (
         <Pressable
           onPress={() => {
+            if (isDetailMode) return; // Detay modunda navigation yapma
             navigationService.navigate(ROOT_ROUTES.POST, {
               screen: 'PostDetailScreen',
               params: { postData: data, type: 'question' }

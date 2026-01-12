@@ -38,9 +38,12 @@ import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 interface UpdatePostCardProps {
   data: UpdateCardData;
   hideProduct?: boolean;
+  isDetailMode?: boolean;
+  showRelatedPost?: boolean;
+  relatedPostData?: any;
 }
 
-const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
+const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showRelatedPost, relatedPostData }: UpdatePostCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
@@ -124,6 +127,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
   };
 
   const handleComment = () => {
+    if (isDetailMode) return; // Detay modunda navigation yapma
     navigationService.navigate(ROOT_ROUTES.POST, {
       screen: 'PostDetailScreen',
       params: { postData: data, type: 'update' },
@@ -229,6 +233,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       {/* Content */}
       <VStack px={12} pb={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         <Pressable onPress={() => {
+          if (isDetailMode) return; // Detay modunda navigation yapma
           // Navigate to PostDetailScreen
           navigationService.navigate(ROOT_ROUTES.POST, {
             screen: 'PostDetailScreen',
@@ -278,6 +283,7 @@ const UpdatePostCard = ({ data, hideProduct = false }: UpdatePostCardProps) => {
       {data.images && data.images.length > 0 && (
         <Pressable
           onPress={() => {
+            if (isDetailMode) return; // Detay modunda navigation yapma
             navigationService.navigate(ROOT_ROUTES.POST, {
               screen: 'PostDetailScreen',
               params: { postData: data, type: 'update' }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import { View, Text, Pressable, Platform, Keyboard, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -10,6 +10,7 @@ interface CommentBottomSheetProps {
   isSubmitting?: boolean;
   autoFocus?: boolean; // Otomatik focus için prop
   onInputPress?: () => void; // Input'a tıklandığında çağrılacak callback
+  initialText?: string; // Başlangıç metni
 }
 
 export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
@@ -18,28 +19,52 @@ export const CommentBottomSheet: React.FC<CommentBottomSheetProps> = ({
   isSubmitting = false,
   autoFocus = true, // Varsayılan olarak true
   onInputPress,
+  initialText = '',
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { closeBottomSheet } = useGlobalBottomSheet();
   const inputRef = useRef<any>(null);
-  const [commentText, setCommentText] = useState('');
+  const [commentText, setCommentText] = useState(initialText);
+
+  // initialText değiştiğinde state'i güncelle
+  useEffect(() => {
+    if (initialText !== undefined) {
+      setCommentText(initialText);
+    }
+  }, [initialText]);
 
   useEffect(() => {
     if (autoFocus) {
-      const id = requestAnimationFrame(() => {
+      // Bottom sheet açıldıktan sonra input'a focus yapmak için delay ekle
+      // Bottom sheet animasyonu tamamlanana kadar bekle
+      // İlk focus denemesi (hızlı)
+      const firstTimeout = setTimeout(() => {
         inputRef.current?.focus();
-      });
-      return () => cancelAnimationFrame(id);
+      }, 100);
+      
+      // İkinci focus denemesi (güvenli, bottom sheet tamamen açıldıktan sonra)
+      const secondTimeout = setTimeout(() => {
+        inputRef.current?.focus();
+      }, Platform.OS === 'ios' ? 500 : 400);
+      
+      return () => {
+        clearTimeout(firstTimeout);
+        clearTimeout(secondTimeout);
+      };
     }
   }, [autoFocus]);
 
   const handleSubmit = () => {
     if (!commentText.trim() || isSubmitting) return;
 
-
+    // Klavyeyi kapat
+    Keyboard.dismiss();
+    
     onCommentSubmit(commentText.trim());
     setCommentText('');
+    
+    // Bottom sheet'i kapat (klavye zaten kapalı)
     closeBottomSheet();
   };
 
