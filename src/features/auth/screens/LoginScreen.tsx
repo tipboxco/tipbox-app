@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle, Mail, Eye, EyeOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
 import { useLogin, useGoogleLogin } from '../api/hooks';
 import { googleService } from '@/src/services/GoogleService';
+import { CustomToast } from '@/src/components/CustomToast';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -67,18 +68,15 @@ export const LoginScreen = () => {
         // Başarılı toast göster
         toast.show({
           placement: 'top',
+          duration: 3000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
-                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                  <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
-                    Login Successful
-                  </ToastTitle>
-                  <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={2}>
-                    Welcome, {result.fullName || result.email}!
-                  </ToastDescription>
-                </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title={`Hoş geldin ${result.fullName || result.email?.split('@')[0] || 'Kullanıcı'}!`}
+                action="success"
+                duration={3000}
+              />
             );
           },
         });
@@ -99,22 +97,20 @@ export const LoginScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'An error occurred during login';
+          'Giriş yapılırken bir hata oluştu';
 
         toast.show({
           placement: 'top',
+          duration: 4000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
-                  Login Error
-                </ToastTitle>
-                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={3}>
-                  {errorMessage}
-                </ToastDescription>
-              </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Giriş başarısız"
+                description={errorMessage}
+                action="error"
+                duration={4000}
+              />
             );
           },
         });
@@ -161,18 +157,15 @@ export const LoginScreen = () => {
       // Başarılı toast göster
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
-                  Google Login Successful
-                </ToastTitle>
-                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={2}>
-                  Welcome, {googleResult.user.name || googleResult.user.email}!
-                </ToastDescription>
-              </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title={`Hoş geldin ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'Kullanıcı'}!`}
+              action="success"
+              duration={3000}
+            />
           );
         },
       });
@@ -190,18 +183,16 @@ export const LoginScreen = () => {
 
       toast.show({
         placement: 'top',
+        duration: 4000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
-                  Google Login Error
-                </ToastTitle>
-                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={3}>
-                  {errorMessage}
-                </ToastDescription>
-              </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Google ile giriş başarısız"
+              description={errorMessage}
+              action="error"
+              duration={4000}
+            />
           );
         },
       });

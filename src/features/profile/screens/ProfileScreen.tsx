@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
 import PagerView from 'react-native-pager-view';
@@ -7,9 +7,9 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   interpolateColor,
+  interpolate,
   withTiming,
-  runOnJS,
-  useAnimatedReaction,
+  useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -309,9 +309,12 @@ interface TabPageProps {
   targetUserId: string;
   isDark: boolean;
   bottomPadding: number;
+  listHeaderComponent?: React.ReactElement | null;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
-// TabsBar Component
+// TabsBar Component - NotificationsScreen'deki gibi
 interface TabsBarProps {
   activeTab: TabKey;
   onChangeTab: (tab: TabKey) => void;
@@ -319,46 +322,42 @@ interface TabsBarProps {
   progress: ReturnType<typeof useSharedValue<number>>;
   tabContainerRef: React.RefObject<any>;
   onTabContainerLayout: (width: number) => void;
-  tabsScrollOffset: number; // Content scroll'dan gelen offset
 }
 
-const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout, tabsScrollOffset }) => {
+const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
   const activeColor = isDark ? '#FFFFFF' : '#000000';
   const inactiveColor = '#A3A3A3';
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
   
-  // Tab genişliği: ekran genişliği / 4 (başlangıçta görünen tab sayısı)
-  const tabWidth = SCREEN_WIDTH / 4;
+  // Her tab için genişlik ve pozisyon state'i (metin genişliğine göre)
+  const [tabWidths, setTabWidths] = useState<number[]>([]);
+  const [tabPositions, setTabPositions] = useState<number[]>([]);
+  const tabRefs = useRef<{ [key: string]: any }>({});
   
-  // Tabs scroll offset değiştiğinde ScrollView'i güncelle
-  useEffect(() => {
-    if (scrollViewRef.current && tabsScrollOffset > 0) {
-      scrollViewRef.current.scrollTo({
-        x: tabsScrollOffset,
-        animated: true,
-      });
-    } else if (scrollViewRef.current && tabsScrollOffset === 0) {
-      scrollViewRef.current.scrollTo({
-        x: 0,
-        animated: true,
-      });
-    }
-  }, [tabsScrollOffset]);
+  // ScrollView scroll pozisyonunu takip et (indicator için)
+  const scrollViewOffset = useSharedValue(0);
   
-  // Progress'e göre scroll enabled kontrolü
-  const [isScrollEnabledState, setIsScrollEnabledState] = useState(false);
-  
-  useAnimatedReaction(
-    () => progress.value,
-    (value) => {
-      'worklet';
-      const enabled = value >= 3;
-      runOnJS(setIsScrollEnabledState)(enabled);
+  // ScrollView scroll handler
+  const handleScrollViewScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollViewOffset.value = event.contentOffset.x;
     },
-    []
-  );
+  });
+  
+  // Tab genişliği hesaplama - aktif tab'ın genişliğini kullan
+  const getTabWidth = useCallback((index: number) => {
+    if (tabWidths[index]) {
+      return tabWidths[index];
+    }
+    return 80; // Default genişlik
+  }, [tabWidths]);
+  
+  // Aktif tab'ın genişliği (indicator için)
+  const activeTabIndex = TABS.findIndex(tab => tab.key === activeTab);
+  const activeTabWidth = activeTabIndex >= 0 ? getTabWidth(activeTabIndex) : 80;
   
   // Her tab için animasyonlu stil - NotificationsScreen'deki gibi
+  // Tab 0 (Feed)
   const tab0Style = useAnimatedStyle(() => {
     const color = interpolateColor(
       progress.value,
@@ -367,7 +366,8 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
     );
     return { color };
   }, [isDark]);
-  
+
+  // Tab 1 (Reviews)
   const tab1Style = useAnimatedStyle(() => {
     const color = interpolateColor(
       progress.value,
@@ -376,7 +376,8 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
     );
     return { color };
   }, [isDark]);
-  
+
+  // Tab 2 (Benchmarks)
   const tab2Style = useAnimatedStyle(() => {
     const color = interpolateColor(
       progress.value,
@@ -385,7 +386,8 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
     );
     return { color };
   }, [isDark]);
-  
+
+  // Tab 3 (Tips & Tricks)
   const tab3Style = useAnimatedStyle(() => {
     const color = interpolateColor(
       progress.value,
@@ -394,7 +396,8 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
     );
     return { color };
   }, [isDark]);
-  
+
+  // Tab 4 (Questions)
   const tab4Style = useAnimatedStyle(() => {
     const color = interpolateColor(
       progress.value,
@@ -403,7 +406,8 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
     );
     return { color };
   }, [isDark]);
-  
+
+  // Tab 5 (Ladders)
   const tab5Style = useAnimatedStyle(() => {
     const color = interpolateColor(
       progress.value,
@@ -426,16 +430,58 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
   };
 
 
-  // Indicator position animation
-  const indicatorWidth = tabWidth * 0.8;
+  // Tab genişliklerini ve pozisyonlarını shared value olarak tut (worklet context için)
+  const tabWidthsShared = useSharedValue<number[]>([]);
+  const tabPositionsShared = useSharedValue<number[]>([]);
   
+  // Tab genişlikleri ve pozisyonları güncellendiğinde shared value'yu güncelle
+  useEffect(() => {
+    if (tabWidths.length === TABS.length) {
+      tabWidthsShared.value = tabWidths;
+    }
+  }, [tabWidths]);
+  
+  useEffect(() => {
+    if (tabPositions.length === TABS.length) {
+      tabPositionsShared.value = tabPositions;
+    }
+  }, [tabPositions]);
+  
+  // Indicator position animation - scroll offset'i dikkate al
+  // Indicator genişliği aktif tab'ın genişliğine göre
   const indicatorStyle = useAnimatedStyle(() => {
-    const baseTranslateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
-    const translateX = baseTranslateX + tabsScrollOffset;
+    'worklet';
+    const currentIndex = Math.floor(progress.value);
+    const nextIndex = Math.min(Math.ceil(progress.value), TABS.length - 1);
+    const offset = progress.value - currentIndex;
+    
+    // Tab genişliklerini ve pozisyonlarını al
+    const widths = tabWidthsShared.value;
+    const positions = tabPositionsShared.value;
+    
+    if (widths.length === 0 || positions.length === 0) {
+      return { transform: [{ translateX: 0 }], width: 0 };
+    }
+    
+    // Mevcut ve sonraki tab'ın genişliklerini ve pozisyonlarını al
+    const currentWidth = widths[currentIndex] || 80;
+    const nextWidth = widths[nextIndex] || currentWidth;
+    const currentPosition = positions[currentIndex] || 0;
+    const nextPosition = positions[nextIndex] || currentPosition;
+    
+    // Smooth geçiş için interpolate
+    const baseTranslateX = currentPosition + (nextPosition - currentPosition) * offset;
+    const baseWidth = currentWidth + (nextWidth - currentWidth) * offset;
+    const indicatorWidthAnimated = baseWidth * 0.8;
+    
+    // Indicator'ı tab'ın ortasına hizala (ScrollView scroll offset'ini dikkate al)
+    const translateX = baseTranslateX + (baseWidth - indicatorWidthAnimated) / 2 - scrollViewOffset.value;
+    
     return {
       transform: [{ translateX }],
+      width: indicatorWidthAnimated,
     };
-  }, [tabWidth, indicatorWidth, tabsScrollOffset]);
+  });
 
   return (
     <Box
@@ -445,81 +491,103 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
       borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
       position="relative"
     >
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
+        contentContainerStyle={{ 
+          paddingHorizontal: 16,
+        }}
         scrollEventThrottle={16}
-        scrollEnabled={isScrollEnabledState}
+        onScroll={handleScrollViewScroll}
+        scrollEnabled={true}
+        bounces={false}
       >
         <HStack
           ref={tabContainerRef}
-          space="xs"
-          py={12}
+          borderBottomWidth={1}
+          borderColor="#E9E9E9"
+          p={0}
+          mb="$2"
           position="relative"
+          space="md"
           onLayout={(event) => {
             const width = event.nativeEvent.layout.width;
             onTabContainerLayout(width);
           }}
-          style={{ position: 'relative' }}
         >
           {TABS.map((tab, index) => {
             const tabStyle = getTabStyle(index);
-            const isActive = activeTab === tab.key;
             return (
               <Pressable
                 key={tab.key}
+                ref={(ref) => {
+                  if (ref) {
+                    tabRefs.current[tab.key] = ref;
+                  }
+                }}
                 onPress={() => onChangeTab(tab.key)}
                 alignItems="center"
-                justifyContent="center"
-                pb="$1"
-                position="relative"
-                width={tabWidth}
-                style={{ minWidth: tabWidth }}
+                py="$1"
+                px="$2"
+                onLayout={(event) => {
+                  const { width, x } = event.nativeEvent.layout;
+                  setTabWidths((prev) => {
+                    const newWidths = [...prev];
+                    newWidths[index] = width;
+                    return newWidths;
+                  });
+                  setTabPositions((prev) => {
+                    const newPositions = [...prev];
+                    // X pozisyonu HStack içindeki relative pozisyon
+                    // ScrollView padding (16px) zaten indicator'ın left'inde var
+                    newPositions[index] = x;
+                    return newPositions;
+                  });
+                }}
               >
-                <Animated.Text
-                  style={[
-                    {
-                      textAlign: 'center',
-                      fontSize: 12,
-                      fontWeight: isActive ? 'bold' : 'normal',
-                    },
-                    tabStyle,
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {tab.title}
-                </Animated.Text>
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                      },
+                      tabStyle,
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {tab.title}
+                  </Animated.Text>
+                </VStack>
               </Pressable>
             );
           })}
+
+          {/* Animated Indicator */}
+          {activeTabWidth > 0 && tabPositions.length === TABS.length && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: 2,
+                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                },
+                indicatorStyle,
+              ]}
+            />
+          )}
         </HStack>
-      </ScrollView>
-      
-      {/* Animated Indicator */}
-      {tabWidth > 0 && (
-        <Animated.View
-          style={[
-            {
-              position: 'absolute',
-              bottom: 0,
-              left: 16,
-              width: indicatorWidth,
-              height: 2,
-              backgroundColor: isDark ? '#FFFFFF' : '#000000',
-            },
-            indicatorStyle,
-          ]}
-        />
-      )}
+      </Animated.ScrollView>
     </Box>
   );
 };
 
 // Tab Page Component - Her tab için ayrı bir sayfa
-const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding }) => {
+const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding, listHeaderComponent, onRefresh, refreshing }) => {
 
   // API hooks for each tab
   const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
@@ -633,57 +701,63 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
   // Render LadderTab
   if (tabKey === 'ladders') {
     return (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: bottomPadding }}
-      >
+      <Box flex={1}>
         <LadderTab />
-      </ScrollView>
+      </Box>
     );
   }
-  
-  // ScrollView için scroll handler - load more için
-  const handleScroll = useCallback((event: any) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = 20;
-    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-    
-    if (isCloseToBottom && activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
-      handleLoadMore();
-    }
-  }, [activeTabQuery, handleLoadMore]);
 
+  // Dikey FlatList kullan - her tab kendi scroll'unu yönetir
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: bottomPadding }}
-      onScroll={handleScroll}
-      scrollEventThrottle={400}
-      nestedScrollEnabled={true}
-    >
-      {activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
-        <FeedSkeleton count={3} />
-      ) : mappedPosts.length === 0 ? (
-        <Box py={20} alignItems="center">
-          <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-            No content found yet.
-          </Text>
+    <FlatList
+      data={mappedPosts}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={listHeaderComponent}
+      ListEmptyComponent={
+        activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
+          <FeedSkeleton count={3} />
+        ) : (
+          <Box py={20} alignItems="center">
+            <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+              No content found yet.
+            </Text>
+          </Box>
+        )
+      }
+      renderItem={({ item }) => (
+        <Box px={16}>
+          {renderPostCard(item)}
         </Box>
-      ) : (
-        <>
-          {mappedPosts.map((item) => (
-            <Box key={item.id} px={16}>
-              {renderPostCard(item)}
-            </Box>
-          ))}
-          {activeTabQuery.isFetchingNextPage && (
-            <Box py={20} alignItems="center">
-              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-            </Box>
-          )}
-        </>
       )}
-    </ScrollView>
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={
+        activeTabQuery.isFetchingNextPage ? (
+          <Box py={20} alignItems="center">
+            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        ) : null
+      }
+      contentContainerStyle={{
+        paddingBottom: bottomPadding,
+      }}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing || false}
+            onRefresh={onRefresh}
+            tintColor={isDark ? '#FFFFFF' : '#000000'}
+            colors={isDark ? ['#FFFFFF'] : ['#000000']}
+          />
+        ) : undefined
+      }
+      showsVerticalScrollIndicator={true}
+      scrollEnabled={true}
+      nestedScrollEnabled={false}
+      bounces={false}
+      alwaysBounceVertical={false}
+      scrollEventThrottle={16}
+    />
   );
 };
 
@@ -706,7 +780,26 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const targetUserId = routeUserId || user?.id;
   
   // Profile API hook
-  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useUserProfile(targetUserId);
+  const { data: userProfile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useUserProfile(targetUserId);
+  
+  // Pull to refresh state
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Pull to refresh handler
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Profile'ı refresh et
+      await refetchProfile();
+      
+      // Tüm tab query'lerini refresh et (invalidate ederek)
+      // TabPage içindeki query'ler otomatik refresh olacak
+    } catch (error) {
+      console.error('[ProfileScreen] Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchProfile]);
   
   // Avatar URL kontrolü için log
   React.useEffect(() => {
@@ -744,9 +837,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // 🎯 CORE: Shared progress value for tab animations
   const progress = useSharedValue(0);
   
-  // Tab genişliği: ekran genişliği / 4
-  const tabWidth = SCREEN_WIDTH / 4;
-  
   // Tab index'i bul
   const getTabIndex = useCallback((tabKey: TabKey) => {
     return TABS.findIndex(tab => tab.key === tabKey);
@@ -756,43 +846,44 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const handleTabChange = useCallback((tabKey: TabKey) => {
     const index = getTabIndex(tabKey);
     if (index !== -1 && contentFlatListRef.current) {
+      progress.value = withTiming(index, { duration: 300 });
+      setActiveTab(tabKey);
+      
       contentFlatListRef.current.scrollToOffset({
         offset: index * SCREEN_WIDTH,
         animated: true,
       });
-      setActiveTab(tabKey);
     }
-  }, [getTabIndex]);
-  
-  // Tabs scroll offset state - Content scroll'a göre güncellenecek
-  const [tabsScrollOffset, setTabsScrollOffset] = useState(0);
+  }, [getTabIndex, progress]);
   
   // Content FlatList scroll handler - realtime progress güncelleme
+  // Indicator realtime hareket eder, tab değişmez
   const handleContentScroll = useCallback(
     (event: any) => {
       const offsetX = event.nativeEvent.contentOffset.x;
       const currentIndex = offsetX / SCREEN_WIDTH;
-      progress.value = currentIndex;
       
-      // Tab 3'e gelindiğinde tabs'ı 1 tab width sola kaydır
-      if (currentIndex >= 3) {
-        // Tab 3+: 1 tab width sola kay
-        setTabsScrollOffset(1 * tabWidth);
-      } else {
-        // Tab 0-2: Başa dön
-        setTabsScrollOffset(0);
-      }
+      // Progress realtime güncelle (indicator animasyonu için)
+      progress.value = currentIndex;
     },
-    [progress, tabWidth]
+    [progress]
   );
 
   // Content FlatList scroll end handler - snap sonrası sync
+  // Scroll tamamlandıktan sonra tab değişir
   const handleContentScrollEnd = useCallback(
     (event: any) => {
       const offsetX = event.nativeEvent.contentOffset.x;
       const index = Math.round(offsetX / SCREEN_WIDTH);
+      
+      // Progress snap sonrası tam sayıya yuvarla
       progress.value = withTiming(index, { duration: 0 });
-      setActiveTab(TABS[index].key);
+      
+      // Active tab'ı güncelle (sadece scroll tamamlandıktan sonra)
+      const tabKey = TABS[index]?.key;
+      if (tabKey) {
+        setActiveTab(tabKey);
+      }
     },
     [progress]
   );
@@ -1452,30 +1543,26 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   if (isProfileLoading) {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
-          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-        </Box>
-      </SafeAreaView>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
     );
   }
   
   if (profileError || !userProfile) {
     return (
-      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
-          <Text color="#CE4A4A" fontSize="$sm">
-            {profileError?.message || 'Profil yüklenirken bir hata oluştu'}
-          </Text>
-        </Box>
-      </SafeAreaView>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center" px={20}>
+        <Text color="#CE4A4A" fontSize="$sm">
+          {profileError?.message || 'Profil yüklenirken bir hata oluştu'}
+        </Text>
+      </Box>
     );
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        {/* Sabit Üst Kısım: Banner + Profile Info + Tabs Bar */}
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      {/* Üst Kısım: Sabit (Profile Header + TabsBar) */}
+      <Box>
         {profileHeader}
         <TabsBar 
           activeTab={activeTab} 
@@ -1484,52 +1571,48 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           progress={progress}
           tabContainerRef={tabContainerRef}
           onTabContainerLayout={handleTabContainerLayout}
-          tabsScrollOffset={tabsScrollOffset}
         />
-        
-        {/* Scrollable İçerik: Tab Sayfaları */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: bottomPadding }}
-          nestedScrollEnabled={true}
+      </Box>
+      
+      {/* Alt Kısım: Yatay Kaydırılabilir Tab İçerikleri */}
+      <Box flex={1}>
+        <FlatList
+          ref={contentFlatListRef}
+          data={TABS}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
           scrollEventThrottle={16}
-        >
-          {/* Yatay Kaydırılabilir İçerik: FlatList ile */}
-          <Box style={{ minHeight: Dimensions.get('window').height * 0.5 }}>
-            <FlatList
-              ref={contentFlatListRef}
-              data={TABS}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              scrollEventThrottle={16}
-              onScroll={handleContentScroll}
-              onMomentumScrollEnd={handleContentScrollEnd}
-              keyExtractor={(item) => item.key}
-              getItemLayout={(data, index) => ({
-                length: SCREEN_WIDTH,
-                offset: SCREEN_WIDTH * index,
-                index,
-              })}
-              renderItem={({ item }) => (
-                <Box width={SCREEN_WIDTH} flex={1}>
-                  <TabPage
-                    tabKey={item.key}
-                    targetUserId={targetUserId || ''}
-                    isDark={isDark}
-                    bottomPadding={0}
-                  />
-                </Box>
-              )}
-              removeClippedSubviews={false}
-              windowSize={5}
-              maxToRenderPerBatch={2}
-              initialNumToRender={2}
-            />
-          </Box>
-        </ScrollView>
-      </VStack>
-    </SafeAreaView>
+          onScroll={handleContentScroll}
+          onMomentumScrollEnd={handleContentScrollEnd}
+          keyExtractor={(item) => item.key}
+          getItemLayout={(data, index) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
+            index,
+          })}
+          scrollEnabled={true}
+          nestedScrollEnabled={false}
+          renderItem={({ item }) => (
+            <Box width={SCREEN_WIDTH} flex={1}>
+              <TabPage
+                tabKey={item.key}
+                targetUserId={targetUserId || ''}
+                isDark={isDark}
+                bottomPadding={bottomPadding}
+                listHeaderComponent={null}
+                onRefresh={handleRefresh}
+                refreshing={refreshing}
+              />
+            </Box>
+          )}
+          removeClippedSubviews={false}
+          windowSize={5}
+          maxToRenderPerBatch={2}
+          initialNumToRender={2}
+        />
+      </Box>
+    </Box>
   );
 };
 

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle, Eye, EyeOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useRegister } from '../api/hooks';
+import { CustomToast } from '@/src/components/CustomToast';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -59,16 +60,16 @@ export const RegisterScreen = () => {
         // Başarılı toast göster
         toast.show({
           placement: 'top',
+          duration: 3000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle fontSize="$sm">Registration Successful</ToastTitle>
-                <ToastDescription fontSize="$sm">
-                  {result.message || 'Registration completed successfully!'}
-                </ToastDescription>
-              </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Kayıt başarılı"
+                description={result.message || 'Hesabınız başarıyla oluşturuldu!'}
+                action="success"
+                duration={3000}
+              />
             );
           },
         });
@@ -90,22 +91,20 @@ export const RegisterScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'An error occurred during registration';
+          'Kayıt sırasında bir hata oluştu';
 
         toast.show({
           placement: 'top',
+          duration: 4000,
           render: ({ id }) => {
             return (
-              <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
-                  Registration Error
-                </ToastTitle>
-                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={3}>
-                  {errorMessage}
-                </ToastDescription>
-              </Toast>
-              </Box>
+              <CustomToast
+                id={id}
+                title="Kayıt başarısız"
+                description={errorMessage}
+                action="error"
+                duration={4000}
+              />
             );
           },
         });

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
+import { CustomToast } from '@/src/components/CustomToast';
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
@@ -34,14 +35,16 @@ export const ForgotPasswordScreen = () => {
     if (!isEmailValid) {
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle fontSize="$sm">Invalid Email</ToastTitle>
-              <ToastDescription fontSize="$sm">Please enter a valid email address.</ToastDescription>
-            </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Geçersiz e-posta"
+              description="Lütfen geçerli bir e-posta adresi girin."
+              action="error"
+              duration={3000}
+            />
           );
         },
       });
@@ -59,14 +62,16 @@ export const ForgotPasswordScreen = () => {
 
       toast.show({
         placement: 'top',
+        duration: 3000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle fontSize="$sm">Email Sent</ToastTitle>
-              <ToastDescription fontSize="$sm">Verification code has been sent to your email address.</ToastDescription>
-            </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="E-posta gönderildi"
+              description="Doğrulama kodu e-posta adresinize gönderildi."
+              action="success"
+              duration={3000}
+            />
           );
         },
       });
@@ -79,18 +84,23 @@ export const ForgotPasswordScreen = () => {
     } catch (error: any) {
       console.error('Forgot Password Error:', error);
       
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Bir hata oluştu. Lütfen tekrar deneyin.';
+      
       toast.show({
         placement: 'top',
+        duration: 4000,
         render: ({ id }) => {
           return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle fontSize="$sm">Error</ToastTitle>
-              <ToastDescription fontSize="$sm">
-                {error?.response?.data?.message || error?.message || 'An error occurred. Please try again.'}
-              </ToastDescription>
-            </Toast>
-            </Box>
+            <CustomToast
+              id={id}
+              title="Hata"
+              description={errorMessage}
+              action="error"
+              duration={4000}
+            />
           );
         },
       });

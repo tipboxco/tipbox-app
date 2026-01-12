@@ -2,7 +2,7 @@ import React, { createContext, useContext, useRef } from 'react';
 import type { FlatList } from 'react-native';
 
 interface FeedListContextType {
-  feedListRef: React.RefObject<FlatList<any> | null>;
+  feedListRef: React.RefObject<FlatList<any>>;
 }
 
 const FeedListContext = createContext<FeedListContextType | undefined>(undefined);
@@ -17,7 +17,7 @@ export const FeedListProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const feedListRef = useRef<FlatList<any>>(null);
 
   return (
-    <FeedListContext.Provider value={{ feedListRef }}>
+    <FeedListContext.Provider value={{ feedListRef: feedListRef as React.RefObject<FlatList<any>> }}>
       {children}
     </FeedListContext.Provider>
   );
