@@ -599,7 +599,7 @@ const NotificationsScreenComponent: React.FC = () => {
                 keyExtractor={keyExtractor}
                 contentContainerStyle={{ 
                     paddingHorizontal: 16,
-                    paddingTop: 8,
+                    paddingTop: 16,
                     paddingBottom: 20,
                 }}
                 showsVerticalScrollIndicator={false}
@@ -680,14 +680,14 @@ const NotificationsScreenComponent: React.FC = () => {
                                 flex={1}
                                 onPress={() => handleTabPress(index)}
                                 alignItems="center"
-                                py="$1"
+                                pb={8}
                                 px="$1"
                             >
                                 <VStack alignItems="center" space="xs">
                                     <Animated.Text
                                         style={[
                                             {
-                                                fontSize: 12,
+                                                fontSize: 14,
                                                 fontWeight: 'bold',
                                             },
                                             tabStyle,

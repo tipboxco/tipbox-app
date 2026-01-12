@@ -568,13 +568,13 @@ const ExploreScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(0)}
                 alignItems="center"
-                pb="$1"
+                pb={8}
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text
                     style={[
                       {
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: 'bold',
                       },
                       tab1Style,
@@ -590,7 +590,7 @@ const ExploreScreen: React.FC = () => {
                 flex={1}
                 onPress={() => handleTabPress(1)}
                 alignItems="center"
-                pb="$1"
+                pb={8}
               >
                 <VStack alignItems="center" space="xs">
                   <Animated.Text

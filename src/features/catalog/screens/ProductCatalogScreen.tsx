@@ -6,7 +6,7 @@ import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -255,6 +255,20 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       onStateChangeRef.current?.(currentState);
     }
   }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems]);
+
+  // Ekrana geri dönüldüğünde product breadcrumb'ını temizle
+  useFocusEffect(
+    useCallback(() => {
+      // Eğer breadcrumb'da product varsa, onu kaldır
+      const hasProductInBreadcrumb = breadcrumbItems.some(item => item.type === 'product');
+      if (hasProductInBreadcrumb) {
+        const filteredBreadcrumb = breadcrumbItems.filter(item => item.type !== 'product');
+        setBreadcrumbItems(filteredBreadcrumb);
+        setSelectedProductLocal(null);
+        setSelectedProduct(undefined);
+      }
+    }, [breadcrumbItems, setSelectedProduct])
+  );
 
   const resetToRoot = useCallback(() => {
     setBreadcrumbItems([]);
@@ -848,7 +862,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       <Breadcrumb
         items={breadcrumbItems}
         onItemPress={handleBreadcrumbPress}
-        rootLabel="All Categories"
+        rootLabel="Categories"
       />
 
       {/* Action Buttons - Show for productgroups and products (after subcategory is selected) */}
@@ -856,12 +870,13 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         <ActionButtons
           onShowPosts={handleShowPosts}
           onCreatePost={handleCreatePost}
+          categoryName={breadcrumbItems.length > 0 ? breadcrumbItems[breadcrumbItems.length - 1]?.name : undefined}
         />
       )}
 
       {/* Dynamic Grid */}
       <ScrollView flex={1} px="$4">
-        <VStack space="md" pb={scrollViewPaddingBottom}>
+        <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
           {/* Loading skeleton */}
           {(currentView === 'categories' && isLoadingCategories) ||
           (currentView === 'subcategories' && isLoadingSubCategories) ||
@@ -874,20 +889,22 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             )
           ) : (
             <>
-          {/* currentData'yı 3'lü gruplara böl */}
-          {Array.from({ length: Math.ceil(currentData.length / 3) }).map((_, rowIndex) => {
-            const startIndex = rowIndex * 3;
-            const rowItems = currentData.slice(startIndex, startIndex + 3);
-            // İlk 3 satır (9 görsel) için high priority - ilk ekranda görünen tüm görseller
+          {/* currentData'yı gruplara böl - categories için 2'li, diğerleri için 3'lü */}
+          {Array.from({ length: Math.ceil(currentData.length / (currentView === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
+            const itemsPerRow = currentView === 'categories' ? 2 : 3;
+            const startIndex = rowIndex * itemsPerRow;
+            const rowItems = currentData.slice(startIndex, startIndex + itemsPerRow);
+            // İlk 3 satır için high priority - ilk ekranda görünen tüm görseller
             // Diğerleri için low priority - scroll edildiğinde yüklenecek
             const priority = rowIndex < 3 ? 'high' : 'low';
             
             return (
-              <HStack key={`row-${rowIndex}`} space="md" justifyContent="space-between">
-                {[0, 1, 2].map((colIndex) => {
+              <HStack key={`row-${rowIndex}`} space="md">
+                {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
                   const currentItem = rowItems[colIndex];
                   
                   if (!currentItem) {
+                    // Son satırda eksik item varsa invisible spacer kullan
                     return <Box key={colIndex} flex={1} />;
                   }
                   
@@ -899,6 +916,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
                         category={currentItem as any}
                         onPress={handleCategoryPress}
                         priority={priority}
+                        isLargeCard={true}
                       />
                     );
                   } else if (currentView === 'subcategories') {
