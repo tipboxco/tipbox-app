@@ -903,7 +903,10 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             </VStack>
           </HStack>
 
-
+          {/* Arrow Icon */}
+          <Box mx="$2" opacity={0.3}>
+            <PaperAirplaneIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
 
           {/* Receiver */}
           <HStack alignItems="center" space="sm" flex={1} justifyContent="flex-end">
