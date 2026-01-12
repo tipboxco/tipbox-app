@@ -236,3 +236,4 @@ GET /transactions/:id        → GetById handler çağrılmalı ✅
 **Status:** ⏳ Backend fix bekleniyor  
 **Frontend Status:** ✅ Graceful degradation eklendi
 
+

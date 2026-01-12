@@ -119,7 +119,7 @@
 - `GET /wallet/transactions` - İşlem geçmişi (pagination ile)
 - `POST /wallet/send` - TIPS gönder
 - `POST /wallet/claim` - TIPS talep et
-- `GET /wallet/nft` - NFT varlıkları
+- `GET /wallet/nft` - NFT Assetsı
 
 **Not:** Send ve Claim işlemleri için bottom sheet'ler var ama API entegrasyonu yok.
 
@@ -129,7 +129,7 @@
 **Durum:** ❌ Mock NFT data kullanıyor
 **Kullanılan Mock:** Local mock nfts array
 **Eksik Endpoint:**
-- `GET /wallet/nft` - NFT varlıkları listele
+- `GET /wallet/nft` - NFT Assetsı listele
 - `GET /wallet/nft/{nftId}` - NFT detay bilgileri
 
 ---

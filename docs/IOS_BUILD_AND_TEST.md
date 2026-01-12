@@ -397,3 +397,4 @@ eas credentials
 **Son Güncelleme:** 12 Ocak 2026
 **Platform:** iOS + EAS Build + Google Auth
 
+

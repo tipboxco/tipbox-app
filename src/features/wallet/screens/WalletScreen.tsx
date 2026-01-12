@@ -417,7 +417,7 @@ export const WalletScreen: React.FC = () => {
                   tab2Style,
                 ]}
               >
-                NFT Varlıklar
+                NFT Assets
               </Animated.Text>
             </VStack>
           </Pressable>
@@ -728,11 +728,11 @@ export const WalletScreen: React.FC = () => {
                 />
               )}
 
-              {/* NFT Varlıklar Header */}
+              {/* NFT Assets Header */}
               <VStack space="md">
                 <HStack justifyContent="space-between" alignItems="center">
                   <Text fontSize={14} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-                    NFT Varlıklar
+                    NFT Assets
                   </Text>
                   <HStack space="xs" alignItems="center">
                     {/* Filtrele Button */}

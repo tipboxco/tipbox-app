@@ -202,3 +202,4 @@ Bu entegrasyon **Web2-First, Web3-Ready** stratejisine uygun:
 - Balance blockchain'den gelecek
 - **Ekranlar değişmeyecek!** 🎉
 
+
