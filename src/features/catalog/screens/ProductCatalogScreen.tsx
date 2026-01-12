@@ -103,6 +103,19 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den seçili kategoriye ait subcategories'i getir
   const { data: catalogSubCategories, isLoading: isLoadingSubCategories } = useCatalogSubCategories(selectedCategoryId);
   
+  // Debug: subcategories verisi geldiğinde logla
+  useEffect(() => {
+    if (selectedCategoryId) {
+      console.log('🔍 [ProductCatalogScreen] useCatalogSubCategories response:', {
+        selectedCategoryId,
+        hasData: !!catalogSubCategories,
+        dataLength: catalogSubCategories?.length,
+        isLoading: isLoadingSubCategories,
+        firstItems: catalogSubCategories?.slice(0, 3),
+      });
+    }
+  }, [catalogSubCategories, selectedCategoryId, isLoadingSubCategories]);
+  
   // API'den seçili alt kategoriye ait product groups'u getir
   const { data: catalogProductGroups, isLoading: isLoadingProductGroups } = useCatalogProductGroups(selectedSubCategoryId);
   
@@ -155,7 +168,20 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
 
   // API'den gelen subcategories'i formatla - useMemo ile cache'le
   const currentSubCategories = useMemo(() => {
-    if (!catalogSubCategories) return [];
+    if (!catalogSubCategories) {
+      console.log('⚠️ [ProductCatalogScreen] catalogSubCategories is null/undefined');
+      return [];
+    }
+    
+    console.log('🔍 [ProductCatalogScreen] Formatting subcategories:', {
+      count: catalogSubCategories.length,
+      selectedCategoryId,
+      items: catalogSubCategories.slice(0, 3).map(s => ({
+        id: s.subCategoryId,
+        name: s.name,
+        categoryId: s.categoryId,
+      })),
+    });
     
     return catalogSubCategories.map(subCat => ({
       id: subCat.subCategoryId,
@@ -164,7 +190,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       categoryId: subCat.categoryId,
       productGroups: [], // API'den productGroups gelmiyor, boş array
     }));
-  }, [catalogSubCategories]);
+  }, [catalogSubCategories, selectedCategoryId]);
 
   // API'den gelen product groups'u formatla - useMemo ile cache'le
   const currentProductGroups = useMemo(() => {
@@ -230,6 +256,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     });
     
     // Seçili kategori ID'sini set et (subcategories API çağrısı için)
+    console.log('🔄 [Catalog] Setting selectedCategoryId to:', category.id);
     setSelectedCategoryId(category.id);
     setSelectedSubCategoryId(undefined); // Subcategory'yi temizle
     setSelectedProductGroupId(undefined); // ProductGroup'u temizle
@@ -243,6 +270,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
         data: category,
       },
     ]);
+    console.log('🎯 [Catalog] Setting currentView to subcategories');
     setCurrentView('subcategories');
   };
 
@@ -790,26 +818,39 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
 
   const getCurrentData = () => {
-    switch (currentView) {
-      case 'categories':
-        return currentCategories.filter(category =>
-          category.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      case 'subcategories':
-        return currentSubCategories.filter(subCategory =>
-          subCategory.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      case 'productgroups':
-        return currentProductGroups.filter(productGroup =>
-          productGroup.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      case 'products':
-        return currentProducts.filter(product =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      default:
-        return [];
-    }
+    const data = (() => {
+      switch (currentView) {
+        case 'categories':
+          return currentCategories.filter(category =>
+            category.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        case 'subcategories':
+          return currentSubCategories.filter(subCategory =>
+            subCategory.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        case 'productgroups':
+          return currentProductGroups.filter(productGroup =>
+            productGroup.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        case 'products':
+          return currentProducts.filter(product =>
+            product.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        default:
+          return [];
+      }
+    })();
+    
+    console.log('📊 [ProductCatalogScreen] getCurrentData:', {
+      currentView,
+      searchQuery,
+      dataLength: data.length,
+      isLoadingSubCategories,
+      catalogSubCategoriesLength: catalogSubCategories?.length,
+      currentSubCategoriesLength: currentSubCategories.length,
+    });
+    
+    return data;
   };
 
   const currentData = getCurrentData();
