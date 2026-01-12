@@ -268,77 +268,90 @@ export const WalletScreen: React.FC = () => {
   }, [nftsData]);
 
   return (
-    <SafeAreaView 
-      edges={['top', 'bottom', 'left', 'right']} 
-      style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
-    >
-      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Header title="Wallet" showBackButton onBackPress={() => navigation.goBack()} />
-      {/* Tabs */}
-      <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
-        <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
-          <Pressable
-            onPress={() => handleTabPress(0)}
-            flex={1}
-            alignItems="center"
-            pb={8}
-            position="relative"
-          >
-            <VStack alignItems="center" space="xs">
-              <Text
-                fontSize={14}
-                fontWeight="$bold"
-                color={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-              >
-                TIPS
-              </Text>
-            </VStack>
-            <Box
-              position="absolute"
-              bottom={-1}
-              left="25%"
-              height={2}
-              width="50%"
-              borderRadius={999}
-              bg={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-            />
-          </Pressable>
-          <Pressable
-            onPress={() => handleTabPress(1)}
-            flex={1}
-            alignItems="center"
-            pb={8}
-            position="relative"
-          >
-            <VStack alignItems="center" space="xs">
-              <Text
-                fontSize={14}
-                fontWeight="$bold"
-                color={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-              >
-                NFT Varlıklar
-              </Text>
-            </VStack>
-            <Box
-              position="absolute"
-              bottom={-1}
-              left="20%"
-              height={2}
-              width="60%"
-              borderRadius={999}
-              bg={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : 'transparent'}
-            />
-          </Pressable>
-        </HStack>
-      </VStack>
-      
-      {/* PagerView - Native swipe tab switching */}
-      <PagerView
-        ref={pagerRef}
-        style={{ flex: 1 }}
-        initialPage={0}
-        onPageSelected={handlePageSelected}
+    <Box flex={1} bg={isDark ? '#000000' : '#FFFFFF'}>
+      <SafeAreaView 
+        edges={['top']} 
+        style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}
       >
+        <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        <Header 
+          title="Wallet" 
+          showBackButton 
+          onBackPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('Feed');
+            }
+          }} 
+        />
+        {/* Tabs */}
+        <VStack pt={0} pb="$4" bg={isDark ? '#000' : '#FFF'}>
+          <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0}>
+            <Pressable
+              onPress={() => handleTabPress(0)}
+              flex={1}
+              alignItems="center"
+              pb={8}
+              position="relative"
+            >
+              <VStack alignItems="center" space="xs">
+                <Text
+                  fontSize={14}
+                  fontWeight="$bold"
+                  color={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+                >
+                  TIPS
+                </Text>
+              </VStack>
+              <Box
+                position="absolute"
+                bottom={-1}
+                left="25%"
+                height={2}
+                width="50%"
+                borderRadius={999}
+                bg={activeTab === 'tips' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+              />
+            </Pressable>
+            <Pressable
+              onPress={() => handleTabPress(1)}
+              flex={1}
+              alignItems="center"
+              pb={8}
+              position="relative"
+            >
+              <VStack alignItems="center" space="xs">
+                <Text
+                  fontSize={14}
+                  fontWeight="$bold"
+                  color={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
+                >
+                  NFT Varlıklar
+                </Text>
+              </VStack>
+              <Box
+                position="absolute"
+                bottom={-1}
+                left="20%"
+                height={2}
+                width="60%"
+                borderRadius={999}
+                bg={activeTab === 'nft' ? (isDark ? '#FFF' : '#000') : 'transparent'}
+              />
+            </Pressable>
+          </HStack>
+        </VStack>
+        
+        {/* PagerView - Native swipe tab switching */}
+        <PagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageSelected={handlePageSelected}
+          scrollEnabled={true}
+          overScrollMode="never"
+        >
         {/* TIPS Tab */}
         <Box key="0" flex={1}>
           <ScrollView 
@@ -746,7 +759,8 @@ export const WalletScreen: React.FC = () => {
       </PagerView>
 
       </VStack>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Box>
   );
 };
 

@@ -12,13 +12,12 @@ import { ToastHost } from '@/src/components/overlays/ToastHost';
  * All global UI components (BottomSheet, ContextMenu, Toast, etc.) are rendered here
  * at the root level, outside of navigation hierarchy.
  * 
- * CRITICAL: pointerEvents="box-none" ensures touch events pass through to underlying screens
- * This allows overlay components to be interactive while not blocking navigation gestures.
+ * CRITICAL: High z-index ensures overlays appear above all navigation content
  * 
  * Architecture:
  * ```
  * NavigationContainer
- *   └── GlobalUIHost (absoluteFill, pointerEvents="box-none")
+ *   └── GlobalUIHost (absoluteFill, zIndex: 9999)
  *       ├── BottomSheetHost
  *       ├── ContextMenuHost
  *       └── ToastHost
@@ -28,7 +27,7 @@ import { ToastHost } from '@/src/components/overlays/ToastHost';
  * - UI components are always accessible regardless of active screen
  * - Events can reach UI components even when detail screens are open
  * - No ownership conflicts between navigation and UI
- * - Touch events pass through to underlying screens (pointerEvents="box-none")
+ * - Overlays render on top of all navigation content
  */
 export const GlobalUIHost: React.FC = () => {
   return (
