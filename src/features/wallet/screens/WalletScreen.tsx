@@ -856,7 +856,7 @@ export const WalletScreen: React.FC = () => {
             </VStack>
           </ScrollView>
         </Box>
-      </PagerView>
+      </AnimatedPagerView>
 
       </VStack>
       </SafeAreaView>
