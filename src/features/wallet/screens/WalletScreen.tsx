@@ -200,6 +200,7 @@ export const WalletScreen: React.FC = () => {
         enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
+        snapPoints: ['90%'], // 10% daha yüksek snap point
         handleIndicatorStyle: {
           backgroundColor: isDark ? '#333333' : '#B8B8B7',
           width: 70,

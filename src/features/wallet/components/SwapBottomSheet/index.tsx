@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { Box, VStack, HStack, Text, Pressable, Input, InputField } from '@gluestack-ui/themed';
 import {
   ChevronLeftIcon,
@@ -11,6 +12,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { SuccessBottomSheet } from '../SuccessBottomSheet';
+import { useWalletBalance } from '../../api/hooks';
 
 interface SwapBottomSheetProps {
   onClose: () => void;
@@ -21,6 +23,9 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  
+  // API: Wallet Balance
+  const { data: walletBalance, isLoading: isLoadingBalance, error: balanceError } = useWalletBalance();
   
   const [payAmount, setPayAmount] = useState('');
   const [receiveAmount, setReceiveAmount] = useState('');
@@ -40,7 +45,33 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
   // Conversion rate: 1 TIP = 0.0001 SOL (example rate)
   const TIP_TO_SOL_RATE = 0.0001;
   const SOL_TO_TIP_RATE = 10000;
-  const MAX_TIPS = 20000; // Maximum available TIPS balance
+  
+  // SOL Price (USD)
+  const SOL_PRICE_USD = 140.84; // SOL current price in USD
+  
+  // Calculate TIP price in USD based on SOL conversion
+  const TIP_PRICE_USD = TIP_TO_SOL_RATE * SOL_PRICE_USD; // 1 TIP = ~$0.014084
+  
+  // Get current TIP balance from API (default to 0 if not loaded)
+  const currentTipBalance = walletBalance?.balance || 0;
+  const currentSolBalance = 0; // SOL balance (default 0 for now)
+
+  // Debug: Log wallet balance info
+  React.useEffect(() => {
+    console.log('[SwapBottomSheet] 💰 Wallet Balance Debug:', {
+      isLoading: isLoadingBalance,
+      hasData: !!walletBalance,
+      hasError: !!balanceError,
+      error: balanceError,
+      rawData: walletBalance,
+      balance: walletBalance?.balance,
+      pending: walletBalance?.pending,
+      cached: walletBalance?.cached,
+      currentTipBalance,
+      currentSolBalance,
+      balanceType: typeof walletBalance?.balance,
+    });
+  }, [walletBalance, isLoadingBalance, balanceError, currentTipBalance, currentSolBalance]);
 
   const handleSwap = () => {
     setActiveToken(activeToken === 'TIP' ? 'SOL' : 'TIP');
@@ -51,7 +82,8 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
   };
 
   const handlePercentagePress = (percentage: number) => {
-    const maxAmount = activeToken === 'TIP' ? 20000 : 2; // 20,000 TIP or 2 SOL
+    // Get max amount based on active token and current balance
+    const maxAmount = activeToken === 'TIP' ? currentTipBalance : currentSolBalance;
     const amount = (maxAmount * percentage / 100).toString();
     setPayAmount(amount);
     
@@ -81,16 +113,18 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
   // Calculate remaining and required amounts
   const getInsufficientBalanceDetails = () => {
     const requestedAmount = parseFloat(payAmount) || 0;
-    const remaining = Math.max(0, MAX_TIPS - requestedAmount);
-    const required = requestedAmount > MAX_TIPS ? (requestedAmount - MAX_TIPS).toFixed(5) : '0';
+    const maxBalance = activeToken === 'TIP' ? currentTipBalance : currentSolBalance;
+    const remaining = Math.max(0, maxBalance - requestedAmount);
+    const required = requestedAmount > maxBalance ? (requestedAmount - maxBalance).toFixed(5) : '0';
     return { remaining, required };
   };
 
   const handleSwapNow = () => {
     const numericValue = parseFloat(payAmount) || 0;
+    const maxBalance = activeToken === 'TIP' ? currentTipBalance : currentSolBalance;
     
     // Check if amount exceeds balance
-    if (activeToken === 'TIP' && numericValue > MAX_TIPS) {
+    if (numericValue > maxBalance) {
       // Open insufficient balance bottom sheet
       const { remaining, required } = getInsufficientBalanceDetails();
       openBottomSheet(
@@ -121,10 +155,10 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
             />
             <VStack alignItems="center" space="xs" px="$4">
               <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
-                Not Enought TIP
+                Not Enought {activeToken}
               </Text>
               <Text fontSize={12} fontWeight="$normal" color="$textLight900" $dark-color="$textDark50" textAlign="center" lineHeight={18}>
-                You don't have enough TIP in your wallet for this transaction.
+                You don't have enough {activeToken} in your wallet for this transaction.
               </Text>
             </VStack>
           </VStack>
@@ -146,7 +180,7 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
                   Remaining
                 </Text>
                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
-                  {remaining.toFixed(0)} TIP
+                  {remaining.toFixed(2)} {activeToken}
                 </Text>
               </HStack>
 
@@ -159,7 +193,7 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
                   Required
                 </Text>
                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="right">
-                  {required} TIP
+                  {required} {activeToken}
                 </Text>
               </HStack>
             </VStack>
@@ -181,7 +215,7 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
               justifyContent="center"
             >
               <Text fontSize={12} fontWeight="$bold" color="#111111" textAlign="center">
-                Buy TIP
+                Buy {activeToken}
               </Text>
             </Pressable>
             <Pressable
@@ -226,8 +260,8 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
       const sentAmount = `${parseFloat(payAmount).toLocaleString()} ${activeToken}`;
       const receivedAmount = `${parseFloat(receiveAmount).toLocaleString()} ${activeToken === 'TIP' ? 'SOL' : 'TIP'}`;
       const remainingBalance = activeToken === 'TIP' 
-        ? `${(MAX_TIPS - parseFloat(payAmount)).toLocaleString()} TIP`
-        : `${MAX_TIPS.toLocaleString()} TIP`;
+        ? `${(currentTipBalance - parseFloat(payAmount)).toLocaleString()} TIP`
+        : `${currentTipBalance.toLocaleString()} TIP`;
       
       // Generate transaction ID (mock - in real app this would come from backend)
       const transactionId = `0x${Math.random().toString(16).substr(2, 64)}`;
@@ -287,7 +321,7 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
 
   return (
     <BottomSheetScrollView>
-      <VStack px="$4" py="$4" space="lg" flex={1}>
+      <VStack px="$4" py="$4" pb="$12" space="lg" flex={1}>
         {/* Header */}
         <HStack alignItems="center" space="md" mb="$2">
           <Pressable onPress={onClose}>
@@ -372,9 +406,15 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
                 </HStack>
                 
                 {/* Available Balance */}
-                <Text fontSize={12} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
-                  {activeToken === 'TIP' ? '20.000 TIP' : '0 SOL'}
-                </Text>
+                {isLoadingBalance ? (
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                ) : (
+                  <Text fontSize={12} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
+                    {activeToken === 'TIP' 
+                      ? `${currentTipBalance.toLocaleString()} TIP` 
+                      : `${currentSolBalance.toLocaleString()} SOL`}
+                  </Text>
+                )}
               </VStack>
             </Box>
 
@@ -434,9 +474,15 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
                 </HStack>
                 
                 {/* Available Balance */}
-                <Text fontSize={12} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
-                  {activeToken === 'TIP' ? '0 SOL' : '20.000 TIP'}
-                </Text>
+                {isLoadingBalance ? (
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                ) : (
+                  <Text fontSize={12} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
+                    {activeToken === 'TIP' 
+                      ? `${currentSolBalance.toLocaleString()} SOL` 
+                      : `${currentTipBalance.toLocaleString()} TIP`}
+                  </Text>
+                )}
               </VStack>
             </Box>
           </VStack>
@@ -532,14 +578,16 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
                 <HStack justifyContent="space-between" alignItems="center">
                   <HStack alignItems="center" space="xs">
                     <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                      Pricing
+                      {activeToken === 'TIP' ? '1 TIP' : '1 SOL'}
                     </Text>
                     <Pressable>
                       <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                     </Pressable>
                   </HStack>
                   <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    11 July 2025
+                    {activeToken === 'TIP' 
+                      ? `$${TIP_PRICE_USD.toFixed(6)}` 
+                      : `$${SOL_PRICE_USD.toFixed(2)}`}
                   </Text>
                 </HStack>
 
@@ -568,14 +616,16 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
                 <HStack justifyContent="space-between" alignItems="center">
                   <HStack alignItems="center" space="xs">
                     <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                      Price Impact
+                      Estimated Value
                     </Text>
                     <Pressable>
                       <InformationCircleIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                     </Pressable>
                   </HStack>
                   <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    11049
+                    {activeToken === 'TIP'
+                      ? `$${(parseFloat(payAmount) * TIP_PRICE_USD).toFixed(2)}`
+                      : `$${(parseFloat(payAmount) * SOL_PRICE_USD).toFixed(2)}`}
                   </Text>
                 </HStack>
 
@@ -599,25 +649,24 @@ export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
               </VStack>
             </Box>
 
-            {/* Swap Now Button */}
+            {/* Swap Now Button - Disabled (Not Available) */}
             <Pressable
-              onPress={handleSwapNow}
-              bg={payAmount && parseFloat(payAmount) > 0 ? "#D8FF08" : "#EDEDEC"}
-              $dark-bg={payAmount && parseFloat(payAmount) > 0 ? "#D8FF08" : "$backgroundDark700"}
+              bg="#EDEDEC"
+              $dark-bg="$backgroundDark700"
               rounded={8}
               py="$3"
               mt="$4"
-              disabled={!payAmount || parseFloat(payAmount) <= 0}
-              opacity={payAmount && parseFloat(payAmount) > 0 ? 1 : 0.5}
+              disabled={true}
+              opacity={0.5}
             >
               <Text 
                 fontSize={14} 
                 fontWeight="$bold" 
-                color={payAmount && parseFloat(payAmount) > 0 ? "#111111" : "#B1B1B1"} 
-                $dark-color={payAmount && parseFloat(payAmount) > 0 ? "#111111" : "$textDark400"} 
+                color="#B1B1B1"
+                $dark-color="$textDark400" 
                 textAlign="center"
               >
-                Swap Now
+                Not Available
               </Text>
             </Pressable>
           </>
