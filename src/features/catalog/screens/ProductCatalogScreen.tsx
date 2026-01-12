@@ -74,7 +74,7 @@ interface ProductCatalogScreenProps {
 
 const MEDUSA_BASE_URL =
   process.env.EXPO_PUBLIC_MEDUSA_URL || 'http://192.168.1.26:8090'; // fallback
-const CATEGORIES_ENDPOINT_BASE = `${MEDUSA_BASE_URL}/store/product-categories?`;
+
 const MEDUSA_API_KEY =
   process.env.EXPO_PUBLIC_MEDUSA_PUBLISHABLE_API_KEY ||
   'pk_cfe68434d1ee0dd82890fcfe492a3472656dbea641266cb02f3dae8b204de65e';
@@ -82,7 +82,7 @@ const MEDUSA_API_KEY =
 const PAGE_SIZE = 500;
 
 // --- Medusa API Fetch Helper Functions ---
-
+const CATEGORIES_ENDPOINT_BASE = `${MEDUSA_BASE_URL}/store/product-categories?`;
 async function fetchMedusaCategoriesByParent(
   parentId: string | null
 ): Promise<MedusaCategory[]> {
