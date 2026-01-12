@@ -61,12 +61,12 @@ export const PostDetailScreen = () => {
             if (__DEV__) {
                 console.warn('[PostDetailScreen] ⚠️ Missing postId. Route params:', params);
             }
-            // Geri dönülecek ekran yoksa Auth'a yönlendir
+            // Geri dönülecek ekran yoksa App (MainTabs) ekranına git
             if (navigation.canGoBack()) {
                 navigation.goBack();
             } else {
-                // Root navigator'a reset yap - App (MainTabs) ekranına git
-                navigation.reset({
+                // Root navigator'a reset yap - PostStackParamList'te 'App' yok, Root navigator'a erişmek için any kullan
+                (navigation as any).getParent()?.reset({
                     index: 0,
                     routes: [{ name: 'App' }],
                 });
@@ -96,34 +96,38 @@ export const PostDetailScreen = () => {
 
     // Use fetched post data if available, otherwise use the passed postData
     // Notification/deep link'ten geldiğinde her zaman fetched data kullan (en güncel)
-    // FIX: Category/contextData/product bilgilerini koru - FeedScreen'den gelen postData'da bu bilgiler var
+    // FIX: Category/contextData/product bilgilerini ve görsellerini koru - FeedScreen'den gelen postData'da bu bilgiler var ve görseller dönüştürülmüş
+    // Type assertion: PostDetailResponse tipinde bu alanlar yok ama API'den gelebilir veya postData'dan gelir
     let finalPostData: any;
     if (isFromNotificationOrDeepLink) {
       // Notification/deep link'ten geldiğinde fetched data öncelikli
-      finalPostData = fetchedPostData || postData || { id: postId };
+      finalPostData = (fetchedPostData as any) || (postData as any) || { id: postId };
     } else {
       // Feed'den geldiğinde: fetched data varsa onu kullan, ama category/contextData/product bilgilerini postData'dan koru
-      if (fetchedPostData && postData) {
-        // Fetched data'yı kullan, ama category/contextData/product bilgilerini postData'dan al
+      const fetched = fetchedPostData as any;
+      const post = postData as any;
+      
+      if (fetched && post) {
+        // Fetched data'yı kullan, ama category/contextData/product bilgilerini postData'dan al (görseller zaten dönüştürülmüş)
         finalPostData = {
-          ...fetchedPostData,
-          // Category bilgisi (Tips & Tricks, Question, Post için)
-          category: fetchedPostData.category || postData.category,
-          // ContextType ve ContextData bilgisi (Post, Experience için)
-          contextType: fetchedPostData.contextType || postData.contextType,
-          contextData: fetchedPostData.contextData || postData.contextData,
-          // Product bilgisi (Update için)
-          product: fetchedPostData.product || postData.product,
-          // Products bilgisi (Benchmark için)
-          products: fetchedPostData.products || postData.products,
-          // RelatedPost bilgisi (Update için)
-          relatedPost: fetchedPostData.relatedPost || postData.relatedPost,
+          ...fetched,
+          // Category bilgisi (Tips & Tricks, Question, Post için) - postData'dan öncelikli (görseller dönüştürülmüş)
+          category: post.category || fetched.category,
+          // ContextType ve ContextData bilgisi (Post, Experience için) - postData'dan öncelikli
+          contextType: post.contextType || fetched.contextType,
+          contextData: post.contextData || fetched.contextData,
+          // Product bilgisi (Update için) - postData'dan öncelikli
+          product: post.product || fetched.product,
+          // Products bilgisi (Benchmark için) - postData'dan öncelikli
+          products: post.products || fetched.products,
+          // RelatedPost bilgisi (Update için) - postData'dan öncelikli
+          relatedPost: post.relatedPost || fetched.relatedPost,
         };
       } else {
-        finalPostData = fetchedPostData || postData;
+        finalPostData = fetched || post;
       }
     }
-    const finalType = type || fetchedPostData?.type || 'post';
+    const finalType = type || (fetchedPostData as any)?.type || 'post';
 
     // Fetch comments
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);

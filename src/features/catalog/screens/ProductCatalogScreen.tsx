@@ -211,15 +211,49 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     onStateChangeRef.current = onStateChange;
   }, [onStateChange]);
 
-  // State değişikliklerini parent'a bildir
+  // PERFORMANCE FIX: Track previous values to prevent unnecessary callbacks
+  // Only call onStateChange when values actually change
+  const prevStateRef = useRef<{
+    selectedProduct: any | null;
+    currentView: 'categories' | 'subcategories' | 'productgroups' | 'products';
+    selectedSubCategoryId?: string;
+    selectedProductGroupId?: string;
+    breadcrumbItems: BreadcrumbItem[];
+  } | null>(null);
+
+  // State değişikliklerini parent'a bildir - sadece gerçekten değiştiğinde
   useEffect(() => {
-    onStateChangeRef.current?.({
+    const currentState = {
       selectedProduct,
       currentView,
       selectedSubCategoryId,
       selectedProductGroupId,
       breadcrumbItems,
-    });
+    };
+
+    // İlk render'da veya değerler gerçekten değiştiyse callback çağır
+    if (!prevStateRef.current) {
+      prevStateRef.current = currentState;
+      onStateChangeRef.current?.(currentState);
+      return;
+    }
+
+    const prev = prevStateRef.current;
+    const hasChanged = 
+      prev.selectedProduct !== currentState.selectedProduct ||
+      prev.currentView !== currentState.currentView ||
+      prev.selectedSubCategoryId !== currentState.selectedSubCategoryId ||
+      prev.selectedProductGroupId !== currentState.selectedProductGroupId ||
+      prev.breadcrumbItems.length !== currentState.breadcrumbItems.length ||
+      prev.breadcrumbItems.some((item, idx) => 
+        item.id !== currentState.breadcrumbItems[idx]?.id ||
+        item.type !== currentState.breadcrumbItems[idx]?.type
+      );
+
+    if (hasChanged) {
+      prevStateRef.current = currentState;
+      onStateChangeRef.current?.(currentState);
+    }
   }, [selectedProduct, currentView, selectedSubCategoryId, selectedProductGroupId, breadcrumbItems]);
 
   const resetToRoot = useCallback(() => {

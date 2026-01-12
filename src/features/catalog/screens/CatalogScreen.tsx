@@ -91,10 +91,11 @@ const CatalogScreenComponent = () => {
     
     // CONTROL FIX: Always update mode when route params change
     // This ensures correct mode is set when navigating from ExploreScreen
+    // PERFORMANCE FIX: Only dispatch if mode actually changed to prevent re-render loops
     if (newMode !== currentMode) {
       dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
     }
-  }, [routeView, currentMode]); // CONTROL FIX: Added currentMode to dependencies to ensure updates
+  }, [routeView]); // PERFORMANCE FIX: Removed currentMode from dependencies to prevent loop
   
   // UI-specific state (keep as useState for simplicity)
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
@@ -109,10 +110,8 @@ const CatalogScreenComponent = () => {
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
   
   // Catalog UI Store
-  const selectedProductId = useCatalogUIStore((state) => state.selectedProductId);
-  const selectedSubCategoryId = useCatalogUIStore((state) => state.selectedSubCategoryId);
-  const selectedProductGroupId = useCatalogUIStore((state) => state.selectedProductGroupId);
-  const currentView = useCatalogUIStore((state) => state.currentView);
+  // PERFORMANCE FIX: Use getState() in callbacks instead of subscribing to prevent re-renders
+  // Only subscribe to values that are needed for rendering
   const setSelectedProduct = useCatalogUIStore((state) => state.setSelectedProduct);
   const setSelectedSubCategory = useCatalogUIStore((state) => state.setSelectedSubCategory);
   const setSelectedProductGroup = useCatalogUIStore((state) => state.setSelectedProductGroup);
@@ -135,6 +134,9 @@ const CatalogScreenComponent = () => {
     
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
+      // PERFORMANCE FIX: Get store state directly instead of subscribing
+      const storeState = useCatalogUIStore.getState();
+      
       // Determine contextType and contextId based on current selection
       // Priority: Product > ProductGroup > SubCategory
       let determinedContextType: ProductInfoType | undefined;
@@ -143,10 +145,10 @@ const CatalogScreenComponent = () => {
       
       // Determine context based on current view and selection (from store)
       // Priority order: Product > ProductGroup > SubCategory
-      if (selectedProductId && currentView === 'products') {
+      if (storeState.selectedProductId && storeState.currentView === 'products') {
         // Product selected
         determinedContextType = ProductInfoType.PRODUCT;
-        determinedContextId = selectedProductId;
+        determinedContextId = storeState.selectedProductId;
         // Get product info from local state if available
         if (selectedProductLocal) {
           productInfoSnapshot = {
@@ -155,15 +157,15 @@ const CatalogScreenComponent = () => {
             subName: selectedProductLocal.description,
           };
         }
-      } else if (selectedProductGroupId && currentView === 'productgroups') {
+      } else if (storeState.selectedProductGroupId && storeState.currentView === 'productgroups') {
         // ProductGroup selected
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
-        determinedContextId = selectedProductGroupId;
-      } else if (selectedSubCategoryId) {
+        determinedContextId = storeState.selectedProductGroupId;
+      } else if (storeState.selectedSubCategoryId) {
         // SubCategory selected - Check if SubCategory is selected (currentView can be 'subcategories' or 'productgroups')
         // If we're in productgroups view but have a selectedSubCategoryId, it means SubCategory was selected
         determinedContextType = ProductInfoType.SUB_CATEGORY;
-        determinedContextId = selectedSubCategoryId;
+        determinedContextId = storeState.selectedSubCategoryId;
       }
       
       // Save to flow store if context is available
@@ -223,32 +225,35 @@ const CatalogScreenComponent = () => {
         },
       });
     }
-  }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId, selectedProductId]);
+  }, [navigation, selectedProductLocal, closeBottomSheet, setFlowContext]);
 
   const handleCreatePost = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view
     setBottomSheetKey(prev => prev + 1);
     
+    // PERFORMANCE FIX: Get store state directly instead of subscribing
+    const storeState = useCatalogUIStore.getState();
+    
     // Determine stage for bottom sheet
     // Priority: Product > ProductGroup > SubCategory
     let stageForBottomSheet: 'subcategories' | 'productgroups' | 'products' | undefined;
-    if (currentView === 'categories') {
+    if (storeState.currentView === 'categories') {
       stageForBottomSheet = undefined;
-    } else if (selectedProductId && currentView === 'products') {
+    } else if (storeState.selectedProductId && storeState.currentView === 'products') {
       // Product seçilmişse products stage'i
       stageForBottomSheet = 'products';
-    } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+    } else if (storeState.selectedProductGroupId && (storeState.currentView === 'products' || storeState.currentView === 'productgroups')) {
       // ProductGroup seçilmiş ama Product seçilmemişse productgroups stage'i (subcategories ile aynı seçenekler)
       stageForBottomSheet = 'subcategories';
-    } else if (currentView === 'subcategories') {
+    } else if (storeState.currentView === 'subcategories') {
       // SubCategory seçilmişse subcategories stage'i
       stageForBottomSheet = 'subcategories';
-    } else if (currentView === 'productgroups') {
+    } else if (storeState.currentView === 'productgroups') {
       // ProductGroups view'deyse subcategories stage'i (aynı seçenekler)
       stageForBottomSheet = 'subcategories';
     } else {
       // Fallback
-      stageForBottomSheet = currentView as 'subcategories' | 'products';
+      stageForBottomSheet = storeState.currentView as 'subcategories' | 'products';
     }
     
     openBottomSheet(
@@ -287,7 +292,7 @@ const CatalogScreenComponent = () => {
         },
       }
     );
-  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProductLocal, isDark, selectedProductId, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect, handleViewChange]);
+  }, [openBottomSheet, closeBottomSheet, bottomSheetKey, selectedProductLocal, isDark, bottomOffset, handlePostTypeSelect, handleViewChange]);
 
   const handleFloatingButtonPress = () => {
     if (currentMode === 'brand-selection') {
@@ -321,16 +326,39 @@ const CatalogScreenComponent = () => {
     selectedProductGroupId?: string;
     breadcrumbItems: any[];
   }) => {
-    // Update local state for product object (for UI display)
-    dispatch({ type: 'SET_SELECTED_PRODUCT_LOCAL', payload: data.selectedProduct });
+    // PERFORMANCE FIX: Only update if values actually changed
+    // Get current store state to compare
+    const currentStoreState = useCatalogUIStore.getState();
     
-    // Update store with IDs
-    setSelectedProduct(data.selectedProduct?.id);
-    setCurrentView(data.currentView);
-    setSelectedSubCategory(data.selectedSubCategoryId);
-    setSelectedProductGroup(data.selectedProductGroupId);
-    dispatch({ type: 'SET_BREADCRUMB_ITEMS', payload: data.breadcrumbItems });
-  }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup]);
+    // Update local state for product object (for UI display) - only if changed
+    if (selectedProductLocal !== data.selectedProduct) {
+      dispatch({ type: 'SET_SELECTED_PRODUCT_LOCAL', payload: data.selectedProduct });
+    }
+    
+    // Update store with IDs - only if values changed (store already checks internally, but we can skip dispatch if same)
+    if (currentStoreState.selectedProductId !== data.selectedProduct?.id) {
+      setSelectedProduct(data.selectedProduct?.id);
+    }
+    if (currentStoreState.currentView !== data.currentView) {
+      setCurrentView(data.currentView);
+    }
+    if (currentStoreState.selectedSubCategoryId !== data.selectedSubCategoryId) {
+      setSelectedSubCategory(data.selectedSubCategoryId);
+    }
+    if (currentStoreState.selectedProductGroupId !== data.selectedProductGroupId) {
+      setSelectedProductGroup(data.selectedProductGroupId);
+    }
+    
+    // Update breadcrumb items - only if changed
+    const breadcrumbChanged = breadcrumbItems.length !== data.breadcrumbItems.length ||
+      breadcrumbItems.some((item, idx) => 
+        item?.id !== data.breadcrumbItems[idx]?.id ||
+        item?.type !== data.breadcrumbItems[idx]?.type
+      );
+    if (breadcrumbChanged) {
+      dispatch({ type: 'SET_BREADCRUMB_ITEMS', payload: data.breadcrumbItems });
+    }
+  }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup, selectedProductLocal, breadcrumbItems]);
 
   const renderContent = () => {
     const paddingBottom = 52;
