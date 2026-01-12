@@ -11,6 +11,7 @@ import {
   InputField,
 } from '@gluestack-ui/themed';
 import { ChevronLeftIcon } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface Friend {

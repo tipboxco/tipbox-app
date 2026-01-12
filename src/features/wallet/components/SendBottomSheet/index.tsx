@@ -171,7 +171,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         {/* Title */}
         <HStack justifyContent="center" alignItems="center">
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-            TIPS Gönder
+            Send TIPS
           </Text>
         </HStack>
 
@@ -202,7 +202,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    Cüzdan Adresine Gönder
+                    Send to Wallet Address
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
                     TIPS Yollamak istediğiniz cüzdan adresini yapıştırarak gönderim sağlayın.
@@ -241,7 +241,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                 </Box>
                 <VStack flex={1} space="xs">
                   <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                    Arkadaşına Gönder
+                    Send to Friend
                   </Text>
                   <Text fontSize={9} color="$textLight500" $dark-color="$textDark400" lineHeight={14}>
                     TIPS Yollamak istediğiniz arkadaşınızı arkadaş listesinden seçerek gönderim sağlayın.
@@ -267,7 +267,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
                   <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            TIPS Gönder
+            Send TIPS
           </Text>
         </HStack>
         <Box w={24} />
@@ -376,7 +376,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
           <PaperAirplaneIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            TIPS Gönder
+            Send TIPS
           </Text>
         </HStack>
         <Box w={24} />
@@ -623,7 +623,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <HStack flex={1} justifyContent="center" alignItems="center">
                   <CreditCardIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
           <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50" ml="$2">
-            TIPS Gönder
+            Send TIPS
           </Text>
         </HStack>
         <Box w={24} />
@@ -772,7 +772,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <VStack space="xs">
         <HStack justifyContent="space-between" alignItems="center" w="100%">
           <Text fontSize={9} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
-            İşlem Ücreti:
+            Transaction Fee:
           </Text>
           <Text fontSize={9} fontWeight="$medium" color="#B9B9B9" $dark-color="$textDark400">
             ${transactionDetails.transactionFee}
