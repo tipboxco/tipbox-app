@@ -1,10 +1,13 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { FlatList, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import {
   Box,
   VStack,
   HStack,
   Text,
+  Modal,
+  ModalBackdrop,
+  ModalContent,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import LimitedTimeEventCard from '../LimitedTimeEventCard';
@@ -14,7 +17,6 @@ import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { FilterOption } from '../AchievementFilter';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useLimitedEvent, useAchievements } from '../../api/hooks';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import BadgeBottomSheet from '../BadgeBottomSheet';
 import type { AchievementApiItem } from '../../types';
 import { LimitedTimeEventSkeleton, BadgeSkeleton } from '@/src/components/Skeletons';
@@ -35,7 +37,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
   
   // Limited Event API hook
   const {
@@ -235,6 +237,11 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const numColumns = 2;
   const hasItems = getFilteredAchievements.length > 0;
 
+  // Modal kapatma handler
+  const handleCloseModal = useCallback(() => {
+    setSelectedBadge(null);
+  }, []);
+
   return (
     <VStack flex={1}>
       <FlatList
@@ -252,44 +259,8 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             <BadgeCard
               data={item}
               onPress={() => {
-                // Detached bottom sheet aç (backdrop olmadan, modal yok)
-                // Görseldeki gibi basit badge card görünümü
-                openBottomSheet(
-                  <BadgeBottomSheet
-                    data={item}
-                    onClose={closeBottomSheet}
-                  />,
-                  {
-                    detached: true,
-                    enablePanDownToClose: true,
-                    enableOverDrag: false,
-                    enableHandlePanningGesture: true,
-                    enableContentPanningGesture: true,
-                    enableDynamicSizing: true,
-                    animateOnMount: true,
-                    backdropOpacity: 0.5,
-                    backdropPressBehavior: 'close',
-                    backgroundStyle: {
-                      backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-                      borderRadius: 20,
-                    },
-                    handleStyle: {
-                      backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-                      borderTopLeftRadius: 20,
-                      borderTopRightRadius: 20,
-                    },
-                    handleIndicatorStyle: {
-                      backgroundColor: isDark ? '#333333' : '#CCCCCC',
-                      width: 40,
-                      height: 4,
-                    },
-                    style: {
-                      marginHorizontal: 4,
-                      marginBottom: bottomInset + 24,
-                    },
-                 
-                  }
-                );
+                // Modal aç - performanslı, tek seferde açılır kapanır
+                setSelectedBadge(item);
               }}
             />
           </Box>
@@ -316,6 +287,29 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
           />
         }
       />
+
+      {/* Badge Detail Modal - Performanslı, tek seferde açılır kapanır */}
+      <Modal
+        isOpen={!!selectedBadge}
+        onClose={handleCloseModal}
+        size="lg"
+      >
+        <ModalBackdrop />
+        {selectedBadge && (
+          <ModalContent
+            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
+            borderRadius={20}
+            marginHorizontal={24}
+            marginBottom={bottomInset + 24}
+            maxHeight="80%"
+          >
+            <BadgeBottomSheet
+              data={selectedBadge}
+              onClose={handleCloseModal}
+            />
+          </ModalContent>
+        )}
+      </Modal>
     </VStack>
   );
 };

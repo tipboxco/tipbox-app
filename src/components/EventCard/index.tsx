@@ -74,13 +74,13 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             bg="rgba(144, 8, 255, 0.8)"
             borderWidth={1}
             borderColor="#CA88FF"
-            borderRadius={10}
-            px="$2"
-            py="$1"
+            borderRadius={8}
+            px="$1.5"
+            py="$0.5"
           >
             <Text
               color="#FFFFFF"
-              fontSize="$xs"
+              fontSize={10}
               fontWeight="$bold"
             >
               {data.eventType}
@@ -129,7 +129,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               </Box>
               <Text
                 color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                fontSize="$xs"
+                fontSize={10}
                 fontWeight="$normal"
               >
                 {data.dateRange}

@@ -9,7 +9,7 @@ interface BadgeBottomSheetProps {
   onClose: () => void;
 }
 
-export const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = ({ data, onClose }) => {
+const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, onClose }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -86,11 +86,11 @@ export const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = ({ data, onClos
       </Box>
 
       {/* Progress Bar */}
-      <VStack space="xs" w="100%">
+      <VStack space="xs" w="100%" mb="$4">
         <Box
           w="100%"
           h={5}
-          bg={isDark ? '#333333' : '#E0E0E0'}
+          bg={isDark ? '#E0E0E0' : '#E0E0E0'}
           borderRadius={10}
           overflow="hidden"
         >
@@ -101,16 +101,49 @@ export const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = ({ data, onClos
           />
         </Box>
         <Text
-          color={isCompleted ? '#0C7A24' : (isDark ? '#CCCCCC' : '#666666')}
+          color={isDark ? '#666666' : '#666666'}
           fontSize={12}
           textAlign="center"
-          fontWeight={isCompleted ? '$bold' : '$normal'}
+          fontWeight="$normal"
         >
-          {isCompleted ? 'Completed' : `${data.completed || 0}/${data.task || 1}`}
+          {`${data.completed || 0}/${data.task || 1}`}
         </Text>
       </VStack>
+
+      {/* Follow Ladder Button */}
+      <Pressable
+        bg="#C2E607"
+        borderRadius={12}
+        h={52}
+        w="100%"
+        px="$4"
+        onPress={onClose}
+        alignItems="center"
+        justifyContent="center"
+        mt="$2"
+      >
+        <Text
+          color="#000000"
+          fontSize={16}
+          fontWeight="$bold"
+        >
+          Follow Ladder
+        </Text>
+      </Pressable>
     </VStack>
   );
-};
+}, (prevProps, nextProps) => {
+  // PERFORMANCE FIX: Only re-render if data actually changed
+  // Prevents unnecessary re-renders that slow down modal opening
+  return (
+    prevProps.data?.id === nextProps.data?.id &&
+    prevProps.data?.title === nextProps.data?.title &&
+    prevProps.data?.completed === nextProps.data?.completed &&
+    prevProps.data?.task === nextProps.data?.task &&
+    prevProps.data?.isUnlocked === nextProps.data?.isUnlocked
+  );
+});
+
+BadgeBottomSheet.displayName = 'BadgeBottomSheet';
 
 export default BadgeBottomSheet;

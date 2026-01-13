@@ -340,7 +340,6 @@ const CollectionsScreen: React.FC = () => {
         <Box key="0" flex={1}>
           <AchievementBadgesTab
             userId={userId}
-            onBadgePress={handleBadgePress}
             searchQuery={debouncedSearchQuery}
           />
         </Box>
