@@ -114,19 +114,33 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   
   // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
   const [avatarSource, setAvatarSource] = useState(initialAvatarSource);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const avatarLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousAvatarRef = useRef<string | null>(null);
   
   // Avatar değiştiğinde state'i güncelle ve load durumunu resetle
   useEffect(() => {
     // Yeni avatar source'u hesapla
     let newSource = DEFAULT_USER_AVATAR;
+    let newSourceUri: string | null = null;
+    
     if (userProfile?.avatar) {
       const profileAvatar = toImageSource(userProfile.avatar);
-      if (profileAvatar) newSource = profileAvatar;
+      if (profileAvatar) {
+        newSource = profileAvatar;
+        newSourceUri = typeof profileAvatar === 'string' ? profileAvatar : (profileAvatar as any)?.uri || null;
+      }
     } else if (user?.avatar) {
       const storeAvatar = toImageSource(user.avatar);
-      if (storeAvatar) newSource = storeAvatar;
+      if (storeAvatar) {
+        newSource = storeAvatar;
+        newSourceUri = typeof storeAvatar === 'string' ? storeAvatar : (storeAvatar as any)?.uri || null;
+      }
+    }
+    
+    // Eğer avatar source değişmediyse (aynı URI), state'i güncelleme
+    // Bu, gereksiz re-render'ları ve avatar'ın gizlenmesini önler
+    if (newSourceUri && previousAvatarRef.current === newSourceUri) {
+      return; // Avatar değişmedi, state'i güncelleme
     }
     
     // Önceki timeout'u temizle
@@ -135,30 +149,33 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       avatarLoadTimeoutRef.current = null;
     }
     
+    // Yeni avatar URI'sini kaydet
+    previousAvatarRef.current = newSourceUri;
+    
     // Eğer yeni source default avatar değilse, load kontrolü yap
     if (newSource !== DEFAULT_USER_AVATAR) {
       setAvatarSource(newSource);
-      setIsImageLoaded(false);
       
       // 5 saniye içinde görsel yüklenmezse default avatar'a geç
       avatarLoadTimeoutRef.current = setTimeout(() => {
         setAvatarSource((currentSource: any) => {
           // Eğer hala yüklenmediyse ve source değişmediyse default avatar'a geç
-          if (currentSource === newSource) {
+          const currentUri = typeof currentSource === 'string' ? currentSource : (currentSource as any)?.uri || null;
+          if (currentUri === newSourceUri) {
             console.log('[DrawerContent] Avatar load timeout, using default avatar:', {
               userId: user?.id,
               attemptedSource: newSource,
             });
+            previousAvatarRef.current = null; // Default avatar'a geçtiğimiz için ref'i temizle
             return DEFAULT_USER_AVATAR;
           }
           return currentSource;
         });
-        setIsImageLoaded(true);
       }, 5000); // 5 saniye timeout
     } else {
       // Zaten default avatar ise direkt set et
       setAvatarSource(DEFAULT_USER_AVATAR);
-      setIsImageLoaded(true);
+      previousAvatarRef.current = null;
     }
     
     return () => {
@@ -175,8 +192,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       userId: user?.id,
       source: avatarSource,
     });
-    setIsImageLoaded(true);
-    // Timeout'u temizle
+    // Timeout'u temizle - görsel başarıyla yüklendi, default avatar'a geçmeye gerek yok
     if (avatarLoadTimeoutRef.current) {
       clearTimeout(avatarLoadTimeoutRef.current);
       avatarLoadTimeoutRef.current = null;
@@ -190,7 +206,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       attemptedSource: avatarSource,
     });
     setAvatarSource(DEFAULT_USER_AVATAR);
-    setIsImageLoaded(true); // Default avatar zaten yüklü sayılır
+    previousAvatarRef.current = null; // Default avatar'a geçtiğimiz için ref'i temizle
     // Timeout'u temizle
     if (avatarLoadTimeoutRef.current) {
       clearTimeout(avatarLoadTimeoutRef.current);
