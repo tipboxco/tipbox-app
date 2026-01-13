@@ -397,14 +397,14 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                 <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
                             {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                                     {data.stats.likes}
                                 </Text>
                             ) : (
                                 <AnimatedCounter
                                     value={likesCount}
                                     color={isDark ? '$textDark50' : '#000'}
-                                    fontSize="$2xs"
+                                    fontSize={10}
                                     ml={4}
                                 />
                             )}
@@ -418,14 +418,14 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         <HStack mr={10} alignItems="center">
                             <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                                     {data.stats.comments}
                                 </Text>
                             ) : (
                                 <AnimatedCounter
                                     value={commentsCount}
                                     color={isDark ? '$textDark50' : '#000'}
-                                    fontSize="$2xs"
+                                    fontSize={10}
                                     ml={4}
                                 />
                             )}
@@ -435,14 +435,14 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         <HStack mr={10} alignItems="center">
                             <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                                     {data.stats.shares}
                                 </Text>
                             ) : (
                                 <AnimatedCounter
                                     value={sharesCount}
                                     color={isDark ? '$textDark50' : '#000'}
-                                    fontSize="$2xs"
+                                    fontSize={10}
                                     ml={4}
                                 />
                             )}
@@ -456,14 +456,14 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                 <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
                             {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                                     {data.stats.bookmarks}
                                 </Text>
                             ) : (
                                 <AnimatedCounter
                                     value={bookmarksCount}
                                     color={isDark ? '$textDark50' : '#000'}
-                                    fontSize="$2xs"
+                                    fontSize={10}
                                     ml={4}
                                 />
                             )}

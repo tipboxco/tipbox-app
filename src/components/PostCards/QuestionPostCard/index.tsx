@@ -329,7 +329,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               <AnimatedCounter
                 value={likesCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
           </HStack>
@@ -340,7 +340,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               <AnimatedCounter
                 value={commentsCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
           </HStack>
@@ -360,7 +360,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               <AnimatedCounter
                 value={bookmarksCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
           </HStack>

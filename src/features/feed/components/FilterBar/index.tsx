@@ -598,7 +598,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
           <HStack alignItems="center" space="xs">
             <Text
               color={isActive ? '#000000' : '#000000'}
-              fontSize="$2xs"
+              fontSize={10}
               fontWeight="$medium"
             >
               {label}
@@ -615,7 +615,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ filters, onFiltersChange, 
               >
                 <Text
                   color={isActive ? '#FFFFFF' : '#000000'}
-                  fontSize="$2xs"
+                  fontSize={10}
                   fontWeight="$medium"
                 >
                   {count}

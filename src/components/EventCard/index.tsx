@@ -80,7 +80,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
           >
             <Text
               color="#FFFFFF"
-              fontSize="$2xs"
+              fontSize={10}
               fontWeight="$bold"
             >
               {data.eventType}
@@ -94,7 +94,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             {/* Title */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize="$2xs"
+              fontSize={10}
               fontWeight="$bold"
               numberOfLines={1}
             >
@@ -104,7 +104,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             {/* Description - 3 satır gösterilecek */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize="$2xs"
+              fontSize={10}
               fontWeight="$normal"
               numberOfLines={4}
             >
@@ -129,7 +129,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
               </Box>
               <Text
                 color={isDark ? '#FFFFFF' : '#B9B9B9'}
-                fontSize="$2xs"
+                fontSize={10}
                 fontWeight="$normal"
               >
                 {data.dateRange}
@@ -187,7 +187,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             </HStack>
             <Text
               color={isDark ? '#FFFFFF' : '#B9B9B9'}
-              fontSize="$2xs"
+              fontSize={10}
               fontWeight="$normal"
             >
               {activeEventData.interaction || 0}+ Etkileşim

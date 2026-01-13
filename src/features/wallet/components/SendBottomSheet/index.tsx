@@ -1150,7 +1150,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           $dark-borderColor="$borderDark600"
           rounded={5}
           px="$5"
-          py="$1.5"
+          py={6}
           onPress={handleMaxPress}
         >
           <Text fontSize={10} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
@@ -1285,7 +1285,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
               width={24} 
               height={24} 
               color={isDark ? '#FFFFFF' : '#000000'}
-              style={{ transform: [{ rotate: '45deg' }] }}
             />
           </Box>
 

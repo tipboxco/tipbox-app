@@ -98,7 +98,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             <BoltIcon width={14} height={14} color="#111111" />
                             <Text
                                 color="#111111"
-                                fontSize="$2xs"
+                                fontSize={10}
                                 fontWeight="$semibold"
                             >
                                 Limited Time
@@ -108,7 +108,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         <HStack alignItems="center" space="xs">
                             <Text
                                 color="#FFFFFF"
-                                fontSize="$2xs"
+                                fontSize={10}
                                 fontWeight="$semibold"
                             >
                                 {formattedCountdown}
@@ -147,7 +147,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                             </Text>
                             <Text
                                 color="#D1D1D1"
-                                fontSize="$2xs"
+                                fontSize={10}
                                 lineHeight={11}
                                 numberOfLines={2}
                             >
@@ -174,14 +174,14 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                 <VStack space="xs">
                                     <Text
                                         color="#B9B9B9"
-                                        fontSize="$2xs"
+                                        fontSize={10}
                                         fontWeight="$semibold"
                                     >
                                         Your Score
                                     </Text>
                                     <Text
                                         color="#FFFFFF"
-                                        fontSize="$2xs"
+                                        fontSize={10}
                                         fontWeight="$semibold"
                                     >
                                         {data.userScore?.score != null 
@@ -193,7 +193,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
 
                             <Text
                                 color="#FFFFFF"
-                                fontSize="$2xs"
+                                fontSize={10}
                                 fontWeight="$semibold"
                             >
                                 #{data.userScore?.rank ?? 0}
@@ -230,7 +230,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                                         >
                                             <Text
                                                 color="#FFFFFF"
-                                                fontSize="$2xs"
+                                                fontSize={10}
                                                 fontWeight="$semibold"
                                             >
                                                 {user?.rank ?? 0}
@@ -251,7 +251,7 @@ export const LimitedTimeEventCard: React.FC<LimitedTimeEventCardProps> = ({
                         >
                             <Text
                                 color="#FFFFFF"
-                                fontSize="$2xs"
+                                fontSize={10}
                                 fontWeight="$semibold"
                                 textAlign="center"
                             >

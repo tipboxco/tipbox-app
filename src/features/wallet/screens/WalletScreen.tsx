@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Header } from '@/src/components/Header';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import {
   QrCodeIcon,
   PaperAirplaneIcon,
@@ -28,9 +29,11 @@ import { ReceiveBottomSheet } from '../components/ReceiveBottomSheet';
 import { ClaimBottomSheet } from '../components/ClaimBottomSheet';
 import { SwapBottomSheet } from '../components/SwapBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
+import { NFTFilterBottomSheet } from '../components/NFTFilterBottomSheet';
+import { NFTSortBottomSheet, SortOption } from '../components/NFTSortBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ScrollView } from 'react-native';
+import { ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaValues } from '@/src/utils';
 import { useWalletBalance, useWalletTransactions, useWalletInfo } from '../api/hooks';
 import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
@@ -62,10 +65,30 @@ export const WalletScreen: React.FC = () => {
   const user = useAppStore((state) => state.user);
   
   // API hooks
-  const { data: walletInfo, isLoading: isLoadingWalletInfo, error: walletInfoError } = useWalletInfo();
-  const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
-  const { data: transactionsData, isLoading: isLoadingTransactions } = useWalletTransactions();
-  const { data: nftsData, isLoading: isLoadingNFTs } = useMyNFTs();
+  const { data: walletInfo, isLoading: isLoadingWalletInfo, error: walletInfoError, refetch: refetchWalletInfo } = useWalletInfo();
+  const { data: walletBalance, isLoading: isLoadingBalance, refetch: refetchBalance } = useWalletBalance();
+  const { data: transactionsData, isLoading: isLoadingTransactions, refetch: refetchTransactions } = useWalletTransactions();
+  const { data: nftsData, isLoading: isLoadingNFTs, refetch: refetchNFTs } = useMyNFTs();
+  
+  // Pull to refresh state
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  // Handle pull to refresh
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchWalletInfo(),
+        refetchBalance(),
+        refetchTransactions(),
+        refetchNFTs(),
+      ]);
+    } catch (error) {
+      console.error('[WalletScreen] Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchWalletInfo, refetchBalance, refetchTransactions, refetchNFTs]);
   
   // Debug: Log wallet info
   React.useEffect(() => {
@@ -103,6 +126,10 @@ export const WalletScreen: React.FC = () => {
     transactionId?: string;
   } | null>(null);
   const [sendBottomSheetContent, setSendBottomSheetContent] = React.useState<React.ReactNode>(null);
+  
+  // NFT Filter & Sort States
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [sortOption, setSortOption] = useState<SortOption>('rarity_desc');
 
   const handleSendSuccess = useCallback((transactionDetails: {
     sentAmount: string;
@@ -371,10 +398,46 @@ export const WalletScreen: React.FC = () => {
     return transactionsData;
   }, [transactionsData]);
 
+  // Calculate balance change from today's transactions
+  const balanceChange = useMemo(() => {
+    if (!transactions.today || transactions.today.length === 0) {
+      return { amount: 0, percentage: 0, isPositive: true };
+    }
+
+    // Calculate net change from today's transactions
+    const netChange = transactions.today.reduce((acc, tx) => {
+      if (tx.type === 'received') {
+        return acc + tx.amount;
+      } else if (tx.type === 'sent') {
+        return acc - tx.amount;
+      }
+      return acc;
+    }, 0);
+
+    // Calculate percentage change based on current balance
+    const currentBalance = walletBalance?.balance || 0;
+    const previousBalance = currentBalance - netChange;
+    const percentage = previousBalance > 0 
+      ? ((netChange / previousBalance) * 100) 
+      : 0;
+
+    // Assume 1 TIP = $0.014084 (based on SOL conversion rate)
+    const TIP_PRICE_USD = 0.014084;
+    const dollarAmount = netChange * TIP_PRICE_USD;
+
+    return {
+      amount: netChange,
+      dollarAmount: dollarAmount,
+      percentage: percentage,
+      isPositive: netChange >= 0,
+    };
+  }, [transactions.today, walletBalance]);
+
   // NFT Item interface
   interface NftItem {
     id: string;
     name: string;
+    type: string; // Type field ekledik
     rarity: 'Usual' | 'Rare';
     rarityColor: string;
     rarityBorderColor: string;
@@ -411,6 +474,7 @@ export const WalletScreen: React.FC = () => {
       return {
         id: nft.id || String(Math.random()),
         name: nft.title || 'Unnamed NFT',
+        type: nft.type || 'Unknown', // Type bilgisini ekledik
         rarity: mappedRarity,
         rarityColor: mappedRarity === 'Rare' 
           ? 'rgba(255, 8, 152, 0.4)' 
@@ -425,6 +489,103 @@ export const WalletScreen: React.FC = () => {
       };
     });
   }, [nftsData]);
+
+  // Get available types from NFT data
+  const availableTypes = useMemo(() => {
+    if (!nftsData?.items || nftsData.items.length === 0) {
+      return [];
+    }
+    const types = new Set<string>();
+    nftsData.items.forEach((nft: any) => {
+      if (nft.type) {
+        types.add(nft.type);
+      }
+    });
+    return Array.from(types);
+  }, [nftsData]);
+
+  // Filter and Sort NFTs
+  const filteredAndSortedNfts = useMemo(() => {
+    let result = [...nfts];
+
+    // Apply Type Filter
+    if (selectedTypes.length > 0) {
+      result = result.filter((nft) => selectedTypes.includes(nft.type));
+    }
+
+    // Apply Sort
+    switch (sortOption) {
+      case 'rarity_desc':
+        // Rare first, then Usual
+        result.sort((a, b) => {
+          if (a.rarity === 'Rare' && b.rarity !== 'Rare') return -1;
+          if (a.rarity !== 'Rare' && b.rarity === 'Rare') return 1;
+          return 0;
+        });
+        break;
+      case 'rarity_asc':
+        // Usual first, then Rare
+        result.sort((a, b) => {
+          if (a.rarity === 'Usual' && b.rarity !== 'Usual') return -1;
+          if (a.rarity !== 'Usual' && b.rarity === 'Usual') return 1;
+          return 0;
+        });
+        break;
+    }
+
+    return result;
+  }, [nfts, selectedTypes, sortOption]);
+
+  // Handle Filter Button Press
+  const handleFilterPress = useCallback(() => {
+    openBottomSheet(
+      <NFTFilterBottomSheet
+        onClose={closeBottomSheet}
+        onApply={(types) => setSelectedTypes(types)}
+        availableTypes={availableTypes}
+        selectedTypes={selectedTypes}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomInset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, availableTypes, selectedTypes]);
+
+  // Handle Sort Button Press
+  const handleSortPress = useCallback(() => {
+    openBottomSheet(
+      <NFTSortBottomSheet
+        onClose={closeBottomSheet}
+        onApply={(sort) => setSortOption(sort)}
+        sortOption={sortOption}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomInset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, sortOption]);
 
   return (
     <SafeAreaView 
@@ -540,6 +701,14 @@ export const WalletScreen: React.FC = () => {
               paddingVertical: 16,
               paddingBottom: 16
             }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={isDark ? '#FFFFFF' : '#000000'}
+                colors={['#000000']}
+              />
+            }
           >
             <VStack space="lg">
               {/* Wallet Card */}
@@ -573,14 +742,39 @@ export const WalletScreen: React.FC = () => {
                   {isLoadingBalance ? (
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                   ) : (
-                    <Text fontSize={38} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-                      {walletBalance?.balance?.toFixed(2) || '0.00'}
-                    </Text>
+                    <AnimatedCounter
+                      value={walletBalance?.balance || 0}
+                      fontSize={38}
+                      fontWeight="bold"
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      darkColor={isDark ? '#FFFFFF' : '#000000'}
+                      decimalPlaces={2}
+                      duration={1000}
+                    />
                   )}
                   <HStack space="sm" alignItems="center">
-                    <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">-$0.24</Text>
-                    <Box bg="$backgroundLight200" rounded={3} px="$1" h={16} justifyContent="center">
-                      <Text fontSize={11} color="$textLight900" $dark-color="$textDark50">-1.05%</Text>
+                    <Text 
+                      fontSize={11} 
+                      fontWeight="$semibold" 
+                      color={balanceChange.isPositive ? '#3CA241' : '#CE4A4A'}
+                    >
+                      {balanceChange.isPositive ? '+' : ''}{balanceChange.amount.toFixed(2)} TIPS
+                    </Text>
+                    <Box 
+                      bg={balanceChange.isPositive ? 'rgba(60, 162, 65, 0.1)' : 'rgba(206, 74, 74, 0.1)'} 
+                      borderWidth={1}
+                      borderColor={balanceChange.isPositive ? '#3CA241' : '#CE4A4A'}
+                      rounded={3} 
+                      px={8} 
+                      py={4}
+                    >
+                      <Text 
+                        fontSize={11} 
+                        fontWeight="$semibold"
+                        color={balanceChange.isPositive ? '#3CA241' : '#CE4A4A'}
+                      >
+                        {balanceChange.isPositive ? '+' : ''}{balanceChange.percentage.toFixed(2)}%
+                      </Text>
                     </Box>
                   </HStack>
                 </VStack>
@@ -628,10 +822,10 @@ export const WalletScreen: React.FC = () => {
                   Transaction History
                 </Text>
                 <HStack space="sm" alignItems="center">
-                  <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
+                  <Pressable px={8} py={4} borderWidth={1} borderColor="$borderLight200" rounded={5}>
                     <FunnelIcon width={16} height={16} color="#000000" />
                   </Pressable>
-                  <Pressable px="$2" py="$1" borderWidth={1} borderColor="$borderLight200" rounded={5}>
+                  <Pressable px={8} py={4} borderWidth={1} borderColor="$borderLight200" rounded={5}>
                     <PresentationChartBarIcon width={16} height={16} color="#000000" />
                   </Pressable>
                 </HStack>
@@ -781,6 +975,14 @@ export const WalletScreen: React.FC = () => {
               paddingVertical: 16,
               paddingBottom: 16
             }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={isDark ? '#FFFFFF' : '#000000'}
+                colors={['#000000']}
+              />
+            }
           >
             <VStack space="lg">
               {/* Wallet Card */}
@@ -810,44 +1012,46 @@ export const WalletScreen: React.FC = () => {
               {/* NFT Assets Header */}
               <VStack space="md">
                 <HStack justifyContent="space-between" alignItems="center">
-                  <Text fontSize={14} fontWeight="$bold" color="#B9B9B9" $dark-color="$textDark400">
-                    NFT Assets
+                  <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+                    NFT's
                   </Text>
                   <HStack space="xs" alignItems="center">
                     {/* Filter Button */}
                     <Pressable
+                      onPress={handleFilterPress}
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
                       borderWidth={1}
                       borderColor="#EFEFEF"
                       $dark-borderColor="$borderDark600"
                       rounded={20}
-                      px="$3"
-                      py="$1"
+                      px="$4"
+                      py="$2"
                     >
                       <HStack alignItems="center" space="xs">
-                        <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
+                        <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                           Filter
                         </Text>
-                        <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <ChevronDownIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
                     </Pressable>
                     {/* Sort Button */}
                     <Pressable
+                      onPress={handleSortPress}
                       bg="$backgroundLight0"
                       $dark-bg="$backgroundDark800"
                       borderWidth={1}
                       borderColor="#EFEFEF"
                       $dark-borderColor="$borderDark600"
                       rounded={20}
-                      px="$3"
-                      py="$1"
+                      px="$4"
+                      py="$2"
                     >
                       <HStack alignItems="center" space="xs">
-                        <Text fontSize={9} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
+                        <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                           Sort
                         </Text>
-                        <ChevronDownIcon width={12} height={12} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <ChevronDownIcon width={14} height={14} color={isDark ? '#FFFFFF' : '#000000'} />
                       </HStack>
                     </Pressable>
                   </HStack>
@@ -855,21 +1059,21 @@ export const WalletScreen: React.FC = () => {
 
                 {/* NFT Grid */}
                 {isLoadingNFTs ? (
-                  <VStack alignItems="center" py="$8">
+                  <VStack alignItems="center" py="$4">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                     <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
                       Loading NFTs...
                     </Text>
                   </VStack>
-                ) : nfts.length === 0 ? (
+                ) : filteredAndSortedNfts.length === 0 ? (
                   <VStack alignItems="center" py="$8">
                     <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                      No NFTs found
+                      {selectedTypes.length > 0 ? 'No NFTs match your filter' : 'No NFTs found'}
                     </Text>
                   </VStack>
                 ) : (
                   <VStack space="md">
-                    {nfts.reduce((rows: NftItem[][], nft, index) => {
+                    {filteredAndSortedNfts.reduce((rows: NftItem[][], nft, index) => {
                       if (index % 2 === 0) {
                         rows.push([nft]);
                       } else {

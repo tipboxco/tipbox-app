@@ -4,6 +4,13 @@ import {
   getWalletBalance,
   getWalletTransactions,
   sendTips,
+  // Reward API
+  getRewardSummary,
+  getClaimableRewards,
+  getRewardsBySource,
+  claimReward,
+  claimAllRewards,
+  getClaimHistory,
   // Backward compatibility
   getWallets,
   getActiveWallet,
@@ -18,6 +25,12 @@ import type {
   TransactionsResponse,
   SendTipRequest,
   SendTipResponse,
+  // Reward types
+  RewardSummary,
+  RewardClaim,
+  RewardSourceType,
+  ClaimResult,
+  ClaimAllResult,
   // Backward compatibility
   Wallet,
   ConnectWalletRequest,
@@ -33,6 +46,12 @@ export const walletKeys = {
   info: () => [...walletKeys.all, 'info'] as const,
   balance: () => [...walletKeys.all, 'balance'] as const,
   transactions: (params?: any) => [...walletKeys.all, 'transactions', params] as const,
+  // Reward keys
+  rewards: () => [...walletKeys.all, 'rewards'] as const,
+  rewardSummary: () => [...walletKeys.rewards(), 'summary'] as const,
+  claimableRewards: () => [...walletKeys.rewards(), 'claimable'] as const,
+  rewardsBySource: (sourceType: RewardSourceType) => [...walletKeys.rewards(), 'source', sourceType] as const,
+  claimHistory: () => [...walletKeys.rewards(), 'history'] as const,
   // Backward compatibility
   wallets: () => [...walletKeys.all, 'wallets'] as const,
   active: () => [...walletKeys.all, 'active'] as const,
@@ -136,10 +155,11 @@ export const useWalletTransactions = (params?: {
         };
       }
     },
-    staleTime: 30000, // 30 saniye
+    refetchInterval: 10000, // 10 saniye - realtime için
+    staleTime: 5000, // 5 saniye
     gcTime: 5 * 60 * 1000, // 5 dakika
     refetchOnMount: true,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Focus olduğunda refetch et
     retry: false, // Backend hatası varsa retry yapma
   });
 };
@@ -191,6 +211,150 @@ export const useSendTips = () => {
     },
     onError: (error) => {
       console.error('[useSendTips] Error:', error);
+    },
+  });
+};
+
+/**
+ * ============================================
+ * REWARD QUERIES
+ * ============================================
+ */
+
+/**
+ * useRewardSummary Hook
+ * 
+ * Kullanıcının tüm claimable reward'larının özetini getirir
+ * 
+ * Backend endpoint: GET /wallets/rewards/summary
+ */
+export const useRewardSummary = () => {
+  return useQuery<RewardSummary, Error>({
+    queryKey: walletKeys.rewardSummary(),
+    queryFn: () => getRewardSummary(),
+    staleTime: 30000, // 30 saniye
+    gcTime: 5 * 60 * 1000, // 5 dakika
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+};
+
+/**
+ * useClaimableRewards Hook
+ * 
+ * Kullanıcının claim edebileceği tüm reward'ları detaylı olarak getirir
+ * 
+ * Backend endpoint: GET /wallets/rewards/claimable
+ */
+export const useClaimableRewards = () => {
+  return useQuery<RewardClaim[], Error>({
+    queryKey: walletKeys.claimableRewards(),
+    queryFn: () => getClaimableRewards(),
+    staleTime: 30000, // 30 saniye
+    gcTime: 5 * 60 * 1000, // 5 dakika
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+};
+
+/**
+ * useRewardsBySource Hook
+ * 
+ * Belirli bir kaynak tipine göre reward'ları getirir
+ * 
+ * Backend endpoint: GET /wallets/rewards/source/:sourceType
+ */
+export const useRewardsBySource = (sourceType: RewardSourceType) => {
+  return useQuery<RewardClaim[], Error>({
+    queryKey: walletKeys.rewardsBySource(sourceType),
+    queryFn: () => getRewardsBySource(sourceType),
+    staleTime: 30000, // 30 saniye
+    gcTime: 5 * 60 * 1000, // 5 dakika
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+};
+
+/**
+ * useClaimHistory Hook
+ * 
+ * Kullanıcının daha önce claim ettiği reward'ların geçmişini getirir
+ * 
+ * Backend endpoint: GET /wallets/rewards/history
+ */
+export const useClaimHistory = () => {
+  return useQuery<RewardClaim[], Error>({
+    queryKey: walletKeys.claimHistory(),
+    queryFn: () => getClaimHistory(),
+    staleTime: 2 * 60 * 1000, // 2 dakika
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 2,
+  });
+};
+
+/**
+ * ============================================
+ * REWARD MUTATIONS
+ * ============================================
+ */
+
+/**
+ * useClaimReward Hook
+ * 
+ * Tek bir reward'ı claim eder
+ * 
+ * Backend endpoint: POST /wallets/rewards/claim/:rewardId
+ */
+export const useClaimReward = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<ClaimResult, Error, string>({
+    mutationFn: (rewardId: string) => claimReward(rewardId),
+    onSuccess: () => {
+      // Reward summary'yi invalidate et
+      queryClient.invalidateQueries({ queryKey: walletKeys.rewardSummary() });
+      // Claimable rewards'ı invalidate et
+      queryClient.invalidateQueries({ queryKey: walletKeys.claimableRewards() });
+      // Balance'ı invalidate et (claim edince balance artar)
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      // Transaction history'yi invalidate et
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
+    },
+    onError: (error) => {
+      console.error('[useClaimReward] Error:', error);
+    },
+  });
+};
+
+/**
+ * useClaimAllRewards Hook
+ * 
+ * Tüm claimable reward'ları tek seferde claim eder
+ * 
+ * Backend endpoint: POST /wallets/rewards/claim-all
+ */
+export const useClaimAllRewards = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<ClaimAllResult, Error, void>({
+    mutationFn: () => claimAllRewards(),
+    onSuccess: () => {
+      // Reward summary'yi invalidate et
+      queryClient.invalidateQueries({ queryKey: walletKeys.rewardSummary() });
+      // Claimable rewards'ı invalidate et
+      queryClient.invalidateQueries({ queryKey: walletKeys.claimableRewards() });
+      // Balance'ı invalidate et (claim edince balance artar)
+      queryClient.invalidateQueries({ queryKey: walletKeys.balance() });
+      // Transaction history'yi invalidate et
+      queryClient.invalidateQueries({ queryKey: walletKeys.transactions() });
+    },
+    onError: (error) => {
+      console.error('[useClaimAllRewards] Error:', error);
     },
   });
 };

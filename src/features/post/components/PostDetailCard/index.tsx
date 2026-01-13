@@ -278,7 +278,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             <AnimatedCounter
                                 value={likesCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                         </HStack>
@@ -293,7 +293,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             <AnimatedCounter
                                 value={commentsCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                         </HStack>
@@ -304,7 +304,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             <AnimatedCounter
                                 value={sharesCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                         </HStack>
@@ -319,7 +319,7 @@ export const PostDetailCard = ({ data, onCommentPress }: PostDetailCardProps) =>
                             <AnimatedCounter
                                 value={bookmarksCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                         </HStack>

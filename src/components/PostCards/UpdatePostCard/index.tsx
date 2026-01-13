@@ -321,7 +321,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               <AnimatedCounter
                 value={likesCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>
@@ -332,7 +332,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               <AnimatedCounter
                 value={commentsCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>
@@ -343,7 +343,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               <AnimatedCounter
                 value={sharesCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>
@@ -358,7 +358,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               <AnimatedCounter
                 value={bookmarksCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>

@@ -461,7 +461,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               <AnimatedCounter
                 value={likesCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>
@@ -472,7 +472,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               <AnimatedCounter
                 value={commentsCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>
@@ -483,7 +483,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               <AnimatedCounter
                 value={sharesCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>
@@ -498,7 +498,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               <AnimatedCounter
                 value={bookmarksCount}
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$2xs"
+                fontSize={10}
                 ml={4}
               />
             </HStack>
