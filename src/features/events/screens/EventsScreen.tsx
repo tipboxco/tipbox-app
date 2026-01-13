@@ -15,11 +15,6 @@ import {
   Input,
   InputField,
   Text,
-  Image,
-  Modal,
-  ModalBackdrop,
-  ModalContent,
-  ModalBody,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -28,7 +23,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { navigationService } from '@/src/services/NavigationService';
 import { Header } from '@/src/components/Header';
-import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { FilterOption } from '../components/AchievementFilter';
 import { CommunityTab, AchievementTab } from '../components/TabContents';
 import { useDrawerStore } from '@/src/store/drawerStore';
@@ -70,7 +64,6 @@ const EventsScreen: React.FC = () => {
   // Tab state - currentPage'e göre hesaplanıyor
   const activeTab: 'community' | 'achievement' = currentPage === 0 ? 'community' : 'achievement';
   
-  const [selectedReward, setSelectedReward] = useState<SeeAllReward | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -94,19 +87,6 @@ const EventsScreen: React.FC = () => {
     }
   };
 
-  const handleRewardPress = useCallback((reward: SeeAllReward) => {
-    setSelectedReward(reward);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setSelectedReward(null);
-  }, []);
-
-  const handleViewAchievement = useCallback(() => {
-    handleCloseModal();
-    // Note: RewardsBadges requires eventId, but achievement ladder shows general achievements
-    // Navigation removed as we don't have an eventId in this context
-  }, [handleCloseModal]);
 
   // Tab press handler - PagerView native animasyonu ile geçiş
   const handleTabPress = useCallback((index: number) => {
@@ -306,105 +286,11 @@ const EventsScreen: React.FC = () => {
               <AchievementTab
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
-                onRewardPress={handleRewardPress}
               />
             </Box>
           </AnimatedPagerView>
         </VStack>
       </Box>
-
-      {/* Badge Detail Modal */}
-      <Modal 
-        isOpen={!!selectedReward} 
-        onClose={handleCloseModal}
-        size="lg"
-      >
-        <ModalBackdrop />
-        <ModalContent
-          bg={isDark ? '#1F1F1F' : '#FFFFFF'}
-          borderRadius={16}
-          marginHorizontal={24}
-          marginBottom={46}
-        >
-          <ModalBody p="$4">
-            {selectedReward && (
-              <VStack space="md" alignItems="center">
-                {/* Badge Title */}
-                <Text
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={16}
-                  fontWeight="$bold"
-                  textAlign="center"
-                >
-                  {selectedReward.title}
-                </Text>
-
-                {/* Instruction Text */}
-                <Text
-                  color={isDark ? '#CCCCCC' : '#000000'}
-                  fontSize={12}
-                  textAlign="center"
-                  px="$2"
-                >
-                  "{selectedReward.title}" rozetini kazanmak için en az {selectedReward.task} gönderi paylaşmalısın.
-                </Text>
-
-                {/* Badge Image */}
-                <Image
-                  source={selectedReward.image}
-                  alt={selectedReward.title}
-                  width={180}
-                  height={180}
-                />
-
-                {/* Progress Bar */}
-                <VStack space="sm" w="100%" px="$4">
-                  <Box
-                    w="100%"
-                    h={5}
-                    bg={isDark ? '$backgroundDark700' : '#E0E0E0'}
-                    borderRadius={10}
-                    overflow="hidden"
-                  >
-                    <Box
-                      w={`${((selectedReward.completed || 0) / (selectedReward.task || 1)) * 100}%`}
-                      h="100%"
-                      bg={selectedReward.isUnlocked ? '#0C7A24' : '#686868'}
-                    />
-                  </Box>
-                  <Text
-                    color={isDark ? '$textDark400' : '#797979'}
-                    fontSize={9}
-                    textAlign="center"
-                  >
-                    {selectedReward.isUnlocked ? 'Completed' : `${selectedReward.completed || 0}/${selectedReward.task || 1}`}
-                  </Text>
-                </VStack>
-
-                {/* View Detail Button */}
-                <Pressable
-                  bg="#C2E607"
-                  borderRadius={8}
-                  h={48}
-                  w="100%"
-                  px="$4"
-                  onPress={handleViewAchievement}
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Text
-                    color="#000000"
-                    fontSize={12}
-                    fontWeight="$bold"
-                  >
-                    View Detail
-                  </Text>
-                </Pressable>
-              </VStack>
-            )}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </SafeAreaView>
   );
 };

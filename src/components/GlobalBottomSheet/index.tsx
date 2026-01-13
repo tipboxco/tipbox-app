@@ -68,15 +68,21 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // Backdrop component
   // CRITICAL: Detached modals need backdrop to work properly
+  // Backdrop opacity 0 ise backdrop'u render etme
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => {
+      const backdropOpacity = mergedOptions.backdropOpacity ?? 0.5;
+      // Backdrop opacity 0 ise boş component döndür
+      if (backdropOpacity === 0) {
+        return <></>;
+      }
       return (
         <BottomSheetBackdrop
           {...props}
           appearsOnIndex={0}
           disappearsOnIndex={-1}
           pressBehavior={mergedOptions.backdropPressBehavior ?? 'close'}
-          opacity={mergedOptions.backdropOpacity ?? 0.5}
+          opacity={backdropOpacity}
           enableTouchThrough={false}
           style={mergedOptions.detached ? { zIndex: 999 } : undefined}
         />

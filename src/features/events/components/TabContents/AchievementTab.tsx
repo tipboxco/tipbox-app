@@ -14,6 +14,8 @@ import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { FilterOption } from '../AchievementFilter';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useLimitedEvent, useAchievements } from '../../api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import BadgeBottomSheet from '../BadgeBottomSheet';
 import type { AchievementApiItem } from '../../types';
 import { LimitedTimeEventSkeleton, BadgeSkeleton } from '@/src/components/Skeletons';
 
@@ -22,7 +24,7 @@ const { width } = Dimensions.get('window');
 type AchievementTabProps = {
   activeFilter: FilterOption;
   onFilterChange: (filter: FilterOption) => void;
-  onRewardPress: (reward: SeeAllReward) => void;
+  onRewardPress?: (reward: SeeAllReward) => void; // Optional - artık kullanılmıyor
 };
 
 export const AchievementTab: React.FC<AchievementTabProps> = ({
@@ -33,6 +35,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   // Limited Event API hook
   const {
@@ -70,6 +73,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
       task: achievement.total,
     };
   }, []);
+
 
   // Transform achievements data for display (flatten all pages and remove duplicates)
   const allAchievements = useMemo(() => {
@@ -135,23 +139,11 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             </Text>
           </Box>
         ) : limitedEvent ? (
-          <LimitedTimeEventCard
+            <LimitedTimeEventCard
             data={limitedEvent}
             onPress={() => {
-              // Limited time event'i SeeAllReward formatına map et
-              if (onRewardPress) {
-                const reward: SeeAllReward = {
-                  id: limitedEvent.id,
-                  title: limitedEvent.title || '',
-                  image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/default-useravatar.png'),
-                  description: limitedEvent.description || '',
-                  category: '', // Limited event için category yok
-                  isUnlocked: false, // Limited event için unlock durumu yok
-                  completed: limitedEvent.userScore?.score || 0,
-                  task: 0, // Limited event için target score yok
-                };
-                onRewardPress(reward);
-              }
+              // Limited time event için bottom sheet açılabilir (ileride eklenebilir)
+              // Şimdilik sadece navigation yapılabilir
             }}
           />
         ) : null}
@@ -170,7 +162,6 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     isDark,
     activeFilter,
     onFilterChange,
-    onRewardPress,
   ]);
 
   // Empty state component
@@ -260,7 +251,46 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
           <Box flex={1}>
             <BadgeCard
               data={item}
-              onPress={() => onRewardPress(item)}
+              onPress={() => {
+                // Detached bottom sheet aç (backdrop olmadan, modal yok)
+                // Görseldeki gibi basit badge card görünümü
+                openBottomSheet(
+                  <BadgeBottomSheet
+                    data={item}
+                    onClose={closeBottomSheet}
+                  />,
+                  {
+                    detached: true,
+                    enablePanDownToClose: true,
+                    enableOverDrag: false,
+                    enableHandlePanningGesture: true,
+                    enableContentPanningGesture: true,
+                    enableDynamicSizing: true,
+                    animateOnMount: true,
+                    backdropOpacity: 0.5,
+                    backdropPressBehavior: 'close',
+                    backgroundStyle: {
+                      backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                      borderRadius: 20,
+                    },
+                    handleStyle: {
+                      backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
+                      borderTopLeftRadius: 20,
+                      borderTopRightRadius: 20,
+                    },
+                    handleIndicatorStyle: {
+                      backgroundColor: isDark ? '#333333' : '#CCCCCC',
+                      width: 40,
+                      height: 4,
+                    },
+                    style: {
+                      marginHorizontal: 4,
+                      marginBottom: bottomInset + 24,
+                    },
+                 
+                  }
+                );
+              }}
             />
           </Box>
         )}
