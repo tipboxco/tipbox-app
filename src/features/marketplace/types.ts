@@ -11,6 +11,7 @@ export interface MarketplaceListingApiItem {
   price: string;
   image: string;
   userAvatar: string;
+  sellerId?: string; // Satıcının ID'si (My Listings filtrelemesi için)
 }
 
 /**
@@ -57,8 +58,14 @@ export interface UserNFTApiItem {
   username: string;
   image: string;
   description?: string;
-  type?: string; // "Kozmetik", "Sandık", "Rozet"
-  rarity?: string; // "Yaygın", "Nadir", "Epik"
+  type?: string; // "BADGE", "CHEST", "COSMETIC", "LOOTBOX"
+  rarity?: string; // "COMMON", "RARE", "EPIC", "LEGENDARY"
+  listing?: {
+    id: string;
+    price: number;
+    listedAt: string;
+    status: string; // "ACTIVE", "CANCELLED", "SOLD"
+  };
 }
 
 /**
@@ -82,5 +89,8 @@ export interface UserNFTCardData {
   title: string;
   username: string;
   image: ImageSourcePropType;
+  isListed?: boolean; // NFT marketplace'te satışta mı?
+  price?: number; // Eğer satıştaysa fiyatı
+  rarity?: string; // NFT'nin rarity'si
 }
 

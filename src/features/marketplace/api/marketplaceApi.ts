@@ -1,5 +1,5 @@
 import { apiService } from '../../../services/ApiService';
-import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTsApiResponse } from '../types';
+import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTsApiResponse, UserNFTApiItem } from '../types';
 
 /**
  * Get Marketplace Listings endpoint function
@@ -49,17 +49,69 @@ export const getMarketplaceListings = async (
  * Get My NFTs endpoint function
  * Kullanıcıya ait NFT'leri getirir (pagination ile)
  *
- * @param limit - Getirilecek NFT sayısı (default: 50)
- * @returns UserNFTsApiResponse - Kullanıcıya ait NFT listesi
+ * @param limit - Getirilecek NFT sayısı (default: 12)
+ * @param offset - Başlangıç offset'i (default: 0)
+ * @returns UserNFTApiItem[] - Kullanıcıya ait NFT listesi (sadece items array'i)
  */
 export const getMyNFTs = async (
-  limit: number = 50
-): Promise<UserNFTsApiResponse> => {
+  limit: number = 12,
+  offset: number = 0
+): Promise<UserNFTApiItem[]> => {
   const queryParams = new URLSearchParams();
   queryParams.append('limit', limit.toString());
+  queryParams.append('offset', offset.toString());
 
   const response = await apiService.getClient().get<UserNFTsApiResponse>(
     `/marketplace/my-nfts?${queryParams.toString()}`
+  );
+  // Backend { items: [...] } formatında döndürüyor, direkt items array'ini döndür
+  return response.data.items || [];
+};
+
+/**
+ * Get My Listings
+ * Kullanıcının oluşturduğu tüm listing'leri getirir (ACTIVE, SOLD, CANCELLED)
+ * 
+ * @param limit - Getirilecek listing sayısı
+ * @param cursor - Pagination cursor
+ * @returns Promise<UserNFTsApiResponse>
+ */
+export const getMyListings = async (
+  limit: number = 50,
+  cursor?: string
+): Promise<UserNFTsApiResponse> => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('limit', limit.toString());
+  if (cursor) {
+    queryParams.append('cursor', cursor);
+  }
+
+  const response = await apiService.getClient().get<UserNFTsApiResponse>(
+    `/marketplace/my-listings?${queryParams.toString()}`
+  );
+  return response.data;
+};
+
+/**
+ * Get Available NFTs
+ * Satışa koyulabilecek NFT'leri getirir (ACTIVE listing'i olmayanlar)
+ * 
+ * @param limit - Getirilecek NFT sayısı
+ * @param cursor - Pagination cursor
+ * @returns Promise<UserNFTsApiResponse>
+ */
+export const getAvailableNFTs = async (
+  limit: number = 50,
+  cursor?: string
+): Promise<UserNFTsApiResponse> => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('limit', limit.toString());
+  if (cursor) {
+    queryParams.append('cursor', cursor);
+  }
+
+  const response = await apiService.getClient().get<UserNFTsApiResponse>(
+    `/marketplace/available-nfts?${queryParams.toString()}`
   );
   return response.data;
 };
@@ -180,12 +232,21 @@ export const deleteListing = async (
  */
 export interface NFTSellInfo {
   id: string;
+  title?: string;
+  description?: string;
+  image?: string;
   viewer: number;
   rarity: string;
   price: number;
   suggestedPrice: number;
   gasFee: number;
   earningsAfterSales: number;
+  listing?: {
+    id: string;
+    price: number;
+    status: string;
+    listedAt: string;
+  };
 }
 
 export const getNFTSellInfo = async (nftId: string): Promise<NFTSellInfo> => {
@@ -215,6 +276,10 @@ export const getNFTSellInfo = async (nftId: string): Promise<NFTSellInfo> => {
  */
 export interface NFTSellDetail {
   id: string;
+  title: string;
+  description?: string;
+  image: string;
+  type: string;
   viewer: number;
   rarity: string;
   price: number;
@@ -225,6 +290,16 @@ export interface NFTSellDetail {
     id: string;
     name: string;
   };
+  priceHistory?: Array<{
+    id: string;
+    price: number;
+    listedAt: string;
+    status: string;
+    seller: {
+      id: string;
+      name: string;
+    };
+  }>;
 }
 
 export const getNFTSellDetail = async (nftId: string): Promise<NFTSellDetail> => {
@@ -240,6 +315,64 @@ export const getNFTSellDetail = async (nftId: string): Promise<NFTSellDetail> =>
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Buy NFT Request Interface
+ */
+export interface BuyNFTRequest {
+  listingId: string;
+}
+
+/**
+ * Buy NFT Response Interface
+ */
+export interface BuyNFTResponse {
+  success: boolean;
+  nftId: string;
+  buyerTransaction: {
+    id: string;
+    amount: number;
+    status: string;
+  };
+  sellerTransaction: {
+    id: string;
+    amount: number;
+    status: string;
+  };
+  newOwner: {
+    id: string;
+    name: string;
+  };
+}
+
+/**
+ * Buy NFT endpoint function
+ * Marketplace'teki bir NFT'yi satın alır
+ *
+ * @param data - Buy NFT request data
+ * @returns BuyNFTResponse - Satın alma sonucu
+ */
+export const buyNFT = async (
+  data: BuyNFTRequest
+): Promise<BuyNFTResponse> => {
+  try {
+    const response = await apiService.getClient().post<BuyNFTResponse>(
+      '/marketplace/buy',
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[buyNFT] API Error:', {
+      url: '/marketplace/buy',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      listingId: data.listingId,
     });
     throw error;
   }

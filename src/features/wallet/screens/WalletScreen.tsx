@@ -443,23 +443,30 @@ export const WalletScreen: React.FC = () => {
     rarityBorderColor: string;
     rarityTextColor?: string;
     image: any;
+    listing?: {
+      id: string;
+      price: number;
+      listedAt: string;
+      status: string;
+    };
   }
 
   // Transform API NFTs data
   const nfts: NftItem[] = useMemo(() => {
-    if (!nftsData?.items || nftsData.items.length === 0) {
+    if (!nftsData || nftsData.length === 0) {
       return [];
     }
     
-    return nftsData.items.map((nft: any) => {
-      // Rarity mapping: Backend'den gelen Türkçe değerleri UI'a uygun formata çevir
+    return nftsData.map((nft: any) => {
+      // Rarity mapping: Backend'den gelen İngilizce değerleri UI'a uygun formata çevir
       const rarityMap: Record<string, 'Usual' | 'Rare'> = {
-        'Yaygın': 'Usual',
-        'Nadir': 'Rare',
-        'Epik': 'Rare',
+        'COMMON': 'Usual',
+        'RARE': 'Rare',
+        'EPIC': 'Rare',
+        'LEGENDARY': 'Rare',
       };
       
-      const mappedRarity = rarityMap[nft.rarity || 'Yaygın'] || 'Usual';
+      const mappedRarity = rarityMap[nft.rarity || 'COMMON'] || 'Usual';
       
       // Image handling: API'den gelen path varsa kullan, yoksa default göster
       let imageSource;
@@ -486,17 +493,18 @@ export const WalletScreen: React.FC = () => {
           ? '#AB2847' 
           : undefined,
         image: imageSource,
+        listing: nft.listing, // Listing bilgisini ekledik
       };
     });
   }, [nftsData]);
 
   // Get available types from NFT data
   const availableTypes = useMemo(() => {
-    if (!nftsData?.items || nftsData.items.length === 0) {
+    if (!nftsData || nftsData.length === 0) {
       return [];
     }
     const types = new Set<string>();
-    nftsData.items.forEach((nft: any) => {
+    nftsData.forEach((nft: any) => {
       if (nft.type) {
         types.add(nft.type);
       }
@@ -854,6 +862,7 @@ export const WalletScreen: React.FC = () => {
                           description={transaction.reason || ''}
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          actionType={transaction.actionType}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 
@@ -881,6 +890,7 @@ export const WalletScreen: React.FC = () => {
                           description={transaction.reason || ''}
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          actionType={transaction.actionType}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 
@@ -908,6 +918,7 @@ export const WalletScreen: React.FC = () => {
                           description={transaction.reason || ''}
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          actionType={transaction.actionType}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 
@@ -935,6 +946,7 @@ export const WalletScreen: React.FC = () => {
                           description={transaction.reason || ''}
                           amount={`${transaction.type === 'sent' ? '-' : '+'}${transaction.amount} ${transaction.currency || 'TIPS'}`}
                           amountColor={transaction.amountColor || '#000000'}
+                          actionType={transaction.actionType}
                           transactionType={
                             transaction.status === 'failed' 
                               ? 'failed' 
@@ -1101,6 +1113,7 @@ export const WalletScreen: React.FC = () => {
                                   $dark-bg="$backgroundDark800"
                                   alignItems="center"
                                   justifyContent="center"
+                                  position="relative"
                                 >
                                   <Image
                                     source={nft.image}
@@ -1109,6 +1122,48 @@ export const WalletScreen: React.FC = () => {
                                     h={135}
                                     resizeMode="contain"
                                   />
+                                  
+                                  {/* ON SALE Badge - Top Right */}
+                                  {nft.listing?.status === 'ACTIVE' && (
+                                    <Box
+                                      position="absolute"
+                                      top={8}
+                                      right={8}
+                                      bg="rgba(194, 230, 7, 0.95)"
+                                      borderRadius={10}
+                                      px="$2"
+                                      py="$1"
+                                    >
+                                      <Text
+                                        color="#596B00"
+                                        fontSize={8}
+                                        fontWeight="$bold"
+                                      >
+                                        ON SALE
+                                      </Text>
+                                    </Box>
+                                  )}
+                                  
+                                  {/* Price Badge - Top Left (only if listed) */}
+                                  {nft.listing?.status === 'ACTIVE' && nft.listing.price && (
+                                    <Box
+                                      position="absolute"
+                                      top={8}
+                                      left={8}
+                                      bg="rgba(0, 0, 0, 0.7)"
+                                      borderRadius={10}
+                                      px="$2"
+                                      py="$1"
+                                    >
+                                      <Text
+                                        color="#FFFFFF"
+                                        fontSize={9}
+                                        fontWeight="$bold"
+                                      >
+                                        {Math.floor(nft.listing.price)} TIPS
+                                      </Text>
+                                    </Box>
+                                  )}
                                 </Box>
                                 
                                 {/* NFT Info */}
