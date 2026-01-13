@@ -257,14 +257,14 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             <VStack flex={1} justifyContent="center">
               <Text
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize="$xs"
+                fontSize="$sm"
                 fontWeight="$bold"
               >
                 {data.user.name}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#787878'}
-                fontSize={9}
+                fontSize={11}
                 numberOfLines={1}
                 maxWidth={250}
               >
@@ -296,7 +296,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             onReportUser={handleReport}
             onBlock={handleBlock}
           >
-            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+            <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
           </PostContextMenu>
         </HStack>
       </VStack>
@@ -504,14 +504,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             </HStack>
           </Pressable>
         </HStack>
-        <Box>
-          <Image
-            source={require('@/assets/common/Vector.png')}
-            alt={'vector'}
-            width={24}
-            height={24}
-          />
-        </Box>
       </HStack>
     </VStack >
   );

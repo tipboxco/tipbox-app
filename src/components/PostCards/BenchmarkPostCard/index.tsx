@@ -217,14 +217,14 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     <VStack flex={1}>
                         <Text
                             color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$xs"
+                            fontSize="$sm"
                             fontWeight="$bold"
                         >
                             {data.user.name}
                         </Text>
                         <Text
                             color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={isDetailMode ? "$xs" : 9}
+                            fontSize={isDetailMode ? "$sm" : 11}
                             numberOfLines={1}
                             maxWidth={250}
                         >
@@ -236,7 +236,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         postContent={data.content}
                         postAuthorName={data.user.name}
                     >
-                        <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+                        <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
                     </PostContextMenu>
                 </HStack>
             </VStack>
@@ -470,14 +470,6 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         </HStack>
                     </Pressable>
                 </HStack>
-                <Box>
-                    <Image
-                        source={require('@/assets/common/Vector.png')}
-                        alt={'vector'}
-                        width={24}
-                        height={24}
-                    />
-                </Box>
             </HStack>
         </VStack>
     );

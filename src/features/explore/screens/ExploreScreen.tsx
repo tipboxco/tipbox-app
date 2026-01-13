@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,9 +22,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Carousel, { ICarouselInstance, Pagination } from 'react-native-reanimated-carousel';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Header } from '@/src/components/Header';
 import { Feather } from '@expo/vector-icons';
+import { Bars3Icon } from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { useDrawerStore } from '@/src/store/drawerStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
@@ -276,6 +277,22 @@ const ExploreScreen: React.FC = () => {
   const [tabContainerWidth, setTabContainerWidth] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   
+  // Drawer store'dan drawer actions al
+  const openDrawer = useDrawerStore((state) => state.openDrawer);
+  
+  // Drawer açma handler - Header component'inden alınan mantık
+  const handleOpenDrawer = useCallback(() => {
+    // React Navigation drawer'ı aç
+    if (navigation.getParent) {
+      const drawerNavigation = navigation.getParent();
+      if (drawerNavigation && 'openDrawer' in drawerNavigation) {
+        (drawerNavigation as any).openDrawer();
+      }
+    }
+    // Drawer store'u da güncelle (sync için)
+    openDrawer();
+  }, [navigation, openDrawer]);
+  
   // 🎯 CORE: Shared progress value (0 = Hottest, 1 = News)
   const progress = useSharedValue(0);
   
@@ -289,9 +306,15 @@ const ExploreScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   
-  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
-  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
-  const tabHeaderBgColor = useMemo(() => isDark ? '#000' : '#FFF', [isDark]);
+  // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
+  const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
+  const tabHeaderBgColor = isDark ? '#000' : '#FFF';
+  
+  // PERFORMANCE FIX: Header renklerini direkt hesapla (useMemo overhead'i yok)
+  // İlk render'da anında görünür olması için sabit değerler kullan
+  const headerBgColor = isDark ? '#000000' : '#FFFFFF';
+  const headerTextColor = isDark ? '#FFFFFF' : '#000000';
+  const HEADER_MIN_HEIGHT = 56;
 
   // Debounce search query for API calls
   useEffect(() => {
@@ -510,10 +533,46 @@ const ExploreScreen: React.FC = () => {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={backgroundColor}>
-        <Header
-          title="Explore"
-          leftAction="menu"
-        />
+        {/* Inline Header - Ekranın içinde, flicker önleme */}
+        {/* PERFORMANCE FIX: Header'ı en üste koy, anında render et */}
+        <Box
+          bg={headerBgColor}
+          px="$4"
+          justifyContent="center"
+          minHeight={HEADER_MIN_HEIGHT}
+          collapsable={false}
+        >
+          <HStack space="md" alignItems="center">
+            {/* Sol kısım - Menu Icon */}
+            <Box flex={1} alignItems="flex-start" justifyContent="center">
+              <Pressable 
+                onPress={handleOpenDrawer}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Bars3Icon
+                  width={22}
+                  height={22}
+                  color={headerTextColor}
+                />
+              </Pressable>
+            </Box>
+
+            {/* Orta kısım - Title */}
+            <Box flex={3} alignItems="center" justifyContent="center">
+              <Text
+                color={headerTextColor}
+                fontSize="$md"
+                fontWeight="$bold"
+                textAlign="center"
+              >
+                Explore
+              </Text>
+            </Box>
+
+            {/* Sağ kısım - Boş */}
+            <Box flex={1} />
+          </HStack>
+        </Box>
 
         <VStack flex={1}>
           {/* Search Bar - Fixed at top */}

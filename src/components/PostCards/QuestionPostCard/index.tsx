@@ -10,6 +10,7 @@ import {
   HeartIcon,
   ChatBubbleLeftIcon,
   BookmarkIcon,
+  ChevronDoubleUpIcon,
 } from 'react-native-heroicons/outline';
 import { PostContextMenu } from '@/src/components/PostContextMenu';
 import {
@@ -149,14 +150,14 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           <VStack flex={1}>
             <Text
               color={isDark ? '$textDark50' : '#000'}
-              fontSize="$xs"
+              fontSize="$sm"
               fontWeight="$bold"
             >
               {data.user.name}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '#787878'}
-              fontSize={9}
+              fontSize={11}
               numberOfLines={1}
               maxWidth={250}
             >
@@ -168,7 +169,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
             postContent={data.content}
             postAuthorName={data.user.name}
           >
-            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
+            <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
           </PostContextMenu>
         </HStack>
       </VStack>
@@ -366,14 +367,15 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           </HStack>
           </Pressable>
         </HStack>
-        <Box>
-          <Image
-            source={require('@/assets/common/Vector.png')}
-            alt={'vector'}
-            width={24}
-            height={24}
-          />
-        </Box>
+        {data.isBoosted && (
+          <Box>
+            <ChevronDoubleUpIcon
+              width={24}
+              height={24}
+              color="#22C55E"
+            />
+          </Box>
+        )}
       </HStack>
     </VStack>
   );

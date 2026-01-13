@@ -194,8 +194,9 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     setSelectedBadge(badgeData);
   }, []);
 
-  // Modal kapatma handler
+  // Modal kapatma handler - Eş zamanlı kapanma için state'i hemen güncelle
   const handleCloseModal = useCallback(() => {
+    // State'i hemen güncelle - Modal ve backdrop eş zamanlı kapansın
     setSelectedBadge(null);
   }, []);
 
@@ -271,8 +272,9 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
         isOpen={!!selectedBadge}
         onClose={handleCloseModal}
         size="lg"
+        closeOnOverlayClick={true}
       >
-        <ModalBackdrop />
+        <ModalBackdrop onPress={handleCloseModal} />
         {selectedBadge ? (
           <ModalContent
             bg={isDark ? '#1A1A1A' : '#FDFDFB'}

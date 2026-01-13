@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -17,12 +17,12 @@ import {
   Text,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { Bars3Icon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { navigationService } from '@/src/services/NavigationService';
-import { Header } from '@/src/components/Header';
 import { FilterOption } from '../components/AchievementFilter';
 import { CommunityTab, AchievementTab } from '../components/TabContents';
 import { useDrawerStore } from '@/src/store/drawerStore';
@@ -42,6 +42,7 @@ const EventsScreen: React.FC = () => {
   
   // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
   const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
+  const openDrawer = useDrawerStore((state) => state.openDrawer);
   
   useFocusEffect(
     useCallback(() => {
@@ -57,6 +58,19 @@ const EventsScreen: React.FC = () => {
       };
     }, [setGestureEnabled])
   );
+
+  // Drawer açma handler - Header component'inden alınan mantık
+  const handleOpenDrawer = useCallback(() => {
+    // React Navigation drawer'ı aç
+    if (navigation.getParent) {
+      const drawerNavigation = navigation.getParent();
+      if (drawerNavigation && 'openDrawer' in drawerNavigation) {
+        (drawerNavigation as any).openDrawer();
+      }
+    }
+    // Drawer store'u da güncelle (sync için)
+    openDrawer();
+  }, [navigation, openDrawer]);
   
   // 🎯 CORE: Shared progress value (0 = Community, 1 = Achievement)
   const progress = useSharedValue(0);
@@ -67,9 +81,9 @@ const EventsScreen: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // PERFORMANCE FIX: Memoize background colors to prevent re-renders
-  const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
-  const tabHeaderBgColor = useMemo(() => '#FFFFFF', []); // Tab header her zaman beyaz
+  // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
+  const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
+  const tabHeaderBgColor = '#FFFFFF'; // Tab header her zaman beyaz
 
   const handleEventPress = (eventId: string) => {
     if (!eventId) {
@@ -149,13 +163,55 @@ const EventsScreen: React.FC = () => {
     };
   });
 
+  // PERFORMANCE FIX: Header renklerini direkt hesapla (useMemo overhead'i yok)
+  // İlk render'da anında görünür olması için sabit değerler kullan
+  const headerBgColor = isDark ? '#000000' : '#FFFFFF';
+  const headerTextColor = isDark ? '#FFFFFF' : '#000000';
+  const HEADER_MIN_HEIGHT = 56;
+
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <Box flex={1} bg={backgroundColor}>
-        <Header
-          title="Events"
-          leftAction="menu"
-        />
+        {/* Inline Header - Ekranın içinde, flicker önleme */}
+        {/* PERFORMANCE FIX: Header'ı en üste koy, anında render et */}
+        <Box
+          bg={headerBgColor}
+          px="$4"
+          justifyContent="center"
+          minHeight={HEADER_MIN_HEIGHT}
+          collapsable={false}
+        >
+          <HStack space="md" alignItems="center">
+            {/* Sol kısım - Menu Icon */}
+            <Box flex={1} alignItems="flex-start" justifyContent="center">
+              <Pressable 
+                onPress={handleOpenDrawer}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Bars3Icon
+                  width={22}
+                  height={22}
+                  color={headerTextColor}
+                />
+              </Pressable>
+            </Box>
+
+            {/* Orta kısım - Title */}
+            <Box flex={3} alignItems="center" justifyContent="center">
+              <Text
+                color={headerTextColor}
+                fontSize="$md"
+                fontWeight="$bold"
+                textAlign="center"
+              >
+                Events
+              </Text>
+            </Box>
+
+            {/* Sağ kısım - Boş */}
+            <Box flex={1} />
+          </HStack>
+        </Box>
 
         <VStack flex={1}>
           {/* Search Bar - Above tabs */}

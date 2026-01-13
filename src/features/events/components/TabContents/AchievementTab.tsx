@@ -201,10 +201,20 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     isDark,
   ]);
 
+  // Modal kapatma handler - Hook Rules: Tüm hook'lar early return'den önce çağrılmalı
+  const handleCloseModal = useCallback(() => {
+    setSelectedBadge(null);
+  }, []);
+
   // Initial loading state - hem limited event hem achievements ilk yüklemede ise tüm ekran için skeleton göster
   // Cache'den veri varsa skeleton gösterme
   const isInitialLoading = (isLimitedEventLoading && !limitedEvent) || 
                            (isAchievementsLoading && !achievementsData);
+
+  // numColumns'u sabit tut (FlatList numColumns'u dinamik değiştirmeyi desteklemiyor)
+  // Boş durumda zaten ListEmptyComponent gösteriliyor, o yüzden her zaman 2 kullan
+  const numColumns = 2;
+  const hasItems = getFilteredAchievements.length > 0;
 
   // İlk yüklemede ve cache'den veri yoksa tüm ekran için skeleton göster
   if (isInitialLoading && !limitedEvent && !achievementsData) {
@@ -231,16 +241,6 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
       </VStack>
     );
   }
-
-  // numColumns'u sabit tut (FlatList numColumns'u dinamik değiştirmeyi desteklemiyor)
-  // Boş durumda zaten ListEmptyComponent gösteriliyor, o yüzden her zaman 2 kullan
-  const numColumns = 2;
-  const hasItems = getFilteredAchievements.length > 0;
-
-  // Modal kapatma handler
-  const handleCloseModal = useCallback(() => {
-    setSelectedBadge(null);
-  }, []);
 
   return (
     <VStack flex={1}>
@@ -293,8 +293,9 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
         isOpen={!!selectedBadge}
         onClose={handleCloseModal}
         size="lg"
+        closeOnOverlayClick={true}
       >
-        <ModalBackdrop />
+        <ModalBackdrop onPress={handleCloseModal} />
         {selectedBadge && (
           <ModalContent
             bg={isDark ? '#1A1A1A' : '#FDFDFB'}
