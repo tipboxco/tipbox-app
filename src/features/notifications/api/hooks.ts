@@ -39,10 +39,10 @@ export const useNotifications = (params?: GetNotificationsParams, enabled: boole
     queryFn: () => getNotifications(params),
     enabled, // Authenticated kontrolü için
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
+    staleTime: 30 * 1000,  // 30 saniye - cache invalid olana kadar backend'e istek atma (daha kısa süre)
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    refetchOnMount: 'always',     // Her mount'ta refetch yap (yeni bildirimler için)
+    refetchOnWindowFocus: true, // Ekran focus olduğunda refetch yap (yeni bildirimler için)
     retry: (failureCount, error: any) => {
       // 500 hatası için retry yapma (backend sorunu)
       if (error?.response?.status === 500) {

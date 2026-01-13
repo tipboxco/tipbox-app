@@ -289,8 +289,16 @@ export const registerPushToken = async (
     );
     return response.data;
   } catch (error: any) {
-    // 500 hatası için daha az detaylı log (backend hatası, log spam'ı azalt)
     const status = error.response?.status;
+    
+    // 401 (Unauthorized) hatası - login olmadan token kaydetmeye çalışıyoruz
+    // Bu normal bir durum, log gösterme (login ekranında hata göstermemek için)
+    if (status === 401) {
+      // Sessizce hata fırlat (caller'da handle edilecek)
+      throw error;
+    }
+    
+    // 500 hatası için daha az detaylı log (backend hatası, log spam'ı azalt)
     if (status >= 500) {
       // Server error için sadece kısa log
       console.error('[registerPushToken] API Error (500):', {
@@ -298,7 +306,7 @@ export const registerPushToken = async (
         message: error.response?.data?.message || error.message,
       });
     } else {
-      // Client error için detaylı log
+      // Diğer client error'lar için detaylı log
       console.error('[registerPushToken] API Error:', {
         url: '/notifications/push-token',
         method: 'POST',

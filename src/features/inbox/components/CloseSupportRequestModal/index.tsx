@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import {
   VStack,
+  HStack,
   Text,
   Pressable,
   Box,
@@ -54,26 +55,10 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback>
             <View style={styles.modalContent}>
-              <VStack px={24} py={24} space="lg" style={styles.modalBody}>
-                {/* Report Button - Sağ üst köşede */}
-                {onReport && (
-                  <View style={styles.reportButtonContainer}>
-                    <Pressable
-                      onPress={onReport}
-                      style={styles.reportButton}
-                    >
-                      <Feather
-                        name="flag"
-                        size={18}
-                        color="#000000"
-                      />
-                    </Pressable>
-                  </View>
-                )}
-
+              <VStack px={24} py={16} space="md" style={styles.modalBody}>
                 {/* User Profile Section */}
-                <VStack space="md" alignItems="center" pt="$2">
-                  {/* User Avatar - Görseldeki gibi pembe border */}
+                <VStack space="sm" alignItems="center">
+                  {/* User Avatar - Mor/macenta border */}
                   <Image
                     source={userAvatar}
                     alt={userName}
@@ -82,7 +67,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                       height: 110,
                       borderRadius: 55,
                       borderWidth: 4,
-                      borderColor: '#FF69B4', // Pembe border (görseldeki gibi)
+                      borderColor: '#C026D3', // Mor/macenta border
                     }}
                   />
 
@@ -96,7 +81,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                     {userName}
                   </Text>
 
-                  {/* User Title - Görseldeki gibi uzun title */}
+                  {/* User Title */}
                   <Text
                     fontSize={13}
                     fontWeight="$normal"
@@ -109,10 +94,10 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                 </VStack>
 
                 {/* Divider */}
-                <Box height={1} bg="#E5E7EB" width="100%" my="$2" />
+                <Box height={1} bg="#E5E7EB" width="100%" my="$1" />
 
                 {/* Description Text */}
-                <VStack space="md" pt="$2">
+                <VStack space="xs" alignItems="center">
                   <Text
                     fontSize={14}
                     fontWeight="$normal"
@@ -120,21 +105,30 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                     textAlign="center"
                     lineHeight={20}
                   >
-                    You are about to close the one-on-one support request with the user.
+                    You are about to close the one-on-one
                   </Text>
-
+                  <Text
+                    fontSize={14}
+                    fontWeight="$normal"
+                    color="#4B5563"
+                    textAlign="center"
+                    lineHeight={20}
+                  >
+                    support request with the user.
+                  </Text>
                   <Text
                     fontSize={15}
                     fontWeight="$semibold"
                     color="#000000"
                     textAlign="center"
+                    mt="$1"
                   >
                     Please rate the process!
                   </Text>
                 </VStack>
 
-                {/* Star Rating - Görseldeki gibi outline stars */}
-                <Box py="$4" alignItems="center">
+                {/* Star Rating */}
+                <Box py="$2" alignItems="center">
                   <StarRating
                     rating={rating}
                     onRatingChange={setRating}
@@ -145,35 +139,63 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                   />
                 </Box>
 
-                {/* Action Buttons - Görseldeki gibi */}
-                <VStack space="md" mt="$4">
-                  {/* Close Support Request Button - Rating yapıldığında sarı-yeşil, yoksa gri */}
-                  <Pressable onPress={handleConfirm} disabled={rating === 0}>
-                    <Box
-                      bg={rating > 0 ? '#E8FF6B' : '#F3F4F6'}
-                      borderRadius={16}
-                      py="$3"
-                      alignItems="center"
-                      borderWidth={1}
-                      borderColor={rating > 0 ? '#D8FF08' : '#E5E7EB'}
-                      opacity={rating === 0 ? 0.6 : 1}
-                    >
-                      <Text
-                        fontSize={15}
-                        fontWeight="$semibold"
-                        color="#000000"
-                      >
-                        Close Support Request
-                      </Text>
+                {/* Action Buttons */}
+                <VStack space="sm" mt="$2">
+                  {/* Close Support Request ve Flag Butonları - Yan yana */}
+                  <HStack space="sm" width="100%">
+                    {/* Close Support Request Button */}
+                    <Box flex={1}>
+                      <Pressable onPress={handleConfirm} disabled={rating === 0}>
+                        <Box
+                          bg={rating > 0 ? '#E8FF6B' : '#F3F4F6'}
+                          borderRadius={16}
+                          py="$2.5"
+                          alignItems="center"
+                          borderWidth={1}
+                          borderColor={rating > 0 ? '#D8FF08' : '#E5E7EB'}
+                          opacity={rating === 0 ? 0.6 : 1}
+                        >
+                          <Text
+                            fontSize={15}
+                            fontWeight="$semibold"
+                            color="#000000"
+                          >
+                            Close Support Request
+                          </Text>
+                        </Box>
+                      </Pressable>
                     </Box>
-                  </Pressable>
 
-                  {/* Cancel Button - Görseldeki gibi gri */}
+                    {/* Flag Button */}
+                    {onReport && (
+                      <Pressable onPress={onReport}>
+                        <Box
+                          bg="#F3F4F6"
+                          borderRadius={16}
+                          py="$2.5"
+                          px="$4"
+                          alignItems="center"
+                          justifyContent="center"
+                          borderWidth={1}
+                          borderColor="#E5E7EB"
+                          minWidth={56}
+                        >
+                          <Feather
+                            name="flag"
+                            size={20}
+                            color="#000000"
+                          />
+                        </Box>
+                      </Pressable>
+                    )}
+                  </HStack>
+
+                  {/* Cancel Button */}
                   <Pressable onPress={handleClose}>
                     <Box
                       bg="#F3F4F6"
                       borderRadius={16}
-                      py="$3"
+                      py="$2.5"
                       alignItems="center"
                       borderWidth={1}
                       borderColor="#E5E7EB"
@@ -206,7 +228,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 24,
     maxWidth: '90%',
     minWidth: 280,
     maxHeight: '80%',
@@ -215,19 +237,6 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     width: '100%',
-  },
-  reportButtonContainer: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    zIndex: 10,
-  },
-  reportButton: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
 });
 

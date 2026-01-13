@@ -29,6 +29,11 @@ class ExpoNotificationService {
     this.config = config;
   }
 
+  /**
+   * Notification servisini initialize eder
+   * Sadece permission ve token alma işlemlerini yapar
+   * Token kaydı (registerPushToken) ayrı bir metod ile yapılmalı (authenticated olduğunda)
+   */
   async initialize(): Promise<NotificationServiceState> {
     if (this.state.isInitialized) {
       return this.state;
@@ -37,8 +42,9 @@ class ExpoNotificationService {
     await this.configureForegroundNotifications();
     const permissionStatus = await this.requestPermission();
 
+    // Permission granted ise token'ı al (ama backend'e kaydetme - bu authenticated olduğunda yapılacak)
     if (permissionStatus === 'granted') {
-      await this.registerForPushNotifications();
+      await this.getPushToken();
     }
 
     this.state = {
@@ -118,8 +124,24 @@ class ExpoNotificationService {
         const status = error?.response?.status;
         const isServerError = status >= 500 && status < 600;
         const isClientError = status >= 400 && status < 500;
+        const isUnauthorized = status === 401;
         
-        // 4xx hataları (client error) için retry yapma
+        // 401 (Unauthorized) hatası - login olmadan token kaydetmeye çalışıyoruz
+        // Bu durumda sessizce return et, token'ı pending olarak sakla
+        if (isUnauthorized) {
+          // Token'ı pending olarak sakla, login sonrası tekrar denenecek
+          try {
+            await SecureStore.setItemAsync(PENDING_PUSH_TOKEN_KEY, token);
+            await SecureStore.setItemAsync(PENDING_DEVICE_TYPE_KEY, deviceType);
+          } catch (storeError) {
+            // Store hatası kritik değil, sessizce geç
+          }
+          // Login olmadan token kaydetmeye çalıştığımız için sessizce return et
+          // Log spam'ı önlemek için log gösterme
+          return;
+        }
+        
+        // Diğer 4xx hataları (client error) için retry yapma
         if (isClientError && status !== 429) {
           // Sadece ilk hatada detaylı log göster
           if (attempt === 0) {
@@ -192,7 +214,11 @@ class ExpoNotificationService {
     }
   }
 
-  private async registerForPushNotifications() {
+  /**
+   * Push token'ı alır (backend'e kaydetmeden)
+   * Bu metod login olmadan da çağrılabilir
+   */
+  private async getPushToken(): Promise<string | null> {
     try {
       if (Platform.OS === 'android') {
         // Android notification channels - Best practice: farklı öncelik seviyeleri
@@ -233,17 +259,37 @@ class ExpoNotificationService {
 
       this.state.expoPushToken = token.data;
 
-      // Backend'e push token'ı kaydet (retry mekanizması ile)
-      await this.registerPushTokenWithRetry(
-        token.data,
-        Platform.OS === 'ios' ? 'ios' : 'android'
-      );
-
       // Token değişikliklerini dinle (iOS'ta token yenilenebilir)
       this.setupTokenChangeListener();
+
+      return token.data;
     } catch (error) {
-      console.error('[ExpoNotificationService] Error registering for push notifications:', error);
+      console.error('[ExpoNotificationService] Error getting push token:', error);
+      return null;
     }
+  }
+
+  /**
+   * Push token'ı backend'e kaydeder
+   * Bu metod SADECE authenticated olduğunda çağrılmalı
+   * Login olmadan çağrılırsa 401 hatası alınır ve token pending olarak saklanır
+   */
+  async registerPushTokenToBackend(): Promise<void> {
+    if (!this.state.expoPushToken) {
+      // Token yoksa önce al
+      const token = await this.getPushToken();
+      if (!token) {
+        // Token alınamadı, sessizce return et (log spam'ı önle)
+        return;
+      }
+    }
+
+    // Backend'e push token'ı kaydet (retry mekanizması ile)
+    // 401 hatası durumunda sessizce return eder (login olmadan çağrıldığı için)
+    await this.registerPushTokenWithRetry(
+      this.state.expoPushToken!,
+      Platform.OS === 'ios' ? 'ios' : 'android'
+    );
   }
 
   /**
@@ -334,8 +380,9 @@ class ExpoNotificationService {
   }
 
   /**
-   * Token'ı yeniden al ve backend'e kaydet
+   * Token'ı yeniden al (backend'e kaydetmeden)
    * App state değişiminde veya token refresh gerektiğinde çağrılabilir
+   * Backend'e kaydetme işlemi registerPushTokenToBackend() ile yapılmalı (authenticated kontrolü ile)
    */
   async refreshPushToken(): Promise<string | null> {
     try {
@@ -355,14 +402,12 @@ class ExpoNotificationService {
         projectId,
       });
 
-      // Token değiştiyse backend'e kaydet
+      // Token değiştiyse state'i güncelle
+      // Backend'e kaydetme işlemi registerPushTokenToBackend() ile yapılmalı (authenticated kontrolü ile)
       if (token.data !== this.state.expoPushToken) {
-        console.log('[ExpoNotificationService] 🔄 Token changed, updating backend...');
+        console.log('[ExpoNotificationService] 🔄 Token changed');
         this.state.expoPushToken = token.data;
-        await this.registerPushTokenWithRetry(
-          token.data,
-          Platform.OS === 'ios' ? 'ios' : 'android'
-        );
+        // Token kaydı authenticated olduğunda yapılacak (registerPushTokenToBackend çağrılacak)
       }
 
       return token.data;

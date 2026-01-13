@@ -97,19 +97,37 @@ export const GlobalBottomSheet: React.FC = () => {
   );
 
   // Styles
-  const backgroundStyle = {
-    backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    ...mergedOptions.backgroundStyle,
-  };
+  // Detached modda: backgroundStyle'dan gelen borderRadius kullanılır (tüm köşeler)
+  // Normal modda: sadece üst köşeler yuvarlatılmış
+  const baseBackgroundColor = isDark ? '#1A1A1A' : '#FDFDFB';
+  
+  // Detached modda radius'u backgroundStyle'dan al, normal modda üst köşeleri yuvarla
+  const backgroundStyle = mergedOptions.detached
+    ? {
+        // Detached modda: backgroundStyle'dan gelen borderRadius'u kullan
+        // borderTopLeftRadius ve borderTopRightRadius'u kaldırmak için explicit olarak set etme
+        ...mergedOptions.backgroundStyle,
+        backgroundColor: mergedOptions.backgroundStyle?.backgroundColor || baseBackgroundColor,
+      }
+    : {
+        backgroundColor: baseBackgroundColor,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        ...mergedOptions.backgroundStyle,
+      };
 
-  const handleStyle = {
-    backgroundColor: isDark ? '#1A1A1A' : '#FDFDFB',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    ...mergedOptions.handleStyle,
-  };
+  // Handle style - detached modda minimal, normal modda üst köşeler yuvarlatılmış
+  const handleStyle = mergedOptions.detached
+    ? {
+        // Detached modda handle style'ı minimal tut
+        ...mergedOptions.handleStyle,
+      }
+    : {
+        backgroundColor: baseBackgroundColor,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        ...mergedOptions.handleStyle,
+      };
 
   const handleIndicatorStyle = {
     backgroundColor: isDark ? '#333333' : '#CCCCCC',
@@ -117,6 +135,13 @@ export const GlobalBottomSheet: React.FC = () => {
     height: 4,
     ...mergedOptions.handleIndicatorStyle,
   };
+
+  // Detach modal style - Example pattern: style prop should contain marginHorizontal for detached modals
+  // If style is provided, use it directly (it should contain marginHorizontal: 24 for detached)
+  // If not provided and detached, add default marginHorizontal
+  const sheetContainerStyle = mergedOptions.detached
+    ? mergedOptions.style || { marginHorizontal: 24 }
+    : mergedOptions.style;
 
   // Padding bottom
   const paddingBottom = mergedOptions.paddingBottom ?? (Platform.OS === 'ios' ? insets.bottom + 8 : 45 + 8);
@@ -146,7 +171,7 @@ export const GlobalBottomSheet: React.FC = () => {
         enableOverDrag={mergedOptions.enableOverDrag}
         enableHandlePanningGesture={mergedOptions.enableHandlePanningGesture}
         enableContentPanningGesture={mergedOptions.enableContentPanningGesture}
-        animateOnMount={mergedOptions.animateOnMount}
+        animateOnMount={mergedOptions.detached ? true : (mergedOptions.animateOnMount ?? true)}
         backdropComponent={renderBackdrop}
         onChange={handleSheetChanges}
         backgroundStyle={backgroundStyle}
@@ -155,6 +180,9 @@ export const GlobalBottomSheet: React.FC = () => {
         keyboardBehavior={mergedOptions.keyboardBehavior ?? 'extend'}
         keyboardBlurBehavior={mergedOptions.keyboardBlurBehavior ?? 'restore'}
         android_keyboardInputMode={mergedOptions.android_keyboardInputMode ?? 'adjustResize'}
+        detached={mergedOptions.detached ?? false}
+        bottomInset={mergedOptions.bottomInset}
+        style={sheetContainerStyle}
       >
         <BottomSheetView 
           style={{ 

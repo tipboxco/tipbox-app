@@ -44,6 +44,11 @@ export interface BottomSheetOptions {
   keyboardBehavior?: 'interactive' | 'fillParent' | 'extend';
   keyboardBlurBehavior?: 'none' | 'restore';
   android_keyboardInputMode?: 'adjustResize' | 'adjustPan';
+  
+  // Detach modal
+  detached?: boolean;
+  bottomInset?: number;
+  style?: ViewStyle;
 }
 
 /**

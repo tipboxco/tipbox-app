@@ -102,9 +102,10 @@ class SocketService {
       });
 
     } catch (error) {
-      // Login ekranında hata göstermemek için sessizce hata fırlat
+      // Login ekranında hata göstermemek için sessizce return et
       // Hata logları SocketProvider'da authenticated kontrolü ile gösterilir
-      throw error;
+      // Hata fırlatma - bu normal bir durum olabilir (token yok, network hatası, vb.)
+      return;
     }
   }
 

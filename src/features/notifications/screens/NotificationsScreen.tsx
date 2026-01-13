@@ -55,6 +55,7 @@ import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '@/src/providers/AuthProvider';
 
 const { width } = Dimensions.get('window');
 
@@ -234,6 +235,7 @@ const NotificationsScreenComponent: React.FC = () => {
     const isDark = colorMode === 'dark';
     const queryClient = useQueryClient();
     const { isAuthenticated } = useAppStore();
+    const { isAuthReady } = useAuth();
     const pagerRef = useRef<PagerView>(null);
     const tabContainerRef = useRef<any>(null);
     const [tabContainerWidth, setTabContainerWidth] = useState(0);
@@ -250,11 +252,17 @@ const NotificationsScreenComponent: React.FC = () => {
         useCallback(() => {
             // Ekran focus aldığında drawer gesture'ı disable et
             setGestureEnabled(false);
+            
+            // Ekran focus aldığında bildirimleri refetch et (yeni bildirimler için)
+            if (shouldFetchNotifications) {
+                refetch();
+            }
+            
             return () => {
                 // Ekran blur olduğunda drawer gesture'ı tekrar enable et
                 setGestureEnabled(true);
             };
-        }, [setGestureEnabled])
+        }, [setGestureEnabled, shouldFetchNotifications, refetch])
     );
     
     // PERFORMANCE FIX: Memoize background colors to prevent re-renders
@@ -277,12 +285,13 @@ const NotificationsScreenComponent: React.FC = () => {
     
     // API hooks
     const unreadOnly = activeFilter?.id === 'unread';
+    const shouldFetchNotifications = isAuthenticated && isAuthReady;
     const { data: notificationsResponse, isLoading, error, refetch } = useNotifications({
         limit: 50,
         offset: 0,
         unreadOnly: unreadOnly,
         search: debouncedSearchQuery || undefined,
-    }, isAuthenticated); // Sadece authenticated olduğunda query çalışsın
+    }, shouldFetchNotifications); // Sadece authenticated ve auth ready olduğunda query çalışsın
 
     // SAFETY FIX: Ensure notifications is always an array
     const notifications = Array.isArray(notificationsResponse?.data) 

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { VStack, HStack, Text, Pressable, Box, Input, InputField, Image } from '@gluestack-ui/themed';
 import { Keyboard, TouchableWithoutFeedback, InputAccessoryView, Platform, ScrollView, ActivityIndicator } from 'react-native';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
   ChevronLeftIcon,
   CreditCardIcon,
@@ -32,7 +31,7 @@ const TrusterListContent: React.FC<{
   console.log('[TrusterList] 🎨 Rendering with', trusterList?.length || 0, 'trusters');
   
   return (
-    <VStack h="100%" w="100%">
+    <VStack flex={1} w="100%">
       {/* Header - Fixed */}
       <HStack alignItems="center" space="md" mb="$2" px="$4" pt="$4">
         <Pressable onPress={onClose}>
@@ -48,14 +47,13 @@ const TrusterListContent: React.FC<{
 
       {/* Truster List - Scrollable */}
       <Box flex={1}>
-        <BottomSheetScrollView 
+        <ScrollView 
           contentContainerStyle={{ 
             paddingHorizontal: 16, 
             paddingTop: 8,
             paddingBottom: 16
           }}
           showsVerticalScrollIndicator={true}
-          nestedScrollEnabled={true}
         >
           {isLoadingTrusters ? (
             <VStack alignItems="center" justifyContent="center" py="$8">
@@ -146,7 +144,7 @@ const TrusterListContent: React.FC<{
               </Text>
             </VStack>
           )}
-        </BottomSheetScrollView>
+        </ScrollView>
       </Box>
     </VStack>
   );
@@ -156,7 +154,7 @@ interface SendBottomSheetProps {
   onClose: () => void;
   onWalletAddressPress?: () => void;
   onFriendPress?: () => void;
-  onViewChange?: (view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => void;
+  onViewChange?: (view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => void;
   onSuccess?: (transactionDetails: {
     sentAmount: string;
     transactionFee: string;
@@ -174,11 +172,12 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [view, setView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>('options');
+  const [view, setView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list'>('options');
   const [walletAddress, setWalletAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [isSwapped, setIsSwapped] = useState(false); // false = TIPS mode, true = USD mode
   const [selectedFriend, setSelectedFriend] = useState<{ id: string; name: string; title?: string; bio?: string; avatar: any } | null>(null);
+  const [previousView, setPreviousView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | null>(null);
   
   // Global bottom sheet
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -209,74 +208,61 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   const { mutate: sendTips, isPending: isSending } = useSendTips();
   
   // Fetch Truster List
-  const { data: trusterList, isLoading: isLoadingTrusters } = useTrusterList(user?.id);
+  const { data: trusterList, isLoading: isLoadingTrusters, error: trusterListError } = useTrusterList(user?.id);
+  
+  // Debug: Log truster list state
+  React.useEffect(() => {
+    console.log('[SendBottomSheet] 🔍 Truster List Debug:', {
+      userId: user?.id,
+      isLoading: isLoadingTrusters,
+      hasError: !!trusterListError,
+      error: trusterListError,
+      data: trusterList,
+      dataLength: trusterList?.length || 0,
+    });
+  }, [trusterList, isLoadingTrusters, trusterListError, user?.id]);
 
-  // Function to open Truster list bottom sheet
+  // Function to show Truster list view (no nested bottom sheet)
   const openTrusterListBottomSheet = () => {
-    // Callback for when a truster is selected
-    const handleTrusterSelect = (truster: any) => {
-      console.log('[SendBottomSheet] 🟢 handleTrusterSelect called:', truster.name);
-      
-      // FIRST: Set the friend data and view
-      const friendData = {
-        id: truster.id,
-        name: truster.name,
-        title: truster.titles?.[0],
-        bio: truster.userName,
-        avatar: truster.avatar,
-      };
-      
-      console.log('[SendBottomSheet] 🟢 Setting selectedFriend:', friendData);
-      setSelectedFriend(friendData);
-      
-      console.log('[SendBottomSheet] 🟢 Setting view to friend-selection');
-      setView('friend-selection');
-      onViewChange?.('friend-selection');
-      
-      // THEN: Close the truster list bottom sheet with a small delay
-      setTimeout(() => {
-        console.log('[SendBottomSheet] 🟢 Closing truster list bottom sheet');
-        closeBottomSheet();
-      }, 100);
+    console.log('[SendBottomSheet] 🎯 Opening Truster List View');
+    console.log('[SendBottomSheet] 🎯 User ID:', user?.id);
+    console.log('[SendBottomSheet] 🎯 Is Loading:', isLoadingTrusters);
+    console.log('[SendBottomSheet] 🎯 Has Error:', !!trusterListError);
+    console.log('[SendBottomSheet] 🎯 Total trusters:', trusterList?.length || 0);
+    console.log('[SendBottomSheet] 🎯 Truster List Data:', trusterList);
+    
+    // View'ı değiştirmeden önce parent'a haber ver
+    // Parent bottom sheet'i kapatıp %50 snap point ile yeniden açacak
+    setPreviousView('options');
+    onViewChange?.('truster-list');
+    
+    // Küçük bir delay ile view'ı değiştir (parent'ın bottom sheet'i güncellemesi için)
+    setTimeout(() => {
+      setView('truster-list');
+    }, 100);
+  };
+  
+  // Callback for when a truster is selected from the list
+  const handleTrusterSelect = (truster: any) => {
+    console.log('[SendBottomSheet] 🟢 handleTrusterSelect called:', truster.name);
+    
+    // Set the friend data
+    const friendData = {
+      id: truster.id,
+      name: truster.name,
+      title: truster.titles?.[0],
+      bio: truster.userName,
+      avatar: truster.avatar,
     };
     
-    console.log('[SendBottomSheet] 🎯 Opening Truster List Bottom Sheet');
-    console.log('[SendBottomSheet] 🎯 Total trusters:', trusterList?.length || 0);
+    console.log('[SendBottomSheet] 🟢 Setting selectedFriend:', friendData);
+    setSelectedFriend(friendData);
     
-    // Only show first 4 trusters
-    const limitedTrusterList = (trusterList || []).slice(0, 4);
-    console.log('[SendBottomSheet] 🎯 Showing limited trusters:', limitedTrusterList.length);
-    
-    openBottomSheet(
-      <TrusterListContent
-        trusterList={limitedTrusterList}
-        isLoadingTrusters={isLoadingTrusters}
-        onTrusterSelect={handleTrusterSelect}
-        onClose={closeBottomSheet}
-        isDark={isDark}
-      />,
-      {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableHandlePanningGesture: false, // ❌ Disable handle panning to prevent sheet drag
-        enableContentPanningGesture: false, // ❌ Disable content panning to prevent sheet drag
-        enableDynamicSizing: false, // ❌ DISABLE dynamic sizing
-        snapPoints: ['70%'], // ✅ Fixed at 70%
-        index: 0, // ✅ Always open at first snap point (70%)
-        animateOnMount: true,
-        activeOffsetY: [-999, 999], // ✅ Very high threshold - prevents sheet movement
-        failOffsetX: [-5, 5], // ✅ Prevents horizontal pan
-        handleIndicatorStyle: {
-          backgroundColor: isDark ? '#333333' : '#B8B8B7',
-          width: 70,
-          height: 5,
-        },
-        style: {
-          // Force height based on snap point, not content
-        },
-      }
-    );
-    console.log('[SendBottomSheet] 🎯 Bottom sheet opened at fixed 70% snap point');
+    // Directly navigate to amount view (skip friend-selection)
+    console.log('[SendBottomSheet] 🟢 Setting view to amount (skipping friend-selection)');
+    setPreviousView('truster-list');
+    setView('amount');
+    onViewChange?.('amount');
   };
 
   // Truncate wallet address for display (crypto-style)
@@ -406,20 +392,33 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   ];
 
   const handleWalletAddressSelect = () => {
+    setPreviousView('options');
     setView('wallet-address');
     onViewChange?.('wallet-address');
     onWalletAddressPress?.();
   };
 
   const handleBack = () => {
-    setView('options');
-    onViewChange?.('options');
+    // Navigate back based on current view
+    if (previousView) {
+      const backToView = previousView;
+      setPreviousView(null);
+      setView(backToView);
+      onViewChange?.(backToView);
+    } else {
+      // Default: go back to options
+      setView('options');
+      onViewChange?.('options');
+    }
   };
 
   const handleConfirmFromAddress = () => {
     console.log('[SendBottomSheet] Confirm from address pressed');
+    // Clear selected friend if any (wallet address flow)
+    setSelectedFriend(null);
     // Navigate to amount view
     // First update local state
+    setPreviousView('wallet-address');
     setView('amount');
     console.log('[SendBottomSheet] View state set to amount');
     // Then notify parent to update bottom sheet snap point
@@ -435,6 +434,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     if (inputValue > 0) {
       // Navigate to confirmation view
       console.log('[SendBottomSheet] Navigating to confirmation view');
+      setPreviousView('amount');
       setView('confirmation');
       onViewChange?.('confirmation');
     } else {
@@ -747,6 +747,22 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     );
   }
 
+  if (view === 'truster-list') {
+    // Truster List View - Shows list of friends to select
+    console.log('[SendBottomSheet] 🎨 Rendering truster-list view');
+    console.log('[SendBottomSheet] 🎨 Truster list data:', trusterList);
+    console.log('[SendBottomSheet] 🎨 Is loading:', isLoadingTrusters);
+    return (
+      <TrusterListContent
+        trusterList={trusterList || []}
+        isLoadingTrusters={isLoadingTrusters}
+        onTrusterSelect={handleTrusterSelect}
+        onClose={handleBack}
+        isDark={isDark}
+      />
+    );
+  }
+
   if (view === 'friend-selection') {
     // Friend Selection View - Shows selected friend with confirm button
     return (
@@ -852,6 +868,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
       <Pressable
         onPress={() => {
           console.log('[SendBottomSheet] ✅ Friend confirmed, moving to amount');
+          setPreviousView('friend-selection');
           setView('amount');
           onViewChange?.('amount');
         }}
@@ -874,16 +891,29 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     return (
     <>
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <VStack px="$4" py="$4" space="md" flex={1}>
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingVertical: 16 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+        <VStack space="md" flex={1}>
       {/* Header with back button */}
       <HStack alignItems="center" space="md" mb="$2">
         <Pressable onPress={() => {
           Keyboard.dismiss();
-          // Back to options view
-          setView('options');
-          onViewChange?.('options');
-          // Clear selected friend
-          setSelectedFriend(null);
+          // Back to previous view (truster-list or wallet-address)
+          if (previousView === 'truster-list' || selectedFriend) {
+            setView('truster-list');
+            onViewChange?.('truster-list');
+          } else if (previousView === 'wallet-address' || walletAddress) {
+            setView('wallet-address');
+            onViewChange?.('wallet-address');
+          } else {
+            // Default: go back to options
+            setView('options');
+            onViewChange?.('options');
+            setSelectedFriend(null);
+          }
         }}>
           <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
         </Pressable>
@@ -970,16 +1000,29 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             <Text fontSize={11} fontWeight="$bold" color="#7F7F7E" $dark-color="$textDark400">
               To:
             </Text>
-            <Text 
-              fontSize={13} 
-              fontWeight="$semibold" 
-              color="$textLight900" 
-              $dark-color="$textDark50"
-              flex={1}
-              numberOfLines={1}
-            >
-              {truncateAddress(walletAddress || '0x', 10, 8)}
-            </Text>
+            {walletAddress && walletAddress.trim() && walletAddress !== '0x' ? (
+              <Text 
+                fontSize={13} 
+                fontWeight="$semibold" 
+                color="$textLight900" 
+                $dark-color="$textDark50"
+                flex={1}
+                numberOfLines={1}
+              >
+                {truncateAddress(walletAddress, 10, 8)}
+              </Text>
+            ) : (
+              <Text 
+                fontSize={13} 
+                fontWeight="$semibold" 
+                color="#B9B9B9" 
+                $dark-color="$textDark400"
+                flex={1}
+                numberOfLines={1}
+              >
+                No address selected
+              </Text>
+            )}
           </HStack>
         </Box>
       )}
@@ -1131,7 +1174,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             $dark-borderColor={isEnabled ? "transparent" : "$borderDark600"}
             rounded={8}
             py="$3"
-            mt="auto"
+            mt="$4"
             disabled={!isEnabled}
             opacity={isEnabled ? 1 : 0.5}
           >
@@ -1141,7 +1184,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
           </Pressable>
         );
       })()}
-    </VStack>
+        </VStack>
+      </ScrollView>
     </TouchableWithoutFeedback>
     {renderInputAccessoryView()}
     </>
@@ -1417,22 +1461,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         </Text>
       </Pressable>
     </VStack>
-    );
-  }
-
-  if (view === 'friend-selection') {
-    // Friend Selection View using SendFriendBottomSheet component
-    return (
-      <SendFriendBottomSheet
-        friends={mockFriends}
-        onFriendSelect={(friend) => {
-          // Store selected friend and navigate to amount view
-          setSelectedFriend(friend);
-          setView('amount');
-          onViewChange?.('amount');
-        }}
-        onBack={handleBack}
-      />
     );
   }
 

@@ -101,8 +101,11 @@ const CollectionsScreen: React.FC = () => {
         enableContentPanningGesture: false,
         enableDynamicSizing: true,
         animateOnMount: false,
+        detached: true,
+        bottomInset: 46,
         backgroundStyle: {
           backgroundColor: isDark ? '#1F1F1F' : '#FFFFFF',
+          borderRadius: 16,
         },
         handleIndicatorStyle: {
           backgroundColor: isDark ? '#666666' : '#CCCCCC',

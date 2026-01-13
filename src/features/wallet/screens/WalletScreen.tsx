@@ -94,7 +94,7 @@ export const WalletScreen: React.FC = () => {
     }
   }, [walletInfo?.walletIdentifier]);
   
-  const [sendSheetView, setSendSheetView] = React.useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection'>('options');
+  const [sendSheetView, setSendSheetView] = React.useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list'>('options');
   const [successTransactionDetails, setSuccessTransactionDetails] = React.useState<{
     sentAmount?: string;
     receivedAmount?: string;
@@ -102,6 +102,7 @@ export const WalletScreen: React.FC = () => {
     remainingBalance?: string;
     transactionId?: string;
   } | null>(null);
+  const [sendBottomSheetContent, setSendBottomSheetContent] = React.useState<React.ReactNode>(null);
 
   const handleSendSuccess = useCallback((transactionDetails: {
     sentAmount: string;
@@ -142,21 +143,49 @@ export const WalletScreen: React.FC = () => {
     }, 300);
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
-  const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection') => {
+  const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => {
     console.log('[WalletScreen] View changing to:', view);
-    setSendSheetView(view);
-    // enableDynamicSizing kullanıldığında içerik otomatik olarak boyutlanır,
-    // bu yüzden snapToIndex çağrılarına gerek yok
-  }, []);
+    setSendSheetView(view as any); // Type compatibility
+    
+    // truster-list view'ı için özel snap point ayarları
+    if (view === 'truster-list' && sendBottomSheetContent) {
+      // Bottom sheet'i yeniden aç ama %50 snap point ile
+      // enableDynamicSizing false yapıp snapPoints kullanıyoruz
+      // Kullanıcı yukarı çekerek %90'a çıkarabilir (snapPoints: ['50%', '90%'])
+      setTimeout(() => {
+        openBottomSheet(
+          sendBottomSheetContent,
+          {
+            enablePanDownToClose: true,
+            enableOverDrag: false,
+            enableHandlePanningGesture: true,
+            enableContentPanningGesture: true,
+            enableDynamicSizing: false, // Disable dynamic sizing for truster-list
+            snapPoints: [0.5, 0.9], // Start at 50%, can expand to 90% (0.5 = 50%, 0.9 = 90%)
+            animateOnMount: false, // No animation when updating
+            paddingBottom: bottomInset,
+            handleIndicatorStyle: {
+              backgroundColor: isDark ? '#333333' : '#B8B8B7',
+              width: 70,
+              height: 5,
+            },
+          }
+        );
+      }, 50); // Small delay to ensure view state is updated
+    }
+    // Diğer view'lar için enableDynamicSizing zaten true, otomatik olarak içeriğe göre boyutlanır
+  }, [openBottomSheet, bottomInset, isDark, sendBottomSheetContent]);
 
   const handleSendPress = useCallback(() => {
     console.log('[WalletScreen] Send button pressed');
     setSendSheetView('options');
-    openBottomSheet(
+    
+    const bottomSheetContent = (
       <SendBottomSheet
         onClose={() => {
           closeBottomSheet();
           setSendSheetView('options');
+          setSendBottomSheetContent(null);
         }}
         onWalletAddressPress={() => {
           // Bottom sheet will handle its own state change
@@ -167,7 +196,14 @@ export const WalletScreen: React.FC = () => {
         }}
         onViewChange={handleSendViewChange}
         onSuccess={handleSendSuccess}
-      />,
+      />
+    );
+    
+    // Store content for view change updates
+    setSendBottomSheetContent(bottomSheetContent);
+    
+    openBottomSheet(
+      bottomSheetContent,
       {
         enablePanDownToClose: true,
         enableOverDrag: false,
@@ -199,7 +235,6 @@ export const WalletScreen: React.FC = () => {
         enableDynamicSizing: true,
         animateOnMount: true,
         paddingBottom: bottomInset,
-        snapPoints: ['90%'], // 10% daha yüksek snap point
         handleIndicatorStyle: {
           backgroundColor: isDark ? '#333333' : '#B8B8B7',
           width: 70,

@@ -125,6 +125,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     const initializeNotifications = async () => {
       try {
+        // İlk aşama: Permission ve token alma (login olmadan yapılabilir)
         const notificationState = await notificationService.initialize();
         
         setState({
@@ -132,6 +133,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           permissionStatus: notificationState.permissionStatus,
           expoPushToken: notificationState.expoPushToken,
         });
+
+        // İkinci aşama: Token'ı backend'e kaydet (sadece authenticated olduğunda)
+        // Bu işlem login kontrolü olmadan yapılmamalı
+        await notificationService.registerPushTokenToBackend();
 
         // Pending token varsa tekrar dene
         await notificationService.retryPendingPushToken();
@@ -155,6 +160,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         const newToken = await notificationService.refreshPushToken();
         if (newToken && newToken !== state.expoPushToken) {
           setState(prev => ({ ...prev, expoPushToken: newToken }));
+          // Token değiştiyse backend'e kaydet (authenticated kontrolü NotificationProvider'da yapılıyor)
+          await notificationService.registerPushTokenToBackend();
         }
       } catch (error) {
         console.error('[NotificationProvider] ❌ Error refreshing push token:', error);
