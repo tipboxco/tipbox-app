@@ -1251,25 +1251,12 @@ const EventDetailScreen: React.FC = () => {
                                 ? 'Type2' as any // EventType.TYPE2
                                 : undefined;
                             
-                            // EventDetailScreen artık RootNavigator'dan çağrılıyor
-                            // EventCreatePost EventsStack içinde, bu yüzden App → MainTabs → EventsStack → EventCreatePost path'ini kullan
-                            // navigateNested EventsStack'in initial route'una (EventsScreen) gidiyor, bu yüzden direkt nested navigation kullan
-                            (navigationService.navigate as any)('App', {
-                                screen: 'MainTabs',
-                                params: {
-                                    screen: 'EventsStack',
-                                    params: {
-                                        screen: 'Events',
-                                        params: {
-                                            screen: 'EventCreatePost',
-                                            params: {
-                                                eventId: eventId,
-                                                eventType: eventTypeForNav,
-                                                product: product,
-                                            },
-                                        },
-                                    },
-                                },
+                            // EventDetailScreen EventNavigator stack'inde olduğu için
+                            // Aynı stack içindeki EventCreatePost'a direkt navigate edebiliriz
+                            navigation.navigate('EventCreatePost', {
+                                eventId: eventId,
+                                eventType: eventTypeForNav,
+                                product: product,
                             });
                         }}
                     >

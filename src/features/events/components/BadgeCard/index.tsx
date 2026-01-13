@@ -44,7 +44,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
             <HStack space="sm" alignItems="flex-start" minHeight={18}>
               <Text
                 color={isDark ? '$textDark50' : '#000'}
-                fontSize={12}
+                fontSize={14}
                 numberOfLines={2}
                 fontWeight="$bold"
                 textAlign="center"
@@ -57,7 +57,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
 
             <Text
               color={isDark ? '$textDark400' : '#575757'}
-              fontSize={9}
+              fontSize={11}
               lineHeight={11}
               textAlign="center"
               w="100%"
@@ -84,7 +84,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
             </Box>
             <Text
               color={isDark ? '$textDark400' : '#797979'}
-              fontSize={9}
+              fontSize={11}
               textAlign="center"
             >
               {data.isUnlocked ? 'Completed' : `${data.completed || 0}/${data.task || 1}`}
