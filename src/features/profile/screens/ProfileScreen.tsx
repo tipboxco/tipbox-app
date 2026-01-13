@@ -818,36 +818,82 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
   
+  // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
+  const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
+  
   // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
   useFocusEffect(
     useCallback(() => {
       // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
       if (targetUserId && user?.id && targetUserId === user.id) {
-        // Tüm profil verilerini refetch et - yeni post, review, benchmark, tips, replies görünsün
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userPosts(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.profile(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userReviews(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userBenchmarks(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userTipsAndTricks(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userReplies(targetUserId),
-          exact: false 
+        // Activity indicator göster
+        setIsRefreshingOnFocus(true);
+        
+        // Tüm profil verilerini invalidate et ve backend'den yeni veriyi çek
+        // CreatePostScreen'lerde zaten invalidate yapılıyor ama burada da yapıyoruz
+        // çünkü diğer yerlerden de ProfileScreen'e yönlendirilebilir
+        Promise.all([
+          // Cache'i invalidate et - yeni gönderi için cache'i temizle
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userPosts(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.profile(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userReviews(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userBenchmarks(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userTipsAndTricks(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userReplies(targetUserId),
+            exact: false 
+          }),
+        ]).then(() => {
+          // Cache invalidate edildikten sonra backend'den yeni veriyi çek
+          return Promise.all([
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userPosts(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.profile(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userReviews(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userBenchmarks(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userTipsAndTricks(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userReplies(targetUserId),
+              exact: false 
+            }),
+          ]);
+        }).then(() => {
+          // Refetch tamamlandıktan sonra activity indicator'ı kapat
+          setIsRefreshingOnFocus(false);
+          console.log('[ProfileScreen] ✅ Focus refresh completed - yeni gönderi yüklendi');
+        }).catch((error) => {
+          console.error('[ProfileScreen] ❌ Focus refresh error:', error);
+          setIsRefreshingOnFocus(false);
         });
       }
     }, [targetUserId, user?.id, queryClient])
@@ -1266,7 +1312,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           />
           
           {/* Pull to Refresh Loading Overlay - Banner'ın üstünde */}
-          {refreshing && (
+          {(refreshing || isRefreshingOnFocus) && (
             <Box
               position="absolute"
               top={0}
@@ -1712,7 +1758,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet, refreshing]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet, refreshing, isRefreshingOnFocus]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)

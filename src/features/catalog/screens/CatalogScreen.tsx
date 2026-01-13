@@ -184,10 +184,98 @@ const CatalogScreenComponent = () => {
         },
       });
     } else if (type === 'tips') {
+      // PERFORMANCE FIX: Get store state directly instead of subscribing
+      const storeState = useCatalogUIStore.getState();
+      
+      // Determine contextType and contextId based on current selection
+      // Priority: Product > ProductGroup > SubCategory
+      let determinedContextType: ProductInfoType | undefined;
+      let determinedContextId: string | undefined;
+      let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
+      
+      // Determine context based on current view and selection (from store)
+      // Priority order: Product > ProductGroup > SubCategory
+      if (storeState.selectedProductId && storeState.currentView === 'products') {
+        // Product selected
+        determinedContextType = ProductInfoType.PRODUCT;
+        determinedContextId = storeState.selectedProductId;
+        // Get product info from local state if available
+        if (selectedProductLocal) {
+          productInfoSnapshot = {
+            image: selectedProductLocal.image,
+            title: selectedProductLocal.name,
+            subName: selectedProductLocal.description,
+          };
+        }
+      } else if (storeState.selectedProductGroupId && storeState.currentView === 'productgroups') {
+        // ProductGroup selected
+        determinedContextType = ProductInfoType.PRODUCT_GROUP;
+        determinedContextId = storeState.selectedProductGroupId;
+      } else if (storeState.selectedSubCategoryId) {
+        // SubCategory selected - Check if SubCategory is selected (currentView can be 'subcategories' or 'productgroups')
+        // If we're in productgroups view but have a selectedSubCategoryId, it means SubCategory was selected
+        determinedContextType = ProductInfoType.SUB_CATEGORY;
+        determinedContextId = storeState.selectedSubCategoryId;
+      }
+      
+      // Store'da ID yoksa hata göster
+      if (!determinedContextType || !determinedContextId) {
+        console.error('[CatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId);
+        // TODO: Show error toast/modal to user
+        return;
+      }
+      
+      // Save to flow store
+      setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
+      
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateTipsAndTrickPostScreen',
       });
     } else if (type === 'question') {
+      // PERFORMANCE FIX: Get store state directly instead of subscribing
+      const storeState = useCatalogUIStore.getState();
+      
+      // Determine contextType and contextId based on current selection
+      // Priority: Product > ProductGroup > SubCategory
+      let determinedContextType: ProductInfoType | undefined;
+      let determinedContextId: string | undefined;
+      let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
+      
+      // Determine context based on current view and selection (from store)
+      // Priority order: Product > ProductGroup > SubCategory
+      if (storeState.selectedProductId && storeState.currentView === 'products') {
+        // Product selected
+        determinedContextType = ProductInfoType.PRODUCT;
+        determinedContextId = storeState.selectedProductId;
+        // Get product info from local state if available
+        if (selectedProductLocal) {
+          productInfoSnapshot = {
+            image: selectedProductLocal.image,
+            title: selectedProductLocal.name,
+            subName: selectedProductLocal.description,
+          };
+        }
+      } else if (storeState.selectedProductGroupId && storeState.currentView === 'productgroups') {
+        // ProductGroup selected
+        determinedContextType = ProductInfoType.PRODUCT_GROUP;
+        determinedContextId = storeState.selectedProductGroupId;
+      } else if (storeState.selectedSubCategoryId) {
+        // SubCategory selected - Check if SubCategory is selected (currentView can be 'subcategories' or 'productgroups')
+        // If we're in productgroups view but have a selectedSubCategoryId, it means SubCategory was selected
+        determinedContextType = ProductInfoType.SUB_CATEGORY;
+        determinedContextId = storeState.selectedSubCategoryId;
+      }
+      
+      // Store'da ID yoksa hata göster
+      if (!determinedContextType || !determinedContextId) {
+        console.error('[CatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
+        // TODO: Show error toast/modal to user
+        return;
+      }
+      
+      // Save to flow store
+      setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
+      
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateQuestionPostScreen',
       });

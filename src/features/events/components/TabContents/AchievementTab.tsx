@@ -190,7 +190,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     if (getFilteredAchievements.length === 0) {
       return (
         <Box py="$4" alignItems="center" px={16}>
-          <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$sm" textAlign="center">
+          <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$md" textAlign="center">
             {activeFilter === 'All' 
               ? 'No achievements yet'
               : `No ${activeFilter} achievements yet`}

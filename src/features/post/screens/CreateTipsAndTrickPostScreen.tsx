@@ -196,6 +196,17 @@ export const CreateTipsAndTrickPostScreen = () => {
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
+  const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
+  
+  // Debug: Context değerlerini logla
+  React.useEffect(() => {
+    console.log('[CreateTipsAndTrickPostScreen] 🔍 Context State:', {
+      contextType,
+      contextId,
+      isValidFlow,
+      storeState: useCreatePostFlowStore.getState(),
+    });
+  }, [contextType, contextId, isValidFlow]);
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -307,8 +318,23 @@ export const CreateTipsAndTrickPostScreen = () => {
   const onSubmit = async (data: TipsAndTrickPostFormData) => {
     console.log('[CreateTipsAndTrickPostScreen] Form submitted:', data);
     
+    // Debug: Store state'i kontrol et
+    const storeState = useCreatePostFlowStore.getState();
+    console.log('[CreateTipsAndTrickPostScreen] 🔍 Store State Check:', {
+      contextType,
+      contextId,
+      isValidFlow,
+      storeState: {
+        contextType: storeState.contextType,
+        contextId: storeState.contextId,
+        expiresAt: storeState.expiresAt,
+        isExpired: storeState.expiresAt ? Date.now() > storeState.expiresAt : false,
+      },
+    });
+    
     // ContextType ve contextId kontrolü
     if (!contextType || !contextId) {
+      console.error('[CreateTipsAndTrickPostScreen] ❌ Missing context:', { contextType, contextId });
       toast.show({
         placement: 'top',
         render: ({ id }: { id: string }) => {
@@ -360,7 +386,7 @@ export const CreateTipsAndTrickPostScreen = () => {
       // Clear flow context on successful submit
       clearFlow();
       
-      // Başarılı olursa ProfileScreen'e yönlendir
+      // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
       if (user?.id) {
         // Profil verilerini invalidate et - yeni post görünsün
         queryClient.invalidateQueries({
@@ -373,10 +399,30 @@ export const CreateTipsAndTrickPostScreen = () => {
           queryKey: profileKeys.userTipsAndTricks(user.id),
         });
         
-        navigation.navigate('Profile', {
-          screen: 'ProfileMain',
-          params: { userId: user.id },
-        });
+        // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
+        // Kullanıcı gönderi oluşturduktan sonra CreatePostScreen'e geri dönmemeli
+        // App'in mevcut state'ini koru (hangi tab açıksa o kalır)
+        const currentState = navigation.getState();
+        const appRoute = currentState?.routes?.find((route) => route.name === 'App');
+        
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 1,
+            routes: [
+              {
+                name: 'App',
+                state: appRoute?.state, // App'in mevcut state'ini koru
+              },
+              {
+                name: 'Profile',
+                params: {
+                  screen: 'ProfileMain',
+                  params: { userId: user.id },
+                },
+              },
+            ],
+          })
+        );
       } else {
         // Fallback: Feed ekranına yönlendir
         navigation.dispatch(

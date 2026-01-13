@@ -9,6 +9,9 @@ export interface BottomSheetOptions {
   // Dynamic sizing - içeriğe göre otomatik boyutlandırma
   enableDynamicSizing?: boolean;
   
+  // Max dynamic content size - Dynamic sizing ile maksimum yükseklik (0-1 arası veya pixel değeri)
+  maxDynamicContentSize?: number;
+  
   // Snap points - klavye açıldığında yukarı kayması için (enableDynamicSizing: false ise kullanılır)
   snapPoints?: number[];
   
@@ -20,6 +23,7 @@ export interface BottomSheetOptions {
   enableOverDrag?: boolean;
   enableHandlePanningGesture?: boolean;
   enableContentPanningGesture?: boolean;
+  enableHandle?: boolean;
   
   // Animation
   animateOnMount?: boolean;

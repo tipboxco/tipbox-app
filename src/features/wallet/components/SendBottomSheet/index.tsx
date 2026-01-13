@@ -88,7 +88,7 @@ const TrusterListContent: React.FC<{
                       <HStack space="md" alignItems="center">
                         <Box w={48} h={48} rounded="$full" overflow="hidden" bg="$backgroundLight200" $dark-bg="$backgroundDark700">
                           <Image
-                            source={toImageSource(truster.avatar, DEFAULT_USER_AVATAR)}
+                            source={toImageSource(truster.avatar) || DEFAULT_USER_AVATAR}
                             alt={truster.name}
                             style={{ width: 48, height: 48 }}
                             resizeMode="cover"
@@ -260,8 +260,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     
     // Directly navigate to amount view (skip friend-selection)
     console.log('[SendBottomSheet] 🟢 Setting view to amount (skipping friend-selection)');
-    setPreviousView('truster-list');
-    setView('amount');
+    setPreviousView('friend-selection');
+    setView('truster-list');
     onViewChange?.('amount');
   };
 
@@ -815,7 +815,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                     overflow="hidden"
                   >
                     <Image
-                      source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR)}
+                      source={toImageSource(selectedFriend.avatar) || DEFAULT_USER_AVATAR}
                       alt={selectedFriend.name}
                       width={56}
                       height={56}
@@ -902,7 +902,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
         <Pressable onPress={() => {
           Keyboard.dismiss();
           // Back to previous view (truster-list or wallet-address)
-          if (previousView === 'truster-list' || selectedFriend) {
+          if (previousView === 'friend-selection' || selectedFriend) {
             setView('truster-list');
             onViewChange?.('truster-list');
           } else if (previousView === 'wallet-address' || walletAddress) {
@@ -958,7 +958,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                   overflow="hidden"
                 >
                   <Image
-                    source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR)}
+                    source={toImageSource(selectedFriend.avatar) || DEFAULT_USER_AVATAR}
                     alt={selectedFriend.name}
                     width={46}
                     height={46}
@@ -1258,7 +1258,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
             <Box w={29} h={29} rounded="$full" bg="#D9D9D9" $dark-bg="$backgroundDark700" alignItems="center" justifyContent="center" position="relative">
               {user?.avatar ? (
                 <Image
-                  source={toImageSource(user.avatar, DEFAULT_USER_AVATAR)}
+                  source={toImageSource(user.avatar) || DEFAULT_USER_AVATAR}
                   alt={user.fullName || 'User'}
                   width={29}
                   height={29}
@@ -1319,7 +1319,7 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
                       overflow="hidden"
                     >
                       <Image
-                        source={toImageSource(selectedFriend.avatar, DEFAULT_USER_AVATAR)}
+                        source={toImageSource(selectedFriend.avatar) || DEFAULT_USER_AVATAR}
                         alt={selectedFriend.name}
                         width={25}
                         height={25}

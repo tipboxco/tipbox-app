@@ -32,6 +32,19 @@ export const GlobalBottomSheet: React.FC = () => {
   
   const { state, closeBottomSheet } = context;
   const { content, index, options } = state;
+  
+  // Debug: Log state changes
+  React.useEffect(() => {
+    if (content && index >= 0) {
+      console.log('[GlobalBottomSheet] 📱 Sheet state:', { 
+        hasContent: !!content, 
+        index, 
+        detached: options?.detached,
+        snapPoints: options?.snapPoints,
+        enableDynamicSizing: options?.enableDynamicSizing,
+      });
+    }
+  }, [content, index, options]);
 
   // CRITICAL FIX: Son index değerini track et (onChange race condition'ını önlemek için)
   const lastIndexRef = useRef<number>(index);
@@ -44,14 +57,17 @@ export const GlobalBottomSheet: React.FC = () => {
   // Options'ı merge et
   const mergedOptions = useMemo(() => {
     const safeOptions = options || {};
+    // snapPoints varsa enableDynamicSizing false olmalı
+    const hasSnapPoints = safeOptions.snapPoints && safeOptions.snapPoints.length > 0;
     return {
       ...DEFAULT_BOTTOM_SHEET_OPTIONS,
       ...safeOptions,
-      enableDynamicSizing: safeOptions.snapPoints ? false : (safeOptions.enableDynamicSizing ?? true),
+      enableDynamicSizing: hasSnapPoints ? false : (safeOptions.enableDynamicSizing ?? true),
     };
   }, [options]);
 
   // Backdrop component
+  // CRITICAL: Detached modals need backdrop to work properly
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => {
       return (
@@ -59,13 +75,14 @@ export const GlobalBottomSheet: React.FC = () => {
           {...props}
           appearsOnIndex={0}
           disappearsOnIndex={-1}
-          pressBehavior={mergedOptions.backdropPressBehavior}
+          pressBehavior={mergedOptions.backdropPressBehavior ?? 'close'}
           opacity={mergedOptions.backdropOpacity ?? 0.5}
           enableTouchThrough={false}
+          style={mergedOptions.detached ? { zIndex: 999 } : undefined}
         />
       );
     },
-    [mergedOptions.backdropPressBehavior, mergedOptions.backdropOpacity]
+    [mergedOptions.backdropPressBehavior, mergedOptions.backdropOpacity, mergedOptions.detached]
   );
 
   // Sheet değişikliklerini handle et
@@ -139,8 +156,14 @@ export const GlobalBottomSheet: React.FC = () => {
   // Detach modal style - Example pattern: style prop should contain marginHorizontal for detached modals
   // If style is provided, use it directly (it should contain marginHorizontal: 24 for detached)
   // If not provided and detached, add default marginHorizontal
+  // CRITICAL: Detached modals need high z-index to appear above other content
   const sheetContainerStyle = mergedOptions.detached
-    ? mergedOptions.style || { marginHorizontal: 24 }
+    ? {
+        marginHorizontal: 24,
+        zIndex: 1000,
+        elevation: 1000, // Android için
+        ...mergedOptions.style,
+      }
     : mergedOptions.style;
 
   // Padding bottom
@@ -153,12 +176,16 @@ export const GlobalBottomSheet: React.FC = () => {
 
   // DOĞRU MİMARİ: Sadece index ile kontrol
   // enableDynamicSizing true ise snapPoints undefined olmalı
+  // @gorhom/bottom-sheet hem number[] (0-1 arası) hem de string[] (örn: ['50%']) formatını destekler
   const bottomSheetProps = mergedOptions.enableDynamicSizing
     ? {
         enableDynamicSizing: true,
+        ...(mergedOptions.maxDynamicContentSize !== undefined && {
+          maxDynamicContentSize: mergedOptions.maxDynamicContentSize,
+        }),
       }
     : {
-        snapPoints: mergedOptions.snapPoints || ['50%'],
+        snapPoints: mergedOptions.snapPoints || [0.25], // Default: 50% (number format)
       };
 
   // BLUEPRINT FIX: Portal kullanmıyoruz - GlobalUIHost içinde render ediliyor
@@ -171,7 +198,7 @@ export const GlobalBottomSheet: React.FC = () => {
         enableOverDrag={mergedOptions.enableOverDrag}
         enableHandlePanningGesture={mergedOptions.enableHandlePanningGesture}
         enableContentPanningGesture={mergedOptions.enableContentPanningGesture}
-        animateOnMount={mergedOptions.detached ? true : (mergedOptions.animateOnMount ?? true)}
+        animateOnMount={mergedOptions.animateOnMount !== undefined ? mergedOptions.animateOnMount : (mergedOptions.detached ? true : true)}
         backdropComponent={renderBackdrop}
         onChange={handleSheetChanges}
         backgroundStyle={backgroundStyle}
@@ -182,6 +209,7 @@ export const GlobalBottomSheet: React.FC = () => {
         android_keyboardInputMode={mergedOptions.android_keyboardInputMode ?? 'adjustResize'}
         detached={mergedOptions.detached ?? false}
         bottomInset={mergedOptions.bottomInset}
+       
         style={sheetContainerStyle}
       >
         <BottomSheetView 

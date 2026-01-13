@@ -223,7 +223,7 @@ export const CreateUpdatePostScreen = () => {
       // Clear flow context on successful submit
       clearFlow();
       
-      // Başarılı olursa ProfileScreen'e yönlendir
+      // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
       if (user?.id) {
         // Profil verilerini invalidate et - yeni post görünsün
         queryClient.invalidateQueries({
@@ -233,10 +233,30 @@ export const CreateUpdatePostScreen = () => {
           queryKey: profileKeys.profile(user.id),
         });
         
-        navigation.navigate('Profile', {
-          screen: 'ProfileMain',
-          params: { userId: user.id },
-        });
+        // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
+        // Kullanıcı gönderi oluşturduktan sonra CreatePostScreen'e geri dönmemeli
+        // App'in mevcut state'ini koru (hangi tab açıksa o kalır)
+        const currentState = navigation.getState();
+        const appRoute = currentState?.routes?.find((route) => route.name === 'App');
+        
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 1,
+            routes: [
+              {
+                name: 'App',
+                state: appRoute?.state, // App'in mevcut state'ini koru
+              },
+              {
+                name: 'Profile',
+                params: {
+                  screen: 'ProfileMain',
+                  params: { userId: user.id },
+                },
+              },
+            ],
+          })
+        );
       } else {
         // Fallback: Feed ekranına yönlendir
         navigation.dispatch(

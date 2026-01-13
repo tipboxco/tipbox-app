@@ -30,7 +30,7 @@ import { SwapBottomSheet } from '../components/SwapBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ScrollView } from 'react-native';
+import { ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaValues } from '@/src/utils';
 import { useWalletBalance, useWalletTransactions, useWalletInfo } from '../api/hooks';
 import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
@@ -94,7 +94,6 @@ export const WalletScreen: React.FC = () => {
     }
   }, [walletInfo?.walletIdentifier]);
   
-  const [sendSheetView, setSendSheetView] = React.useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list'>('options');
   const [successTransactionDetails, setSuccessTransactionDetails] = React.useState<{
     sentAmount?: string;
     receivedAmount?: string;
@@ -102,7 +101,6 @@ export const WalletScreen: React.FC = () => {
     remainingBalance?: string;
     transactionId?: string;
   } | null>(null);
-  const [sendBottomSheetContent, setSendBottomSheetContent] = React.useState<React.ReactNode>(null);
 
   const handleSendSuccess = useCallback((transactionDetails: {
     sentAmount: string;
@@ -143,15 +141,15 @@ export const WalletScreen: React.FC = () => {
     }, 300);
   }, [openBottomSheet, closeBottomSheet, bottomInset, isDark]);
 
+
+  const [sendBottomSheetContent, setSendBottomSheetContent] = React.useState<React.ReactNode>(null);
+  const screenHeight = Dimensions.get('window').height;
+  
   const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => {
     console.log('[WalletScreen] View changing to:', view);
-    setSendSheetView(view as any); // Type compatibility
     
-    // truster-list view'ı için özel snap point ayarları
+    // truster-list view'ı için maxDynamicContentSize ayarla (%50 ekran yüksekliği)
     if (view === 'truster-list' && sendBottomSheetContent) {
-      // Bottom sheet'i yeniden aç ama %50 snap point ile
-      // enableDynamicSizing false yapıp snapPoints kullanıyoruz
-      // Kullanıcı yukarı çekerek %90'a çıkarabilir (snapPoints: ['50%', '90%'])
       setTimeout(() => {
         openBottomSheet(
           sendBottomSheetContent,
@@ -160,9 +158,9 @@ export const WalletScreen: React.FC = () => {
             enableOverDrag: false,
             enableHandlePanningGesture: true,
             enableContentPanningGesture: true,
-            enableDynamicSizing: false, // Disable dynamic sizing for truster-list
-            snapPoints: [0.5, 0.9], // Start at 50%, can expand to 90% (0.5 = 50%, 0.9 = 90%)
-            animateOnMount: false, // No animation when updating
+            enableDynamicSizing: true,
+            maxDynamicContentSize: 0.5, // %50 ekran yüksekliği - kullanıcı yukarı çekerek tamamını görebilir
+            animateOnMount: false,
             paddingBottom: bottomInset,
             handleIndicatorStyle: {
               backgroundColor: isDark ? '#333333' : '#B8B8B7',
@@ -171,35 +169,21 @@ export const WalletScreen: React.FC = () => {
             },
           }
         );
-      }, 50); // Small delay to ensure view state is updated
+      }, 50);
     }
-    // Diğer view'lar için enableDynamicSizing zaten true, otomatik olarak içeriğe göre boyutlanır
   }, [openBottomSheet, bottomInset, isDark, sendBottomSheetContent]);
 
   const handleSendPress = useCallback(() => {
     console.log('[WalletScreen] Send button pressed');
-    setSendSheetView('options');
     
     const bottomSheetContent = (
       <SendBottomSheet
-        onClose={() => {
-          closeBottomSheet();
-          setSendSheetView('options');
-          setSendBottomSheetContent(null);
-        }}
-        onWalletAddressPress={() => {
-          // Bottom sheet will handle its own state change
-        }}
-        onFriendPress={() => {
-          // Friend selection is handled within SendBottomSheet
-          // No need to close bottom sheet - it will show friend selection view
-        }}
+        onClose={closeBottomSheet}
         onViewChange={handleSendViewChange}
         onSuccess={handleSendSuccess}
       />
     );
     
-    // Store content for view change updates
     setSendBottomSheetContent(bottomSheetContent);
     
     openBottomSheet(
@@ -209,7 +193,7 @@ export const WalletScreen: React.FC = () => {
         enableOverDrag: false,
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
-        enableDynamicSizing: true,
+        enableDynamicSizing: true, // Dynamic sizing kullanıyoruz
         animateOnMount: true,
         paddingBottom: bottomInset,
         handleIndicatorStyle: {
@@ -219,7 +203,7 @@ export const WalletScreen: React.FC = () => {
         },
       }
     );
-  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendViewChange, handleSendSuccess]);
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, handleSendSuccess, handleSendViewChange]);
 
   const handleSwapPress = useCallback(() => {
     console.log('[WalletScreen] Swap button pressed');

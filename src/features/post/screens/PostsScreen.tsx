@@ -217,8 +217,116 @@ export const PostsScreen = () => {
         productInfo,
       });
     } else if (type === 'tips') {
+      // CatalogUIStore'dan ID'leri al
+      const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+      const selectedSubCategoryId = useCatalogUIStore.getState().selectedSubCategoryId;
+      const selectedProductGroupId = useCatalogUIStore.getState().selectedProductGroupId;
+      
+      // Route params'tan type'ı al (fallback için contextType da kontrol et)
+      let determinedContextType: ProductInfoType | undefined = contextType;
+      let determinedContextId: string | undefined = contextId; // Backward compatibility için route params'tan al
+      
+      // Eğer contextType yoksa stage'den belirle
+      if (!determinedContextType) {
+        switch (stage) {
+          case 'Product':
+            determinedContextType = ProductInfoType.PRODUCT;
+            break;
+          case 'ProductGroup':
+            determinedContextType = ProductInfoType.PRODUCT_GROUP;
+            break;
+          case 'SubCategories':
+            determinedContextType = ProductInfoType.SUB_CATEGORY;
+            break;
+        }
+      }
+      
+      // Type'a göre store'dan ID'yi al (route params fallback)
+      if (!determinedContextId && determinedContextType) {
+        switch (determinedContextType) {
+          case ProductInfoType.PRODUCT:
+            determinedContextId = selectedProductId || selectedProduct?.id;
+            break;
+          case ProductInfoType.PRODUCT_GROUP:
+            determinedContextId = selectedProductGroupId;
+            break;
+          case ProductInfoType.SUB_CATEGORY:
+            determinedContextId = selectedSubCategoryId;
+            break;
+        }
+      }
+      
+      // Store'da ID yoksa hata göster
+      if (!determinedContextType || !determinedContextId) {
+        console.error('[PostsScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId);
+        // TODO: Show error toast/modal to user
+        return;
+      }
+      
+      // Save to flow store
+      const setFlowContext = useCreatePostFlowStore.getState().setFlowContext;
+      setFlowContext(determinedContextType, determinedContextId, productInfo ? {
+        image: productInfo.image,
+        title: productInfo.title,
+        subName: productInfo.subName,
+      } : undefined);
+      
       navigation.navigate('CreateTipsAndTrickPostScreen');
     } else if (type === 'question') {
+      // CatalogUIStore'dan ID'leri al
+      const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+      const selectedSubCategoryId = useCatalogUIStore.getState().selectedSubCategoryId;
+      const selectedProductGroupId = useCatalogUIStore.getState().selectedProductGroupId;
+      
+      // Route params'tan type'ı al (fallback için contextType da kontrol et)
+      let determinedContextType: ProductInfoType | undefined = contextType;
+      let determinedContextId: string | undefined = contextId; // Backward compatibility için route params'tan al
+      
+      // Eğer contextType yoksa stage'den belirle
+      if (!determinedContextType) {
+        switch (stage) {
+          case 'Product':
+            determinedContextType = ProductInfoType.PRODUCT;
+            break;
+          case 'ProductGroup':
+            determinedContextType = ProductInfoType.PRODUCT_GROUP;
+            break;
+          case 'SubCategories':
+            determinedContextType = ProductInfoType.SUB_CATEGORY;
+            break;
+        }
+      }
+      
+      // Type'a göre store'dan ID'yi al (route params fallback)
+      if (!determinedContextId && determinedContextType) {
+        switch (determinedContextType) {
+          case ProductInfoType.PRODUCT:
+            determinedContextId = selectedProductId || selectedProduct?.id;
+            break;
+          case ProductInfoType.PRODUCT_GROUP:
+            determinedContextId = selectedProductGroupId;
+            break;
+          case ProductInfoType.SUB_CATEGORY:
+            determinedContextId = selectedSubCategoryId;
+            break;
+        }
+      }
+      
+      // Store'da ID yoksa hata göster
+      if (!determinedContextType || !determinedContextId) {
+        console.error('[PostsScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
+        // TODO: Show error toast/modal to user
+        return;
+      }
+      
+      // Save to flow store
+      const setFlowContext = useCreatePostFlowStore.getState().setFlowContext;
+      setFlowContext(determinedContextType, determinedContextId, productInfo ? {
+        image: productInfo.image,
+        title: productInfo.title,
+        subName: productInfo.subName,
+      } : undefined);
+      
       navigation.navigate('CreateQuestionPostScreen');
     } else if (type === 'experience') {
       navigation.navigate('CreateExperiencePostScreen', {
@@ -236,7 +344,7 @@ export const PostsScreen = () => {
       });
     }
     // Handle other post types here if needed
-  }, [navigation, selectedProductPayload, closeBottomSheet]);
+  }, [navigation, selectedProductPayload, closeBottomSheet, contextType, contextId, stage, productInfo, selectedProduct]);
 
   const handleCreatePress = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view
