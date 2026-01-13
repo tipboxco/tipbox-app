@@ -74,9 +74,9 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             bg="rgba(144, 8, 255, 0.8)"
             borderWidth={1}
             borderColor="#CA88FF"
-            borderRadius={10}
-            px="$2"
-            py="$1"
+            borderRadius={8}
+            px="$1.5"
+            py="$0.5"
           >
             <Text
               color="#FFFFFF"
@@ -94,7 +94,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             {/* Title */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={10}
+              fontSize="$xs"
               fontWeight="$bold"
               numberOfLines={1}
             >
@@ -104,7 +104,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             {/* Description - 3 satır gösterilecek */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={10}
+              fontSize="$xs"
               fontWeight="$normal"
               numberOfLines={4}
             >
@@ -187,7 +187,7 @@ export const EventCard = ({ data, onPress, isGrid = false }: EventCardProps) => 
             </HStack>
             <Text
               color={isDark ? '#FFFFFF' : '#B9B9B9'}
-              fontSize={10}
+              fontSize="$xs"
               fontWeight="$normal"
             >
               {activeEventData.interaction || 0}+ Etkileşim

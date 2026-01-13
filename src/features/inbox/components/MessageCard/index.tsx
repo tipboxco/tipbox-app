@@ -62,7 +62,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
         <VStack flex={1} space="xs">
           <Text
             color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize={11}
+            fontSize="$xs"
             fontWeight="$semibold"
           >
             {data.senderName}
@@ -72,7 +72,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
             <HStack space="xs" alignItems="center">
               <Text
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize={9}
+                fontSize="$sm"
                 fontWeight="$normal"
                 fontStyle="italic"
               >
@@ -105,7 +105,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
           ) : (
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={9}
+              fontSize="$sm"
               fontWeight={data.isUnread ? '$semibold' : '$normal'}
               numberOfLines={2}
             >
@@ -125,7 +125,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
       >
         <Text
           color={isDark ? '#8C8C8C' : '#8C8C8C'}
-          fontSize={9}
+          fontSize="$xs"
           fontWeight="$medium"
         >
           {formatRelativeTime(data.timestamp)}

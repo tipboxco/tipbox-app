@@ -818,36 +818,82 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
   
+  // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
+  const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
+  
   // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
   useFocusEffect(
     useCallback(() => {
       // Sadece kendi profilimizdeysek (targetUserId === user?.id) refetch et
       if (targetUserId && user?.id && targetUserId === user.id) {
-        // Tüm profil verilerini refetch et - yeni post, review, benchmark, tips, replies görünsün
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userPosts(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.profile(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userReviews(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userBenchmarks(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userTipsAndTricks(targetUserId),
-          exact: false 
-        });
-        queryClient.refetchQueries({ 
-          queryKey: profileKeys.userReplies(targetUserId),
-          exact: false 
+        // Activity indicator göster
+        setIsRefreshingOnFocus(true);
+        
+        // Tüm profil verilerini invalidate et ve backend'den yeni veriyi çek
+        // CreatePostScreen'lerde zaten invalidate yapılıyor ama burada da yapıyoruz
+        // çünkü diğer yerlerden de ProfileScreen'e yönlendirilebilir
+        Promise.all([
+          // Cache'i invalidate et - yeni gönderi için cache'i temizle
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userPosts(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.profile(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userReviews(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userBenchmarks(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userTipsAndTricks(targetUserId),
+            exact: false 
+          }),
+          queryClient.invalidateQueries({ 
+            queryKey: profileKeys.userReplies(targetUserId),
+            exact: false 
+          }),
+        ]).then(() => {
+          // Cache invalidate edildikten sonra backend'den yeni veriyi çek
+          return Promise.all([
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userPosts(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.profile(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userReviews(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userBenchmarks(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userTipsAndTricks(targetUserId),
+              exact: false 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: profileKeys.userReplies(targetUserId),
+              exact: false 
+            }),
+          ]);
+        }).then(() => {
+          // Refetch tamamlandıktan sonra activity indicator'ı kapat
+          setIsRefreshingOnFocus(false);
+          console.log('[ProfileScreen] ✅ Focus refresh completed - yeni gönderi yüklendi');
+        }).catch((error) => {
+          console.error('[ProfileScreen] ❌ Focus refresh error:', error);
+          setIsRefreshingOnFocus(false);
         });
       }
     }, [targetUserId, user?.id, queryClient])
@@ -924,7 +970,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const contentFlatListRef = useRef<FlatList>(null);
+  const pagerRef = useRef<PagerView>(null);
   const tabContainerRef = useRef<any>(null);
   
   // 🎯 CORE: Shared progress value for tab animations
@@ -935,45 +981,33 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     return TABS.findIndex(tab => tab.key === tabKey);
   }, []);
   
-  // Tab değiştiğinde Content FlatList'i scroll et
+  // Tab değiştiğinde PagerView'ı programatik olarak değiştir
   const handleTabChange = useCallback((tabKey: TabKey) => {
     const index = getTabIndex(tabKey);
-    if (index !== -1 && contentFlatListRef.current) {
-      progress.value = withTiming(index, { duration: 300 });
-      setActiveTab(tabKey);
-      
-      contentFlatListRef.current.scrollToOffset({
-        offset: index * SCREEN_WIDTH,
-        animated: true,
-      });
+    if (index !== -1 && pagerRef.current) {
+      // PagerView'ı native animasyon ile değiştir
+      pagerRef.current.setPage(index);
     }
-  }, [getTabIndex, progress]);
+  }, [getTabIndex]);
   
-  // Content FlatList scroll handler - realtime progress güncelleme
-  // Indicator realtime hareket eder, tab değişmez
-  const handleContentScroll = useCallback(
-    (event: any) => {
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const currentIndex = offsetX / SCREEN_WIDTH;
-      
-      // Progress realtime güncelle (indicator animasyonu için)
-      progress.value = currentIndex;
+  // PagerView scroll handler - realtime progress güncelleme
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      progress.value = position + offset;
     },
     [progress]
   );
 
-  // Content FlatList scroll end handler - snap sonrası sync
-  // Scroll tamamlandıktan sonra tab değişir
-  const handleContentScrollEnd = useCallback(
-    (event: any) => {
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / SCREEN_WIDTH);
+  // PagerView page selected handler - snap sonrası sync
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
       
-      // Progress snap sonrası tam sayıya yuvarla
-      progress.value = withTiming(index, { duration: 0 });
-      
-      // Active tab'ı güncelle (sadece scroll tamamlandıktan sonra)
-      const tabKey = TABS[index]?.key;
+      // Active tab'ı güncelle (sadece snap tamamlandıktan sonra)
+      const tabKey = TABS[position]?.key;
       if (tabKey) {
         setActiveTab(tabKey);
       }
@@ -985,75 +1019,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const handleTabContainerLayout = useCallback((width: number) => {
     // Tab container width'i state'e kaydet (gerekirse)
   }, []);
-
-  // Scroll pozisyonunu takip et (bounce kontrolü için)
-  // CRITICAL FIX: runOnJS frame bazlı event'lerde (onScroll) ASLA kullanılmamalı
-  // Bunun yerine SharedValue kullan ve useAnimatedReaction ile throttled state update
-  const scrollYShared = useSharedValue(0);
-  const [shouldBounce, setShouldBounce] = useState(false);
-  const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
-
-  // Scroll handler - scroll pozisyonunu takip et (UI thread'de, SharedValue ile)
-  const handleScroll = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      'worklet';
-      const offsetY = event.contentOffset.y;
-      // CRITICAL FIX: runOnJS onScroll'da ASLA kullanılmamalı (frame bazlı spam)
-      // Bunun yerine SharedValue'ya yaz, useAnimatedReaction ile throttled state update
-      // En üstteyken yukarı scroll'u engelle - pozisyonu 0'da tut
-      const clampedY = Math.max(0, offsetY);
-      scrollYShared.value = clampedY;
-    },
-  });
-
-  // CRITICAL FIX: SharedValue değişikliğini throttled bir şekilde state'e yaz
-  // Bu sayede frame bazlı runOnJS spam'i önlenir
-  // Sadece 0'dan büyük/küçük geçişinde state'e yaz (low-frequency event)
-  useAnimatedReaction(
-    () => scrollYShared.value > 0,
-    (currentShouldBounce, previousShouldBounce) => {
-      'worklet';
-      // Sadece değiştiğinde state'e yaz (low-frequency event - threshold geçildiğinde)
-      // runOnJS burada DOĞRU kullanım - low-frequency event (sadece 0'dan büyük/küçük geçişinde)
-      // Bu çok düşük frequency (sadece threshold geçildiğinde), frame bazlı değil
-      if (previousShouldBounce !== null && currentShouldBounce !== previousShouldBounce) {
-        runOnJS(setShouldBounce)(currentShouldBounce);
-      }
-    },
-    []
-  );
-
-  // Scroll başladığında yukarı scroll'u engelle (en üstteyken)
-  const handleScrollBeginDrag = useCallback((event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    
-    // Eğer scroll pozisyonu 0 veya 0'a yakınsa, yukarı scroll'u engelle
-    // Scroll pozisyonunu 0'da tut (bounce'u engelle)
-    if (offsetY <= 10) {
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: 0, animated: false });
-      }
-    }
-  }, []);
-
-  // Scroll bittiğinde pozisyonu kontrol et ve 0'dan küçükse 0'a çek
-  const handleScrollEndDrag = useCallback((event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    if (offsetY < 0 && scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 0, animated: true });
-    }
-  }, []);
-
-  const handleMomentumScrollEnd = useCallback((event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    if (offsetY < 0 && scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 0, animated: true });
-    }
-  }, []);
-
-  // Bounce kontrolü - scroll pozisyonu 0 olduğunda bounce disable
-  // CRITICAL FIX: SharedValue'dan direkt hesapla (state yerine)
-  // Ama ScrollView'in bounces prop'u JS thread'de olmalı, bu yüzden state gerekiyor
   
   // Action button handlers
   const handleSendTIPS = useCallback(() => {
@@ -1266,7 +1231,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           />
           
           {/* Pull to Refresh Loading Overlay - Banner'ın üstünde */}
-          {refreshing && (
+          {(refreshing || isRefreshingOnFocus) && (
             <Box
               position="absolute"
               top={0}
@@ -1474,7 +1439,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         <Box px={15} mt={10}>
           <Text
             color={isDark ? '$textDark50' : '$textLight900'}
-            fontSize={14}
+            fontSize="$md"
             fontWeight="$bold"
           >
             {profile.name}
@@ -1483,7 +1448,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           {profile.biography && (
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize={10}
+              fontSize="$xs"
               lineHeight={15}
               mt={2}
             >
@@ -1495,20 +1460,20 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           <HStack space="xs" mt={10}>
             <Text
               color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize={10}
+              fontSize="$xs"
               fontWeight="$bold"
             >
               {profile.stats.posts}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize={10}
+              fontSize="$xs"
             >
               Posts
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize={10}
+              fontSize="$xs"
             >
               {" "}•{" "}
             </Text>
@@ -1526,14 +1491,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               <HStack alignItems="center" space="xs">
                 <Text
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={10}
+                  fontSize="$xs"
                   fontWeight="$bold"
                 >
                   {profile.stats.trust}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
-                  fontSize={10}
+                  fontSize="$xs"
                 >
                   Trust
                 </Text>
@@ -1541,7 +1506,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             </Pressable>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize={10}
+              fontSize="$xs"
             >
               {" "}•{" "}
             </Text>
@@ -1559,14 +1524,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               <HStack alignItems="center" space="xs">
                 <Text
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={10}
+                  fontSize="$xs"
                   fontWeight="$bold"
                 >
                   {profile.stats.truster > 999 ? `${Math.floor(profile.stats.truster / 1000)}K` : profile.stats.truster}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
-                  fontSize={10}
+                  fontSize="$xs"
                 >
                   Truster
                 </Text>
@@ -1606,7 +1571,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             >
               <Text
                 color="$white"
-                fontSize={10}
+                fontSize="$xs"
                 fontWeight="$semibold"
                 textAlign="center"
               >
@@ -1624,9 +1589,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               p={14}
               h={130}
             >
-              <HStack space="md" justifyContent="space-between">
+              <HStack space="md" justifyContent="flex-start">
                 {[0, 1, 2, 3].map((index) => (
-                  <VStack key={index} space="xs" alignItems="center" flex={1}>
+                  <VStack key={index} space="xs" alignItems="center">
                     <Box
                       w={70}
                       h={70}
@@ -1660,7 +1625,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 p={14}
                 h={130}
               >
-                <HStack space="md" justifyContent="space-between">
+                <HStack space="md" justifyContent="flex-start">
                   {profile.badges.slice(0, 4).map((badge) => (
                     <VStack key={badge.id} space="xs" alignItems="center">
                       <Box
@@ -1682,7 +1647,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       </Box>
                       <Text
                         color={isDark ? '$textDark400' : '#000000'}
-                        fontSize={8}
+                        fontSize="$2xs"
                         fontWeight="$bold"
                         textAlign="center"
                       >
@@ -1698,7 +1663,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 >
                   <Text
                     color={isDark ? '$textDark400' : '$textLight600'}
-                    fontSize={10}
+                    fontSize="$xs"
                     textAlign="center"
                     mt="$4"
                     fontWeight="$regular"
@@ -1712,7 +1677,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet, refreshing]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet, refreshing, isRefreshingOnFocus]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
@@ -1738,80 +1703,48 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     );
   }
 
-  // Ekran yüksekliğini hesapla
-  const screenHeight = Dimensions.get('window').height;
-  
-  // Tab içerikleri için minimum yükseklik (profile header + tabs bar yüksekliği yaklaşık 400px)
-  const tabContentHeight = screenHeight - 400;
-
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <StatusBar style="light" />
-      <Animated.ScrollView
-        ref={scrollViewRef}
-        onScroll={handleScroll}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onScrollEndDrag={handleScrollEndDrag}
-        onMomentumScrollEnd={handleMomentumScrollEnd}
-        scrollEventThrottle={16}
-        bounces={shouldBounce}
-        alwaysBounceVertical={false}
-        scrollEnabled={true}
-        showsVerticalScrollIndicator={true}
-        contentContainerStyle={{ flexGrow: 1 }}
-      >
-        {/* Üst Kısım: Profile Header + TabsBar */}
+      <VStack flex={1}>
+        {/* Üst Kısım: Profile Header - SABIT (scroll edilmez) */}
         <Box>
           {profileHeader}
-          <TabsBar 
-            activeTab={activeTab} 
-            onChangeTab={handleTabChange} 
-            isDark={isDark}
-            progress={progress}
-            tabContainerRef={tabContainerRef}
-            onTabContainerLayout={handleTabContainerLayout}
-          />
         </Box>
-        
-        {/* Alt Kısım: Yatay Kaydırılabilir Tab İçerikleri */}
-        <Box style={{ minHeight: tabContentHeight }}>
-          <FlatList
-            ref={contentFlatListRef}
-            data={TABS}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onScroll={handleContentScroll}
-            onMomentumScrollEnd={handleContentScrollEnd}
-            keyExtractor={(item) => item.key}
-            getItemLayout={(data, index) => ({
-              length: SCREEN_WIDTH,
-              offset: SCREEN_WIDTH * index,
-              index,
-            })}
-            scrollEnabled={true}
-            nestedScrollEnabled={true}
-            renderItem={({ item }) => (
-              <Box width={SCREEN_WIDTH} style={{ minHeight: tabContentHeight }}>
-                <TabPage
-                  tabKey={item.key}
-                  targetUserId={targetUserId || ''}
-                  isDark={isDark}
-                  bottomPadding={bottomPadding}
-                  listHeaderComponent={null}
-                  onRefresh={handleRefresh}
-                  refreshing={refreshing}
-                />
-              </Box>
-            )}
-            removeClippedSubviews={false}
-            windowSize={5}
-            maxToRenderPerBatch={2}
-            initialNumToRender={2}
-          />
-        </Box>
-      </Animated.ScrollView>
+
+        {/* Tab Bar - SABIT (scroll edilmez) */}
+        <TabsBar 
+          activeTab={activeTab} 
+          onChangeTab={handleTabChange} 
+          isDark={isDark}
+          progress={progress}
+          tabContainerRef={tabContainerRef}
+          onTabContainerLayout={handleTabContainerLayout}
+        />
+
+        {/* Alt Kısım: PagerView - Sadece FlatList'ler değişir */}
+        <AnimatedPagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageScroll={handlePageScroll}
+          onPageSelected={handlePageSelected}
+        >
+          {TABS.map((tab, index) => (
+            <Box key={tab.key} flex={1}>
+              <TabPage
+                tabKey={tab.key}
+                targetUserId={targetUserId || ''}
+                isDark={isDark}
+                bottomPadding={bottomPadding}
+                listHeaderComponent={null}
+                onRefresh={handleRefresh}
+                refreshing={refreshing}
+              />
+            </Box>
+          ))}
+        </AnimatedPagerView>
+      </VStack>
     </Box>
   );
 };

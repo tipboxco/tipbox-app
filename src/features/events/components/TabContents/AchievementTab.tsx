@@ -1,10 +1,13 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { FlatList, Dimensions, ActivityIndicator, RefreshControl } from 'react-native';
 import {
   Box,
   VStack,
   HStack,
   Text,
+  Modal,
+  ModalBackdrop,
+  ModalContent,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import LimitedTimeEventCard from '../LimitedTimeEventCard';
@@ -14,6 +17,7 @@ import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { FilterOption } from '../AchievementFilter';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useLimitedEvent, useAchievements } from '../../api/hooks';
+import BadgeBottomSheet from '../BadgeBottomSheet';
 import type { AchievementApiItem } from '../../types';
 import { LimitedTimeEventSkeleton, BadgeSkeleton } from '@/src/components/Skeletons';
 
@@ -22,7 +26,7 @@ const { width } = Dimensions.get('window');
 type AchievementTabProps = {
   activeFilter: FilterOption;
   onFilterChange: (filter: FilterOption) => void;
-  onRewardPress: (reward: SeeAllReward) => void;
+  onRewardPress?: (reward: SeeAllReward) => void; // Optional - artık kullanılmıyor
 };
 
 export const AchievementTab: React.FC<AchievementTabProps> = ({
@@ -33,6 +37,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
+  const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
   
   // Limited Event API hook
   const {
@@ -70,6 +75,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
       task: achievement.total,
     };
   }, []);
+
 
   // Transform achievements data for display (flatten all pages and remove duplicates)
   const allAchievements = useMemo(() => {
@@ -135,23 +141,11 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
             </Text>
           </Box>
         ) : limitedEvent ? (
-          <LimitedTimeEventCard
+            <LimitedTimeEventCard
             data={limitedEvent}
             onPress={() => {
-              // Limited time event'i SeeAllReward formatına map et
-              if (onRewardPress) {
-                const reward: SeeAllReward = {
-                  id: limitedEvent.id,
-                  title: limitedEvent.title || '',
-                  image: limitedEvent.eventImage ? toImageSource(limitedEvent.eventImage) : require('@/assets/avatar/default-useravatar.png'),
-                  description: limitedEvent.description || '',
-                  category: '', // Limited event için category yok
-                  isUnlocked: false, // Limited event için unlock durumu yok
-                  completed: limitedEvent.userScore?.score || 0,
-                  task: 0, // Limited event için target score yok
-                };
-                onRewardPress(reward);
-              }
+              // Limited time event için bottom sheet açılabilir (ileride eklenebilir)
+              // Şimdilik sadece navigation yapılabilir
             }}
           />
         ) : null}
@@ -170,7 +164,6 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     isDark,
     activeFilter,
     onFilterChange,
-    onRewardPress,
   ]);
 
   // Empty state component
@@ -190,7 +183,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     if (getFilteredAchievements.length === 0) {
       return (
         <Box py="$4" alignItems="center" px={16}>
-          <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$sm" textAlign="center">
+          <Text color={isDark ? '#FFFFFF' : '#B9B9B9'} fontSize="$md" textAlign="center">
             {activeFilter === 'All' 
               ? 'No achievements yet'
               : `No ${activeFilter} achievements yet`}
@@ -244,6 +237,11 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
   const numColumns = 2;
   const hasItems = getFilteredAchievements.length > 0;
 
+  // Modal kapatma handler
+  const handleCloseModal = useCallback(() => {
+    setSelectedBadge(null);
+  }, []);
+
   return (
     <VStack flex={1}>
       <FlatList
@@ -260,7 +258,10 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
           <Box flex={1}>
             <BadgeCard
               data={item}
-              onPress={() => onRewardPress(item)}
+              onPress={() => {
+                // Modal aç - performanslı, tek seferde açılır kapanır
+                setSelectedBadge(item);
+              }}
             />
           </Box>
         )}
@@ -286,6 +287,29 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
           />
         }
       />
+
+      {/* Badge Detail Modal - Performanslı, tek seferde açılır kapanır */}
+      <Modal
+        isOpen={!!selectedBadge}
+        onClose={handleCloseModal}
+        size="lg"
+      >
+        <ModalBackdrop />
+        {selectedBadge && (
+          <ModalContent
+            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
+            borderRadius={20}
+            marginHorizontal={24}
+            marginBottom={bottomInset + 24}
+            maxHeight="80%"
+          >
+            <BadgeBottomSheet
+              data={selectedBadge}
+              onClose={handleCloseModal}
+            />
+          </ModalContent>
+        )}
+      </Modal>
     </VStack>
   );
 };

@@ -621,14 +621,61 @@ const EventDetailScreen: React.FC = () => {
     // Banner yüksekliği
     const BANNER_HEIGHT = 250;
     
+    // Parallax ayarları
+    const PARALLAX_BACKGROUND_SCROLL_SPEED = 0.5; // Banner'ın scroll'dan daha yavaş hareket etmesi için (0-1 arası)
+    const PARALLAX_SCALE_FACTOR = 1.2; // Banner'ın scale efekti için
+    
     // Parallax header için animated value
     const scrollY = useRef(new Animated.Value(0)).current;
     
     // Header opacity - scroll pozisyonuna göre 0'dan 1'e animate olacak
     // Banner'ın yarısına gelince header görünür olacak
     const headerOpacity = scrollY.interpolate({
-        inputRange: [0, BANNER_HEIGHT / 2, BANNER_HEIGHT],
-        outputRange: [0, 0.5, 1],
+        inputRange: [0, BANNER_HEIGHT * 0.3, BANNER_HEIGHT * 0.7, BANNER_HEIGHT],
+        outputRange: [0, 0.3, 0.8, 1],
+        extrapolate: 'clamp',
+    });
+    
+    // Header background color - transparent'dan solid'e geçiş
+    const headerBackgroundOpacity = scrollY.interpolate({
+        inputRange: [0, BANNER_HEIGHT * 0.5, BANNER_HEIGHT],
+        outputRange: [0, 0.7, 1],
+        extrapolate: 'clamp',
+    });
+    
+    // Banner parallax translateY - scroll'dan daha yavaş hareket edecek
+    // Scroll 100px aşağı inerse, banner sadece 50px yukarı kayar (PARALLAX_BACKGROUND_SCROLL_SPEED = 0.5)
+    const bannerTranslateY = scrollY.interpolate({
+        inputRange: [0, BANNER_HEIGHT],
+        outputRange: [0, -BANNER_HEIGHT * PARALLAX_BACKGROUND_SCROLL_SPEED],
+        extrapolate: 'clamp',
+    });
+    
+    // Banner scale efekti - scroll yapınca zoom out olacak
+    const bannerScale = scrollY.interpolate({
+        inputRange: [-BANNER_HEIGHT, 0, BANNER_HEIGHT],
+        outputRange: [PARALLAX_SCALE_FACTOR, 1, 0.95],
+        extrapolate: 'clamp',
+    });
+    
+    // Banner opacity - scroll yapınca kaybolacak
+    const bannerOpacity = scrollY.interpolate({
+        inputRange: [0, BANNER_HEIGHT * 0.5, BANNER_HEIGHT * 0.8, BANNER_HEIGHT],
+        outputRange: [1, 0.7, 0.2, 0],
+        extrapolate: 'clamp',
+    });
+    
+    // Overlay opacity - banner ile birlikte kaybolacak
+    const overlayOpacity = scrollY.interpolate({
+        inputRange: [0, BANNER_HEIGHT * 0.5, BANNER_HEIGHT],
+        outputRange: [0.6, 0.4, 0],
+        extrapolate: 'clamp',
+    });
+    
+    // Banner overlay header opacity - banner görünürken header görünecek, scroll yapınca kaybolacak
+    const bannerHeaderOpacity = scrollY.interpolate({
+        inputRange: [0, BANNER_HEIGHT * 0.3, BANNER_HEIGHT * 0.7, BANNER_HEIGHT],
+        outputRange: [1, 0.8, 0.2, 0],
         extrapolate: 'clamp',
     });
     
@@ -681,67 +728,17 @@ const EventDetailScreen: React.FC = () => {
 
     return (
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-            {/* Header - Parallax efekt ile scroll yapınca görünecek */}
-            <Animated.View
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 1000,
-                    backgroundColor: isDark ? '#000000' : '#FFFFFF',
-                    paddingTop: insets.top,
-                    paddingBottom: 10,
-                    paddingHorizontal: 16,
-                    opacity: headerOpacity,
-                }}
-            >
-                <HStack justifyContent="space-between" alignItems="center">
-                    <Pressable
-                        onPress={() => navigation.goBack()}
-                        width={36}
-                        height={36}
-                        borderRadius={18}
-                        bg="rgba(0, 0, 0, 0.1)"
-                        alignItems="center"
-                        justifyContent="center"
-                    >
-                        <ChevronLeftIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                    </Pressable>
-
-                    <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={16}
-                        fontWeight="$bold"
-                        flex={1}
-                        textAlign="center"
-                        mx={16}
-                    >
-                        {event.title}
-                    </Text>
-
-                    <Pressable
-                        onPress={handleShare}
-                        width={36}
-                        height={36}
-                        borderRadius={18}
-                        bg="rgba(0, 0, 0, 0.1)"
-                        alignItems="center"
-                        justifyContent="center"
-                    >
-                        <ArrowTopRightOnSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                    </Pressable>
-                </HStack>
-            </Animated.View>
-
             {/* ScrollView */}
             <Animated.ScrollView
+                style={{
+                    flex: 1,
+                }}
+                contentContainerStyle={{
+                    flexGrow: 1,
+                }}
                 bounces={false}
                 overScrollMode="never"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{
-                    paddingTop: insets.top + 60, // Header height
-                }}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 onMomentumScrollEnd={(event) => {
@@ -755,25 +752,36 @@ const EventDetailScreen: React.FC = () => {
                     }
                 }}
             >
-                {/* Banner */}
+                {/* Banner - Parallax efekt ile */}
                 <Box
                     width="100%"
                     height={BANNER_HEIGHT}
                     overflow="hidden"
                 >
-                    <Image
+                    <Animated.Image
                         source={bannerImageSource}
-                        alt="Event Banner"
-                        style={{ width: '100%', height: '100%' }}
+                        style={{
+                            width: '100%',
+                            height: BANNER_HEIGHT * (1 + PARALLAX_SCALE_FACTOR * 0.3), // Scale için ekstra yükseklik
+                            transform: [
+                                { translateY: bannerTranslateY },
+                                { scale: bannerScale },
+                            ],
+                            opacity: bannerOpacity,
+                        }}
                         resizeMode="cover"
                     />
-                    <Box
-                        position="absolute"
-                        top={0}
-                        left={0}
-                        right={0}
-                        bottom={0}
-                        bg="rgba(0, 0, 0, 0.6)"
+                    {/* Overlay - banner ile birlikte kaybolacak */}
+                    <Animated.View
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                            opacity: overlayOpacity,
+                        }}
                     />
                 </Box>
 
@@ -1094,6 +1102,115 @@ const EventDetailScreen: React.FC = () => {
                 </VStack>
             </Animated.ScrollView>
 
+            {/* Banner Overlay Header - Banner görünürken üstte görünecek, scroll yapınca kaybolacak */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 999,
+                    paddingTop: insets.top,
+                    paddingBottom: 10,
+                    paddingHorizontal: 16,
+                    opacity: bannerHeaderOpacity,
+                }}
+                pointerEvents="box-none"
+            >
+                <HStack justifyContent="space-between" alignItems="center">
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        width={36}
+                        height={36}
+                        borderRadius={18}
+                        bg="rgba(0, 0, 0, 0.3)"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <ChevronLeftIcon width={20} height={20} color="#FFFFFF" />
+                    </Pressable>
+
+                    <Pressable
+                        onPress={handleShare}
+                        width={36}
+                        height={36}
+                        borderRadius={18}
+                        bg="rgba(0, 0, 0, 0.3)"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <ArrowTopRightOnSquareIcon width={20} height={20} color="#FFFFFF" />
+                    </Pressable>
+                </HStack>
+            </Animated.View>
+
+            {/* Header - Parallax efekt ile scroll yapınca görünecek */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1000,
+                    paddingTop: insets.top,
+                    paddingBottom: 10,
+                    paddingHorizontal: 16,
+                    opacity: headerOpacity,
+                }}
+                pointerEvents="box-none"
+            >
+                {/* Header background - dinamik opacity ile */}
+                <Animated.View
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: isDark ? '#000000' : '#FFFFFF',
+                        opacity: headerBackgroundOpacity,
+                    }}
+                />
+                
+                {/* Header content */}
+                <HStack justifyContent="space-between" alignItems="center" style={{ zIndex: 1 }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        width={36}
+                        height={36}
+                        borderRadius={18}
+                        bg="rgba(0, 0, 0, 0.1)"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <ChevronLeftIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                    </Pressable>
+
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize={16}
+                        fontWeight="$bold"
+                        flex={1}
+                        textAlign="center"
+                        mx={16}
+                    >
+                        {event.title}
+                    </Text>
+
+                    <Pressable
+                        onPress={handleShare}
+                        width={36}
+                        height={36}
+                        borderRadius={18}
+                        bg="rgba(0, 0, 0, 0.1)"
+                        alignItems="center"
+                        justifyContent="center"
+                    >
+                        <ArrowTopRightOnSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                    </Pressable>
+                </HStack>
+            </Animated.View>
+
             {/* Floating Action Button - EVENT_GUIDE.MD Section 2.1 */}
             {/* FAB sadece isJoined: true ise görünsün */}
             {isJoined && event?.status === EventStatus.ACTIVE && (
@@ -1134,25 +1251,12 @@ const EventDetailScreen: React.FC = () => {
                                 ? 'Type2' as any // EventType.TYPE2
                                 : undefined;
                             
-                            // EventDetailScreen artık RootNavigator'dan çağrılıyor
-                            // EventCreatePost EventsStack içinde, bu yüzden App → MainTabs → EventsStack → EventCreatePost path'ini kullan
-                            // navigateNested EventsStack'in initial route'una (EventsScreen) gidiyor, bu yüzden direkt nested navigation kullan
-                            (navigationService.navigate as any)('App', {
-                                screen: 'MainTabs',
-                                params: {
-                                    screen: 'EventsStack',
-                                    params: {
-                                        screen: 'Events',
-                                        params: {
-                                            screen: 'EventCreatePost',
-                                            params: {
-                                                eventId: eventId,
-                                                eventType: eventTypeForNav,
-                                                product: product,
-                                            },
-                                        },
-                                    },
-                                },
+                            // EventDetailScreen EventNavigator stack'inde olduğu için
+                            // Aynı stack içindeki EventCreatePost'a direkt navigate edebiliriz
+                            navigation.navigate('EventCreatePost', {
+                                eventId: eventId,
+                                eventType: eventTypeForNav,
+                                product: product,
                             });
                         }}
                     >

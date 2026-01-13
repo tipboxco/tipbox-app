@@ -77,81 +77,56 @@ const ProfileEditScreen: React.FC = () => {
     // Bottom sheet içeriği
     const badgeContent = (
       <Box px="$4" pb={bottomOffset}>
-        <VStack space="md">
-          <Text
-            fontSize={18}
-            fontWeight="$bold"
-            color={isDark ? '$textDark50' : '$textLight900'}
-            mb="$2"
-          >
-            Badge Seç
-          </Text>
-          
-          {/* Badge listesi */}
-          <VStack space="sm">
-            {/* None seçeneği */}
-            <Pressable
-              onPress={() => {
-                if (slot === 1) setBadge1('');
-                else if (slot === 2) setBadge2('');
-                else if (slot === 3) setBadge3('');
-                closeBottomSheet();
-                setSelectedBadgeSlot(null);
-              }}
-              bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
-              borderRadius={8}
-              p="$3"
-              borderWidth={currentSlotValue === '' ? 2 : 0}
-              borderColor="#E8FF6B"
-            >
-              <Text
-                color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={14}
-              >
-                Badge Seçme
-              </Text>
-            </Pressable>
+        <VStack space="sm">
+          {/* Badge seçenekleri */}
+          {AVAILABLE_BADGES.map((badge) => {
+            const isSelected = currentSlotValue === badge.id;
+            const isUsedInOtherSlot = 
+              (slot !== 1 && badge1 === badge.id) ||
+              (slot !== 2 && badge2 === badge.id) ||
+              (slot !== 3 && badge3 === badge.id);
             
-            {/* Badge seçenekleri */}
-            {AVAILABLE_BADGES.map((badge) => {
-              const isSelected = currentSlotValue === badge.id;
-              const isUsedInOtherSlot = 
-                (slot !== 1 && badge1 === badge.id) ||
-                (slot !== 2 && badge2 === badge.id) ||
-                (slot !== 3 && badge3 === badge.id);
-              
-              return (
-                <Pressable
-                  key={badge.id}
-                  onPress={() => {
-                    if (isUsedInOtherSlot) {
-                      Alert.alert('Warning', 'This badge is already used in another slot');
-                      return;
-                    }
-                    if (slot === 1) setBadge1(badge.id);
-                    else if (slot === 2) setBadge2(badge.id);
-                    else if (slot === 3) setBadge3(badge.id);
-                    closeBottomSheet();
-                    setSelectedBadgeSlot(null);
-                  }}
-                  bg={isDark ? '$backgroundDark900' : '#F5F5F5'}
-                  borderRadius={8}
-                  p="$3"
-                  borderWidth={isSelected ? 2 : 0}
-                  borderColor="#E8FF6B"
-                  opacity={isUsedInOtherSlot ? 0.5 : 1}
-                >
+            return (
+              <Pressable
+                key={badge.id}
+                onPress={() => {
+                  if (isUsedInOtherSlot) {
+                    Alert.alert('Warning', 'This badge is already used in another slot');
+                    return;
+                  }
+                  if (slot === 1) setBadge1(badge.id);
+                  else if (slot === 2) setBadge2(badge.id);
+                  else if (slot === 3) setBadge3(badge.id);
+                  closeBottomSheet();
+                  setSelectedBadgeSlot(null);
+                }}
+                bg={isSelected 
+                  ? (isDark ? '$backgroundDark800' : '#E8E8E8')
+                  : (isDark ? '$backgroundDark900' : '#F5F5F5')
+                }
+                borderRadius={8}
+                p="$3"
+                opacity={isUsedInOtherSlot ? 0.5 : 1}
+              >
+                <HStack justifyContent="space-between" alignItems="center">
                   <Text
                     color={isDark ? '$textDark50' : '$textLight900'}
                     fontSize={14}
-                    fontWeight={isSelected ? '$bold' : '$normal'}
+                    fontWeight={isSelected ? '$semibold' : '$normal'}
                   >
                     {badge.label}
                   </Text>
-                </Pressable>
-              );
-            })}
-          </VStack>
+                  {isSelected && (
+                    <Feather
+                      name="check"
+                      size={18}
+                      color={isDark ? '#E8FF6B' : '#000000'}
+                    />
+                  )}
+                </HStack>
+              </Pressable>
+            );
+          })}
         </VStack>
       </Box>
     );
@@ -160,6 +135,7 @@ const ProfileEditScreen: React.FC = () => {
       enablePanDownToClose: true,
       enableDynamicSizing: true,
       backdropPressBehavior: 'close',
+      animateOnMount: true,
     });
   }, [badge1, badge2, badge3, isDark, bottomOffset, openBottomSheet, closeBottomSheet]);
 

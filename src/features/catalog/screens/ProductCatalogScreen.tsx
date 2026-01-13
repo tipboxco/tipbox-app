@@ -691,10 +691,86 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         },
       });
     } else if (type === 'tips') {
+      // Get current store state
+      const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+      
+      // Determine contextType and contextId based on current selection
+      // Priority: Product > ProductGroup > SubCategory
+      let determinedContextType: ProductInfoType | undefined;
+      let determinedContextId: string | undefined;
+      let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
+      
+      // Determine context based on current view and selection (from store)
+      if (selectedProductId && currentView === 'products') {
+        determinedContextType = ProductInfoType.PRODUCT;
+        determinedContextId = selectedProductId;
+        if (selectedProduct) {
+          productInfoSnapshot = {
+            image: selectedProduct.image,
+            title: selectedProduct.name,
+            subName: selectedProduct.description,
+          };
+        }
+      } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+        determinedContextType = ProductInfoType.PRODUCT_GROUP;
+        determinedContextId = selectedProductGroupId;
+      } else if (selectedSubCategoryId) {
+        determinedContextType = ProductInfoType.SUB_CATEGORY;
+        determinedContextId = selectedSubCategoryId;
+      }
+      
+      // Store'da ID yoksa hata göster
+      if (!determinedContextType || !determinedContextId) {
+        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for tips. Type:', determinedContextType, 'ID:', determinedContextId);
+        // TODO: Show error toast/modal to user
+        return;
+      }
+      
+      // Save to flow store
+      setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
+      
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateTipsAndTrickPostScreen',
       });
     } else if (type === 'question') {
+      // Get current store state
+      const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+      
+      // Determine contextType and contextId based on current selection
+      // Priority: Product > ProductGroup > SubCategory
+      let determinedContextType: ProductInfoType | undefined;
+      let determinedContextId: string | undefined;
+      let productInfoSnapshot: { image: any; title: string; subName?: string } | undefined;
+      
+      // Determine context based on current view and selection (from store)
+      if (selectedProductId && currentView === 'products') {
+        determinedContextType = ProductInfoType.PRODUCT;
+        determinedContextId = selectedProductId;
+        if (selectedProduct) {
+          productInfoSnapshot = {
+            image: selectedProduct.image,
+            title: selectedProduct.name,
+            subName: selectedProduct.description,
+          };
+        }
+      } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
+        determinedContextType = ProductInfoType.PRODUCT_GROUP;
+        determinedContextId = selectedProductGroupId;
+      } else if (selectedSubCategoryId) {
+        determinedContextType = ProductInfoType.SUB_CATEGORY;
+        determinedContextId = selectedSubCategoryId;
+      }
+      
+      // Store'da ID yoksa hata göster
+      if (!determinedContextType || !determinedContextId) {
+        console.error('[ProductCatalogScreen] ❌ Missing contextType or contextId for question. Type:', determinedContextType, 'ID:', determinedContextId);
+        // TODO: Show error toast/modal to user
+        return;
+      }
+      
+      // Save to flow store
+      setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
+      
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateQuestionPostScreen',
       });

@@ -35,12 +35,12 @@ export const AchievementFilter: React.FC<AchievementFilterProps> = ({
             borderWidth={1}
             borderColor="#EFEFEF"
             borderRadius={10}
-            px='$3'
-            py="$1"
+            px='$4'
+            py="$2"
           >
             <Text
               color="#000000"
-              fontSize={8}
+              fontSize="$xs"
               fontWeight="$semibold"
               textAlign="center"
             >

@@ -30,6 +30,16 @@ import {
   CalendarIcon,
   BellIcon,
   MagnifyingGlassIcon,
+  ArrowTopRightOnSquareIcon,
+  BookmarkIcon,
+  ChatBubbleLeftRightIcon,
+  EnvelopeIcon,
+  CheckCircleIcon,
+  AcademicCapIcon,
+  CurrencyDollarIcon,
+  PaperAirplaneIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
 } from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -68,8 +78,7 @@ const NotificationCard: React.FC<{
     onPress?: () => void;
     onMarkAsRead?: () => void;
     onDelete?: () => void;
-    hasNavigationAction?: boolean; // Navigation action var mı?
-}> = ({ notification, onPress, onMarkAsRead, onDelete, hasNavigationAction = false }) => {
+}> = ({ notification, onPress, onMarkAsRead, onDelete }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const markAsReadMutation = useMarkNotificationAsRead();
@@ -77,27 +86,63 @@ const NotificationCard: React.FC<{
 
     const getIconComponent = (type: NotificationType): React.ComponentType<{ width?: number; height?: number; color?: string }> => {
         switch (type) {
+            // Post ile ilgili
             case 'POST_LIKED':
+                return HeartIcon;
+            case 'POST_COMMENTED':
+                return ChatBubbleLeftIcon;
+            case 'POST_SHARED':
+                return ArrowTopRightOnSquareIcon;
+            case 'POST_FAVORITED':
+                return BookmarkIcon;
+
+            // Yorum ile ilgili
             case 'COMMENT_LIKED':
                 return HeartIcon;
-            case 'TIPS_RECEIVED':
-            case 'TIPS_SENT':
-            case 'REWARD_EARNED':
-                return GiftIcon;
-            case 'POST_COMMENTED':
             case 'COMMENT_REPLIED':
-            case 'NEW_MESSAGE':
-                return ChatBubbleLeftIcon;
+                return ChatBubbleLeftRightIcon;
+
+            // Trust/Follow ile ilgili
             case 'NEW_TRUSTER':
             case 'NEW_TRUSTED_BY':
                 return UserPlusIcon;
+
+            // Mesajlaşma ile ilgili
+            case 'NEW_MESSAGE':
+                return ChatBubbleLeftIcon;
+            case 'DM_REQUEST_RECEIVED':
+                return EnvelopeIcon;
+            case 'DM_REQUEST_ACCEPTED':
+                return CheckCircleIcon;
+
+            // Gamification ile ilgili
             case 'NEW_BADGE':
             case 'ACHIEVEMENT_UNLOCKED':
                 return TrophyIcon;
+            case 'REWARD_EARNED':
+                return GiftIcon;
+
+            // Expert ile ilgili
+            case 'EXPERT_REQUEST_AVAILABLE':
+            case 'EXPERT_REQUEST_ANSWERED':
+                return AcademicCapIcon;
+
+            // Sistem/Tips ile ilgili
+            case 'SYSTEM_ANNOUNCEMENT':
+                return BellIcon;
+            case 'TIPS_RECEIVED':
+                return CurrencyDollarIcon;
+            case 'TIPS_SENT':
+                return PaperAirplaneIcon;
+
+            // Event ile ilgili
             case 'EVENT_STARTED':
-            case 'EVENT_ENDING_SOON':
-            case 'EVENT_REWARD_AVAILABLE':
                 return CalendarIcon;
+            case 'EVENT_ENDING_SOON':
+                return ClockIcon;
+            case 'EVENT_REWARD_AVAILABLE':
+                return GiftIcon;
+
             default:
                 return BellIcon;
         }
@@ -130,28 +175,20 @@ const NotificationCard: React.FC<{
         ? toImageSource(notification.metadata.userAvatar)
         : DEFAULT_USER_AVATAR;
     const userName = notification.metadata?.userName || 'Kullanıcı';
+    const IconComponent = getIconComponent(notification.type);
 
     return (
         <Pressable onPress={handlePress}>
             <HStack space="md" alignItems="flex-start" mb="$4">
-                {/* Avatar */}
+                {/* Avatar - Border olmadan direkt göster */}
                 <Box position="relative">
-                    <Box
+                    <Image
+                        source={userAvatar}
+                        alt="User avatar"
                         width={48}
                         height={48}
                         borderRadius={24}
-                        bg="#F400FF"
-                        justifyContent="center"
-                        alignItems="center"
-                    >
-                        <Image
-                            source={userAvatar}
-                            alt="User avatar"
-                            width={42}
-                            height={42}
-                            borderRadius={21}
-                        />
-                    </Box>
+                    />
                     {!notification.read && (
                         <Box
                             position="absolute"
@@ -170,10 +207,10 @@ const NotificationCard: React.FC<{
                 {/* Content */}
                 <VStack flex={1} space="xs">
                     {/* Message and Time */}
-                    <HStack justifyContent="space-between" alignItems="flex-start">
+                    <HStack justifyContent="space-between" alignItems="flex-start" flex={1}>
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={11}
+                            fontSize="$sm"
                             fontWeight="$normal"
                             flex={1}
                             mr="$2"
@@ -189,39 +226,16 @@ const NotificationCard: React.FC<{
                             >
                                 {formatRelativeTime(notification.createdAt)}
                             </Text>
-                            {(() => {
-                                const IconComponent = getIconComponent(notification.type);
-                                return <IconComponent width={14} height={14} color="#7D7D7D" />;
-                            })()}
-                            <Pressable onPress={handleDelete} ml="$2">
-                                <XMarkIcon width={14} height={14} color="#7D7D7D" />
-                            </Pressable>
                         </HStack>
                     </HStack>
+                </VStack>
 
-                    {/* Navigation Action Button */}
-                    {/* Backend'den navigation data varsa veya NotificationService'den action varsa göster */}
-                    {(notification.navigation || hasNavigationAction) && (
-                        <Pressable
-                            onPress={handlePress}
-                            bg="#E8FF6B"
-                            borderWidth={1}
-                            borderColor="#D8FF08"
-                            borderRadius={20}
-                            px="$2"
-                            py="$1.5"
-                            alignSelf="flex-start"
-                            mt="$2"
-                        >
-                            <Text
-                                color="#000000"
-                                fontSize="$xs"
-                                fontWeight="$bold"
-                            >
-                                Görüntüle
-                            </Text>
-                        </Pressable>
-                    )}
+                {/* Icon - En sağda */}
+                <VStack alignItems="center" justifyContent="flex-start" space="xs" ml="$2">
+                    <IconComponent width={20} height={20} color="#7D7D7D" />
+                    <Pressable onPress={handleDelete}>
+                        <XMarkIcon width={16} height={16} color="#7D7D7D" />
+                    </Pressable>
                 </VStack>
             </HStack>
         </Pressable>
@@ -244,10 +258,33 @@ const NotificationsScreenComponent: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
-    
+
     // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
     const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
-    
+
+    // Get active filter based on current page
+    const activeFilter = filters[currentPage] || filters[0];
+
+    // API hooks - shouldFetchNotifications tanımı useFocusEffect'ten önce olmalı
+    const shouldFetchNotifications = isAuthenticated && isAuthReady;
+    const unreadOnly = activeFilter?.id === 'unread';
+
+    // Debounce search query for API calls
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearchQuery(searchQuery.trim());
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // API hooks - useNotifications hook'unu useFocusEffect'ten önce çağır
+    const { data: notificationsResponse, isLoading, error, refetch } = useNotifications({
+        limit: 50,
+        offset: 0,
+        unreadOnly: unreadOnly,
+        search: debouncedSearchQuery || undefined,
+    }, shouldFetchNotifications); // Sadece authenticated ve auth ready olduğunda query çalışsın
+
     useFocusEffect(
         useCallback(() => {
             // Ekran focus aldığında drawer gesture'ı disable et
@@ -271,27 +308,6 @@ const NotificationsScreenComponent: React.FC = () => {
     
     // 🎯 CORE: Shared progress value (0 = All, 1 = Replies, 2 = Trust, 3 = Tips)
     const progress = useSharedValue(0);
-
-    // Debounce search query for API calls
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setDebouncedSearchQuery(searchQuery.trim());
-      }, 500);
-      return () => clearTimeout(timer);
-    }, [searchQuery]);
-
-    // Get active filter based on current page
-    const activeFilter = filters[currentPage] || filters[0];
-    
-    // API hooks
-    const unreadOnly = activeFilter?.id === 'unread';
-    const shouldFetchNotifications = isAuthenticated && isAuthReady;
-    const { data: notificationsResponse, isLoading, error, refetch } = useNotifications({
-        limit: 50,
-        offset: 0,
-        unreadOnly: unreadOnly,
-        search: debouncedSearchQuery || undefined,
-    }, shouldFetchNotifications); // Sadece authenticated ve auth ready olduğunda query çalışsın
 
     // SAFETY FIX: Ensure notifications is always an array
     const notifications = Array.isArray(notificationsResponse?.data) 
@@ -533,20 +549,15 @@ const NotificationsScreenComponent: React.FC = () => {
 
     // FlatList renderItem - useCallback ile memoize et
     const renderNotificationItem = React.useCallback(({ item }: { item: Notification }) => {
-        // Notification için navigation action var mı kontrol et
-        const navigationAction = getNavigationAction(item);
-        const hasNavigationAction = navigationAction !== null;
-
         return (
             <NotificationCard
                 notification={item}
                 onPress={() => handleNotificationPress(item)}
                 onMarkAsRead={handleMarkAsRead}
                 onDelete={handleDelete}
-                hasNavigationAction={hasNavigationAction}
             />
         );
-    }, [handleNotificationPress, handleMarkAsRead, handleDelete, getNavigationAction]);
+    }, [handleNotificationPress, handleMarkAsRead, handleDelete]);
     
     // Key extractor - unique ID kullan
     const keyExtractor = React.useCallback((item: Notification) => item.id, []);
@@ -601,6 +612,9 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
+        // Estimated item height: avatar (48px) + content + margins (~100px)
+        const estimatedItemHeight = 100;
+        
         return (
             <FlashList
                 data={filtered}
@@ -609,7 +623,7 @@ const NotificationsScreenComponent: React.FC = () => {
                 contentContainerStyle={{ 
                     paddingHorizontal: 16,
                     paddingTop: 16,
-                    paddingBottom: 20,
+                    paddingBottom: estimatedItemHeight, // 1 item boyutu kadar padding
                 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={

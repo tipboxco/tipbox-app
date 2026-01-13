@@ -1,5 +1,13 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { RefreshControl } from 'react-native';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    interpolateColor,
+    withTiming,
+} from 'react-native-reanimated';
 import {
     VStack,
     HStack,
@@ -25,6 +33,8 @@ import { useTrustList, useTrusterList, useUserProfile } from '../api/hooks';
 import { ProfileStackParamList } from '../navigation';
 import { useSafeAreaValues, DEFAULT_USER_AVATAR } from '@/src/utils';
 
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
+
 type TrustListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type TrustListScreenRouteProp = {
     key: string;
@@ -45,9 +55,19 @@ export const Trust_TrusterListScreen = () => {
     const bottomInset = useSafeAreaValues('bottom');
 
     const userId = route.params?.userId;
-    const [activeTab, setActiveTab] = useState<'trust' | 'truster'>(
-        route.params?.initialTab || 'trust'
-    );
+    const initialTab = route.params?.initialTab || 'trust';
+    const initialPage = initialTab === 'truster' ? 1 : 0;
+    
+    // PagerView refs and state
+    const pagerRef = useRef<PagerView>(null);
+    const tabContainerRef = useRef<any>(null);
+    const [tabContainerWidth, setTabContainerWidth] = useState(0);
+    const [currentPage, setCurrentPage] = useState(initialPage);
+    
+    // 🎯 CORE: Shared progress value (0 = Trust, 1 = Truster)
+    const progress = useSharedValue(initialPage);
+    
+    const [activeTab, setActiveTab] = useState<'trust' | 'truster'>(initialTab);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
@@ -73,16 +93,30 @@ export const Trust_TrusterListScreen = () => {
         }
     }, [searchQuery, activeTab]);
 
-    // React Query hook - sadece trust sekmesinde aktif, search query ile
-    const { data: trustListData, isLoading: isTrustListLoading, error: trustListError } = useTrustList(
-        activeTab === 'trust' ? userId : undefined,
-        activeTab === 'trust' ? (debouncedSearchQuery.trim() || undefined) : undefined
+    // React Query hook - her zaman aktif (cache'den veri göster, tab değişiminde yeni istek atma)
+    // Sadece search query değiştiğinde veya pull to refresh'te yeni istek atılacak
+    const { 
+        data: trustListData, 
+        isLoading: isTrustListLoading, 
+        error: trustListError,
+        refetch: refetchTrustList,
+        isRefetching: isRefetchingTrustList
+    } = useTrustList(
+        userId, // Her zaman userId geçir (cache'den veri göster)
+        activeTab === 'trust' ? (debouncedSearchQuery.trim() || undefined) : undefined // Sadece trust tab'ında search query kullan
     );
 
-    // React Query hook - sadece truster sekmesinde aktif, search query ile
-    const { data: trusterListData, isLoading: isTrusterListLoading, error: trusterListError } = useTrusterList(
-        activeTab === 'truster' ? userId : undefined,
-        activeTab === 'truster' ? (debouncedSearchQuery.trim() || undefined) : undefined
+    // React Query hook - her zaman aktif (cache'den veri göster, tab değişiminde yeni istek atma)
+    const { 
+        data: trusterListData, 
+        isLoading: isTrusterListLoading, 
+        error: trusterListError,
+        refetch: refetchTrusterList,
+        isRefetching: isRefetchingTrusterList
+    } = useTrusterList(
+        userId, // Her zaman userId geçir (cache'den veri göster)
+        activeTab === 'truster' ? (debouncedSearchQuery.trim() || undefined) : undefined, // Sadece truster tab'ında search query kullan
+        selectedSort === 'newest' ? 'date_desc' : selectedSort === 'oldest' ? 'date_asc' : undefined
     );
 
     // API'den gelen data'yı mock formatına transform et (sadece TrustUserCard için gerekli)
@@ -108,33 +142,92 @@ export const Trust_TrusterListScreen = () => {
         };
     };
 
-    // Trust sekmesi için sadece API'den gelen verileri kullan (backend'de filtrelenmiş)
-    const trustUsers: TrustUserCardUser[] = activeTab === 'trust'
-        ? (trustListData?.map(transformTrustApiUserToCardUser) || [])
-        : [];
+    // Trust sekmesi için veriler - her zaman hesapla (PagerView içinde her iki tab da render ediliyor)
+    const trustUsers: TrustUserCardUser[] = (trustListData?.map(transformTrustApiUserToCardUser) || []);
 
-    // Truster sekmesi için API verisi
-    const trusterUsers: TrustUserCardUser[] = activeTab === 'truster'
-        ? (trusterListData?.map(transformTrusterApiUserToCardUser) || [])
-        : [];
+    // Truster sekmesi için veriler - her zaman hesapla
+    const trusterUsers: TrustUserCardUser[] = (trusterListData?.map(transformTrusterApiUserToCardUser) || []);
 
-    // Get current data based on active tab
-    const currentUsers = activeTab === 'trust' ? trustUsers : trusterUsers;
+    // Trust sekmesi için filtrelenmiş kullanıcılar (backend'den filtrelenmiş veri geliyor, direkt kullan)
+    const filteredTrustUsers = trustUsers;
 
-    // Filter users based on search query - sadece Truster sekmesi için frontend filtreleme
-    // Trust sekmesinde backend'den filtrelenmiş veri geliyor, bu yüzden direkt kullan
-    const filteredUsers = activeTab === 'trust'
-        ? currentUsers // Trust sekmesinde backend'den filtrelenmiş veri geliyor
-        : currentUsers.filter((user: TrustUserCardUser) => {
-            // Truster sekmesinde mock data'yı frontend'de filtrele
-            return user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.title.toLowerCase().includes(searchQuery.toLowerCase());
-        });
+    // Truster sekmesi için filtrelenmiş kullanıcılar (frontend'de filtrele)
+    const filteredTrusterUsers = trusterUsers.filter((user: TrustUserCardUser) => {
+        return user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.title.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
     // Trust sekmesinde search query varsa ve data boşsa, "Kullanıcı bulunamadı" göster
-    const showEmptyState = activeTab === 'trust'
-        ? (!isTrustListLoading && !trustListError && debouncedSearchQuery.trim().length > 0 && filteredUsers.length === 0)
-        : (!isTrusterListLoading && !trusterListError && searchQuery.trim().length > 0 && filteredUsers.length === 0);
+    const showTrustEmptyState = !isTrustListLoading && !trustListError && debouncedSearchQuery.trim().length > 0 && filteredTrustUsers.length === 0;
+    
+    // Truster sekmesinde search query varsa ve data boşsa, "Kullanıcı bulunamadı" göster
+    const showTrusterEmptyState = !isTrusterListLoading && !trusterListError && searchQuery.trim().length > 0 && filteredTrusterUsers.length === 0;
+
+    // Tab press handler
+    const handleTabPress = useCallback((index: number) => {
+        pagerRef.current?.setPage(index);
+    }, []);
+
+    // Page scroll handler (realtime progress)
+    const handlePageScroll = useCallback(
+        (e: any) => {
+            'worklet';
+            const { position, offset } = e.nativeEvent;
+            progress.value = position + offset;
+        },
+        [progress]
+    );
+
+    // Page selected handler (snap sonrası sync)
+    const handlePageSelected = useCallback(
+        (e: any) => {
+            const position = e.nativeEvent.position;
+            progress.value = withTiming(position, { duration: 0 });
+            setCurrentPage(position);
+            setActiveTab(position === 0 ? 'trust' : 'truster');
+        },
+        [progress]
+    );
+
+    // Animated styles for tab labels
+    const trustTabStyle = useAnimatedStyle(() => {
+        const activeColor = isDark ? '#FFFFFF' : '#000000';
+        const inactiveColor = '#8C8C8C';
+        const color = interpolateColor(
+            progress.value,
+            [0, 1], // Progress range
+            [activeColor, inactiveColor] // Trust: active -> inactive
+        );
+        return { color };
+    });
+
+    const trusterTabStyle = useAnimatedStyle(() => {
+        const activeColor = isDark ? '#FFFFFF' : '#000000';
+        const inactiveColor = '#8C8C8C';
+        const color = interpolateColor(
+            progress.value,
+            [0, 1], // Progress range
+            [inactiveColor, activeColor] // Truster: inactive -> active
+        );
+        return { color };
+    });
+
+    // Indicator animation
+    const numberOfTabs = 2;
+    const tabWidth = tabContainerWidth / numberOfTabs || 0;
+    const indicatorWidth = tabWidth * 0.8; // Tab genişliğinin %80'i
+
+    const indicatorStyle = useAnimatedStyle(() => {
+        // Her tab'in ortasına yerleştirmek için
+        const translateX = progress.value * tabWidth + (tabWidth - indicatorWidth) / 2;
+        return {
+            transform: [{ translateX }],
+        };
+    });
+
+    // Background color - NotificationsScreen ile aynı yapı
+    const backgroundColor = isDark ? '#000' : '#FFFFFF';
+    const tabHeaderBgColor = '#FFFFFF'; // Tab header her zaman beyaz
 
     const handlePopoverOpen = (userId: string) => {
         setOpenPopoverId(userId);
@@ -148,6 +241,15 @@ export const Trust_TrusterListScreen = () => {
         setSelectedSort(sort);
         closeBottomSheet();
     };
+
+    // Pull to refresh handler - cache invalid yap ve fresh data fetch et
+    const handleRefreshTrust = useCallback(async () => {
+        await refetchTrustList();
+    }, [refetchTrustList]);
+
+    const handleRefreshTruster = useCallback(async () => {
+        await refetchTrusterList();
+    }, [refetchTrusterList]);
 
     const handleFilterPress = () => {
         openBottomSheet(
@@ -277,12 +379,12 @@ export const Trust_TrusterListScreen = () => {
                 animateOnMount: true,
                 paddingBottom: bottomInset,
                 backgroundStyle: {
-                    backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+                    backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                 },
                 handleStyle: {
-                    backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+                    backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
                     borderTopLeftRadius: 20,
                     borderTopRightRadius: 20,
                 },
@@ -296,8 +398,8 @@ export const Trust_TrusterListScreen = () => {
     };
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-            <VStack flex={1} bg={isDark ? '#000' : '#FAFAFA'}>
+        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+            <Box flex={1} bg={backgroundColor}>
                 {/* Header */}
                 <Header
                     title={userProfile?.name || 'Loading...'}
@@ -305,110 +407,155 @@ export const Trust_TrusterListScreen = () => {
                     onBackPress={() => navigation.goBack()}
                 />
 
-                {/* Tab Bar */}
-                <VStack py={16} bg={isDark ? '#000' : '#FAFAFA'}>
-                    <HStack borderBottomWidth={1} borderColor="#E9E9E9" p={0} m={0} mb={16}>
-                        <Pressable
-                            onPress={() => setActiveTab('trust')}
-                            flex={1}
-                            alignItems="center"
-                            pb="$1"
-                            position="relative"
-                        >
-                            <VStack alignItems="center" space="xs">
-                                <Text
-                                    color={activeTab === 'trust' ? '#000' : '#8C8C8C'}
-                                    fontSize={12}
-                                    fontWeight="$bold"
-                                >
-                                    Trust
-                                </Text>
-                            </VStack>
-                            <Box
-                                position="absolute"
-                                bottom={-1}
-                                left="25%"
-                                height={2}
-                                width="50%"
-                                borderRadius={999}
-                                bg={activeTab === 'trust' ? '#000' : 'transparent'}
+                {/* Search Bar - Fixed at top */}
+                <VStack
+                    space="md"
+                    pb="$4"
+                    px="$4"
+                    bg={backgroundColor}
+                >
+                    <HStack
+                        alignItems="center"
+                        bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                        borderWidth={1}
+                        borderColor="#E9E9E9"
+                        borderRadius={20}
+                        px={14}
+                        space="sm"
+                    >
+                        <Feather
+                            name="search"
+                            size={24}
+                            color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
+                        />
+                        <Input flex={1} borderWidth={0} bg="transparent">
+                            <InputField
+                                placeholder={activeTab === 'trust' ? "Search for a user in the Trust List." : "Search for a user in the Truster List."}
+                                placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                                color={isDark ? '#000' : '#000'}
+                                fontSize="$xs"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
                             />
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setActiveTab('truster')}
-                            flex={1}
-                            alignItems="center"
-                            pb="$1"
-                            position="relative"
-                        >
-                            <VStack alignItems="center" space="xs">
-                                <Text
-                                    color={activeTab === 'truster' ? '#000' : '#8C8C8C'}
-                                    fontSize={12}
-                                    fontWeight="$bold"
-                                >
-                                    Truster
-                                </Text>
-                            </VStack>
-                            <Box
-                                position="absolute"
-                                bottom={-1}
-                                left="25%"
-                                height={2}
-                                width="50%"
-                                borderRadius={999}
-                                bg={activeTab === 'truster' ? '#000' : 'transparent'}
-                            />
-                        </Pressable>
-                    </HStack>
-
-                    <VStack px="$4">
-                        {/* Search Bar */}
-                        <HStack
-                            alignItems="center"
-                            bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-                            borderWidth={1}
-                            borderColor="#E9E9E9"
-                            borderRadius={23}
-                            px={12}
-                            space="sm"
-                        >
-                            <Feather
-                                name="search"
-                                size={24}
-                                color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'}
-                            />
-                            <Input flex={1} borderWidth={0} bg="transparent">
-                                <InputField
-                                    placeholder={activeTab === 'trust' ? "Search for a user in the Trust List." : "Search for a user in the Truster List."}
-                                    placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
-                                    color={isDark ? '#fff' : '#000'}
-                                    fontSize={11}
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
+                        </Input>
+                        {/* Filter Icon - Only for Truster tab */}
+                        {activeTab === 'truster' && (
+                            <Pressable p={8} onPress={handleFilterPress}>
+                                <Feather
+                                    name="filter"
+                                    size={18}
+                                    color={isDark ? '#89898D' : '#89898D'}
                                 />
-                            </Input>
-                            {/* Filter Icon - Only for Truster tab */}
-                            {activeTab === 'truster' && (
-                                <Pressable p={8}                                 onPress={handleFilterPress}>
-                                    <Feather
-                                        name="filter"
-                                        size={18}
-                                        color={isDark ? '#89898D' : '#89898D'}
-                                    />
-                                </Pressable>
-                            )}
-                        </HStack>
-                    </VStack>
+                            </Pressable>
+                        )}
+                    </HStack>
                 </VStack>
 
-                {/* Content */}
-                <VStack flex={1}>
-                    {activeTab === 'trust' ? (
+                {/* Tab Header */}
+                <VStack pt={0} bg={tabHeaderBgColor}>
+                    <HStack
+                        ref={tabContainerRef}
+                        borderBottomWidth={1}
+                        borderColor="#E9E9E9"
+                        p={0}
+                        mb="$2"
+                        position="relative"
+                        onLayout={(event) => {
+                            const width = event.nativeEvent.layout.width;
+                            setTabContainerWidth(width);
+                        }}
+                    >
+                        {/* Trust Tab */}
+                        <Pressable
+                            onPress={() => handleTabPress(0)}
+                            flex={1}
+                            alignItems="center"
+                            pb={8}
+                            px="$1"
+                        >
+                            <VStack alignItems="center" space="xs">
+                                <Animated.Text
+                                    style={[
+                                        {
+                                            fontSize: 14,
+                                            fontWeight: 'bold',
+                                        },
+                                        trustTabStyle,
+                                    ]}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
+                                    Trust
+                                </Animated.Text>
+                            </VStack>
+                        </Pressable>
+
+                        {/* Truster Tab */}
+                        <Pressable
+                            onPress={() => handleTabPress(1)}
+                            flex={1}
+                            alignItems="center"
+                            pb={8}
+                            px="$1"
+                        >
+                            <VStack alignItems="center" space="xs">
+                                <Animated.Text
+                                    style={[
+                                        {
+                                            fontSize: 14,
+                                            fontWeight: 'bold',
+                                        },
+                                        trusterTabStyle,
+                                    ]}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
+                                    Truster
+                                </Animated.Text>
+                            </VStack>
+                        </Pressable>
+
+                        {/* Animated Indicator */}
+                        {tabWidth > 0 && (
+                            <Animated.View
+                                style={[
+                                    {
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        width: indicatorWidth,
+                                        height: 2,
+                                        backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                                    },
+                                    indicatorStyle,
+                                ]}
+                            />
+                        )}
+                    </HStack>
+                </VStack>
+
+                {/* PagerView - Native swipe tab switching */}
+                <AnimatedPagerView
+                    ref={pagerRef}
+                    style={{ flex: 1 }}
+                    initialPage={initialPage}
+                    onPageScroll={handlePageScroll}
+                    onPageSelected={handlePageSelected}
+                >
+                    {/* Trust Tab Content */}
+                    <Box key="0" flex={1}>
                         <ScrollView
                             flex={1}
                             keyboardShouldPersistTaps="handled"
                             contentContainerStyle={{ paddingBottom: bottomInset }}
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={isRefetchingTrustList}
+                                    onRefresh={handleRefreshTrust}
+                                    tintColor={isDark ? '#FFFFFF' : '#000000'}
+                                    colors={isDark ? ['#FFFFFF'] : ['#000000']}
+                                />
+                            }
                         >
                             {/* Suggested Users Section */}
                             <SuggestionCard
@@ -445,16 +592,16 @@ export const Trust_TrusterListScreen = () => {
                                 <Box py={20} alignItems="center">
                                     <Text color="#CE4A4A">Hata: {trustListError.message}</Text>
                                 </Box>
-                            ) : showEmptyState ? (
+                            ) : showTrustEmptyState ? (
                                 <Box py={20} alignItems="center">
                                     <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı bulunamadı</Text>
                                 </Box>
-                            ) : filteredUsers.length === 0 && !debouncedSearchQuery.trim() ? (
+                            ) : filteredTrustUsers.length === 0 && !debouncedSearchQuery.trim() ? (
                                 <Box py={20} alignItems="center">
                                     <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz trust listeniz boş</Text>
                                 </Box>
                             ) : (
-                                filteredUsers.map((user: TrustUserCardUser) => (
+                                filteredTrustUsers.map((user: TrustUserCardUser) => (
                                     <TrustUserCard
                                         key={user.id}
                                         user={user}
@@ -469,11 +616,22 @@ export const Trust_TrusterListScreen = () => {
                                 ))
                             )}
                         </ScrollView>
-                    ) : (
+                    </Box>
+
+                    {/* Truster Tab Content */}
+                    <Box key="1" flex={1}>
                         <ScrollView
                             flex={1}
                             keyboardShouldPersistTaps="handled"
                             contentContainerStyle={{ paddingBottom: bottomInset }}
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={isRefetchingTrusterList}
+                                    onRefresh={handleRefreshTruster}
+                                    tintColor={isDark ? '#FFFFFF' : '#000000'}
+                                    colors={isDark ? ['#FFFFFF'] : ['#000000']}
+                                />
+                            }
                         >
                             {/* Suggested Users Section */}
                             <SuggestionCard
@@ -510,27 +668,32 @@ export const Trust_TrusterListScreen = () => {
                                 <Box py={20} alignItems="center">
                                     <Text color="#CE4A4A">Hata: {trusterListError.message}</Text>
                                 </Box>
-                            ) : filteredUsers.length === 0 && !searchQuery.trim() ? (
+                            ) : showTrusterEmptyState ? (
+                                <Box py={20} alignItems="center">
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı bulunamadı</Text>
+                                </Box>
+                            ) : filteredTrusterUsers.length === 0 && !searchQuery.trim() ? (
                                 <Box py={20} alignItems="center">
                                     <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz truster listeniz boş</Text>
                                 </Box>
                             ) : (
-                            filteredUsers.map((user: TrustUserCardUser) => (
-                                <TrustUserCard
-                                    key={user.id}
-                                    user={user}
-                                    showBorder={false}
-                                    isPopoverOpen={openPopoverId === user.id}
-                                    onPopoverOpen={() => handlePopoverOpen(user.id)}
-                                    onPopoverClose={handlePopoverClose}
-                                    onUserPress={() => {
-                                        profileNavigation.navigate('ProfileMain', { userId: user.id });
-                                    }}
-                                />
-                            )))}
+                                filteredTrusterUsers.map((user: TrustUserCardUser) => (
+                                    <TrustUserCard
+                                        key={user.id}
+                                        user={user}
+                                        showBorder={false}
+                                        isPopoverOpen={openPopoverId === user.id}
+                                        onPopoverOpen={() => handlePopoverOpen(user.id)}
+                                        onPopoverClose={handlePopoverClose}
+                                        onUserPress={() => {
+                                            profileNavigation.navigate('ProfileMain', { userId: user.id });
+                                        }}
+                                    />
+                                ))
+                            )}
                         </ScrollView>
-                    )}
-                </VStack>
+                    </Box>
+                </AnimatedPagerView>
 
                 {/* Güvenli kapanış overlay'i - sadece popover açıkken aktif */}
                 {openPopoverId && (
@@ -547,8 +710,7 @@ export const Trust_TrusterListScreen = () => {
                         pointerEvents="auto"
                     />
                 )}
-
-            </VStack>
+            </Box>
         </SafeAreaView>
     );
 };

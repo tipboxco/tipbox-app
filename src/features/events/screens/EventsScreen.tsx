@@ -15,7 +15,6 @@ import {
   Input,
   InputField,
   Text,
-  Image,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -24,12 +23,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { EventsStackParamList } from '../navigation';
 import { navigationService } from '@/src/services/NavigationService';
 import { Header } from '@/src/components/Header';
-import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { FilterOption } from '../components/AchievementFilter';
 import { CommunityTab, AchievementTab } from '../components/TabContents';
 import { useDrawerStore } from '@/src/store/drawerStore';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
@@ -68,12 +64,8 @@ const EventsScreen: React.FC = () => {
   // Tab state - currentPage'e göre hesaplanıyor
   const activeTab: 'community' | 'achievement' = currentPage === 0 ? 'community' : 'achievement';
   
-  const [selectedReward, setSelectedReward] = useState<SeeAllReward | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Global bottom sheet
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
   // PERFORMANCE FIX: Memoize background colors to prevent re-renders
   const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '#FFFFFF', [isDark]);
@@ -95,130 +87,6 @@ const EventsScreen: React.FC = () => {
     }
   };
 
-  const handleRewardPress = useCallback((reward: SeeAllReward) => {
-    setSelectedReward(reward);
-    
-    const handleClose = () => {
-      closeBottomSheet();
-      setTimeout(() => setSelectedReward(null), 300);
-    };
-
-    const handleViewAchievement = () => {
-      handleClose();
-      // Note: RewardsBadges requires eventId, but achievement ladder shows general achievements
-      // Navigation removed as we don't have an eventId in this context
-    };
-
-    // Badge detail content'i hazırla
-    openBottomSheet(
-      <Box flex={1}>
-        {/* Scrollable Content */}
-        <BottomSheetScrollView
-          contentContainerStyle={{ paddingBottom: 24 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <VStack space="md" alignItems="center" px="$4" pt="$4" pb="$4">
-            {/* Badge Title */}
-            <Text
-              color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={16}
-              fontWeight="$bold"
-              textAlign="center"
-            >
-              {reward.title}
-            </Text>
-
-            {/* Instruction Text */}
-            <Text
-              color={isDark ? '#CCCCCC' : '#000000'}
-              fontSize={12}
-              textAlign="center"
-              px="$2"
-            >
-              "{reward.title}" rozetini kazanmak için en az {reward.task} gönderi paylaşmalısın.
-            </Text>
-
-            {/* Badge Image */}
-            <Image
-              source={reward.image}
-              alt={reward.title}
-              width={180}
-              height={180}
-            />
-
-            {/* Progress Bar */}
-            <VStack space="sm" w="100%" px="$4">
-              <Box
-                w="100%"
-                h={5}
-                bg={isDark ? '$backgroundDark700' : '#E0E0E0'}
-                borderRadius={10}
-                overflow="hidden"
-              >
-                <Box
-                  w={`${((reward.completed || 0) / (reward.task || 1)) * 100}%`}
-                  h="100%"
-                  bg={reward.isUnlocked ? '#0C7A24' : '#686868'}
-                />
-              </Box>
-              <Text
-                color={isDark ? '$textDark400' : '#797979'}
-                fontSize={9}
-                textAlign="center"
-              >
-                {reward.isUnlocked ? 'Completed' : `${reward.completed || 0}/${reward.task || 1}`}
-              </Text>
-            </VStack>
-
-            {/* View Detail Button */}
-            <Pressable
-              bg="#C2E607"
-              borderRadius={8}
-              h={48}
-              w="100%"
-              px="$4"
-              onPress={handleViewAchievement}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Text
-                color="#000000"
-                fontSize={12}
-                fontWeight="$bold"
-              >
-                View Detail
-              </Text>
-            </Pressable>
-          </VStack>
-        </BottomSheetScrollView>
-      </Box>,
-      {
-        enablePanDownToClose: true,
-        enableOverDrag: false,
-        enableHandlePanningGesture: true,
-        enableContentPanningGesture: false,
-        enableDynamicSizing: true,
-        detached: true,
-        bottomInset: 46,
-        style: {
-          marginHorizontal: 24,
-        },
-        backgroundStyle: {
-          backgroundColor: isDark ? '#1F1F1F' : '#FFFFFF',
-          borderRadius: 16,
-        },
-        handleIndicatorStyle: {
-          backgroundColor: isDark ? '#666666' : '#CCCCCC',
-        },
-        onChange: (index: number) => {
-          // Sheet kapandığında selectedReward'i temizle
-          if (index === -1) {
-            setTimeout(() => setSelectedReward(null), 300);
-          }
-        },
-      }
-    );
-  }, [openBottomSheet, closeBottomSheet, isDark]);
 
   // Tab press handler - PagerView native animasyonu ile geçiş
   const handleTabPress = useCallback((index: number) => {
@@ -418,7 +286,6 @@ const EventsScreen: React.FC = () => {
               <AchievementTab
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
-                onRewardPress={handleRewardPress}
               />
             </Box>
           </AnimatedPagerView>
