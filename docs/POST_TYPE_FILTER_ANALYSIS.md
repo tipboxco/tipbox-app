@@ -75,9 +75,30 @@ Product Seviyesi:
    - `getFeed` fonksiyonu `contextType` ve `contextId` parametrelerini destekliyor ✅
    - **Dosya:** `src/features/feed/api/feedApi.ts` (satır 94-141)
 
-3. **PostsScreen - Context Detection**
+3. **Filtered Feed API - Context Support**
+   - `getFilteredFeed` fonksiyonu `contextType` ve `contextId` parametrelerini destekliyor ✅
+   - Backend endpoint: `GET /feed/filtered?contextType=<type>&contextId=<id>&tags[]=<tag>&sort=<sort>`
+   - **Dosya:** `src/features/feed/api/feedApi.ts` (satır 161-284)
+   - **Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 527-566)
+
+4. **PostsScreen - Context Detection**
    - Context type ve ID'yi route params ve store'dan belirliyor ✅
    - **Dosya:** `src/features/post/screens/PostsScreen.tsx` (satır 64-103)
+
+5. **Backend - Hiyerarşik Feed Mantığı**
+   - Sub Category Feed: Sub category + alt product groups + alt products (sadece Free, Tips, Question) ✅
+   - Product Group Feed: Product group + alt products (sadece Free, Tips, Question) ✅
+   - Product Feed: Sadece product'a ait gönderiler (tüm tipler) ✅
+   - **Backend Endpoint'ler:**
+     - `GET /catalog/sub-categories/:subCategoryId/posts`
+     - `GET /catalog/product-groups/:productGroupId/posts`
+     - `GET /catalog/products/:productId/posts`
+   - **Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 319-485, 570-647)
+
+6. **Backend - Otomatik Post Type Filtreleme**
+   - Backend context seviyesine göre otomatik filtreleme yapıyor ✅
+   - Sub Category ve Product Group için Experience, Update, Benchmark otomatik filtreleniyor ✅
+   - **Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 652-666)
 
 ### ❌ Eksik Özellikler
 
@@ -114,27 +135,42 @@ const handleFilterPress = () => {
 - Context seviyesine göre otomatik post type filtreleme
 - Sub Category ve Product Group için Experience, Update, Benchmark'ı filtreleme
 
-#### 3. Filtered Feed API - Context Support Eksik
+#### 3. Filtered Feed API - Context Support (Backend'de Var, Frontend'de Eksik)
 
 **Mevcut Durum:**
-- `getFilteredFeed` fonksiyonu contextType ve contextId parametrelerini desteklemiyor
-- Sadece tags, interests, category, sort filtreleri var
+- Backend endpoint `contextType` ve `contextId` parametrelerini destekliyor ✅
+- Frontend `getFilteredFeed` fonksiyonu bu parametreleri desteklemiyor ❌
+
+**Backend Endpoint:**
+```
+GET /feed/filtered?contextType=<type>&contextId=<id>&tags[]=<tag>&sort=<sort>
+```
 
 **Dosya:** `src/features/feed/api/feedApi.ts` (satır 161-284)
 
 **Eksik:**
-- `contextType` ve `contextId` parametreleri
-- Context seviyesine göre otomatik post type filtreleme
+- Frontend `getFilteredFeed` fonksiyonuna `contextType` ve `contextId` parametreleri eklenmeli
+- Context seviyesine göre otomatik post type filtreleme (backend'de var, frontend'de kullanılmıyor)
 
-#### 4. Hiyerarşik Feed Mantığı Eksik
+#### 4. Hiyerarşik Feed Mantığı (Backend'de Var, Frontend'de Kullanılmıyor)
 
 **Mevcut Durum:**
-- Backend sadece seçili context'e ait gönderileri getiriyor
-- Üst seviye alt seviyeye ait gönderileri göstermiyor
+- Backend hiyerarşik feed mantığını destekliyor ✅
+- Sub Category Feed: Sub category + alt product groups + alt products (sadece Free, Tips, Question)
+- Product Group Feed: Product group + alt products (sadece Free, Tips, Question)
+- Product Feed: Sadece product'a ait gönderiler (tüm tipler)
+
+**Backend Endpoint'ler:**
+- `GET /catalog/sub-categories/:subCategoryId/posts` - Hiyerarşik feed ✅
+- `GET /catalog/product-groups/:productGroupId/posts` - Hiyerarşik feed ✅
+- `GET /catalog/products/:productId/posts` - Product feed ✅
+
+**Dosya:** `src/features/post/screens/PostsScreen.tsx`
 
 **Eksik:**
-- Backend'de hiyerarşik feed mantığı (üst seviye alt seviyeye ait gönderileri de getirmeli)
-- Frontend'de bu mantığın kullanımı
+- Frontend'de hiyerarşik feed endpoint'leri kullanılmıyor
+- Şu anda `/feed` endpoint'i kullanılıyor, `/catalog/*/posts` endpoint'leri kullanılmalı
+- Frontend'de bu endpoint'lerin kullanımı
 
 #### 5. PostsScreen - Post Type Render Eksik
 
@@ -187,58 +223,81 @@ const getAvailablePostTypes = (contextType: string) => {
 
 **Yeni Dosya:** `src/features/post/components/FilterSortBottomSheet/index.tsx`
 
-### 2. Feed API - Context-Based Post Type Filtreleme
+### 2. Catalog Posts API Endpoint'leri Kullanımı
 
 **Gereksinim:**
-- `getFeed` fonksiyonuna context seviyesine göre otomatik post type filtreleme eklenmeli
-- Sub Category ve Product Group için Experience, Update, Benchmark filtrelenmeli
+- Hiyerarşik feed mantığı için `/catalog/*/posts` endpoint'lerini kullanmalı
+- Backend otomatik olarak hiyerarşik feed ve post type filtreleme yapıyor
 
-**Önerilen Değişiklik:**
+**Önerilen Yeni Endpoint Fonksiyonları:**
 
 ```typescript
-export const getFeed = async (
+// Sub Category Posts
+export const getSubCategoryPosts = async (
+  subCategoryId: string,
   cursor?: string,
   limit: number = 20,
-  contextType?: 'sub_category' | 'product_group' | 'product',
-  contextId?: string,
-  postTypeFilters?: string[] // Yeni parametre
+  type?: 'tips' | 'experience' | 'comments' | 'benchmark'
 ): Promise<FeedApiResponse> => {
   const params = new URLSearchParams();
-  // ... mevcut parametreler
-  
-  // Context seviyesine göre otomatik filtreleme
-  if (contextType && !postTypeFilters) {
-    const allowedTypes = getAllowedPostTypesForContext(contextType);
-    allowedTypes.forEach(type => params.append('tags[]', type));
-  } else if (postTypeFilters) {
-    postTypeFilters.forEach(type => params.append('tags[]', type));
-  }
-  
-  // ...
+  if (cursor) params.append('cursor', cursor);
+  params.append('limit', limit.toString());
+  if (type) params.append('type', type);
+
+  const response = await apiService.getClient().get<FeedApiResponse>(
+    `/catalog/sub-categories/${subCategoryId}/posts?${params.toString()}`
+  );
+  return response.data;
 };
 
-const getAllowedPostTypesForContext = (contextType: string): string[] => {
-  switch (contextType) {
-    case 'sub_category':
-    case 'product_group':
-      // Experience, Update, Benchmark hariç
-      return ['Review', 'Tips', 'Question'];
-    case 'product':
-      // Tüm post type'lar
-      return ['Review', 'Tips', 'Question', 'Experience', 'Update', 'Benchmark'];
-    default:
-      return [];
-  }
+// Product Group Posts
+export const getProductGroupPosts = async (
+  productGroupId: string,
+  cursor?: string,
+  limit: number = 20,
+  type?: 'tips' | 'experience' | 'comments' | 'benchmark'
+): Promise<FeedApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) params.append('cursor', cursor);
+  params.append('limit', limit.toString());
+  if (type) params.append('type', type);
+
+  const response = await apiService.getClient().get<FeedApiResponse>(
+    `/catalog/product-groups/${productGroupId}/posts?${params.toString()}`
+  );
+  return response.data;
+};
+
+// Product Posts
+export const getProductPosts = async (
+  productId: string,
+  cursor?: string,
+  limit: number = 20,
+  type?: 'tips' | 'experience' | 'comments' | 'benchmark'
+): Promise<FeedApiResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) params.append('cursor', cursor);
+  params.append('limit', limit.toString());
+  if (type) params.append('type', type);
+
+  const response = await apiService.getClient().get<FeedApiResponse>(
+    `/catalog/products/${productId}/posts?${params.toString()}`
+  );
+  return response.data;
 };
 ```
 
-**Dosya:** `src/features/feed/api/feedApi.ts`
+**Not:** Backend otomatik olarak:
+- Sub Category ve Product Group için Experience, Update, Benchmark'ı filtreler
+- Hiyerarşik feed mantığını uygular (alt seviyelerin gönderilerini de getirir)
 
-### 3. Filtered Feed API - Context Support
+**Dosya:** `src/features/catalog/api/catalogApi.ts` (yeni veya mevcut dosyaya ekle)
+
+### 3. Filtered Feed API - Context Support Ekleme
 
 **Gereksinim:**
 - `getFilteredFeed` fonksiyonuna `contextType` ve `contextId` parametreleri eklenmeli
-- Context seviyesine göre otomatik post type filtreleme
+- Backend zaten bu parametreleri destekliyor, frontend'de kullanılmalı
 
 **Önerilen Değişiklik:**
 
@@ -253,7 +312,7 @@ export const getFilteredFeed = async (
   const params = new URLSearchParams();
   // ... mevcut parametreler
   
-  // Context parametreleri
+  // Context parametreleri (Backend'de zaten destekleniyor)
   if (contextType) {
     params.append('contextType', contextType);
   }
@@ -261,15 +320,18 @@ export const getFilteredFeed = async (
     params.append('contextId', contextId);
   }
   
-  // Context seviyesine göre otomatik post type filtreleme
-  if (contextType && (!filters?.tags || filters.tags.length === 0)) {
-    const allowedTypes = getAllowedPostTypesForContext(contextType);
-    allowedTypes.forEach(type => params.append('tags[]', type));
-  }
+  // Backend otomatik olarak context seviyesine göre filtreleme yapıyor
+  // Eğer tags belirtilmemişse, backend otomatik filtreleme yapar
+  // Eğer tags belirtilmişse, kullanıcının seçtiği filtreler uygulanır
   
   // ...
 };
 ```
+
+**Backend Davranışı:**
+- `contextType` ve `contextId` varsa, backend context'e göre filtreleme yapar
+- `tags` yoksa, backend context seviyesine göre otomatik post type filtreleme yapar
+- `tags` varsa, kullanıcının seçtiği tag filtreleri uygulanır
 
 **Dosya:** `src/features/feed/api/feedApi.ts`
 
@@ -357,94 +419,92 @@ const renderFeedItem = useCallback((item: FeedApiItem) => {
 
 ---
 
-## 🔧 Backend Endpoint Gereksinimleri
+## 🔧 Backend Endpoint Durumu
 
-### 1. GET /feed - Context-Based Post Type Filtreleme
+### ✅ Mevcut Backend Endpoint'leri
 
-**Mevcut Endpoint:**
+#### 1. GET /catalog/sub-categories/:subCategoryId/posts
+
+**Endpoint:**
+```
+GET /catalog/sub-categories/:subCategoryId/posts?type=<type>&cursor=<cursor>&limit=<limit>
+```
+
+**Özellikler:**
+- ✅ Hiyerarşik feed mantığı (sub category + alt product groups + alt products)
+- ✅ Otomatik post type filtreleme (Experience, Update, Benchmark hariç)
+- ✅ `type` parametresi ile manuel filtreleme (`tips`, `experience`, `comments`, `benchmark`)
+
+**Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 319-373)
+
+#### 2. GET /catalog/product-groups/:productGroupId/posts
+
+**Endpoint:**
+```
+GET /catalog/product-groups/:productGroupId/posts?type=<type>&cursor=<cursor>&limit=<limit>
+```
+
+**Özellikler:**
+- ✅ Hiyerarşik feed mantığı (product group + alt products)
+- ✅ Otomatik post type filtreleme (Experience, Update, Benchmark hariç)
+- ✅ `type` parametresi ile manuel filtreleme (`tips`, `experience`, `comments`, `benchmark`)
+
+**Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 377-429)
+
+#### 3. GET /catalog/products/:productId/posts
+
+**Endpoint:**
+```
+GET /catalog/products/:productId/posts?type=<type>&cursor=<cursor>&limit=<limit>
+```
+
+**Özellikler:**
+- ✅ Product feed (sadece product'a ait gönderiler)
+- ✅ Tüm post tipleri gösterilir (filtreleme yok)
+- ✅ `type` parametresi ile manuel filtreleme (`tips`, `experience`, `comments`, `benchmark`)
+
+**Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 433-484)
+
+#### 4. GET /feed - Context-Based Feed
+
+**Endpoint:**
 ```
 GET /feed?cursor=<cursor>&limit=<limit>&contextType=<type>&contextId=<id>
 ```
 
-**Gereksinim:**
-- Context seviyesine göre otomatik post type filtreleme
-- Sub Category ve Product Group için Experience, Update, Benchmark'ı filtreleme
+**Özellikler:**
+- ✅ Context-based feed
+- ✅ Context seviyesine göre otomatik post type filtreleme
 
-**Önerilen Backend Mantığı:**
+**Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 488-523)
 
-```typescript
-// Backend'de contextType'a göre otomatik filtreleme
-if (contextType === 'sub_category' || contextType === 'product_group') {
-  // Sadece Review, Tips, Question göster
-  postWhere.AND.push({
-    OR: [
-      { contentPostTags: { some: { tag: { in: ['Review', 'Tips', 'Question'] } } } },
-      { tags: { some: { tag: { in: ['Review', 'Tips', 'Question'] } } } },
-    ],
-  });
-} else if (contextType === 'product') {
-  // Tüm post type'lar gösterilebilir (filtreleme yok)
-}
+#### 5. GET /feed/filtered - Context-Based Filtered Feed
+
+**Endpoint:**
+```
+GET /feed/filtered?contextType=<type>&contextId=<id>&tags[]=<tag>&sort=<sort>&cursor=<cursor>&limit=<limit>
 ```
 
-### 2. GET /feed/filtered - Context Support
+**Özellikler:**
+- ✅ Context-based filtered feed
+- ✅ `contextType` ve `contextId` parametreleri destekleniyor
+- ✅ Context seviyesine göre otomatik post type filtreleme
+- ✅ `tags` parametresi ile manuel filtreleme
+- ✅ `sort` parametresi (`recent`, `top`)
 
-**Mevcut Endpoint:**
-```
-GET /feed/filtered?cursor=<cursor>&limit=<limit>&tags[]=<tag>&sort=<sort>
-```
+**Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 527-566)
 
-**Gereksinim:**
-- `contextType` ve `contextId` parametreleri
-- Context seviyesine göre otomatik post type filtreleme
+### Backend Otomatik Filtreleme Mantığı
 
-**Önerilen Endpoint:**
-```
-GET /feed/filtered?cursor=<cursor>&limit=<limit>&contextType=<type>&contextId=<id>&tags[]=<tag>&sort=<sort>
-```
+Backend otomatik olarak context seviyesine göre post type filtreleme yapıyor:
 
-**Backend Mantığı:**
-- `contextType` ve `contextId` varsa, context'e göre filtreleme yap
-- `tags` parametresi varsa, kullanıcının seçtiği filtreleri uygula
-- `tags` yoksa, context seviyesine göre otomatik filtreleme yap
+| Context Seviyesi | Gösterilen Post Tipleri | Filtrelenen Post Tipleri |
+|------------------|------------------------|--------------------------|
+| Sub Category | Free, Tips, Question | Experience, Update, Benchmark |
+| Product Group | Free, Tips, Question | Experience, Update, Benchmark |
+| Product | Tüm tipler | Yok |
 
-### 3. Hiyerarşik Feed Mantığı
-
-**Gereksinim:**
-- Üst seviye alt seviyeye ait gönderileri de getirmeli
-
-**Önerilen Backend Mantığı:**
-
-```typescript
-// Sub Category Feed: Sub Category'ye ait + Alt Product Group'lara ait gönderiler
-if (contextType === 'sub_category') {
-  // Sub Category'ye ait gönderiler
-  const subCategoryPosts = await getPostsBySubCategory(contextId);
-  
-  // Alt Product Group'lara ait gönderiler
-  const productGroups = await getProductGroupsBySubCategory(contextId);
-  const productGroupPosts = await getPostsByProductGroups(productGroups.map(pg => pg.id));
-  
-  // Birleştir ve sırala
-  return mergeAndSortPosts(subCategoryPosts, productGroupPosts);
-}
-
-// Product Group Feed: Product Group'a ait + Alt Product'lara ait gönderiler
-if (contextType === 'product_group') {
-  // Product Group'a ait gönderiler
-  const productGroupPosts = await getPostsByProductGroup(contextId);
-  
-  // Alt Product'lara ait gönderiler (sadece Experience, Update, Benchmark hariç)
-  const products = await getProductsByProductGroup(contextId);
-  const productPosts = await getPostsByProducts(
-    products.map(p => p.id),
-    { excludeTypes: ['Experience', 'Update', 'Benchmark'] }
-  );
-  
-  // Birleştir ve sırala
-  return mergeAndSortPosts(productGroupPosts, productPosts);
-}
-```
+**Backend Dokümantasyon:** `docs/MOBILE_API_COMPATIBILITY.md` (satır 652-666)
 
 ---
 
@@ -473,24 +533,51 @@ const POST_TYPE_MAPPING = {
 };
 ```
 
-### Phase 2: Feed API Updates
+### Phase 2: Catalog Posts API Endpoint'leri
+
+**Dosya:** `src/features/catalog/api/catalogApi.ts` (yeni veya mevcut dosyaya ekle)
+
+**Yeni Fonksiyonlar:**
+1. `getSubCategoryPosts` - Sub category posts endpoint'i
+2. `getProductGroupPosts` - Product group posts endpoint'i
+3. `getProductPosts` - Product posts endpoint'i
+
+**Özellikler:**
+- Hiyerarşik feed mantığı (backend'de zaten var)
+- Otomatik post type filtreleme (backend'de zaten var)
+- `type` parametresi ile manuel filtreleme
+
+### Phase 3: Feed API Updates
 
 **Dosya:** `src/features/feed/api/feedApi.ts`
 
 **Değişiklikler:**
-1. `getFeed` fonksiyonuna context-based post type filtreleme
-2. `getFilteredFeed` fonksiyonuna `contextType` ve `contextId` parametreleri
-3. Helper fonksiyonlar: `getAllowedPostTypesForContext`, `mapPostTypeToTag`
+1. `getFilteredFeed` fonksiyonuna `contextType` ve `contextId` parametreleri ekle
+2. Backend zaten bu parametreleri destekliyor, frontend'de kullanılmalı
 
-### Phase 3: Feed Hooks Updates
+### Phase 4: Catalog Posts Hooks
+
+**Dosya:** `src/features/catalog/api/hooks.ts` (yeni veya mevcut dosyaya ekle)
+
+**Yeni Hooks:**
+1. `useSubCategoryPosts` - Sub category posts hook
+2. `useProductGroupPosts` - Product group posts hook
+3. `useProductPosts` - Product posts hook
+
+**Özellikler:**
+- Infinite scroll desteği
+- `type` parametresi ile filtreleme
+- Context seviyesine göre otomatik filtreleme (backend'de)
+
+### Phase 5: Feed Hooks Updates
 
 **Dosya:** `src/features/feed/api/hooks.ts`
 
 **Değişiklikler:**
 1. `useFilteredFeed` hook'una `contextType` ve `contextId` parametreleri
-2. Context seviyesine göre otomatik filtreleme
+2. Backend otomatik filtreleme yapıyor, frontend'de sadece parametreleri göndermeli
 
-### Phase 4: PostsScreen Integration
+### Phase 6: PostsScreen Integration
 
 **Dosya:** `src/features/post/screens/PostsScreen.tsx`
 
@@ -500,7 +587,7 @@ const POST_TYPE_MAPPING = {
 3. Filtered feed API çağrısı
 4. Post type render logic (tüm post type'lar için)
 
-### Phase 5: Post Type Mapping Functions
+### Phase 7: Post Type Mapping Functions
 
 **Dosya:** `src/features/post/utils/postTypeMapping.ts` (yeni)
 
@@ -515,21 +602,47 @@ const POST_TYPE_MAPPING = {
 
 ## 📝 Request/Response Yapıları
 
-### Request: GET /feed (Context-Based)
+### Request: GET /catalog/sub-categories/:subCategoryId/posts
 
 ```typescript
 // Request
-GET /feed?cursor=<cursor>&limit=20&contextType=sub_category&contextId=<id>
+GET /catalog/sub-categories/330e8400-e29b-41d4-a716-446655440000/posts?type=tips&limit=20
 
-// Backend otomatik olarak şu tag'leri filtreler:
-// - Review, Tips, Question (Experience, Update, Benchmark hariç)
+// Backend:
+// 1. Hiyerarşik feed: Sub category + alt product groups + alt products
+// 2. Otomatik filtreleme: Experience, Update, Benchmark hariç
+// 3. Manuel filtreleme: type=tips ile sadece Tips gönderileri
+```
+
+### Request: GET /catalog/product-groups/:productGroupId/posts
+
+```typescript
+// Request
+GET /catalog/product-groups/550e8400-e29b-41d4-a716-446655440000/posts?type=tips&limit=20
+
+// Backend:
+// 1. Hiyerarşik feed: Product group + alt products
+// 2. Otomatik filtreleme: Experience, Update, Benchmark hariç
+// 3. Manuel filtreleme: type=tips ile sadece Tips gönderileri
+```
+
+### Request: GET /catalog/products/:productId/posts
+
+```typescript
+// Request
+GET /catalog/products/770e8400-e29b-41d4-a716-446655440000/posts?type=experience&limit=20
+
+// Backend:
+// 1. Product feed: Sadece product'a ait gönderiler
+// 2. Otomatik filtreleme: Yok (tüm tipler gösterilir)
+// 3. Manuel filtreleme: type=experience ile sadece Experience ve Update gönderileri
 ```
 
 ### Request: GET /feed/filtered (Context-Based)
 
 ```typescript
 // Request
-GET /feed/filtered?cursor=<cursor>&limit=20&contextType=product_group&contextId=<id>&tags[]=Tips&tags[]=Question&sort=recent
+GET /feed/filtered?contextType=product_group&contextId=550e8400-e29b-41d4-a716-446655440000&tags[]=Tips&tags[]=Question&sort=recent&limit=20
 
 // Backend:
 // 1. Context'e göre otomatik filtreleme yapar (sub_category/product_group için Experience, Update, Benchmark hariç)
@@ -568,13 +681,40 @@ interface FeedApiItem {
 3. ❌ **Post type render logic** - Tüm post type'lar için render
 4. ❌ **Hiyerarşik feed mantığı** - Üst seviye alt seviyeye ait gönderileri gösterme
 
-### Eksik Endpoint'ler
-1. ❌ **GET /feed/filtered** - `contextType` ve `contextId` parametreleri eksik
-2. ❌ **Hiyerarşik feed endpoint** - Üst seviye alt seviyeye ait gönderileri getirme
+### Eksik Endpoint Kullanımları
+1. ❌ **GET /catalog/sub-categories/:id/posts** - Frontend'de kullanılmıyor
+2. ❌ **GET /catalog/product-groups/:id/posts** - Frontend'de kullanılmıyor
+3. ❌ **GET /catalog/products/:id/posts** - Frontend'de kullanılmıyor
+4. ⚠️ **GET /feed/filtered** - `contextType` ve `contextId` parametreleri backend'de var ama frontend'de kullanılmıyor
 
 ### Eksik Request/Response Yapıları
-1. ❌ **FilteredFeedRequest** - `contextType` ve `contextId` alanları
-2. ❌ **Post type mapping** - Frontend post type ↔ Backend tag mapping
+1. ❌ **CatalogPostsRequest** - Sub category, product group, product posts için request yapıları
+2. ❌ **Post type mapping** - Frontend post type ↔ Backend `type` parametresi mapping
+3. ⚠️ **FilteredFeedRequest** - `contextType` ve `contextId` alanları backend'de var ama frontend'de kullanılmıyor
+
+### Post Type Mapping (Frontend ↔ Backend)
+
+**Frontend Post Type → Backend `type` Parametresi:**
+
+| Frontend Post Type | Backend `type` Parametresi | Açıklama |
+|-------------------|---------------------------|----------|
+| Free | `comments` | Free ve Question gönderileri |
+| Tips & Tricks | `tips` | Tips gönderileri |
+| Question | `comments` | Free ve Question gönderileri |
+| Experience | `experience` | Experience ve Update gönderileri |
+| Update | `experience` | Experience ve Update gönderileri |
+| Benchmark | `benchmark` | Benchmark gönderileri |
+
+**Backend Tag → Frontend Post Type:**
+
+| Backend Tag | Frontend Post Type | Açıklama |
+|-------------|-------------------|----------|
+| `Review` | Free | Serbest gönderiler |
+| `Tips` | Tips & Tricks | İpucu gönderileri |
+| `Question` | Question | Soru gönderileri |
+| `Experience` | Experience | Deneyim gönderileri |
+| `Update` | Update | Güncelleme gönderileri |
+| `Benchmark` | Benchmark | Karşılaştırma gönderileri |
 
 ---
 

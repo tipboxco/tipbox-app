@@ -1,22 +1,63 @@
 import React from 'react';
 import { VStack, HStack, Text, Pressable, Box, Image } from '@gluestack-ui/themed';
+import { TouchableOpacity } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useNavigation } from '@react-navigation/native';
 import type { NFTCardData } from '../../types';
 
 interface NFTCardProps {
     data: NFTCardData;
+    showQuickBuy?: boolean; // Optional prop to hide Quick Buy button
 }
 
-export const NFTCard = ({ data }: NFTCardProps) => {
+export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const navigation = useNavigation();
+
+    console.log('NFTCard mounted for NFT:', data.id, data.title);
+
+    const handleCardPress = () => {
+        console.log('🎯 NFTCard pressed, navigating to NFTDetailScreen with nftId:', data.id);
+        try {
+            navigation.navigate('NFTDetailScreen' as never, { nftId: data.id, mode: 'buy' } as never);
+        } catch (error) {
+            console.error('❌ Navigation error:', error);
+        }
+    };
+
+    const handleViewPress = (e: any) => {
+        e?.stopPropagation?.(); // Prevent parent Pressable from triggering
+        console.log('👁️ View button pressed, navigating to NFTDetailScreen with nftId:', data.id);
+        try {
+            navigation.navigate('NFTDetailScreen' as never, { nftId: data.id, mode: 'view' } as never);
+        } catch (error) {
+            console.error('❌ Navigation error:', error);
+        }
+    };
+
+    const handleQuickBuyPress = (e: any) => {
+        e?.stopPropagation?.(); // Prevent parent Pressable from triggering
+        console.log('💰 Quick Buy button pressed for NFT:', data.id);
+        try {
+            navigation.navigate('NFTDetailScreen' as never, { nftId: data.id, mode: 'buy' } as never);
+        } catch (error) {
+            console.error('❌ Navigation error:', error);
+        }
+    };
 
     return (
-        <Pressable
-            bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
-            borderRadius={10}
-            borderWidth={1}
-            borderColor={isDark ? '$backgroundDark200' : '#E9E9E9'}
+        <TouchableOpacity
+            onPress={handleCardPress}
+            activeOpacity={0.7}
+            onPressIn={() => console.log('👇 Press IN detected on card:', data.id)}
+            onPressOut={() => console.log('👆 Press OUT detected on card:', data.id)}
+            style={{
+                backgroundColor: isDark ? '#1A1A1A' : '#FDFDFD',
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: isDark ? '#2A2A2A' : '#E9E9E9',
+            }}
         >
             {/* Image Section */}
             <Box
@@ -89,6 +130,7 @@ export const NFTCard = ({ data }: NFTCardProps) => {
             {/* Action Buttons */}
             <HStack space="sm" justifyContent="space-between" px='$2' pb={'$2'}>
                 <Pressable
+                    onPress={handleViewPress}
                     bg={isDark ? '$backgroundDark700' : '#F7F7F7'}
                     borderRadius={10}
                     flex={1}
@@ -106,26 +148,29 @@ export const NFTCard = ({ data }: NFTCardProps) => {
                     </Text>
                 </Pressable>
 
-                <Pressable
-                    bg={isDark ? '$backgroundDark600' : '#E8FF6B'}
-                    justifyContent="center"
-                    alignItems="center"
-                    borderRadius={10}
-                    borderWidth={1}
-                    borderColor={isDark ? '$backgroundDark500' : '#D8FF08'}
-                    py={'$2'}
-                    flex={1}
-                >
-                    <Text
-                        color={isDark ? '$textDark50' : '#000000'}
-                        fontSize={8}
-                        fontWeight="$bold"
-                        textAlign="center"
+                {showQuickBuy && (
+                    <Pressable
+                        onPress={handleQuickBuyPress}
+                        bg={isDark ? '$backgroundDark600' : '#E8FF6B'}
+                        justifyContent="center"
+                        alignItems="center"
+                        borderRadius={10}
+                        borderWidth={1}
+                        borderColor={isDark ? '$backgroundDark500' : '#D8FF08'}
+                        py={'$2'}
+                        flex={1}
                     >
-                        Quick Buy
-                    </Text>
-                </Pressable>
+                        <Text
+                            color={isDark ? '$textDark50' : '#000000'}
+                            fontSize={8}
+                            fontWeight="$bold"
+                            textAlign="center"
+                        >
+                            Quick Buy
+                        </Text>
+                    </Pressable>
+                )}
             </HStack>
-        </Pressable>
+        </TouchableOpacity>
     );
 };

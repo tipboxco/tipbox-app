@@ -29,7 +29,7 @@ type AchievementTabProps = {
   onRewardPress?: (reward: SeeAllReward) => void; // Optional - artık kullanılmıyor
 };
 
-export const AchievementTab: React.FC<AchievementTabProps> = ({
+const AchievementTab: React.FC<AchievementTabProps> = ({
   activeFilter,
   onFilterChange,
   onRewardPress,
@@ -161,7 +161,6 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     isLimitedEventLoading,
     limitedEventError,
     limitedEvent,
-    isDark,
     activeFilter,
     onFilterChange,
   ]);
@@ -194,7 +193,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     return null;
   }, [
     isAchievementsLoading,
-    mappedAchievements.length,
+    achievementsData,
     achievementsError,
     getFilteredAchievements.length,
     activeFilter,
@@ -253,7 +252,7 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
         ItemSeparatorComponent={hasItems ? () => <Box height={12} /> : undefined}
         columnWrapperStyle={hasItems ? { gap: 12 } : undefined}
         ListHeaderComponent={ListHeaderComponent}
-        ListEmptyComponent={() => EmptyComponent}
+        ListEmptyComponent={EmptyComponent}
         renderItem={({ item }) => (
           <Box flex={1}>
             <BadgeCard
@@ -314,4 +313,6 @@ export const AchievementTab: React.FC<AchievementTabProps> = ({
     </VStack>
   );
 };
+
+export default React.memo(AchievementTab);
 

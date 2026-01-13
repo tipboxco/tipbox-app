@@ -1,7 +1,7 @@
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMarketplaceListings, getMyNFTs, createListing, deleteListing, updateListingPrice, getNFTSellInfo, getNFTSellDetail } from './marketplaceApi';
-import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTsApiResponse } from '../types';
-import type { CreateListingRequest, CreateListingResponse, DeleteListingResponse, UpdateListingPriceResponse, NFTSellInfo, NFTSellDetail } from './marketplaceApi';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getMarketplaceListings, getMyNFTs, getMyListings, getAvailableNFTs, createListing, deleteListing, updateListingPrice, getNFTSellInfo, getNFTSellDetail, buyNFT } from './marketplaceApi';
+import type { MarketplaceListingsApiResponse, MarketplaceListingsParams, UserNFTApiItem } from '../types';
+import type { CreateListingRequest, CreateListingResponse, DeleteListingResponse, UpdateListingPriceResponse, NFTSellInfo, NFTSellDetail, BuyNFTRequest, BuyNFTResponse } from './marketplaceApi';
 
 /**
  * Query Keys - Marketplace feature için cache key pattern'leri
@@ -11,6 +11,8 @@ export const marketplaceKeys = {
   listings: (params?: MarketplaceListingsParams) =>
     [...marketplaceKeys.all, 'listings', params] as const,
   myNFTs: () => [...marketplaceKeys.all, 'my-nfts'] as const,
+  myListings: () => [...marketplaceKeys.all, 'my-listings'] as const,
+  availableNFTs: () => [...marketplaceKeys.all, 'available-nfts'] as const,
 };
 
 /**
@@ -49,11 +51,12 @@ export const useMarketplaceListings = (params: MarketplaceListingsParams = {}) =
       const currentOffset = allPages.reduce((sum, page) => sum + page.length, 0);
       return currentOffset;
     },
-    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    // Çok kısa cache - her zaman fresh data
+    staleTime: 0,  // Her zaman stale - her seferinde backend'e sor
+    gcTime: 30 * 1000,     // 30 saniye garbage collection
+    refetchOnMount: 'always',     // Her mount'ta kesin refetch
+    refetchOnWindowFocus: true,   // Window focus'ta refetch
+    refetchOnReconnect: true,     // Network reconnect'te refetch
     retry: 1,
   });
 };
@@ -66,17 +69,72 @@ export const useMarketplaceListings = (params: MarketplaceListingsParams = {}) =
  * @returns React Query hook result
  *
  * @example
- * const { data, isLoading } = useMyNFTs(50);
+ * const { data, isLoading, error, refetch } = useMyNFTs(50);
  */
 export const useMyNFTs = (limit: number = 50) => {
-  return useQuery<UserNFTsApiResponse, Error>({
-    queryKey: marketplaceKeys.myNFTs(),
-    queryFn: () => getMyNFTs(limit),
-    // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
-    refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+  return useQuery<UserNFTApiItem[], Error>({
+    queryKey: [...marketplaceKeys.myNFTs(), limit],
+    queryFn: () => getMyNFTs(limit, 0),
+    // Çok kısa cache - her zaman fresh data
+    staleTime: 0,  // Her zaman stale - her seferinde backend'e sor
+    gcTime: 30 * 1000,    // 30 saniye garbage collection
+    refetchOnMount: 'always',     // Her mount'ta kesin refetch
+    refetchOnWindowFocus: true,   // Window focus'ta refetch
+    refetchOnReconnect: true,     // Network reconnect'te refetch
+    retry: 1,
+  });
+};
+
+/**
+ * Get My Listings query hook
+ * Kullanıcının oluşturduğu tüm listing'leri getirir (ACTIVE, SOLD, CANCELLED)
+ *
+ * @param limit - Getirilecek listing sayısı (default: 50)
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error, refetch } = useMyListings(50);
+ */
+export const useMyListings = (limit: number = 50) => {
+  return useQuery<UserNFTApiItem[], Error>({
+    queryKey: [...marketplaceKeys.myListings(), limit],
+    queryFn: async () => {
+      const response = await getMyListings(limit);
+      return response.items || [];
+    },
+    // Çok kısa cache - her zaman fresh data
+    staleTime: 0,
+    gcTime: 30 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Available NFTs query hook
+ * Satışa koyulabilecek NFT'leri getirir (ACTIVE listing'i olmayanlar)
+ *
+ * @param limit - Getirilecek NFT sayısı (default: 50)
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error, refetch } = useAvailableNFTs(50);
+ */
+export const useAvailableNFTs = (limit: number = 50) => {
+  return useQuery<UserNFTApiItem[], Error>({
+    queryKey: [...marketplaceKeys.availableNFTs(), limit],
+    queryFn: async () => {
+      const response = await getAvailableNFTs(limit);
+      return response.items || [];
+    },
+    // Çok kısa cache - her zaman fresh data
+    staleTime: 0,
+    gcTime: 30 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     retry: 1,
   });
 };
@@ -97,8 +155,13 @@ export const useCreateListing = () => {
   return useMutation<CreateListingResponse, Error, CreateListingRequest>({
     mutationFn: createListing,
     onSuccess: () => {
+      console.log('[useCreateListing] Successfully listed NFT, invalidating caches...');
       // Listings ve myNFTs query'lerini invalidate et
       queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
+      // My NFTs, My Listings, Available NFTs cache'ini direkt sil
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myNFTs() });
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myListings() });
+      queryClient.removeQueries({ queryKey: marketplaceKeys.availableNFTs() });
     },
     onError: (error) => {
       console.error('[useCreateListing] Mutation error:', error);
@@ -122,8 +185,13 @@ export const useDeleteListing = () => {
   return useMutation<DeleteListingResponse, Error, string>({
     mutationFn: deleteListing,
     onSuccess: () => {
+      console.log('[useDeleteListing] Successfully delisted NFT, invalidating caches...');
       // Listings ve myNFTs query'lerini invalidate et
       queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
+      // My NFTs, My Listings, Available NFTs cache'ini direkt sil
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myNFTs() });
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myListings() });
+      queryClient.removeQueries({ queryKey: marketplaceKeys.availableNFTs() });
     },
     onError: (error) => {
       console.error('[useDeleteListing] Mutation error:', error);
@@ -147,8 +215,12 @@ export const useUpdateListingPrice = () => {
   return useMutation<UpdateListingPriceResponse, Error, { listingId: string; amount: number }>({
     mutationFn: ({ listingId, amount }) => updateListingPrice(listingId, amount),
     onSuccess: () => {
+      console.log('[useUpdateListingPrice] Successfully updated listing price, invalidating caches...');
       // Listings ve myNFTs query'lerini invalidate et
       queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
+      // My NFTs, My Listings cache'ini direkt sil (Available NFTs etkilenmez)
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myNFTs() });
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myListings() });
     },
     onError: (error) => {
       console.error('[useUpdateListingPrice] Mutation error:', error);
@@ -205,6 +277,38 @@ export const useNFTSellDetail = (nftId: string | undefined) => {
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     retry: 1,
+  });
+};
+
+/**
+ * Buy NFT mutation hook
+ * Marketplace'teki bir NFT'yi satın alır
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: buyNFTMutation, isPending } = useBuyNFT();
+ * buyNFTMutation({ listingId: 'listing-123' });
+ */
+export const useBuyNFT = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<BuyNFTResponse, Error, BuyNFTRequest>({
+    mutationFn: buyNFT,
+    onSuccess: () => {
+      console.log('[useBuyNFT] Successfully purchased NFT, invalidating caches...');
+      // Listings ve myNFTs query'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: marketplaceKeys.all });
+      // My NFTs cache'ini direkt sil (yeni NFT sahibi değişti)
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myNFTs() });
+      queryClient.removeQueries({ queryKey: marketplaceKeys.myListings() });
+      queryClient.removeQueries({ queryKey: marketplaceKeys.availableNFTs() });
+      // Wallet balance'ı da invalidate et (bakiye değişecek)
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+    },
+    onError: (error) => {
+      console.error('[useBuyNFT] Mutation error:', error);
+    },
   });
 };
 

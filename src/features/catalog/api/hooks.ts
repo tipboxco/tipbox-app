@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail } from './catalogApi';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats } from '../types';
 
@@ -33,6 +33,13 @@ export const catalogKeys = {
   productNews: (productId: string, cursor?: string, limit?: number) => 
     [...catalogKeys.all, 'productNews', productId, cursor, limit] as const,
   newsDetail: (newsId: string) => [...catalogKeys.all, 'newsDetail', newsId] as const,
+  // Catalog Posts endpoints
+  subCategoryPosts: (subCategoryId: string, type?: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'subCategoryPosts', subCategoryId, type, cursor, limit] as const,
+  productGroupPosts: (productGroupId: string, type?: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'productGroupPosts', productGroupId, type, cursor, limit] as const,
+  catalogProductPosts: (productId: string, type?: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'catalogProductPosts', productId, type, cursor, limit] as const,
 };
 
 /**
@@ -641,6 +648,190 @@ export const useBrandStats = (brandId: string | undefined) => {
     enabled: !!brandId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Sub Category Posts infinite query hook
+ * /catalog/sub-categories/:subCategoryId/posts endpoint'inden sub category postlarını infinite scroll ile getirir
+ * 
+ * Hiyerarşik Feed Mantığı:
+ * - Sub category'ye ait gönderiler
+ * - Alt product group'ların gönderileri
+ * - Alt product'ların gönderileri (sadece Free, Tips, Question)
+ * 
+ * Otomatik Post Type Filtreleme:
+ * - Experience, Update, Benchmark otomatik olarak filtrelenir
+ *
+ * @param subCategoryId - Sub category ID'si
+ * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSubCategoryPosts('sub-category-123', 'tips');
+ */
+export const useSubCategoryPosts = (
+  subCategoryId: string | undefined,
+  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  limit: number = 20
+) => {
+  return useInfiniteQuery({
+    queryKey: subCategoryId ? catalogKeys.subCategoryPosts(subCategoryId, type, undefined, limit) : ['catalog', 'subCategoryPosts', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!subCategoryId) {
+        throw new Error('SubCategory ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getSubCategoryPosts(subCategoryId, type, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.pagination) {
+        return undefined;
+      }
+      if (!lastPage.pagination.hasMore) {
+        return undefined;
+      }
+      const items = Array.isArray(lastPage.items) ? lastPage.items : [];
+      if (items.length > 0) {
+        const lastItem = items[items.length - 1];
+        if (lastItem && typeof lastItem === 'object' && 'data' in lastItem) {
+          const itemData = lastItem.data;
+          if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
+            return lastPage.pagination.cursor || String(itemData.id);
+          }
+        }
+      }
+      return lastPage.pagination.cursor || undefined;
+    },
+    enabled: !!subCategoryId,
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Product Group Posts infinite query hook
+ * /catalog/product-groups/:productGroupId/posts endpoint'inden product group postlarını infinite scroll ile getirir
+ * 
+ * Hiyerarşik Feed Mantığı:
+ * - Product group'a ait gönderiler
+ * - Alt product'ların gönderileri (sadece Free, Tips, Question)
+ * 
+ * Otomatik Post Type Filtreleme:
+ * - Experience, Update, Benchmark otomatik olarak filtrelenir
+ *
+ * @param productGroupId - Product group ID'si
+ * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductGroupPosts('product-group-123', 'tips');
+ */
+export const useProductGroupPosts = (
+  productGroupId: string | undefined,
+  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  limit: number = 20
+) => {
+  return useInfiniteQuery({
+    queryKey: productGroupId ? catalogKeys.productGroupPosts(productGroupId, type, undefined, limit) : ['catalog', 'productGroupPosts', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!productGroupId) {
+        throw new Error('ProductGroup ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getProductGroupPosts(productGroupId, type, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.pagination) {
+        return undefined;
+      }
+      if (!lastPage.pagination.hasMore) {
+        return undefined;
+      }
+      const items = Array.isArray(lastPage.items) ? lastPage.items : [];
+      if (items.length > 0) {
+        const lastItem = items[items.length - 1];
+        if (lastItem && typeof lastItem === 'object' && 'data' in lastItem) {
+          const itemData = lastItem.data;
+          if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
+            return lastPage.pagination.cursor || String(itemData.id);
+          }
+        }
+      }
+      return lastPage.pagination.cursor || undefined;
+    },
+    enabled: !!productGroupId,
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
+ * Get Catalog Product Posts infinite query hook
+ * /catalog/products/:productId/posts endpoint'inden product postlarını infinite scroll ile getirir
+ * 
+ * Post Type Filtreleme:
+ * - Tüm post tipleri gösterilir (filtreleme yok)
+ * - type parametresi ile manuel filtreleme yapılabilir
+ *
+ * @param productId - Product ID'si
+ * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns React Query infinite query hook result
+ *
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCatalogProductPosts('product-123', 'experience');
+ */
+export const useCatalogProductPosts = (
+  productId: string | undefined,
+  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  limit: number = 20
+) => {
+  return useInfiniteQuery({
+    queryKey: productId ? catalogKeys.catalogProductPosts(productId, type, undefined, limit) : ['catalog', 'catalogProductPosts', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return getCatalogProductPosts(productId, type, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.pagination) {
+        return undefined;
+      }
+      if (!lastPage.pagination.hasMore) {
+        return undefined;
+      }
+      const items = Array.isArray(lastPage.items) ? lastPage.items : [];
+      if (items.length > 0) {
+        const lastItem = items[items.length - 1];
+        if (lastItem && typeof lastItem === 'object' && 'data' in lastItem) {
+          const itemData = lastItem.data;
+          if (itemData && typeof itemData === 'object' && 'id' in itemData && itemData.id) {
+            return lastPage.pagination.cursor || String(itemData.id);
+          }
+        }
+      }
+      return lastPage.pagination.cursor || undefined;
+    },
+    enabled: !!productId,
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,

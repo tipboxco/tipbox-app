@@ -145,23 +145,31 @@ export const getFeed = async (
  * Filtrelenmiş feed akışını getirir (pagination ile)
  * 
  * @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu ve test senaryoları
+ * @see docs/MOBILE_API_COMPATIBILITY.md - Context-based feed dokümantasyonu
  *
  * @param cursor - Pagination cursor (son item'ın id'si, opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @param filters - Filtre parametreleri (interests, tags, category, sort)
+ * @param contextType - Context type (opsiyonel): 'sub_category' | 'product_group' | 'product'
+ * @param contextId - Context ID (opsiyonel): UUID (required if contextType is provided)
  * @returns FeedApiResponse - Feed items ve pagination bilgisi
  * 
+ * Context-Based Filtreleme:
+ * - contextType ve contextId belirtilirse, backend context'e göre filtreleme yapar
+ * - tags yoksa, backend context seviyesine göre otomatik post type filtreleme yapar
+ * - tags varsa, kullanıcının seçtiği tag filtreleri uygulanır
+ * 
  * Örnek Kullanım:
+ * - Context-based: getFilteredFeed(undefined, 20, undefined, 'product_group', 'product-group-id')
+ * - Context + filters: getFilteredFeed(undefined, 20, { tags: ['Tips'], sort: 'recent' }, 'product_group', 'product-group-id')
  * - Tüm filtreler: getFilteredFeed(undefined, 20, { interests: ['cat1'], tags: ['Review'], category: 'cat2', sort: 'top' })
- * - Sadece interests: getFilteredFeed(undefined, 20, { interests: ['cat1', 'cat2'] })
- * - Sadece tags: getFilteredFeed(undefined, 20, { tags: ['Review', 'Benchmark'] })
- * - Sadece category: getFilteredFeed(undefined, 20, { category: ['cat1', 'cat2'] })
- * - Sadece sort: getFilteredFeed(undefined, 20, { sort: 'recent' })
  */
 export const getFilteredFeed = async (
   cursor?: string,
   limit: number = 20,
-  filters?: FeedFilterParams
+  filters?: FeedFilterParams,
+  contextType?: 'sub_category' | 'product_group' | 'product',
+  contextId?: string
 ): Promise<FeedApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
@@ -212,6 +220,17 @@ export const getFilteredFeed = async (
   if (filters?.sort) {
     params.append('sort', filters.sort);
   }
+  
+  // Context parametreleri (Backend'de zaten destekleniyor)
+  // Backend otomatik olarak context seviyesine göre filtreleme yapar
+  // Eğer tags belirtilmemişse, backend otomatik filtreleme yapar
+  // Eğer tags belirtilmişse, kullanıcının seçtiği filtreler uygulanır
+  if (contextType) {
+    params.append('contextType', contextType);
+  }
+  if (contextId) {
+    params.append('contextId', contextId);
+  }
 
   const fullUrl = `/feed/filtered?${params.toString()}`;
   
@@ -223,6 +242,8 @@ export const getFilteredFeed = async (
     tags: filters?.tags,
     category: filters?.category,
     sort: filters?.sort,
+    contextType: contextType,
+    contextId: contextId,
     cursor: cursor,
     limit: limit,
     params: params.toString(),

@@ -100,21 +100,24 @@ export const useFloatingButtonBottomOffset = (extraPadding: number = 16): number
 /**
  * String URL'yi React Native Image component'inin kullanabileceği formata çevirir
  * Backend'den gelen URL'leri direkt kullanır, herhangi bir dönüşüm yapmaz
+ * 
+ * @param value - Image URL or source
+ * @param fallback - Optional fallback image source if value is null/undefined/empty
  */
 export const toImageSource = (
   value: string | ImageSourcePropType | null | undefined,
+  fallback?: ImageSourcePropType,
 ): ImageSourcePropType | undefined => {
   if (!value) {
-    // Null/undefined değerler normal bir durum olabilir (avatar yoksa, image yoksa vs)
-    // Bu yüzden uyarı basmıyoruz - gereksiz spam önlenir
-    return undefined;
+    // Return fallback if provided, otherwise undefined
+    return fallback;
   }
 
   if (typeof value === 'string') {
     // Boş string kontrolü
     if (value.trim() === '') {
-      // Boş string de normal bir durum olabilir
-      return undefined;
+      // Return fallback if provided, otherwise undefined
+      return fallback;
     }
 
     // Backend'den gelen URL'yi direkt kullan

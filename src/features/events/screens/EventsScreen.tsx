@@ -85,6 +85,11 @@ const EventsScreen: React.FC = () => {
   const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
   const tabHeaderBgColor = '#FFFFFF'; // Tab header her zaman beyaz
 
+  // Memoize filter change handler to prevent AchievementTab re-renders
+  const handleFilterChange = useCallback((filter: FilterOption) => {
+    setActiveFilter(filter);
+  }, []);
+
   const handleEventPress = (eventId: string) => {
     if (!eventId) {
       console.error('[EventsScreen] handleEventPress: eventId is missing');
@@ -341,7 +346,7 @@ const EventsScreen: React.FC = () => {
             <Box key="1" flex={1}>
               <AchievementTab
                 activeFilter={activeFilter}
-                onFilterChange={setActiveFilter}
+                onFilterChange={handleFilterChange}
               />
             </Box>
           </AnimatedPagerView>

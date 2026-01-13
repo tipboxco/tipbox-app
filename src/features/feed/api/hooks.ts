@@ -9,8 +9,8 @@ export const feedKeys = {
   all: ['feed'] as const,
   feed: (cursor?: string, limit?: number, contextType?: string, contextId?: string) =>
     [...feedKeys.all, cursor, limit, contextType, contextId] as const,
-  filtered: (cursor?: string, limit?: number, filters?: FeedFilterParams) =>
-    [...feedKeys.all, 'filtered', cursor, limit, filters] as const,
+  filtered: (cursor?: string, limit?: number, filters?: FeedFilterParams, contextType?: string, contextId?: string) =>
+    [...feedKeys.all, 'filtered', cursor, limit, filters, contextType, contextId] as const,
   // Context-based feed keys
   productFeed: (productId: string, cursor?: string, limit?: number) =>
     [...feedKeys.all, 'product', productId, cursor, limit] as const,
@@ -97,26 +97,37 @@ export const useFeed = (
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @param filters - Filtre parametreleri (interests, tags, category, sort)
+ * @param contextType - Context type (opsiyonel): 'sub_category' | 'product_group' | 'product'
+ * @param contextId - Context ID (opsiyonel): UUID (required if contextType is provided)
  * @param enabled - Query'nin çalışıp çalışmayacağını belirler (default: true)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useFeedFiltered(20, {
+ * // Context-based filtered feed
+ * const { data, fetchNextPage, hasNextPage } = useFeedFiltered(20, undefined, 'product_group', 'product-group-id');
+ * 
+ * // Context + filters
+ * const { data, fetchNextPage, hasNextPage } = useFeedFiltered(20, { tags: ['Tips'], sort: 'recent' }, 'product_group', 'product-group-id');
+ * 
+ * // Sadece filters
+ * const { data, fetchNextPage, hasNextPage } = useFeedFiltered(20, {
  *   interests: ['category-1', 'category-2'],
  *   tags: ['Review', 'Benchmark'],
  *   sort: 'recent'
- * }, true);
+ * });
  */
 export const useFeedFiltered = (
   limit: number = 20,
   filters?: FeedFilterParams,
+  contextType?: 'sub_category' | 'product_group' | 'product',
+  contextId?: string,
   enabled: boolean = true
 ) => {
   return useInfiniteQuery<FeedApiResponse, Error>({
-    queryKey: feedKeys.filtered(undefined, limit, filters),
+    queryKey: feedKeys.filtered(undefined, limit, filters, contextType, contextId),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getFilteredFeed(cursor, limit, filters);
+      return getFilteredFeed(cursor, limit, filters, contextType, contextId);
     },
     enabled, // PERFORMANCE FIX: Only run query when enabled (prevents duplicate API calls)
     initialPageParam: undefined,
