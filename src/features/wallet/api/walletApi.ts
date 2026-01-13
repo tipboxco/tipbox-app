@@ -364,6 +364,222 @@ export interface ConnectWalletRequest {
 }
 
 /**
+ * ============================================
+ * REWARD CLAIM TYPES
+ * ============================================
+ */
+
+export enum RewardClaimType {
+  TIPS = 'TIPS',
+  BADGE = 'BADGE',
+  ACHIEVEMENT = 'ACHIEVEMENT',
+  LADDER = 'LADDER',
+  SUPPORT = 'SUPPORT',
+  EVENT = 'EVENT',
+}
+
+export enum RewardSourceType {
+  LADDER_REWARD = 'LADDER_REWARD',
+  TIPS_RECEIVED = 'TIPS_RECEIVED',
+  SUPPORT_SESSION = 'SUPPORT_SESSION',
+  BADGE_EARNED = 'BADGE_EARNED',
+  ACHIEVEMENT_UNLOCKED = 'ACHIEVEMENT_UNLOCKED',
+  EVENT_PARTICIPATION = 'EVENT_PARTICIPATION',
+  SYSTEM_GRANT = 'SYSTEM_GRANT',
+}
+
+export enum RewardClaimStatus {
+  PENDING = 'PENDING',
+  CLAIMED = 'CLAIMED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
+export interface RewardClaim {
+  id: string;
+  userId: string;
+  rewardType: RewardClaimType;
+  sourceType: RewardSourceType;
+  amount: number;
+  status: RewardClaimStatus;
+  earnedAt: string;
+  claimedAt: string | null;
+  expiresAt: string | null;
+  metadata: Record<string, any> | null;
+  isClaimable: boolean;
+  rewardTypeDisplay: string;
+  sourceTypeDisplay: string;
+  amountFormatted: string;
+  description: string;
+}
+
+export interface RewardSummary {
+  totalPending: number;
+  totalClaimable: number;
+  totalAmount: number;
+  bySourceType: Record<string, {
+    count: number;
+    amount: number;
+    claims: RewardClaim[];
+  }>;
+}
+
+export interface ClaimResult {
+  success: boolean;
+  rewardClaim?: RewardClaim;
+  transactionId?: string;
+  error?: string;
+}
+
+export interface ClaimAllResult {
+  success: boolean;
+  totalAmount: number;
+  claimedCount: number;
+  failedCount: number;
+  transactionId?: string;
+  claims: RewardClaim[];
+  errors?: string[];
+}
+
+/**
+ * ============================================
+ * REWARD ENDPOINTS
+ * ============================================
+ */
+
+/**
+ * Get Reward Summary
+ * 
+ * Backend endpoint: GET /wallets/rewards/summary
+ * 
+ * Kullanıcının tüm claimable reward'larının özetini getirir
+ */
+export const getRewardSummary = async (): Promise<RewardSummary> => {
+  try {
+    const response = await apiService.getClient().get<RewardSummary>('/wallets/rewards/summary');
+    return response.data;
+  } catch (error: any) {
+    console.error('[getRewardSummary] API Error:', {
+      url: '/wallets/rewards/summary',
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Claimable Rewards
+ * 
+ * Backend endpoint: GET /wallets/rewards/claimable
+ * 
+ * Kullanıcının claim edebileceği tüm reward'ları detaylı olarak getirir
+ */
+export const getClaimableRewards = async (): Promise<RewardClaim[]> => {
+  try {
+    const response = await apiService.getClient().get<RewardClaim[]>('/wallets/rewards/claimable');
+    return response.data;
+  } catch (error: any) {
+    console.error('[getClaimableRewards] API Error:', {
+      url: '/wallets/rewards/claimable',
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Rewards by Source Type
+ * 
+ * Backend endpoint: GET /wallets/rewards/source/:sourceType
+ * 
+ * Belirli bir kaynak tipine göre reward'ları getirir
+ */
+export const getRewardsBySource = async (sourceType: RewardSourceType): Promise<RewardClaim[]> => {
+  try {
+    const response = await apiService.getClient().get<RewardClaim[]>(
+      `/wallets/rewards/source/${sourceType}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getRewardsBySource] API Error:', {
+      url: `/wallets/rewards/source/${sourceType}`,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Claim Single Reward
+ * 
+ * Backend endpoint: POST /wallets/rewards/claim/:rewardId
+ * 
+ * Belirli bir reward'ı claim eder
+ */
+export const claimReward = async (rewardId: string): Promise<ClaimResult> => {
+  try {
+    const response = await apiService.getClient().post<ClaimResult>(
+      `/wallets/rewards/claim/${rewardId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[claimReward] API Error:', {
+      url: `/wallets/rewards/claim/${rewardId}`,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Claim All Rewards
+ * 
+ * Backend endpoint: POST /wallets/rewards/claim-all
+ * 
+ * Kullanıcının tüm claimable reward'larını tek seferde claim eder
+ */
+export const claimAllRewards = async (): Promise<ClaimAllResult> => {
+  try {
+    const response = await apiService.getClient().post<ClaimAllResult>(
+      '/wallets/rewards/claim-all'
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[claimAllRewards] API Error:', {
+      url: '/wallets/rewards/claim-all',
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Claim History
+ * 
+ * Backend endpoint: GET /wallets/rewards/history
+ * 
+ * Kullanıcının daha önce claim ettiği reward'ların geçmişini getirir
+ */
+export const getClaimHistory = async (): Promise<RewardClaim[]> => {
+  try {
+    const response = await apiService.getClient().get<RewardClaim[]>('/wallets/rewards/history');
+    return response.data;
+  } catch (error: any) {
+    console.error('[getClaimHistory] API Error:', {
+      url: '/wallets/rewards/history',
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
+};
+
+/**
  * @deprecated Kullanmayın. Bunun yerine getWalletInfo() kullanın.
  */
 export const getWallets = async (): Promise<Wallet[]> => {

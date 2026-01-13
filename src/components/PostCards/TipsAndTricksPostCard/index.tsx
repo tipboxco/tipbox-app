@@ -315,7 +315,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             <AnimatedCounter
                                 value={likesCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                     </HStack>
@@ -326,7 +326,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             <AnimatedCounter
                                 value={commentsCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                     </HStack>
@@ -337,7 +337,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             <AnimatedCounter
                                 value={sharesCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                     </HStack>
@@ -352,7 +352,7 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             <AnimatedCounter
                                 value={bookmarksCount}
                                 color={isDark ? '$textDark50' : '#000'}
-                                fontSize="$2xs"
+                                fontSize={10}
                                 ml={4}
                             />
                     </HStack>

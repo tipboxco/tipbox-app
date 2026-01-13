@@ -419,7 +419,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                   ) : (
                     <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                   )}
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                     {(relatedPostData?.stats || data.stats)?.likes || 0}
                   </Text>
                 </HStack>
@@ -431,7 +431,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               >
                 <HStack mr={10} alignItems="center">
                   <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                     {(relatedPostData?.stats || data.stats)?.comments || 0}
                   </Text>
                 </HStack>
@@ -439,7 +439,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
               <Pressable onPress={handleShare}>
                 <HStack mr={10} alignItems="center">
                   <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                     {(relatedPostData?.stats || data.stats)?.shares || 0}
                   </Text>
                 </HStack>
@@ -451,7 +451,7 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
                   ) : (
                     <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                   )}
-                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize="$2xs">
+                  <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
                     {(relatedPostData?.stats || data.stats)?.bookmarks || 0}
                   </Text>
                 </HStack>

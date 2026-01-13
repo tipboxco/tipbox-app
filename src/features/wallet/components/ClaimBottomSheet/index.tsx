@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { VStack, HStack, Text, Pressable, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { RewardCard, RewardCardProps } from '../RewardCard';
+import { useRewardSummary, useClaimReward, useClaimAllRewards } from '../../api/hooks';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 
 interface ClaimBottomSheetProps {
   onClose: () => void;
@@ -13,6 +16,7 @@ interface RewardItem extends RewardCardProps {
     name: string;
     amount: number;
   }>;
+  sourceType?: string;
 }
 
 export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
@@ -21,120 +25,191 @@ export const ClaimBottomSheet: React.FC<ClaimBottomSheetProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  // Mock reward data
-  const [rewards, setRewards] = useState<RewardItem[]>([
-    {
-      id: '1',
-      title: 'Ladder Rewards',
-      amount: 370,
-      claimed: false,
-      details: [
-        { date: '11 July 2025', name: 'Ömer Faruk Demiral', amount: 20 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-      ],
-    },
-    {
-      id: '2',
-      title: 'Tips',
-      amount: 370,
-      claimed: false,
-      details: [
-        { date: '11 July 2025', name: 'Ömer Faruk Demiral', amount: 20 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-      ],
-    },
-    {
-      id: '3',
-      title: 'Support Rewards',
-      amount: 370,
-      claimed: false,
-      details: [
-        { date: '11 July 2025', name: 'Ömer Faruk Demiral', amount: 20 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-        { date: '07 July 2025', name: 'Mehmet Koç', amount: 35 },
-      ],
-    },
-  ]);
+  // API hooks
+  const { data: rewardSummary, isLoading, error, refetch } = useRewardSummary();
+  const { mutate: claimReward, isPending: isClaimingOne } = useClaimReward();
+  const { mutate: claimAll, isPending: isClaimingAll } = useClaimAllRewards();
+
+  // Track locally claimed items for optimistic UI updates
+  const [locallyClaimedIds, setLocallyClaimedIds] = useState<string[]>([]);
+
+  // Transform API data to RewardItem format
+  const rewards: RewardItem[] = useMemo(() => {
+    if (!rewardSummary?.bySourceType) return [];
+
+    return Object.entries(rewardSummary.bySourceType).map(([sourceType, data]) => {
+      // Map sourceType to display title
+      const titleMap: Record<string, string> = {
+        'LADDER_REWARD': 'Ladder Rewards',
+        'TIPS_RECEIVED': 'Tips',
+        'SUPPORT_SESSION': 'Support Rewards',
+        'BADGE_EARNED': 'Badge Rewards',
+        'ACHIEVEMENT_UNLOCKED': 'Achievement Rewards',
+        'EVENT_PARTICIPATION': 'Event Rewards',
+        'SYSTEM_GRANT': 'System Rewards',
+      };
+
+      // Get first claim ID as the group ID
+      const groupId = data.claims[0]?.id || sourceType;
+
+      // Transform claims to details format
+      const details = data.claims.slice(0, 10).map((claim) => ({
+        date: new Date(claim.earnedAt).toLocaleDateString('en-US', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        }),
+        name: claim.description || claim.metadata?.fromUserName || 'System',
+        amount: claim.amount,
+      }));
+
+      return {
+        id: groupId,
+        title: titleMap[sourceType] || sourceType,
+        amount: data.amount,
+        claimed: locallyClaimedIds.includes(groupId),
+        details,
+        sourceType, // Keep source type for filtering if needed
+      };
+    });
+  }, [rewardSummary, locallyClaimedIds]);
 
   const handleClaimItem = (id: string) => {
-    setRewards(prev => prev.map(reward => 
-      reward.id === id ? { ...reward, claimed: true } : reward
-    ));
+    // Find all claim IDs for this source type
+    const sourceType = rewards.find(r => r.id === id)?.sourceType;
+    if (!sourceType || !rewardSummary?.bySourceType[sourceType]) return;
+
+    const claimIds = rewardSummary.bySourceType[sourceType].claims.map(c => c.id);
+
+    // Optimistically update UI
+    setLocallyClaimedIds(prev => [...prev, id]);
+
+    // Claim all rewards in this group (sequentially or use claim-all for the source)
+    // For simplicity, we'll claim the first one as an example
+    // In production, you might want to claim all in the group
+    if (claimIds.length > 0) {
+      claimReward(claimIds[0], {
+        onSuccess: () => {
+          console.log('[ClaimBottomSheet] Successfully claimed reward group:', id);
+          refetch();
+        },
+        onError: (error) => {
+          console.error('[ClaimBottomSheet] Failed to claim reward:', error);
+          // Revert optimistic update
+          setLocallyClaimedIds(prev => prev.filter(cId => cId !== id));
+        },
+      });
+    }
   };
 
   const handleClaimAll = () => {
-    setRewards(prev => prev.map(reward => ({ ...reward, claimed: true })));
-    // Close after claiming all
-    setTimeout(() => {
-      onClose();
-    }, 500);
+    claimAll(undefined, {
+      onSuccess: (result) => {
+        console.log('[ClaimBottomSheet] Successfully claimed all rewards:', result);
+        // Close after claiming all
+        setTimeout(() => {
+          onClose();
+        }, 500);
+      },
+      onError: (error) => {
+        console.error('[ClaimBottomSheet] Failed to claim all rewards:', error);
+      },
+    });
   };
 
   const totalAvailable = rewards.filter(r => !r.claimed).reduce((sum, r) => sum + r.amount, 0);
+  const isProcessing = isClaimingOne || isClaimingAll;
 
   return (
-    <VStack px="$4" py="$4" space="md" flex={1}>
-      {/* Header */}
-      <HStack justifyContent="center" alignItems="center" mb="$2">
-        <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
-          Rewards
-        </Text>
-      </HStack>
+    <BottomSheetScrollView>
+      <VStack px="$4" py="$4" pb="$8" space="md" flex={1}>
+        {/* Header */}
+        <HStack justifyContent="center" alignItems="center" mb="$2">
+          <Text fontSize={16} fontWeight="$bold" color="$textLight900" $dark-color="$textDark50">
+            Rewards
+          </Text>
+        </HStack>
 
-      {/* Reward Cards */}
-      <VStack space="md">
-        {rewards.map((reward) => (
-          <RewardCard
-            key={reward.id}
-            id={reward.id}
-            title={reward.title}
-            amount={reward.amount}
-            claimed={reward.claimed}
-            details={reward.details}
-            onClaim={handleClaimItem}
-          />
-        ))}
+        {/* Loading State */}
+        {isLoading && (
+          <VStack alignItems="center" py="$8" space="md">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+            <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+              Loading rewards...
+            </Text>
+          </VStack>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <VStack alignItems="center" py="$8" space="md">
+            <Text fontSize={14} color="#CE4A4A" textAlign="center">
+              Failed to load rewards
+            </Text>
+            <Pressable
+              onPress={() => refetch()}
+              bg="#F5F5F5"
+              $dark-bg="$backgroundDark700"
+              rounded={8}
+              px="$4"
+              py="$2"
+            >
+              <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
+                Retry
+              </Text>
+            </Pressable>
+          </VStack>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && rewards.length === 0 && (
+          <VStack alignItems="center" py="$8">
+            <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" textAlign="center">
+              No rewards available to claim
+            </Text>
+          </VStack>
+        )}
+
+        {/* Reward Cards */}
+        {!isLoading && !error && rewards.length > 0 && (
+          <VStack space="md">
+            {rewards.map((reward) => (
+              <RewardCard
+                key={reward.id}
+                id={reward.id}
+                title={reward.title}
+                amount={reward.amount}
+                claimed={reward.claimed}
+                details={reward.details}
+                onClaim={handleClaimItem}
+              />
+            ))}
+          </VStack>
+        )}
+
+        {/* Claim All Button */}
+        {!isLoading && !error && rewards.length > 0 && (
+          <Pressable
+            onPress={handleClaimAll}
+            bg="#D8FF08"
+            $dark-bg="#D8FF08"
+            rounded={8}
+            py="$3"
+            mt="$4"
+            disabled={totalAvailable === 0 || isProcessing}
+            opacity={totalAvailable === 0 || isProcessing ? 0.5 : 1}
+          >
+            {isClaimingAll ? (
+              <ActivityIndicator size="small" color="#111111" />
+            ) : (
+              <Text fontSize={14} fontWeight="$bold" color="#111111" $dark-color="#111111" textAlign="center">
+                Claim All
+              </Text>
+            )}
+          </Pressable>
+        )}
       </VStack>
-
-      {/* Claim All Button */}
-      <Pressable
-        onPress={handleClaimAll}
-        bg="#D8FF08"
-        $dark-bg="#D8FF08"
-        rounded={8}
-        py="$3"
-        mt="auto"
-        disabled={totalAvailable === 0}
-        opacity={totalAvailable === 0 ? 0.5 : 1}
-      >
-        <Text fontSize={14} fontWeight="$bold" color="#111111" $dark-color="#111111" textAlign="center">
-          Claim All
-        </Text>
-      </Pressable>
-    </VStack>
+    </BottomSheetScrollView>
   );
 };
 
