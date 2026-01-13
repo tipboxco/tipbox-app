@@ -1,3 +1,3 @@
 export { CommunityTab } from './CommunityTab';
-export { AchievementTab } from './AchievementTab';
+export { default as AchievementTab } from './AchievementTab';
 
