@@ -163,14 +163,14 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
           <VStack flex={1} space="xs">
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={11}
+              fontSize="$xs"
               fontWeight="$semibold"
             >
               {data.userName}
             </Text>
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={9}
+              fontSize="$xs"
               fontWeight="$medium"
               numberOfLines={1}
             >
@@ -190,7 +190,7 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
           >
             <Text
               color="#000000"
-              fontSize={9}
+              fontSize="$xs"
               fontWeight="$semibold"
             >
               {buttonText}
@@ -202,9 +202,9 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
         <VStack space="xs">
           <Text
             color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize={11}
+            fontSize="$xs"
             fontWeight="$normal"
-            lineHeight={13}
+            lineHeight={16}
             numberOfLines={3}
           >
             {data.requestDescription}
@@ -220,7 +220,7 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
             />
             <Text
               color={statusInfo.color}
-              fontSize={9}
+              fontSize="$xs"
               fontWeight="$semibold"
             >
               {statusInfo.text}

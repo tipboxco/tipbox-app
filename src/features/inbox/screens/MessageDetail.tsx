@@ -36,7 +36,7 @@ interface MessageDetailItem {
   isSent: boolean;
   senderName?: string;
   senderAvatar?: any;
-  type?: 'message' | 'support_request';
+  type?: 'message' | 'support_request' | 'tips';
   supportRequest?: {
     supportType: string;
     message: string;
@@ -47,6 +47,7 @@ interface MessageDetailItem {
     fromUserId?: string; // Request'i oluşturan kullanıcı ID'si
     toUserId?: string; // Request'in gönderildiği kullanıcı ID'si (expert)
   };
+  tipsAmount?: number; // TIPS mesajı için amount
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
   readAt?: string; // Okunma zamanı
@@ -378,6 +379,14 @@ const MessageDetailScreen: React.FC = () => {
               ? undefined 
               : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : params.senderAvatar);
             
+            // Mesaj tipini belirle
+            let messageType: 'message' | 'support_request' | 'tips' = 'message';
+            if (msg.messageType === 'support-request') {
+              messageType = 'support_request';
+            } else if (msg.messageType === 'send-tips') {
+              messageType = 'tips';
+            }
+
             return {
               id: msg.id,
               text: msg.message || '', // Boş string fallback
@@ -387,8 +396,10 @@ const MessageDetailScreen: React.FC = () => {
               senderAvatar,
               isRead: msg.isRead,
               readAt: msg.readAt,
+              type: messageType,
+              // TIPS mesajı için amount
+              tipsAmount: msg.messageType === 'send-tips' ? (msg.amount || 0) : undefined,
               // Support request için özel alanlar
-              type: (msg.messageType === 'support-request' ? 'support_request' : 'message') as 'message' | 'support_request',
               supportRequest: msg.messageType === 'support-request' ? {
                 supportType: msg.supportRequestType || 'GENERAL',
                 message: msg.message,
@@ -746,9 +757,89 @@ const MessageDetailScreen: React.FC = () => {
         safeScrollToEnd(true);
       }, 100);
     } else if (eventData.messageType === 'send-tips') {
-      // TIPS mesajı - şu an için sadece log
-      console.log('[MessageDetail] TIPS message received:', eventData);
-      // TODO: TIPS mesajını UI'da göster
+      // TIPS mesajı - anında local state'e ekle
+      const isSent = eventData.senderId === currentUserId;
+      console.log('[MessageDetail] 💰 TIPS message received:', {
+        messageId: eventData.messageId,
+        amount: eventData.amount,
+        message: eventData.message,
+        senderId: eventData.senderId,
+        currentUserId,
+        isSent,
+      });
+      
+      // TIPS mesajını formatla
+      const tipsAmount = eventData.amount || 0;
+      const tipsMessageText = eventData.message || '';
+      
+      const newTipsMessage: MessageDetailItem = {
+        id: eventData.messageId,
+        text: tipsMessageText,
+        timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        isSent,
+        senderName: isSent ? undefined : (params.senderName || 'Unknown'),
+        senderAvatar: isSent ? undefined : params.senderAvatar,
+        type: 'tips',
+        tipsAmount: tipsAmount,
+        isRead: false,
+      };
+      
+      setMessages((prev) => {
+        // Duplicate kontrolü
+        const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
+        if (existingMessage) {
+          console.log('[MessageDetail] 💰 TIPS message already exists, skipping duplicate');
+          return prev;
+        }
+        
+        // Optimistic mesajı (pending-tips- ile başlayan) gerçek mesajla değiştir
+        // TIPS mesajları için amount ve text'e göre eşleştir
+        const optimisticMessageIndex = prev.findIndex(
+          (msg) => msg.id.startsWith('pending-tips-') && 
+                   msg.isSent === isSent &&
+                   msg.type === 'tips' &&
+                   Math.abs((msg.tipsAmount || 0) - tipsAmount) < 0.01 // Amount eşleşiyor mu (float karşılaştırması)
+        );
+        
+        if (optimisticMessageIndex !== -1) {
+          console.log('[MessageDetail] 💰 Replacing optimistic TIPS message with real message:', {
+            optimisticId: prev[optimisticMessageIndex].id,
+            realId: eventData.messageId,
+          });
+          const updated = [...prev];
+          updated[optimisticMessageIndex] = newTipsMessage;
+          return updated;
+        }
+        
+        // Normal FlatList: Yeni mesajı sona ekle
+        return [...prev, newTipsMessage];
+      });
+      
+      // Mesaj geldiğinde anında okundu işaretle (eğer kullanıcı ekrandaysa ve mesaj alıcı tarafından gönderildiyse)
+      if (!isSent && isSocketReady && threadId && isMountedRef.current) {
+        console.log('[MessageDetail] 📖 Marking received TIPS message as read immediately:', eventData.messageId);
+        socketMarkMessageAsRead(eventData.messageId);
+        
+        if (isMountedRef.current) {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id === eventData.messageId) {
+                return {
+                  ...msg,
+                  isRead: true,
+                  readAt: new Date().toISOString(),
+                };
+              }
+              return msg;
+            })
+          );
+        }
+      }
+      
+      // Normal FlatList'te scroll to end = en alta scroll
+      setTimeout(() => {
+        safeScrollToEnd(true);
+      }, 100);
     } else if (eventData.messageType === 'support-request') {
       // Support request mesajı - şu an için sadece log
       console.log('[MessageDetail] Support request received:', eventData);
@@ -758,11 +849,14 @@ const MessageDetailScreen: React.FC = () => {
     // Mesaj listesini invalidate et (inbox listesini güncelle)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     
-    // Thread mesajlarını da invalidate et (yeniden yüklensin)
-    if (threadId) {
-      queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(threadId) });
+    // Thread mesajlarını da invalidate et ve refetch yap (yeniden yüklensin)
+    if (currentThreadId) {
+      queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(currentThreadId) });
+      setTimeout(() => {
+        refetchMessages();
+      }, 500);
     }
-  }, [user?.id, threadId, params.senderName, params.senderAvatar, queryClient, isSocketReady, socketMarkMessageAsRead]);
+  }, [user?.id, threadId, params.senderName, params.senderAvatar, queryClient, isSocketReady, socketMarkMessageAsRead, refetchMessages]);
 
   // 9️⃣ SOCKET EVENT'LERİ ALINIR - message_sent event handler (gönderici onayı)
   const handleMessageSent = useCallback((eventData: any) => {
@@ -1276,6 +1370,29 @@ const MessageDetailScreen: React.FC = () => {
       timestampISO: requestData.timestamp,
     });
 
+    // Thread ID yoksa finalRecipientUserId'yi kullan (fallback)
+    const effectiveThreadId = threadId || finalRecipientUserId;
+
+    // Optimistic UI Update - TIPS mesajını anında local state'e ekle
+    const optimisticMessageId = `pending-tips-${Date.now()}`;
+    const optimisticTipsMessage: MessageDetailItem = {
+      id: optimisticMessageId,
+      text: finalMessage,
+      timestamp: formatMessageTime(new Date()),
+      isSent: true,
+      type: 'tips',
+      tipsAmount: amount,
+      isRead: false,
+    };
+
+    // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
+    setMessages((prev) => [...prev, optimisticTipsMessage]);
+
+    // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth animasyon)
+    setTimeout(() => {
+      scrollByMessageHeight(tipsMessageText);
+    }, 50);
+
     sendGiftMutation.mutate(
       requestData,
       {
@@ -1283,6 +1400,14 @@ const MessageDetailScreen: React.FC = () => {
           console.log('[MessageDetail] ✅ TIPS sent successfully');
           Alert.alert('Success', 'TIPS sent successfully');
           closeBottomSheet();
+          
+          // Mesaj listesini invalidate et (socket event'i geldiğinde optimistic mesaj gerçek mesajla değiştirilecek)
+          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          
+          // Thread mesajlarını da invalidate et (socket event'i geldiğinde güncellenecek)
+          if (effectiveThreadId) {
+            queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(effectiveThreadId) });
+          }
         },
         onError: (error: any) => {
           console.error('[MessageDetail] ❌ TIPS send error:', {
@@ -1292,15 +1417,21 @@ const MessageDetailScreen: React.FC = () => {
             requestData,
           });
           
+          // Hata durumunda optimistic mesajı geri al
+          setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
+          
           const errorMessage = error.response?.data?.message || error.message || 'TIPS gönderilirken bir hata oluştu';
           Alert.alert('Hata', errorMessage);
         },
       }
     );
-  }, [user, route, sendGiftMutation, closeBottomSheet, effectiveRecipientUserId]);
+  }, [user, route, sendGiftMutation, closeBottomSheet, effectiveRecipientUserId, threadId, queryClient, scrollByMessageHeight]);
 
   // Handle Send TIPS button press
   const handleSendTipsPress = () => {
+    // 1. Klavye açıksa kapat
+    Keyboard.dismiss();
+    
     const routeParams = (route.params as MessageDetailScreenParams) || {
       messageId: '',
       senderName: 'Unknown',
@@ -1702,6 +1833,126 @@ const MessageDetailScreen: React.FC = () => {
 
   // Mesaj öğesi render fonksiyonu
   const renderMessageItem = ({ item }: { item: MessageDetailItem }) => {
+    // TIPS mesajı render'ı
+    if (item.type === 'tips') {
+      const isSent = item.isSent;
+      const tipsAmount = item.tipsAmount || 0;
+
+      return (
+        <VStack
+          space="xs"
+          alignItems={isSent ? 'flex-end' : 'flex-start'}
+          px="$4"
+          py="$2"
+        >
+          {!isSent && (
+            <HStack space="sm" alignItems="center" mb="$1">
+              <Image
+                source={
+                  toImageSource(item.senderAvatar || params.senderAvatar) ||
+                  DEFAULT_USER_AVATAR
+                }
+                alt={item.senderName || params.senderName || 'User'}
+                width={24}
+                height={24}
+                borderRadius={12}
+              />
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$xs"
+                fontWeight="$medium"
+              >
+                {item.senderName || params.senderName || 'Unknown User'}
+              </Text>
+            </HStack>
+          )}
+
+          <HStack
+            space="sm"
+            alignItems="flex-end"
+            maxWidth="80%"
+            flexDirection={isSent ? 'row-reverse' : 'row'}
+          >
+            <Box
+              bg={isSent ? (isDark ? '#6366F1' : '#6366F1') : (isDark ? '#1A1A1A' : '#F2F2F2')}
+              px="$3"
+              py="$2"
+              borderRadius={16}
+              borderTopLeftRadius={isSent ? 16 : 4}
+              borderTopRightRadius={isSent ? 4 : 16}
+            >
+              <VStack space="xs">
+                {/* TIPS Amount */}
+                <HStack space="xs" alignItems="center">
+                  <Feather
+                    name="award"
+                    size={16}
+                    color={isSent ? '#E2FF46' : '#E2FF46'}
+                  />
+                  <Text
+                    color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
+                    fontSize="$xs"
+                    fontWeight="$bold"
+                  >
+                    {tipsAmount} TIPS
+                  </Text>
+                </HStack>
+                {/* Message Text */}
+                {item.text && (
+                  <Text
+                    color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
+                    fontSize="$xs"
+                    fontWeight="$normal"
+                  >
+                    {item.text}
+                  </Text>
+                )}
+              </VStack>
+            </Box>
+
+            <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$xs"
+                fontWeight="$normal"
+              >
+                {item.timestamp}
+              </Text>
+              {/* Read receipt (görüldü) - sadece gönderilen mesajlarda */}
+              {isSent && (
+                <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
+                  {item.isRead ? (
+                    // Çift yeşil tik (WhatsApp stili)
+                    <>
+                      <Feather
+                        name="check"
+                        size={14}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 0, top: 0 }}
+                      />
+                      <Feather
+                        name="check"
+                        size={14}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 4, top: 0 }}
+                      />
+                    </>
+                  ) : (
+                    // Tek gri tik (gönderildi ama okunmadı)
+                    <Feather
+                      name="check"
+                      size={12}
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                    />
+                  )}
+                </Box>
+              )}
+            </VStack>
+          </HStack>
+        </VStack>
+      );
+    }
+
     // Support Request render'ı
     if (item.type === 'support_request' && item.supportRequest) {
       const isExpanded = expandedSupportRequests[item.id];
@@ -1747,7 +1998,7 @@ const MessageDetailScreen: React.FC = () => {
                     />
                   </Box>
                   <Text
-                    fontSize={12}
+                    fontSize="$xs"
                     fontWeight="$semibold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
@@ -1775,14 +2026,14 @@ const MessageDetailScreen: React.FC = () => {
                   {/* Support Type */}
                   <VStack space="xs">
                     <Text
-                      fontSize={9}
+                      fontSize="$xs"
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
                       Support Type
                     </Text>
                     <Text
-                      fontSize={11}
+                      fontSize="$xs"
                       fontWeight="$semibold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
@@ -1793,17 +2044,17 @@ const MessageDetailScreen: React.FC = () => {
                   {/* Message */}
                   <VStack space="xs">
                     <Text
-                      fontSize={9}
+                      fontSize="$xs"
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
                       Request Details
                     </Text>
                     <Text
-                      fontSize={10}
+                      fontSize="$xs"
                       fontWeight="$normal"
                       color={isDark ? '#CCCCCC' : '#666666'}
-                      lineHeight={14}
+                      lineHeight={16}
                     >
                       {item.supportRequest.message}
                     </Text>
@@ -1817,7 +2068,7 @@ const MessageDetailScreen: React.FC = () => {
                       color="#E2FF46"
                     />
                     <Text
-                      fontSize={13}
+                      fontSize="$xs"
                       fontWeight="$bold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
@@ -1828,7 +2079,7 @@ const MessageDetailScreen: React.FC = () => {
                   {/* Status Badge */}
                   <VStack space="xs" mt="$2">
                     <Text
-                      fontSize={9}
+                      fontSize="$xs"
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
@@ -1848,7 +2099,7 @@ const MessageDetailScreen: React.FC = () => {
                       alignSelf="flex-start"
                     >
                       <Text
-                        fontSize={10}
+                        fontSize="$xs"
                         fontWeight="$semibold"
                         color={
                           requestStatus === 'pending' ? '#FFC107' :
@@ -1875,7 +2126,7 @@ const MessageDetailScreen: React.FC = () => {
                           borderRadius={8}
                           py="$2"
                         >
-                          <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                          <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
                             Cancel Request
                           </ButtonText>
                         </Button>
@@ -1890,7 +2141,7 @@ const MessageDetailScreen: React.FC = () => {
                             py="$2"
                             flex={1}
                           >
-                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                            <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
                               Accept
                             </ButtonText>
                           </Button>
@@ -1901,7 +2152,7 @@ const MessageDetailScreen: React.FC = () => {
                             py="$2"
                             flex={1}
                           >
-                            <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                            <ButtonText color="#FFFFFF" fontSize="$xs" fontWeight="$semibold">
                               Reject
                             </ButtonText>
                           </Button>
@@ -1919,7 +2170,7 @@ const MessageDetailScreen: React.FC = () => {
                         borderRadius={8}
                         py="$2"
                       >
-                        <ButtonText color="#000000" fontSize={12} fontWeight="$semibold">
+                        <ButtonText color="#000000" fontSize="$xs" fontWeight="$semibold">
                           Go to Support Chat
                         </ButtonText>
                       </Button>
@@ -1942,7 +2193,7 @@ const MessageDetailScreen: React.FC = () => {
                 color={isDark ? '#8C8C8C' : '#999999'}
               />
               <Text
-                fontSize={9}
+                fontSize="$xs"
                 fontWeight="$normal"
                 color={isDark ? '#8C8C8C' : '#999999'}
                 flex={1}
@@ -1988,7 +2239,7 @@ const MessageDetailScreen: React.FC = () => {
             />
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={9}
+              fontSize="$xs"
               fontWeight="$medium"
             >
               {item.senderName || params.senderName || 'Unknown User'}
@@ -2012,7 +2263,7 @@ const MessageDetailScreen: React.FC = () => {
           >
             <Text
               color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
-              fontSize={11}
+              fontSize="$xs"
               fontWeight="$normal"
             >
               {item.text || '(Mesaj içeriği yok)'}
@@ -2022,7 +2273,7 @@ const MessageDetailScreen: React.FC = () => {
           <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={8}
+              fontSize="$xs"
               fontWeight="$normal"
             >
               {item.timestamp}
@@ -2139,7 +2390,7 @@ const MessageDetailScreen: React.FC = () => {
               <HStack space="xs" alignItems="center">
                 <Text
                   color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  fontSize={10}
+                  fontSize="$xs"
                   fontStyle="italic"
                 >
                   {params.senderName || 'Kullanıcı'} yazıyor

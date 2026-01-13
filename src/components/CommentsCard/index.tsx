@@ -135,23 +135,35 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
         {/* Comment Content */}
         <VStack flex={1} space="xs">
           {/* Name & Title */}
-          <VStack space="xs">
-            <Text
-              color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize="$sm"
-              fontWeight="$bold"
-            >
-              {userName}
-            </Text>
-            <Text
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize="$sm"
-              fontWeight="$medium"
-              numberOfLines={1}
-            >
-              {userTitle}
-            </Text>
-          </VStack>
+          {userTitle ? (
+            <VStack space="xs">
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize="$sm"
+                fontWeight="$bold"
+              >
+                {userName}
+              </Text>
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$sm"
+                fontWeight="$medium"
+                numberOfLines={1}
+              >
+                {userTitle}
+              </Text>
+            </VStack>
+          ) : (
+            <HStack alignItems="center" space="xs">
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize="$sm"
+                fontWeight="$bold"
+              >
+                {userName}
+              </Text>
+            </HStack>
+          )}
 
           {/* Comment Text */}
           <VStack space="xs">
