@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import { Platform, View, Pressable as RNPressable } from 'react-native';
+import { Platform } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
@@ -41,7 +41,6 @@ import {
 import { useReportUser } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
-import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 
 
@@ -57,8 +56,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const navigation = useNavigation<any>();
   const { user } = useAppStore();
   const targetUserId = data.user.id;
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-  const contextMenuCloseRef = useRef<(() => void) | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -194,10 +191,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         <ContextMenuReanimated
           onViewProfile={handleViewProfile}
           onReport={handleReport}
-          onMenuStateChange={setIsContextMenuOpen}
-          onCloseRef={(closeFn) => {
-            contextMenuCloseRef.current = closeFn;
-          }}
         >
           <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
         </ContextMenuReanimated>
@@ -207,39 +200,43 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
           {toImageSource(data.user.avatar) && (
-            <Image
-              source={toImageSource(data.user.avatar)!}
-              alt={data.user.name}
-              mr={8}
-              width={48}
-              height={48}
-              borderRadius={100}
-            />
+            <Pressable onPress={handleViewProfile}>
+              <Image
+                source={toImageSource(data.user.avatar)!}
+                alt={data.user.name}
+                mr={8}
+                width={48}
+                height={48}
+                borderRadius={100}
+              />
+            </Pressable>
           )}
-          <VStack flex={1}>
-            <Text
-              color={isDark ? '$textDark400' : '#C7C7C7'}
-              fontSize={8}
-              fontWeight="$semibold"
-            >
-              {data.user.action}
-            </Text>
-            <Text
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize='$xs'
-              fontWeight="$bold"
-            >
-              {data.user.name}
-            </Text>
-            <Text
-              color={isDark ? '$textDark400' : '#787878'}
-              fontSize={9}
-              numberOfLines={1}
-              maxWidth={250}
-            >
-              {data.user.title}
-            </Text>
-          </VStack>
+          <Pressable flex={1} onPress={handleViewProfile}>
+            <VStack flex={1}>
+              <Text
+                color={isDark ? '$textDark400' : '#C7C7C7'}
+                fontSize={8}
+                fontWeight="$semibold"
+              >
+                {data.user.action}
+              </Text>
+              <Text
+                color={isDark ? '$textDark50' : '#000'}
+                fontSize='$xs'
+                fontWeight="$bold"
+              >
+                {data.user.name}
+              </Text>
+              <Text
+                color={isDark ? '$textDark400' : '#787878'}
+                fontSize={9}
+                numberOfLines={1}
+                maxWidth={250}
+              >
+                {data.user.title}
+              </Text>
+            </VStack>
+          </Pressable>
         </HStack>
       </VStack>
 
@@ -376,34 +373,25 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
             ) : (
               <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
             )}
-            <AnimatedCounter
-              value={likesCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
+            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+              {likesCount}
+            </Text>
         </HStack>
         </Pressable>
         <Pressable onPress={handleComment}>
         <HStack mr={10} alignItems="center">
           <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-            <AnimatedCounter
-              value={commentsCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
+            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+              {commentsCount}
+            </Text>
         </HStack>
         </Pressable>
         <Pressable onPress={handleShare}>
         <HStack mr={10} alignItems="center">
           <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-            <AnimatedCounter
-              value={sharesCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
+            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+              {sharesCount}
+            </Text>
         </HStack>
         </Pressable>
         <Pressable onPress={handleBookmark}>
@@ -413,36 +401,14 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
             ) : (
               <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
             )}
-            <AnimatedCounter
-              value={bookmarksCount}
-              color={isDark ? '$textDark50' : '#000'}
-              fontSize={10}
-              ml={4}
-            />
+            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+              {bookmarksCount}
+            </Text>
         </HStack>
         </Pressable>
       </HStack>
-
-      {/* Overlay - menu açıkken PostCard'a tıklamayı engellemek için */}
-      {isContextMenuOpen && (
-        <RNPressable
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'transparent',
-            zIndex: 999,
-          }}
-          onPress={() => {
-            contextMenuCloseRef.current?.();
-          }}
-        />
-      )}
     </VStack>
   );
 };
 
 export default ExperiencePostCard;
-

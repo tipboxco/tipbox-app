@@ -131,7 +131,7 @@ const NotificationCard: React.FC<{
             case 'SYSTEM_ANNOUNCEMENT':
                 return BellIcon;
             case 'TIPS_RECEIVED':
-                return CurrencyDollarIcon;
+                return GiftIcon;
             case 'TIPS_SENT':
                 return PaperAirplaneIcon;
 
@@ -176,68 +176,199 @@ const NotificationCard: React.FC<{
         : DEFAULT_USER_AVATAR;
     const userName = notification.metadata?.userName || 'Kullanıcı';
     const IconComponent = getIconComponent(notification.type);
+    
+    // Metadata'dan ekstra içerikleri al
+    const postContent = notification.metadata?.postContent || notification.metadata?.content;
+    const postTitle = notification.metadata?.postTitle || notification.metadata?.title;
+    const postTag = notification.metadata?.postTag || notification.metadata?.tag;
+    const commentContent = notification.metadata?.commentContent || notification.metadata?.commentText;
+    const tipsAmount = notification.metadata?.amount || notification.metadata?.rewardAmount;
+    const showPostCard = (notification.type === 'POST_LIKED' || notification.type === 'POST_COMMENTED') && (postContent || postTitle);
+    const showTipsBadge = (notification.type === 'TIPS_RECEIVED' || notification.type === 'TIPS_SENT') && tipsAmount;
+    const showCommentText = notification.type === 'POST_COMMENTED' && commentContent;
+    const showTrustButton = (notification.type === 'NEW_TRUSTER' || notification.type === 'NEW_TRUSTED_BY');
 
     return (
-        <Pressable onPress={handlePress}>
-            <HStack space="md" alignItems="flex-start" mb="$4">
-                {/* Avatar - Border olmadan direkt göster */}
-                <Box position="relative">
-                    <Image
-                        source={userAvatar}
-                        alt="User avatar"
-                        width={48}
-                        height={48}
-                        borderRadius={24}
-                    />
-                    {!notification.read && (
+        <Pressable onPress={handlePress} mb="$4">
+            <VStack space="sm">
+                {/* Main Notification Row */}
+                <HStack space="md" alignItems="flex-start">
+                    {/* Avatar - Mor/pembe border ile */}
+                    <Box position="relative">
                         <Box
-                            position="absolute"
-                            top={0}
-                            right={0}
-                            width={12}
-                            height={12}
-                            borderRadius={6}
-                            bg="#E8FF6B"
-                            borderWidth={2}
-                            borderColor={isDark ? '#000000' : '#FFFFFF'}
-                        />
-                    )}
-                </Box>
+                            width={48}
+                            height={48}
+                            borderRadius={24}
+                            borderWidth={2.5}
+                            borderColor="#C084FC"
+                            justifyContent="center"
+                            alignItems="center"
+                        >
+                            <Image
+                                source={userAvatar}
+                                alt="User avatar"
+                                width={44}
+                                height={44}
+                                borderRadius={22}
+                            />
+                        </Box>
+                        {!notification.read && (
+                            <Box
+                                position="absolute"
+                                top={-2}
+                                right={-2}
+                                width={12}
+                                height={12}
+                                borderRadius={6}
+                                bg="#E8FF6B"
+                                borderWidth={2}
+                                borderColor={isDark ? '#000000' : '#FFFFFF'}
+                            />
+                        )}
+                    </Box>
 
-                {/* Content */}
-                <VStack flex={1} space="xs">
-                    {/* Message and Time */}
-                    <HStack justifyContent="space-between" alignItems="flex-start" flex={1}>
+                    {/* Content - Ortada */}
+                    <VStack flex={1} space="xs" mr="$2">
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$normal"
-                            flex={1}
-                            mr="$2"
+                            fontSize={14}
+                            fontWeight="400"
+                            lineHeight={20}
                         >
                             {notification.message}
                         </Text>
+                    </VStack>
 
-                        <HStack alignItems="center" space="xs">
+                    {/* Time and Icon - Sağda */}
+                    <VStack alignItems="flex-end" space="xs" justifyContent="flex-start">
+                        <Text
+                            color="#8C8C8C"
+                            fontSize={12}
+                            fontWeight="500"
+                        >
+                            {formatRelativeTime(notification.createdAt)}
+                        </Text>
+                        <IconComponent width={20} height={20} color="#7D7D7D" />
+                    </VStack>
+                </HStack>
+
+                {/* Extra Content - Altında */}
+                {showTipsBadge && (
+                    <Box ml={56} mt="$1">
+                        <Box
+                            bg="#FFD700"
+                            borderRadius={20}
+                            px="$3"
+                            py="$1"
+                            alignSelf="flex-start"
+                        >
                             <Text
-                                color="#8C8C8C"
-                                fontSize="$xs"
-                                fontWeight="$medium"
+                                color="#000000"
+                                fontSize={12}
+                                fontWeight="700"
                             >
-                                {formatRelativeTime(notification.createdAt)}
+                                +{tipsAmount} TIPS
                             </Text>
-                        </HStack>
-                    </HStack>
-                </VStack>
+                        </Box>
+                    </Box>
+                )}
 
-                {/* Icon - En sağda */}
-                <VStack alignItems="center" justifyContent="flex-start" space="xs" ml="$2">
-                    <IconComponent width={20} height={20} color="#7D7D7D" />
-                    <Pressable onPress={handleDelete}>
-                        <XMarkIcon width={16} height={16} color="#7D7D7D" />
-                    </Pressable>
-                </VStack>
-            </HStack>
+                {showCommentText && (
+                    <Box ml={56} mt="$1" mr="$2">
+                        <Text
+                            color={isDark ? '#B9B9B9' : '#666666'}
+                            fontSize={13}
+                            fontWeight="400"
+                            lineHeight={18}
+                        >
+                            {commentContent}
+                        </Text>
+                    </Box>
+                )}
+
+                {showPostCard && (
+                    <Box ml={56} mt="$2" mr="$2">
+                        <Box
+                            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                            borderRadius={8}
+                            p="$3"
+                        >
+                            <HStack justifyContent="space-between" alignItems="flex-start" mb="$2">
+                                {postTag && (
+                                    <Box
+                                        bg="#A855F7"
+                                        borderRadius={12}
+                                        px="$2"
+                                        py="$1"
+                                    >
+                                        <Text
+                                            color="#FFFFFF"
+                                            fontSize={10}
+                                            fontWeight="600"
+                                        >
+                                            {postTag}
+                                        </Text>
+                                    </Box>
+                                )}
+                                {notification.metadata?.postCategory && (
+                                    <HStack alignItems="center" space="xs">
+                                        <Text
+                                            color={isDark ? '#B9B9B9' : '#666666'}
+                                            fontSize={11}
+                                            fontWeight="500"
+                                        >
+                                            {notification.metadata.postCategory}
+                                        </Text>
+                                        <BookmarkIcon width={14} height={14} color={isDark ? '#B9B9B9' : '#666666'} />
+                                    </HStack>
+                                )}
+                            </HStack>
+                            {postTitle && (
+                                <Text
+                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                    fontSize={14}
+                                    fontWeight="700"
+                                    mb="$1"
+                                >
+                                    {postTitle}
+                                </Text>
+                            )}
+                            {postContent && (
+                                <Text
+                                    color={isDark ? '#B9B9B9' : '#666666'}
+                                    fontSize={12}
+                                    fontWeight="400"
+                                    lineHeight={16}
+                                    numberOfLines={3}
+                                >
+                                    {postContent}
+                                </Text>
+                            )}
+                        </Box>
+                    </Box>
+                )}
+
+                {showTrustButton && (
+                    <Box ml={56} mt="$2">
+                        <Pressable
+                            bg="#FFD700"
+                            borderRadius={20}
+                            px="$4"
+                            py="$2"
+                            alignSelf="flex-start"
+                            onPress={onPress}
+                        >
+                            <Text
+                                color="#000000"
+                                fontSize={12}
+                                fontWeight="600"
+                            >
+                                Profili Görüntüle
+                            </Text>
+                        </Pressable>
+                    </Box>
+                )}
+            </VStack>
         </Pressable>
     );
 };
@@ -612,8 +743,8 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        // Estimated item height: avatar (48px) + content + margins (~100px)
-        const estimatedItemHeight = 100;
+        // Estimated item height: avatar (48px) + content + extra content (post card, comment, etc.) + margins (~150px)
+        const estimatedItemHeight = 150;
         
         return (
             <FlashList
@@ -622,7 +753,7 @@ const NotificationsScreenComponent: React.FC = () => {
                 keyExtractor={keyExtractor}
                 contentContainerStyle={{ 
                     paddingHorizontal: 16,
-                    paddingTop: 16,
+                    paddingTop: 8,
                     paddingBottom: estimatedItemHeight, // 1 item boyutu kadar padding
                 }}
                 showsVerticalScrollIndicator={false}

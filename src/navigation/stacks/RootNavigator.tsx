@@ -132,8 +132,20 @@ export const RootNavigator = () => {
             }}
           />
           
+          {/* Settings - Card presentation (sağdan sola açılır) */}
+          <RootStack.Screen
+            name="Settings"
+            component={SettingsNavigator}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+              gestureEnabled: true,
+              headerShown: false,
+            }}
+          />
+          
           {/* ModalsGroup - UI flow screens */}
-          {/* CRITICAL: Modal presentation ile Settings ve MoreSchoise aşağıdan yukarıya açılır */}
+          {/* CRITICAL: Modal presentation ile MoreSchoise aşağıdan yukarıya açılır */}
           <RootStack.Group 
             screenOptions={{ 
               presentation: 'modal',
@@ -142,10 +154,6 @@ export const RootNavigator = () => {
               headerShown: false,
             }}
           >
-            <RootStack.Screen
-              name="Settings"
-              component={SettingsNavigator}
-            />
             <RootStack.Screen
               name="MoreSchoise"
               component={MoreSchoiseNavigator}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -23,6 +23,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
 import MessageDetailActionButtons from '../components/MessageDetailActionButtons';
@@ -1390,7 +1391,7 @@ const MessageDetailScreen: React.FC = () => {
 
     // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth animasyon)
     setTimeout(() => {
-      scrollByMessageHeight(tipsMessageText);
+      scrollByMessageHeight(finalMessage);
     }, 50);
 
     sendGiftMutation.mutate(
@@ -1828,6 +1829,26 @@ const MessageDetailScreen: React.FC = () => {
       ]
     );
   }, [isConnected, isSocketReady, socketCancelSupportRequest, cancelSupportRequestMutation]);
+
+  // Handle Add Image - Galeriyi aç
+  const handleAddImage = useCallback(async () => {
+    try {
+      const result = await imagePickerService.pickFromGallery();
+      
+      if (result.success && result.asset) {
+        console.log('[MessageDetail] 📷 Image selected:', result.asset.uri);
+        // TODO: Seçilen görseli mesaj olarak gönder veya önizleme göster
+        Alert.alert('Başarılı', 'Görsel seçildi: ' + result.asset.uri);
+      } else {
+        if (result.error) {
+          Alert.alert('Hata', result.error);
+        }
+      }
+    } catch (error: any) {
+      console.error('[MessageDetail] ❌ Image picker error:', error);
+      Alert.alert('Hata', 'Görsel seçilirken bir hata oluştu');
+    }
+  }, []);
 
 
 
@@ -2314,14 +2335,13 @@ const MessageDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
         keyboardVerticalOffset={0}
         enabled={true}
       >
-        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
           {/* Header */}
           <MessageDetailHeader
             senderName={params.senderName}
@@ -2433,7 +2453,7 @@ const MessageDetailScreen: React.FC = () => {
 
           {/* Mesaj Input - En altta, KeyboardAvoidingView ile otomatik yönetilir */}
           <Box 
-            pb={isKeyboardVisible ? (Platform.OS === 'ios' ? 8 : 0) : (Platform.OS === 'ios' ? insets.bottom : 0)}
+            pb={isKeyboardVisible ? (Platform.OS === 'ios' ? 8 : insets.bottom) : insets.bottom}
             zIndex={1001}
             elevation={1001}
             position="relative"
@@ -2441,7 +2461,7 @@ const MessageDetailScreen: React.FC = () => {
           >
             <MessageInput
               onSendMessage={handleSendMessage}
-              onAddImage={() => console.log('Görsel eklenecek')}
+              onAddImage={handleAddImage}
               placeholder="Type your message..."
               threadId={threadId}
               onTypingStart={handleTypingStart}
@@ -2449,10 +2469,8 @@ const MessageDetailScreen: React.FC = () => {
             />
           </Box>
 
-        </Box>
-      </KeyboardAvoidingView>
-
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+    </Box>
   );
 };
 

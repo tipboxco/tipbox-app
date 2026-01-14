@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, Toast, ToastTitle, ToastDescription, useToast } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
@@ -352,18 +353,10 @@ export const CreateBenchmarkPostScreen = () => {
     
     // ContextType ve contextId kontrolü
     if (!contextType || !contextId) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Error',
+        description: 'Context information not found. Please try again.',
+        action: 'error',
       });
       return;
     }
@@ -387,18 +380,10 @@ export const CreateBenchmarkPostScreen = () => {
     }
     
     if (products.length < 2) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>En az 2 ürün seçilmelidir.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Hata',
+        description: 'En az 2 ürün seçilmelidir.',
+        action: 'error',
       });
       return;
     }
@@ -502,18 +487,10 @@ export const CreateBenchmarkPostScreen = () => {
                           error?.message || 
                           'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
       
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Hata',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };

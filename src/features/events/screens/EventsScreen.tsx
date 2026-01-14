@@ -257,8 +257,6 @@ const EventsScreen: React.FC = () => {
           <VStack pt={0} pb="$4" bg={tabHeaderBgColor}>
             <HStack
               ref={tabContainerRef}
-              borderBottomWidth={1}
-              borderColor="#E9E9E9"
               p={0}
               m={0}
               position="relative"

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator } from 'react-native';
-import { Box, useToast, Toast, ToastTitle, ToastDescription, VStack, Text } from '@gluestack-ui/themed';
+import { Box, useToast, VStack, Text } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { FormProvider, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -153,32 +154,20 @@ export const CreateExperiencePostScreen = () => {
             if (isValid) {
                 // Product ID kontrolü
                 if (!selectedProduct?.id) {
-                    toast.show({
-                        placement: 'top',
-                        render: ({ id }: { id: string }) => (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>Ürün seçilmedi. Lütfen bir ürün seçin.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        ),
+                    showCustomToast(toast, {
+                        title: 'Error',
+                        description: 'Product not selected. Please select a product.',
+                        action: 'error',
                     });
                     return;
                 }
 
                 // Experience text kontrolü
                 if (!experienceText || experienceText.trim().length < 10) {
-                    toast.show({
-                        placement: 'top',
-                        render: ({ id }: { id: string }) => (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>Deneyim metni en az 10 karakter olmalıdır.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        ),
+                    showCustomToast(toast, {
+                        title: 'Hata',
+                        description: 'Deneyim metni en az 10 karakter olmalıdır.',
+                        action: 'error',
                     });
                     return;
                 }
@@ -238,16 +227,10 @@ export const CreateExperiencePostScreen = () => {
                                        'Deneyim metni işlenirken bir hata oluştu. Lütfen tekrar deneyin.';
                     }
                     
-                    toast.show({
-                        placement: 'top',
-                        render: ({ id }: { id: string }) => (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>{errorMessage}</ToastDescription>
-                                </Toast>
-                            </Box>
-                        ),
+                    showCustomToast(toast, {
+                        title: 'Error',
+                        description: errorMessage,
+                        action: 'error',
                     });
                 }
             }
@@ -273,36 +256,20 @@ export const CreateExperiencePostScreen = () => {
         
         // ContextType ve contextId kontrolü
         if (!contextType || !contextId) {
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Hata',
+                description: 'Context bilgisi bulunamadı. Lütfen tekrar deneyin.',
+                action: 'error',
             });
             return;
         }
         
         // Ürün kontrolü
         if (!data.selectedProduct) {
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>Ürün seçimi zorunludur.</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Error',
+                description: 'Product selection is required.',
+                action: 'error',
             });
             return;
         }
@@ -333,18 +300,10 @@ export const CreateExperiencePostScreen = () => {
         
         // Experience array kontrolü
         if (experience.length === 0) {
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>En az bir deneyim kategorisi doldurulmalıdır.</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Hata',
+                description: 'En az bir deneyim kategorisi doldurulmalıdır.',
+                action: 'error',
             });
             return;
         }
@@ -368,52 +327,28 @@ export const CreateExperiencePostScreen = () => {
         
         // Zorunlu alan kontrolü
         if (!selectedDurationId || selectedDurationId.trim() === '') {
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>Duration seçimi zorunludur.</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Error',
+                description: 'Duration selection is required.',
+                action: 'error',
             });
             return;
         }
         
         if (!selectedLocationId || selectedLocationId.trim() === '') {
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>Location seçimi zorunludur.</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Hata',
+                description: 'Location seçimi zorunludur.',
+                action: 'error',
             });
             return;
         }
         
         if (!selectedPurposeId || selectedPurposeId.trim() === '') {
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>Purpose seçimi zorunludur.</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Hata',
+                description: 'Purpose seçimi zorunludur.',
+                action: 'error',
             });
             return;
         }
@@ -448,18 +383,10 @@ export const CreateExperiencePostScreen = () => {
             console.log('[CreateExperiencePostScreen] ✅ API Response:', response);
             
             // Başarılı toast göster
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                                <ToastTitle>Post Oluşturuldu</ToastTitle>
-                                <ToastDescription>Deneyim gönderiniz başarıyla oluşturuldu!</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Post Created',
+                description: 'Your experience post has been created successfully!',
+                action: 'success',
             });
             
             // Clear flow context on successful submit
@@ -532,18 +459,10 @@ export const CreateExperiencePostScreen = () => {
                                 error?.message || 
                                 'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
             
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>{errorMessage}</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Hata',
+                description: errorMessage,
+                action: 'error',
             });
         }
     };
@@ -554,18 +473,10 @@ export const CreateExperiencePostScreen = () => {
             const remainingSlots = 10 - currentImages.length;
             
             if (remainingSlots <= 0) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Limit Aşıldı</ToastTitle>
-                                    <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Limit Aşıldı',
+                    description: 'Maksimum 10 görsel seçebilirsiniz.',
+                    action: 'error',
                 });
                 return;
             }
@@ -581,50 +492,26 @@ export const CreateExperiencePostScreen = () => {
                     const updatedImages = [...currentImages, ...newImageUris];
                     setValue('selectedImages', updatedImages, { shouldValidate: true });
                 } else {
-                    toast.show({
-                        placement: 'top',
-                        render: ({ id }: { id: string }) => {
-                            return (
-                                <Box maxWidth="90%" alignSelf="center" px="$4">
-                                    <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                        <ToastTitle>Hata</ToastTitle>
-                                        <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
-                                    </Toast>
-                                </Box>
-                            );
-                        },
+                    showCustomToast(toast, {
+                        title: 'Hata',
+                        description: "Seçilen görsellerin URI'leri bulunamadı.",
+                        action: 'error',
                     });
                 }
             } else if (result.error) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Hata</ToastTitle>
-                                    <ToastDescription>{result.error}</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Hata',
+                    description: result.error,
+                    action: 'error',
                 });
             }
         } catch (error: any) {
             console.error('Image picker error:', error);
             const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Hata</ToastTitle>
-                                <ToastDescription>{errorMessage}</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Hata',
+                description: errorMessage,
+                action: 'error',
             });
         }
     };

@@ -9,6 +9,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toImageSource } from '@/src/utils';
 
 interface MessageDetailHeaderProps {
@@ -28,12 +29,14 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const insets = useSafeAreaInsets();
 
   return (
     <VStack
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       borderBottomWidth={1}
       borderColor={isDark ? '#333' : '#E9E9E9'}
+      pt={insets.top}
     >
       {/* Header Section */}
       <Box

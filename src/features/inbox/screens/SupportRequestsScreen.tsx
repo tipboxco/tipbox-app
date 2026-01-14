@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import SupportRequestCard from '../components/SupportRequestCard/index';
 import SupportRequestFilterGroup from '../components/SupportRequestFilterGroup/index';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
+import { toImageSource } from '@/src/utils';
 import { useSupportRequests, useAcceptSupportRequest } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -33,7 +33,6 @@ const SupportRequestsScreen: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string>('pending');
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<SupportRequestsScreenNavigationProp>();
-  const bottomInset = useSafeAreaValues('bottom');
   const queryClient = useQueryClient();
   const { isConnected, on, off } = useSocket();
   const acceptMutation = useAcceptSupportRequest();
@@ -233,52 +232,53 @@ const SupportRequestsScreen: React.FC = () => {
   ];
 
   return (
-    <VStack flex={1} space="md" px="$4">
-      {/* Filter Buttons */}
-      <Box mt="$4">
-        <SupportRequestFilterGroup
-          filters={filterOptions.map(f => ({ id: f.id, name: f.name, isActive: activeFilter === f.id }))}
-          activeFilter={activeFilter}
-          onFilterPress={handleFilterPress}
-        />
-      </Box>
-
-      {/* Support Requests List - Full Width */}
-      {isLoading && !supportRequests ? (
-        <SupportRequestSkeleton count={5} />
-      ) : error ? (
-        <Box py={20} alignItems="center">
-          <Text color="#CE4A4A">Hata: {error.message}</Text>
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      <VStack flex={1} space="md" px="$4">
+        {/* Filter Buttons */}
+        <Box mt="$4">
+          <SupportRequestFilterGroup
+            filters={filterOptions.map(f => ({ id: f.id, name: f.name, isActive: activeFilter === f.id }))}
+            activeFilter={activeFilter}
+            onFilterPress={handleFilterPress}
+          />
         </Box>
-      ) : (
-        <FlatList
-          data={supportRequestsArray}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <SupportRequestCard
-              data={item}
-              onPress={handleRequestPress}
-              onAccept={handleAccept}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: bottomInset }}
-          style={{ flex: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing || isRefetching}
-              onRefresh={handleRefresh}
-              tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
-            />
-          }
-          ListEmptyComponent={
-            <Box py={20} alignItems="center">
-              <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No support requests found</Text>
-            </Box>
-          }
-        />
-      )}
-    </VStack>
+
+        {/* Support Requests List - Full Width */}
+        {isLoading && !supportRequests ? (
+          <SupportRequestSkeleton count={5} />
+        ) : error ? (
+          <Box py={20} alignItems="center">
+            <Text color="#CE4A4A">Hata: {error.message}</Text>
+          </Box>
+        ) : (
+          <FlatList
+            data={supportRequestsArray}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <SupportRequestCard
+                data={item}
+                onPress={handleRequestPress}
+                onAccept={handleAccept}
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            style={{ flex: 1 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing || isRefetching}
+                onRefresh={handleRefresh}
+                tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+              />
+            }
+            ListEmptyComponent={
+              <Box py={20} alignItems="center">
+                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No support requests found</Text>
+              </Box>
+            }
+          />
+        )}
+      </VStack>
+    </Box>
   );
 };
 

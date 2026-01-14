@@ -70,7 +70,6 @@ export const Trust_TrusterListScreen = () => {
     const [activeTab, setActiveTab] = useState<'trust' | 'truster'>(initialTab);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-    const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
     const [selectedSort, setSelectedSort] = useState<'default' | 'newest' | 'oldest'>('default');
     
     // Global bottom sheet hook
@@ -229,13 +228,6 @@ export const Trust_TrusterListScreen = () => {
     const backgroundColor = isDark ? '#000' : '#FFFFFF';
     const tabHeaderBgColor = '#FFFFFF'; // Tab header her zaman beyaz
 
-    const handlePopoverOpen = (userId: string) => {
-        setOpenPopoverId(userId);
-    };
-
-    const handlePopoverClose = () => {
-        setOpenPopoverId(null);
-    };
 
     const handleSortSelect = (sort: 'default' | 'newest' | 'oldest') => {
         setSelectedSort(sort);
@@ -606,9 +598,6 @@ export const Trust_TrusterListScreen = () => {
                                         key={user.id}
                                         user={user}
                                         showBorder={false}
-                                        isPopoverOpen={openPopoverId === user.id}
-                                        onPopoverOpen={() => handlePopoverOpen(user.id)}
-                                        onPopoverClose={handlePopoverClose}
                                         onUserPress={() => {
                                             profileNavigation.navigate('ProfileMain', { userId: user.id });
                                         }}
@@ -682,9 +671,6 @@ export const Trust_TrusterListScreen = () => {
                                         key={user.id}
                                         user={user}
                                         showBorder={false}
-                                        isPopoverOpen={openPopoverId === user.id}
-                                        onPopoverOpen={() => handlePopoverOpen(user.id)}
-                                        onPopoverClose={handlePopoverClose}
                                         onUserPress={() => {
                                             profileNavigation.navigate('ProfileMain', { userId: user.id });
                                         }}
@@ -695,21 +681,6 @@ export const Trust_TrusterListScreen = () => {
                     </Box>
                 </AnimatedPagerView>
 
-                {/* Güvenli kapanış overlay'i - sadece popover açıkken aktif */}
-                {openPopoverId && (
-                    <Pressable
-                        onPress={handlePopoverClose}
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            right: 0,
-                            bottom: 0,
-                            left: 0,
-                            zIndex: 1
-                        }}
-                        pointerEvents="auto"
-                    />
-                )}
             </Box>
         </SafeAreaView>
     );

@@ -32,7 +32,6 @@ import {
 import { useReportUser } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
-import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
 
@@ -253,31 +252,35 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
             {/* Header */}
             <VStack px={12} py={8} borderRightWidth={isDetailMode ? 0 : 1} borderLeftWidth={isDetailMode ? 0 : 1} borderTopWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
-                    <Image
-                        source={toImageSource(data.user.avatar) || DEFAULT_USER_AVATAR}
-                        alt={data.user.name}
-                        mr={8}
-                        width={42}
-                        height={42}
-                        borderRadius={100}
-                    />
-                    <VStack flex={1}>
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$sm"
-                            fontWeight="$bold"
-                        >
-                            {data.user.name}
-                        </Text>
-                        <Text
-                            color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={isDetailMode ? "$sm" : 11}
-                            numberOfLines={1}
-                            maxWidth={250}
-                        >
-                            {data.user.title}
-                        </Text>
-                    </VStack>
+                    <Pressable onPress={handleViewProfile}>
+                        <Image
+                            source={toImageSource(data.user.avatar) || DEFAULT_USER_AVATAR}
+                            alt={data.user.name}
+                            mr={8}
+                            width={42}
+                            height={42}
+                            borderRadius={100}
+                        />
+                    </Pressable>
+                    <Pressable flex={1} onPress={handleViewProfile}>
+                        <VStack flex={1}>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$sm"
+                                fontWeight="$bold"
+                            >
+                                {data.user.name}
+                            </Text>
+                            <Text
+                                color={isDark ? '$textDark400' : '#787878'}
+                                fontSize={isDetailMode ? "$sm" : 11}
+                                numberOfLines={1}
+                                maxWidth={250}
+                            >
+                                {data.user.title}
+                            </Text>
+                        </VStack>
+                    </Pressable>
                     <ContextMenuReanimated
                         onViewProfile={handleViewProfile}
                         onReport={handleReport}
@@ -451,12 +454,9 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                     {data.stats.likes}
                                 </Text>
                             ) : (
-                                <AnimatedCounter
-                                    value={likesCount}
-                                    color={isDark ? '$textDark50' : '#000'}
-                                    fontSize={10}
-                                    ml={4}
-                                />
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                    {likesCount}
+                                </Text>
                             )}
                         </HStack>
                     </Pressable>
@@ -472,12 +472,9 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                     {data.stats.comments}
                                 </Text>
                             ) : (
-                                <AnimatedCounter
-                                    value={commentsCount}
-                                    color={isDark ? '$textDark50' : '#000'}
-                                    fontSize={10}
-                                    ml={4}
-                                />
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                    {commentsCount}
+                                </Text>
                             )}
                         </HStack>
                     </Pressable>
@@ -489,12 +486,9 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                     {data.stats.shares}
                                 </Text>
                             ) : (
-                                <AnimatedCounter
-                                    value={sharesCount}
-                                    color={isDark ? '$textDark50' : '#000'}
-                                    fontSize={10}
-                                    ml={4}
-                                />
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                    {sharesCount}
+                                </Text>
                             )}
                         </HStack>
                     </Pressable>
@@ -510,12 +504,9 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                     {data.stats.bookmarks}
                                 </Text>
                             ) : (
-                                <AnimatedCounter
-                                    value={bookmarksCount}
-                                    color={isDark ? '$textDark50' : '#000'}
-                                    fontSize={10}
-                                    ml={4}
-                                />
+                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                    {bookmarksCount}
+                                </Text>
                             )}
                         </HStack>
                     </Pressable>

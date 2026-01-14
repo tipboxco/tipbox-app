@@ -112,13 +112,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             });
         }
         
-        // Backend'den güncel veri çek (invalidate + refetch)
-        // Not: Optimistic update zaten yapıldı, bu sadece backend'den güncel veriyi çekmek için
+        // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)
+        // Refetch yapmıyoruz çünkü optimistic update yeterli ve isRefetching state'ini true yapıp loader'ı takılı bırakıyor
         queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-        // Refetch yap (invalidate yeterli olmayabilir, özellikle yeni thread'ler için)
-        setTimeout(() => {
-            queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
-        }, 300);
     }, [queryClient, user?.id]);
 
     // Socket event handler - thread_read event (thread okundu olarak işaretlendiğinde)
@@ -135,12 +131,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             );
         });
         
-        // Invalidate messages query to refresh the list (backend'den güncel veri çek)
+        // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)
+        // Refetch yapmıyoruz çünkü optimistic update yeterli ve isRefetching state'ini true yapıp loader'ı takılı bırakıyor
         queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-        // Refetch yap (invalidate yeterli olmayabilir)
-        setTimeout(() => {
-            queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
-        }, 100);
     }, [queryClient]);
 
     // Socket event handler - user_typing event (kullanıcı typing yapıyor)
@@ -275,12 +268,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 console.warn('[MessagesScreen] ⚠️ Socket not connected, thread read status will be updated when socket connects');
             }
             
-            // Query'i invalidate et ve refetch yap ki backend'den güncel veri çekilsin
-            // thread_read event'i geldiğinde de invalidate edilecek ama burada da yapıyoruz
-            setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-                queryClient.refetchQueries({ queryKey: inboxKeys.messages() });
-            }, 500);
+            // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)
+            // Refetch yapmıyoruz çünkü optimistic update yeterli ve isRefetching state'ini true yapıp loader'ı takılı bırakıyor
+            queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
         }
         
         // MessageDetail ekranına git (backend'den gelen recipientUserId ile)
@@ -383,7 +373,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     );
 
     return (
-        <VStack flex={1} space="md">
+        <VStack flex={1} space="sm">
             {/* Sol kenardan drawer açma gesture alanı - PagerView swipe'ını engellememek için küçük alan */}
             {isActiveTab && onDrawerOpen && (
                 <GestureDetector gesture={drawerGesture}>
@@ -399,7 +389,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 </GestureDetector>
             )}
             {/* Filters */}
-            <VStack px="$4" space="md">
+            <VStack px="$4" pt="$2" pb="$2">
                 {/* Filter Buttons - TODO: API'ye taşındığında categories de buradan gelecek */}
                 <MessagesFilterGroup
                     categories={[]}
@@ -409,7 +399,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             </VStack>
 
             {/* Messages List - Full Height */}
-            {isLoading && !messages ? (
+            {isLoading && !messages && !isRefetching ? (
                 <MessageSkeleton count={5} />
             ) : error ? (
                 <Box py={20} alignItems="center">

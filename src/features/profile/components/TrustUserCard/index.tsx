@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { Alert, View, Pressable as RNPressable } from 'react-native';
 import {
     VStack, 
     HStack, 
@@ -7,17 +7,13 @@ import {
     Pressable, 
     Box, 
     Image,
-    Popover,
-    PopoverBackdrop,
-    PopoverContent,
-    PopoverBody,
-    PopoverArrow
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useReportUser, useRemoveFromTrustList } from '../../api/hooks';
+import { useRemoveFromTrustList } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { DEFAULT_USER_AVATAR } from '@/src/utils';
+import { RemoveFromTrustlistContextMenu } from '../RemoveFromTrustlistContextMenu';
 
 export interface TrustUserCardUser {
   id: string;
@@ -35,9 +31,9 @@ export interface TrustUserCardUser {
 interface TrustUserCardProps {
   user: TrustUserCardUser;
   showBorder?: boolean;
-  isPopoverOpen: boolean;
-  onPopoverOpen: () => void;
-  onPopoverClose: () => void;
+  isPopoverOpen?: boolean; // Deprecated, kept for backward compatibility
+  onPopoverOpen?: () => void; // Deprecated, kept for backward compatibility
+  onPopoverClose?: () => void; // Deprecated, kept for backward compatibility
   onUserPress?: () => void;
 }
 
@@ -51,9 +47,9 @@ export const TrustUserCard = ({
 }: TrustUserCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const { user: currentUser } = useAppStore();
-  const { mutate: reportUser, isPending: isReporting } = useReportUser();
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const contextMenuCloseRef = useRef<(() => void) | null>(null);
 
   const getTrustColor = (level: number) => {
     const colors = ['#CE4A4A', '#FF6B35', '#FFA500', '#32CD32', '#00BFFF'];
@@ -62,50 +58,20 @@ export const TrustUserCard = ({
 
   const handleBlock = () => {
     Alert.alert(
-      'Kullanıcıyı Engelle',
-      'Bu kullanıcıyı engellemek istediğinizden emin misiniz? Engellediğiniz kullanıcı sizinle etkileşime geçemez.',
+      'Block User',
+      'Are you sure you want to block this user? Blocked users cannot interact with you.',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Engelle',
+          text: 'Block',
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
             console.log('[TrustUserCard] Block user:', user.id);
-            onPopoverClose();
-          },
-        },
-      ]
-    );
-  };
-
-  const handleReport = () => {
-    if (!currentUser?.id) return;
-    
-    Alert.alert(
-      'Kullanıcıyı Raporla',
-      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel',
-        },
-        {
-          text: 'Raporla',
-          style: 'destructive',
-          onPress: () => {
-            reportUser({
-              userId: currentUser.id,
-              targetUserId: user.id,
-              data: {
-                category: 'OTHER',
-                description: 'Kullanıcı trust listesinden raporlandı',
-              },
-            });
-            onPopoverClose();
+            contextMenuCloseRef.current?.();
           },
         },
       ]
@@ -114,19 +80,19 @@ export const TrustUserCard = ({
 
   const handleRemoveFromTrustList = () => {
     Alert.alert(
-      'Trust Listesinden Kaldır',
-      `${user.name} kullanıcısını trust listesinden kaldırmak istediğinizden emin misiniz?`,
+      'Remove from Trust List',
+      `Are you sure you want to remove ${user.name} from your trust list?`,
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Kaldır',
+          text: 'Remove',
           style: 'destructive',
           onPress: () => {
             untrustUser(user.id);
-            onPopoverClose();
+            contextMenuCloseRef.current?.();
           },
         },
       ]
@@ -136,7 +102,7 @@ export const TrustUserCard = ({
   const handleMute = () => {
     // TODO: Mute functionality eklendiğinde buraya entegre edilecek
     console.log('[TrustUserCard] Mute user:', user.id);
-    onPopoverClose();
+    contextMenuCloseRef.current?.();
   };
 
   const avatarSource =
@@ -151,6 +117,7 @@ export const TrustUserCard = ({
       px={16}
       borderBottomWidth={showBorder ? 1 : 0}
       borderBottomColor={isDark ? '#333' : '#E9E9E9'}
+      position="relative"
     >
       <Pressable 
         flex={1}
@@ -208,169 +175,42 @@ export const TrustUserCard = ({
       </HStack>
       </Pressable>
 
-      {/* More Options Popover */}
-      <Popover
-        isOpen={isPopoverOpen}
-        onClose={onPopoverClose}
-        placement="left"
-        trigger={(triggerProps) => (
-          <Pressable
-            {...triggerProps}
-            p={8}
-            onPress={(e) => {
-              // gluestack'in kendi tetikleyicisini de çalıştır
-              (triggerProps as any)?.onPress?.(e);
-              onPopoverOpen();
-            }}
-          >
-            <Feather
-              name="more-horizontal"
-              size={24}
-              color={isDark ? '#959595' : '#959595'}
-            />
-          </Pressable>
-        )}
+      {/* Context Menu */}
+      <RemoveFromTrustlistContextMenu
+        onRemoveFromTrustList={handleRemoveFromTrustList}
+        onMute={handleMute}
+        onBlock={handleBlock}
+        onMenuStateChange={setIsContextMenuOpen}
+        onCloseRef={(closeFn) => {
+          contextMenuCloseRef.current = closeFn;
+        }}
       >
-        <PopoverBackdrop onPress={onPopoverClose} />
-        <PopoverContent
-          width={190}
-          bg={isDark ? '#1A1A1A' : '#FAFAFA'}
-          borderRadius={5}
-        >
-          <PopoverArrow />
-          <PopoverBody p={0}>
-            <VStack>
-              {/* Mute Option */}
-              <Pressable
-                onPress={handleMute}
-                p={12}
-                borderBottomWidth={1}
-                borderBottomColor={isDark ? '#333' : '#E9E9E9'}
-              >
-                <HStack alignItems="center" space="sm">
-                  <Box
-                    width={22}
-                    height={22}
-                    bg={isDark ? '#333' : '#FFFFFF'}
-                    borderRadius={11}
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Feather
-                      name="bell-off"
-                      size={16}
-                      color={isDark ? '#fff' : '#000'}
-                    />
-                  </Box>
-                  <Text
-                    color={isDark ? '#fff' : '#2F2F2F'}
-                    fontSize={11}
-                    fontWeight="$medium"
-                  >
-                    Mute
-                  </Text>
-                </HStack>
-              </Pressable>
+        <Pressable p={8}>
+          <Feather
+            name="more-horizontal"
+            size={24}
+            color={isDark ? '#959595' : '#959595'}
+          />
+        </Pressable>
+      </RemoveFromTrustlistContextMenu>
 
-              {/* Block Option */}
-              <Pressable
-                onPress={handleBlock}
-                p={12}
-                borderBottomWidth={1}
-                borderBottomColor={isDark ? '#333' : '#E9E9E9'}
-              >
-                <HStack alignItems="center" space="sm">
-                  <Box
-                    width={22}
-                    height={22}
-                    bg={isDark ? '#333' : '#FFFFFF'}
-                    borderRadius={11}
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Feather
-                      name="slash"
-                      size={16}
-                      color="#FF3040"
-                    />
-                  </Box>
-                  <Text
-                    color="#FF3040"
-                    fontSize={11}
-                    fontWeight="$medium"
-                  >
-                    Block
-                  </Text>
-                </HStack>
-              </Pressable>
-
-              {/* Report Option */}
-              <Pressable
-                onPress={handleReport}
-                p={12}
-                borderBottomWidth={1}
-                borderBottomColor={isDark ? '#333' : '#E9E9E9'}
-                disabled={isReporting}
-              >
-                <HStack alignItems="center" space="sm">
-                  <Box
-                    width={22}
-                    height={22}
-                    bg={isDark ? '#333' : '#FFFFFF'}
-                    borderRadius={11}
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Feather
-                      name="flag"
-                      size={16}
-                      color={isDark ? '#fff' : '#000'}
-                    />
-                  </Box>
-                  <Text
-                    color={isDark ? '#fff' : '#2F2F2F'}
-                    fontSize={11}
-                    fontWeight="$medium"
-                  >
-                    {isReporting ? 'Raporlanıyor...' : 'Raporla'}
-                  </Text>
-                </HStack>
-              </Pressable>
-
-              {/* Remove from Trust List Option */}
-              <Pressable
-                onPress={handleRemoveFromTrustList}
-                p={12}
-                disabled={isUntrusting}
-              >
-                <HStack alignItems="center" space="sm">
-                  <Box
-                    width={22}
-                    height={22}
-                    bg={isDark ? '#333' : '#FFFFFF'}
-                    borderRadius={11}
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Feather
-                      name="user-x"
-                      size={16}
-                      color={isDark ? '#fff' : '#000'}
-                    />
-                  </Box>
-                  <Text
-                    color={isDark ? '#fff' : '#2F2F2F'}
-                    fontSize={11}
-                    fontWeight="$medium"
-                  >
-                    {isUntrusting ? 'Kaldırılıyor...' : 'Remove from Trust List'}
-                  </Text>
-                </HStack>
-              </Pressable>
-            </VStack>
-          </PopoverBody>
-        </PopoverContent>
-      </Popover>
+      {/* Overlay - menu açıkken TrustUserCard'a tıklamayı engellemek için */}
+      {isContextMenuOpen && (
+        <RNPressable
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'transparent',
+            zIndex: 999,
+          }}
+          onPress={() => {
+            contextMenuCloseRef.current?.();
+          }}
+        />
+      )}
     </HStack>
   );
 };

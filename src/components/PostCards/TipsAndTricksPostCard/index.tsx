@@ -38,7 +38,6 @@ import {
 import { useReportUser } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
-import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface TipsAndTricksPostCardProps {
     data: TipsCardData;
@@ -184,32 +183,36 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
             <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
                 <HStack alignItems="center" space="xs">
                     {toImageSource(data.user.avatar) && (
-                        <Image
-                            source={toImageSource(data.user.avatar)!}
-                            alt={data.user.name}
-                            mr={8}
-                            width={42}
-                            height={42}
-                            borderRadius={100}
-                        />
+                        <Pressable onPress={handleViewProfile}>
+                            <Image
+                                source={toImageSource(data.user.avatar)!}
+                                alt={data.user.name}
+                                mr={8}
+                                width={42}
+                                height={42}
+                                borderRadius={100}
+                            />
+                        </Pressable>
                     )}
-                    <VStack flex={1}>
-                        <Text
-                            color={isDark ? '$textDark50' : '#000'}
-                            fontSize="$sm"
-                            fontWeight="$bold"
-                        >
-                            {data.user.name}
-                        </Text>
-                        <Text
-                            color={isDark ? '$textDark400' : '#787878'}
-                            fontSize={11}
-                            numberOfLines={1}
-                            maxWidth={250}
-                        >
-                            {data.user.title}
-                        </Text>
-                    </VStack>
+                    <Pressable flex={1} onPress={handleViewProfile}>
+                        <VStack flex={1}>
+                            <Text
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize="$sm"
+                                fontWeight="$bold"
+                            >
+                                {data.user.name}
+                            </Text>
+                            <Text
+                                color={isDark ? '$textDark400' : '#787878'}
+                                fontSize={11}
+                                numberOfLines={1}
+                                maxWidth={250}
+                            >
+                                {data.user.title}
+                            </Text>
+                        </VStack>
+                    </Pressable>
                     <ContextMenuReanimated
                         onViewProfile={handleViewProfile}
                         onReport={handleReport}
@@ -362,34 +365,25 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             ) : (
                                 <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            <AnimatedCounter
-                                value={likesCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize={10}
-                                ml={4}
-                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                {likesCount}
+                            </Text>
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleComment}>
                     <HStack mr={10} alignItems="center">
                         <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            <AnimatedCounter
-                                value={commentsCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize={10}
-                                ml={4}
-                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                {commentsCount}
+                            </Text>
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleShare}>
                     <HStack mr={10} alignItems="center">
                         <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            <AnimatedCounter
-                                value={sharesCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize={10}
-                                ml={4}
-                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                {sharesCount}
+                            </Text>
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
@@ -399,12 +393,9 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             ) : (
                                 <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            <AnimatedCounter
-                                value={bookmarksCount}
-                                color={isDark ? '$textDark50' : '#000'}
-                                fontSize={10}
-                                ml={4}
-                            />
+                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                                {bookmarksCount}
+                            </Text>
                     </HStack>
                     </Pressable>
                 </HStack>

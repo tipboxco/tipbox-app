@@ -1,7 +1,8 @@
 import React from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider } from 'react-hook-form';
@@ -90,18 +91,10 @@ export const CreateUpdatePostScreen = () => {
       const remainingSlots = 10 - currentImages.length;
       
       if (remainingSlots <= 0) {
-        toast.show({
-          placement: 'top',
-          render: ({ id }: { id: string }) => {
-            return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Limit Aşıldı</ToastTitle>
-                  <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
-                </Toast>
-              </Box>
-            );
-          },
+        showCustomToast(toast, {
+          title: 'Limit Exceeded',
+          description: 'You can select a maximum of 10 images.',
+          action: 'error',
         });
         return;
       }
@@ -117,50 +110,26 @@ export const CreateUpdatePostScreen = () => {
           const updatedImages = [...currentImages, ...newImageUris];
           setValue('selectedImages', updatedImages, { shouldValidate: true });
         } else {
-          toast.show({
-            placement: 'top',
-            render: ({ id }: { id: string }) => {
-              return (
-                <Box maxWidth="90%" alignSelf="center" px="$4">
-                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                    <ToastTitle>Hata</ToastTitle>
-                    <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
-                  </Toast>
-                </Box>
-              );
-            },
+          showCustomToast(toast, {
+            title: 'Hata',
+            description: "Seçilen görsellerin URI'leri bulunamadı.",
+            action: 'error',
           });
         }
       } else if (result.error) {
-        toast.show({
-          placement: 'top',
-          render: ({ id }: { id: string }) => {
-            return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Hata</ToastTitle>
-                  <ToastDescription>{result.error}</ToastDescription>
-                </Toast>
-              </Box>
-            );
-          },
+        showCustomToast(toast, {
+          title: 'Error',
+          description: result.error,
+          action: 'error',
         });
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
       const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Hata',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };
@@ -176,18 +145,10 @@ export const CreateUpdatePostScreen = () => {
     
     // ContextType ve contextId kontrolü
     if (!contextType || !contextId) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Hata',
+        description: 'Context bilgisi bulunamadı. Lütfen tekrar deneyin.',
+        action: 'error',
       });
       return;
     }
@@ -206,18 +167,10 @@ export const CreateUpdatePostScreen = () => {
       console.log('[CreateUpdatePostScreen] ✅ API Response:', response);
       
       // Başarılı toast göster
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Post Oluşturuldu</ToastTitle>
-                <ToastDescription>Update gönderiniz başarıyla oluşturuldu!</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Post Oluşturuldu',
+        description: 'Update gönderiniz başarıyla oluşturuldu!',
+        action: 'success',
       });
       
       // Clear flow context on successful submit
@@ -290,18 +243,10 @@ export const CreateUpdatePostScreen = () => {
                           error?.message || 
                           'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
       
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Hata',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };

@@ -9,6 +9,7 @@ import {
   Input, 
   InputField,
 } from '@gluestack-ui/themed';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,7 +19,6 @@ import { Feather } from '@expo/vector-icons';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
 import YourDevicesBottomSheet from '../components/YourDevicesBottomSheet';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<SettingsStackParamList, 'SettingsScreen'>;
 
@@ -39,6 +39,9 @@ export const SettingsScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Safe area insets
+  const insets = useSafeAreaInsets();
   
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -143,11 +146,7 @@ export const SettingsScreen = () => {
   })).filter(section => section.items.length > 0);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
-      >
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Settings"
         showBackButton
@@ -184,7 +183,7 @@ export const SettingsScreen = () => {
       </Box>
 
       {/* Settings Content */}
-      <ScrollView flex={1} px="$4" pb="$6">
+      <ScrollView flex={1} px="$4" pb={insets.bottom + 24}>
         <VStack>
           {filteredSections.map((section, sectionIndex) => (
             <VStack key={section.title}>
@@ -257,6 +256,5 @@ export const SettingsScreen = () => {
         </VStack>
       </ScrollView>
     </Box>
-    </SafeAreaView>
   );
 };

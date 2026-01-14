@@ -10,11 +10,9 @@ import {
     Textarea,
     TextareaInput,
     useToast,
-    Toast,
-    ToastTitle,
-    ToastDescription,
     Image,
 } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -156,18 +154,10 @@ const EventCreatePost: React.FC = () => {
             const remainingSlots = 10 - selectedImages.length;
             
             if (remainingSlots <= 0) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Limit Exceeded</ToastTitle>
-                                    <ToastDescription>You can select a maximum of 10 images.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Limit Exceeded',
+                    description: 'You can select a maximum of 10 images.',
+                    action: 'error',
                 });
                 return;
             }
@@ -182,50 +172,26 @@ const EventCreatePost: React.FC = () => {
                 if (newImageUris.length > 0) {
                     setSelectedImages(prev => [...prev, ...newImageUris]);
                 } else {
-                    toast.show({
-                        placement: 'top',
-                        render: ({ id }: { id: string }) => {
-                            return (
-                                <Box maxWidth="90%" alignSelf="center" px="$4">
-                                    <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                        <ToastTitle>Error</ToastTitle>
-                                        <ToastDescription>Could not find URIs of selected images.</ToastDescription>
-                                    </Toast>
-                                </Box>
-                            );
-                        },
+                    showCustomToast(toast, {
+                        title: 'Error',
+                        description: 'Could not find URIs of selected images.',
+                        action: 'error',
                     });
                 }
             } else if (result.error) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Error</ToastTitle>
-                                    <ToastDescription>{result.error}</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: result.error,
+                    action: 'error',
                 });
             }
         } catch (error: any) {
             console.error('Image picker error:', error);
             const errorMessage = error?.message || 'An error occurred while selecting images';
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Error</ToastTitle>
-                                <ToastDescription>{errorMessage}</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Error',
+                description: errorMessage,
+                action: 'error',
             });
         }
     };
@@ -238,54 +204,30 @@ const EventCreatePost: React.FC = () => {
         try {
             // Validation
             if (!eventId) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Error</ToastTitle>
-                                    <ToastDescription>Event ID not found.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Event ID not found.',
+                    action: 'error',
                 });
                 return;
             }
 
             // Title validation (max 200 char)
             if (!title.trim()) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Error</ToastTitle>
-                                    <ToastDescription>Title is required.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Title is required.',
+                    action: 'error',
                 });
                 return;
             }
 
             // Body validation (max 2000 char)
             if (!content.trim()) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Error</ToastTitle>
-                                    <ToastDescription>Content is required.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Content is required.',
+                    action: 'error',
                 });
                 return;
             }
@@ -293,18 +235,10 @@ const EventCreatePost: React.FC = () => {
             // Product seçimi opsiyonel (EVENT_GUIDE.MD'ye göre)
             // Ancak mevcut UI flow'da product seçilmesi beklendiği için kontrol ekliyoruz
             if (!selectedProduct) {
-                toast.show({
-                    placement: 'top',
-                    render: ({ id }: { id: string }) => {
-                        return (
-                            <Box maxWidth="90%" alignSelf="center" px="$4">
-                                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                    <ToastTitle>Error</ToastTitle>
-                                    <ToastDescription>Please select a product.</ToastDescription>
-                                </Toast>
-                            </Box>
-                        );
-                    },
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Please select a product.',
+                    action: 'error',
                 });
                 return;
             }
@@ -320,18 +254,10 @@ const EventCreatePost: React.FC = () => {
             console.log('Event post created:', response);
 
             // Başarılı toast göster
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                                <ToastTitle>Success</ToastTitle>
-                                <ToastDescription>Post created successfully!</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Success',
+                description: 'Post created successfully!',
+                action: 'success',
             });
 
             // Event detail ekranına geri dön
@@ -359,18 +285,10 @@ const EventCreatePost: React.FC = () => {
                     displayMessage = errorMessage || displayMessage;
             }
             
-            toast.show({
-                placement: 'top',
-                render: ({ id }: { id: string }) => {
-                    return (
-                        <Box maxWidth="90%" alignSelf="center" px="$4">
-                            <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                                <ToastTitle>Error</ToastTitle>
-                                <ToastDescription>{displayMessage}</ToastDescription>
-                            </Toast>
-                        </Box>
-                    );
-                },
+            showCustomToast(toast, {
+                title: 'Error',
+                description: displayMessage,
+                action: 'error',
             });
         }
     };

@@ -7,4 +7,5 @@ export { BadgeSkeleton } from './BadgeSkeleton';
 export { LimitedTimeEventSkeleton } from './LimitedTimeEventSkeleton';
 export { MessageSkeleton } from './MessageSkeleton';
 export { SupportRequestSkeleton } from './SupportRequestSkeleton';
+export { EventsScreenSkeleton } from './EventsScreenSkeleton';
 

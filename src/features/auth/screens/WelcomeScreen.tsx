@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image, useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { LogIn, Mail, Facebook } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -35,22 +36,10 @@ export const WelcomeScreen = () => {
       await googleLoginMutation.mutateAsync(googleResult.idToken);
 
       // Başarılı toast göster
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
-                  Google Login Successful
-                </ToastTitle>
-                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={2}>
-                  Welcome, {googleResult.user.name || googleResult.user.email}!
-                </ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Google Login Successful',
+        description: `Welcome, ${googleResult.user.name || googleResult.user.email}!`,
+        action: 'success',
       });
 
       // RootNavigator otomatik olarak isAuthenticated=true olduğunda
@@ -64,22 +53,10 @@ export const WelcomeScreen = () => {
         error?.response?.data?.message ||
         'Google ile giriş yapılırken bir hata oluştu';
 
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4" width="100%">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle fontSize="$sm" flexShrink={1} numberOfLines={1}>
-                  Google Login Error
-                </ToastTitle>
-                <ToastDescription fontSize="$sm" flexShrink={1} numberOfLines={3}>
-                  {errorMessage}
-                </ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Google Login Error',
+        description: errorMessage,
+        action: 'error',
       });
     } finally {
       setIsGoogleLoading(false);

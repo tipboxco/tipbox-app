@@ -10,7 +10,7 @@ import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
 import { useLogin, useGoogleLogin } from '../api/hooks';
 import { googleService } from '@/src/services/GoogleService';
-import { CustomToast } from '@/src/components/CustomToast';
+import { showCustomToast } from '@/src/components/CustomToast';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -67,19 +67,10 @@ export const LoginScreen = () => {
         }
 
         // Başarılı toast göster
-        toast.show({
-          placement: 'top',
+        showCustomToast(toast, {
+          title: `Hoş geldin ${result.fullName || result.email?.split('@')[0] || 'Kullanıcı'}!`,
+          action: 'success',
           duration: 3000,
-          render: ({ id }) => {
-            return (
-              <CustomToast
-                id={id}
-                title={`Hoş geldin ${result.fullName || result.email?.split('@')[0] || 'Kullanıcı'}!`}
-                action="success"
-                duration={3000}
-              />
-            );
-          },
         });
 
         // RootNavigator otomatik olarak isAuthenticated=true olduğunda
@@ -100,20 +91,11 @@ export const LoginScreen = () => {
           error?.message ||
           'Giriş yapılırken bir hata oluştu';
 
-        toast.show({
-          placement: 'top',
+        showCustomToast(toast, {
+          title: 'Login Failed',
+          description: errorMessage,
+          action: 'error',
           duration: 4000,
-          render: ({ id }) => {
-            return (
-              <CustomToast
-                id={id}
-                title="Giriş başarısız"
-                description={errorMessage}
-                action="error"
-                duration={4000}
-              />
-            );
-          },
         });
       }
     }
@@ -156,19 +138,10 @@ export const LoginScreen = () => {
       await googleLoginMutation.mutateAsync(googleResult.idToken);
 
       // Başarılı toast göster
-      toast.show({
-        placement: 'top',
+      showCustomToast(toast, {
+        title: `Hoş geldin ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'Kullanıcı'}!`,
+        action: 'success',
         duration: 3000,
-        render: ({ id }) => {
-          return (
-            <CustomToast
-              id={id}
-              title={`Hoş geldin ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'Kullanıcı'}!`}
-              action="success"
-              duration={3000}
-            />
-          );
-        },
       });
 
       // RootNavigator otomatik olarak isAuthenticated=true olduğunda
@@ -182,20 +155,11 @@ export const LoginScreen = () => {
         error?.response?.data?.message ||
         'Google ile giriş yapılırken bir hata oluştu';
 
-      toast.show({
-        placement: 'top',
+      showCustomToast(toast, {
+        title: 'Google Login Failed',
+        description: errorMessage,
+        action: 'error',
         duration: 4000,
-        render: ({ id }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Google ile giriş başarısız"
-              description={errorMessage}
-              action="error"
-              duration={4000}
-            />
-          );
-        },
       });
     } finally {
       setIsGoogleLoading(false);

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions, RefreshControl } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions, RefreshControl, Pressable as RNPressable } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
@@ -58,9 +58,8 @@ import {
   UserMinusIcon,
   UserPlusIcon,
 } from 'react-native-heroicons/outline';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedSkeleton } from '@/src/components/Skeletons';
+import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -799,8 +798,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const rootNavigation = useNavigation<any>();
   const safeAreaTop = useSafeAreaValues('top');
   const safeAreaBottom = useSafeAreaValues('bottom');
-  const insets = useSafeAreaInsets();
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
@@ -968,6 +965,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === targetUserId;
   
+  // Context menu state
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const contextMenuCloseRef = useRef<(() => void) | null>(null);
+  
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
   const pagerRef = useRef<PagerView>(null);
@@ -1058,11 +1059,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         message: `Check out ${userProfile.name}'s profile on Tipbox!`,
         url: `tipboxapp://profile/user/${targetUserId}`,
       });
-      closeBottomSheet();
     } catch (error) {
       console.error('[ProfileScreen] Share error:', error);
     }
-  }, [userProfile, targetUserId, closeBottomSheet]);
+  }, [userProfile, targetUserId]);
 
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
@@ -1087,12 +1087,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 description: 'Kullanıcı raporlandı',
               },
             });
-            closeBottomSheet();
           },
         },
       ]
     );
-  }, [user?.id, targetUserId, reportUser, closeBottomSheet]);
+  }, [user?.id, targetUserId, reportUser]);
 
   const handleBlock = useCallback(() => {
     Alert.alert(
@@ -1109,7 +1108,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
             console.log('[ProfileScreen] Block user:', targetUserId);
-            closeBottomSheet();
             // Navigate back after blocking
             if (navigation.canGoBack()) {
               navigation.goBack();
@@ -1118,85 +1116,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         },
       ]
     );
-  }, [targetUserId, navigation, closeBottomSheet]);
+  }, [targetUserId, navigation]);
 
-  // BUG FIX: handleOpenActionSheet tanımlanmalı - ActionSheet bottom sheet aç
-  const handleOpenActionSheet = useCallback(() => {
-    if (isOwnProfile || !userProfile) return;
-
-    const actionSheetContent = (
-      <VStack bg={isDark ? '$backgroundDark900' : '$white'} pb={20}>
-        {/* Share */}
-        <Pressable
-          onPress={() => {
-            handleShare();
-            closeBottomSheet();
-          }}
-          px={20}
-          py={16}
-        >
-          <HStack alignItems="center" space="md">
-            <ArrowUpTrayIcon size={20} color={isDark ? '#FFFFFF' : '#000000'} />
-            <Text
-              color={isDark ? '$textLight0' : '$textDark950'}
-              fontSize="$md"
-              fontWeight="$medium"
-            >
-              Paylaş
-            </Text>
-          </HStack>
-        </Pressable>
-
-        {/* Report */}
-        <Pressable
-          onPress={() => {
-            closeBottomSheet();
-            handleReport();
-          }}
-          px={20}
-          py={16}
-        >
-          <HStack alignItems="center" space="md">
-            <FlagIcon size={20} color={isDark ? '#FFFFFF' : '#000000'} />
-            <Text
-              color={isDark ? '$textLight0' : '$textDark950'}
-              fontSize="$md"
-              fontWeight="$medium"
-            >
-              Raporla
-            </Text>
-          </HStack>
-        </Pressable>
-
-        {/* Block */}
-        <Pressable
-          onPress={() => {
-            closeBottomSheet();
-            handleBlock();
-          }}
-          px={20}
-          py={16}
-        >
-          <HStack alignItems="center" space="md">
-            <NoSymbolIcon size={20} color="#FF3040" />
-            <Text
-              color="#FF3040"
-              fontSize="$md"
-              fontWeight="$medium"
-            >
-              Engelle
-            </Text>
-          </HStack>
-        </Pressable>
-      </VStack>
-    );
-
-    openBottomSheet(actionSheetContent, {
-      enablePanDownToClose: true,
-      enableDynamicSizing: true,
-      paddingBottom: insets.bottom + 8,
-    });
-  }, [isOwnProfile, userProfile, isDark, handleShare, handleReport, handleBlock, openBottomSheet, closeBottomSheet, insets.bottom]);
   
   // ListHeaderComponent: Banner + Profile Info
   const renderProfileHeader = useCallback((activeTab: TabKey, onChangeTab: (tab: TabKey) => void, isLoading: boolean): React.ReactElement | null => {
@@ -1250,7 +1171,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           {/* Banner Controls */}
           <Box
             position="absolute"
-            top={36}
+            top={50}
             left={0}
             right={0}
             flexDirection="row"
@@ -1259,6 +1180,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             px={16}
             pointerEvents="box-none"
             zIndex={2000}
+            style={{ position: 'relative' }}
           >
             <Pressable
               onPress={() => {
@@ -1273,18 +1195,47 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               <ChevronLeftIcon size={24} color="#fff" />
             </Pressable>
 
-            <Pressable
-              onPress={() => {
-                if (isOwnProfile) {
-                  rootNavigation.navigate('Settings' as never);
-                } else {
-                  handleOpenActionSheet();
-                }
-              }}
-              style={{ zIndex: 2000 }}
-            >
-              <EllipsisVerticalIcon size={24} color="#fff" />
-            </Pressable>
+            {isOwnProfile ? (
+              <Pressable
+                onPress={() => {
+                  navigationService.navigate(ROOT_ROUTES.SETTINGS);
+                }}
+                style={{ zIndex: 2000 }}
+              >
+                <EllipsisVerticalIcon size={24} color="#fff" />
+              </Pressable>
+            ) : (
+              <Box style={{ zIndex: 2000 }}>
+                <ContextMenuReanimated
+                  menuItems={[
+                    {
+                      label: 'Paylaş',
+                      icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+                      onPress: handleShare,
+                    },
+                    {
+                      label: 'Şikayet Et',
+                      icon: <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+                      onPress: handleReport,
+                    },
+                    {
+                      label: 'Engelle',
+                      icon: <NoSymbolIcon width={20} height={20} color="#FF3040" />,
+                      onPress: handleBlock,
+                      color: '#FF3040',
+                    },
+                  ]}
+                  onMenuStateChange={setIsContextMenuOpen}
+                  onCloseRef={(closeFn) => {
+                    contextMenuCloseRef.current = closeFn;
+                  }}
+                >
+                  <Pressable>
+                    <EllipsisVerticalIcon size={24} color="#fff" />
+                  </Pressable>
+                </ContextMenuReanimated>
+              </Box>
+            )}
           </Box>
         </Box>
 
@@ -1338,8 +1289,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               ) : (
                 <>
                   <Pressable
-                    w={30}
-                    h={30}
+                    w={34}
+                    h={34}
                     bg="#F7F7F7"
                     borderRadius={200}
                     borderWidth={1}
@@ -1348,12 +1299,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handleSendTIPS}
                   >
-                    <GiftIcon size={14} color="#000" />
+                    <GiftIcon size={16} color="#000" />
                   </Pressable>
                   
                   <Pressable
-                    w={30}
-                    h={30}
+                    w={34}
+                    h={34}
                     bg="#F7F7F7"
                     borderRadius={200}
                     borderWidth={1}
@@ -1362,12 +1313,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handle1on1Request}
                   >
-                    <PhoneIcon size={14} color="#000" />
+                    <PhoneIcon size={16} color="#000" />
                   </Pressable>
                   
                   <Pressable
-                    w={30}
-                    h={30}
+                    w={34}
+                    h={34}
                     bg="#F7F7F7"
                     borderRadius={200}
                     borderWidth={1}
@@ -1376,12 +1327,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     alignItems="center"
                     onPress={handleDM}
                   >
-                    <ChatBubbleLeftIcon size={14} color="#000" />
+                    <ChatBubbleLeftIcon size={16} color="#000" />
                   </Pressable>
                   
                   <Pressable
-                    w={30}
-                    h={30}
+                    w={34}
+                    h={34}
                     bg="#F7F7F7"
                     borderRadius={200}
                     borderWidth={1}
@@ -1392,7 +1343,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       console.log('[ProfileScreen] Notification pressed');
                     }}
                   >
-                    <BellIcon size={14} color="#000" />
+                    <BellIcon size={16} color="#000" />
                   </Pressable>
                   
                   <Pressable
@@ -1400,8 +1351,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     borderRadius={200}
                     borderWidth={1}
                     borderColor="#E9E9E9"
-                    px={12}
-                    py={8}
+                    px={14}
+                    py={10}
                     flexDirection="row"
                     alignItems="center"
                     gap={2}
@@ -1417,9 +1368,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     opacity={(isTrusting || isUntrusting) ? 0.6 : 1}
                   >
                     {profile.isTrusted ? (
-                      <UserMinusIcon size={14} color="#000" />
+                      <UserMinusIcon size={16} color="#000" />
                     ) : (
-                      <UserPlusIcon size={14} color="#000" />
+                      <UserPlusIcon size={16} color="#000" />
                     )}
                     <Text
                       color="#000"
@@ -1677,7 +1628,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleOpenActionSheet, refreshing, isRefreshingOnFocus]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, refreshing, isRefreshingOnFocus]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)

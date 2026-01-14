@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import { FormProvider, useFormContext } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -249,19 +250,11 @@ export const CreatePostScreen = () => {
     const remainingSlots = 10 - currentImages.length;
     
     if (remainingSlots <= 0) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Limit Aşıldı</ToastTitle>
-                <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
-      });
+        showCustomToast(toast, {
+          title: 'Limit Exceeded',
+          description: 'You can select a maximum of 10 images.',
+          action: 'error',
+        });
       return;
     }
 
@@ -322,18 +315,10 @@ export const CreatePostScreen = () => {
       console.log('[CreatePostScreen] ====================================');
       
       // Başarılı toast göster
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Post Oluşturuldu</ToastTitle>
-                <ToastDescription>Postunuz başarıyla oluşturuldu!</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Post Oluşturuldu',
+        description: 'Postunuz başarıyla oluşturuldu!',
+        action: 'success',
       });
       
       // Clear flow context on successful submit
@@ -407,18 +392,10 @@ export const CreatePostScreen = () => {
                           error?.message || 
                           'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
       
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Error',
+        description: errorMessage,
+        action: 'error',
       });
       // TODO: Error handling UI göster
     }

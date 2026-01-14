@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { Box, ScrollView, VStack, HStack, Text, Pressable, useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext } from 'react-hook-form';
@@ -214,12 +215,28 @@ export const CreateTipsAndTrickPostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Feed screen
-      navigation.navigate('Main', {
-        screen: 'Feed',
-        params: {
-          screen: 'FeedScreen',
-        },
-      });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'App',
+              state: {
+                routes: [
+                  {
+                    name: 'MainTabs',
+                    state: {
+                      routes: [{ name: 'FeedScreen' }],
+                      index: 0,
+                    },
+                  },
+                ],
+                index: 0,
+              },
+            },
+          ],
+        })
+      );
     }
   };
 
@@ -229,18 +246,10 @@ export const CreateTipsAndTrickPostScreen = () => {
       const remainingSlots = 10 - currentImages.length;
       
       if (remainingSlots <= 0) {
-        toast.show({
-          placement: 'top',
-          render: ({ id }: { id: string }) => {
-            return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Limit Aşıldı</ToastTitle>
-                  <ToastDescription>Maksimum 10 görsel seçebilirsiniz.</ToastDescription>
-                </Toast>
-              </Box>
-            );
-          },
+        showCustomToast(toast, {
+          title: 'Limit Aşıldı',
+          description: 'Maksimum 10 görsel seçebilirsiniz.',
+          action: 'error',
         });
         return;
       }
@@ -256,50 +265,26 @@ export const CreateTipsAndTrickPostScreen = () => {
           const updatedImages = [...currentImages, ...newImageUris];
           setValue('selectedImages', updatedImages, { shouldValidate: true });
         } else {
-          toast.show({
-            placement: 'top',
-            render: ({ id }: { id: string }) => {
-              return (
-                <Box maxWidth="90%" alignSelf="center" px="$4">
-                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                    <ToastTitle>Hata</ToastTitle>
-                    <ToastDescription>Seçilen görsellerin URI'leri bulunamadı.</ToastDescription>
-                  </Toast>
-                </Box>
-              );
-            },
+          showCustomToast(toast, {
+            title: 'Hata',
+            description: 'Seçilen görsellerin URI\'leri bulunamadı.',
+            action: 'error',
           });
         }
       } else if (result.error) {
-        toast.show({
-          placement: 'top',
-          render: ({ id }: { id: string }) => {
-            return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Hata</ToastTitle>
-                  <ToastDescription>{result.error}</ToastDescription>
-                </Toast>
-              </Box>
-            );
-          },
+        showCustomToast(toast, {
+          title: 'Hata',
+          description: result.error,
+          action: 'error',
         });
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
       const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Hata',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };
@@ -335,18 +320,10 @@ export const CreateTipsAndTrickPostScreen = () => {
     // ContextType ve contextId kontrolü
     if (!contextType || !contextId) {
       console.error('[CreateTipsAndTrickPostScreen] ❌ Missing context:', { contextType, contextId });
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Context bilgisi bulunamadı. Lütfen tekrar deneyin.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Error',
+        description: 'Context information not found. Please try again.',
+        action: 'error',
       });
       return;
     }
@@ -369,18 +346,10 @@ export const CreateTipsAndTrickPostScreen = () => {
       console.log('[CreateTipsAndTrickPostScreen] ✅ API Response:', response);
       
       // Başarılı toast göster
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Post Oluşturuldu</ToastTitle>
-                <ToastDescription>Tips & Tricks gönderiniz başarıyla oluşturuldu!</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Post Oluşturuldu',
+        description: 'Tips & Tricks gönderiniz başarıyla oluşturuldu!',
+        action: 'success',
       });
       
       // Clear flow context on successful submit
@@ -411,8 +380,8 @@ export const CreateTipsAndTrickPostScreen = () => {
             routes: [
               {
                 name: 'App',
-                state: appRoute?.state, // App'in mevcut state'ini koru
-              },
+                ...(appRoute?.state && { state: appRoute.state }), // App'in mevcut state'ini koru
+              } as any,
               {
                 name: 'Profile',
                 params: {
@@ -456,18 +425,10 @@ export const CreateTipsAndTrickPostScreen = () => {
                           error?.message || 
                           'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
       
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Hata',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };
