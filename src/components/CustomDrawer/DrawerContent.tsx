@@ -527,16 +527,16 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 </Box>
                 <Text
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={18}
+                  fontSize="$lg"
                   fontWeight="$bold"
-                  mt="$2"
+                  mt="$1"
                 >
                   {displayName}
                 </Text>
                 {tags.length > 0 && (
                   <Text
-                    mt="$1"
-                    fontSize={9}
+                    mt="$0.5"
+                    fontSize="$2xs"
                     fontWeight="$medium"
                     color="#A3A3A3"
                     numberOfLines={1}
@@ -550,7 +550,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
         </Box>
 
           {/* Stats Section – FULL BLEED, içte hizalama */}
-          <Box mt={-40} mb="$4">
+          <Box mt={-60} mb="$2">
             <HStack justifyContent="center" alignItems="center" px="$6">
               <Pressable
                 onPress={() => {
@@ -564,12 +564,12 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 <VStack alignItems="center" space="xs">
                   <Text
                     color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={14}
+                    fontSize="$sm"
                     fontWeight="$bold"
                   >
                     {stats.posts}
                   </Text>
-                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$xs">
                     Posts
                   </Text>
                 </VStack>
@@ -587,12 +587,12 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 <VStack alignItems="center" space="xs">
                   <Text
                     color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={14}
+                    fontSize="$sm"
                     fontWeight="$bold"
                   >
                     {stats.trust}
                   </Text>
-                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$xs">
                     Trust
                   </Text>
                 </VStack>
@@ -610,12 +610,12 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 <VStack alignItems="center" space="xs">
                   <Text
                     color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={14}
+                    fontSize="$sm"
                     fontWeight="$bold"
                   >
                     {stats.truster}
                   </Text>
-                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize={11}>
+                  <Text color={isDark ? '$textDark400' : '$textLight600'} fontSize="$xs">
                     Truster
                   </Text>
                 </VStack>
@@ -624,7 +624,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           </Box>
 
           {/* Premium Banner – FULL BLEED, içte padding */}
-          <Box w="100%" mb="$3">
+          <Box w="100%" mb="$2">
           <Box
             w="100%"
             h={0.5}
@@ -639,7 +639,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           >
             <Text
               color={isDark ? '$textDark50' : '$textLight900'}
-              fontSize={12}
+              fontSize="$sm"
               fontWeight="$semibold"
             >
               Premium Selling Design Small Banner
@@ -668,7 +668,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
                 </Box>
                 <Text 
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={12}
+                  fontSize="$sm"
                   fontWeight="$semibold"
                   w={110}
                 >
@@ -680,7 +680,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           </VStack>
 
           {/* Bottom Line – FULL BLEED */}
-          <Box h={0.5} w="100%" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} mt={20} />
+          <Box h={0.5} w="100%" bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} mt="$3" />
 
           {/* Settings and Help – DIŞTA px yok, SATIRDA px var */}
           <VStack px="$0">
@@ -698,9 +698,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={10}
+                fontSize="$xs"
                 fontWeight="$semibold"
-                w={110}
+                flex={1}
+                numberOfLines={1}
               >
                 Vote New Features
               </Text>
@@ -720,7 +721,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={10}
+                fontSize="$xs"
                 fontWeight="$semibold"
                 w={110}
               >
@@ -742,7 +743,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={10}
+                fontSize="$xs"
                 fontWeight="$semibold"
                 w={110}
               >
@@ -764,7 +765,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               </Box>
               <Text 
                 color={isDark ? '$textDark50' : '$textLight900'}
-                fontSize={10}
+                fontSize="$xs"
                 fontWeight="$semibold"
                 w={110}
               >
