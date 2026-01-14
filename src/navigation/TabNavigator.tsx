@@ -116,11 +116,13 @@ export const TabNavigator = () => {
     color: string;
     size: number;
   }) => {
+    // Icon boyutunu artır
+    const iconSize = size * 1.1;
     // Heroicons: focused durumda solid, unfocused durumda outline kullan
     const iconProps = {
       color,
-      width: size,
-      height: size,
+      width: iconSize,
+      height: iconSize,
     };
 
     let IconComponent: React.ComponentType<any> | null = null;

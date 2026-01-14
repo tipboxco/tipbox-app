@@ -424,7 +424,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                         );
                     }}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: bottomInset }}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: bottomInset }}
                     refreshControl={
                         <RefreshControl
                             refreshing={isRefetching}
