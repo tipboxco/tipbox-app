@@ -176,7 +176,7 @@ export const SettingsScreen = () => {
               placeholder="Select product group or search product name"
               placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
               color={isDark ? '#fff' : '#000'}
-              fontSize={11}
+              fontSize="$sm"
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -191,7 +191,7 @@ export const SettingsScreen = () => {
             <VStack key={section.title}>
               {/* Section Title */}
               <Text
-                fontSize="$xs"
+                fontSize="$sm"
                 fontWeight="$medium"
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
                 px="$2"
@@ -212,8 +212,8 @@ export const SettingsScreen = () => {
                     <HStack alignItems="center" justifyContent="space-between">
                       <HStack alignItems="center" space="sm" flex={1}>
                         <Box
-                          w={22}
-                          h={22}
+                          w="$7"
+                          h="$7"
                           bg={isDark ? '#1A1A1A' : '#FDFDFD'}
                           rounded="$sm"
                           alignItems="center"
@@ -221,12 +221,12 @@ export const SettingsScreen = () => {
                         >
                           <Feather
                             name={item.icon as any} 
-                            size={21} 
+                            size={20} 
                             color={isDark ? '#FFFFFF' : '#000000'} 
                           />
                         </Box>
                         <Text
-                          fontSize={11}
+                          fontSize="$sm"
                           fontWeight="$bold"
                           color={isDark ? '#FFFFFF' : '#000000'}
                           flex={1}
