@@ -16,11 +16,17 @@ import { ScrollView } from 'react-native';
 interface NftItem {
     id: string;
     name: string;
-    rarity: 'Usual' | 'Rare';
+    rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
     rarityColor: string;
     rarityBorderColor: string;
     rarityTextColor?: string;
     image: any;
+    listing?: {
+        id: string;
+        price: number;
+        listedAt: string;
+        status: string;
+    };
 }
 
 type RouteParams = {
@@ -38,12 +44,16 @@ export const NftAssetDetailScreen: React.FC = () => {
         nft: {
             id: '1',
             name: 'Everyday Consumer',
-            rarity: 'Usual',
+            rarity: 'Common',
             rarityColor: 'rgba(211, 211, 211, 0.4)',
             rarityBorderColor: '#D4D4D4',
             image: require('@/assets/badges/badge_01.png'),
         },
     };
+
+    // Check if NFT is currently listed for sale
+    const isListed = nft.listing?.status === 'ACTIVE';
+    const listingPrice = nft.listing?.price;
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -109,7 +119,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                     {/* Action Buttons */}
                     <HStack space="md" justifyContent="space-between">
 
-                        {/* Transfer Et Button (White) */}
+                        {/* Transfer Button (White) */}
                         <Pressable
                             bg="$backgroundLight0"
                             $dark-bg="$backgroundDark800"
@@ -125,12 +135,12 @@ export const NftAssetDetailScreen: React.FC = () => {
                             <HStack alignItems="center" space="xs">
                                 <ArrowTopRightOnSquareIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                                    Transfer Et
+                                    Transfer
                                 </Text>
                             </HStack>
                         </Pressable>
 
-                        {/* Sat Button (Yellow) */}
+                        {/* Sell / View Listing Button (Yellow) */}
                         <Pressable
                             bg="#D8FF08"
                             $dark-bg="#D8FF08"
@@ -142,27 +152,30 @@ export const NftAssetDetailScreen: React.FC = () => {
                             alignItems="center"
                             justifyContent="center"
                             onPress={() => {
-                                // Convert wallet NFT to UserNFT format and navigate to NFTDetailScreen
-                                const userNFT = {
-                                    id: nft.id,
-                                    title: nft.name,
-                                    username: '@user', // Default username
-                                    image: nft.image,
-                                    isSelected: false,
-                                };
-                                // Navigate to Marketplace NFTDetailScreen (sale page)
-                                navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
-                                    screen: 'NFTDetailScreen',
-                                    params: {
-                                        nftData: userNFT,
-                                    },
-                                });
+                                if (isListed) {
+                                    // If already listed, navigate to NFTDetailScreen to view listing
+                                    navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
+                                        screen: 'NFTDetailScreen',
+                                        params: {
+                                            nftId: nft.id,
+                                            mode: 'view',
+                                        },
+                                    });
+                                } else {
+                                    // If not listed, navigate to NFTSellScreen to create listing
+                                    navigationService.navigate(ROOT_ROUTES.MARKETPLACE, {
+                                        screen: 'NFTSellScreen',
+                                        params: {
+                                            nftId: nft.id,
+                                        },
+                                    });
+                                }
                             }}
                         >
                             <HStack alignItems="center" space="xs">
                                 <ShoppingBagIcon width={24} height={24} color="#000000" />
                                 <Text fontSize={11} fontWeight="$semibold" color="#000000">
-                                    Sat
+                                    {isListed ? 'View Listing' : 'Sell'}
                                 </Text>
                             </HStack>
                         </Pressable>
@@ -178,10 +191,10 @@ export const NftAssetDetailScreen: React.FC = () => {
                         rounded={5}
                     >
                         <VStack space="md" py="$4">
-                            {/* Kazanma Tarihi */}
+                            {/* Acquisition Date */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Kazanma Tarihi
+                                    Acquisition Date
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     11 July 2025
@@ -191,10 +204,10 @@ export const NftAssetDetailScreen: React.FC = () => {
                             {/* Divider */}
                             <Box h={1} bg="#EBEBEB" $dark-bg="$borderDark600" />
 
-                            {/* Enderlik */}
+                            {/* Rarity */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Enderlik
+                                    Rarity
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     {nft.rarity}
@@ -204,10 +217,39 @@ export const NftAssetDetailScreen: React.FC = () => {
                             {/* Divider */}
                             <Box h={1} bg="#EBEBEB" $dark-bg="$borderDark600" />
 
-                            {/* Sahip */}
+                            {/* Listing Price (only if listed) */}
+                            {isListed && listingPrice && (
+                                <>
+                                    <HStack justifyContent="space-between" alignItems="center" px="$4">
+                                        <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
+                                            Listed Price
+                                        </Text>
+                                        <HStack alignItems="center" space="xs">
+                                            <Text fontSize={11} fontWeight="$bold" color="#C2E607" $dark-color="#C2E607">
+                                                {Math.floor(listingPrice)} TIPS
+                                            </Text>
+                                            <Box
+                                                bg="rgba(194, 230, 7, 0.15)"
+                                                borderRadius={4}
+                                                px="$2"
+                                                py="$1"
+                                            >
+                                                <Text fontSize={8} fontWeight="$bold" color="#596B00">
+                                                    ON SALE
+                                                </Text>
+                                            </Box>
+                                        </HStack>
+                                    </HStack>
+
+                                    {/* Divider */}
+                                    <Box h={1} bg="#EBEBEB" $dark-bg="$borderDark600" />
+                                </>
+                            )}
+
+                            {/* Owners */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Sahip
+                                    Owners
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     11049
@@ -218,10 +260,10 @@ export const NftAssetDetailScreen: React.FC = () => {
                             <Box h={1} bg="#EBEBEB" $dark-bg="$borderDark600" />
 
 
-                            {/* Ortalama Fiyat */}
+                            {/* Average Price */}
                             <HStack justifyContent="space-between" alignItems="center" px="$4">
                                 <Text fontSize={11} fontWeight="$semibold" color="#9D9D9D" $dark-color="$textDark400">
-                                    Ortalama Fiyat
+                                    Average Price
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
                                     $0.495

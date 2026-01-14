@@ -28,9 +28,6 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
   const deleteListingMutation = useDeleteListing();
   const updatePriceMutation = useUpdateListingPrice();
 
-  const [showEditPrice, setShowEditPrice] = useState(false);
-  const [newPrice, setNewPrice] = useState(currentPrice?.toString() || '');
-
   const inputAccessoryViewID = 'nftPriceInputAccessory';
 
   const handleDelist = useCallback(() => {
@@ -71,9 +68,11 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
   const handleEditPrice = useCallback(() => {
     closeBottomSheet();
     
-    // Open Edit Price bottom sheet
-    setTimeout(() => {
-      openBottomSheet(
+    // EditPriceBottomSheet component'ini oluştur
+    const EditPriceBottomSheet = () => {
+      const [localPrice, setLocalPrice] = useState(currentPrice?.toString() || '');
+
+      return (
         <Box bg={isDark ? '$backgroundDark900' : '$white'} pb={20} pt={16} px={20}>
           <VStack space="lg">
             <Text fontSize="$xl" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
@@ -96,12 +95,13 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                 New Price (TIPS)
               </Text>
               <TextInput
-                value={newPrice}
-                onChangeText={setNewPrice}
+                value={localPrice}
+                onChangeText={setLocalPrice}
                 placeholder="Enter new price"
                 placeholderTextColor={isDark ? '#666' : '#999'}
                 keyboardType="numeric"
                 inputAccessoryViewID={inputAccessoryViewID}
+                autoFocus
                 style={{
                   backgroundColor: isDark ? '#1A1A1A' : '#F7F7F7',
                   color: isDark ? '#FFF' : '#000',
@@ -110,8 +110,8 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                   paddingHorizontal: 16,
                   paddingVertical: 14,
                   borderRadius: 10,
-                  borderWidth: 2,
-                  borderColor: '#C2E607',
+                  borderWidth: 1,
+                  borderColor: isDark ? '#404040' : '#D1D1D1',
                 }}
               />
             </VStack>
@@ -122,7 +122,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                 Gas Fee (10%)
               </Text>
               <Text fontSize="$sm" fontWeight="$semibold" color={isDark ? '$textDark50' : '#000'}>
-                {newPrice ? (parseFloat(newPrice) * 0.1).toFixed(2) : '0'} TIPS
+                {localPrice ? (parseFloat(localPrice) * 0.1).toFixed(2) : '0'} TIPS
               </Text>
             </HStack>
 
@@ -136,8 +136,8 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                 <Text fontSize="$md" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
                   You will receive
                 </Text>
-                <Text fontSize="$md" fontWeight="$bold" color="#C2E607">
-                  {newPrice ? (parseFloat(newPrice) * 0.9).toFixed(2) : '0'} TIPS
+                <Text fontSize="$md" fontWeight="$bold" color={isDark ? '#FFF' : '#000'}>
+                  {localPrice ? (parseFloat(localPrice) * 0.9).toFixed(2) : '0'} TIPS
                 </Text>
               </HStack>
             </Box>
@@ -160,7 +160,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
               <Pressable
                 flex={1}
                 onPress={() => {
-                  const price = parseFloat(newPrice);
+                  const price = parseFloat(localPrice);
 
                   if (!price || price <= 0) {
                     Alert.alert('Invalid Price', 'Please enter a valid price greater than 0.');
@@ -180,15 +180,29 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                       {
                         text: 'Yes',
                         onPress: () => {
+                          console.log('[NFTOptionsMenu] Updating price:', { listingId, amount: price });
+                          
                           updatePriceMutation.mutate(
                             { listingId, amount: price },
                             {
-                              onSuccess: () => {
+                              onSuccess: (data) => {
+                                console.log('[NFTOptionsMenu] ✅ Price updated successfully:', data);
+                                
+                                // Önce bottom sheet'i kapat
                                 closeBottomSheet();
-                                Alert.alert('Success', 'Price has been updated');
+                                
+                                // Sonra success mesajını göster (setTimeout ile bottom sheet kapandıktan sonra)
+                                setTimeout(() => {
+                                  Alert.alert('Success', 'Price has been updated successfully!');
+                                }, 500);
+                                
+                                // Parent component'i bilgilendir (NFT detail refetch için)
                                 onSuccess?.('updatePrice');
                               },
                               onError: (error: any) => {
+                                console.error('[NFTOptionsMenu] ❌ Failed to update price:', error);
+                                
+                                // Error durumunda bottom sheet'i kapatma, sadece mesajı göster
                                 Alert.alert('Error', error?.message || 'Failed to update price');
                               },
                             }
@@ -202,7 +216,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
                 py="$3"
                 borderRadius="$lg"
                 alignItems="center"
-                opacity={!newPrice || parseFloat(newPrice) <= 0 ? 0.5 : 1}
+                opacity={!localPrice || parseFloat(localPrice) <= 0 ? 0.5 : 1}
               >
                 <Text fontSize="$md" fontWeight="$bold" color="#000">
                   Update Price
@@ -217,7 +231,7 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
               <Box bg={isDark ? '#1A1A1A' : '#F7F7F7'} px={20} py={10}>
                 <Pressable onPress={() => Keyboard.dismiss()}>
                   <HStack justifyContent="flex-end">
-                    <Text fontSize="$md" fontWeight="$semibold" color="#C2E607">
+                    <Text fontSize="$md" fontWeight="$semibold" color={isDark ? '#FFF' : '#000'}>
                       Done
                     </Text>
                   </HStack>
@@ -225,15 +239,22 @@ export const NFTOptionsMenu: React.FC<NFTOptionsMenuProps> = ({
               </Box>
             </InputAccessoryView>
           )}
-        </Box>,
+        </Box>
+      );
+    };
+
+    // NFTOptionsMenu bottom sheet'i kapandıktan sonra Edit Price bottom sheet'i aç
+    setTimeout(() => {
+      openBottomSheet(
+        <EditPriceBottomSheet />,
         {
           snapPoints: [600],
           enableDynamicSizing: false,
           keyboardBehavior: 'extend',
         }
       );
-    }, 300);
-  }, [closeBottomSheet, openBottomSheet, isDark, newPrice, currentPrice, listingId, updatePriceMutation, onSuccess, inputAccessoryViewID]);
+    }, 400);
+  }, [closeBottomSheet, openBottomSheet, isDark, currentPrice, listingId, updatePriceMutation, onSuccess, inputAccessoryViewID]);
 
   return (
     <VStack 

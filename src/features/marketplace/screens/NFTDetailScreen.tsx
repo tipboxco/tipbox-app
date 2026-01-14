@@ -87,20 +87,18 @@ const NFTDetailScreen = () => {
                 currentPrice={nftDetail?.price}
                 nftTitle={nftDetail?.title}
                 onSuccess={(action?: 'delist' | 'updatePrice') => {
+                    // Refetch to get updated data
                     refetch();
+                    
                     if (action === 'delist') {
                         // Navigate back to MarketPlaceScreen with My Listings tab
-                        // First go back to close NFTDetailScreen
                         navigation.goBack();
-                        // Then use setTimeout to navigate with params after screen closes
                         setTimeout(() => {
-                            // Use navigate with params to switch to My Listings tab
                             navigation.navigate('MarketPlaceScreen', { initialTab: 'myListings' });
                         }, 300);
-                    } else {
-                        // For price update, just stay on the screen (refetch already called)
-                        // No navigation needed
                     }
+                    // For price update, just stay on screen and refetch
+                    // No additional action needed - refetch already updates UI
                 }}
             />,
             {

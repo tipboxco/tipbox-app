@@ -524,6 +524,16 @@ export const WalletScreen: React.FC = () => {
         break;
     }
 
+    // PRIORITY: Move "ON SALE" items to the top
+    result.sort((a, b) => {
+      const aIsOnSale = a.listing?.status === 'ACTIVE';
+      const bIsOnSale = b.listing?.status === 'ACTIVE';
+      
+      if (aIsOnSale && !bIsOnSale) return -1;
+      if (!aIsOnSale && bIsOnSale) return 1;
+      return 0;
+    });
+
     return result;
   }, [nfts, selectedTypes, sortOption]);
 
