@@ -1014,7 +1014,7 @@ const EventDetailScreen: React.FC = () => {
                                 }}>
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#000000'}
-                                        fontSize={11}
+                                        fontSize="$sm"
                                         fontWeight="$medium"
                                         textDecorationLine="underline"
                                     >
@@ -1108,7 +1108,7 @@ const EventDetailScreen: React.FC = () => {
                             </Text>
                             <Text
                                 color={isDark ? '#FFFFFF' : '#000000'}
-                                fontSize={10}
+                                fontSize="$sm"
                                 fontWeight="$bold"
                                 underline
                             >

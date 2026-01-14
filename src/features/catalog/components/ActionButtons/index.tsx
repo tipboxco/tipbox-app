@@ -59,7 +59,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                     <VStack flex={1} alignItems="flex-start" justifyContent="center" px="$3">
                         <Text
                             color="#341385"
-                            fontSize={12}
+                            fontSize="$xs"
                             fontWeight="$bold"
                             textAlign="left"
                         >
@@ -67,7 +67,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                         </Text>
                         <Text
                             color={isDark ? '#ACACAC' : '#ACACAC'}
-                            fontSize={9}
+                            fontSize="$2xs"
                             fontWeight="$semibold"
                             textAlign="left"
                             numberOfLines={1}
@@ -116,7 +116,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                     <VStack flex={1} alignItems="flex-start" justifyContent="center" px="$3">
                         <Text
                             color="#829905"
-                            fontSize={12}
+                            fontSize="$xs"
                             fontWeight="$bold"
                             textAlign="left"
                         >
@@ -124,7 +124,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onShowPosts, onCreatePost
                         </Text>
                         <Text
                             color={isDark ? '#ACACAC' : '#ACACAC'}
-                            fontSize={9}
+                            fontSize="$2xs"
                             fontWeight="$semibold"
                             textAlign="left"
                             numberOfLines={1}

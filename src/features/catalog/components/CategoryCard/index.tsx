@@ -27,8 +27,8 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority
   // Boyutlar - large card için daha büyük
   const cardHeight = isLargeCard ? 160 : 132;
   const imageSize = isLargeCard ? 120 : 86;
-  const fontSize = isLargeCard ? 12 : 8;
-  const lineHeight = isLargeCard ? 16 : 10;
+  const fontSize = isLargeCard ? '$sm' : '$2xs';
+  const lineHeight = isLargeCard ? 18 : 14;
 
   return (
     <Pressable
@@ -42,7 +42,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority
       justifyContent="center"
       alignItems="center"
       style={[
-        ({ pressed }) => ({
+        ({ pressed }: { pressed: boolean }) => ({
           transform: [{ scale: pressed ? 0.95 : 1 }],
           opacity: pressed ? 0.8 : 1,
         }),
@@ -85,7 +85,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onPress, priority
           textAlign="center"
           numberOfLines={2}
           px="$2"
-          lineHeight={lineHeight}
+          lineHeight={typeof fontSize === 'string' ? undefined : lineHeight}
         >
           {category.name}
         </Text>
