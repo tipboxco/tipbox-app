@@ -3,6 +3,7 @@
     "name": "Tipbox",
     "slug": "tipbox-app",
     "version": "1.0.0",
+    "newArchEnabled": true,
     "runtimeVersion": {
       "policy": "sdkVersion"
     },
@@ -26,7 +27,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tipboxapp",
+      "bundleIdentifier": "app.tipbox.test",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",
@@ -106,7 +107,17 @@
       ],
       "expo-font",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "deploymentTarget": "15.1",
+            "extraPods": []
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

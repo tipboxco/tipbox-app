@@ -837,4 +837,3 @@ export const useCatalogProductPosts = (
     retry: 1,
   });
 };
-

@@ -1,6 +1,6 @@
-import React, { memo, useState, useEffect, useCallback } from 'react';
+import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, View, Pressable as RNPressable } from 'react-native';
 // Heroicons imports
 import {
   EllipsisHorizontalIcon,
@@ -32,15 +32,11 @@ import {
   useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
-import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useAppStore } from '@/src/store/appStore';
 import {
-  useAddToTrustList,
-  useRemoveFromTrustList,
   useReportUser,
-  useUserProfile,
 } from '@/src/features/profile/api/hooks';
-import { PostContextMenu } from '@/src/components/PostContextMenu';
+import { ContextMenuReanimated } from './ContextMenuReanimated';
 
 interface PostCardProps {
   data: PostCardData;
@@ -63,13 +59,11 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const [commentsCount, setCommentsCount] = useState(data.stats.comments);
   const [sharesCount, setSharesCount] = useState(data.stats.shares);
   const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const contextMenuCloseRef = useRef<(() => void) | null>(null);
 
   // User profile check
   const targetUserId = data.user.id;
-  const isOwnProfile = user?.id === targetUserId;
-  
-  // User profile query (for trust status)
-  const { data: userProfile } = useUserProfile(isOwnProfile ? undefined : targetUserId);
   
   // Interaction hooks
   const likePostMutation = useLikePost();
@@ -80,9 +74,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const { data: postStatus } = usePostStatus(data.id);
   
   // User action hooks
-  const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
-  const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
-  const { mutate: reportUser, isPending: isReporting } = useReportUser();
+  const { mutate: reportUser } = useReportUser();
 
   // Sync with post status from API
   useEffect(() => {
@@ -237,6 +229,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     <VStack
       bg={isDark ? '$backgroundDark900' : '$white'}
       mb={16}
+      position="relative"
     >
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
@@ -272,32 +265,16 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               </Text>
             </VStack>
           </Pressable>
-          <PostContextMenu
-            postId={data.id}
-            postContent={data.content}
-            postAuthorName={data.user.name}
-            userId={data.user.id}
-            isOwnProfile={isOwnProfile}
-            isTrusted={userProfile?.isTrusted ?? false}
-            isTrusting={isTrusting}
-            isUntrusting={isUntrusting}
-            isReporting={isReporting}
+          <ContextMenuReanimated
             onViewProfile={handleViewProfile}
-            onTrust={() => {
-              if (targetUserId) {
-                trustUser(targetUserId);
-              }
+            onReport={handleReport}
+            onMenuStateChange={setIsContextMenuOpen}
+            onCloseRef={(closeFn) => {
+              contextMenuCloseRef.current = closeFn;
             }}
-            onUntrust={() => {
-              if (targetUserId) {
-                untrustUser(targetUserId);
-              }
-            }}
-            onReportUser={handleReport}
-            onBlock={handleBlock}
           >
             <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
-          </PostContextMenu>
+          </ContextMenuReanimated>
         </HStack>
       </VStack>
 
@@ -458,34 +435,25 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               ) : (
                 <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               )}
-              <AnimatedCounter
-                value={likesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {likesCount}
+              </Text>
             </HStack>
           </Pressable>
           <Pressable onPress={handleComment}>
             <HStack mr={10} alignItems="center">
               <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              <AnimatedCounter
-                value={commentsCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {commentsCount}
+              </Text>
             </HStack>
           </Pressable>
           <Pressable onPress={handleShare}>
             <HStack mr={10} alignItems="center">
               <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-              <AnimatedCounter
-                value={sharesCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {sharesCount}
+              </Text>
             </HStack>
           </Pressable>
           <Pressable onPress={handleBookmark}>
@@ -495,16 +463,32 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               ) : (
                 <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
               )}
-              <AnimatedCounter
-                value={bookmarksCount}
-                color={isDark ? '$textDark50' : '#000'}
-                fontSize={10}
-                ml={4}
-              />
+              <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
+                {bookmarksCount}
+              </Text>
             </HStack>
           </Pressable>
         </HStack>
       </HStack>
+
+      {/* Overlay - menu açıkken PostCard'a tıklamayı engellemek için */}
+      {isContextMenuOpen && (
+        <RNPressable
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'transparent',
+            zIndex: 999,
+          }}
+          onPress={() => {
+            // Overlay'e tıklanınca menu'yu kapat
+            contextMenuCloseRef.current?.();
+          }}
+        />
+      )}
     </VStack >
   );
 };

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Platform } from 'react-native';
+import { Platform, View, Pressable as RNPressable } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -10,7 +10,7 @@ import {
   PaperAirplaneIcon,
   BookmarkIcon,
 } from 'react-native-heroicons/outline';
-import { PostContextMenu } from '@/src/components/PostContextMenu';
+import { ContextMenuReanimated } from '../PostCard/ContextMenuReanimated';
 import {
   HeartIcon as HeartIconSolid,
   BookmarkIcon as BookmarkIconSolid,
@@ -29,6 +29,9 @@ import {
   useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
+import { useReportUser } from '@/src/features/profile/api/hooks';
+import { useAppStore } from '@/src/store/appStore';
+import { Alert } from 'react-native';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
@@ -99,6 +102,8 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<any>();
+    const { user } = useAppStore();
+    const targetUserId = data.user.id;
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [isShared, setIsShared] = useState(false);
@@ -108,6 +113,8 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const [commentsCount, setCommentsCount] = useState(data.stats.comments);
     const [sharesCount, setSharesCount] = useState(data.stats.shares);
     const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
+    const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+    const contextMenuCloseRef = useRef<(() => void) | null>(null);
 
     // Translation hooks (only in detail mode)
     const deviceLocale = useDeviceLocale();
@@ -132,6 +139,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const unbookmarkPostMutation = useUnbookmarkPost();
     const sharePostMutation = useSharePost();
     const { data: postStatus } = usePostStatus(data.id);
+    const { mutate: reportUser } = useReportUser();
 
     // Sync with post status from API
     useEffect(() => {
@@ -198,9 +206,48 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
         }
     };
 
+    const handleViewProfile = React.useCallback(() => {
+        if (data.user.id) {
+            navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                screen: 'ProfileMain',
+                params: { userId: data.user.id },
+            });
+        }
+    }, [data.user.id]);
+
+    const handleReport = React.useCallback(() => {
+        if (!user?.id || !targetUserId) return;
+        
+        Alert.alert(
+            'Kullanıcıyı Raporla',
+            'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+            [
+                {
+                    text: 'İptal',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Raporla',
+                    style: 'destructive',
+                    onPress: () => {
+                        reportUser({
+                            userId: user.id,
+                            targetUserId,
+                            data: {
+                                category: 'OTHER',
+                                description: 'Kullanıcı raporlandı',
+                            },
+                        });
+                    },
+                },
+            ]
+        );
+    }, [user?.id, targetUserId, reportUser]);
+
     return (
         <VStack
             bg={isDark ? '$backgroundDark900' : '$white'}
+            position="relative"
             mb={16}
         >
             {/* Header */}
@@ -231,13 +278,16 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             {data.user.title}
                         </Text>
                     </VStack>
-                    <PostContextMenu
-                        postId={data.id}
-                        postContent={data.content}
-                        postAuthorName={data.user.name}
+                    <ContextMenuReanimated
+                        onViewProfile={handleViewProfile}
+                        onReport={handleReport}
+                        onMenuStateChange={setIsContextMenuOpen}
+                        onCloseRef={(closeFn) => {
+                            contextMenuCloseRef.current = closeFn;
+                        }}
                     >
                         <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
-                    </PostContextMenu>
+                    </ContextMenuReanimated>
                 </HStack>
             </VStack>
 
@@ -471,6 +521,24 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     </Pressable>
                 </HStack>
             </HStack>
+
+            {/* Overlay - menu açıkken PostCard'a tıklamayı engellemek için */}
+            {isContextMenuOpen && (
+                <RNPressable
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'transparent',
+                        zIndex: 999,
+                    }}
+                    onPress={() => {
+                        contextMenuCloseRef.current?.();
+                    }}
+                />
+            )}
         </VStack>
     );
 };

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import { Platform } from 'react-native';
+import { Platform, View, Pressable as RNPressable } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
@@ -14,7 +14,7 @@ import {
   PaperAirplaneIcon,
   BookmarkIcon,
 } from 'react-native-heroicons/outline';
-import { PostContextMenu } from '@/src/components/PostContextMenu';
+import { ContextMenuReanimated } from '../PostCard/ContextMenuReanimated';
 import {
   StarIcon as StarIconSolid,
   HeartIcon as HeartIconSolid,
@@ -38,6 +38,9 @@ import {
   useSharePost,
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
+import { useReportUser } from '@/src/features/profile/api/hooks';
+import { useAppStore } from '@/src/store/appStore';
+import { Alert } from 'react-native';
 import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 
@@ -52,6 +55,10 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<any>();
+  const { user } = useAppStore();
+  const targetUserId = data.user.id;
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const contextMenuCloseRef = useRef<(() => void) | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -69,6 +76,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   const unbookmarkPostMutation = useUnbookmarkPost();
   const sharePostMutation = useSharePost();
   const { data: postStatus } = usePostStatus(data.id);
+  const { mutate: reportUser } = useReportUser();
 
   // Sync with post status from API
   useEffect(() => {
@@ -132,26 +140,68 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
     });
   };
 
+  const handleViewProfile = React.useCallback(() => {
+    if (data.user.id) {
+      navigationService.navigate(ROOT_ROUTES.PROFILE, {
+        screen: 'ProfileMain',
+        params: { userId: data.user.id },
+      });
+    }
+  }, [data.user.id]);
+
+  const handleReport = React.useCallback(() => {
+    if (!user?.id || !targetUserId) return;
+    
+    Alert.alert(
+      'Kullanıcıyı Raporla',
+      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Raporla',
+          style: 'destructive',
+          onPress: () => {
+            reportUser({
+              userId: user.id,
+              targetUserId,
+              data: {
+                category: 'OTHER',
+                description: 'Kullanıcı raporlandı',
+              },
+            });
+          },
+        },
+      ]
+    );
+  }, [user?.id, targetUserId, reportUser]);
+
   return (
     <VStack
       bg={isDark ? '$backgroundDark900' : '$white'}
+      position="relative"
       mb={16}
     >
       {/* Action Button */}
-      <PostContextMenu
-        postId={data.id}
-        postContent={data.content && data.content.length > 0 ? data.content[0]?.text || '' : ''}
-        postAuthorName={data.user.name}
+      <Box
+        position="absolute"
+        top={12}
+        right={15}
+        zIndex={1}
       >
-        <Box
-          position="absolute"
-          top={12}
-          right={15}
-          zIndex={1}
+        <ContextMenuReanimated
+          onViewProfile={handleViewProfile}
+          onReport={handleReport}
+          onMenuStateChange={setIsContextMenuOpen}
+          onCloseRef={(closeFn) => {
+            contextMenuCloseRef.current = closeFn;
+          }}
         >
           <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-        </Box>
-      </PostContextMenu>
+        </ContextMenuReanimated>
+      </Box>
 
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
@@ -372,6 +422,24 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </HStack>
         </Pressable>
       </HStack>
+
+      {/* Overlay - menu açıkken PostCard'a tıklamayı engellemek için */}
+      {isContextMenuOpen && (
+        <RNPressable
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'transparent',
+            zIndex: 999,
+          }}
+          onPress={() => {
+            contextMenuCloseRef.current?.();
+          }}
+        />
+      )}
     </VStack>
   );
 };

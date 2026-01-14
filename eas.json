@@ -30,6 +30,21 @@
     },
     "production": {
       "channel": "production",
+      "ios": {
+        "simulator": false,
+        "buildConfiguration": "Release"
+      },
+      "env": {
+        "APP_ENV": "production",
+        "APP_NAME": "Tipbox"
+      }
+    },
+    "simulator": {
+      "channel": "production",
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Release"
+      },
       "env": {
         "APP_ENV": "production",
         "APP_NAME": "Tipbox"

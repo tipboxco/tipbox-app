@@ -392,4 +392,3 @@ export const getCatalogProductPosts = async (
     throw error;
   }
 };
-
