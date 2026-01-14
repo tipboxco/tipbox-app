@@ -866,12 +866,15 @@ const EventDetailScreen: React.FC = () => {
                         </Box>
                     </Box>
 
-                    <HStack justifyContent="space-between" alignItems="center" mb="$2">
+                    <HStack justifyContent="space-between" alignItems="center" mb="$2" space="sm">
                         {/* Event Title */}
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize={16}
                             fontWeight="$bold"
+                            flex={0.8}
+                            numberOfLines={2}
+                            mr="$2"
                         >
                             {event.title}
                         </Text>
@@ -882,6 +885,7 @@ const EventDetailScreen: React.FC = () => {
                             px="$3"
                             isDisabled={event.status === EventStatus.UPCOMING || joinEventMutation.isPending || leaveEventMutation.isPending}
                             onPress={handleJoinPress}
+                            flex={0.2}
                         >
                             <HStack alignItems="center" space="xs">
                                 {!isJoined && <UserPlusIcon width={16} height={16} color="#000000" />}
