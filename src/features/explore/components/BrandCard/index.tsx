@@ -49,7 +49,7 @@ export const BrandCard: React.FC<BrandCardProps> = ({ data, onPress }) => {
             {/* Brand Name */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={12}
+              fontSize="$sm"
               fontWeight="$bold"
               numberOfLines={1}
             >
@@ -59,10 +59,10 @@ export const BrandCard: React.FC<BrandCardProps> = ({ data, onPress }) => {
             {/* Brand Description */}
             <Text
               color={isDark ? '#FFFFFF' : '#B9B9B9'}
-              fontSize={10}
+              fontSize="$xs"
               fontWeight="$normal"
               numberOfLines={2}
-              lineHeight={14}
+              lineHeight={16}
             >
               {data.description}
             </Text>

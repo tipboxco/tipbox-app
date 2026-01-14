@@ -322,11 +322,11 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       contentContainerStyle={{ paddingBottom: 16 }}
     >
       {headerComponent}
-      <VStack space="md" mb="$4" pt={16} mt={0}>
+      <VStack space="sm" mb="$2" pt={16} mt={0}>
         {/* New Community Events Section */}
       {(isLoadingEvents || events.length > 0) && (
         <Box pl="$4">
-          <VStack space="sm" mb="$4">
+          <VStack space="sm" mb="$1">
             <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
               <Text
                 color={isDark ? '#FFFFFF' : '#B9B9B9'}
@@ -382,7 +382,7 @@ const NewsTabComponent: React.FC<NewsTabProps> = ({
       {/* New Brands Section */}
       {(isLoadingBrands || brands.length > 0) && (
         <Box pl="$4">
-          <VStack space="sm" mb="$4">
+          <VStack space="sm" mb="$2">
             <HStack justifyContent="space-between" alignItems="center" mt="$2" pr="$4">
               <Text
                 color={isDark ? '#FFFFFF' : '#B9B9B9'}
