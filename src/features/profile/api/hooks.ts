@@ -19,12 +19,17 @@ import {
   updateProfile,
   reportUser,
   getSuggestedUsers,
+  updateInventoryItem,
+  deleteInventoryItem,
   type UserFeedApiResponse,
   type UpdateProfileRequest,
   type UpdateProfileResponse,
   type ReportUserRequest,
   type ReportUserResponse,
   type ProductExperienceSearchResponse,
+  type UpdateInventoryItemRequest,
+  type UpdateInventoryItemResponse,
+  type DeleteInventoryItemResponse,
 } from './profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import type {
@@ -846,6 +851,65 @@ export const useReportUser = () => {
     },
     onError: (error) => {
       console.error('[useReportUser] ❌ Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Update Inventory Item mutation hook
+ * Inventory item'ı günceller
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: updateInventory, isPending } = useUpdateInventoryItem();
+ * updateInventory({
+ *   inventoryId: 'inventory-123',
+ *   data: { hasOwned: true, experienceSummary: 'Harika bir ürün' }
+ * });
+ */
+export const useUpdateInventoryItem = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    UpdateInventoryItemResponse,
+    Error,
+    { inventoryId: string; data: UpdateInventoryItemRequest }
+  >({
+    mutationFn: ({ inventoryId, data }) => updateInventoryItem(inventoryId, data),
+    onSuccess: (data, variables) => {
+      // Inventory listesini invalidate et
+      queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
+      console.log('[useUpdateInventoryItem] ✅ Inventory item updated successfully', { inventoryId: variables.inventoryId });
+    },
+    onError: (error) => {
+      console.error('[useUpdateInventoryItem] ❌ Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Delete Inventory Item mutation hook
+ * Inventory item'ı siler
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: deleteInventory, isPending } = useDeleteInventoryItem();
+ * deleteInventory('inventory-123');
+ */
+export const useDeleteInventoryItem = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<DeleteInventoryItemResponse, Error, string>({
+    mutationFn: (inventoryId) => deleteInventoryItem(inventoryId),
+    onSuccess: (data, inventoryId) => {
+      // Inventory listesini invalidate et
+      queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
+      console.log('[useDeleteInventoryItem] ✅ Inventory item deleted successfully', { inventoryId });
+    },
+    onError: (error) => {
+      console.error('[useDeleteInventoryItem] ❌ Mutation error:', error);
     },
   });
 };

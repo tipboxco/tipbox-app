@@ -18,9 +18,10 @@ import type { InventoryItem } from '../types';
 import InventoryCard from '../components/InventoryCard';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
-import { useInventory } from '../api/hooks';
+import { useInventory, useDeleteInventoryItem } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { InventorySkeleton } from '@/src/components/Skeletons';
+import { Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 6;
@@ -66,6 +67,9 @@ const InventoryScreen = () => {
     hasNextPage, 
     isFetchingNextPage 
   } = useInventory(LIMIT);
+
+  // Delete inventory item mutation
+  const { mutate: deleteInventoryItem, isPending: isDeleting } = useDeleteInventoryItem();
 
   // Tüm sayfalardaki item'ları birleştir
   const allInventoryItems = useMemo(() => {
@@ -139,6 +143,45 @@ const InventoryScreen = () => {
     console.log('BottomSheet view changed:', view);
   };
 
+  // Handle update experience - CreateExperiencePostScreen'e yönlendir
+  const handleUpdateExperience = useCallback((item: InventoryItem) => {
+    console.log('[InventoryScreen] Update experience for item:', item.id);
+    navigationService.navigate(ROOT_ROUTES.POST, {
+      screen: 'CreateExperiencePostScreen',
+      params: {
+        product: {
+          id: item.id,
+          name: `${item.brand.name} ${item.brand.model}`,
+          image: item.image,
+        },
+        fromInventory: true,
+        experienceOption: item.hasOwned ? 'own' : 'tried',
+      },
+    });
+  }, []);
+
+  // Handle delete product
+  const handleDeleteProduct = useCallback((item: InventoryItem) => {
+    console.log('[InventoryScreen] Delete product:', item.id);
+    Alert.alert(
+      'Ürünü Sil',
+      'Bu ürünü envanterinizden silmek istediğinizden emin misiniz?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: () => {
+            deleteInventoryItem(item.id);
+          },
+        },
+      ]
+    );
+  }, [deleteInventoryItem]);
+
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -194,6 +237,8 @@ const InventoryScreen = () => {
               item={item}
               width={CARD_WIDTH}
               onPress={() => navigation.navigate('InventoryDetail', { itemId: item.id })}
+              onUpdateExperience={handleUpdateExperience}
+              onDeleteProduct={handleDeleteProduct}
             />
           )}
           keyExtractor={(item) => item.id}

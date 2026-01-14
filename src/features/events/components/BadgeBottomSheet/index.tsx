@@ -7,9 +7,10 @@ import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 interface BadgeBottomSheetProps {
   data: SeeAllReward;
   onClose: () => void;
+  hideFollowLadder?: boolean; // Eğer true ise "Follow Ladder" butonu gösterilmez (completed badge'ler için)
 }
 
-const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, onClose }) => {
+const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, onClose, hideFollowLadder = false }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
@@ -20,7 +21,7 @@ const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, on
   const isCompleted = data.isUnlocked || progressPercentage >= 100;
 
   // Açıklama metni oluştur
-  const descriptionText = data.task && data.task > 0
+  const descriptionText = data.task && data.task > 0 && !isCompleted
     ? `"${data.title}" rozetini kazanmak için en az ${data.task} gönderi paylaşmalısın.`
     : data.description || '';
 
@@ -110,26 +111,50 @@ const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, on
         </Text>
       </VStack>
 
-      {/* Follow Ladder Button */}
-      <Pressable
-        bg="#C2E607"
-        borderRadius={12}
-        h={52}
-        w="100%"
-        px="$4"
-        onPress={onClose}
-        alignItems="center"
-        justifyContent="center"
-        mt="$2"
-      >
-        <Text
-          color="#000000"
-          fontSize={16}
-          fontWeight="$bold"
+      {/* Follow Ladder Button - Sadece completed değilse ve hideFollowLadder false ise göster */}
+      {!hideFollowLadder && !isCompleted && (
+        <Pressable
+          bg="#C2E607"
+          borderRadius={12}
+          h={52}
+          w="100%"
+          px="$4"
+          onPress={onClose}
+          alignItems="center"
+          justifyContent="center"
+          mt="$2"
         >
-          Follow Ladder
-        </Text>
-      </Pressable>
+          <Text
+            color="#000000"
+            fontSize={16}
+            fontWeight="$bold"
+          >
+            Follow Ladder
+          </Text>
+        </Pressable>
+      )}
+      
+      {/* Completed Badge Message - Eğer completed ise veya hideFollowLadder true ise göster */}
+      {(hideFollowLadder || isCompleted) && (
+        <Box
+          bg={isDark ? '#1A1A1A' : '#F5F5F5'}
+          borderRadius={12}
+          h={52}
+          w="100%"
+          px="$4"
+          alignItems="center"
+          justifyContent="center"
+          mt="$2"
+        >
+          <Text
+            color={isDark ? '#0C7A24' : '#0C7A24'}
+            fontSize={16}
+            fontWeight="$bold"
+          >
+            ✓ Completed
+          </Text>
+        </Box>
+      )}
     </VStack>
   );
 }, (prevProps, nextProps) => {
@@ -140,7 +165,8 @@ const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, on
     prevProps.data?.title === nextProps.data?.title &&
     prevProps.data?.completed === nextProps.data?.completed &&
     prevProps.data?.task === nextProps.data?.task &&
-    prevProps.data?.isUnlocked === nextProps.data?.isUnlocked
+    prevProps.data?.isUnlocked === nextProps.data?.isUnlocked &&
+    prevProps.hideFollowLadder === nextProps.hideFollowLadder
   );
 });
 

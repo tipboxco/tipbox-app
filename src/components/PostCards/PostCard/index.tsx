@@ -292,11 +292,27 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 title={context.name}
                 subName={context.subName}
                 onPress={() => {
+                  // Product için PostsScreen'e navigate et
+                  if (!context.id || !data.contextType) return;
+                  
                   navigationService.navigate(ROOT_ROUTES.POST, {
-                    screen: 'PostDetailScreen',
+                    screen: 'PostsScreen',
                     params: {
-                      postData: data,
-                      type: 'post',
+                      stage: 'Product',
+                      name: context.name,
+                      productInfo: {
+                        image: imageSource,
+                        title: context.name,
+                        subName: context.subName,
+                      },
+                      selectedProduct: {
+                        id: context.id,
+                        name: context.name,
+                        description: context.subName,
+                        image: imageSource,
+                      },
+                      contextType: data.contextType,
+                      contextId: context.id,
                     },
                   });
                 }}
@@ -319,8 +335,27 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 title={context.name}
                 subName={context.subName}
                 onPress={() => {
-                  // ProductGroup veya SubCategory için CatalogScreen'e navigate et
-                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen' as any, undefined);
+                  // ProductGroup veya SubCategory için PostsScreen'e navigate et
+                  if (!context.id || !data.contextType) return;
+                  
+                  const stage = data.contextType === ProductInfoType.PRODUCT_GROUP 
+                    ? 'ProductGroup' 
+                    : 'SubCategories';
+                  
+                  navigationService.navigate(ROOT_ROUTES.POST, {
+                    screen: 'PostsScreen',
+                    params: {
+                      stage,
+                      name: context.name,
+                      productInfo: {
+                        image: imageSource,
+                        title: context.name,
+                        subName: context.subName,
+                      },
+                      contextType: data.contextType,
+                      contextId: context.id,
+                    },
+                  });
                 }}
               />
             </Box>

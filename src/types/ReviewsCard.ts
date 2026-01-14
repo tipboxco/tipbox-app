@@ -1,4 +1,5 @@
 import type { ImageSourcePropType } from 'react-native';
+import type { ProductInfoType } from './common';
 
 /**
  * API'den dönen review item tipi
@@ -95,6 +96,7 @@ export interface ReviewCardData {
   id: string;
   user: ReviewCardUser;
   contextData: ReviewCardProduct;
+  contextType?: ProductInfoType; // Context type bilgisi (opsiyonel, backward compatibility için)
   content: ReviewCardContentItem[];
   tags: string[];
   images?: ImageSourcePropType[];

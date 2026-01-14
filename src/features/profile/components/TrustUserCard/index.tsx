@@ -51,6 +51,20 @@ export const TrustUserCard = ({
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const contextMenuCloseRef = useRef<(() => void) | null>(null);
 
+  // Debug: Log component mount
+  React.useEffect(() => {
+    console.log('[TrustUserCard] Component mounted', { userId: user.id, userName: user.name });
+  }, [user.id, user.name]);
+
+  // Debug: Log context menu state changes
+  React.useEffect(() => {
+    console.log('[TrustUserCard] isContextMenuOpen changed', { 
+      isContextMenuOpen, 
+      userId: user.id,
+      hasCloseRef: !!contextMenuCloseRef.current 
+    });
+  }, [isContextMenuOpen, user.id]);
+
   const getTrustColor = (level: number) => {
     const colors = ['#CE4A4A', '#FF6B35', '#FFA500', '#32CD32', '#00BFFF'];
     return colors[level - 1] || colors[0];
@@ -118,80 +132,85 @@ export const TrustUserCard = ({
       borderBottomWidth={showBorder ? 1 : 0}
       borderBottomColor={isDark ? '#333' : '#E9E9E9'}
       position="relative"
+      overflow="visible"
     >
+      {/* User Info - Pressable */}
       <Pressable 
         flex={1}
         onPress={onUserPress}
         flexDirection="row"
         alignItems="center"
-    >
-      <HStack alignItems="center" space="md" flex={1}>
-        {/* Avatar with Trust Level Ring */}
-        <Box position="relative">
-          <Box
-            width={54}
-            height={54}
-            borderRadius={100}
-            bg={getTrustColor(user.trustLevel)}
-            alignItems="center"
-            justifyContent="center"
-          >
+      >
+        <HStack alignItems="center" space="md" flex={1}>
+          {/* Avatar with Trust Level Ring */}
+          <Box position="relative">
             <Box
-              width={50}
-              height={50}
-              borderRadius={23}
-              overflow="hidden"
+              width={54}
+              height={54}
+              borderRadius={100}
+              bg={getTrustColor(user.trustLevel)}
+              alignItems="center"
+              justifyContent="center"
             >
-              <Image
-                source={avatarSource}
-                alt={user.name}
+              <Box
                 width={50}
                 height={50}
-                resizeMode="cover"
-              />
+                borderRadius={23}
+                overflow="hidden"
+              >
+                <Image
+                  source={avatarSource}
+                  alt={user.name}
+                  width={50}
+                  height={50}
+                  resizeMode="cover"
+                />
+              </Box>
             </Box>
           </Box>
-        </Box>
 
-        {/* User Info */}
-        <VStack space="xs" maxWidth={180}>
-          <Text
-            color={isDark ? '#fff' : '#000'}
-            fontSize={11}
-            fontWeight="$semibold"
-            numberOfLines={1}
-          >
-            {user.name}
-          </Text>
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize={9}
-            numberOfLines={1}
-            lineHeight={11}
-          >
-            {user.title}
-          </Text>
-        </VStack>
-      </HStack>
+          {/* User Info */}
+          <VStack space="xs" maxWidth={180}>
+            <Text
+              color={isDark ? '#fff' : '#000'}
+              fontSize="$sm"
+              fontWeight="$semibold"
+              numberOfLines={1}
+            >
+              {user.name}
+            </Text>
+            <Text
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              fontSize="$xs"
+              numberOfLines={1}
+            >
+              {user.title}
+            </Text>
+          </VStack>
+        </HStack>
       </Pressable>
 
-      {/* Context Menu */}
+      {/* Context Menu - More Icon */}
       <RemoveFromTrustlistContextMenu
         onRemoveFromTrustList={handleRemoveFromTrustList}
         onMute={handleMute}
         onBlock={handleBlock}
-        onMenuStateChange={setIsContextMenuOpen}
+        onMenuStateChange={(isOpen) => {
+          console.log('[TrustUserCard] onMenuStateChange called', { isOpen, userId: user.id });
+          setIsContextMenuOpen(isOpen);
+        }}
         onCloseRef={(closeFn) => {
+          console.log('[TrustUserCard] onCloseRef called', { userId: user.id, hasCloseFn: !!closeFn });
           contextMenuCloseRef.current = closeFn;
         }}
       >
-        <Pressable p={8}>
+        <Box p={8}>
           <Feather
             name="more-horizontal"
             size={24}
             color={isDark ? '#959595' : '#959595'}
           />
-        </Pressable>
+        </Box>
       </RemoveFromTrustlistContextMenu>
 
       {/* Overlay - menu açıkken TrustUserCard'a tıklamayı engellemek için */}
@@ -204,7 +223,7 @@ export const TrustUserCard = ({
             right: 0,
             bottom: 0,
             backgroundColor: 'transparent',
-            zIndex: 999,
+            zIndex: 9999, // Menüden düşük ama yüksek z-index
           }}
           onPress={() => {
             contextMenuCloseRef.current?.();

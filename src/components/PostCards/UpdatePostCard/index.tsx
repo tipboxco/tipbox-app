@@ -250,9 +250,36 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
             subName={product.subName}
             isOwned={product.isOwned}
             onPress={() => {
+              // Context'e göre PostsScreen'e navigate et
+              if (!product.id || !data.contextType) return;
+              
+              const stage = data.contextType === ProductInfoType.PRODUCT_GROUP 
+                ? 'ProductGroup' 
+                : data.contextType === ProductInfoType.SUB_CATEGORY
+                ? 'SubCategories'
+                : 'Product';
+              
               navigationService.navigate(ROOT_ROUTES.POST, {
-                screen: 'PostDetailScreen',
-                params: { postData: data, type: 'update' }
+                screen: 'PostsScreen',
+                params: {
+                  stage,
+                  name: product.name,
+                  productInfo: {
+                    image: toImageSource(product.image),
+                    title: product.name,
+                    subName: product.subName,
+                  },
+                  ...(data.contextType === ProductInfoType.PRODUCT && {
+                    selectedProduct: {
+                      id: product.id,
+                      name: product.name,
+                      description: product.subName,
+                      image: toImageSource(product.image),
+                    },
+                  }),
+                  contextType: data.contextType,
+                  contextId: product.id,
+                },
               });
             }}
           />

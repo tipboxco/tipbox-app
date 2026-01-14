@@ -1,10 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Pressable as RNPressable } from 'react-native';
 import { Box, VStack, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { InventoryItem } from '../../types';
 import { toImageSource, cleanNewlines } from '@/src/utils';
 import { CachedImage } from '@/src/components/CachedImage';
+import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
+import { PencilIcon, TrashIcon } from 'react-native-heroicons/outline';
 
 // Default post image
 const DEFAULT_POST_IMAGE = require('@/assets/defaultImages/default-post.png');
@@ -13,11 +15,17 @@ interface InventoryCardProps {
   item: InventoryItem;
   width: number;
   onPress?: () => void;
+  onUpdateExperience?: (item: InventoryItem) => void;
+  onDeleteProduct?: (item: InventoryItem) => void;
 }
 
-export const InventoryCard = ({ item, width, onPress }: InventoryCardProps) => {
+export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDeleteProduct }: InventoryCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  
+  // Context menu state
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const contextMenuCloseRef = useRef<(() => void) | null>(null);
   
   // Image source state - görsel yüklenemezse default image'a geçiş için
   const initialImageSource = toImageSource(item.image) || DEFAULT_POST_IMAGE;
@@ -95,52 +103,120 @@ export const InventoryCard = ({ item, width, onPress }: InventoryCardProps) => {
     }
   }, [item.id, imageSource]);
 
+  // Context menu handlers
+  const handleUpdateExperience = useCallback(() => {
+    contextMenuCloseRef.current?.();
+    onUpdateExperience?.(item);
+  }, [item, onUpdateExperience]);
+
+  const handleDeleteProduct = useCallback(() => {
+    contextMenuCloseRef.current?.();
+    onDeleteProduct?.(item);
+  }, [item, onDeleteProduct]);
+
+  // Context menu open ref
+  const contextMenuOpenRef = useRef<(() => void) | null>(null);
+
   return (
-    <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
-      <Box
-        bg={isDark ? '$backgroundDark800' : '$white'}
-        borderWidth={1}
-        borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-        borderRadius={5}
-        w={width}
-        h={175}
-        mb={10}
-        overflow="hidden"
+    <Box
+      position="relative"
+      w={width}
+      mb={10}
+    >
+      <ContextMenuReanimated
+        menuItems={[
+          {
+            label: 'Update Experience',
+            icon: <PencilIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+            onPress: handleUpdateExperience,
+          },
+          {
+            label: 'Delete Product',
+            icon: <TrashIcon width={20} height={20} color="#FF3040" />,
+            onPress: handleDeleteProduct,
+            color: '#FF3040',
+          },
+        ]}
+        onMenuStateChange={setIsContextMenuOpen}
+        onCloseRef={(closeFn) => {
+          contextMenuCloseRef.current = closeFn;
+        }}
+        onOpenRef={(openFn) => {
+          contextMenuOpenRef.current = openFn;
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onPress}
+          delayLongPress={2000}
+          onLongPress={() => {
+            // Long press'te context menu'yu aç
+            contextMenuOpenRef.current?.();
+          }}
         >
-      <Box
-          flex={1}
-          p={15}
-          alignItems="center"
-          justifyContent="center"
-        >
-          <CachedImage
-            source={imageSource}
-            placeholder={DEFAULT_POST_IMAGE}
-            style={{
-              width: 100,
-              height: 100,
-            }}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-            priority="normal"
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
-        </Box>
-        <VStack p={8} space="xs">
-          <Text
-            color={isDark ? '$textDark400' : '#A3A3A3'}
-            fontSize={11}
-            fontWeight="$bold"
-            numberOfLines={3}
+          <Box
+            bg={isDark ? '$backgroundDark800' : '$white'}
+            borderWidth={1}
+            borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
+            borderRadius={5}
+            w={width}
+            h={175}
+            overflow="hidden"
           >
-            {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
-              .filter(Boolean)
-              .join(' ')}
-          </Text>
-        </VStack>
-      </Box>
-    </TouchableOpacity>
+            <Box
+              flex={1}
+              p={15}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <CachedImage
+                source={imageSource}
+                placeholder={DEFAULT_POST_IMAGE}
+                style={{
+                  width: 100,
+                  height: 100,
+                }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                priority="normal"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            </Box>
+            <VStack p={8} space="xs">
+              <Text
+                color={isDark ? '$textDark400' : '#A3A3A3'}
+                fontSize={11}
+                fontWeight="$bold"
+                numberOfLines={3}
+              >
+                {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
+                  .filter(Boolean)
+                  .join(' ')}
+              </Text>
+            </VStack>
+          </Box>
+        </TouchableOpacity>
+      </ContextMenuReanimated>
+
+      {/* Overlay - menu açıkken card'a tıklamayı engellemek için */}
+      {isContextMenuOpen && (
+        <RNPressable
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'transparent',
+            zIndex: 999,
+          }}
+          onPress={() => {
+            contextMenuCloseRef.current?.();
+          }}
+        />
+      )}
+    </Box>
   );
 };
 

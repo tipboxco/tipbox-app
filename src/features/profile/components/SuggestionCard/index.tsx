@@ -107,14 +107,14 @@ export const SuggestionCard = ({
                     <VStack flex={1}>
                         <Text
                             color={isDark ? '#fff' : '#000'}
-                            fontSize={10}
+                            fontSize="$sm"
                             fontWeight="$bold"
                         >
                             {title}
                         </Text>
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            fontSize={9}
+                            fontSize="$xs"
                         >
                             {subtitle}
                         </Text>

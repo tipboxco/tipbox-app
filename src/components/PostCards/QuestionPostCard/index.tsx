@@ -238,12 +238,29 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               title={data.category.product.name}
               subName={data.category.product.subName}
               onPress={() => {
-                // Product için BrandProductDetailScreen'e navigate et
-                if (data.category?.product?.id) {
-                  navigationService.navigateNested(TAB_ROUTES.CATALOG, 'BrandProductDetailScreen', { 
-                    productId: data.category.product.id 
-                  });
-                }
+                // Product için PostsScreen'e navigate et
+                if (!data.category?.product?.id) return;
+                
+                navigationService.navigate(ROOT_ROUTES.POST, {
+                  screen: 'PostsScreen',
+                  params: {
+                    stage: 'Product',
+                    name: data.category.product.name,
+                    productInfo: {
+                      image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
+                      title: data.category.product.name,
+                      subName: data.category.product.subName,
+                    },
+                    selectedProduct: {
+                      id: data.category.product.id,
+                      name: data.category.product.name,
+                      description: data.category.product.subName,
+                      image: toImageSource(data.category.product.image) || require('@/assets/inventory/product_01.png'),
+                    },
+                    contextType: ProductInfoType.PRODUCT,
+                    contextId: data.category.product.id,
+                  },
+                });
               }}
             />
           </Box>
@@ -256,8 +273,23 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               title={data.category.name}
               subName={data.category.subCategory}
               onPress={() => {
-                // Category için CatalogScreen'e navigate et
-                navigationService.navigateNested(TAB_ROUTES.CATALOG, 'CatalogScreen', undefined);
+                // SubCategory için PostsScreen'e navigate et
+                if (!data.category?.id) return;
+                
+                navigationService.navigate(ROOT_ROUTES.POST, {
+                  screen: 'PostsScreen',
+                  params: {
+                    stage: 'SubCategories',
+                    name: data.category.name,
+                    productInfo: {
+                      image: toImageSource(data.category.image) || require('@/assets/inventory/product_01.png'),
+                      title: data.category.name,
+                      subName: data.category.subCategory,
+                    },
+                    contextType: ProductInfoType.SUB_CATEGORY,
+                    contextId: data.category.id,
+                  },
+                });
               }}
             />
           </Box>

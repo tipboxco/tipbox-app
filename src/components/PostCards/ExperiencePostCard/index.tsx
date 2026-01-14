@@ -251,16 +251,32 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               title={data.contextData.name}
               subName={data.contextData.subName}
               onPress={() => {
-                // Product için BrandProductDetailScreen'e navigate et
-                if (data.contextData?.id) {
-                  navigationService.navigateNested(
-                    TAB_ROUTES.CATALOG, 
-                    'BrandProductDetailScreen' as any, 
-                    { 
-                      productId: data.contextData.id 
-                    }
-                  );
-                }
+                // Product için PostsScreen'e navigate et
+                if (!data.contextData?.id) return;
+                
+                // Experience post'ları genelde Product context'inde olduğu için varsayılan olarak Product kullan
+                const contextType = data.contextType || ProductInfoType.PRODUCT;
+                
+                navigationService.navigate(ROOT_ROUTES.POST, {
+                  screen: 'PostsScreen',
+                  params: {
+                    stage: 'Product',
+                    name: data.contextData.name,
+                    productInfo: {
+                      image: toImageSource(data.contextData.image),
+                      title: data.contextData.name,
+                      subName: data.contextData.subName,
+                    },
+                    selectedProduct: {
+                      id: data.contextData.id,
+                      name: data.contextData.name,
+                      description: data.contextData.subName,
+                      image: toImageSource(data.contextData.image),
+                    },
+                    contextType,
+                    contextId: data.contextData.id,
+                  },
+                });
               }}
             />
           </Box>

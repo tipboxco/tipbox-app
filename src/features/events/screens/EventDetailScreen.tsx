@@ -10,6 +10,9 @@ import {
     Image,
     Button,
     ButtonText,
+    Modal,
+    ModalBackdrop,
+    ModalContent,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -28,8 +31,11 @@ import {
   TrophyIcon,
 } from 'react-native-heroicons/outline';
 import { useEventDetail, useEventPosts, useJoinEvent, useLeaveEvent } from '../api/hooks';
-    import { toImageSource } from '@/src/utils';
+    import { toImageSource, useSafeAreaValues } from '@/src/utils';
 import { CardType, EventStatus } from '@/src/types/common';
+import BadgeBottomSheet from '../components/BadgeBottomSheet';
+import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
+import type { EventDetailReward } from '../types';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
@@ -113,6 +119,10 @@ const EventDetailScreen: React.FC = () => {
     
     // Local state for join button (synced with API's isJoined)
     const [isJoined, setIsJoined] = useState(false);
+    
+    // Badge modal state
+    const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
+    const bottomInset = useSafeAreaValues('bottom');
 
     // Format date range from startDate and endDate
     const formatDateRange = (startDate: string, endDate: string): string => {
@@ -618,6 +628,33 @@ const EventDetailScreen: React.FC = () => {
         }
     }, [event, eventId]);
 
+    // Map EventDetailReward to SeeAllReward format for BadgeBottomSheet
+    const mapRewardToSeeAllReward = useCallback((reward: EventDetailReward): SeeAllReward => {
+        const imageSource = reward.image ? toImageSource(reward.image) : require('@/assets/defaultImages/default-badge.png');
+        
+        return {
+            id: reward.id,
+            title: reward.title,
+            image: imageSource,
+            description: `"${reward.title}" rozetini kazanmak için event'e katıl ve gönderiler paylaş.`,
+            category: 'event',
+            isUnlocked: false, // EventDetailReward'da bu bilgi yok, default false
+            completed: 0,
+            task: 1,
+        };
+    }, []);
+
+    // Handle badge press - open modal
+    const handleBadgePress = useCallback((reward: EventDetailReward) => {
+        const badgeData = mapRewardToSeeAllReward(reward);
+        setSelectedBadge(badgeData);
+    }, [mapRewardToSeeAllReward]);
+
+    // Handle modal close
+    const handleCloseModal = useCallback(() => {
+        setSelectedBadge(null);
+    }, []);
+
     // Banner yüksekliği
     const BANNER_HEIGHT = 250;
     
@@ -956,19 +993,9 @@ const EventDetailScreen: React.FC = () => {
                             {/* See All Button */}
                             {event.rewards && event.rewards.length > 0 && (
                                 <Pressable onPress={() => {
-                                    // RewardsBadges EventsStack içinde, bu yüzden App → MainTabs → EventsStack → RewardsBadges path'ini kullan
-                                    (navigationService.navigate as any)('App', {
-                                        screen: 'MainTabs',
-                                        params: {
-                                            screen: 'EventsStack',
-                                            params: {
-                                                screen: 'Events',
-                                                params: {
-                                                    screen: 'RewardsBadges',
-                                                    params: { eventId },
-                                                },
-                                            },
-                                        },
+                                    // Profile → Collections ekranına yönlendir (AchievementBadgesTab burada)
+                                    navigationService.navigate('Profile', {
+                                        screen: 'Collections',
                                     });
                                 }}>
                                     <Text
@@ -994,50 +1021,54 @@ const EventDetailScreen: React.FC = () => {
                                 renderItem={({ item }) => {
                                     const imageSource = item.image ? toImageSource(item.image) : undefined;
                                     return (
-                                        <Box
-                                            width={108}
-                                            height={122}
-                                            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                                            borderWidth={1}
-                                            borderColor="#E9E9E9"
-                                            borderRadius={5}
-                                            alignItems="center"
-                                            justifyContent="center"
-                                            p="$3"
+                                        <Pressable
+                                            onPress={() => handleBadgePress(item)}
                                         >
-                                            {imageSource ? (
-                                                <Image
-                                                    source={imageSource}
-                                                    alt={item.title}
-                                                    width={62}
-                                                    height={62}
-                                                    borderRadius={5}
-                                                    mb="$2"
-                                                    resizeMode="cover"
-                                                />
-                                            ) : (
-                                                <Box
-                                                    width={62}
-                                                    height={62}
-                                                    bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                                                    borderRadius={5}
-                                                    mb="$2"
-                                                    alignItems="center"
-                                                    justifyContent="center"
-                                                >
-                                                    <TrophyIcon width={24} height={24} color={isDark ? '#666' : '#999'} />
-                                                </Box>
-                                            )}
-                                            <Text
-                                                color={isDark ? '#FFFFFF' : '#000000'}
-                                                fontSize={10}
-                                                fontWeight="$bold"
-                                                textAlign="center"
-                                                numberOfLines={2}
+                                            <Box
+                                                width={108}
+                                                height={122}
+                                                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                                                borderWidth={1}
+                                                borderColor="#E9E9E9"
+                                                borderRadius={5}
+                                                alignItems="center"
+                                                justifyContent="center"
+                                                p="$3"
                                             >
-                                                {item.title}
-                                            </Text>
-                                        </Box>
+                                                {imageSource ? (
+                                                    <Image
+                                                        source={imageSource}
+                                                        alt={item.title}
+                                                        width={62}
+                                                        height={62}
+                                                        borderRadius={5}
+                                                        mb="$2"
+                                                        resizeMode="cover"
+                                                    />
+                                                ) : (
+                                                    <Box
+                                                        width={62}
+                                                        height={62}
+                                                        bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                                                        borderRadius={5}
+                                                        mb="$2"
+                                                        alignItems="center"
+                                                        justifyContent="center"
+                                                    >
+                                                        <TrophyIcon width={24} height={24} color={isDark ? '#666' : '#999'} />
+                                                    </Box>
+                                                )}
+                                                <Text
+                                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                                    fontSize={10}
+                                                    fontWeight="$bold"
+                                                    textAlign="center"
+                                                    numberOfLines={2}
+                                                >
+                                                    {item.title}
+                                                </Text>
+                                            </Box>
+                                        </Pressable>
                                     );
                                 }}
                                 keyExtractor={(item) => item.id}
@@ -1210,6 +1241,30 @@ const EventDetailScreen: React.FC = () => {
                     </Pressable>
                 </HStack>
             </Animated.View>
+
+            {/* Badge Detail Modal */}
+            <Modal
+                isOpen={!!selectedBadge}
+                onClose={handleCloseModal}
+                size="lg"
+                closeOnOverlayClick={true}
+            >
+                <ModalBackdrop onPress={handleCloseModal} />
+                {selectedBadge ? (
+                    <ModalContent
+                        bg={isDark ? '#1A1A1A' : '#FDFDFB'}
+                        borderRadius={20}
+                        marginHorizontal={24}
+                        marginBottom={bottomInset + 24}
+                        maxHeight="80%"
+                    >
+                        <BadgeBottomSheet
+                            data={selectedBadge}
+                            onClose={handleCloseModal}
+                        />
+                    </ModalContent>
+                ) : null}
+            </Modal>
 
             {/* Floating Action Button - EVENT_GUIDE.MD Section 2.1 */}
             {/* FAB sadece isJoined: true ise görünsün */}

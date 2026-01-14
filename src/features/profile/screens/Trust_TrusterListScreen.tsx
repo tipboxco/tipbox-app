@@ -250,7 +250,7 @@ export const Trust_TrusterListScreen = () => {
                 <HStack justifyContent="center" mb={20}>
                     <Text
                         color={isDark ? '#fff' : '#000'}
-                        fontSize={16}
+                        fontSize="$md"
                         fontWeight="$bold"
                     >
                         Sort
@@ -268,7 +268,7 @@ export const Trust_TrusterListScreen = () => {
                         >
                             <Text
                                 color={isDark ? '#fff' : '#000'}
-                                fontSize={14}
+                                fontSize="$sm"
                                 fontWeight="$normal"
                             >
                                 Default
@@ -303,7 +303,7 @@ export const Trust_TrusterListScreen = () => {
                         >
                             <Text
                                 color={isDark ? '#fff' : '#000'}
-                                fontSize={14}
+                                fontSize="$sm"
                                 fontWeight="$normal"
                             >
                                 Sort by: Newest
@@ -338,7 +338,7 @@ export const Trust_TrusterListScreen = () => {
                         >
                             <Text
                                 color={isDark ? '#fff' : '#000'}
-                                fontSize={14}
+                                fontSize="$sm"
                                 fontWeight="$normal"
                             >
                                 Sort by: Oldest
@@ -469,7 +469,7 @@ export const Trust_TrusterListScreen = () => {
                                 <Animated.Text
                                     style={[
                                         {
-                                            fontSize: 14,
+                                            fontSize: 12,
                                             fontWeight: 'bold',
                                         },
                                         trustTabStyle,
@@ -494,7 +494,7 @@ export const Trust_TrusterListScreen = () => {
                                 <Animated.Text
                                     style={[
                                         {
-                                            fontSize: 14,
+                                            fontSize: 12,
                                             fontWeight: 'bold',
                                         },
                                         trusterTabStyle,

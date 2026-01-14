@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { Text as RNText, Dimensions, View, InteractionManager, Pressable as RNPressable } from 'react-native';
-import { Pressable, Box, VStack, HStack } from '@gluestack-ui/themed';
+import { Pressable, Box, VStack, HStack, Divider, Text } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,7 +9,28 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Feather } from '@expo/vector-icons';
+import { XCircleIcon, BellIcon } from 'react-native-heroicons/outline';
+
+// Custom Mute Icon - çan simgesi üzerinde Z harfi (görseldeki gibi)
+const MuteIcon: React.FC<{ color: string }> = ({ color }) => {
+  return (
+    <Box position="relative" width={20} height={20} alignItems="center" justifyContent="center">
+      <BellIcon width={20} height={20} color={color} />
+      <RNText
+        style={{
+          position: 'absolute',
+          top: -1,
+          left: 3,
+          fontSize: 9,
+          fontWeight: '700',
+          color: color,
+        }}
+      >
+        Z
+      </RNText>
+    </Box>
+  );
+};
 
 // Spring configuration for natural feel
 const SPRING_CONFIG = {
@@ -18,11 +39,11 @@ const SPRING_CONFIG = {
   mass: 0.8,
 };
 
-// Menu item height
-const MENU_ITEM_HEIGHT = 48;
+// Menu item height - dikey padding azaltıldığı için küçültüldü
+const MENU_ITEM_HEIGHT = 40;
 const MENU_PADDING = 8;
-const MENU_BORDER_RADIUS = 8;
-const MENU_WIDTH = 180;
+const MENU_BORDER_RADIUS = 12; // Görselde yuvarlak köşeler var
+const MENU_WIDTH = 200; // Görseldeki menü genişliğine göre ayarlandı
 
 interface RemoveFromTrustlistContextMenuProps {
   children: React.ReactNode;
@@ -55,33 +76,62 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
   // 🎯 CORE: Single progress sharedValue (0 = closed, 1 = open)
   const progress = useSharedValue(0);
   
-  // Calculate menu items
+  // Calculate menu items - görseldeki sıraya göre
+  const iconColor = isDark ? '#fff' : '#000';
   const items = [
     ...(onRemoveFromTrustList ? [{ 
       label: 'Remove from Trust List', 
-      icon: <Feather name="user-x" size={20} color={isDark ? '#fff' : '#000'} />, 
+      icon: <XCircleIcon width={20} height={20} color={iconColor} />, 
       onPress: onRemoveFromTrustList 
     }] : []),
     ...(onMute ? [{ 
       label: 'Mute', 
-      icon: <Feather name="bell-off" size={20} color={isDark ? '#fff' : '#000'} />, 
+      icon: <MuteIcon color={iconColor} />, 
       onPress: onMute 
     }] : []),
     ...(onBlock ? [{ 
       label: 'Block', 
-      icon: <Feather name="slash" size={20} color="#FF3040" />, 
+      icon: <XCircleIcon width={20} height={20} color={iconColor} />, 
       onPress: onBlock,
-      color: '#FF3040' 
+      color: undefined // Block için özel renk yok, görselde siyah
     }] : []),
   ];
   
   const menuHeight = items.length * MENU_ITEM_HEIGHT + (MENU_PADDING * 2);
 
+  // Debug: Log component mount and items
+  React.useEffect(() => {
+    console.log('[RemoveFromTrustlistContextMenu] Component mounted/updated', {
+      itemsCount: items.length,
+      hasOnRemoveFromTrustList: !!onRemoveFromTrustList,
+      hasOnMute: !!onMute,
+      hasOnBlock: !!onBlock,
+      menuHeight,
+    });
+  }, [items.length, onRemoveFromTrustList, onMute, onBlock, menuHeight]);
+
   // Debug: Log isOpen changes
   React.useEffect(() => {
+    console.log('[RemoveFromTrustlistContextMenu] isOpen changed', { 
+      isOpen, 
+      menuPosition,
+      triggerLayout 
+    });
     // Notify parent component about menu state change
     onMenuStateChange?.(isOpen);
-  }, [isOpen, onMenuStateChange]);
+  }, [isOpen, menuPosition, triggerLayout, onMenuStateChange]);
+
+  // Debug: Log menu render
+  React.useEffect(() => {
+    if (isOpen) {
+      console.log('[RemoveFromTrustlistContextMenu] Menu should be visible', { 
+        isOpen, 
+        menuPosition, 
+        itemsCount: items.length,
+        menuHeight 
+      });
+    }
+  }, [isOpen, menuPosition, items.length, menuHeight]);
 
   // Close menu
   const closeMenu = useCallback(() => {
@@ -97,28 +147,68 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
   // Handle layout measurement - onLayout'dan gelen bilgileri kullan
   const handleTriggerLayout = useCallback((event: any) => {
     const { x, y, width, height } = event.nativeEvent.layout;
+    console.log('[RemoveFromTrustlistContextMenu] handleTriggerLayout called', { x, y, width, height });
+    
     // measure kullanarak parent container'a göre koordinatları al
     if (triggerRef.current) {
       triggerRef.current.measure((fx: number, fy: number, w: number, h: number, px: number, py: number) => {
         // px, py parent container'a göre koordinatlar
+        console.log('[RemoveFromTrustlistContextMenu] measure result', { px, py, w, h, fx, fy });
         setTriggerLayout({ x: px, y: py, width: w, height: h });
       });
     } else {
       // Ref henüz hazır değilse, onLayout'dan gelen x, y'yi kullan (parent container'a göre)
+      console.log('[RemoveFromTrustlistContextMenu] Using onLayout values directly', { x, y, width, height });
       setTriggerLayout({ x, y, width, height });
     }
   }, []);
 
   // Toggle menu
   const handleToggle = useCallback(() => {
+    console.log('[RemoveFromTrustlistContextMenu] handleToggle called', { isOpen, triggerLayout: !!triggerLayout });
+    
     if (!isOpen) {
       // Önce triggerLayout state'ini kullan (parent container'a göre)
       if (triggerLayout) {
         const buttonLeft = triggerLayout.x;
-        const menuLeft = buttonLeft - MENU_WIDTH;
+        const buttonRight = buttonLeft + triggerLayout.width;
         const screenWidth = Dimensions.get('window').width;
-        const left = Math.max(-screenWidth + MENU_WIDTH + 12, menuLeft);
+        const minMargin = 12;
+        
+        // Agresif offset - menüyü çok daha sola al
+        const offset = 60; // Çok agresif offset
+        // Menüyü button'ın sol kenarından hesapla - MENU_WIDTH - offset kadar sola git
+        let menuLeft = buttonLeft - MENU_WIDTH - offset;
+        
+        // Menü ekranın dışına çıkmaması için kontrol et
+        let left = Math.max(minMargin, menuLeft);
+        
+        // Eğer menü hala ekranın sağında taşıyorsa, daha da sola al
+        if (left + MENU_WIDTH > screenWidth - minMargin) {
+          // Menüyü ekranın sağ kenarından MENU_WIDTH + margin kadar sola yerleştir
+          left = screenWidth - MENU_WIDTH - minMargin - 40; // Ekstra 40px daha sola
+          // Ama yine de button'ın solunda olmalı
+          if (left > buttonLeft) {
+            left = buttonLeft - MENU_WIDTH - offset;
+          }
+          left = Math.max(minMargin, left);
+        }
+        
         const top = triggerLayout.y - 8;
+        
+        console.log('[RemoveFromTrustlistContextMenu] Setting menu position (AGGRESSIVE)', { 
+          buttonLeft,
+          buttonRight,
+          menuLeft, 
+          left, 
+          top,
+          screenWidth,
+          MENU_WIDTH,
+          offset,
+          triggerLayout,
+          menuRight: left + MENU_WIDTH,
+          calculatedLeft: buttonLeft - MENU_WIDTH - offset
+        });
         
         setMenuPosition({ top, left });
         setIsOpen(true);
@@ -127,10 +217,39 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
         // Fallback: measure kullan (parent container'a göre)
         triggerRef.current.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
           const buttonLeft = px;
-          const menuLeft = buttonLeft - MENU_WIDTH;
+          const buttonRight = buttonLeft + width;
           const screenWidth = Dimensions.get('window').width;
-          const left = Math.max(-screenWidth + MENU_WIDTH + 12, menuLeft);
+          const minMargin = 12;
+          
+          // Agresif offset
+          const offset = 60;
+          let menuLeft = buttonLeft - MENU_WIDTH - offset;
+          
+          let left = Math.max(minMargin, menuLeft);
+          
+          // Eğer menü hala ekranın sağında taşıyorsa, daha da sola al
+          if (left + MENU_WIDTH > screenWidth - minMargin) {
+            left = screenWidth - MENU_WIDTH - minMargin - 40;
+            if (left > buttonLeft) {
+              left = buttonLeft - MENU_WIDTH - offset;
+            }
+            left = Math.max(minMargin, left);
+          }
+          
           const top = py - 8;
+          
+          console.log('[RemoveFromTrustlistContextMenu] Setting menu position from measure (AGGRESSIVE)', { 
+            buttonLeft,
+            buttonRight,
+            menuLeft, 
+            left, 
+            top,
+            screenWidth,
+            MENU_WIDTH,
+            offset,
+            menuRight: left + MENU_WIDTH,
+            calculatedLeft: buttonLeft - MENU_WIDTH - offset
+          });
           
           setMenuPosition({ top, left });
           setIsOpen(true);
@@ -142,9 +261,25 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
           if (triggerRef.current) {
             triggerRef.current.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
               const buttonLeft = px;
-              const menuLeft = buttonLeft - MENU_WIDTH;
+              const buttonRight = buttonLeft + width;
               const screenWidth = Dimensions.get('window').width;
-              const left = Math.max(-screenWidth + MENU_WIDTH + 12, menuLeft);
+              const minMargin = 12;
+              
+              // Agresif offset
+              const offset = 60;
+              let menuLeft = buttonLeft - MENU_WIDTH - offset;
+              
+              let left = Math.max(minMargin, menuLeft);
+              
+              // Eğer menü hala ekranın sağında taşıyorsa, daha da sola al
+              if (left + MENU_WIDTH > screenWidth - minMargin) {
+                left = screenWidth - MENU_WIDTH - minMargin - 40;
+                if (left > buttonLeft) {
+                  left = buttonLeft - MENU_WIDTH - offset;
+                }
+                left = Math.max(minMargin, left);
+              }
+              
               const top = py - 8;
               
               setMenuPosition({ top, left });
@@ -153,12 +288,14 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
             });
           } else {
             // Son çare: try to open anyway
+            console.log('[RemoveFromTrustlistContextMenu] Opening menu without position');
             setIsOpen(true);
             progress.value = withSpring(1, SPRING_CONFIG);
           }
         });
       }
     } else {
+      console.log('[RemoveFromTrustlistContextMenu] Closing menu');
       closeMenu();
     }
   }, [isOpen, progress, closeMenu, triggerLayout]);
@@ -179,7 +316,7 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
       opacity,
       transform: [{ scale }],
       overflow: 'hidden' as const,
-      zIndex: 1000,
+      zIndex: 10000, // Yüksek z-index - card içinde görünmesi için
     };
   });
 
@@ -192,17 +329,38 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
     }, 150);
   }, [closeMenu]);
 
+  console.log('[RemoveFromTrustlistContextMenu] Rendering component', { 
+    isOpen, 
+    itemsCount: items.length,
+    hasChildren: !!children 
+  });
+
   return (
-    <View style={{ position: 'relative' }}>
+    <View style={{ position: 'relative', overflow: 'visible' }}>
       {/* Trigger Button */}
       <View 
         ref={triggerRef}
         collapsable={false}
-        onLayout={handleTriggerLayout}
+        onLayout={(e) => {
+          console.log('[RemoveFromTrustlistContextMenu] onLayout called');
+          handleTriggerLayout(e);
+        }}
       >
-        <Pressable onPress={handleToggle}>
+        <RNPressable 
+          onPress={() => {
+            console.log('[RemoveFromTrustlistContextMenu] RNPressable pressed - handleToggle will be called');
+            handleToggle();
+          }}
+          onPressIn={() => {
+            console.log('[RemoveFromTrustlistContextMenu] RNPressable onPressIn');
+          }}
+          style={{ 
+            padding: 8,
+            backgroundColor: 'transparent' // Test için görünür yap
+          }}
+        >
           {children}
-        </Pressable>
+        </RNPressable>
       </View>
 
       {/* Overlay - menu açıkken boşluğa tıklamayı yakalamak için (menu'den önce render edilir, z-index menu'den düşük) */}
@@ -215,7 +373,7 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
             right: 0,
             bottom: 0,
             backgroundColor: 'transparent',
-            zIndex: 998,
+            zIndex: 9999, // Menüden düşük ama yüksek z-index
           }}
           onPress={closeMenu}
         />
@@ -236,6 +394,7 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
               shadowOpacity: isDark ? 0.3 : 0.1,
               shadowRadius: 4,
               elevation: 10,
+              zIndex: 10000, // Yüksek z-index - card içinde görünmesi için
             },
           ]}
           pointerEvents="box-none"
@@ -253,25 +412,30 @@ export const RemoveFromTrustlistContextMenu: React.FC<RemoveFromTrustlistContext
                 </Box>
               )}
               {items.map((item, index) => (
-                <Pressable
-                  key={index}
-                  onPress={() => handleMenuItemPress(item.onPress)}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    {item.icon}
-                    <RNText
-                      style={{
-                        color: item.color || (isDark ? '#FFFFFF' : '#000000'),
-                        fontSize: 14,
-                        fontWeight: '500',
-                      }}
-                    >
-                      {item.label}
-                    </RNText>
-                  </HStack>
-                </Pressable>
+                <React.Fragment key={index}>
+                  {index > 0 && (
+                    <Divider 
+                      bg={isDark ? '#333333' : '#E9E9E9'} 
+                      mx={0}
+                    />
+                  )}
+                  <Pressable
+                    onPress={() => handleMenuItemPress(item.onPress)}
+                    px={16}
+                    py={8}
+                  >
+                    <HStack alignItems="center" space="md">
+                      {item.icon}
+                      <Text
+                        color={item.color || (isDark ? '#FFFFFF' : '#000000')}
+                        fontSize="$md"
+                        fontWeight="$medium"
+                      >
+                        {item.label}
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </React.Fragment>
               ))}
             </VStack>
           </RNPressable>

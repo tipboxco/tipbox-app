@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, ScrollView, Alert, FlatList, Dimensions, RefreshControl, Pressable as RNPressable } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Text, Pressable, HStack, VStack, Image } from '@gluestack-ui/themed';
+import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent } from '@gluestack-ui/themed';
 import PagerView from 'react-native-pager-view';
 import Animated, {
   useSharedValue,
@@ -60,6 +60,9 @@ import {
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
+import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
+import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
+import type { Badge } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -818,6 +821,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Focus'ta otomatik refresh state - yeni gönderi oluşturulduktan sonra ekrana yönlendirildiğinde gösterilecek
   const [isRefreshingOnFocus, setIsRefreshingOnFocus] = useState(false);
   
+  // Badge modal state
+  const [selectedBadge, setSelectedBadge] = useState<SeeAllReward | null>(null);
+  
   // ARCHITECTURE FIX: Ekran focus olduğunda mevcut kullanıcının tüm profil verilerini refetch et
   // Yeni gönderi oluşturulduktan sonra ProfileScreen'e dönüldüğünde yeni gönderi görünsün
   useFocusEffect(
@@ -1118,6 +1124,33 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     );
   }, [targetUserId, navigation]);
 
+  // Map Badge to SeeAllReward format for BadgeBottomSheet
+  const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
+    const imageSource = badge.image ? toImageSource(badge.image) : require('@/assets/defaultImages/default-badge.png');
+    
+    return {
+      id: badge.id,
+      title: badge.title,
+      image: imageSource,
+      description: `"${badge.title}" rozetini kazandın!`,
+      category: 'achievement',
+      isUnlocked: true, // Profile'da gösterilen badge'ler zaten kazanılmış
+      completed: 1,
+      task: 1,
+    };
+  }, []);
+
+  // Handle badge press - open modal
+  const handleBadgePress = useCallback((badge: Badge) => {
+    const badgeData = mapBadgeToSeeAllReward(badge);
+    setSelectedBadge(badgeData);
+  }, [mapBadgeToSeeAllReward]);
+
+  // Handle modal close
+  const handleCloseModal = useCallback(() => {
+    setSelectedBadge(null);
+  }, []);
+
   
   // ListHeaderComponent: Banner + Profile Info
   const renderProfileHeader = useCallback((activeTab: TabKey, onChangeTab: (tab: TabKey) => void, isLoading: boolean): React.ReactElement | null => {
@@ -1178,9 +1211,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             justifyContent="space-between"
             alignItems="flex-start"
             px={16}
-            pointerEvents="box-none"
             zIndex={2000}
-            style={{ position: 'relative' }}
+            pointerEvents="box-none"
           >
             <Pressable
               onPress={() => {
@@ -1190,7 +1222,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   rootNavigation.navigate('Main' as never);
                 }
               }}
-              style={{ zIndex: 2000 }}
             >
               <ChevronLeftIcon size={24} color="#fff" />
             </Pressable>
@@ -1200,12 +1231,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 onPress={() => {
                   navigationService.navigate(ROOT_ROUTES.SETTINGS);
                 }}
-                style={{ zIndex: 2000 }}
               >
                 <EllipsisVerticalIcon size={24} color="#fff" />
               </Pressable>
             ) : (
-              <Box style={{ zIndex: 2000 }}>
+              <Box position="relative" zIndex={2001}>
                 <ContextMenuReanimated
                   menuItems={[
                     {
@@ -1230,9 +1260,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     contextMenuCloseRef.current = closeFn;
                   }}
                 >
-                  <Pressable>
-                    <EllipsisVerticalIcon size={24} color="#fff" />
-                  </Pressable>
+                  <EllipsisVerticalIcon size={24} color="#fff" />
                 </ContextMenuReanimated>
               </Box>
             )}
@@ -1578,33 +1606,38 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               >
                 <HStack space="md" justifyContent="flex-start">
                   {profile.badges.slice(0, 4).map((badge) => (
-                    <VStack key={badge.id} space="xs" alignItems="center">
-                      <Box
-                        w={70}
-                        h={70}
-                        borderRadius={5}
-                        borderWidth={0}
-                        overflow="hidden"
-                        justifyContent="center"
-                        alignItems="center"
-                      >
-                        <Image
-                          source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
-                          alt={badge.title}
-                          w={60}
-                          h={60}
-                          resizeMode="contain"
-                        />
-                      </Box>
-                      <Text
-                        color={isDark ? '$textDark400' : '#000000'}
-                        fontSize="$2xs"
-                        fontWeight="$bold"
-                        textAlign="center"
-                      >
-                        {badge.title}
-                      </Text>
-                    </VStack>
+                    <Pressable
+                      key={badge.id}
+                      onPress={() => handleBadgePress(badge)}
+                    >
+                      <VStack space="xs" alignItems="center">
+                        <Box
+                          w={70}
+                          h={70}
+                          borderRadius={5}
+                          borderWidth={0}
+                          overflow="hidden"
+                          justifyContent="center"
+                          alignItems="center"
+                        >
+                          <Image
+                            source={toImageSource(badge.image) || require('@/assets/defaultImages/default-badge.png')}
+                            alt={badge.title}
+                            w={60}
+                            h={60}
+                            resizeMode="contain"
+                          />
+                        </Box>
+                        <Text
+                          color={isDark ? '$textDark400' : '#000000'}
+                          fontSize="$2xs"
+                          fontWeight="$bold"
+                          textAlign="center"
+                        >
+                          {badge.title}
+                        </Text>
+                      </VStack>
+                    </Pressable>
                   ))}
                 </HStack>
                 <Pressable
@@ -1628,7 +1661,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         )}
       </Box>
     );
-  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, refreshing, isRefreshingOnFocus]);
+  }, [userProfile, isDark, isOwnProfile, targetUserId, trustUser, untrustUser, isTrusting, isUntrusting, rootNavigation, user, navigation, handleShare, handleReport, handleBlock, handleBadgePress, refreshing, isRefreshingOnFocus]);
   
   // Profile header'ı memoize et - CRITICAL: Early return'lerden ÖNCE çağrılmalı (Rules of Hooks)
   // userProfile undefined olsa bile hook çağrılmalı (Rules of Hooks)
@@ -1696,6 +1729,51 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           ))}
         </AnimatedPagerView>
       </VStack>
+
+      {/* Context Menu Backdrop - Boş bir yere tıklandığında context menu'yu kapat */}
+      {isContextMenuOpen && (
+        <Pressable
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          zIndex={2000}
+          onPress={() => {
+            if (contextMenuCloseRef.current) {
+              contextMenuCloseRef.current();
+            }
+          }}
+          style={{
+            backgroundColor: 'transparent',
+          }}
+        />
+      )}
+
+      {/* Badge Detail Modal */}
+      <Modal
+        isOpen={!!selectedBadge}
+        onClose={handleCloseModal}
+        size="lg"
+        closeOnOverlayClick={true}
+      >
+        <ModalBackdrop onPress={handleCloseModal} />
+        {selectedBadge ? (
+          <ModalContent
+            bg={isDark ? '#1A1A1A' : '#FDFDFB'}
+            borderRadius={20}
+            marginHorizontal={24}
+            marginBottom={safeAreaBottom + 24}
+            maxHeight="80%"
+          >
+            <BadgeBottomSheet
+              data={selectedBadge}
+              onClose={handleCloseModal}
+              hideFollowLadder={isOwnProfile}
+            />
+          </ModalContent>
+        ) : null}
+      </Modal>
     </Box>
   );
 };
