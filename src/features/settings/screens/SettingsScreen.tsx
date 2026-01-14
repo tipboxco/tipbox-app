@@ -147,11 +147,13 @@ export const SettingsScreen = () => {
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <Header
-        title="Settings"
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+      <Box pt={insets.top}>
+        <Header
+          title="Settings"
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+        />
+      </Box>
 
       {/* Search Bar */}
       <Box px="$4" py="$2">

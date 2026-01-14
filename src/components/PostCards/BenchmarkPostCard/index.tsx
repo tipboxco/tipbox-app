@@ -254,8 +254,8 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                 <HStack alignItems="center" space="xs">
                     <Pressable onPress={handleViewProfile}>
                         <Image
-                            source={toImageSource(data.user.avatar) || DEFAULT_USER_AVATAR}
-                            alt={data.user.name}
+                            source={toImageSource(data.user?.avatar) || DEFAULT_USER_AVATAR}
+                            alt={data.user?.name || 'User'}
                             mr={8}
                             width={42}
                             height={42}
@@ -269,7 +269,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                 fontSize="$sm"
                                 fontWeight="$bold"
                             >
-                                {data.user.name}
+                                {data.user?.name || 'Unknown User'}
                             </Text>
                             <Text
                                 color={isDark ? '$textDark400' : '#787878'}
@@ -277,7 +277,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                                 numberOfLines={1}
                                 maxWidth={250}
                             >
-                                {data.user.title}
+                                {data.user?.title || ''}
                             </Text>
                         </VStack>
                     </Pressable>

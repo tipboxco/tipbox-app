@@ -139,14 +139,14 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
             <VStack space="xs">
               <Text
                 color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize="$sm"
+                fontSize="$xs"
                 fontWeight="$bold"
               >
                 {userName}
               </Text>
               <Text
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize="$sm"
+                fontSize="$xs"
                 fontWeight="$medium"
                 numberOfLines={1}
               >
@@ -169,7 +169,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
           <VStack space="xs">
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize="$sm"
+              fontSize="$xs"
               lineHeight={14}
               numberOfLines={isExpanded || !shouldTruncate ? undefined : 3}
             >
@@ -184,7 +184,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
               >
                 <Text
                   color="#829905"
-                  fontSize="$sm"
+                  fontSize="$xs"
                   fontWeight="$medium"
                   textDecorationLine="underline"
                 >
@@ -202,7 +202,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
         top={8}
         right={12}
         color={isDark ? '#8C8C8C' : '#8C8C8C'}
-        fontSize="$sm"
+        fontSize="$xs"
         fontWeight="$medium"
       >
         {timeAgo}

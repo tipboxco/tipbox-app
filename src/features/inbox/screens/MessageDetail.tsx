@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -2335,13 +2335,14 @@ const MessageDetailScreen: React.FC = () => {
   };
 
   return (
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={0}
-        enabled={true}
-      >
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={0}
+          enabled={true}
+        >
           {/* Header */}
           <MessageDetailHeader
             senderName={params.senderName}
@@ -2470,7 +2471,8 @@ const MessageDetailScreen: React.FC = () => {
           </Box>
 
         </KeyboardAvoidingView>
-    </Box>
+      </Box>
+    </SafeAreaView>
   );
 };
 

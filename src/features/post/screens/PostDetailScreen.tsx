@@ -37,6 +37,7 @@ export const PostDetailScreen = () => {
     const route = useRoute<PostDetailScreenRouteProp>();
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState('Newest');
+    const [isSortBottomSheetOpen, setIsSortBottomSheetOpen] = useState(false);
     
     // FIX: route.params undefined kontrolü - güvenli erişim
     // Deep link veya notification'dan gelen durumlarda params undefined olabilir
@@ -148,7 +149,7 @@ export const PostDetailScreen = () => {
     }, [keyboardHeight]);
 
     // Global bottom sheet
-    const { openBottomSheet } = useGlobalBottomSheet();
+    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
     // Comment input state
     const [commentText, setCommentText] = useState('');
@@ -202,6 +203,64 @@ export const PostDetailScreen = () => {
             }
         );
     };
+
+    // Handle sort option press - sort bottom sheet aç
+    const handleSortPress = useCallback(() => {
+        const sortOptions = [
+            { value: 'Newest', label: 'Newest First' },
+            { value: 'Oldest', label: 'Oldest First' },
+            { value: 'Popular', label: 'Most Popular' },
+        ];
+
+        openBottomSheet(
+            <Box bg={isDark ? '#1A1A1A' : '#FFFFFF'} pb={insets.bottom + 16}>
+                <VStack px="$4" py="$4" space="md">
+                    <Text
+                        fontSize={16}
+                        fontWeight="$bold"
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        mb="$2"
+                    >
+                        Sort Comments
+                    </Text>
+                    {sortOptions.map((option) => (
+                        <Pressable
+                            key={option.value}
+                            onPress={() => {
+                                setSelectedOption(option.value);
+                                closeBottomSheet();
+                                // TODO: Implement actual sorting logic
+                            }}
+                            py="$3"
+                            px="$2"
+                            borderRadius={8}
+                            bg={selectedOption === option.value 
+                                ? (isDark ? '#2A2A2A' : '#F5F5F5')
+                                : 'transparent'
+                            }
+                        >
+                            <Text
+                                fontSize={14}
+                                fontWeight={selectedOption === option.value ? '$bold' : '$normal'}
+                                color={isDark ? '#FFFFFF' : '#000000'}
+                            >
+                                {option.label}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </VStack>
+            </Box>,
+            {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableHandlePanningGesture: true,
+                enableContentPanningGesture: true,
+                enableDynamicSizing: true,
+                animateOnMount: false,
+                paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 16,
+            }
+        );
+    }, [isDark, selectedOption, openBottomSheet, closeBottomSheet, insets.bottom]);
 
     // Handle empty area press - sadece klavyeyi kapat
     const handleEmptyAreaPress = () => {
@@ -314,6 +373,7 @@ export const PostDetailScreen = () => {
                     bg={isDark ? '#111111' : '#F5F5F5'}
                     flexDirection="row"
                     alignItems="center"
+                    onPress={handleSortPress}
                 >
                     <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
@@ -321,7 +381,7 @@ export const PostDetailScreen = () => {
                         fontWeight="$medium"
                         mr={6}
                     >
-                        Newest
+                        {selectedOption}
                     </Text>
                     <ChevronDownIcon
                         width={14}
@@ -331,7 +391,7 @@ export const PostDetailScreen = () => {
                 </Pressable>
             </HStack>
         </>
-    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, showRelatedPost, relatedPostData, isDark]);
+    ), [isLoadingPost, postData, isPostDataComplete, finalPostData, finalType, showRelatedPost, relatedPostData, isDark, selectedOption, handleSortPress]);
 
     // FlatList render item - useCallback ile memoize edildi
     const renderCommentItem = useCallback(({ item }: { item: typeof flattenedComments[0] }) => (

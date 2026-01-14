@@ -195,11 +195,11 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
         borderColor="#E9E9E9"
       >
         <HStack alignItems="center" space="xs">
-          {toImageSource(data.user.avatar) && (
+          {data.user && toImageSource(data.user.avatar) && (
             <Pressable onPress={handleViewProfile}>
               <Image
                 source={toImageSource(data.user.avatar)!}
-                alt={data.user.name}
+                alt={data.user?.name || 'User'}
                 mr={8}
                 width={42}
                 height={42}
@@ -214,7 +214,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                 fontSize="$sm"
                 fontWeight="$bold"
               >
-                {data.user.name}
+                {data.user?.name || 'Unknown User'}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#787878'}
@@ -222,7 +222,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
                 numberOfLines={1}
                 maxWidth={250}
               >
-                {data.user.title}
+                {data.user?.title || ''}
               </Text>
             </VStack>
           </Pressable>

@@ -239,6 +239,7 @@ const InventoryScreen = () => {
               onPress={() => navigation.navigate('InventoryDetail', { itemId: item.id })}
               onUpdateExperience={handleUpdateExperience}
               onDeleteProduct={handleDeleteProduct}
+              isOwnProfile={showCreateButton}
             />
           )}
           keyExtractor={(item) => item.id}

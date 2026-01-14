@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { Text as RNText, Dimensions, View, InteractionManager, Pressable as RNPressable } from 'react-native';
-import { Box, VStack, HStack } from '@gluestack-ui/themed';
+import { Pressable, Box, VStack, HStack } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -42,8 +42,10 @@ interface ContextMenuReanimatedProps {
   onMenuStateChange?: (isOpen: boolean) => void;
   // Expose close function to parent
   onCloseRef?: (closeFn: () => void) => void;
-  // Expose open function to parent (for long press support)
-  onOpenRef?: (openFn: () => void) => void;
+  // Enable long press to open menu (default: false)
+  enableLongPress?: boolean;
+  // Long press delay in milliseconds (default: 2000)
+  longPressDelay?: number;
 }
 
 export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
@@ -53,7 +55,8 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
   menuItems,
   onMenuStateChange,
   onCloseRef,
-  onOpenRef,
+  enableLongPress = false,
+  longPressDelay = 2000,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -151,7 +154,7 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
         const buttonLeft = triggerLayout.x;
         const menuLeft = buttonLeft - MENU_WIDTH + 10; // 10px sağa kaydır
         const screenWidth = Dimensions.get('window').width;
-        const left = Math.max(screenWidth - MENU_WIDTH + 12, menuLeft);
+        const left = Math.max(-screenWidth + MENU_WIDTH + 12, menuLeft);
         const top = triggerLayout.y - 8; // Butonun üstüne hizala, 8px yukarı
         
         console.log('[ContextMenuReanimated] Setting menu position from triggerLayout', { top, left, buttonLeft, menuLeft });
@@ -204,11 +207,6 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
     }
   }, [isOpen, progress, closeMenu, items.length, onViewProfile, onReport, triggerLayout]);
 
-  // Expose open function to parent (for long press support)
-  React.useEffect(() => {
-    onOpenRef?.(handleToggle);
-  }, [handleToggle, onOpenRef]);
-
   // Menu animated style - absolute positioned relative to parent container
   const menuStyle = useAnimatedStyle(() => {
     'worklet';
@@ -246,21 +244,13 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
         collapsable={false}
         onLayout={handleTriggerLayout}
       >
-        <RNPressable 
-          onPress={() => {
-            console.log('[ContextMenuReanimated] RNPressable pressed - handleToggle will be called');
-            handleToggle();
-          }}
-          onPressIn={() => {
-            console.log('[ContextMenuReanimated] RNPressable onPressIn');
-          }}
-          style={{ 
-            padding: 8,
-            backgroundColor: 'transparent'
-          }}
+        <Pressable 
+          onPress={handleToggle}
+          onLongPress={enableLongPress ? handleToggle : undefined}
+          delayLongPress={enableLongPress ? longPressDelay : undefined}
         >
           {children}
-        </RNPressable>
+        </Pressable>
       </View>
 
       {/* Overlay - menu açıkken boşluğa tıklamayı yakalamak için (menu'den önce render edilir, z-index menu'den düşük) */}
@@ -313,13 +303,11 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
               {items.map((item, index) => {
                 console.log('[ContextMenuReanimated] Rendering menu item', { index, label: item.label });
                 return (
-                <RNPressable
+                <Pressable
                   key={index}
                   onPress={() => handleMenuItemPress(item.onPress)}
-                  style={{ 
-                    paddingHorizontal: 16,
-                    paddingVertical: 12
-                  }}
+                  px={16}
+                  py={12}
                 >
                   <HStack alignItems="center" space="md">
                     {item.icon}
@@ -333,7 +321,7 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
                       {item.label}
                     </RNText>
                   </HStack>
-                </RNPressable>
+                </Pressable>
                 );
               })}
             </VStack>

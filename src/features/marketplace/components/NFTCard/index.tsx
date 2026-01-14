@@ -105,7 +105,7 @@ export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
             <VStack space="xs" px='$2' mb={8}>
                 <Text
                     color={isDark ? '$textDark50' : '#000000'}
-                    fontSize={10}
+                    fontSize={12}
                     fontWeight="$bold"
                     numberOfLines={1}
                 >
@@ -113,7 +113,7 @@ export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
                 </Text>
                 <Text
                     color={isDark ? '$textDark400' : '#808080'}
-                    fontSize={9}
+                    fontSize={10}
                     fontWeight="$semibold"
                     numberOfLines={1}
                 >
@@ -136,11 +136,12 @@ export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
                     flex={1}
                     justifyContent="center"
                     alignItems="center"
-                    py={'$2'}
+                    py={'$3'}
+                    minHeight={36}
                 >
                     <Text
                         color={isDark ? '$textDark400' : '#B9B9B9'}
-                        fontSize={8}
+                        fontSize={11}
                         fontWeight="$bold"
                         textAlign="center"
                     >
@@ -157,12 +158,13 @@ export const NFTCard = ({ data, showQuickBuy = true }: NFTCardProps) => {
                         borderRadius={10}
                         borderWidth={1}
                         borderColor={isDark ? '$backgroundDark500' : '#D8FF08'}
-                        py={'$2'}
+                        py={'$3'}
                         flex={1}
+                        minHeight={36}
                     >
                         <Text
                             color={isDark ? '$textDark50' : '#000000'}
-                            fontSize={8}
+                            fontSize={11}
                             fontWeight="$bold"
                             textAlign="center"
                         >

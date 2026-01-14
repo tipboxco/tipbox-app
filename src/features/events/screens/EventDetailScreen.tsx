@@ -15,7 +15,7 @@ import {
     ModalContent,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { EventStackParamList } from '../EventNavigator';
@@ -29,6 +29,7 @@ import {
   UsersIcon,
   PencilSquareIcon,
   TrophyIcon,
+  UserPlusIcon,
 } from 'react-native-heroicons/outline';
 import { useEventDetail, useEventPosts, useJoinEvent, useLeaveEvent } from '../api/hooks';
     import { toImageSource, useSafeAreaValues } from '@/src/utils';
@@ -91,7 +92,16 @@ const EventDetailScreen: React.FC = () => {
     }
 
     // Fetch event detail from API
-    const { data: event, isLoading, error } = useEventDetail(eventId);
+    const { data: event, isLoading, error, refetch: refetchEvent } = useEventDetail(eventId);
+    
+    // Ekran focus olduğunda event detail'i yeniden yükle (Collections'dan geri dönünce)
+    useFocusEffect(
+        useCallback(() => {
+            if (eventId) {
+                refetchEvent();
+            }
+        }, [eventId, refetchEvent])
+    );
     
     // YENİ: Event posts endpoint kullan (Yeni Backend yapısı)
     // NOT: Backend artık ContentPost tablosunu kullanıyor, /events/{eventId}/posts endpoint'i ile!
@@ -868,29 +878,33 @@ const EventDetailScreen: React.FC = () => {
                         <Button
                             bg={isJoined ? '#D9D9D9' : '#C2E607'}
                             borderRadius={5}
-                            h={20}
+                            h={36}
+                            px="$3"
                             isDisabled={event.status === EventStatus.UPCOMING || joinEventMutation.isPending || leaveEventMutation.isPending}
                             onPress={handleJoinPress}
                         >
-                            <ButtonText
-                                color="#000000"
-                                fontSize={10}
-                                fontWeight="$bold"
-                                textAlign="center"
-                            >
-                                {(joinEventMutation.isPending || leaveEventMutation.isPending)
-                                    ? '...' 
-                                    : (isJoined ? 'Joined' : 'Join')
-                                }
-                            </ButtonText>
+                            <HStack alignItems="center" space="xs">
+                                {!isJoined && <UserPlusIcon width={16} height={16} color="#000000" />}
+                                <ButtonText
+                                    color="#000000"
+                                    fontSize={14}
+                                    fontWeight="$bold"
+                                    textAlign="center"
+                                >
+                                    {(joinEventMutation.isPending || leaveEventMutation.isPending)
+                                        ? '...' 
+                                        : (isJoined ? 'Joined' : 'Join')
+                                    }
+                                </ButtonText>
+                            </HStack>
                         </Button>
                     </HStack>
 
                     {/* Event Description */}
                     <Text
                         color={isDark ? '#FFFFFF' : '#343434'}
-                        fontSize={10}
-                        lineHeight={12}
+                        fontSize={12}
+                        lineHeight={16}
                         mb="$3"
                     >
                         {event.description}

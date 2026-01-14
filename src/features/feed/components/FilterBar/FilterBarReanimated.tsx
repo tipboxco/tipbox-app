@@ -658,6 +658,27 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
       >
         {(openFilterId || lastOpenFilterId) && renderFilterPanel()}
       </Animated.View>
+
+      {/* Overlay - Boşluğa tıklanınca paneli kapat */}
+      {(openFilterId || lastOpenFilterId) && (
+        <Pressable
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          zIndex={999}
+          onPress={() => {
+            // Panel kapatma işlemi
+            setOpenFilterId(null);
+            openFilterIdShared.value = null;
+            progress.value = withSpring(0, SPRING_CONFIG);
+          }}
+          style={{
+            backgroundColor: 'transparent',
+          }}
+        />
+      )}
     </Box>
   );
 };

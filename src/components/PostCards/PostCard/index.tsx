@@ -238,7 +238,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             <Pressable onPress={handleAvatarPress}>
               <Image
                 source={avatarSource}
-                alt={data.user.name}
+                alt={data.user?.name || 'User'}
                 mr={8}
                 width={42}
                 height={42}
@@ -253,7 +253,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 fontSize="$sm"
                 fontWeight="$bold"
               >
-                {data.user.name}
+                {data.user?.name || 'Unknown User'}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#787878'}
@@ -261,7 +261,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 numberOfLines={1}
                 maxWidth={250}
               >
-                {data.user.title}
+                {data.user?.title || ''}
               </Text>
             </VStack>
           </Pressable>

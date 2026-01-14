@@ -199,11 +199,11 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
-          {toImageSource(data.user.avatar) && (
+          {data.user && toImageSource(data.user.avatar) && (
             <Pressable onPress={handleViewProfile}>
               <Image
                 source={toImageSource(data.user.avatar)!}
-                alt={data.user.name}
+                alt={data.user?.name || 'User'}
                 mr={8}
                 width={48}
                 height={48}
@@ -218,14 +218,14 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                 fontSize={8}
                 fontWeight="$semibold"
               >
-                {data.user.action}
+                {data.user?.action || ''}
               </Text>
               <Text
                 color={isDark ? '$textDark50' : '#000'}
                 fontSize='$xs'
                 fontWeight="$bold"
               >
-                {data.user.name}
+                {data.user?.name || 'Unknown User'}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#787878'}
@@ -233,7 +233,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
                 numberOfLines={1}
                 maxWidth={250}
               >
-                {data.user.title}
+                {data.user?.title || ''}
               </Text>
             </VStack>
           </Pressable>

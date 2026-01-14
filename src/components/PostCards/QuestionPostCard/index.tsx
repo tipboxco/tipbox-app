@@ -183,11 +183,11 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
-          {toImageSource(data.user.avatar) && (
+          {data.user && toImageSource(data.user.avatar) && (
             <Pressable onPress={handleViewProfile}>
               <Image
                 source={toImageSource(data.user.avatar)!}
-                alt={data.user.name}
+                alt={data.user?.name || 'User'}
                 mr={8}
                 width={42}
                 height={42}
@@ -202,7 +202,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                 fontSize="$sm"
                 fontWeight="$bold"
               >
-                {data.user.name}
+                {data.user?.name || 'Unknown User'}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#787878'}
@@ -210,7 +210,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                 numberOfLines={1}
                 maxWidth={250}
               >
-                {data.user.title}
+                {data.user?.title || ''}
               </Text>
             </VStack>
           </Pressable>

@@ -17,9 +17,10 @@ interface InventoryCardProps {
   onPress?: () => void;
   onUpdateExperience?: (item: InventoryItem) => void;
   onDeleteProduct?: (item: InventoryItem) => void;
+  isOwnProfile?: boolean;
 }
 
-export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDeleteProduct }: InventoryCardProps) => {
+export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDeleteProduct, isOwnProfile = false }: InventoryCardProps) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   
@@ -114,45 +115,86 @@ export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDele
     onDeleteProduct?.(item);
   }, [item, onDeleteProduct]);
 
-  // Context menu open ref
-  const contextMenuOpenRef = useRef<(() => void) | null>(null);
-
   return (
     <Box
       position="relative"
       w={width}
       mb={10}
     >
-      <ContextMenuReanimated
-        menuItems={[
-          {
-            label: 'Update Experience',
-            icon: <PencilIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-            onPress: handleUpdateExperience,
-          },
-          {
-            label: 'Delete Product',
-            icon: <TrashIcon width={20} height={20} color="#FF3040" />,
-            onPress: handleDeleteProduct,
-            color: '#FF3040',
-          },
-        ]}
-        onMenuStateChange={setIsContextMenuOpen}
-        onCloseRef={(closeFn) => {
-          contextMenuCloseRef.current = closeFn;
-        }}
-        onOpenRef={(openFn) => {
-          contextMenuOpenRef.current = openFn;
-        }}
-      >
+      {isOwnProfile ? (
+        <ContextMenuReanimated
+          menuItems={[
+            {
+              label: 'Update Experience',
+              icon: <PencilIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+              onPress: handleUpdateExperience,
+            },
+            {
+              label: 'Delete Product',
+              icon: <TrashIcon width={20} height={20} color="#FF3040" />,
+              onPress: handleDeleteProduct,
+              color: '#FF3040',
+            },
+          ]}
+          onMenuStateChange={setIsContextMenuOpen}
+          onCloseRef={(closeFn) => {
+            contextMenuCloseRef.current = closeFn;
+          }}
+          enableLongPress={true}
+          longPressDelay={2000}
+        >
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={onPress}
+          >
+          <Box
+            bg={isDark ? '$backgroundDark800' : '$white'}
+            borderWidth={1}
+            borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
+            borderRadius={5}
+            w={width}
+            h={175}
+            overflow="hidden"
+          >
+            <Box
+              flex={1}
+              p={15}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <CachedImage
+                source={imageSource}
+                placeholder={DEFAULT_POST_IMAGE}
+                style={{
+                  width: 100,
+                  height: 100,
+                }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                priority="normal"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            </Box>
+            <VStack p={8} space="xs">
+              <Text
+                color={isDark ? '$textDark400' : '#A3A3A3'}
+                fontSize={11}
+                fontWeight="$bold"
+                numberOfLines={3}
+              >
+                {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
+                  .filter(Boolean)
+                  .join(' ')}
+              </Text>
+            </VStack>
+          </Box>
+        </TouchableOpacity>
+        </ContextMenuReanimated>
+      ) : (
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={onPress}
-          delayLongPress={2000}
-          onLongPress={() => {
-            // Long press'te context menu'yu aç
-            contextMenuOpenRef.current?.();
-          }}
         >
           <Box
             bg={isDark ? '$backgroundDark800' : '$white'}
@@ -197,10 +239,10 @@ export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDele
             </VStack>
           </Box>
         </TouchableOpacity>
-      </ContextMenuReanimated>
+      )}
 
       {/* Overlay - menu açıkken card'a tıklamayı engellemek için */}
-      {isContextMenuOpen && (
+      {isContextMenuOpen && isOwnProfile && (
         <RNPressable
           style={{
             position: 'absolute',

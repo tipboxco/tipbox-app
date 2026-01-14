@@ -1164,7 +1164,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Banner */}
         <Box 
-          h={140} 
+          h={180} 
           overflow="hidden" 
           position="relative"
         >
@@ -1268,14 +1268,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         </Box>
 
         {/* Profile Image and Action Buttons Row */}
-        <Box px={15} mt={-20}>
+        <Box px={15} mt={-45}>
           <HStack alignItems="flex-start" justifyContent="space-between" space="md">
             {/* Profile Image */}
             <Box 
               borderRadius={100}
               overflow="hidden"
-              w={68}
-              h={68}
+              w={90}
+              h={90}
               borderWidth={2}
               borderColor="$white"
               flexShrink={0}
@@ -1289,7 +1289,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             </Box>
 
             {/* Action Buttons */}
-            <HStack space="sm" alignItems="center" flexShrink={0} mt={32}>
+            <HStack space="sm" alignItems="center" flexShrink={0} mt={60}>
               {isOwnProfile ? (
                 <Pressable
                   bg="#F7F7F7"
@@ -1418,7 +1418,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         <Box px={15} mt={10}>
           <Text
             color={isDark ? '$textDark50' : '$textLight900'}
-            fontSize="$md"
+            fontSize={18}
             fontWeight="$bold"
           >
             {profile.name}
@@ -1427,8 +1427,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           {profile.biography && (
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
-              fontSize="$xs"
-              lineHeight={15}
+              fontSize="$sm"
+              lineHeight={18}
               mt={2}
             >
               {profile.biography}

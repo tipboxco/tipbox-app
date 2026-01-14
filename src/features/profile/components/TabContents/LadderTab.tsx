@@ -403,9 +403,9 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
               justifyContent: 'space-between',
               gap: COLUMN_GAP,
             }}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
-            scrollEnabled={false}
+            scrollEnabled={true}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
             ListFooterComponent={
