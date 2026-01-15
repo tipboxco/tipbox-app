@@ -37,9 +37,11 @@ interface ProductCatalogScreenProps {
     breadcrumbItems: BreadcrumbItem[];
   }) => void;
   scrollViewPaddingBottom?: number;
+  selectMode?: 'event';
+  returnScreen?: string;
 }
 
-export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCreatePost, onStateChange, scrollViewPaddingBottom = 52 }) => {
+export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCreatePost, onStateChange, scrollViewPaddingBottom = 52, selectMode, returnScreen }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ProductCatalogScreenNavigationProp>();
@@ -392,6 +394,23 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     setSelectedProductLocal(product);
     // Store'a product ID'yi kaydet
     setSelectedProduct(product.id);
+    
+    // If selectMode is 'event', navigate back to EventCreatePost with product
+    if (selectMode === 'event' && returnScreen === 'EventCreatePost') {
+      // Navigate to EventCreatePost with selected product
+      navigationService.navigate(ROOT_ROUTES.EVENT, {
+        screen: 'EventCreatePost',
+        params: {
+          selectedProduct: {
+            id: product.id,
+            name: product.name,
+            image: product.image,
+            description: product.description || '',
+          },
+        },
+      });
+      return;
+    }
     
     // Save to flow store for CreatePostScreen
     setFlowContext(ProductInfoType.PRODUCT, product.id, {

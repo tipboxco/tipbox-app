@@ -128,43 +128,9 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
         }
       }
 
-      // Log request details for /messages/tips endpoint
-      if (config.url?.includes('/messages/tips')) {
-        console.log('[ApiInterceptor] 📤 Request Interceptor - /messages/tips:', {
-          url: config.url,
-          method: config.method,
-          baseURL: config.baseURL,
-          fullURL: `${config.baseURL}${config.url}`,
-          data: config.data,
-          headers: {
-            'Content-Type': config.headers['Content-Type'],
-            'Authorization': config.headers.Authorization ? 'Bearer ***' : undefined,
-          },
-        });
-      }
-
-      // Log request details for /catalog endpoint
-      if (config.url?.includes('/catalog')) {
-        console.log('[ApiInterceptor] 📤 Request - /catalog:', {
-          url: config.url,
-          method: config.method,
-          fullURL: `${config.baseURL}${config.url}`,
-        });
-      }
-
-      // Log request details for /marketplace endpoint
-      if (config.url?.includes('/marketplace')) {
-        console.log('[ApiInterceptor] 📤 Request - /marketplace:', {
-          url: config.url,
-          method: config.method,
-          fullURL: `${config.baseURL}${config.url}`,
-        });
-      }
-
       return config;
     },
     (error) => {
-      console.error('[ApiInterceptor] ❌ Request Error:', error);
       return Promise.reject(error);
     }
   );
@@ -172,36 +138,6 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
   // Response Interceptor - Token refresh
   client.interceptors.response.use(
     (response) => {
-      // Log response details for /messages/tips endpoint
-      if (response.config.url?.includes('/messages/tips')) {
-        console.log('[ApiInterceptor] ✅ Response Interceptor - /messages/tips:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: response.data,
-          headers: response.headers,
-        });
-      }
-      
-      // Log response details for /catalog endpoint
-      if (response.config.url?.includes('/catalog')) {
-        console.log('[ApiInterceptor] ✅ Response - /catalog:', {
-          url: response.config.url,
-          status: response.status,
-          dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
-          firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null,
-        });
-      }
-
-      // Log response details for /marketplace endpoint
-      if (response.config.url?.includes('/marketplace')) {
-        console.log('[ApiInterceptor] ✅ Response - /marketplace:', {
-          url: response.config.url,
-          status: response.status,
-          dataType: typeof response.data,
-          dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
-        });
-      }
-      
       return response;
     },
     async (error: AxiosError) => {

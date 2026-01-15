@@ -18,7 +18,13 @@ export type EventStackParamList = {
     eventId?: string; 
     eventType?: EventType; 
     product?: EventProduct; 
-    productSource?: 'Catalog' | 'Inventory' 
+    productSource?: 'Catalog' | 'Inventory';
+    selectedProduct?: {
+      id: string;
+      name: string;
+      image: any;
+      description?: string;
+    };
   } | undefined;
 };
 

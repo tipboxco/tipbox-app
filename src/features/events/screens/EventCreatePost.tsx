@@ -57,11 +57,12 @@ const EventCreatePost: React.FC = () => {
     // Safe area insets (tab bar yok, EventNavigator RootNavigator'ın DetailsGroup'unda)
     const insets = useSafeAreaInsets();
     
-    // Get eventId, eventType, product, and productSource from route params
+    // Get eventId, eventType, product, productSource, and selectedProduct from route params
     const eventId = route.params?.eventId;
     const eventType = route.params?.eventType;
     const eventProduct = route.params?.product;
     const routeProductSource = route.params?.productSource;
+    const selectedProductFromCatalog = route.params?.selectedProduct;
     
     // YENİ: Event post mutation hook (/events/{eventId}/posts endpoint kullanır)
     const createPostMutation = useCreateEventPostNew(eventId || '');
@@ -86,6 +87,23 @@ const EventCreatePost: React.FC = () => {
             setShowProductSelector(true);
         }
     }, [routeProductSource]);
+
+    // Handle selected product from CatalogScreen
+    useEffect(() => {
+        if (selectedProductFromCatalog) {
+            const productCategory: Category = {
+                id: selectedProductFromCatalog.id,
+                name: selectedProductFromCatalog.name,
+                image: selectedProductFromCatalog.image,
+                category: undefined,
+            };
+            setSelectedProduct(productCategory);
+            setShowProductSelector(false);
+            setProductSource(null);
+            // Clear route params to prevent re-triggering
+            navigation.setParams({ selectedProduct: undefined });
+        }
+    }, [selectedProductFromCatalog, navigation]);
 
     // handleProductSelect'i önce tanımla (handleSelectProduct'ta kullanılıyor)
     const handleProductSelect = useCallback((product: Category) => {
@@ -233,15 +251,7 @@ const EventCreatePost: React.FC = () => {
             }
 
             // Product seçimi opsiyonel (EVENT_GUIDE.MD'ye göre)
-            // Ancak mevcut UI flow'da product seçilmesi beklendiği için kontrol ekliyoruz
-            if (!selectedProduct) {
-                showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Please select a product.',
-                    action: 'error',
-                });
-                return;
-            }
+            // Product seçilmediyse productId undefined olarak gönderilir
 
             // YENİ API çağrısı - /events/{eventId}/posts endpoint'ini kullan
             // NOT: Artık /posts/free yerine /events/{eventId}/posts kullanılıyor!
@@ -294,16 +304,13 @@ const EventCreatePost: React.FC = () => {
     };
 
     // Check if share button should be enabled
-    // TYPE2 event'lerde product zaten seçili, TYPE1'de product seçilmeli
+    // Product seçimi opsiyonel (EVENT_GUIDE.MD'ye göre)
     // Her durumda title, content ve eventId gereklidir
     const hasEventId = !!eventId;
     const hasTitle = title.trim().length > 0;
     const hasContent = content.trim().length > 0;
-    // For TYPE2 events, product is auto-selected, so we don't need to check
-    // For TYPE1 or undefined events, product must be selected
-    const hasProductIfNeeded = eventType === EventType.TYPE2 ? true : selectedProduct !== null;
     
-    const isShareEnabled = hasEventId && hasTitle && hasContent && hasProductIfNeeded;
+    const isShareEnabled = hasEventId && hasTitle && hasContent;
     
     // Debug log (can be removed later)
     if (__DEV__) {
@@ -311,7 +318,6 @@ const EventCreatePost: React.FC = () => {
             hasEventId,
             hasTitle,
             hasContent,
-            hasProductIfNeeded,
             eventType,
             selectedProduct: selectedProduct ? 'selected' : 'null',
             isShareEnabled,

@@ -19,6 +19,7 @@ import Breadcrumb from '@/src/components/Breadcrumb';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { catalogData } from '@/src/mock/catalog/productCatalog';
 import { Category as CatalogCategory } from '@/src/mock/catalog/productCatalog/types';
+import { navigationService } from '@/src/services/NavigationService';
 
 type CreateEventPostBottomSheetNavigationProp = NativeStackNavigationProp<EventStackParamList>;
 
@@ -71,7 +72,11 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
 
     const handleCatalogPress = () => {
         onClose();
-        navigation.navigate('EventCreatePost', { productSource: 'Catalog' });
+        // Navigate to CatalogScreen with selectMode
+        navigationService.navigateNested('Catalog', 'CatalogScreen' as any, {
+            selectMode: 'event',
+            returnScreen: 'EventCreatePost',
+        });
     };
 
     const handleBackPress = () => {

@@ -482,6 +482,8 @@ const CatalogScreenComponent = () => {
           <ProductCatalogScreen
             onStateChange={handleProductCatalogStateChange}
             scrollViewPaddingBottom={paddingBottom}
+            selectMode={route.params?.selectMode}
+            returnScreen={route.params?.returnScreen}
           />
         );
     }

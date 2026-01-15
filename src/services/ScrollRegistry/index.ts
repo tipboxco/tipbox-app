@@ -29,12 +29,10 @@ class ScrollRegistryClass {
    */
   register(key: string, ref: ScrollableRef): void {
     if (!ref) {
-      console.warn(`[ScrollRegistry] ⚠️ Attempted to register null ref for key: ${key}`);
       return;
     }
 
     this.registry.set(key, ref);
-    console.log(`[ScrollRegistry] ✅ Registered scrollable: ${key}`);
   }
 
   /**
@@ -44,7 +42,6 @@ class ScrollRegistryClass {
   unregister(key: string): void {
     const existed = this.registry.delete(key);
     if (existed) {
-      console.log(`[ScrollRegistry] 🗑️ Unregistered scrollable: ${key}`);
     }
   }
 
@@ -57,12 +54,10 @@ class ScrollRegistryClass {
     const ref = this.registry.get(key);
 
     if (!ref) {
-      console.warn(`[ScrollRegistry] ⚠️ No scrollable registered for key: ${key}`);
       return false;
     }
 
     if (!ref.current) {
-      console.warn(`[ScrollRegistry] ⚠️ Ref is null for key: ${key}`);
       return false;
     }
 
@@ -75,7 +70,6 @@ class ScrollRegistryClass {
           // 5 deneme yap (daha fazla deneme - native view'in mount olmasını bekle)
           setTimeout(() => attemptScroll(attempt + 1), 100 * (attempt + 1));
         } else {
-          console.warn(`[ScrollRegistry] ⚠️ Ref is null after ${attempt} attempts for key: ${key}`);
         }
         return;
       }
@@ -85,7 +79,6 @@ class ScrollRegistryClass {
         
         // CRITICAL FIX: scrollEnabled kontrolü
         if (flatList.props.scrollEnabled === false) {
-          console.warn(`[ScrollRegistry] ⚠️ Scroll is disabled for key: ${key}`);
           if (attempt < 4) {
             setTimeout(() => attemptScroll(attempt + 1), 100);
             return;
@@ -99,12 +92,10 @@ class ScrollRegistryClass {
           try {
             const listRef = (flatList as any)._listRef;
             if (!listRef) {
-              console.warn(`[ScrollRegistry] ⚠️ _listRef is null for key: ${key}`);
             } else {
               const scrollRef = listRef._scrollRef;
               
               if (!scrollRef) {
-                console.warn(`[ScrollRegistry] ⚠️ _scrollRef is null for key: ${key}`);
               } else {
                 // Path 1: _scrollRef.current (if it's a ref)
                 let nativeScrollView = scrollRef.current || scrollRef;
@@ -112,14 +103,12 @@ class ScrollRegistryClass {
                 // Path 2: Try scrollTo method directly
                 if (nativeScrollView?.scrollTo) {
                   nativeScrollView.scrollTo({ y: 0, animated });
-                  console.log(`[ScrollRegistry] ✅ Scrolled to top: ${key} (Native ScrollView - PRIMARY via _scrollRef.scrollTo)`);
                   return;
                 }
                 
                 // Path 3: Try scrollToOffset (FlatList method on native view)
                 if (nativeScrollView?.scrollToOffset) {
                   nativeScrollView.scrollToOffset({ offset: 0, animated });
-                  console.log(`[ScrollRegistry] ✅ Scrolled to top: ${key} (Native ScrollView via scrollToOffset)`);
                   return;
                 }
                 
@@ -128,7 +117,6 @@ class ScrollRegistryClass {
                   const node = nativeScrollView.getNode();
                   if (node?.scrollTo) {
                     node.scrollTo({ y: 0, animated });
-                    console.log(`[ScrollRegistry] ✅ Scrolled to top: ${key} (Native ScrollView via getNode)`);
                     return;
                   }
                 }
@@ -136,50 +124,32 @@ class ScrollRegistryClass {
                 // Path 5: Try _scrollRef._component (internal structure)
                 if (scrollRef._component?.scrollTo) {
                   scrollRef._component.scrollTo({ y: 0, animated });
-                  console.log(`[ScrollRegistry] ✅ Scrolled to top: ${key} (Native ScrollView via _component)`);
                   return;
                 }
                 
-                // DEBUG: Log _scrollRef structure for further investigation
-                console.log(`[ScrollRegistry] 🔍 _scrollRef structure:`, {
-                  has_scrollRef: !!scrollRef,
-                  scrollRef_type: typeof scrollRef,
-                  scrollRef_keys: scrollRef ? Object.keys(scrollRef).slice(0, 20) : [], // First 20 keys
-                  has_current: !!(scrollRef?.current),
-                  current_type: typeof scrollRef?.current,
-                  has_scrollTo: !!(scrollRef?.scrollTo || scrollRef?.current?.scrollTo),
-                  has_scrollToOffset: !!(scrollRef?.scrollToOffset || scrollRef?.current?.scrollToOffset),
-                  has_getNode: !!(scrollRef?.getNode || scrollRef?.current?.getNode),
-                  has_component: !!(scrollRef?._component),
-                });
               }
             }
           } catch (error) {
-            console.warn(`[ScrollRegistry] ⚠️ Native ScrollView access failed:`, error);
           }
 
           // Method 2: scrollToOffset (fallback)
           try {
             flatList.scrollToOffset({ offset: 0, animated });
-            console.log(`[ScrollRegistry] ✅ Scrolled to top: ${key} (FlatList.scrollToOffset, attempt ${attempt + 1})`);
             return;
           } catch (error) {
             if (attempt < 4) {
               setTimeout(() => attemptScroll(attempt + 1), 100);
               return;
             }
-            console.warn(`[ScrollRegistry] ⚠️ scrollToOffset failed after ${attempt + 1} attempts:`, error);
           }
 
           // Method 3: scrollToIndex (last resort)
           try {
             if (flatList.props.data && flatList.props.data.length > 0) {
               flatList.scrollToIndex({ index: 0, animated, viewPosition: 0 });
-              console.log(`[ScrollRegistry] ✅ Scrolled to top: ${key} (FlatList.scrollToIndex)`);
               return;
             }
           } catch (error) {
-            console.warn(`[ScrollRegistry] ⚠️ scrollToIndex failed:`, error);
           }
         }
 
@@ -187,20 +157,17 @@ class ScrollRegistryClass {
         const scrollView = ref.current as ScrollView;
         if ('scrollTo' in scrollView) {
           scrollView.scrollTo({ y: 0, animated });
-          console.log(`[ScrollRegistry] ✅ Scrolled to top: ${key} (ScrollView)`);
           return;
         }
 
         if (attempt < 4) {
           setTimeout(() => attemptScroll(attempt + 1), 100);
         } else {
-          console.warn(`[ScrollRegistry] ⚠️ Unknown scrollable type for key: ${key}`);
         }
       } catch (error) {
         if (attempt < 4) {
           setTimeout(() => attemptScroll(attempt + 1), 100);
         } else {
-          console.error(`[ScrollRegistry] ❌ Error scrolling to top for key: ${key}:`, error);
         }
       }
     };
@@ -227,7 +194,6 @@ class ScrollRegistryClass {
    */
   clear(): void {
     this.registry.clear();
-    console.log('[ScrollRegistry] 🗑️ Registry cleared');
   }
 }
 

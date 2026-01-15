@@ -108,12 +108,6 @@ class ExpoNotificationService {
         await SecureStore.deleteItemAsync(PENDING_PUSH_TOKEN_KEY);
         await SecureStore.deleteItemAsync(PENDING_DEVICE_TYPE_KEY);
         
-        // Başarılı olduysa ve önceki hata varsa, başarı mesajı göster
-        if (firstError) {
-          console.log('[ExpoNotificationService] ✅ Push token registered to backend (after retry)');
-        } else {
-          console.log('[ExpoNotificationService] ✅ Push token registered to backend');
-        }
         return;
       } catch (error: any) {
         lastError = error;
@@ -143,13 +137,6 @@ class ExpoNotificationService {
         
         // Diğer 4xx hataları (client error) için retry yapma
         if (isClientError && status !== 429) {
-          // Sadece ilk hatada detaylı log göster
-          if (attempt === 0) {
-            console.error('[ExpoNotificationService] ❌ Client error, skipping retry:', {
-              status,
-              message: error?.response?.data?.message || error?.message,
-            });
-          }
           throw error;
         }
         
@@ -160,13 +147,6 @@ class ExpoNotificationService {
             ? initialDelay * Math.pow(2, attempt) * 2 // Server error için 2x daha uzun
             : initialDelay * Math.pow(2, attempt);
           
-          // Sadece ilk retry'da ve son retry'da log göster (log spam'ı azalt)
-          if (attempt === 0 || attempt === maxRetries - 2) {
-            console.warn(`[ExpoNotificationService] ⚠️ Retry ${attempt + 1}/${maxRetries} in ${delay}ms...`, {
-              status,
-              message: error?.response?.data?.message || error?.message,
-            });
-          }
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -176,23 +156,8 @@ class ExpoNotificationService {
     try {
       await SecureStore.setItemAsync(PENDING_PUSH_TOKEN_KEY, token);
       await SecureStore.setItemAsync(PENDING_DEVICE_TYPE_KEY, deviceType);
-      // Sadece bir kez log göster (log spam'ı azalt)
-      console.warn('[ExpoNotificationService] ⚠️ All retries failed, token saved for later retry', {
-        status: lastError?.response?.status,
-        message: lastError?.response?.data?.message || lastError?.message,
-      });
     } catch (storeError) {
-      console.error('[ExpoNotificationService] ❌ Failed to save pending token:', storeError);
-    }
-    
-    // Hata fırlatma - uygulama çalışmaya devam etsin (push notification kritik değil)
-    // Sadece bir kez log göster
-    if (firstError === lastError) {
-      // İlk ve son hata aynıysa sadece bir kez log göster
-      console.error('[ExpoNotificationService] ❌ Failed to register push token after all retries:', {
-        status: lastError?.response?.status,
-        message: lastError?.response?.data?.message || lastError?.message,
-      });
+      // Error handled silently
     }
   }
 
@@ -206,11 +171,9 @@ class ExpoNotificationService {
       const pendingDeviceType = await SecureStore.getItemAsync(PENDING_DEVICE_TYPE_KEY) as 'ios' | 'android' | null;
       
       if (pendingToken && pendingDeviceType) {
-        console.log('[ExpoNotificationService] 🔄 Retrying pending push token registration...');
         await this.registerPushTokenWithRetry(pendingToken, pendingDeviceType);
       }
     } catch (error) {
-      console.error('[ExpoNotificationService] ❌ Error retrying pending push token:', error);
     }
   }
 
@@ -264,7 +227,6 @@ class ExpoNotificationService {
 
       return token.data;
     } catch (error) {
-      console.error('[ExpoNotificationService] Error getting push token:', error);
       return null;
     }
   }
@@ -346,14 +308,11 @@ class ExpoNotificationService {
     try {
       if (Platform.OS === 'ios') {
         await Notifications.setBadgeCountAsync(count);
-        console.log('[ExpoNotificationService] ✅ Badge count updated:', count);
       } else {
         // Android'de badge count native olarak desteklenmez
         // Ancak notification channel'ları üzerinden gösterilebilir
-        console.log('[ExpoNotificationService] ℹ️ Badge count (Android):', count);
       }
     } catch (error) {
-      console.error('[ExpoNotificationService] ❌ Error setting badge count:', error);
     }
   }
 
@@ -374,7 +333,6 @@ class ExpoNotificationService {
       }
       return 0; // Android'de 0 döndür
     } catch (error) {
-      console.error('[ExpoNotificationService] ❌ Error getting badge count:', error);
       return 0;
     }
   }
@@ -387,7 +345,6 @@ class ExpoNotificationService {
   async refreshPushToken(): Promise<string | null> {
     try {
       if (this.state.permissionStatus !== 'granted') {
-        console.log('[ExpoNotificationService] ⚠️ Permission not granted, cannot refresh token');
         return null;
       }
 
@@ -405,14 +362,12 @@ class ExpoNotificationService {
       // Token değiştiyse state'i güncelle
       // Backend'e kaydetme işlemi registerPushTokenToBackend() ile yapılmalı (authenticated kontrolü ile)
       if (token.data !== this.state.expoPushToken) {
-        console.log('[ExpoNotificationService] 🔄 Token changed');
         this.state.expoPushToken = token.data;
         // Token kaydı authenticated olduğunda yapılacak (registerPushTokenToBackend çağrılacak)
       }
 
       return token.data;
     } catch (error) {
-      console.error('[ExpoNotificationService] ❌ Error refreshing push token:', error);
       return null;
     }
   }

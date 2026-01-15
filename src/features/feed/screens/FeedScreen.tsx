@@ -138,15 +138,6 @@ const FeedScreenInner = React.memo(() => {
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
 
-  // Log filter changes (especially for interests)
-  useEffect(() => {
-    if (filters.interests && Array.isArray(filters.interests) && filters.interests.length > 0) {
-      console.log('[FeedScreen] 🔍 Interests filter changed:', {
-        interests: filters.interests,
-        allFilters: filters,
-      });
-    }
-  }, [filters.interests]);
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
@@ -237,7 +228,6 @@ const FeedScreenInner = React.memo(() => {
       if (lastItem?.data?.id) {
         const postId = String(lastItem.data.id);
         setLastSeenPostId(postId);
-        console.log('[FeedScreen] 🔄 Auto-updated lastSeenPostId:', postId, 'Total items:', feedItems.length);
       }
     }
   }, [feedItems.length]); // Sadece item sayısı değiştiğinde çalış (performans için)
@@ -833,13 +823,7 @@ const FeedScreenInner = React.memo(() => {
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
-      console.log('[FeedScreen] 📥 Loading more... Current items count:', feedItems.length);
       fetchNextPage();
-    } else {
-      console.log('[FeedScreen] 🚫 Load more skipped:', {
-        hasNextPage,
-        isFetchingNextPage,
-      });
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, feedItems.length]);
 
@@ -855,43 +839,23 @@ const FeedScreenInner = React.memo(() => {
 
   // FEATURE: Pull-to-refresh handler - ESKİ listeyi temizleyip, son görülen ID'den başlayan YENİ bir liste başlat
   const handleRefresh = useCallback(async () => {
-    console.log('[FeedScreen] 🔄 Pull-to-refresh triggered!');
-    console.log('[FeedScreen] 📊 Current state:', {
-      lastSeenPostId,
-      feedItemsCount: feedItems.length,
-      hasNextPage,
-      isFetchingNextPage,
-    });
-    
     if (!lastSeenPostId) {
-      console.log('[FeedScreen] ⚠️ No lastSeenPostId, doing normal refetch');
       // İlk yüklemede normal refetch yap
       await refetch();
       return;
     }
     
     try {
-      console.log('[FeedScreen] ✅ Fetching next items with cursor:', lastSeenPostId);
-      
       // Son görülen post ID'sini cursor olarak kullanarak sonraki sayfayı getir
       let newData;
       if (hasActiveFilters) {
-        console.log('[FeedScreen] 📊 Using filtered feed API with filters:', filters);
         newData = await getFilteredFeed(lastSeenPostId, 10, filters);
       } else {
-        console.log('[FeedScreen] 📊 Using normal feed API');
         newData = await getFeed(lastSeenPostId, 10);
       }
       
-      console.log('[FeedScreen] ✅ New data received:', {
-        newItemsCount: newData.items.length,
-        hasMore: newData.pagination.hasMore,
-      });
-      
       if (newData.items.length > 0) {
         // ESKİ query cache'ini tamamen temizle ve YENİ veriyi set et
-        console.log('[FeedScreen] 🗑️ Resetting query cache and setting new data...');
-        
         const queryKey = hasActiveFilters 
           ? ['feed', 'filtered', undefined, 10, filters]
           : ['feed', undefined, 10, undefined, undefined];
@@ -906,25 +870,15 @@ const FeedScreenInner = React.memo(() => {
         const lastItem = newData.items[newData.items.length - 1];
         if (lastItem?.data?.id) {
           const newLastSeenPostId = String(lastItem.data.id);
-          console.log('[FeedScreen] 🆔 Updating lastSeenPostId:', {
-            old: lastSeenPostId,
-            new: newLastSeenPostId,
-          });
           setLastSeenPostId(newLastSeenPostId);
         }
         
         // Scroll'u en üste götür
         if (feedListRef?.current) {
-          console.log('[FeedScreen] ⬆️ Scrolling to top...');
           feedListRef.current.scrollToOffset({ offset: 0, animated: true });
         }
-        
-        console.log('[FeedScreen] ✅ Pull-to-refresh completed! Feed replaced with new items.');
-      } else {
-        console.log('[FeedScreen] ℹ️ No new items available.');
       }
     } catch (error) {
-      console.error('[FeedScreen] ❌ Pull-to-refresh error:', error);
       // Hata durumunda normal refetch yap
       await refetch();
     }
@@ -947,12 +901,10 @@ const FeedScreenInner = React.memo(() => {
 
   // FEATURE: Handle scrollToIndex failures - fallback to scrollToOffset
   const handleScrollToIndexFailed = useCallback((info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
-    console.warn('[FeedScreen] ⚠️ scrollToIndex failed:', info);
     // Fallback: Use scrollToOffset
     if (feedListRef?.current) {
       setTimeout(() => {
         feedListRef.current?.scrollToOffset({ offset: 0, animated: true });
-        console.log('[FeedScreen] ✅ Fallback scrollToOffset executed');
       }, 100);
     }
   }, [feedListRef]);

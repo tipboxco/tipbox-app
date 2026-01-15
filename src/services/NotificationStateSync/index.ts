@@ -27,7 +27,6 @@ class NotificationStateSync {
       this.syncRealtimeNotifications();
     }, 5000);
 
-    console.log('[NotificationStateSync] ✅ State sync initialized');
   }
 
   /**
@@ -225,7 +224,6 @@ class NotificationStateSync {
     }
     
     this.queryClient = null;
-    console.log('[NotificationStateSync] 🧹 State sync cleaned up');
   }
 }
 

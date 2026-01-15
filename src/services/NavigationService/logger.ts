@@ -6,26 +6,19 @@
  */
 export const navigationLogger = {
   debug: (...args: any[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[NavigationService]', ...args);
-    }
+    // Logs disabled
   },
   
   warn: (...args: any[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[NavigationService] ⚠️', ...args);
-    }
+    // Logs disabled
   },
   
   error: (...args: any[]) => {
-    // Error'lar her zaman loglanır (production'da da)
-    console.error('[NavigationService] ❌', ...args);
+    // Logs disabled
   },
   
   log: (...args: any[]) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[NavigationService] ✅', ...args);
-    }
+    // Logs disabled
   },
 };
 

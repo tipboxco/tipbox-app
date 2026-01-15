@@ -18,7 +18,7 @@ import type { InventoryItem } from '../types';
 import InventoryCard from '../components/InventoryCard';
 import { CreatePostBottomSheet } from '@/src/components/CreatePostBottomSheet';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
-import { useInventory, useDeleteInventoryItem } from '../api/hooks';
+import { useInventory, useDeleteInventoryItem, useUserProfile } from '../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { InventorySkeleton } from '@/src/components/Skeletons';
 import { Alert } from 'react-native';
@@ -56,6 +56,9 @@ const InventoryScreen = () => {
   
   // Create Button'u sadece kendi envanteri ise göster
   const showCreateButton = currentUserId === userId;
+
+  // Get user profile to display name in header
+  const { data: userProfile } = useUserProfile(userId);
 
   // API'den envanter ürünlerini getir (pagination ile)
   const LIMIT = 20;
@@ -187,7 +190,7 @@ const InventoryScreen = () => {
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
-        title="Inventory"
+        title={userProfile?.name ? `${userProfile.name}'s Inventory` : 'Inventory'}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />

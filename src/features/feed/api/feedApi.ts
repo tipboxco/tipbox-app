@@ -245,39 +245,9 @@ export const getFilteredFeed = async (
         limit: limit,
       },
     };
-        itemsCount: safeResponse.items.length,
-        pagination: safeResponse.pagination,
-        items: Array.isArray(safeResponse.items) 
-          ? safeResponse.items.map((item) => {
-              const content = 'content' in (item?.data || {}) 
-                ? (typeof item.data.content === 'string' 
-                    ? item.data.content.substring(0, 50) 
-                    : 'N/A')
-                : 'N/A';
-              return {
-                type: item?.type || 'unknown',
-                id: item?.data?.id || 'unknown',
-                contentPreview: content,
-              };
-            })
-          : [],
-      },
-      fullResponse: safeResponse,
-    });
     
     return safeResponse;
   } catch (error: any) {
-    console.error('[getFilteredFeed] ❌ API Error:', {
-      url: fullUrl,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      config: {
-        baseURL: error.config?.baseURL,
-        headers: error.config?.headers,
-      },
-    });
     throw error;
   }
 };
