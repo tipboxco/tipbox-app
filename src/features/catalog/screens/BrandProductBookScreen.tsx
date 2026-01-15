@@ -82,7 +82,11 @@ const BrandProductBookScreen: React.FC = () => {
         
         return (
         <Pressable
-            onPress={() => navigation.navigate('BrandProductDetailScreen', { productId: cardData.id })}
+            onPress={() => navigation.navigate('BrandProductDetailScreen', { 
+                productId: cardData.id,
+                productName: cardData.name,
+                productImage: cardData.image,
+            })}
         >
             <Box
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}

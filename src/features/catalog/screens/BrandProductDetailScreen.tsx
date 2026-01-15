@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator } from 'react-native';
-import { ScrollView, VStack, Text, Button, ButtonText, Pressable } from '@gluestack-ui/themed';
+import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { VStack, Text, Box, Pressable, HStack } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,439 +9,824 @@ import type { RouteProp } from '@react-navigation/native';
 import type { CatalogStackParamList } from '../navigation';
 import { Header } from '@/src/components/Header';
 import BrandProductInfoCard from '../components/BrandProductInfoCard';
-import FilterTabs from '../components/FilterTabs';
 import { ExperiencePostCard } from '@/src/components/PostCards/ExperiencePostCard';
 import NewsCard from '../components/NewsCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
-import { useSafeAreaValues, toImageSource } from '@/src/utils';
-import { useProductDetail, useProductPosts, useProductNews } from '../api/hooks';
+import PostCard from '@/src/components/PostCards/PostCard';
+import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
+import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
+import { useSafeAreaValues, toImageSource, useBottomOffset } from '@/src/utils';
+import { useProductDetail, useProductPosts, useProductNews, useCatalogProductPosts } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { BenchmarkCardData } from '@/src/types/BenchmarkCard';
+import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
+import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
+import type { PostCardData } from '@/src/types/PostCard';
+import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
+import type { ProfilePost } from '@/src/features/profile/types';
+import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
+import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
+import type { QuestionApiItem } from '@/src/types/QuestionCard';
+import { CardType } from '@/src/types/common';
+import PagerView from 'react-native-pager-view';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolateColor,
+  withTiming,
+  useAnimatedScrollHandler,
+} from 'react-native-reanimated';
+
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
+
+const TABS = [
+  { key: 'feed', title: 'Feed' },
+  { key: 'reviews', title: 'Reviews' },
+  { key: 'benchmarks', title: 'Benchmarks' },
+  { key: 'tips', title: 'Tips & Tricks' },
+  { key: 'questions', title: 'Questions' },
+  { key: 'news', title: 'News' },
+] as const;
+
+type TabKey = typeof TABS[number]['key'];
 
 type BrandProductDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
 type BrandProductDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
+
+// Mapping functions
+const mapPostToCardData = (post: ProfilePost): PostCardData | null => {
+  if (!post?.id || !post?.user?.id) {
+    return null;
+  }
+  
+  const contextImage = post?.contextData?.image
+    ? toImageSource(post.contextData.image)
+    : undefined;
+
+  const contentString = Array.isArray(post?.content)
+    ? post.content.map((item) => item?.content || '').join(' ')
+    : (post?.content || '');
+
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const avatarSource = toImageSource(post.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
+
+  const mappedImages = post.images
+    ?.map((img) => toImageSource(img))
+    .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+  return {
+    id: post.id,
+    user: {
+      id: post.user.id,
+      name: post.user.name || '',
+      title: post.user.title || '',
+      avatar: avatarSource,
+    },
+    content: contentString,
+    images,
+    stats: {
+      likes: post.stats.likes,
+      comments: post.stats.comments || 0,
+      shares: post.stats.shares,
+      bookmarks: post.stats.bookmarks,
+    },
+    createdAt: post.createdAt,
+    contextType: post?.contextType,
+    contextData: post?.contextData
+      ? {
+          id: post.contextData.id,
+          name: post.contextData.name || '',
+          subName: post.contextData.subName || '',
+          image: contextImage || post.contextData?.image || require('@/assets/defaultImages/default-post.png'),
+          isOwned: post.contextData.isOwned,
+        }
+      : undefined,
+  };
+};
+
+const mapExperienceToCardData = (item: BrandFeedPost): ReviewCardData | null => {
+  if (item.type !== 'experience') {
+    return null;
+  }
+  
+  const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
+  const avatarSource = toImageSource(postData.user.avatar)!;
+  const productImage = postData.contextData?.image
+    ? toImageSource(postData.contextData.image)
+    : undefined;
+
+  const content: ReviewCardContentItem[] = Array.isArray(postData.content) 
+    ? postData.content.map((contentItem) => {
+        const ratingValue = contentItem.rating || 0;
+        const stars = Math.floor(ratingValue / 20);
+        
+        return {
+          tag: {
+            icon: 'tag' as const,
+            title: contentItem.title || '',
+          },
+          text: contentItem.content || '',
+          rating: Array(5)
+            .fill(false)
+            .map((_, index) => index < stars),
+        };
+      })
+    : [];
+
+  return {
+    id: postData.id,
+    user: {
+      id: postData.user.id,
+      name: postData.user.name,
+      title: postData.user.title,
+      avatar: avatarSource,
+      action: 'wrote a review',
+    },
+    contextData: {
+      id: postData.contextData?.id || '',
+      name: postData.contextData?.name || '',
+      subName: postData.contextData?.subName || '',
+      image: productImage,
+      isOwned: postData.contextData?.isOwned,
+    },
+    content,
+    tags: postData.tags || [],
+    images: postData.images
+      ?.map((img: string) => toImageSource(img))
+      .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+    stats: postData.stats,
+    createdAt: postData.createdAt,
+  };
+};
+
+const mapBenchmarkToCardData = (item: BrandFeedPost): BenchmarkCardData | null => {
+  if (item.type !== 'benchmark') {
+    return null;
+  }
+  
+  const postData = item.data as BenchmarkApiItem;
+  const avatarSource = toImageSource(postData.user.avatar)!;
+
+  const products: import('@/src/types/BenchmarkCard').BenchmarkProduct[] = (postData.products || []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    subName: p.subName,
+    image: toImageSource(p.image)!,
+    isOwned: p.isOwned,
+    choice: p.choice,
+  }));
+
+  return {
+    id: postData.id,
+    user: {
+      id: postData.user.id,
+      name: postData.user.name,
+      title: postData.user.title,
+      avatar: avatarSource,
+    },
+    products,
+    content: postData.content || '',
+    stats: postData.stats,
+    createdAt: postData.createdAt,
+  };
+};
+
+const mapTipsToCardData = (item: FeedApiItem | BrandFeedPost): TipsCardData | null => {
+  // FeedApiItem veya BrandFeedPost formatı kontrolü
+  if (!('type' in item) || item.type !== 'tipsAndTricks') {
+    return null;
+  }
+  
+  const postData = 'data' in item ? (item.data as TipsApiItem) : ((item as any).data as TipsApiItem);
+  if (!postData?.contextData?.id) {
+    return null;
+  }
+  
+  const avatarSource = toImageSource(postData?.user?.avatar)!;
+  const contextImage = toImageSource(postData.contextData?.image) || require('@/assets/inventory/product_01.png');
+  const product: TipsProduct = {
+    id: postData.contextData.id,
+    name: postData.contextData.name || '',
+    subName: postData.contextData.subName || '',
+    image: contextImage,
+  };
+  const category: TipsCategory = {
+    id: postData.contextData.id,
+    name: postData.contextData.name || '',
+    subCategory: postData.contextData.subName || '',
+    image: contextImage,
+    product,
+  };
+
+  return {
+    id: postData.id,
+    user: {
+      id: postData.user.id,
+      name: postData.user.name,
+      title: postData.user.title,
+      avatar: avatarSource,
+    },
+    category,
+    content: postData.content,
+    images: postData.images
+      ?.map((img) => toImageSource(img))
+      .filter((imgSource): imgSource is NonNullable<typeof imgSource> => !!imgSource),
+    stats: postData.stats,
+    tag: postData.tag,
+    createdAt: postData.createdAt,
+  };
+};
+
+const mapQuestionToCardData = (item: FeedApiItem | BrandFeedPost): QuestionCardData | null => {
+  // FeedApiItem veya BrandFeedPost formatı kontrolü
+  if (!('type' in item) || item.type !== 'question') {
+    return null;
+  }
+  
+  const postData = 'data' in item ? (item.data as QuestionApiItem) : ((item as any).data as QuestionApiItem);
+  if (!postData?.contextData?.id) {
+    return null;
+  }
+  
+  const avatarSource = toImageSource(postData?.user?.avatar)!;
+  const contextImage = toImageSource(postData.contextData?.image) || require('@/assets/inventory/product_01.png');
+  const product: QuestionCardProduct = {
+    id: postData.contextData.id,
+    name: postData.contextData.name || '',
+    subName: postData.contextData.subName || '',
+    image: contextImage,
+  };
+  const category: QuestionCardCategory = {
+    id: postData.contextData.id,
+    name: postData.contextData.name || '',
+    subCategory: postData.contextData.subName || '',
+    image: contextImage,
+    product,
+  };
+
+  const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+  const mappedImages = postData.images
+    ?.map((img: string) => toImageSource(img))
+    .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+
+  return {
+    id: postData.id,
+    user: {
+      id: postData.user.id,
+      name: postData.user.name,
+      title: postData.user.title,
+      avatar: avatarSource,
+    },
+    category,
+    content: postData.content,
+    isBoosted: postData.isBoosted,
+    images,
+    stats: postData.stats,
+    createdAt: postData.createdAt,
+  };
+};
+
+type MappedPost = 
+  | { type: 'post'; id: string; data: PostCardData }
+  | { type: 'experience'; id: string; data: ReviewCardData }
+  | { type: 'benchmark'; id: string; data: BenchmarkCardData }
+  | { type: 'tips'; id: string; data: TipsCardData }
+  | { type: 'question'; id: string; data: QuestionCardData };
+
+interface TabPageProps {
+  tabKey: TabKey;
+  productId: string;
+  isDark: boolean;
+  bottomPadding: number;
+}
+
+interface TabsBarProps {
+  activeTab: TabKey;
+  onChangeTab: (tab: TabKey) => void;
+  isDark: boolean;
+  progress: ReturnType<typeof useSharedValue<number>>;
+  tabContainerRef: React.RefObject<any>;
+  onTabContainerLayout: (width: number) => void;
+}
+
+const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
+  const activeColor = isDark ? '#FFFFFF' : '#000000';
+  const inactiveColor = '#A3A3A3';
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  const [tabWidths, setTabWidths] = useState<number[]>([]);
+  const [tabPositions, setTabPositions] = useState<number[]>([]);
+  const tabRefs = useRef<{ [key: string]: any }>({});
+  const scrollViewOffset = useSharedValue(0);
+  
+  const handleScrollViewScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollViewOffset.value = event.contentOffset.x;
+    },
+  });
+  
+  const getTabWidth = useCallback((index: number) => {
+    if (tabWidths[index]) {
+      return tabWidths[index];
+    }
+    return 80;
+  }, [tabWidths]);
+  
+  const activeTabIndex = TABS.findIndex(tab => tab.key === activeTab);
+  const activeTabWidth = activeTabIndex >= 0 ? getTabWidth(activeTabIndex) : 80;
+  
+  const tabStyles = TABS.map((_, index) => {
+    return useAnimatedStyle(() => {
+      const color = interpolateColor(
+        progress.value,
+        [index - 0.5, index, index + 0.5],
+        [inactiveColor, activeColor, inactiveColor]
+      );
+      return { color };
+    }, [isDark]);
+  });
+
+  const getTabStyle = (index: number) => {
+    return tabStyles[index] || tabStyles[0];
+  };
+
+  const tabWidthsShared = useSharedValue<number[]>([]);
+  const tabPositionsShared = useSharedValue<number[]>([]);
+  
+  useEffect(() => {
+    if (tabWidths.length === TABS.length) {
+      tabWidthsShared.value = tabWidths;
+    }
+  }, [tabWidths]);
+  
+  useEffect(() => {
+    if (tabPositions.length === TABS.length) {
+      tabPositionsShared.value = tabPositions;
+    }
+  }, [tabPositions]);
+  
+  const indicatorStyle = useAnimatedStyle(() => {
+    'worklet';
+    const currentIndex = Math.floor(progress.value);
+    const nextIndex = Math.min(Math.ceil(progress.value), TABS.length - 1);
+    const offset = progress.value - currentIndex;
+    
+    const widths = tabWidthsShared.value;
+    const positions = tabPositionsShared.value;
+    
+    if (widths.length === 0 || positions.length === 0) {
+      return { transform: [{ translateX: 0 }], width: 0 };
+    }
+    
+    const currentWidth = widths[currentIndex] || 80;
+    const nextWidth = widths[nextIndex] || currentWidth;
+    const currentPosition = positions[currentIndex] || 0;
+    const nextPosition = positions[nextIndex] || currentPosition;
+    
+    const baseTranslateX = currentPosition + (nextPosition - currentPosition) * offset;
+    const baseWidth = currentWidth + (nextWidth - currentWidth) * offset;
+    const indicatorWidthAnimated = baseWidth * 0.8;
+    
+    const translateX = baseTranslateX + (baseWidth - indicatorWidthAnimated) / 2 - scrollViewOffset.value;
+    
+    return {
+      transform: [{ translateX }],
+      width: indicatorWidthAnimated,
+    };
+  });
+
+  return (
+    <Box
+      mb={16}
+      bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      borderBottomWidth={StyleSheet.hairlineWidth}
+      borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+      position="relative"
+    >
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ 
+          paddingHorizontal: 16,
+        }}
+        scrollEventThrottle={16}
+        onScroll={handleScrollViewScroll}
+        scrollEnabled={true}
+        bounces={false}
+      >
+        <HStack
+          ref={tabContainerRef}
+          borderBottomWidth={1}
+          borderColor="#E9E9E9"
+          p={0}
+          mb="$2"
+          position="relative"
+          space="md"
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            onTabContainerLayout(width);
+          }}
+        >
+          {TABS.map((tab, index) => {
+            const tabStyle = getTabStyle(index);
+            return (
+              <Pressable
+                key={tab.key}
+                ref={(ref) => {
+                  if (ref) {
+                    tabRefs.current[tab.key] = ref;
+                  }
+                }}
+                onPress={() => onChangeTab(tab.key)}
+                alignItems="center"
+                py="$1"
+                px="$2"
+                onLayout={(event) => {
+                  const { width, x } = event.nativeEvent.layout;
+                  setTabWidths((prev) => {
+                    const newWidths = [...prev];
+                    newWidths[index] = width;
+                    return newWidths;
+                  });
+                  setTabPositions((prev) => {
+                    const newPositions = [...prev];
+                    newPositions[index] = x;
+                    return newPositions;
+                  });
+                }}
+              >
+                <VStack alignItems="center" space="xs">
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                      },
+                      tabStyle,
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {tab.title}
+                  </Animated.Text>
+                </VStack>
+              </Pressable>
+            );
+          })}
+
+          {activeTabWidth > 0 && tabPositions.length === TABS.length && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: 2,
+                  backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                },
+                indicatorStyle,
+              ]}
+            />
+          )}
+        </HStack>
+      </Animated.ScrollView>
+    </Box>
+  );
+};
+
+const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadding }) => {
+  const flatListRef = useRef<FlatList>(null);
+  const navigation = useNavigation();
+
+  // API hooks for each tab - enabled kontrolü query key'de yapılacak
+  const feedQuery = useCatalogProductPosts(tabKey === 'feed' ? productId : undefined);
+  const reviewsQuery = useProductPosts(tabKey === 'reviews' ? productId : undefined, 'experience', 20);
+  const benchmarksQuery = useProductPosts(tabKey === 'benchmarks' ? productId : undefined, 'benchmark', 20);
+  const tipsQuery = useCatalogProductPosts(tabKey === 'tips' ? productId : undefined, 'tips');
+  const questionsQuery = useCatalogProductPosts(tabKey === 'questions' ? productId : undefined);
+  const newsQuery = useProductNews(tabKey === 'news' ? productId : undefined, 20);
+  
+  const activeTabQuery = useMemo(() => {
+    switch (tabKey) {
+      case 'feed': return feedQuery;
+      case 'reviews': return reviewsQuery;
+      case 'benchmarks': return benchmarksQuery;
+      case 'tips': return tipsQuery;
+      case 'questions': return questionsQuery;
+      case 'news': return newsQuery;
+      default: return feedQuery;
+    }
+  }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, questionsQuery, newsQuery]);
+  
+  const mappedPosts = useMemo(() => {
+    if (tabKey === 'news') {
+      // News için özel mapping
+      const queryData = newsQuery.data as any;
+      if (!queryData?.pages) return [];
+      
+      const allNews = queryData.pages.flatMap((page: any) => page?.items ?? []) ?? [];
+      return allNews.map((item: any) => ({
+        type: 'news' as const,
+        id: item.id,
+        data: item,
+      }));
+    }
+    
+    const queryData = activeTabQuery.data as any;
+    if (!queryData?.pages) return [];
+    
+    const allItems = queryData.pages.flatMap((page: any) => {
+      if (tabKey === 'reviews' || tabKey === 'benchmarks') {
+        return page?.items ?? [];
+      }
+      // Feed, Tips, Questions için FeedApiItem formatı
+      return page?.items ?? [];
+    }) ?? [];
+    
+    const validItems = allItems.filter((item: any) => item?.id || item?.data?.id);
+    const uniqueItems = validItems.filter((item: any, index: number, self: any[]) => {
+      const id = item?.id || item?.data?.id;
+      return index === self.findIndex((t: any) => (t?.id || t?.data?.id) === id);
+    });
+    
+    const mapped: MappedPost[] = [];
+    
+    for (const item of uniqueItems) {
+      let mappedItem: MappedPost | null = null;
+      
+      // BrandFeedPost formatı (reviews, benchmarks)
+      if ('type' in item && 'data' in item) {
+        const brandPost = item as BrandFeedPost;
+        switch (brandPost.type) {
+          case 'experience':
+            const experienceData = mapExperienceToCardData(brandPost);
+            if (experienceData) {
+              mappedItem = { type: 'experience', id: experienceData.id, data: experienceData };
+            }
+            break;
+          case 'benchmark':
+            const benchmarkData = mapBenchmarkToCardData(brandPost);
+            if (benchmarkData) {
+              mappedItem = { type: 'benchmark', id: benchmarkData.id, data: benchmarkData };
+            }
+            break;
+        }
+      }
+      // FeedApiItem formatı (feed, tips, questions) - useCatalogProductPosts'den gelen
+      else if ('type' in item && 'data' in item) {
+        const feedItem = item as FeedApiItem;
+        switch (feedItem.type) {
+          case 'post':
+            const postData = mapPostToCardData(feedItem.data as ProfilePost);
+            if (postData) {
+              mappedItem = { type: 'post', id: postData.id, data: postData };
+            }
+            break;
+          case 'experience':
+            // FeedApiItem içinde experience varsa BrandFeedPost formatına çevir
+            const expData = feedItem.data as any;
+            if (expData?.contextData && Array.isArray(expData?.content)) {
+              const experienceData = mapExperienceToCardData({ type: 'experience', data: expData } as BrandFeedPost);
+              if (experienceData) {
+                mappedItem = { type: 'experience', id: experienceData.id, data: experienceData };
+              }
+            }
+            break;
+          case 'benchmark':
+            const benchData = feedItem.data as any;
+            if (benchData?.products) {
+              const benchmarkData = mapBenchmarkToCardData({ type: 'benchmark', data: benchData } as BrandFeedPost);
+              if (benchmarkData) {
+                mappedItem = { type: 'benchmark', id: benchmarkData.id, data: benchmarkData };
+              }
+            }
+            break;
+          case 'tipsAndTricks':
+            const tipsData = mapTipsToCardData(feedItem);
+            if (tipsData) {
+              mappedItem = { type: 'tips', id: tipsData.id, data: tipsData };
+            }
+            break;
+          case 'question':
+            const questionData = mapQuestionToCardData(feedItem);
+            if (questionData) {
+              mappedItem = { type: 'question', id: questionData.id, data: questionData };
+            }
+            break;
+        }
+      }
+      
+      if (mappedItem) {
+        mapped.push(mappedItem);
+      }
+    }
+    
+    // Questions tab için sadece question type'ları filtrele
+    if (tabKey === 'questions') {
+      return mapped.filter(item => item.type === 'question');
+    }
+    
+    // Tips tab için sadece tips type'ları filtrele
+    if (tabKey === 'tips') {
+      return mapped.filter(item => item.type === 'tips');
+    }
+    
+    // Reviews tab için sadece experience type'ları filtrele
+    if (tabKey === 'reviews') {
+      return mapped.filter(item => item.type === 'experience');
+    }
+    
+    // Benchmarks tab için sadece benchmark type'ları filtrele
+    if (tabKey === 'benchmarks') {
+      return mapped.filter(item => item.type === 'benchmark');
+    }
+    
+    return mapped;
+  }, [activeTabQuery.data, tabKey, newsQuery.data]);
+  
+  const handleLoadMore = useCallback(() => {
+    if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
+      activeTabQuery.fetchNextPage();
+    }
+  }, [activeTabQuery]);
+  
+  const renderPostCard = useCallback((postData: MappedPost | { type: 'news'; id: string; data: any }) => {
+    if (postData.type === 'news') {
+      return (
+        <NewsCard
+          key={postData.id}
+          id={postData.data.id}
+          title={postData.data.title}
+          description={postData.data.description}
+          source={postData.data.source}
+          date={postData.data.date}
+          image={toImageSource(postData.data.image)}
+          onPress={() => (navigation as any).navigate('NewsDetailScreen', { newsId: postData.data.id })}
+        />
+      );
+    }
+    
+    switch (postData.type) {
+      case 'experience':
+        return <ExperiencePostCard key={postData.id} data={postData.data} />;
+      case 'benchmark':
+        return <BenchmarkPostCard key={postData.id} data={postData.data} />;
+      case 'tips':
+        return <TipsAndTricksPostCard key={postData.id} data={postData.data} />;
+      case 'question':
+        return <QuestionPostCard key={postData.id} data={postData.data} />;
+      case 'post':
+      default:
+        return <PostCard key={postData.id} data={postData.data} />;
+    }
+  }, [navigation]);
+  
+  if (tabKey === 'news') {
+    const newsItems = mappedPosts as any[];
+    return (
+      <FlatList
+        ref={flatListRef}
+        data={newsItems}
+        keyExtractor={(item) => item.id}
+        ListEmptyComponent={
+          newsQuery.isLoading && !((newsQuery.data as any)?.pages?.[0]) ? (
+            <Box py={20} alignItems="center">
+              <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+          ) : (
+            <Box py={20} alignItems="center">
+              <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+                No news found yet.
+              </Text>
+            </Box>
+          )
+        }
+        renderItem={({ item }) => (
+          <Box px={16}>
+            {renderPostCard(item)}
+          </Box>
+        )}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          newsQuery.isFetchingNextPage ? (
+            <Box py={20} alignItems="center">
+              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+            </Box>
+          ) : null
+        }
+        contentContainerStyle={{
+          paddingBottom: bottomPadding,
+        }}
+        showsVerticalScrollIndicator={true}
+      />
+    );
+  }
+  
+  return (
+    <FlatList
+      ref={flatListRef}
+      data={mappedPosts}
+      keyExtractor={(item) => item.id}
+      ListEmptyComponent={
+        activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
+          <Box py={20} alignItems="center">
+            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        ) : (
+          <Box py={20} alignItems="center">
+            <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+              No content found yet.
+            </Text>
+          </Box>
+        )
+      }
+      renderItem={({ item }) => (
+        <Box px={16}>
+          {renderPostCard(item)}
+        </Box>
+      )}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={
+        activeTabQuery.isFetchingNextPage ? (
+          <Box py={20} alignItems="center">
+            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+          </Box>
+        ) : null
+      }
+      contentContainerStyle={{
+        paddingBottom: bottomPadding,
+      }}
+      showsVerticalScrollIndicator={true}
+    />
+  );
+};
 
 const BrandProductDetailScreen: React.FC = () => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
     const route = useRoute<BrandProductDetailScreenRouteProp>();
-    const [selectedTab, setSelectedTab] = useState('Experiences');
     const bottomInset = useSafeAreaValues('bottom');
+    const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
 
-    const { productId } = route.params;
-
-    const filterTabs = ['Experiences', 'Comments', 'Comparisons', 'News'];
+    const { productId, productName: initialProductName, productImage: initialProductImage } = route.params;
 
     // API hooks
     const { data: productDetail, isLoading: isLoadingProduct } = useProductDetail(productId);
-    const { data: experiencePosts, isLoading: isLoadingExperience, fetchNextPage: fetchNextExperience, hasNextPage: hasNextExperience, isFetchingNextPage: isFetchingNextExperience } = useProductPosts(productId, 'experience', 20);
-    const { data: commentPosts, isLoading: isLoadingComments, fetchNextPage: fetchNextComments, hasNextPage: hasNextComments, isFetchingNextPage: isFetchingNextComments } = useProductPosts(productId, 'comments', 20);
-    const { data: benchmarkPosts, isLoading: isLoadingBenchmark, fetchNextPage: fetchNextBenchmark, hasNextPage: hasNextBenchmark, isFetchingNextPage: isFetchingNextBenchmark } = useProductPosts(productId, 'benchmark', 20);
-    const { data: newsData, isLoading: isLoadingNews, fetchNextPage: fetchNextNews, hasNextPage: hasNextNews, isFetchingNextPage: isFetchingNextNews } = useProductNews(productId, 20);
+    
+    // Seçilen product bilgisi (navigation'dan gelen veya API'den gelen)
+    const displayProductName = productDetail?.name || initialProductName || '';
+    const displayProductImage = productDetail?.image 
+        ? toImageSource(productDetail.image) 
+        : (initialProductImage || require('@/assets/events/card-icon.png'));
 
-    // Map Experience (ReviewApiItem) to ReviewCardData
-    const mapExperienceToCardData = useCallback((item: BrandFeedPost): ReviewCardData => {
-        // Type guard: experience type kontrolü
-        if (item.type !== 'experience') {
-            throw new Error(`Expected experience type, got ${item.type}`);
-        }
-        
-        const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
-        const avatarSource = toImageSource(postData.user.avatar)!;
-        const productImage = postData.contextData?.image
-            ? toImageSource(postData.contextData.image)
-            : undefined;
-
-        // Content array'i map et - rating 0-100 arası, 0-5 arasına çevir (her 20 = 1 star)
-        const content: ReviewCardContentItem[] = Array.isArray(postData.content) 
-            ? postData.content.map((contentItem) => {
-                // Rating 0-100 arası, 0-5 arasına çevir
-                const ratingValue = contentItem.rating || 0;
-                const stars = Math.floor(ratingValue / 20); // 0-100 -> 0-5
-                
-                return {
-                    tag: {
-                        icon: 'tag' as const,
-                        title: contentItem.title || '',
-                    },
-                    text: contentItem.content || '',
-                    rating: Array(5)
-                        .fill(false)
-                        .map((_, index) => index < stars),
-                };
-            })
-            : [];
-
-        return {
-            id: postData.id,
-            user: {
-                id: postData.user.id,
-                name: postData.user.name,
-                title: postData.user.title,
-                avatar: avatarSource,
-                action: 'wrote a review',
-            },
-            contextData: {
-                id: postData.contextData?.id || '',
-                name: postData.contextData?.name || '',
-                subName: postData.contextData?.subName || '',
-                image: productImage,
-                isOwned: postData.contextData?.isOwned,
-            },
-            content,
-            tags: postData.tags || [],
-            images: postData.images
-                ?.map((img: string) => toImageSource(img))
-                .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
-            stats: postData.stats,
-            createdAt: postData.createdAt,
-        };
+    // Active tab state
+    const [activeTab, setActiveTab] = useState<TabKey>('feed');
+    const pagerRef = useRef<PagerView>(null);
+    const tabContainerRef = useRef<any>(null);
+    const progress = useSharedValue(0);
+    
+    const getTabIndex = useCallback((tabKey: TabKey) => {
+        return TABS.findIndex(tab => tab.key === tabKey);
     }, []);
-
-    // Map Benchmark to BenchmarkCardData
-    const mapBenchmarkToCardData = useCallback((item: BrandFeedPost): BenchmarkCardData => {
-        // Type guard: benchmark type kontrolü
-        if (item.type !== 'benchmark') {
-            throw new Error(`Expected benchmark type, got ${item.type}`);
+    
+    const handleTabChange = useCallback((tabKey: TabKey) => {
+        const index = getTabIndex(tabKey);
+        if (index !== -1 && pagerRef.current) {
+            pagerRef.current.setPage(index);
         }
-        
-        const postData = item.data as import('@/src/types/BenchmarkCard').BenchmarkApiItem;
-        const avatarSource = toImageSource(postData.user.avatar)!;
+    }, [getTabIndex]);
+    
+    const handlePageScroll = useCallback(
+        (e: any) => {
+            'worklet';
+            const { position, offset } = e.nativeEvent;
+            progress.value = position + offset;
+        },
+        [progress]
+    );
 
-        const products: import('@/src/types/BenchmarkCard').BenchmarkProduct[] = (postData.products || []).map((p) => ({
-            id: p.id,
-            name: p.name,
-            subName: p.subName,
-            image: toImageSource(p.image)!,
-            isOwned: p.isOwned,
-            choice: p.choice,
-        }));
-
-        return {
-            id: postData.id,
-            user: {
-                id: postData.user.id,
-                name: postData.user.name,
-                title: postData.user.title,
-                avatar: avatarSource,
-            },
-            products,
-            content: postData.content || '',
-            stats: postData.stats,
-            createdAt: postData.createdAt,
-        };
+    const handlePageSelected = useCallback(
+        (e: any) => {
+            const position = e.nativeEvent.position;
+            progress.value = withTiming(position, { duration: 0 });
+            
+            const tabKey = TABS[position]?.key;
+            if (tabKey) {
+                setActiveTab(tabKey);
+            }
+        },
+        [progress]
+    );
+    
+    const handleTabContainerLayout = useCallback((width: number) => {
+        // Tab container width'i state'e kaydet (gerekirse)
     }, []);
-
-    // Transform API posts data
-    const transformPosts = useMemo(() => {
-        const transformExperience = (postsData: typeof experiencePosts): ReviewCardData[] => {
-            if (!postsData?.pages) return [];
-            const allPosts: ReviewCardData[] = [];
-            postsData.pages.forEach((page) => {
-                if (page.items) {
-                    page.items.forEach((item: BrandFeedPost) => {
-                        if (item.type === 'experience') {
-                            try {
-                                allPosts.push(mapExperienceToCardData(item));
-                            } catch (error) {
-                                console.error('[transformPosts] Error mapping experience post:', error);
-                            }
-                        }
-                    });
-                }
-            });
-            return allPosts;
-        };
-
-        const transformBenchmark = (postsData: typeof benchmarkPosts): BenchmarkCardData[] => {
-            if (!postsData?.pages) return [];
-            const allPosts: BenchmarkCardData[] = [];
-            postsData.pages.forEach((page) => {
-                if (page.items) {
-                    page.items.forEach((item: BrandFeedPost) => {
-                        if (item.type === 'benchmark') {
-                            try {
-                                allPosts.push(mapBenchmarkToCardData(item));
-                            } catch (error) {
-                                console.error('[transformPosts] Error mapping benchmark post:', error);
-                            }
-                        }
-                    });
-                }
-            });
-            return allPosts;
-        };
-
-        const transformComments = (postsData: typeof commentPosts): ReviewCardData[] => {
-            if (!postsData?.pages) return [];
-            const allPosts: ReviewCardData[] = [];
-            postsData.pages.forEach((page) => {
-                if (page.items) {
-                    page.items.forEach((item: BrandFeedPost) => {
-                        if (item.type === 'experience') {
-                            try {
-                                allPosts.push(mapExperienceToCardData(item));
-                            } catch (error) {
-                                console.error('[transformPosts] Error mapping comment post:', error);
-                            }
-                        }
-                    });
-                }
-            });
-            return allPosts;
-        };
-
-        return {
-            experience: transformExperience(experiencePosts),
-            comments: transformComments(commentPosts),
-            benchmark: transformBenchmark(benchmarkPosts),
-        };
-    }, [experiencePosts, commentPosts, benchmarkPosts, mapExperienceToCardData, mapBenchmarkToCardData]);
-
-    // Transform API news data
-    const newsItems = useMemo(() => {
-        if (!newsData?.pages) return [];
-        const allNews: Array<{
-            id: string;
-            title: string;
-            description: string;
-            source: string;
-            date: string;
-            image: any;
-        }> = [];
-        newsData.pages.forEach((page) => {
-            if (page.items) {
-                page.items.forEach((item) => {
-                    allNews.push({
-                        id: item.id,
-                        title: item.title,
-                        description: item.description,
-                        source: item.source,
-                        date: item.date,
-                        image: toImageSource(item.image),
-                    });
-                });
-            }
-        });
-        return allNews;
-    }, [newsData]);
-
-    const handleTabChange = (tab: string) => {
-        setSelectedTab(tab);
-    };
-
-    const renderContent = () => {
-        if (selectedTab === 'News') {
-            if (isLoadingNews) {
-                return (
-                    <VStack alignItems="center" py="$8">
-                        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                            Loading news...
-                        </Text>
-                    </VStack>
-                );
-            }
-            if (newsItems.length === 0) {
-                return (
-                    <VStack alignItems="center" py="$8">
-                        <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                            No news found
-                        </Text>
-                    </VStack>
-                );
-            }
-            return (
-                <VStack space="md">
-                    {newsItems.map((news) => (
-                        <NewsCard
-                            key={news.id}
-                            id={news.id}
-                            title={news.title}
-                            description={news.description}
-                            source={news.source}
-                            date={news.date}
-                            image={news.image}
-                            onPress={() => navigation.navigate('NewsDetailScreen', { newsId: news.id })}
-                        />
-                    ))}
-                    {hasNextNews && (
-                        <VStack alignItems="center" py="$4">
-                            {isFetchingNextNews ? (
-                                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onPress={() => fetchNextNews()}
-                                    bg="transparent"
-                                    borderColor={isDark ? '$borderDark400' : '$borderLight300'}
-                                >
-                                    <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
-                                        Load More
-                                    </ButtonText>
-                                </Button>
-                            )}
-                        </VStack>
-                    )}
-                </VStack>
-            );
-        }
-
-        if (selectedTab === 'Comparisons') {
-            if (isLoadingBenchmark) {
-                return (
-                    <VStack alignItems="center" py="$8">
-                        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                            Loading comparisons...
-                        </Text>
-                    </VStack>
-                );
-            }
-            if (transformPosts.benchmark.length === 0) {
-                return (
-                    <VStack alignItems="center" py="$8">
-                        <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                            No comparisons found
-                        </Text>
-                    </VStack>
-                );
-            }
-            return (
-                <VStack space="md">
-                    {transformPosts.benchmark.map((post) => (
-                        <BenchmarkPostCard
-                            key={post.id}
-                            data={post}
-                        />
-                    ))}
-                    {hasNextBenchmark && (
-                        <VStack alignItems="center" py="$4">
-                            {isFetchingNextBenchmark ? (
-                                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onPress={() => fetchNextBenchmark()}
-                                    bg="transparent"
-                                    borderColor={isDark ? '$borderDark400' : '$borderLight300'}
-                                >
-                                    <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
-                                        Load More
-                                    </ButtonText>
-                                </Button>
-                            )}
-                        </VStack>
-                    )}
-                </VStack>
-            );
-        }
-
-        if (selectedTab === 'Comments') {
-            if (isLoadingComments) {
-                return (
-                    <VStack alignItems="center" py="$8">
-                        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                            Loading comments...
-                        </Text>
-                    </VStack>
-                );
-            }
-            if (transformPosts.comments.length === 0) {
-                return (
-                    <VStack alignItems="center" py="$8">
-                        <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                            No comments found
-                        </Text>
-                    </VStack>
-                );
-            }
-            return (
-                <VStack space="md">
-                    {transformPosts.comments.map((post) => (
-                        <ExperiencePostCard
-                            key={post.id}
-                            data={post}
-                        />
-                    ))}
-                    {hasNextComments && (
-                        <VStack alignItems="center" py="$4">
-                            {isFetchingNextComments ? (
-                                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onPress={() => fetchNextComments()}
-                                    bg="transparent"
-                                    borderColor={isDark ? '$borderDark400' : '$borderLight300'}
-                                >
-                                    <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
-                                        Load More
-                                    </ButtonText>
-                                </Button>
-                            )}
-                        </VStack>
-                    )}
-                </VStack>
-            );
-        }
-
-        // Default: Experiences posts
-        if (isLoadingExperience) {
-            return (
-                <VStack alignItems="center" py="$8">
-                    <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                    <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                        Loading experiences...
-                    </Text>
-                </VStack>
-            );
-        }
-        if (transformPosts.experience.length === 0) {
-            return (
-                <VStack alignItems="center" py="$8">
-                    <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
-                        No experiences found
-                    </Text>
-                </VStack>
-            );
-        }
-        return (
-            <VStack space="md">
-                {transformPosts.experience.map((post) => (
-                    <ExperiencePostCard
-                        key={post.id}
-                        data={post}
-                    />
-                ))}
-                {hasNextExperience && (
-                    <VStack alignItems="center" py="$4">
-                        {isFetchingNextExperience ? (
-                            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                        ) : (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onPress={() => fetchNextExperience()}
-                                bg="transparent"
-                                borderColor={isDark ? '$borderDark400' : '$borderLight300'}
-                            >
-                                <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
-                                    Load More
-                                </ButtonText>
-                            </Button>
-                        )}
-                    </VStack>
-                )}
-            </VStack>
-        );
-    };
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -453,33 +838,45 @@ const BrandProductDetailScreen: React.FC = () => {
                     onBackPress={() => navigation.goBack()}
                 />
 
-                <ScrollView
-                    flex={1}
-                    contentContainerStyle={{ paddingBottom: bottomInset }}
-                >
-                    <VStack space="md" p="$4">
-                        {/* Product Info Card */}
-                        {isLoadingProduct ? (
-                            <VStack alignItems="center" py="$4">
-                                <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                            </VStack>
-                        ) : productDetail ? (
-                            <BrandProductInfoCard
-                                productName={productDetail.name}
-                                productImage={productDetail.image ? toImageSource(productDetail.image) : require('@/assets/events/card-icon.png')}
-                            />
-                        ) : null}
-
-                        {/* Filter Tabs */}
-                        <FilterTabs
-                            tabs={filterTabs}
-                            onTabChange={handleTabChange}
+                {/* Product Info Card - Seçilen product bilgisi gösteriliyor */}
+                {(displayProductName || initialProductName) && (
+                    <Box px="$4" pt="$4" pb="$3">
+                        <BrandProductInfoCard
+                            productName={displayProductName}
+                            productImage={displayProductImage}
                         />
+                    </Box>
+                )}
 
-                        {/* Dynamic Content */}
-                        {renderContent()}
-                    </VStack>
-                </ScrollView>
+                {/* Tab Bar */}
+                <TabsBar 
+                    activeTab={activeTab} 
+                    onChangeTab={handleTabChange} 
+                    isDark={isDark}
+                    progress={progress}
+                    tabContainerRef={tabContainerRef}
+                    onTabContainerLayout={handleTabContainerLayout}
+                />
+
+                {/* PagerView */}
+                <AnimatedPagerView
+                    ref={pagerRef}
+                    style={{ flex: 1 }}
+                    initialPage={0}
+                    onPageScroll={handlePageScroll}
+                    onPageSelected={handlePageSelected}
+                >
+                    {TABS.map((tab) => (
+                        <Box key={tab.key} flex={1}>
+                            <TabPage
+                                tabKey={tab.key}
+                                productId={productId}
+                                isDark={isDark}
+                                bottomPadding={bottomPadding}
+                            />
+                        </Box>
+                    ))}
+                </AnimatedPagerView>
             </VStack>
         </SafeAreaView>
     );
