@@ -49,18 +49,16 @@ export const SuggestedUserCard = ({
             <HStack alignItems="center" space="md" maxWidth={240} flex={1}>
                 {/* Avatar */}
                 <Box
-                    width={50}
-                    height={50}
-                    borderRadius={25}
+                    width={54}
+                    height={54}
+                    borderRadius={100}
                     bg="#CE4A4A"
                     alignItems="center"
                     justifyContent="center"
-                    borderWidth={2}
-                    borderColor={isDark ? '#000' : '#FAFAFA'}
                 >
                     <Box
-                        width={46}
-                        height={46}
+                        width={50}
+                        height={50}
                         borderRadius={23}
                         overflow="hidden"
                     >
@@ -68,19 +66,19 @@ export const SuggestedUserCard = ({
                             <CachedImage
                                 source={{ uri: avatar }}
                                 alt={name}
-                                width={46}
-                                height={46}
+                                width={50}
+                                height={50}
                                 resizeMode="cover"
                             />
                         ) : (
                             <Box
-                                width={46}
-                                height={46}
+                                width={50}
+                                height={50}
                                 bg="#8C8C8C"
                                 alignItems="center"
                                 justifyContent="center"
                             >
-                                <Text color="#FFF" fontSize={18} fontWeight="$bold">
+                                <Text color="#FFF" fontSize="$md" fontWeight="$bold">
                                     {name.charAt(0).toUpperCase()}
                                 </Text>
                             </Box>
@@ -92,7 +90,7 @@ export const SuggestedUserCard = ({
                 <VStack flex={1} space="xs">
                     <Text
                         color={isDark ? '#fff' : '#000'}
-                        fontSize={11}
+                        fontSize="$sm"
                         fontWeight="$semibold"
                         numberOfLines={1}
                     >
@@ -100,16 +98,15 @@ export const SuggestedUserCard = ({
                     </Text>
                     <Text
                         color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                        fontSize={9}
+                        fontSize="$xs"
                         numberOfLines={2}
-                        lineHeight={11}
                     >
                         {titleText}
                     </Text>
                     {mutualTrustCount && mutualTrustCount > 0 ? (
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                            fontSize={8}
+                            fontSize="$xs"
                             numberOfLines={1}
                         >
                             {mutualTrustCount} ortak arkadaş
@@ -123,10 +120,10 @@ export const SuggestedUserCard = ({
                 onPress={() => !isTrusted && onAddTrust(id)}
                 bg={isTrusted ? '#00C853' : '#F1F1F1'}
                 borderRadius={5}
-                px={12}
-                py={4}
+                px="$4"
+                py="$2"
                 minWidth={102}
-                height={26}
+                height={32}
                 alignItems="center"
                 justifyContent="center"
                 disabled={isTrusted}
@@ -134,7 +131,7 @@ export const SuggestedUserCard = ({
             >
                 <Text
                     color={isTrusted ? '#FFF' : '#000'}
-                    fontSize={10}
+                    fontSize="$sm"
                     fontWeight="$bold"
                 >
                     {isTrusted ? 'Added' : 'Add Trust'}

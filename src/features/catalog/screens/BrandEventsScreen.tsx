@@ -93,7 +93,7 @@ const BrandEventsScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Etkinlikler"
+          title="Events"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -114,13 +114,13 @@ const BrandEventsScreen: React.FC = () => {
             {isLoading ? (
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                   Loading events...
                 </Text>
               </VStack>
             ) : events.length === 0 ? (
               <VStack alignItems="center" py="$8">
-                <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                   No events found
                 </Text>
               </VStack>

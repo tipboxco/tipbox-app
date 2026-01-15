@@ -1,6 +1,7 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, VStack, HStack, Text, Image, Box, Pressable, ActivityIndicator } from '@gluestack-ui/themed';
+import { ScrollView, VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
+import { ActivityIndicator } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,7 +41,7 @@ const BrandHistoryScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Marka Geçmişim"
+          title="Brand History"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -52,13 +53,13 @@ const BrandHistoryScreen: React.FC = () => {
           {isLoading ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-              <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+              <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                 Loading brand history...
               </Text>
             </VStack>
           ) : error || !brandHistory ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
-              <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+              <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                 Error loading brand history
               </Text>
             </VStack>
@@ -78,6 +79,7 @@ const BrandHistoryScreen: React.FC = () => {
             <Pressable
               onPress={() => navigation.navigate('BrandSurveyListScreen', { brandId })}
               flex={1}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Box
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -91,7 +93,7 @@ const BrandHistoryScreen: React.FC = () => {
                 <DocumentTextIcon width={24} height={24} color="#A1A1A1" />
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
+                  fontSize="$xs"
                   fontWeight="$bold"
                   textAlign="center"
                 >
@@ -99,11 +101,11 @@ const BrandHistoryScreen: React.FC = () => {
                 </Text>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
+                  fontSize="$xs"
                   fontWeight="$bold"
                   textAlign="center"
                 >
-                  Anket
+                  Survey
                 </Text>
               </VStack>
               </Box>
@@ -113,6 +115,7 @@ const BrandHistoryScreen: React.FC = () => {
             <Pressable
               onPress={() => navigation.navigate('BrandPostListScreen', { brandId })}
               flex={1}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Box
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -126,7 +129,7 @@ const BrandHistoryScreen: React.FC = () => {
                 <ChatBubbleLeftIcon width={24} height={24} color="#A1A1A1" />
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
+                  fontSize="$xs"
                   fontWeight="$bold"
                   textAlign="center"
                 >
@@ -134,11 +137,11 @@ const BrandHistoryScreen: React.FC = () => {
                 </Text>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
+                  fontSize="$xs"
                   fontWeight="$bold"
                   textAlign="center"
                 >
-                  Paylaşım
+                  Share
                 </Text>
               </VStack>
               </Box>
@@ -148,6 +151,7 @@ const BrandHistoryScreen: React.FC = () => {
             <Pressable
               onPress={() => navigation.navigate('BrandEventsScreen', { brandId })}
               flex={1}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Box
                 bg={isDark ? '#1A1A1A' : '#FDFDFD'}
@@ -161,7 +165,7 @@ const BrandHistoryScreen: React.FC = () => {
                 <CalendarIcon width={24} height={24} color="#A1A1A1" />
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
+                  fontSize="$xs"
                   fontWeight="$bold"
                   textAlign="center"
                 >
@@ -169,11 +173,11 @@ const BrandHistoryScreen: React.FC = () => {
                 </Text>
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={12}
+                  fontSize="$xs"
                   fontWeight="$bold"
                   textAlign="center"
                 >
-                  Etkinlik
+                  Event
                 </Text>
               </VStack>
               </Box>
@@ -216,7 +220,7 @@ const BrandHistoryScreen: React.FC = () => {
                       </Box>
                       <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize={8}
+                        fontSize="$xs"
                         fontWeight="$bold"
                         textAlign="center"
                       >
@@ -225,13 +229,16 @@ const BrandHistoryScreen: React.FC = () => {
                     </VStack>
                   ))}
                 </HStack>
-                <Pressable onPress={() => {
-                  // RewardsBadgesScreen'e navigate et (Events stack içinde)
-                  navigationService.navigateNested(TAB_ROUTES.EVENTS, 'RewardsBadges', undefined);
-                }}>
+                <Pressable 
+                  onPress={() => {
+                    // RewardsBadgesScreen'e navigate et (Events stack içinde)
+                    navigationService.navigateNested(TAB_ROUTES.EVENTS, 'RewardsBadges', undefined);
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize={8}
+                    fontSize="$xs"
                     textAlign="center"
                     mt="$4"
                     fontWeight="$regular"
@@ -247,17 +254,17 @@ const BrandHistoryScreen: React.FC = () => {
             <VStack space="sm">
               <Text
                 color="#9D9D9D"
-                fontSize={14}
+                fontSize="$sm"
                 fontWeight="$bold"
               >
-                Puan Geçmişi
+                Points History
               </Text>
               {brandHistory.pointsHistory && brandHistory.pointsHistory.length > 0 ? (
                 brandHistory.pointsHistory.map((item) => (
                   <PointsHistoryCard key={item.id} item={item} />
                 ))
               ) : (
-                <Text fontSize={12} color="$textLight500" $dark-color="$textDark400" textAlign="center" py="$4">
+                <Text fontSize="$xs" color="$textLight500" $dark-color="$textDark400" textAlign="center" py="$4">
                   No points history found
                 </Text>
               )}

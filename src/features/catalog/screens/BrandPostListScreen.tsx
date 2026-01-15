@@ -73,7 +73,7 @@ const BrandPostListScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Paylaşımlar"
+          title="Posts"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -94,13 +94,13 @@ const BrandPostListScreen: React.FC = () => {
             {isLoading ? (
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                   Loading posts...
                 </Text>
               </VStack>
             ) : posts.length === 0 ? (
               <VStack alignItems="center" py="$8">
-                <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                   No posts found
                 </Text>
               </VStack>

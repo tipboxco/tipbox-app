@@ -32,7 +32,7 @@ const NewsDetailScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Marka Ürünleri Defteri"
+          title="News Detail"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -44,13 +44,13 @@ const NewsDetailScreen: React.FC = () => {
           {isLoading ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-              <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+              <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                 Loading news...
               </Text>
             </VStack>
           ) : error ? (
             <VStack alignItems="center" py="$8" flex={1} justifyContent="center">
-              <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+              <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                 Error loading news
               </Text>
             </VStack>
@@ -85,19 +85,19 @@ const NewsDetailScreen: React.FC = () => {
                   <BookOpenIcon width={12} height={12} color="#B9B9B9" />
                   <Text
                     color="#B9B9B9"
-                    fontSize={9}
+                    fontSize="$2xs"
                     fontWeight="$medium"
                   >
-                    {newsDetail.source} - {new Date(newsDetail.date).toLocaleDateString('tr-TR')}
+                    {newsDetail.source} - {new Date(newsDetail.date).toLocaleDateString('en-US')}
                   </Text>
                 </HStack>
 
                 {/* Title */}
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={16}
+                  fontSize="$lg"
                   fontWeight="$bold"
-                  lineHeight={20}
+                  lineHeight="$xl"
                 >
                   {newsDetail.title}
                 </Text>
@@ -106,10 +106,10 @@ const NewsDetailScreen: React.FC = () => {
                 {newsDetail.author && (
                   <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize={12}
+                    fontSize="$sm"
                     fontWeight="$medium"
                   >
-                    Yazar: {newsDetail.author}
+                    Author: {newsDetail.author}
                   </Text>
                 )}
 
@@ -124,7 +124,7 @@ const NewsDetailScreen: React.FC = () => {
                         py="$1"
                         borderRadius={5}
                       >
-                        <Text fontSize={9} color={isDark ? '#FFFFFF' : '#000000'}>
+                        <Text fontSize="$2xs" color={isDark ? '#FFFFFF' : '#000000'}>
                           #{tag}
                         </Text>
                       </Box>
@@ -135,8 +135,8 @@ const NewsDetailScreen: React.FC = () => {
                 {/* Content */}
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={9}
-                  lineHeight={12}
+                  fontSize="$2xs"
+                  lineHeight="$sm"
                   textAlign="justify"
                 >
                   {newsDetail.content}

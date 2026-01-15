@@ -24,9 +24,13 @@ import {
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandProductBook } from '../api/hooks';
 import type { BrandProductGroup, BrandProduct } from '../types';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { ProductInfoType } from '@/src/types/common';
 
 const { width: screenWidth } = Dimensions.get('window');
-const cardWidth = (screenWidth - 48) / 2; // 2 cards per row with padding
+// Card genişliği: 2.4 card görünür (2 tam + 0.4 kısım) - scrollable olduğunu göstermek için
+const cardWidth = (screenWidth - 48) / 2.4; // 2.4 cards visible per row with padding
 const imageSize = cardWidth - 16; // Square image with padding
 
 type BrandProductBookScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandProductBookScreen'>;
@@ -87,7 +91,7 @@ const BrandProductBookScreen: React.FC = () => {
                 borderRadius={10}
                 width={cardWidth}
                 height={imageSize + 80} // Square image + text + stats space
-                mr="$3"
+                mr="$2"
             >
             <VStack flex={1} p="$2">
                 {/* Product Image - Square */}
@@ -115,7 +119,7 @@ const BrandProductBookScreen: React.FC = () => {
                 {/* Product Name */}
                 <Text
                     color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize={11}
+                    fontSize="$xs"
                     fontWeight="$semibold"
                     mb="$2"
                     textAlign="center"
@@ -143,7 +147,7 @@ const BrandProductBookScreen: React.FC = () => {
                         />
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={8}
+                            fontSize="$2xs"
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
@@ -194,16 +198,36 @@ const BrandProductBookScreen: React.FC = () => {
     const renderProductGroup = (productGroup: BrandProductGroup) => (
         <VStack key={productGroup.productGroupId} space="xs" mb='$2'>
             {/* Group Header */}
-            <HStack justifyContent="space-between" alignItems="center" pr='$4'>
-                <Text
-                    color={isDark ? '#FFFFFF' : '#9D9D9D'}
-                    fontSize={12}
-                    fontWeight="$bold"
-                >
-                    {productGroup.productGroupName}
-                </Text>
-                <ChevronRightIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
-            </HStack>
+            <Pressable
+                onPress={() => {
+                    // Product Group için PostsScreen'e navigate et
+                    navigationService.navigate(ROOT_ROUTES.POST, {
+                        screen: 'PostsScreen',
+                        params: {
+                            stage: 'ProductGroup',
+                            name: productGroup.productGroupName,
+                            productInfo: {
+                                image: require('@/assets/events/card-icon.png'), // Placeholder, API'den gelecek
+                                title: productGroup.productGroupName,
+                                subName: productGroup.productGroupName,
+                            },
+                            contextType: ProductInfoType.PRODUCT_GROUP,
+                            contextId: productGroup.productGroupId,
+                        },
+                    });
+                }}
+            >
+                <HStack justifyContent="space-between" alignItems="center" pr='$4'>
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#9D9D9D'}
+                        fontSize="$sm"
+                        fontWeight="$bold"
+                    >
+                        {productGroup.productGroupName}
+                    </Text>
+                    <ChevronRightIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#9D9D9D'} />
+                </HStack>
+            </Pressable>
 
             {/* Horizontal Scrollable Products */}
             <FlatList
@@ -212,7 +236,12 @@ const BrandProductBookScreen: React.FC = () => {
                 keyExtractor={(item) => item.productId}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingRight: 16 }}
+                contentContainerStyle={{ 
+                    paddingRight: 16,
+                    paddingLeft: 0, // İlk card için sol padding yok
+                }}
+                // 3. cardın bir kısmının görünmesi için ek padding
+                style={{ marginRight: -16 }}
             />
         </VStack>
     );
@@ -223,14 +252,14 @@ const BrandProductBookScreen: React.FC = () => {
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
-                        title="Marka Ürünleri Defteri"
+                        title="Brand Products Book"
                         showBackButton={true}
                         onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center">
                         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4">
-                            Yükleniyor...
+                        <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4" fontSize="$sm">
+                            Loading...
                         </Text>
                     </Box>
                 </Box>
@@ -244,13 +273,13 @@ const BrandProductBookScreen: React.FC = () => {
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                     <Header
-                        title="Marka Ürünleri Defteri"
+                        title="Brand Products Book"
                         showBackButton={true}
                         onBackPress={() => navigation.goBack()}
                     />
                     <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                         <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                            {productBookError ? `Hata: ${productBookError.message}` : 'Ürün listesi bulunamadı'}
+                            {productBookError ? `Error: ${productBookError.message}` : 'Product list not found'}
                         </Text>
                     </Box>
                 </Box>
@@ -262,7 +291,7 @@ const BrandProductBookScreen: React.FC = () => {
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
             <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 <Header
-                    title="Marka Ürünleri Defteri"
+                    title="Brand Products Book"
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />
@@ -283,7 +312,7 @@ const BrandProductBookScreen: React.FC = () => {
                                     placeholder="Select product group or search product name"
                                     placeholderTextColor={isDark ? '#8C8C8C' : '#B9B9B9'}
                                     color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize={9}
+                                    fontSize="$2xs"
                                 />
                             </Input>
                         </HStack>
@@ -307,7 +336,7 @@ const BrandProductBookScreen: React.FC = () => {
                     <VStack space="md" pb="$4" pl="$4">
                         {allProductGroups.length === 0 ? (
                             <Box py="$4" alignItems="center">
-                                <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
+                                <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm">
                                     No products yet
                                 </Text>
                             </Box>

@@ -46,7 +46,7 @@ const BrandSurveyListScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Anketler"
+          title="Surveys"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -67,13 +67,13 @@ const BrandSurveyListScreen: React.FC = () => {
             {isLoading ? (
               <VStack alignItems="center" py="$8">
                 <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                   Loading surveys...
                 </Text>
               </VStack>
             ) : surveys.length === 0 ? (
               <VStack alignItems="center" py="$8">
-                <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                   No surveys found
                 </Text>
               </VStack>

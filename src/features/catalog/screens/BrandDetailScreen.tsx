@@ -435,8 +435,8 @@ const BrandDetailScreen: React.FC = () => {
             <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FFFFFF' }}>
                 <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                    <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4">
-                        Yükleniyor...
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$4" fontSize="$sm">
+                        Loading...
                     </Text>
                 </Box>
             </SafeAreaView>
@@ -455,7 +455,7 @@ const BrandDetailScreen: React.FC = () => {
                     />
                     <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                         <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                            {brandCatalogError ? `Hata: ${brandCatalogError.message}` : 'Marka bulunamadı'}
+                            {brandCatalogError ? `Error: ${brandCatalogError.message}` : 'Brand not found'}
                         </Text>
                     </Box>
                 </Box>
@@ -580,8 +580,8 @@ const BrandDetailScreen: React.FC = () => {
                     >
                         <Text
                             color="#FFFFFF"
-                            fontSize={9}
-                            lineHeight={12}
+                            fontSize="$2xs"
+                            lineHeight="$sm"
                             mb="$2"
                         >
                             Discover all experiences related to {brandCatalog.name}.
@@ -604,7 +604,7 @@ const BrandDetailScreen: React.FC = () => {
                         <VStack flex={1}>
                             <Text
                                 color={isDark ? '#FFFFFF' : '#000000'}
-                                fontSize={18}
+                                fontSize="$xl"
                                 fontWeight="$bold"
                                 mb="$1"
                             >
@@ -614,7 +614,7 @@ const BrandDetailScreen: React.FC = () => {
                                 <UsersIcon width={12} height={12} color="#9D9D9D" />
                                 <Text
                                     color="#9D9D9D"
-                                    fontSize={9}
+                                    fontSize="$xs"
                                     fontWeight="$medium"
                                 >
                                     {brandCatalog.followers} Followers
@@ -630,7 +630,7 @@ const BrandDetailScreen: React.FC = () => {
                         >
                             <ButtonText
                                 color="#000000"
-                                fontSize={9}
+                                fontSize="$xs"
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
@@ -642,8 +642,8 @@ const BrandDetailScreen: React.FC = () => {
                     {/* Brand Description */}
                     <Text
                         color={isDark ? '#FFFFFF' : '#343434'}
-                        fontSize={9}
-                        lineHeight={12}
+                        fontSize="$2xs"
+                        lineHeight="$sm"
                         mb="$4"
                     >
                         {brandCatalog.description}
@@ -654,7 +654,7 @@ const BrandDetailScreen: React.FC = () => {
                         <HStack justifyContent="space-between" alignItems="center">
                             <Text
                                 color={isDark ? '#FFFFFF' : '#9D9D9D'}
-                                fontSize={12}
+                                fontSize="$sm"
                                 fontWeight="$bold"
                             >
                                 Browse
@@ -676,7 +676,7 @@ const BrandDetailScreen: React.FC = () => {
                                     {/* Icon */}
                                     <Image
                                         source={require('@/assets/catalog/lego.png')}
-                                        alt="Anketler & Oyunlaştırmalar"
+                                        alt="Surveys & Gamification"
                                         width={24}
                                         height={24}
                                     />
@@ -684,21 +684,21 @@ const BrandDetailScreen: React.FC = () => {
                                     {/* Title */}
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#000000'}
-                                        fontSize={12}
+                                        fontSize="$sm"
                                         fontWeight="$bold"
                                         textAlign="left"
                                     >
-                                        Anketler & Oyunlaştırmalar
+                                        Surveys & Gamification
                                     </Text>
 
                                     {/* Description */}
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#343434'}
-                                        fontSize={9}
-                                        lineHeight={12}
+                                        fontSize="$2xs"
+                                        lineHeight="$xs"
                                         textAlign="left"
                                     >
-                                        Anketler ve Oyunlaştırmalar hakkında küçük bir yazı
+                                        A brief description about Surveys and Gamification
                                     </Text>
 
                                     {/* Button */}
@@ -719,7 +719,7 @@ const BrandDetailScreen: React.FC = () => {
                                         <HStack alignItems="center" space="xs">
                                             <ButtonText
                                                 color="#000000"
-                                                fontSize={9}
+                                                fontSize="$2xs"
                                                 fontWeight="$bold"
                                             >
                                                 Explore
@@ -743,7 +743,7 @@ const BrandDetailScreen: React.FC = () => {
                                     {/* Icon */}
                                     <Image
                                         source={require('@/assets/catalog/book.png')}
-                                        alt="Marka Ürünleri Defteri"
+                                        alt="Brand Products Book"
                                         width={24}
                                         height={24}
                                     />
@@ -751,21 +751,21 @@ const BrandDetailScreen: React.FC = () => {
                                     {/* Title */}
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#000000'}
-                                        fontSize={12}
+                                        fontSize="$sm"
                                         fontWeight="$bold"
                                         textAlign="left"
                                     >
-                                        Marka Ürünleri Defteri
+                                        Brand Products Book
                                     </Text>
 
                                     {/* Description */}
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#343434'}
-                                        fontSize={9}
-                                        lineHeight={12}
+                                        fontSize="$2xs"
+                                        lineHeight="$xs"
                                         textAlign="left"
                                     >
-                                        Marka Ürünleri Defteri hakkında küçük bir yazı
+                                        A brief description about Brand Products Book
                                     </Text>
 
                                     {/* Button */}
@@ -786,7 +786,7 @@ const BrandDetailScreen: React.FC = () => {
                                         <HStack alignItems="center" space="xs">
                                             <ButtonText
                                                 color="#000000"
-                                                fontSize={9}
+                                                fontSize="$2xs"
                                                 fontWeight="$bold"
                                             >
                                                 View
@@ -804,7 +804,7 @@ const BrandDetailScreen: React.FC = () => {
                         <HStack justifyContent="space-between" alignItems="center">
                             <Text
                                 color={isDark ? '#FFFFFF' : '#9D9D9D'}
-                                fontSize={12}
+                                fontSize="$sm"
                                 fontWeight="$bold"
                             >
                                 All Posts
@@ -815,19 +815,19 @@ const BrandDetailScreen: React.FC = () => {
                         {isBrandFeedLoading && allPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
                                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                                <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$2" fontSize={12}>
-                                    Yükleniyor...
+                                <Text color={isDark ? '#FFFFFF' : '#000000'} mt="$2" fontSize="$sm">
+                                    Loading...
                                 </Text>
                             </Box>
                         ) : brandFeedError ? (
                             <Box py="$4" alignItems="center">
-                                <Text color="#CE4A4A" fontSize={12} textAlign="center">
-                                    Hata: {brandFeedError.message}
+                                <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
+                                    Error: {brandFeedError.message}
                                 </Text>
                             </Box>
                         ) : allPosts.length === 0 ? (
                             <Box py="$4" alignItems="center">
-                                <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize={12}>
+                                <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm">
                                     No posts yet
                                 </Text>
                             </Box>

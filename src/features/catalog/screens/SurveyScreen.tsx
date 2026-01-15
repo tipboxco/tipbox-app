@@ -47,7 +47,7 @@ const SurveyScreen: React.FC = () => {
   const navigation = useNavigation<SurveyScreenNavigationProp>();
   const route = useRoute<SurveyScreenRouteProp>();
   const brandId = route.params?.brandId;
-  const [activeTab, setActiveTab] = useState('Anketler');
+  const [activeTab, setActiveTab] = useState('Surveys');
   const bottomInset = useSafeAreaValues('bottom');
 
   // Surveys API hook
@@ -643,13 +643,13 @@ const SurveyScreen: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'Trendler':
+      case 'Trends':
         if (isTrendsLoading && !trendsData) {
           return (
             <VStack py={20} alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-                Trendler yükleniyor...
+                Loading trends...
               </Text>
             </VStack>
           );
@@ -659,7 +659,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color="#CE4A4A" fontSize="$sm">
-                Trendler yüklenirken bir hata oluştu: {trendsError.message}
+                Error loading trends: {trendsError.message}
               </Text>
             </VStack>
           );
@@ -699,13 +699,13 @@ const SurveyScreen: React.FC = () => {
           />
         );
       
-      case 'Etkinlikler':
+      case 'Events':
         if (isEventsLoading && !eventsData) {
           return (
             <VStack py={20} alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-                Etkinlikler yükleniyor...
+                Loading events...
               </Text>
             </VStack>
           );
@@ -715,7 +715,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color="#CE4A4A" fontSize="$sm">
-                Etkinlikler yüklenirken bir hata oluştu: {eventsError.message}
+                Error loading events: {eventsError.message}
               </Text>
             </VStack>
           );
@@ -725,7 +725,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
-                Henüz etkinlik bulunmuyor.
+                No events found yet.
               </Text>
             </VStack>
           );
@@ -764,14 +764,14 @@ const SurveyScreen: React.FC = () => {
           />
         );
       
-      case 'Anketler':
+      case 'Surveys':
       default:
         if (isSurveysLoading && !surveysData) {
           return (
             <VStack py={20} alignItems="center">
               <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm" mt="$2">
-                Anketler yükleniyor...
+                Loading surveys...
               </Text>
             </VStack>
           );
@@ -781,7 +781,7 @@ const SurveyScreen: React.FC = () => {
           return (
             <VStack py={20} alignItems="center">
               <Text color="#CE4A4A" fontSize="$sm">
-                Anketler yüklenirken bir hata oluştu: {surveysError.message}
+                Error loading surveys: {surveysError.message}
               </Text>
             </VStack>
           );
@@ -826,7 +826,7 @@ const SurveyScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Anketler & Oyunlaştırmalar"
+          title="Surveys & Gamification"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -846,7 +846,7 @@ const SurveyScreen: React.FC = () => {
                 <VStack alignItems="center" space="xs">
                   <Text
                     color={activeTab === tab.name ? (isDark ? '#FFFFFF' : '#000000') : '#8C8C8C'}
-                    fontSize={12}
+                    fontSize="$sm"
                     fontWeight="$bold"
                   >
                     {tab.name}

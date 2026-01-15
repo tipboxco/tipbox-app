@@ -681,7 +681,7 @@ export const useSubCategoryPosts = (
 ) => {
   return useInfiniteQuery({
     queryKey: subCategoryId ? catalogKeys.subCategoryPosts(subCategoryId, type, undefined, limit) : ['catalog', 'subCategoryPosts', 'disabled'],
-    queryFn: ({ pageParam }) => {
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
       if (!subCategoryId) {
         throw new Error('SubCategory ID is required');
       }
@@ -743,7 +743,7 @@ export const useProductGroupPosts = (
 ) => {
   return useInfiniteQuery({
     queryKey: productGroupId ? catalogKeys.productGroupPosts(productGroupId, type, undefined, limit) : ['catalog', 'productGroupPosts', 'disabled'],
-    queryFn: ({ pageParam }) => {
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
       if (!productGroupId) {
         throw new Error('ProductGroup ID is required');
       }
@@ -802,7 +802,7 @@ export const useCatalogProductPosts = (
 ) => {
   return useInfiniteQuery({
     queryKey: productId ? catalogKeys.catalogProductPosts(productId, type, undefined, limit) : ['catalog', 'catalogProductPosts', 'disabled'],
-    queryFn: ({ pageParam }) => {
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
       if (!productId) {
         throw new Error('Product ID is required');
       }

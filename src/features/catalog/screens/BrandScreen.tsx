@@ -211,7 +211,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       {/* Loading State */}
       {currentStep === 'brands' && isBrandsLoading && (
         <Box flex={1} justifyContent="center" alignItems="center" py="$8">
-          <Text color={isDark ? '#FFFFFF' : '#000000'}>Yükleniyor...</Text>
+          <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm">Loading...</Text>
         </Box>
       )}
 
@@ -219,7 +219,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       {currentStep === 'brands' && brandsError && (
         <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
           <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-            Hata: {brandsError.message}
+            Error: {brandsError.message}
           </Text>
         </Box>
       )}
@@ -228,7 +228,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
       {currentStep === 'brands' && !isBrandsLoading && !brandsError && currentData.length === 0 && (
         <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
           <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm" textAlign="center">
-            Bu kategoride henüz marka bulunmuyor
+            No brands found in this category yet
           </Text>
         </Box>
       )}

@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, VStack, ActivityIndicator, Text } from '@gluestack-ui/themed';
+import { ActivityIndicator } from 'react-native';
+import { ScrollView, VStack, Text, Button, ButtonText, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,8 +16,8 @@ import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useProductDetail, useProductPosts, useProductNews } from '../api/hooks';
 import type { BrandFeedPost } from '../types';
-import type { PostCardData } from '@/src/types/PostCard';
-import { CardType } from '@/src/types/common';
+import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
+import type { BenchmarkCardData } from '@/src/types/BenchmarkCard';
 
 type BrandProductDetailScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
 type BrandProductDetailScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandProductDetailScreen'>;
@@ -26,12 +27,12 @@ const BrandProductDetailScreen: React.FC = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
     const route = useRoute<BrandProductDetailScreenRouteProp>();
-    const [selectedTab, setSelectedTab] = useState('Deneyim Paylaşımı');
+    const [selectedTab, setSelectedTab] = useState('Experiences');
     const bottomInset = useSafeAreaValues('bottom');
 
     const { productId } = route.params;
 
-    const filterTabs = ['Deneyim Paylaşımı', 'Yorumlar', 'Karşılaştırmalar', 'Haberler'];
+    const filterTabs = ['Experiences', 'Comments', 'Comparisons', 'News'];
 
     // API hooks
     const { data: productDetail, isLoading: isLoadingProduct } = useProductDetail(productId);
@@ -40,48 +41,164 @@ const BrandProductDetailScreen: React.FC = () => {
     const { data: benchmarkPosts, isLoading: isLoadingBenchmark, fetchNextPage: fetchNextBenchmark, hasNextPage: hasNextBenchmark, isFetchingNextPage: isFetchingNextBenchmark } = useProductPosts(productId, 'benchmark', 20);
     const { data: newsData, isLoading: isLoadingNews, fetchNextPage: fetchNextNews, hasNextPage: hasNextNews, isFetchingNextPage: isFetchingNextNews } = useProductNews(productId, 20);
 
+    // Map Experience (ReviewApiItem) to ReviewCardData
+    const mapExperienceToCardData = useCallback((item: BrandFeedPost): ReviewCardData => {
+        // Type guard: experience type kontrolü
+        if (item.type !== 'experience') {
+            throw new Error(`Expected experience type, got ${item.type}`);
+        }
+        
+        const postData = item.data as import('@/src/types/ReviewsCard').ReviewApiItem;
+        const avatarSource = toImageSource(postData.user.avatar)!;
+        const productImage = postData.contextData?.image
+            ? toImageSource(postData.contextData.image)
+            : undefined;
+
+        // Content array'i map et - rating 0-100 arası, 0-5 arasına çevir (her 20 = 1 star)
+        const content: ReviewCardContentItem[] = Array.isArray(postData.content) 
+            ? postData.content.map((contentItem) => {
+                // Rating 0-100 arası, 0-5 arasına çevir
+                const ratingValue = contentItem.rating || 0;
+                const stars = Math.floor(ratingValue / 20); // 0-100 -> 0-5
+                
+                return {
+                    tag: {
+                        icon: 'tag' as const,
+                        title: contentItem.title || '',
+                    },
+                    text: contentItem.content || '',
+                    rating: Array(5)
+                        .fill(false)
+                        .map((_, index) => index < stars),
+                };
+            })
+            : [];
+
+        return {
+            id: postData.id,
+            user: {
+                id: postData.user.id,
+                name: postData.user.name,
+                title: postData.user.title,
+                avatar: avatarSource,
+                action: 'wrote a review',
+            },
+            contextData: {
+                id: postData.contextData?.id || '',
+                name: postData.contextData?.name || '',
+                subName: postData.contextData?.subName || '',
+                image: productImage,
+                isOwned: postData.contextData?.isOwned,
+            },
+            content,
+            tags: postData.tags || [],
+            images: postData.images
+                ?.map((img: string) => toImageSource(img))
+                .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [],
+            stats: postData.stats,
+            createdAt: postData.createdAt,
+        };
+    }, []);
+
+    // Map Benchmark to BenchmarkCardData
+    const mapBenchmarkToCardData = useCallback((item: BrandFeedPost): BenchmarkCardData => {
+        // Type guard: benchmark type kontrolü
+        if (item.type !== 'benchmark') {
+            throw new Error(`Expected benchmark type, got ${item.type}`);
+        }
+        
+        const postData = item.data as import('@/src/types/BenchmarkCard').BenchmarkApiItem;
+        const avatarSource = toImageSource(postData.user.avatar)!;
+
+        const products: import('@/src/types/BenchmarkCard').BenchmarkProduct[] = (postData.products || []).map((p) => ({
+            id: p.id,
+            name: p.name,
+            subName: p.subName,
+            image: toImageSource(p.image)!,
+            isOwned: p.isOwned,
+            choice: p.choice,
+        }));
+
+        return {
+            id: postData.id,
+            user: {
+                id: postData.user.id,
+                name: postData.user.name,
+                title: postData.user.title,
+                avatar: avatarSource,
+            },
+            products,
+            content: postData.content || '',
+            stats: postData.stats,
+            createdAt: postData.createdAt,
+        };
+    }, []);
+
     // Transform API posts data
     const transformPosts = useMemo(() => {
-        const transform = (postsData: typeof experiencePosts) => {
+        const transformExperience = (postsData: typeof experiencePosts): ReviewCardData[] => {
             if (!postsData?.pages) return [];
-            const allPosts: PostCardData[] = [];
+            const allPosts: ReviewCardData[] = [];
             postsData.pages.forEach((page) => {
                 if (page.items) {
                     page.items.forEach((item: BrandFeedPost) => {
-                        const postCard: PostCardData = {
-                            id: item.id,
-                            type: item.type as CardType,
-                            user: {
-                                id: item.user?.id || '',
-                                name: item.user?.name || '',
-                                avatar: item.user?.avatar || null,
-                            },
-                            content: item.content || '',
-                            images: item.images || [],
-                            stats: {
-                                likes: item.stats?.likes || 0,
-                                comments: item.stats?.comments || 0,
-                                shares: item.stats?.shares || 0,
-                            },
-                            createdAt: item.createdAt || new Date().toISOString(),
-                            product: item.product ? {
-                                id: item.product.id,
-                                name: item.product.name,
-                                image: item.product.image,
-                            } : undefined,
-                        };
-                        allPosts.push(postCard);
+                        if (item.type === 'experience') {
+                            try {
+                                allPosts.push(mapExperienceToCardData(item));
+                            } catch (error) {
+                                console.error('[transformPosts] Error mapping experience post:', error);
+                            }
+                        }
                     });
                 }
             });
             return allPosts;
         };
-        return {
-            experience: transform(experiencePosts),
-            comments: transform(commentPosts),
-            benchmark: transform(benchmarkPosts),
+
+        const transformBenchmark = (postsData: typeof benchmarkPosts): BenchmarkCardData[] => {
+            if (!postsData?.pages) return [];
+            const allPosts: BenchmarkCardData[] = [];
+            postsData.pages.forEach((page) => {
+                if (page.items) {
+                    page.items.forEach((item: BrandFeedPost) => {
+                        if (item.type === 'benchmark') {
+                            try {
+                                allPosts.push(mapBenchmarkToCardData(item));
+                            } catch (error) {
+                                console.error('[transformPosts] Error mapping benchmark post:', error);
+                            }
+                        }
+                    });
+                }
+            });
+            return allPosts;
         };
-    }, [experiencePosts, commentPosts, benchmarkPosts]);
+
+        const transformComments = (postsData: typeof commentPosts): ReviewCardData[] => {
+            if (!postsData?.pages) return [];
+            const allPosts: ReviewCardData[] = [];
+            postsData.pages.forEach((page) => {
+                if (page.items) {
+                    page.items.forEach((item: BrandFeedPost) => {
+                        if (item.type === 'experience') {
+                            try {
+                                allPosts.push(mapExperienceToCardData(item));
+                            } catch (error) {
+                                console.error('[transformPosts] Error mapping comment post:', error);
+                            }
+                        }
+                    });
+                }
+            });
+            return allPosts;
+        };
+
+        return {
+            experience: transformExperience(experiencePosts),
+            comments: transformComments(commentPosts),
+            benchmark: transformBenchmark(benchmarkPosts),
+        };
+    }, [experiencePosts, commentPosts, benchmarkPosts, mapExperienceToCardData, mapBenchmarkToCardData]);
 
     // Transform API news data
     const newsItems = useMemo(() => {
@@ -116,12 +233,12 @@ const BrandProductDetailScreen: React.FC = () => {
     };
 
     const renderContent = () => {
-        if (selectedTab === 'Haberler') {
+        if (selectedTab === 'News') {
             if (isLoadingNews) {
                 return (
                     <VStack alignItems="center" py="$8">
                         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                             Loading news...
                         </Text>
                     </VStack>
@@ -130,7 +247,7 @@ const BrandProductDetailScreen: React.FC = () => {
             if (newsItems.length === 0) {
                 return (
                     <VStack alignItems="center" py="$8">
-                        <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                             No news found
                         </Text>
                     </VStack>
@@ -155,9 +272,17 @@ const BrandProductDetailScreen: React.FC = () => {
                             {isFetchingNextNews ? (
                                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                             ) : (
-                                <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" onPress={() => fetchNextNews()}>
-                                    Load More
-                                </Text>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onPress={() => fetchNextNews()}
+                                    bg="transparent"
+                                    borderColor={isDark ? '$borderDark400' : '$borderLight300'}
+                                >
+                                    <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
+                                        Load More
+                                    </ButtonText>
+                                </Button>
                             )}
                         </VStack>
                     )}
@@ -165,12 +290,12 @@ const BrandProductDetailScreen: React.FC = () => {
             );
         }
 
-        if (selectedTab === 'Karşılaştırmalar') {
+        if (selectedTab === 'Comparisons') {
             if (isLoadingBenchmark) {
                 return (
                     <VStack alignItems="center" py="$8">
                         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                             Loading comparisons...
                         </Text>
                     </VStack>
@@ -179,7 +304,7 @@ const BrandProductDetailScreen: React.FC = () => {
             if (transformPosts.benchmark.length === 0) {
                 return (
                     <VStack alignItems="center" py="$8">
-                        <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                             No comparisons found
                         </Text>
                     </VStack>
@@ -190,7 +315,7 @@ const BrandProductDetailScreen: React.FC = () => {
                     {transformPosts.benchmark.map((post) => (
                         <BenchmarkPostCard
                             key={post.id}
-                            data={post as any}
+                            data={post}
                         />
                     ))}
                     {hasNextBenchmark && (
@@ -198,9 +323,17 @@ const BrandProductDetailScreen: React.FC = () => {
                             {isFetchingNextBenchmark ? (
                                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                             ) : (
-                                <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" onPress={() => fetchNextBenchmark()}>
-                                    Load More
-                                </Text>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onPress={() => fetchNextBenchmark()}
+                                    bg="transparent"
+                                    borderColor={isDark ? '$borderDark400' : '$borderLight300'}
+                                >
+                                    <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
+                                        Load More
+                                    </ButtonText>
+                                </Button>
                             )}
                         </VStack>
                     )}
@@ -208,12 +341,12 @@ const BrandProductDetailScreen: React.FC = () => {
             );
         }
 
-        if (selectedTab === 'Yorumlar') {
+        if (selectedTab === 'Comments') {
             if (isLoadingComments) {
                 return (
                     <VStack alignItems="center" py="$8">
                         <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                             Loading comments...
                         </Text>
                     </VStack>
@@ -222,7 +355,7 @@ const BrandProductDetailScreen: React.FC = () => {
             if (transformPosts.comments.length === 0) {
                 return (
                     <VStack alignItems="center" py="$8">
-                        <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                        <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                             No comments found
                         </Text>
                     </VStack>
@@ -233,7 +366,7 @@ const BrandProductDetailScreen: React.FC = () => {
                     {transformPosts.comments.map((post) => (
                         <ExperiencePostCard
                             key={post.id}
-                            data={post as any}
+                            data={post}
                         />
                     ))}
                     {hasNextComments && (
@@ -241,9 +374,17 @@ const BrandProductDetailScreen: React.FC = () => {
                             {isFetchingNextComments ? (
                                 <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                             ) : (
-                                <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" onPress={() => fetchNextComments()}>
-                                    Load More
-                                </Text>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onPress={() => fetchNextComments()}
+                                    bg="transparent"
+                                    borderColor={isDark ? '$borderDark400' : '$borderLight300'}
+                                >
+                                    <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
+                                        Load More
+                                    </ButtonText>
+                                </Button>
                             )}
                         </VStack>
                     )}
@@ -251,12 +392,12 @@ const BrandProductDetailScreen: React.FC = () => {
             );
         }
 
-        // Default: Deneyim Paylaşımı posts
+        // Default: Experiences posts
         if (isLoadingExperience) {
             return (
                 <VStack alignItems="center" py="$8">
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-                    <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                    <Text mt="$4" fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                         Loading experiences...
                     </Text>
                 </VStack>
@@ -265,7 +406,7 @@ const BrandProductDetailScreen: React.FC = () => {
         if (transformPosts.experience.length === 0) {
             return (
                 <VStack alignItems="center" py="$8">
-                    <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
+                    <Text fontSize="$sm" color="$textLight500" $dark-color="$textDark400">
                         No experiences found
                     </Text>
                 </VStack>
@@ -276,7 +417,7 @@ const BrandProductDetailScreen: React.FC = () => {
                 {transformPosts.experience.map((post) => (
                     <ExperiencePostCard
                         key={post.id}
-                        data={post as any}
+                        data={post}
                     />
                 ))}
                 {hasNextExperience && (
@@ -284,9 +425,17 @@ const BrandProductDetailScreen: React.FC = () => {
                         {isFetchingNextExperience ? (
                             <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
                         ) : (
-                            <Text fontSize={14} color="$textLight500" $dark-color="$textDark400" onPress={() => fetchNextExperience()}>
-                                Load More
-                            </Text>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onPress={() => fetchNextExperience()}
+                                bg="transparent"
+                                borderColor={isDark ? '$borderDark400' : '$borderLight300'}
+                            >
+                                <ButtonText fontSize="$sm" color={isDark ? '$textDark400' : '$textLight500'}>
+                                    Load More
+                                </ButtonText>
+                            </Button>
                         )}
                     </VStack>
                 )}
@@ -299,7 +448,7 @@ const BrandProductDetailScreen: React.FC = () => {
             <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
                 {/* Header */}
                 <Header
-                    title="Marka Ürünleri Defteri"
+                    title="Product Details"
                     showBackButton={true}
                     onBackPress={() => navigation.goBack()}
                 />

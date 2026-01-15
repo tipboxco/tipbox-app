@@ -147,7 +147,7 @@ const BrandEventsDetailScreen: React.FC = () => {
       <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Header */}
         <Header
-          title="Anketler & Oyunlaştırmalar"
+          title="Surveys & Gamification"
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
