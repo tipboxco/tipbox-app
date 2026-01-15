@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
-import { Text as RNText, Dimensions, View, InteractionManager, Pressable as RNPressable } from 'react-native';
-import { Pressable, Box, VStack, HStack } from '@gluestack-ui/themed';
+import { Text as RNText, Dimensions, View, InteractionManager, Pressable as RNPressable, Modal } from 'react-native';
+import { Pressable, Box, VStack, HStack, Text, Divider } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,10 +21,10 @@ const SPRING_CONFIG = {
   mass: 0.8,
 };
 
-// Menu item height
-const MENU_ITEM_HEIGHT = 48;
-const MENU_PADDING = 8;
-const MENU_BORDER_RADIUS = 8;
+// Menu constants - Trust List pattern'e göre
+const MENU_ITEM_HEIGHT = 40;
+const MENU_PADDING = 8; // Not used directly, VStack p={12} kullanılır
+const MENU_BORDER_RADIUS = 12;
 const MENU_WIDTH = 180;
 
 interface ContextMenuReanimatedProps {
@@ -85,7 +85,9 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
     }] : []),
   ];
   
-  const menuHeight = items.length * MENU_ITEM_HEIGHT + (MENU_PADDING * 2);
+  // Menu height: VStack padding (4 top + 12 bottom) + items (her item py={10} + text height ~15px = ~35px per item) + dividers (1px per divider)
+  // Her item için: py={10} (20px padding) + text height (~15px) = ~35px
+  const menuHeight = 16 + (items.length * 35) + ((items.length - 1) * 1);
   
   // Debug: Log items on mount and when they change
   React.useEffect(() => {
@@ -223,7 +225,7 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
       opacity,
       transform: [{ scale }],
       overflow: 'hidden' as const,
-      zIndex: 1000, // PostCard içinde üstte görünsün
+      zIndex: 10000, // Menu üstte görünsün
     };
   });
 
@@ -253,21 +255,21 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
         </Pressable>
       </View>
 
-      {/* Overlay - menu açıkken boşluğa tıklamayı yakalamak için (menu'den önce render edilir, z-index menu'den düşük) */}
-      {isOpen && (
+      {/* Modal Overlay - ekranın tamamını kapla */}
+      <Modal
+        visible={isOpen}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeMenu}
+      >
         <RNPressable
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            flex: 1,
             backgroundColor: 'transparent',
-            zIndex: 998, // Menu'den düşük (menu zIndex: 1000)
           }}
           onPress={closeMenu}
         />
-      )}
+      </Modal>
 
       {/* Animated Menu - positioned relative to parent container (PostCard içinde) */}
       {isOpen && (
@@ -292,9 +294,9 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
             onPress={(e) => e.stopPropagation()}
             style={{ flex: 1 }}
           >
-            <VStack py={MENU_PADDING} width="100%">
+            <VStack pt={4} pb={12} px={12} width="100%">
               {items.length === 0 && (
-                <Box px={16} py={12}>
+                <Box px={12} py={12}>
                   <RNText style={{ color: isDark ? '#FFFFFF' : '#000000', fontSize: 12 }}>
                     No menu items
                   </RNText>
@@ -303,25 +305,29 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
               {items.map((item, index) => {
                 console.log('[ContextMenuReanimated] Rendering menu item', { index, label: item.label });
                 return (
-                <Pressable
-                  key={index}
-                  onPress={() => handleMenuItemPress(item.onPress)}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    {item.icon}
-                    <RNText
-                      style={{
-                        color: item.color || (isDark ? '#FFFFFF' : '#000000'),
-                        fontSize: 14,
-                        fontWeight: '500',
-                      }}
-                    >
-                      {item.label}
-                    </RNText>
-                  </HStack>
-                </Pressable>
+                <React.Fragment key={index}>
+                  {index > 0 && (
+                    <Divider 
+                      bg={isDark ? '#333333' : '#E9E9E9'} 
+                      mx={0}
+                    />
+                  )}
+                  <Pressable
+                    onPress={() => handleMenuItemPress(item.onPress)}
+                    py={10}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      {item.icon}
+                      <Text
+                        color={item.color || (isDark ? '#FFFFFF' : '#000000')}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        {item.label}
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </React.Fragment>
                 );
               })}
             </VStack>
