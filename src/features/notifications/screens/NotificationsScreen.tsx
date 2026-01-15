@@ -189,8 +189,14 @@ const NotificationCard: React.FC<{
     const showTrustButton = (notification.type === 'NEW_TRUSTER' || notification.type === 'NEW_TRUSTED_BY');
 
     return (
-        <Pressable onPress={handlePress} mb="$4">
-            <VStack space="sm">
+        <Pressable 
+            onPress={handlePress}
+            py={12}
+            px={16}
+            borderBottomWidth={1}
+            borderBottomColor={isDark ? '#333' : '#E9E9E9'}
+        >
+            <VStack space="xs">
                 {/* Main Notification Row */}
                 <HStack space="md" alignItems="flex-start">
                     {/* Avatar - Mor/pembe border ile */}
@@ -231,9 +237,8 @@ const NotificationCard: React.FC<{
                     <VStack flex={1} space="xs" mr="$2">
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={14}
-                            fontWeight="400"
-                            lineHeight={20}
+                            fontSize="$sm"
+                            fontWeight="$normal"
                         >
                             {notification.message}
                         </Text>
@@ -243,8 +248,8 @@ const NotificationCard: React.FC<{
                     <VStack alignItems="flex-end" space="xs" justifyContent="flex-start">
                         <Text
                             color="#8C8C8C"
-                            fontSize={12}
-                            fontWeight="500"
+                            fontSize="$xs"
+                            fontWeight="$medium"
                         >
                             {formatRelativeTime(notification.createdAt)}
                         </Text>
@@ -277,9 +282,8 @@ const NotificationCard: React.FC<{
                     <Box ml={56} mt="$1" mr="$2">
                         <Text
                             color={isDark ? '#B9B9B9' : '#666666'}
-                            fontSize={13}
-                            fontWeight="400"
-                            lineHeight={18}
+                            fontSize="$xs"
+                            fontWeight="$normal"
                         >
                             {commentContent}
                         </Text>
@@ -303,8 +307,8 @@ const NotificationCard: React.FC<{
                                     >
                                         <Text
                                             color="#FFFFFF"
-                                            fontSize={10}
-                                            fontWeight="600"
+                                            fontSize="$xs"
+                                            fontWeight="$semibold"
                                         >
                                             {postTag}
                                         </Text>
@@ -314,8 +318,8 @@ const NotificationCard: React.FC<{
                                     <HStack alignItems="center" space="xs">
                                         <Text
                                             color={isDark ? '#B9B9B9' : '#666666'}
-                                            fontSize={11}
-                                            fontWeight="500"
+                                            fontSize="$xs"
+                                            fontWeight="$medium"
                                         >
                                             {notification.metadata.postCategory}
                                         </Text>
@@ -326,8 +330,8 @@ const NotificationCard: React.FC<{
                             {postTitle && (
                                 <Text
                                     color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize={14}
-                                    fontWeight="700"
+                                    fontSize="$sm"
+                                    fontWeight="$bold"
                                     mb="$1"
                                 >
                                     {postTitle}
@@ -336,9 +340,8 @@ const NotificationCard: React.FC<{
                             {postContent && (
                                 <Text
                                     color={isDark ? '#B9B9B9' : '#666666'}
-                                    fontSize={12}
-                                    fontWeight="400"
-                                    lineHeight={16}
+                                    fontSize="$xs"
+                                    fontWeight="$normal"
                                     numberOfLines={3}
                                 >
                                     {postContent}
@@ -360,8 +363,8 @@ const NotificationCard: React.FC<{
                         >
                             <Text
                                 color="#000000"
-                                fontSize={12}
-                                fontWeight="600"
+                                fontSize="$xs"
+                                fontWeight="$semibold"
                             >
                                 Profili Görüntüle
                             </Text>

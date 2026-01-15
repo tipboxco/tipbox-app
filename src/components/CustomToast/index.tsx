@@ -157,8 +157,8 @@ export const CustomToast: React.FC<CustomToastProps> = ({
       <HStack space="sm" alignItems="center" position="relative" flex={1}>
         {/* Sol tarafta dairesel ikon */}
         <Box
-          width={24}
-          height={24}
+          width={20}
+          height={20}
           borderRadius="$full"
           bg={config.iconBgColor}
           alignItems="center"
@@ -172,8 +172,8 @@ export const CustomToast: React.FC<CustomToastProps> = ({
           }}
         >
           <IconComponent
-            width={12}
-            height={12}
+            width={10}
+            height={10}
             color={config.iconColor}
           />
         </Box>
@@ -181,7 +181,7 @@ export const CustomToast: React.FC<CustomToastProps> = ({
         {/* Orta kısım - Mesaj metni */}
         <Box flex={1}>
           <Text
-            fontSize={9}
+            fontSize="$xs"
             fontWeight="$medium"
             color={config.textColor}
             numberOfLines={1}
@@ -190,7 +190,7 @@ export const CustomToast: React.FC<CustomToastProps> = ({
           </Text>
           {description && (
             <Text
-              fontSize={9}
+              fontSize="$xs"
               color={config.textColor}
               opacity={0.8}
               numberOfLines={1}
@@ -206,8 +206,8 @@ export const CustomToast: React.FC<CustomToastProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <X
-            width={14}
-            height={14}
+            width={10}
+            height={10}
             color="#9CA3AF"
           />
         </Pressable>

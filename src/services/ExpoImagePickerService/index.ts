@@ -255,20 +255,27 @@ class ExpoImagePickerService implements IImagePickerService {
             mimeTypeLower === 'image/jpeg' ||
             mimeTypeLower === 'image/png';
 
+          // HEIC/HEIF formatını tespit et
+          const isHeicFormat = 
+            uriLower.endsWith('.heic') || 
+            uriLower.endsWith('.heif') ||
+            mimeTypeLower === 'image/heic' ||
+            mimeTypeLower === 'image/heif' ||
+            mimeTypeLower.includes('heic') ||
+            mimeTypeLower.includes('heif');
+
           let finalAsset: ImagePicker.ImagePickerAsset = asset;
 
-          // iOS'ta manipulator sorun çıkarabildiği için iOS'ta manipulator kullanma
-          // Expo Image Picker zaten görsel formatlarını destekliyor
-          // Backend'e gönderirken format dönüşümü backend tarafında yapılabilir
-          if (!isAlreadyStandardFormat && Platform.OS !== 'ios') {
-            // Sadece Android'de manipulator kullan (iOS'ta sorun çıkarabiliyor)
+          // HEIC/HEIF formatındaki görüntüleri her platformda JPEG'e dönüştür
+          // iOS'ta HEIC formatı Expo Image Picker tarafından doğrudan okunamaz
+          if (isHeicFormat || (!isAlreadyStandardFormat && Platform.OS !== 'ios')) {
             try {
               const manipulatedImage = await ImageManipulator.manipulateAsync(
                 asset.uri,
-                [],
+                [], // No transformations - sadece format dönüşümü
                 {
-                  compress: 0.9,
-                  format: ImageManipulator.SaveFormat.JPEG,
+                  compress: 0.9, // Yüksek kalite
+                  format: ImageManipulator.SaveFormat.JPEG, // JPEG formatına dönüştür
                 }
               );
 
@@ -281,13 +288,20 @@ class ExpoImagePickerService implements IImagePickerService {
                   : asset.fileSize,
               };
             } catch (manipulatorError: any) {
-              // Manipulator başarısız olursa orijinal asset'i kullan
-              console.warn('Image manipulator failed, using original asset:', manipulatorError?.message);
+              // Manipulator başarısız olursa orijinal asset'i kullanmayı dene
+              console.warn('Image manipulator failed:', manipulatorError?.message);
+              
+              // HEIC formatındaysa ve manipulator başarısız olduysa hata döndür
+              if (isHeicFormat) {
+                console.error('HEIC format conversion failed:', manipulatorError);
+                invalidAssets.push('HEIC formatındaki görsel işlenemedi. Lütfen görseli JPEG/PNG formatına dönüştürün.');
+                continue;
+              }
+              
+              // HEIC değilse orijinal asset'i kullan
               finalAsset = asset;
             }
           }
-          // iOS'ta manipulator kullanma - orijinal asset'i direkt kullan
-          // Expo Image Picker zaten tüm formatları destekliyor
 
           const validation = this.validateImage(finalAsset);
           if (validation.isValid) {
@@ -297,11 +311,21 @@ class ExpoImagePickerService implements IImagePickerService {
           }
         } catch (error: any) {
           console.error('Image processing error:', error, 'Original URI:', asset.uri);
-          // Hata durumunda da orijinal asset'i kullanmayı dene
+          
+          // HEIC format hatası kontrolü
+          const errorMsg = (error?.message || '').toLowerCase();
+          if (errorMsg.includes('cannot load representation') || 
+              errorMsg.includes('public.heic') || 
+              errorMsg.includes('heic')) {
+            invalidAssets.push('HEIC formatındaki görsel işlenemedi. Lütfen görseli JPEG/PNG formatına dönüştürün.');
+            continue;
+          }
+          
+          // Hata durumunda da orijinal asset'i kullanmayı dene (HEIC değilse)
           try {
-        const validation = this.validateImage(asset);
-        if (validation.isValid) {
-          validAssets.push(asset);
+            const validation = this.validateImage(asset);
+            if (validation.isValid) {
+              validAssets.push(asset);
             } else {
               invalidAssets.push(validation.error || 'Görsel işlenemedi');
             }
@@ -340,9 +364,13 @@ class ExpoImagePickerService implements IImagePickerService {
       if (error?.message) {
         const errorMsg = error.message.toLowerCase();
         
-        // iOS'ta format hatası
-        if (errorMsg.includes('cannot load representation') || errorMsg.includes('public.jpeg') || errorMsg.includes('public.heic')) {
-          errorMessage = 'Görsel formatı desteklenmiyor. Lütfen farklı bir görsel seçin veya görseli JPEG/PNG formatına dönüştürün.';
+        // iOS'ta format hatası (HEIC/HEIF)
+        if (errorMsg.includes('cannot load representation') || 
+            errorMsg.includes('public.heic') || 
+            errorMsg.includes('public.heif') ||
+            errorMsg.includes('heic') ||
+            errorMsg.includes('heif')) {
+          errorMessage = 'HEIC formatındaki görsel işlenemedi. Görsel otomatik olarak JPEG formatına dönüştürülmeye çalışıldı ancak başarısız oldu. Lütfen farklı bir görsel seçin veya görseli önceden JPEG/PNG formatına dönüştürün.';
         } else if (errorMsg.includes('permission') || errorMsg.includes('authorization')) {
           errorMessage = 'Galeri erişim izni gerekli. Lütfen ayarlardan izin verin.';
         } else if (errorMsg.includes('canceled') || errorMsg.includes('cancelled')) {
