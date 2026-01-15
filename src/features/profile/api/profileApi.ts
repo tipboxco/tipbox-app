@@ -53,49 +53,9 @@ export interface UpdateProfileResponse {
 export const getUserProfile = async (
   userId: string
 ): Promise<UserProfile> => {
-  console.log('[getUserProfile] 📤 API Request:', {
-    url: `/users/${userId}/profile`,
-    userId,
-    timestamp: new Date().toISOString(),
-  });
-  
   const response = await apiService.getClient().get<UserProfile>(
     `/users/${userId}/profile`
   );
-  
-  // CRITICAL: Profile response'unu detaylıca logla
-  console.log('[getUserProfile] 📥 API Response:', {
-    url: `/users/${userId}/profile`,
-    userId,
-    timestamp: new Date().toISOString(),
-    responseStatus: response.status,
-    responseData: {
-      id: response.data?.id,
-      name: response.data?.name,
-      avatar: response.data?.avatar,
-      biography: response.data?.biography,
-      bannerUrl: response.data?.bannerUrl,
-      titles: response.data?.titles,
-      badges: response.data?.badges?.length || 0,
-      stats: response.data?.stats,
-      isTrusted: response.data?.isTrusted,
-    },
-    fullResponse: response.data,
-  });
-  
-  // PERFORMANCE: Stats değerlerini özellikle kontrol et
-  if (response.data?.stats) {
-    console.log('[getUserProfile] 📊 Stats Detay:', {
-      posts: response.data.stats.posts,
-      trust: response.data.stats.trust,
-      truster: response.data.stats.truster,
-      statsType: {
-        posts: typeof response.data.stats.posts,
-        trust: typeof response.data.stats.trust,
-        truster: typeof response.data.stats.truster,
-      },
-    });
-  }
   
   return response.data;
 };
@@ -701,32 +661,11 @@ export const getUserReviews = async (
     
     const responseData = response.data;
     
-    // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserReviews] API Response Detay:', {
-      url: `/users/${userId}/reviews?${params.toString()}`,
-      cursor,
-      limit,
-      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
-      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
-      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
-      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
-      allItemIds: Array.isArray(responseData) 
-        ? responseData.map((item: any) => item?.id).filter(Boolean)
-        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
-    });
-    
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
       const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
-      
-      console.log('[getUserReviews] Normalized Response:', {
-        itemsCount: items.length,
-        hasMore,
-        cursor: cursorValue,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean),
-      });
       
       return {
         items,
@@ -756,13 +695,6 @@ export const getUserReviews = async (
       }
       
       // Zaten doğru formatta
-      console.log('[getUserReviews] Response (already formatted):', {
-        itemsCount: responseData.items?.length || 0,
-        hasMore: responseData.pagination?.hasMore,
-        cursor: responseData.pagination?.cursor,
-        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
-      });
-      
       return responseData as ProfileReviewsApiResponse;
     }
     
@@ -813,33 +745,12 @@ export const getUserBenchmarks = async (
     );
     
     const responseData = response.data;
-    
-    // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserBenchmarks] API Response Detay:', {
-      url: `/users/${userId}/benchmarks?${params.toString()}`,
-      cursor,
-      limit,
-      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
-      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
-      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
-      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
-      allItemIds: Array.isArray(responseData) 
-        ? responseData.map((item: any) => item?.id).filter(Boolean)
-        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
-    });
-    
+
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
       const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
-      
-      console.log('[getUserBenchmarks] Normalized Response:', {
-        itemsCount: items.length,
-        hasMore,
-        cursor: cursorValue,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean),
-      });
       
       return {
         items,
@@ -858,13 +769,6 @@ export const getUserBenchmarks = async (
         const items = Array.isArray(responseData.items) ? responseData.items : [];
         const hasMore = items.length >= limit;
         
-        console.log('[getUserBenchmarks] Normalized Response (object format):', {
-          itemsCount: items.length,
-          hasMore,
-          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
-          itemIds: items.map((item: any) => item?.id).filter(Boolean),
-        });
-        
         return {
           items,
           pagination: {
@@ -876,18 +780,8 @@ export const getUserBenchmarks = async (
       }
       
       // Zaten doğru formatta
-      console.log('[getUserBenchmarks] Response (already formatted):', {
-        itemsCount: responseData.items?.length || 0,
-        hasMore: responseData.pagination?.hasMore,
-        cursor: responseData.pagination?.cursor,
-        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
-      });
-      
       return responseData as ProfileBenchmarksApiResponse;
     }
-    
-    // Beklenmeyen format
-    console.warn('[getUserBenchmarks] Unexpected response format:', responseData);
     return {
       items: [],
       pagination: {
@@ -934,32 +828,11 @@ export const getUserTipsAndTricks = async (
     
     const responseData = response.data;
     
-    // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserTipsAndTricks] API Response Detay:', {
-      url: `/users/${userId}/tips?${params.toString()}`,
-      cursor,
-      limit,
-      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
-      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
-      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
-      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
-      allItemIds: Array.isArray(responseData) 
-        ? responseData.map((item: any) => item?.id).filter(Boolean)
-        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
-    });
-    
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
       const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
-      
-      console.log('[getUserTipsAndTricks] Normalized Response:', {
-        itemsCount: items.length,
-        hasMore,
-        cursor: cursorValue,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean),
-      });
       
       return {
         items,
@@ -978,13 +851,6 @@ export const getUserTipsAndTricks = async (
         const items = Array.isArray(responseData.items) ? responseData.items : [];
         const hasMore = items.length >= limit;
         
-        console.log('[getUserTipsAndTricks] Normalized Response (object format):', {
-          itemsCount: items.length,
-          hasMore,
-          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
-          itemIds: items.map((item: any) => item?.id).filter(Boolean),
-        });
-        
         return {
           items,
           pagination: {
@@ -996,18 +862,8 @@ export const getUserTipsAndTricks = async (
       }
       
       // Zaten doğru formatta
-      console.log('[getUserTipsAndTricks] Response (already formatted):', {
-        itemsCount: responseData.items?.length || 0,
-        hasMore: responseData.pagination?.hasMore,
-        cursor: responseData.pagination?.cursor,
-        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
-      });
-      
       return responseData as ProfileTipsAndTricksApiResponse;
     }
-    
-    // Beklenmeyen format
-    console.warn('[getUserTipsAndTricks] Unexpected response format:', responseData);
     return {
       items: [],
       pagination: {
@@ -1054,32 +910,11 @@ export const getUserLadderBadges = async (
     
     const responseData = response.data;
     
-    // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserLadderBadges] API Response Detay:', {
-      url: `/users/${userId}/ladder/badges?${params.toString()}`,
-      cursor,
-      limit,
-      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
-      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
-      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
-      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
-      allItemIds: Array.isArray(responseData) 
-        ? responseData.map((item: any) => item?.id).filter(Boolean)
-        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
-    });
-    
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
       const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
-      
-      console.log('[getUserLadderBadges] Normalized Response:', {
-        itemsCount: items.length,
-        hasMore,
-        cursor: cursorValue,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean),
-      });
       
       return {
         items,
@@ -1098,13 +933,6 @@ export const getUserLadderBadges = async (
         const items = Array.isArray(responseData.items) ? responseData.items : [];
         const hasMore = items.length >= limit;
         
-        console.log('[getUserLadderBadges] Normalized Response (object format):', {
-          itemsCount: items.length,
-          hasMore,
-          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
-          itemIds: items.map((item: any) => item?.id).filter(Boolean),
-        });
-        
         return {
           items,
           pagination: {
@@ -1116,18 +944,8 @@ export const getUserLadderBadges = async (
       }
       
       // Zaten doğru formatta
-      console.log('[getUserLadderBadges] Response (already formatted):', {
-        itemsCount: responseData.items?.length || 0,
-        hasMore: responseData.pagination?.hasMore,
-        cursor: responseData.pagination?.cursor,
-        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
-      });
-      
       return responseData as ProfileLadderBadgesApiResponse;
     }
-    
-    // Beklenmeyen format
-    console.warn('[getUserLadderBadges] Unexpected response format:', responseData);
     return {
       items: [],
       pagination: {
@@ -1173,34 +991,13 @@ export const getUserReplies = async (
     );
     
     const responseData = response.data;
-    
-    // Detaylı log: Backend'den ne geldi?
-    console.log('[getUserReplies] API Response Detay:', {
-      url: `/users/${userId}/questions?${params.toString()}`,
-      cursor,
-      limit,
-      responseType: Array.isArray(responseData) ? 'array' : typeof responseData,
-      rawItemsCount: Array.isArray(responseData) ? responseData.length : (responseData?.items?.length || 0),
-      firstItemId: Array.isArray(responseData) ? responseData[0]?.id : responseData?.items?.[0]?.id,
-      lastItemId: Array.isArray(responseData) ? responseData[responseData.length - 1]?.id : responseData?.items?.[responseData?.items?.length - 1]?.id,
-      allItemIds: Array.isArray(responseData) 
-        ? responseData.map((item: any) => item?.id).filter(Boolean)
-        : (responseData?.items?.map((item: any) => item?.id).filter(Boolean) || []),
-    });
-    
+
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
       const hasMore = items.length >= limit;
       const cursorValue = items.length > 0 ? items[items.length - 1].id : undefined;
-      
-      console.log('[getUserReplies] Normalized Response:', {
-        itemsCount: items.length,
-        hasMore,
-        cursor: cursorValue,
-        itemIds: items.map((item: any) => item?.id).filter(Boolean),
-      });
-      
+
       return {
         items,
         pagination: {
@@ -1218,13 +1015,6 @@ export const getUserReplies = async (
         const items = Array.isArray(responseData.items) ? responseData.items : [];
         const hasMore = items.length >= limit;
         
-        console.log('[getUserReplies] Normalized Response (object format):', {
-          itemsCount: items.length,
-          hasMore,
-          cursor: items.length > 0 ? items[items.length - 1].id : undefined,
-          itemIds: items.map((item: any) => item?.id).filter(Boolean),
-        });
-        
         return {
           items,
           pagination: {
@@ -1236,18 +1026,10 @@ export const getUserReplies = async (
       }
       
       // Zaten doğru formatta
-      console.log('[getUserReplies] Response (already formatted):', {
-        itemsCount: responseData.items?.length || 0,
-        hasMore: responseData.pagination?.hasMore,
-        cursor: responseData.pagination?.cursor,
-        itemIds: responseData.items?.map((item: any) => item?.id).filter(Boolean) || [],
-      });
-      
       return responseData as ProfileRepliesApiResponse;
     }
     
     // Beklenmeyen format
-    console.warn('[getUserReplies] Unexpected response format:', responseData);
     return {
       items: [],
       pagination: {
@@ -1256,13 +1038,6 @@ export const getUserReplies = async (
       },
     };
   } catch (error: any) {
-    console.error('[getUserReplies] API Error:', {
-      url: `/users/${userId}/questions?${params.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-    });
     throw error;
   }
 };

@@ -162,10 +162,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           // Eğer hala yüklenmediyse ve source değişmediyse default avatar'a geç
           const currentUri = typeof currentSource === 'string' ? currentSource : (currentSource as any)?.uri || null;
           if (currentUri === newSourceUri) {
-            console.log('[DrawerContent] Avatar load timeout, using default avatar:', {
-              userId: user?.id,
-              attemptedSource: newSource,
-            });
             previousAvatarRef.current = null; // Default avatar'a geçtiğimiz için ref'i temizle
             return DEFAULT_USER_AVATAR;
           }
@@ -188,10 +184,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   
   // Avatar başarıyla yüklendiğinde
   const handleAvatarLoad = useCallback(() => {
-    console.log('[DrawerContent] Avatar loaded successfully:', {
-      userId: user?.id,
-      source: avatarSource,
-    });
     // Timeout'u temizle - görsel başarıyla yüklendi, default avatar'a geçmeye gerek yok
     if (avatarLoadTimeoutRef.current) {
       clearTimeout(avatarLoadTimeoutRef.current);
@@ -201,10 +193,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   
   // Avatar yüklenme hatası durumunda default avatar'a geçiş
   const handleAvatarError = useCallback(() => {
-    console.log('[DrawerContent] Avatar load error, using default avatar:', {
-      userId: user?.id,
-      attemptedSource: avatarSource,
-    });
     setAvatarSource(DEFAULT_USER_AVATAR);
     previousAvatarRef.current = null; // Default avatar'a geçtiğimiz için ref'i temizle
     // Timeout'u temizle
@@ -238,27 +226,18 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // CRITICAL FIX: DrawerContent sadece drawer açıkken render edilir, bu yüzden state kontrolü gereksiz
   // Handler çağrıldıysa drawer açık demektir
   const handleNavigateToProfile = useCallback(() => {
-    console.log('[DrawerContent] 🎯 handleNavigateToProfile called', { 
-      userId: user?.id,
-      isOpen
-    });
     if (!user?.id) {
-      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
       return;
     }
-    console.log('[DrawerContent] ✅ Navigating to Profile...');
     handleCloseDrawer();
     // NavigationService root navigator ref'ine direkt erişir
     navigationService.navigate('Profile', {
       screen: 'ProfileMain',
       params: { userId: user.id },
     });
-    console.log('[DrawerContent] ✅ Navigation called');
   }, [handleCloseDrawer, user?.id, isOpen]);
 
   const handleNavigateToWallet = useCallback(() => {
-    console.log('[DrawerContent] 🎯 handleNavigateToWallet called');
-    console.log('[DrawerContent] ✅ Navigating to Wallet (FeedNavigator)...');
     handleCloseDrawer();
     // FeedNavigator içindeki WalletScreen'e navigate et - FeedStack içinde olduğu için global bottom sheet çalışır
     navigationService.navigate('App', {
@@ -270,7 +249,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
         },
       },
     } as any);
-    console.log('[DrawerContent] ✅ Navigation called');
   }, [handleCloseDrawer]);
 
   const handleNavigateToBookmarks = useCallback(() => {
@@ -295,67 +273,48 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
 
   // PERFORMANCE FIX: Profile section handler'ını memoize et
   const handleProfilePress = useCallback(() => {
-    console.log('[DrawerContent] 🎯 handleProfilePress called (Avatar)', { 
-      userId: user?.id,
-      isOpen
-    });
     if (!user?.id) {
-      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
       return;
     }
-    console.log('[DrawerContent] ✅ Navigating to Profile (Avatar)...');
     handleCloseDrawer();
     navigationService.navigate('Profile', {
       screen: 'ProfileMain',
       params: { userId: user.id },
     });
-    console.log('[DrawerContent] ✅ Navigation called');
   }, [handleCloseDrawer, user?.id, isOpen]);
 
   // PERFORMANCE FIX: Stats section handler'larını memoize et
   const handlePostsPress = useCallback(() => {
-    console.log('[DrawerContent] 🎯 handlePostsPress called', { userId: user?.id });
     if (!user?.id) {
-      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
       return;
     }
-    console.log('[DrawerContent] ✅ Navigating to Profile (Posts)...');
     handleCloseDrawer();
     navigationService.navigate('Profile', {
       screen: 'ProfileMain',
       params: { userId: user.id },
     });
-    console.log('[DrawerContent] ✅ Navigation called');
   }, [handleCloseDrawer, user?.id]);
 
   const handleTrustPress = useCallback(() => {
-    console.log('[DrawerContent] 🎯 handleTrustPress called', { userId: user?.id });
     if (!user?.id) {
-      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
       return;
     }
-    console.log('[DrawerContent] ✅ Navigating to TrustList...');
     handleCloseDrawer();
     navigationService.navigate('Profile', {
       screen: 'TrustList',
       params: { userId: user.id, initialTab: 'trust' },
     });
-    console.log('[DrawerContent] ✅ Navigation called');
   }, [handleCloseDrawer, user?.id]);
 
   const handleTrusterPress = useCallback(() => {
-    console.log('[DrawerContent] 🎯 handleTrusterPress called', { userId: user?.id });
     if (!user?.id) {
-      console.log('[DrawerContent] ❌ Navigation blocked: no userId');
       return;
     }
-    console.log('[DrawerContent] ✅ Navigating to TrustList (Truster)...');
     handleCloseDrawer();
     navigationService.navigate('Profile', {
       screen: 'TrustList',
       params: { userId: user.id, initialTab: 'truster' },
     });
-    console.log('[DrawerContent] ✅ Navigation called');
   }, [handleCloseDrawer, user?.id]);
 
   // PERFORMANCE FIX: Bottom menu handler'larını memoize et
@@ -500,7 +459,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               zIndex: 0,
             }}
             onPress={() => {
-              console.log('[DrawerContent] 👆 TouchableOpacity (Avatar) pressed');
               handleProfilePress();
             }}
           >
@@ -554,7 +512,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             <HStack justifyContent="center" alignItems="center" px="$6">
               <Pressable
                 onPress={() => {
-                  console.log('[DrawerContent] 👆 Pressable (Posts) pressed');
                   handlePostsPress();
                 }}
                 flex={1}
@@ -577,7 +534,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               <Box w={1} h={30} bg={isDark ? '#DFDFDF' : '#DFDFDF'} />
               <Pressable
                 onPress={() => {
-                  console.log('[DrawerContent] 👆 Pressable (Trust) pressed');
                   handleTrustPress();
                 }}
                 flex={1}
@@ -600,7 +556,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               <Box w={0.5} h={30} bg={isDark ? '$backgroundDark200' : '$backgroundLight200'} />
               <Pressable
                 onPress={() => {
-                  console.log('[DrawerContent] 👆 Pressable (Truster) pressed');
                   handleTrusterPress();
                 }}
                 flex={1}
@@ -653,7 +608,6 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
               <Pressable
                 key={item.id}
                 onPress={() => {
-                  console.log('[DrawerContent] 👆 MenuItem pressed:', item.id, item.label);
                   item.onPress();
                 }}
                 h={48}

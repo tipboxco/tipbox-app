@@ -38,10 +38,10 @@ const NewsCard: React.FC<NewsCardProps> = ({
         p="$3"
       >
         <HStack space="sm" alignItems="center">
-          {/* News Image - 64x64 */}
+          {/* News Image */}
           <Box
-            width={92}
-            height={92}
+            width={64}
+            height={64}
             borderRadius={5}
             bg="rgba(0, 0, 0, 0.2)"
             alignItems="center"
@@ -52,21 +52,21 @@ const NewsCard: React.FC<NewsCardProps> = ({
               source={image}
               alt={title}
               style={{
-                width: 92,
-                height: 92,
+                width: 64,
+                height: 64,
               }}
               resizeMode="cover"
             />
           </Box>
 
           {/* News Content - VStack */}
-          <VStack pr={'$5'} maxHeight={92} flex={1} space="xs">
+          <VStack pr={'$5'} maxHeight={64} flex={1} space="xs">
             {/* Source and Date */}
             <HStack alignItems="center" space="xs">
               <BookOpenIcon width={12} height={12} color="#B9B9B9" />
               <Text
                 color="#B9B9B9"
-                fontSize={9}
+                fontSize="$2xs"
                 fontWeight="$medium"
               >
                 {source} - {date}
@@ -76,7 +76,7 @@ const NewsCard: React.FC<NewsCardProps> = ({
             {/* Title */}
             <Text
               color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={12}
+              fontSize="$sm"
               fontWeight="$bold"
               numberOfLines={1}
             >
@@ -86,8 +86,8 @@ const NewsCard: React.FC<NewsCardProps> = ({
             {/* Description */}
             <Text
               color={isDark ? '#FFFFFF' : '#343434'}
-              fontSize={9}
-              lineHeight={12}
+              fontSize="$2xs"
+              lineHeight="$sm"
               numberOfLines={4}
             >
               {description}

@@ -233,21 +233,6 @@ export const getFilteredFeed = async (
   }
 
   const fullUrl = `/feed/filtered?${params.toString()}`;
-  
-  // Log request details
-  console.log('[getFilteredFeed] 📤 Request:', {
-    url: fullUrl,
-    filters: filters,
-    interests: filters?.interests,
-    tags: filters?.tags,
-    category: filters?.category,
-    sort: filters?.sort,
-    contextType: contextType,
-    contextId: contextId,
-    cursor: cursor,
-    limit: limit,
-    params: params.toString(),
-  });
 
   try {
     const response = await apiService.getClient().get<FeedApiResponse>(fullUrl);
@@ -260,13 +245,6 @@ export const getFilteredFeed = async (
         limit: limit,
       },
     };
-    
-    // Log response details
-    console.log('[getFilteredFeed] ✅ Response:', {
-      url: fullUrl,
-      status: response.status,
-      statusText: response.statusText,
-      data: {
         itemsCount: safeResponse.items.length,
         pagination: safeResponse.pagination,
         items: Array.isArray(safeResponse.items) 

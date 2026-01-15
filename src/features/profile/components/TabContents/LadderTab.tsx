@@ -63,11 +63,6 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
       }
     });
     
-    console.log(`[LadderTab] Render #${renderCountRef.current}`, {
-      changed: changedValues.length > 0 ? changedValues : ['No changes detected'],
-      current: currentValues,
-    });
-    
     prevValuesRef.current = currentValues;
   });
 
@@ -76,29 +71,10 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
     if (!ladderBadgesData?.pages) return [];
     const allItems = ladderBadgesData.pages.flatMap((page) => page.items ?? []);
     
-    // Detaylı log: Duplicate filter öncesi
-    console.log('[LadderTab] Duplicate Filter Öncesi:', {
-      pagesCount: ladderBadgesData.pages.length,
-      allItemsCount: allItems.length,
-      allItemIds: allItems.map((item) => item.id),
-      pagesItemIds: ladderBadgesData.pages.map((page, idx) => ({
-        pageIndex: idx,
-        itemIds: page.items?.map((item) => item.id) || [],
-      })),
-    });
-    
     // ID'ye göre unique item'ları filtrele
     const uniqueItems = allItems.filter((item, index, self) => 
       index === self.findIndex((t) => t.id === item.id)
     );
-    
-    // Detaylı log: Duplicate filter sonrası
-    console.log('[LadderTab] Duplicate Filter Sonrası:', {
-      allItemsCount: allItems.length,
-      uniqueItemsCount: uniqueItems.length,
-      duplicatesRemoved: allItems.length - uniqueItems.length,
-      uniqueItemIds: uniqueItems.map((item) => item.id),
-    });
     
     return uniqueItems;
   }, [ladderBadgesData]);

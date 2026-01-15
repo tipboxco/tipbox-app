@@ -893,9 +893,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         }).then(() => {
           // Refetch tamamlandıktan sonra activity indicator'ı kapat
           setIsRefreshingOnFocus(false);
-          console.log('[ProfileScreen] ✅ Focus refresh completed - yeni gönderi yüklendi');
         }).catch((error) => {
-          console.error('[ProfileScreen] ❌ Focus refresh error:', error);
           setIsRefreshingOnFocus(false);
         });
       }
@@ -934,27 +932,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           exact: false,
         }),
       ]);
-      
-      console.log('[ProfileScreen] ✅ Pull to refresh completed');
     } catch (error) {
-      console.error('[ProfileScreen] ❌ Refresh error:', error);
+      // Error handled silently
     } finally {
       setRefreshing(false);
     }
   }, [targetUserId, refetchProfile, queryClient]);
   
-  // Avatar URL kontrolü için log
-  React.useEffect(() => {
-    if (userProfile) {
-      console.log('[ProfileScreen] User Profile Avatar:', {
-        userId: userProfile.id,
-        name: userProfile.name,
-        avatar: userProfile.avatar,
-        hasAvatar: !!userProfile.avatar,
-        avatarLength: userProfile.avatar?.length || 0,
-      });
-    }
-  }, [userProfile]);
   
   // Trust mutations
   const { mutate: trustUser, isPending: isTrusting } = useAddToTrustList();
@@ -1113,7 +1097,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
-            console.log('[ProfileScreen] Block user:', targetUserId);
             // Navigate back after blocking
             if (navigation.canGoBack()) {
               navigation.goBack();
@@ -1368,7 +1351,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     justifyContent="center"
                     alignItems="center"
                     onPress={() => {
-                      console.log('[ProfileScreen] Notification pressed');
+                      // Notification action
                     }}
                   >
                     <BellIcon size={16} color="#000" />
@@ -1459,7 +1442,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             <Pressable
               onPress={() => {
                 if (targetUserId) {
-                  console.log('[ProfileScreen] Navigating to TrustList with userId:', targetUserId, 'initialTab: trust');
                   navigation.navigate('TrustList', {
                     userId: targetUserId,
                     initialTab: 'trust',
@@ -1492,7 +1474,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             <Pressable
               onPress={() => {
                 if (targetUserId) {
-                  console.log('[ProfileScreen] Navigating to TrustList with userId:', targetUserId, 'initialTab: truster');
                   navigation.navigate('TrustList', {
                     userId: targetUserId,
                     initialTab: 'truster',

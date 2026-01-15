@@ -89,26 +89,13 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
   // Her item için: py={10} (20px padding) + text height (~15px) = ~35px
   const menuHeight = 16 + (items.length * 35) + ((items.length - 1) * 1);
   
-  // Debug: Log items on mount and when they change
+  // Notify parent component about menu state change
   React.useEffect(() => {
-    console.log('[ContextMenuReanimated] Items changed', { 
-      itemsCount: items.length, 
-      hasOnViewProfile: !!onViewProfile,
-      hasOnReport: !!onReport,
-      menuHeight 
-    });
-  }, [items.length, onViewProfile, onReport, menuHeight]);
-  
-  // Debug: Log isOpen changes
-  React.useEffect(() => {
-    console.log('[ContextMenuReanimated] isOpen changed', { isOpen, menuPosition });
-    // Notify parent component about menu state change
     onMenuStateChange?.(isOpen);
   }, [isOpen, menuPosition, onMenuStateChange]);
 
   // Close menu
   const closeMenu = useCallback(() => {
-    console.log('[ContextMenuReanimated] closeMenu called');
     setIsOpen(false);
     progress.value = withSpring(0, SPRING_CONFIG);
   }, [progress]);
@@ -121,70 +108,52 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
   // Handle layout measurement - onLayout'dan gelen bilgileri kullan
   const handleTriggerLayout = useCallback((event: any) => {
     const { x, y, width, height } = event.nativeEvent.layout;
-    console.log('[ContextMenuReanimated] handleTriggerLayout called', { x, y, width, height });
     
     // onLayout'dan gelen x, y zaten parent container'a göre koordinatlar
     // Ama measure ile window koordinatlarını almak için ref kullan
     if (triggerRef.current) {
       triggerRef.current.measure((fx: number, fy: number, w: number, h: number, px: number, py: number) => {
-        console.log('[ContextMenuReanimated] measure in onLayout', { px, py, w, h, x, y });
         // px, py parent container'a göre koordinatlar
         setTriggerLayout({ x: px, y: py, width: w, height: h });
       });
     } else {
       // Ref henüz hazır değilse, onLayout'dan gelen x, y'yi kullan (parent container'a göre)
-      console.log('[ContextMenuReanimated] Using onLayout x, y directly', { x, y, width, height });
       setTriggerLayout({ x, y, width, height });
     }
   }, []);
 
   // Toggle menu
   const handleToggle = useCallback(() => {
-    console.log('[ContextMenuReanimated] handleToggle called', { isOpen, itemsCount: items.length });
-    
     if (!isOpen) {
-      console.log('[ContextMenuReanimated] Opening menu...', { 
-        triggerRefExists: !!triggerRef.current,
-        triggerLayout,
-        onViewProfile: !!onViewProfile,
-        onReport: !!onReport 
-      });
-      
       // Önce triggerLayout state'ini kullan (onLayout'dan gelmiş olabilir)
       if (triggerLayout) {
-        console.log('[ContextMenuReanimated] Using triggerLayout state', triggerLayout);
         const buttonLeft = triggerLayout.x;
         const menuLeft = buttonLeft - MENU_WIDTH + 10; // 10px sağa kaydır
         const screenWidth = Dimensions.get('window').width;
         const left = Math.max(-screenWidth + MENU_WIDTH + 12, menuLeft);
         const top = triggerLayout.y - 8; // Butonun üstüne hizala, 8px yukarı
         
-        console.log('[ContextMenuReanimated] Setting menu position from triggerLayout', { top, left, buttonLeft, menuLeft });
         setMenuPosition({ top, left });
         setIsOpen(true);
         progress.value = withSpring(1, SPRING_CONFIG);
       } else if (triggerRef.current) {
         // Fallback: measure kullan
         triggerRef.current.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
-          console.log('[ContextMenuReanimated] measure result', { px, py, width, height, fx, fy });
           const buttonLeft = px;
           const menuLeft = buttonLeft - MENU_WIDTH ; // 10px sağa kaydır
           const screenWidth = Dimensions.get('window').width;
           const left = Math.max(-screenWidth + MENU_WIDTH + 12, menuLeft);
           const top = py - 8; // Butonun üstüne hizala, 8px yukarı
           
-          console.log('[ContextMenuReanimated] Setting menu position from measure', { top, left, buttonLeft, menuLeft });
           setMenuPosition({ top, left });
           setIsOpen(true);
           progress.value = withSpring(1, SPRING_CONFIG);
         });
       } else {
-        console.error('[ContextMenuReanimated] triggerRef.current is null and no triggerLayout!');
         // Ref henüz hazır değilse, InteractionManager ile render tamamlandıktan sonra dene
         InteractionManager.runAfterInteractions(() => {
           if (triggerRef.current) {
             triggerRef.current.measure((fx: number, fy: number, width: number, height: number, px: number, py: number) => {
-              console.log('[ContextMenuReanimated] measure after InteractionManager', { px, py, width, height });
               const buttonLeft = px;
               const menuLeft = buttonLeft - MENU_WIDTH ; // 10px sağa kaydır
               const screenWidth = Dimensions.get('window').width;
@@ -196,7 +165,6 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
               progress.value = withSpring(1, SPRING_CONFIG);
             });
           } else {
-            console.error('[ContextMenuReanimated] Still null after InteractionManager!');
             // Son çare: try to open anyway
             setIsOpen(true);
             progress.value = withSpring(1, SPRING_CONFIG);
@@ -204,7 +172,6 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
         });
       }
     } else {
-      console.log('[ContextMenuReanimated] Closing menu...');
       closeMenu();
     }
   }, [isOpen, progress, closeMenu, items.length, onViewProfile, onReport, triggerLayout]);
@@ -303,7 +270,6 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
                 </Box>
               )}
               {items.map((item, index) => {
-                console.log('[ContextMenuReanimated] Rendering menu item', { index, label: item.label });
                 return (
                 <React.Fragment key={index}>
                   {index > 0 && (
