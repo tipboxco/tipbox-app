@@ -45,8 +45,8 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
         screens: {
           MainTabs: {
             screens: {
-              // Feed Tab - ARCHITECTURE FIX: FeedScreen is now a direct Tab.Screen (not nested in FeedNavigator)
-              FeedScreen: 'feed',
+              // Feed Tab - ARCHITECTURE FIX: FeedStack is now a Tab.Screen that uses FeedNavigator
+              FeedStack: 'feed',
               // Explore Tab
               ExploreStack: {
                 screens: {

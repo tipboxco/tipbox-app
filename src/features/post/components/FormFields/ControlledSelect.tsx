@@ -49,7 +49,7 @@ export const ControlledSelect: React.FC<ControlledSelectProps> = ({
           {label && (
             <Text
               color={isDark ? '$textDark400' : '#B9B9B9'}
-              fontSize={10}
+              fontSize="$sm"
               fontWeight="$bold"
             >
               {label}
@@ -67,13 +67,13 @@ export const ControlledSelect: React.FC<ControlledSelectProps> = ({
               borderColor={error ? '#CE4A4A' : '#E9E9E9'}
               $dark-borderColor={error ? '#CE4A4A' : '$borderDark600'}
               borderRadius={10}
-              height={44}
+              height={52}
             >
               <SelectInput
                 placeholder={placeholder}
                 placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                 color={value ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
-                fontSize={10}
+                fontSize="$sm"
                 fontWeight="$medium"
               />
               <SelectIcon mr="$3" as={ChevronDownIcon} />
@@ -95,7 +95,7 @@ export const ControlledSelect: React.FC<ControlledSelectProps> = ({
             </SelectPortal>
           </Select>
           {error && (
-            <Text color="#CE4A4A" fontSize={9} px={2}>
+            <Text color="#CE4A4A" fontSize="$xs" px={2}>
               {error.message}
             </Text>
           )}

@@ -125,17 +125,6 @@ export const getFeed = async (
     
     return safeResponse;
   } catch (error: any) {
-    console.error('[getFeed] API Error:', {
-      url: `/feed?${params.toString()}`,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      config: {
-        baseURL: error.config?.baseURL,
-        headers: error.config?.headers,
-      },
-    });
     throw error;
   }
 };

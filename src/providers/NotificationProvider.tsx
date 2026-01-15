@@ -217,11 +217,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const isSocketConnected = socketService.isConnected();
     
     if (!isSocketConnected || !socket) {
-      console.warn('[NotificationProvider] ⚠️ Socket not connected, listener will not work:', {
-        isSocketConnected,
-        socketExists: !!socket,
-        socketId: socket?.id,
-      });
       // Socket bağlı değilse listener ekleme (socket bağlandığında tekrar denenecek)
       return;
     }

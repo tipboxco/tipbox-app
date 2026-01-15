@@ -24,11 +24,7 @@ import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TipsAndTrickPostFormData } from '../schemas/tipsAndTrickPostSchema';
 
-// Mock data for product info
-const productInfo = {
-  image: require('@/assets/product/product_01.png'),
-  title: 'Computers & Tablet\nTechnology Subcategories',
-};
+// ProductInfo will be loaded from store
 
 // Categories from Figma
 const categories = [
@@ -72,7 +68,7 @@ const CategorySelectorField: React.FC = () => {
         <VStack space="xs" position="relative">
           <Text
             color={isDark ? '$textDark400' : '#A3A3A3'}
-            fontSize={10}
+            fontSize="$sm"
             fontWeight="$semibold"
           >
             Tips & Tricks Category
@@ -94,7 +90,7 @@ const CategorySelectorField: React.FC = () => {
               >
                 <Text
                   color={selectedCategory ? (isDark ? '$textDark50' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
-                  fontSize={10}
+                  fontSize="$sm"
                   fontWeight="$medium"
                   flex={1}
                 >
@@ -104,7 +100,7 @@ const CategorySelectorField: React.FC = () => {
                 </Text>
                 <Feather
                   name={showCategoryModal ? "chevron-up" : "chevron-down"}
-                  size={18}
+                  size={20}
                   color={isDark ? '#000000' : '#000000'}
                 />
               </HStack>
@@ -146,8 +142,8 @@ const CategorySelectorField: React.FC = () => {
                       }}
                     >
                       <HStack
-                        px={12}
-                        py={10}
+                        px="$3"
+                        py="$3"
                         alignItems="center"
                         space="sm"
                       >
@@ -158,7 +154,7 @@ const CategorySelectorField: React.FC = () => {
                         />
                         <Text
                           color={isDark ? '$textDark50' : '#2F2F2F'}
-                          fontSize={10}
+                          fontSize="$sm"
                           fontWeight="$medium"
                         >
                           {category.label}
@@ -171,7 +167,7 @@ const CategorySelectorField: React.FC = () => {
             </Box>
           )}
           {error && (
-            <Text color="#CE4A4A" fontSize={9} px={2}>
+            <Text color="#CE4A4A" fontSize="$xs" px={2}>
               {error.message}
             </Text>
           )}
@@ -196,6 +192,7 @@ export const CreateTipsAndTrickPostScreen = () => {
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
   
@@ -204,10 +201,11 @@ export const CreateTipsAndTrickPostScreen = () => {
     console.log('[CreateTipsAndTrickPostScreen] 🔍 Context State:', {
       contextType,
       contextId,
+      productInfoSnapshot,
       isValidFlow,
       storeState: useCreatePostFlowStore.getState(),
     });
-  }, [contextType, contextId, isValidFlow]);
+  }, [contextType, contextId, productInfoSnapshot, isValidFlow]);
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -456,9 +454,9 @@ export const CreateTipsAndTrickPostScreen = () => {
               borderWidth: 1,
               borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
               textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-              fontSize: 12,
+              fontSize: 11,
               borderRadius: 25,
-              paddingX: 24,
+              paddingX: 22,
               paddingY: 8,
               onPress: handleSubmit(onSubmit),
             }}
@@ -473,14 +471,17 @@ export const CreateTipsAndTrickPostScreen = () => {
           >
             <VStack space="md">
               {/* Product Info Card */}
-              <Box px="$4" py="$2">
-                <ProductInfoCard
-                  image={productInfo.image}
-                  title={productInfo.title}
-                  size="big"
-                  type={ProductInfoType.SUB_CATEGORY}
-                />
-              </Box>
+              {productInfoSnapshot && (
+                <Box px="$4" py="$2">
+                  <ProductInfoCard
+                    image={productInfoSnapshot.image}
+                    title={productInfoSnapshot.title}
+                    subName={productInfoSnapshot.subName}
+                    size="big"
+                    type={contextType || ProductInfoType.SUB_CATEGORY}
+                  />
+                </Box>
+              )}
 
               {/* Tips & Tricks Description Section */}
               <VStack px={16} space="xs">

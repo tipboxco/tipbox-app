@@ -15,12 +15,9 @@ export class ImageCacheService {
       const expoImage = await import('expo-image');
       if (expoImage.clearMemoryCache && typeof expoImage.clearMemoryCache === 'function') {
         await expoImage.clearMemoryCache();
-        console.log('[ImageCacheService] ✅ Memory cache cleared');
-      } else {
-        console.warn('[ImageCacheService] ⚠️ clearMemoryCache is not available in this expo-image version');
       }
     } catch (error) {
-      console.warn('[ImageCacheService] ⚠️ Error clearing memory cache:', error);
+      // Silent fail
     }
   }
 
@@ -34,12 +31,9 @@ export class ImageCacheService {
       const expoImage = await import('expo-image');
       if (expoImage.clearDiskCache && typeof expoImage.clearDiskCache === 'function') {
         await expoImage.clearDiskCache();
-        console.log('[ImageCacheService] ✅ Disk cache cleared');
-      } else {
-        console.warn('[ImageCacheService] ⚠️ clearDiskCache is not available in this expo-image version');
       }
     } catch (error) {
-      console.warn('[ImageCacheService] ⚠️ Error clearing disk cache:', error);
+      // Silent fail
     }
   }
 
@@ -53,9 +47,8 @@ export class ImageCacheService {
         this.clearMemory(),
         this.clearDisk(),
       ]);
-      console.log('[ImageCacheService] ✅ All cache cleared');
     } catch (error) {
-      console.warn('[ImageCacheService] ⚠️ Error clearing all cache:', error);
+      // Silent fail
     }
   }
 }

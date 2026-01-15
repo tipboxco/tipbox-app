@@ -69,14 +69,14 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
             <VStack flex={1} space="xs">
               <Text
                 color={isDark ? '$textDark50' : '#000000'}
-                fontSize={12}
+                fontSize="$md"
                 fontWeight="$semibold"
               >
                 {title}
               </Text>
               <Text
                 color={isDark ? '$textDark400' : '#000000'}
-                fontSize={10}
+                fontSize="$sm"
                 fontWeight="$normal"
               >
                 {description}
@@ -99,7 +99,7 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
                 >
                   <Text
                     color="#FFFFFF"
-                    fontSize={9}
+                    fontSize="$xs"
                     fontWeight="$medium"
                   >
                     Popular
@@ -108,7 +108,7 @@ export const BoostOptionCard: React.FC<BoostOptionCardProps> = ({
               )}
               <Text
                 color={isSelected ? '#829905' : (isDark ? '$textDark50' : '#000000')}
-                fontSize={12}
+                fontSize="$md"
                 fontWeight="$semibold"
               >
                 {price}

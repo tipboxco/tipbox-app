@@ -419,9 +419,21 @@ export const getEventRequirements = async (
  * @returns CreateEventPostResponse
  */
 export interface CreateEventPostRequestNew {
-  title: string; // Max 200 char
-  body: string; // Max 2000 char
+  title: string; // Max 200 char - ZORUNLU
+  body: string; // Max 2000 char - ZORUNLU (content olarak da kullanılabilir)
   productId?: string; // Opsiyonel
+}
+
+/**
+ * Event içerisinde free post oluşturmak için yeni request interface
+ * POST /events/{eventId}/posts endpoint'i için
+ */
+export interface CreateEventFreePostRequest {
+  productId: string; // ZORUNLU - Product ID
+  title: string; // ZORUNLU - Post başlığı
+  content: string; // ZORUNLU - Post içeriği
+  isOwned?: boolean; // Opsiyonel - Ürün sahibi mi?
+  iTried?: boolean; // Opsiyonel - Denendi mi?
 }
 
 export interface CreateEventPostResponseNew {
@@ -472,6 +484,113 @@ export const createEventPostNew = async (
   } catch (error: any) {
     console.error('[createEventPostNew] API Error:', {
       url: `/events/${eventId}/posts`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Event içerisinde free post oluşturma endpoint fonksiyonu
+ * POST /events/{eventId}/posts endpoint'ine istek gönderir
+ * 
+ * @param eventId - Event ID (URL'de)
+ * @param data - CreateEventFreePostRequest - Post oluşturma verisi
+ * @returns CreateEventPostResponseNew - Oluşturulan post response'u
+ * 
+ * Payload yapısı:
+ * {
+ *   productId: string,      // ZORUNLU
+ *   title: string,           // ZORUNLU
+ *   content: string,         // ZORUNLU
+ *   isOwned?: boolean,        // Opsiyonel
+ *   iTried?: boolean          // Opsiyonel
+ * }
+ */
+export const createEventFreePost = async (
+  eventId: string,
+  data: CreateEventFreePostRequest
+): Promise<CreateEventPostResponseNew> => {
+  // Validate eventId before making API call
+  if (!eventId || eventId.trim() === '') {
+    const error = new Error('Event ID is required');
+    console.error('[createEventFreePost] Validation Error:', {
+      eventId: eventId || 'undefined',
+      error: error.message,
+    });
+    throw error;
+  }
+
+  // Validate required fields
+  if (!data.productId || data.productId.trim() === '') {
+    const error = new Error('Product ID is required');
+    console.error('[createEventFreePost] Validation Error:', {
+      productId: data.productId || 'undefined',
+      error: error.message,
+    });
+    throw error;
+  }
+
+  if (!data.title || data.title.trim() === '') {
+    const error = new Error('Title is required');
+    console.error('[createEventFreePost] Validation Error:', {
+      title: data.title || 'undefined',
+      error: error.message,
+    });
+    throw error;
+  }
+
+  if (!data.content || data.content.trim() === '') {
+    const error = new Error('Content is required');
+    console.error('[createEventFreePost] Validation Error:', {
+      content: data.content || 'undefined',
+      error: error.message,
+    });
+    throw error;
+  }
+  
+  try {
+    // Payload yapısı: 6 parametre (eventId URL'de, diğerleri body'de)
+    const payload: {
+      productId: string;
+      title: string;
+      content: string;
+      isOwned?: boolean;
+      iTried?: boolean;
+    } = {
+      productId: data.productId,
+      title: data.title,
+      content: data.content,
+    };
+
+    // Opsiyonel parametreleri ekle (sadece tanımlıysa)
+    if (data.isOwned !== undefined) {
+      payload.isOwned = data.isOwned;
+    }
+
+    if (data.iTried !== undefined) {
+      payload.iTried = data.iTried;
+    }
+
+    const response = await apiService.getClient().post<CreateEventPostResponseNew>(
+      `/events/${eventId}/posts`,
+      payload
+    );
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('[createEventFreePost] API Error:', {
+      url: `/events/${eventId}/posts`,
+      payload: {
+        productId: data.productId,
+        title: data.title,
+        content: data.content,
+        isOwned: data.isOwned,
+        iTried: data.iTried,
+      },
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

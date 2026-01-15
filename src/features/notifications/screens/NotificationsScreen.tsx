@@ -416,6 +416,20 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, shouldFetchNotifications); // Sadece authenticated ve auth ready olduğunda query çalışsın
 
+    // DEBUG: API response formatını kontrol et
+    useEffect(() => {
+        if (notificationsResponse) {
+            console.log('[NotificationsScreen] 📦 API Response:', {
+                hasResponse: !!notificationsResponse,
+                hasData: !!notificationsResponse?.data,
+                dataType: Array.isArray(notificationsResponse?.data) ? 'array' : typeof notificationsResponse?.data,
+                dataLength: Array.isArray(notificationsResponse?.data) ? notificationsResponse.data.length : 'N/A',
+                success: notificationsResponse?.success,
+                fullResponse: notificationsResponse,
+            });
+        }
+    }, [notificationsResponse]);
+
     useFocusEffect(
         useCallback(() => {
             // Ekran focus aldığında drawer gesture'ı disable et
@@ -441,9 +455,37 @@ const NotificationsScreenComponent: React.FC = () => {
     const progress = useSharedValue(0);
 
     // SAFETY FIX: Ensure notifications is always an array
-    const notifications = Array.isArray(notificationsResponse?.data) 
-        ? notificationsResponse.data 
-        : [];
+    // API response format: { success: boolean, data: Notification[] }
+    // Eğer backend direkt array döndürüyorsa, onu da handle et
+    const notifications = useMemo(() => {
+        if (!notificationsResponse) {
+            return [];
+        }
+        
+        // Format 1: { success, data: [...] }
+        if (notificationsResponse.data && Array.isArray(notificationsResponse.data)) {
+            return notificationsResponse.data;
+        }
+        
+        // Format 2: Backend direkt array döndürüyor olabilir (fallback)
+        if (Array.isArray(notificationsResponse)) {
+            console.warn('[NotificationsScreen] ⚠️ Backend returned array directly, wrapping in response format');
+            return notificationsResponse;
+        }
+        
+        // Format 3: Response'un kendisi array (axios response.data direkt array)
+        if (Array.isArray(notificationsResponse)) {
+            return notificationsResponse;
+        }
+        
+        console.warn('[NotificationsScreen] ⚠️ Unexpected response format:', {
+            response: notificationsResponse,
+            type: typeof notificationsResponse,
+            isArray: Array.isArray(notificationsResponse),
+        });
+        
+        return [];
+    }, [notificationsResponse]);
     
     // Tab press handler - PagerView native animasyonu ile geçiş
     const handleTabPress = useCallback((index: number) => {

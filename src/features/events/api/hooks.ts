@@ -12,6 +12,7 @@ import {
   leaveEvent, 
   getEventRequirements, 
   createEventPostNew,
+  createEventFreePost,
   getEventPostDetail,
   deleteEventPost,
   toggleEventPostLike,
@@ -24,13 +25,14 @@ import {
   type EventRequirementsResponse,
   type CreateEventPostRequestNew,
   type CreateEventPostResponseNew,
+  type CreateEventFreePostRequest,
   type EventPostDetail,
   type ToggleLikeResponse,
   type CommentResponse,
   type CommentsResponse,
 } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgesApiResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 
@@ -208,7 +210,7 @@ export const useEventPosts = (eventId: string, limit: number = 20) => {
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useEventBadges('eventId123');
  */
 export const useEventBadges = (eventId: string, limit: number = 20) => {
-  return useInfiniteQuery<EventBadgesResponse, Error>({
+  return useInfiniteQuery<EventBadgesApiResponse, Error>({
     queryKey: eventsKeys.badges(eventId, undefined, limit),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
@@ -506,7 +508,12 @@ export const useDeleteEventPost = () => {
 export const useToggleEventPostLike = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<ToggleLikeResponse, Error, { eventId: string; postId: string }>({
+  return useMutation<
+    ToggleLikeResponse, 
+    Error, 
+    { eventId: string; postId: string },
+    { previousPosts: any }
+  >({
     mutationFn: ({ eventId, postId }) => toggleEventPostLike(eventId, postId),
     onMutate: async ({ eventId, postId }) => {
       // Cancel outgoing queries
@@ -671,6 +678,52 @@ export const useDeleteEventPostComment = () => {
       queryClient.invalidateQueries({ queryKey: eventsKeys.eventPostComments(eventId, postId) });
       // Event posts listesini invalidate et (comment count değişir)
       queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
+    },
+  });
+};
+
+/**
+ * Create Event Free Post mutation hook
+ * Event içerisinde free post oluşturmak için mutation hook
+ * POST /events/{eventId}/posts endpoint'ine istek gönderir
+ * 
+ * Payload yapısı:
+ * - eventId: string (URL'de, zorunlu)
+ * - productId: string (body'de, zorunlu)
+ * - title: string (body'de, zorunlu)
+ * - content: string (body'de, zorunlu)
+ * - isOwned?: boolean (body'de, opsiyonel)
+ * - iTried?: boolean (body'de, opsiyonel)
+ *
+ * @param eventId - Event ID
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const createPost = useCreateEventFreePost('event-123');
+ * createPost.mutate({
+ *   productId: 'product-456',
+ *   title: 'Post Title',
+ *   content: 'Post content',
+ *   isOwned: true,
+ *   iTried: false
+ * });
+ */
+export const useCreateEventFreePost = (eventId: string) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<CreateEventPostResponseNew, Error, CreateEventFreePostRequest>({
+    mutationFn: (data) => createEventFreePost(eventId, data),
+    onSuccess: () => {
+      // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
+      queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
+      // 2. Event detail'i invalidate et (post sayısı değişebilir)
+      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      // 3. Ana feed'i invalidate et ki yeni post görünsün
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // 5. Active events listesini invalidate et (event post sayısı değişebilir)
+      queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
     },
   });
 };

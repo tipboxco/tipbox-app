@@ -105,9 +105,8 @@ export const WalletService = {
         AsyncStorage.removeItem(WALLET_IDENTIFIER_KEY),
         AsyncStorage.removeItem(WALLET_CONNECTED_KEY), // Backward compatibility
       ]);
-      console.log('[WalletService] ✅ Wallet bilgileri temizlendi');
     } catch (error) {
-      console.error('[WalletService] ❌ Wallet temizleme hatası:', error);
+      // Silent fail
     }
   },
 

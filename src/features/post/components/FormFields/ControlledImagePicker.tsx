@@ -45,7 +45,7 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
             {label && (
               <Text
                 color={isDark ? '$textDark400' : '#A3A3A3'}
-                fontSize={10}
+                fontSize="$sm"
                 fontWeight="$bold"
               >
                 {label}
@@ -114,7 +114,7 @@ export const ControlledImagePicker: React.FC<ControlledImagePickerProps> = ({
               )}
             </HStack>
             {error && (
-              <Text color="#CE4A4A" fontSize={9} px={2}>
+              <Text color="#CE4A4A" fontSize="$xs" px={2}>
                 {error.message}
               </Text>
             )}

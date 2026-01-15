@@ -34,7 +34,7 @@ export const ControlledTextarea: React.FC<ControlledTextareaProps> = ({
           {label && (
             <Text
               color={isDark ? '$textDark400' : '#B9B9B9'}
-              fontSize={10}
+              fontSize="$sm"
               fontWeight="$bold"
             >
               {label}
@@ -60,17 +60,17 @@ export const ControlledTextarea: React.FC<ControlledTextareaProps> = ({
                 placeholder={placeholder}
                 placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
                 color={isDark ? '$textDark50' : '#000000'}
-                fontSize={10}
-                lineHeight={12}
+                fontSize="$sm"
+                lineHeight="$md"
                 value={value || ''}
                 onChangeText={onChange}
                 maxLength={maxLength}
                 style={{
                   textAlignVertical: 'top',
-                  paddingTop: 10,
-                  paddingBottom: 32,
-                  paddingLeft: 8,
-                  paddingRight: 8,
+                  paddingTop: 12,
+                  paddingBottom: 36,
+                  paddingLeft: 12,
+                  paddingRight: 12,
                 }}
               />
             </Textarea>
@@ -83,7 +83,7 @@ export const ControlledTextarea: React.FC<ControlledTextareaProps> = ({
             >
               <Text
                 color={isDark ? '$textDark400' : '#A3A3A3'}
-                fontSize={9}
+                fontSize="$xs"
                 fontWeight="$medium"
               >
                 {characterCount}/{maxLength}
@@ -91,7 +91,7 @@ export const ControlledTextarea: React.FC<ControlledTextareaProps> = ({
             </Box>
           </Box>
           {error && (
-            <Text color="#CE4A4A" fontSize={9} px={2}>
+            <Text color="#CE4A4A" fontSize="$xs" px={2}>
               {error.message}
             </Text>
           )}

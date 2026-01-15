@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts } from './catalogApi';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, type CatalogPaginationResponse } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats } from '../types';
 
@@ -9,7 +9,7 @@ import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogP
  */
 export const catalogKeys = {
   all: ['catalog'] as const,
-  categories: () => [...catalogKeys.all, 'categories'] as const,
+  categories: (cursor?: string, limit?: number) => [...catalogKeys.all, 'categories', cursor, limit] as const,
   brandCategories: () => [...catalogKeys.all, 'brandCategories'] as const,
   brandList: (categoryId: string) => [...catalogKeys.all, 'brands', categoryId] as const,
   brandCatalog: (brandId: string) => [...catalogKeys.all, 'brandCatalog', brandId] as const,
@@ -24,8 +24,8 @@ export const catalogKeys = {
     [...catalogKeys.all, 'brandEvents', brandId, limit] as const,
   brandHistory: (brandId: string) => [...catalogKeys.all, 'brandHistory', brandId] as const,
   brandStats: (brandId: string) => [...catalogKeys.all, 'brandStats', brandId] as const,
-  subCategories: (categoryId: string) => [...catalogKeys.all, 'subCategories', categoryId] as const,
-  productGroups: (subCategoryId: string) => [...catalogKeys.all, 'productGroups', subCategoryId] as const,
+  subCategories: (categoryId: string, cursor?: string, limit?: number) => [...catalogKeys.all, 'subCategories', categoryId, cursor, limit] as const,
+  productGroups: (subCategoryId: string, cursor?: string, limit?: number) => [...catalogKeys.all, 'productGroups', subCategoryId, cursor, limit] as const,
   products: (productGroupId: string) => [...catalogKeys.all, 'products', productGroupId] as const,
   productDetail: (productId: string) => [...catalogKeys.all, 'productDetail', productId] as const,
   productPosts: (productId: string, type?: string, cursor?: string, limit?: number) => 
@@ -50,16 +50,16 @@ export const useCatalogPrefetch = () => {
 
   const prefetchSubCategories = useCallback((categoryId: string) => {
     queryClient.prefetchQuery({
-      queryKey: catalogKeys.subCategories(categoryId),
-      queryFn: () => getCatalogSubCategories(categoryId),
+      queryKey: catalogKeys.subCategories(categoryId, undefined, 1000),
+      queryFn: () => getCatalogSubCategories(categoryId, undefined, 1000),
       staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     });
   }, [queryClient]);
 
   const prefetchProductGroups = useCallback((subCategoryId: string) => {
     queryClient.prefetchQuery({
-      queryKey: catalogKeys.productGroups(subCategoryId),
-      queryFn: () => getCatalogProductGroups(subCategoryId),
+      queryKey: catalogKeys.productGroups(subCategoryId, undefined, 1000),
+      queryFn: () => getCatalogProductGroups(subCategoryId, undefined, 1000),
       staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     });
   }, [queryClient]);
@@ -81,17 +81,18 @@ export const useCatalogPrefetch = () => {
 
 /**
  * Get Catalog Categories query hook
- * Tüm katalog kategorilerini getirir ve cache'ler
+ * Tüm katalog kategorilerini getirir
  * 
+ * @param limit - Maksimum item sayısı (default: 1000)
  * @returns React Query hook result
  * 
  * @example
  * const { data, isLoading, error } = useCatalogCategories();
  */
-export const useCatalogCategories = () => {
-  return useQuery<CatalogCategory[], Error>({
-    queryKey: catalogKeys.categories(),
-    queryFn: () => getCatalogCategories(),
+export const useCatalogCategories = (limit: number = 1000) => {
+  return useQuery<CatalogPaginationResponse<CatalogCategory>, Error>({
+    queryKey: catalogKeys.categories(undefined, limit),
+    queryFn: () => getCatalogCategories(undefined, limit),
     staleTime: 24 * 60 * 60 * 1000, // 24 saat - dokümana göre backend cache TTL
     gcTime: 7 * 24 * 60 * 60 * 1000, // 7 gün - cache'de tut
     refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
@@ -151,22 +152,23 @@ export const useBrandsByCategory = (categoryId: string | undefined) => {
 
 /**
  * Get Catalog SubCategories query hook
- * Belirli bir kategoriye ait alt kategorileri getirir ve cache'ler
+ * Belirli bir kategoriye ait alt kategorileri getirir
  * 
  * @param categoryId - Kategori ID'si
+ * @param limit - Maksimum item sayısı (default: 1000)
  * @returns React Query hook result
  * 
  * @example
  * const { data, isLoading, error } = useCatalogSubCategories('category-123');
  */
-export const useCatalogSubCategories = (categoryId: string | undefined) => {
-  return useQuery<CatalogSubCategory[], Error>({
-    queryKey: categoryId ? catalogKeys.subCategories(categoryId) : ['catalog', 'subCategories', 'disabled'],
+export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 1000) => {
+  return useQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
+    queryKey: categoryId ? catalogKeys.subCategories(categoryId, undefined, limit) : ['catalog', 'subCategories', 'disabled'],
     queryFn: () => {
       if (!categoryId) {
         throw new Error('Category ID is required');
       }
-      return getCatalogSubCategories(categoryId);
+      return getCatalogSubCategories(categoryId, undefined, limit);
     },
     enabled: !!categoryId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
@@ -180,22 +182,23 @@ export const useCatalogSubCategories = (categoryId: string | undefined) => {
 
 /**
  * Get Catalog ProductGroups query hook
- * Belirli bir alt kategoriye ait ürün gruplarını getirir ve cache'ler
+ * Belirli bir alt kategoriye ait ürün gruplarını getirir
  * 
  * @param subCategoryId - Alt kategori ID'si
+ * @param limit - Maksimum item sayısı (default: 1000)
  * @returns React Query hook result
  * 
  * @example
  * const { data, isLoading, error } = useCatalogProductGroups('subcategory-123');
  */
-export const useCatalogProductGroups = (subCategoryId: string | undefined) => {
-  return useQuery<CatalogProductGroup[], Error>({
-    queryKey: subCategoryId ? catalogKeys.productGroups(subCategoryId) : ['catalog', 'productGroups', 'disabled'],
+export const useCatalogProductGroups = (subCategoryId: string | undefined, limit: number = 1000) => {
+  return useQuery<CatalogPaginationResponse<CatalogProductGroup>, Error>({
+    queryKey: subCategoryId ? catalogKeys.productGroups(subCategoryId, undefined, limit) : ['catalog', 'productGroups', 'disabled'],
     queryFn: () => {
       if (!subCategoryId) {
         throw new Error('SubCategory ID is required');
       }
-      return getCatalogProductGroups(subCategoryId);
+      return getCatalogProductGroups(subCategoryId, undefined, limit);
     },
     enabled: !!subCategoryId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL

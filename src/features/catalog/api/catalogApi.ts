@@ -12,48 +12,187 @@ import type {
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
- * Get Catalog Categories endpoint function
- * Tüm katalog kategorilerini getirir
- * 
- * @returns CatalogCategory[] - Katalog kategorileri listesi
+ * Catalog Pagination Response - Pagination destekli response formatı
  */
-export const getCatalogCategories = async (): Promise<CatalogCategory[]> => {
-  const response = await apiService.getClient().get<CatalogCategory[]>(
-    '/catalog/categories'
-  );
-  return response.data;
+export interface CatalogPaginationResponse<T> {
+  items: T[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
+ * Get Catalog Categories endpoint function
+ * Tüm katalog kategorilerini getirir (pagination ile)
+ * 
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns CatalogPaginationResponse<CatalogCategory> - Katalog kategorileri listesi ve pagination bilgisi
+ */
+export const getCatalogCategories = async (
+  cursor?: string,
+  limit: number = 20
+): Promise<CatalogPaginationResponse<CatalogCategory>> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+  
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogCategory> | CatalogCategory[]>(
+      `/catalog/categories?${params.toString()}`
+    );
+    
+    // Backend pagination destekliyorsa direkt döndür
+    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
+      return response.data as CatalogPaginationResponse<CatalogCategory>;
+    }
+    
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (Array.isArray(response.data)) {
+      return {
+        items: response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    
+    // Beklenmeyen format
+    throw new Error('Unexpected response format from /catalog/categories');
+  } catch (error: any) {
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (error.response?.data && Array.isArray(error.response.data)) {
+      return {
+        items: error.response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    throw error;
+  }
 };
 
 /**
  * Get Catalog SubCategories endpoint function
- * Belirli bir kategoriye ait alt kategorileri getirir
+ * Belirli bir kategoriye ait alt kategorileri getirir (pagination ile)
  * 
  * @param categoryId - Kategori ID'si
- * @returns CatalogSubCategory[] - Alt kategori listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns CatalogPaginationResponse<CatalogSubCategory> - Alt kategori listesi ve pagination bilgisi
  */
 export const getCatalogSubCategories = async (
-  categoryId: string
-): Promise<CatalogSubCategory[]> => {
-  const response = await apiService.getClient().get<CatalogSubCategory[]>(
-    `/catalog/categories/${categoryId}/sub-categories`
-  );
-  return response.data;
+  categoryId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<CatalogPaginationResponse<CatalogSubCategory>> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+  
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogSubCategory> | CatalogSubCategory[]>(
+      `/catalog/categories/${categoryId}/sub-categories?${params.toString()}`
+    );
+    
+    // Backend pagination destekliyorsa direkt döndür
+    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
+      return response.data as CatalogPaginationResponse<CatalogSubCategory>;
+    }
+    
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (Array.isArray(response.data)) {
+      return {
+        items: response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    
+    // Beklenmeyen format
+    throw new Error('Unexpected response format from /catalog/categories/{categoryId}/sub-categories');
+  } catch (error: any) {
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (error.response?.data && Array.isArray(error.response.data)) {
+      return {
+        items: error.response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    throw error;
+  }
 };
 
 /**
  * Get Catalog ProductGroups endpoint function
- * Belirli bir alt kategoriye ait ürün gruplarını getirir
+ * Belirli bir alt kategoriye ait ürün gruplarını getirir (pagination ile)
  * 
  * @param subCategoryId - Alt kategori ID'si
- * @returns CatalogProductGroup[] - Ürün grubu listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns CatalogPaginationResponse<CatalogProductGroup> - Ürün grubu listesi ve pagination bilgisi
  */
 export const getCatalogProductGroups = async (
-  subCategoryId: string
-): Promise<CatalogProductGroup[]> => {
-  const response = await apiService.getClient().get<CatalogProductGroup[]>(
-    `/catalog/sub-categories/${subCategoryId}/product-groups`
-  );
-  return response.data;
+  subCategoryId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<CatalogPaginationResponse<CatalogProductGroup>> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+  
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogProductGroup> | CatalogProductGroup[]>(
+      `/catalog/sub-categories/${subCategoryId}/product-groups?${params.toString()}`
+    );
+    
+    // Backend pagination destekliyorsa direkt döndür
+    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
+      return response.data as CatalogPaginationResponse<CatalogProductGroup>;
+    }
+    
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (Array.isArray(response.data)) {
+      return {
+        items: response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    
+    // Beklenmeyen format
+    throw new Error('Unexpected response format from /catalog/sub-categories/{subCategoryId}/product-groups');
+  } catch (error: any) {
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    if (error.response?.data && Array.isArray(error.response.data)) {
+      return {
+        items: error.response.data,
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    throw error;
+  }
 };
 
 /**

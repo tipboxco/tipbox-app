@@ -160,8 +160,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       connectionErrorRef.current = false;
     }
 
-    console.log('[SocketProvider] 🔌 Starting connection attempt', maxRetriesRef.current + 1, '/', MAX_RETRIES);
-
     connectionAttemptRef.current = true;
     maxRetriesRef.current += 1;
     lastAttemptTimeRef.current = Date.now();
@@ -300,7 +298,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         throw new Error('Socket connection timeout');
       }
     } catch (error) {
-      console.error('[SocketProvider] Connection error:', error);
       setIsConnected(false);
       throw error; // Hata fırlat ki retry mekanizması çalışsın
     } finally {

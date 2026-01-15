@@ -26,11 +26,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { QuestionPostFormData } from '../schemas/questionPostSchema';
 import type { BoostOption } from '../api/postApi';
 
-// Mock data for product info
-const productInfo = {
-  image: require('@/assets/product/product_01.png'),
-  title: 'Computers & Tablet\nTechnology Subcategories',
-};
+// ProductInfo will be loaded from store
 
 type CreateQuestionPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -86,6 +82,7 @@ export const CreateQuestionPostScreen = () => {
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
+  const productInfoSnapshot = useCreatePostFlowStore((state) => state.productInfoSnapshot);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
   const isValidFlow = useCreatePostFlowStore((state) => state.isValid());
   
@@ -94,10 +91,11 @@ export const CreateQuestionPostScreen = () => {
     console.log('[CreateQuestionPostScreen] 🔍 Context State:', {
       contextType,
       contextId,
+      productInfoSnapshot,
       isValidFlow,
       storeState: useCreatePostFlowStore.getState(),
     });
-  }, [contextType, contextId, isValidFlow]);
+  }, [contextType, contextId, productInfoSnapshot, isValidFlow]);
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -452,9 +450,9 @@ export const CreateQuestionPostScreen = () => {
               borderWidth: 1,
               borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
               textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-              fontSize: 12,
+              fontSize: 11,
               borderRadius: 25,
-              paddingX: 24,
+              paddingX: 22,
               paddingY: 8,
               onPress: methods.handleSubmit(onSubmit),
             }}
@@ -464,14 +462,17 @@ export const CreateQuestionPostScreen = () => {
           <ScrollView flex={1} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <VStack space="md" pb={100}>
               {/* Product Info Card */}
-              <Box px="$4" py="$2">
-                <ProductInfoCard
-                  image={productInfo.image}
-                  title={productInfo.title}
-                  size="big"
-                  type={ProductInfoType.SUB_CATEGORY}
-                />
-              </Box>
+              {productInfoSnapshot && (
+                <Box px="$4" py="$2">
+                  <ProductInfoCard
+                    image={productInfoSnapshot.image}
+                    title={productInfoSnapshot.title}
+                    subName={productInfoSnapshot.subName}
+                    size="big"
+                    type={contextType || ProductInfoType.SUB_CATEGORY}
+                  />
+                </Box>
+              )}
 
               {/* Question Description Section */}
               <VStack px={16} space="xs">
@@ -498,7 +499,7 @@ export const CreateQuestionPostScreen = () => {
                 {/* Section Title */}
                 <Text
                   color={isDark ? '$textDark400' : '#A3A3A3'}
-                  fontSize={10}
+                  fontSize="$sm"
                   fontWeight="$bold"
                 >
                   Boost this Question
@@ -507,19 +508,19 @@ export const CreateQuestionPostScreen = () => {
                 {/* Boost Options */}
                 {isLoadingBoostOptions ? (
                   <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize={12}>
+                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize="$sm">
                       Boost seçenekleri yükleniyor...
                     </Text>
                   </Box>
                 ) : boostOptionsError ? (
                   <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '$red500' : '#EF4444'} fontSize={12}>
+                    <Text color={isDark ? '$red500' : '#EF4444'} fontSize="$sm">
                       Boost seçenekleri yüklenirken hata oluştu
                     </Text>
                   </Box>
                 ) : boostOptions.length === 0 ? (
                   <Box py="$4" alignItems="center">
-                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize={12}>
+                    <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize="$sm">
                       Boost seçeneği bulunamadı
                     </Text>
                   </Box>
@@ -536,7 +537,7 @@ export const CreateQuestionPostScreen = () => {
                   />
                   <Text
                     color={isDark ? '$textDark400' : '#A3A3A3'}
-                    fontSize={10}
+                    fontSize="$sm"
                     fontWeight="$medium"
                   >
                     You currently have {availableTips} TIPS available

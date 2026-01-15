@@ -457,9 +457,9 @@ export const CreatePostScreen = () => {
               borderWidth: 1,
               borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
               textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-              fontSize: 12,
+              fontSize: 11,
               borderRadius: 25,
-              paddingX: 24,
+              paddingX: 22,
               paddingY: 8,
               onPress: handleSharePress,
             }}

@@ -256,11 +256,6 @@ export const useAppStore = create<AppState>()(
         
         logout: async () => {
           try {
-            const logoutStartTime = Date.now();
-            console.log('========================================');
-            console.log('🚪 LOGOUT İŞLEMİ BAŞLATILIYOR');
-            console.log('========================================');
-            
             // ÖNCE: State'i anında güncelle (kullanıcı anında çıkış görsün)
             set({
               isAuthenticated: false,
@@ -274,52 +269,30 @@ export const useAppStore = create<AppState>()(
             });
             
             // ÖNCE: Token'ları SecureStore'dan temizle (kritik - güvenlik)
-            console.log('📋 Step 1: Token\'lar temizleniyor...');
-            const tokenClearStartTime = Date.now();
             await TokenService.clearTokens();
             clearTokenCache(); // PERFORMANCE FIX: Clear token cache
-            const tokenClearTime = Date.now() - tokenClearStartTime;
-            console.log('✅ Token\'lar temizlendi');
-            console.log('   - Clear Time:', tokenClearTime, 'ms');
             
             // ARKA PLANDA: Wallet ve image cache temizleme (await etmeden)
             // Kullanıcı zaten çıkış yaptı, bu işlemler arka planda tamamlanabilir
             Promise.all([
               (async () => {
                 try {
-                  console.log('📋 Step 2: Wallet temizleniyor (arka plan)...');
                   await WalletService.clearWallet();
-                  console.log('✅ Wallet temizlendi');
                 } catch (error) {
-                  console.error('⚠️ Wallet temizleme hatası:', error);
+                  // Silent fail
                 }
               })(),
               (async () => {
                 try {
-                  console.log('📋 Step 3: Image cache temizleniyor (arka plan)...');
                   await ImageCacheService.clearAll();
-                  console.log('✅ Image cache temizlendi');
                 } catch (error) {
-                  console.error('⚠️ Image cache temizleme hatası:', error);
+                  // Silent fail
                 }
               })(),
-            ]).catch((error) => {
-              console.error('⚠️ Arka plan temizleme hatası:', error);
+            ]).catch(() => {
+              // Silent fail
             });
-            
-            const logoutTime = Date.now() - logoutStartTime;
-            console.log('========================================');
-            console.log('✅ LOGOUT İŞLEMİ TAMAMLANDI (ANINDA)');
-            console.log('========================================');
-            console.log('   - Total Time:', logoutTime, 'ms');
-            console.log('   - isAuthenticated: false');
-            console.log('   - User: null');
-            console.log('   - Access Token: null');
-            console.log('   - Wallet: null');
-            console.log('   - Login ekranı gösterilecek');
-            console.log('========================================');
           } catch (error) {
-            console.error('❌ Logout hatası:', error);
             // Hata olsa bile state'i güncelle (kullanıcı çıkış yapmış sayılır)
             set({
               isAuthenticated: false,

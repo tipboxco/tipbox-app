@@ -102,20 +102,30 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   const { prefetchSubCategories, prefetchProductGroups, prefetchProducts } = useCatalogPrefetch();
   
   // API'den kategorileri getir
-  const { data: catalogCategories, isLoading: isLoadingCategories, isError } = useCatalogCategories();
+  const { 
+    data: catalogCategoriesData, 
+    isLoading: isLoadingCategories, 
+    isError,
+  } = useCatalogCategories();
   
   // API'den seçili kategoriye ait subcategories'i getir
-  const { data: catalogSubCategories, isLoading: isLoadingSubCategories } = useCatalogSubCategories(selectedCategoryId);
+  const { 
+    data: catalogSubCategoriesData, 
+    isLoading: isLoadingSubCategories,
+  } = useCatalogSubCategories(selectedCategoryId);
   
   // subcategories verisi takibi (debug mode'da aktif)
   useEffect(() => {
-    if (__DEV__ && selectedCategoryId && catalogSubCategories) {
+    if (__DEV__ && selectedCategoryId && catalogSubCategoriesData) {
       // Sadece development'ta ve veri yoksa log
     }
-  }, [catalogSubCategories, selectedCategoryId, isLoadingSubCategories]);
+  }, [catalogSubCategoriesData, selectedCategoryId, isLoadingSubCategories]);
   
   // API'den seçili alt kategoriye ait product groups'u getir
-  const { data: catalogProductGroups, isLoading: isLoadingProductGroups } = useCatalogProductGroups(selectedSubCategoryId);
+  const { 
+    data: catalogProductGroupsData, 
+    isLoading: isLoadingProductGroups,
+  } = useCatalogProductGroups(selectedSubCategoryId);
   
   // Debounce search query for API calls
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -133,6 +143,25 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     debouncedSearchQuery || undefined
   );
   
+  // API'den gelen verileri formatla
+  // Categories için
+  const catalogCategories = useMemo(() => {
+    if (!catalogCategoriesData?.items) return [];
+    return catalogCategoriesData.items;
+  }, [catalogCategoriesData]);
+
+  // SubCategories için
+  const catalogSubCategories = useMemo(() => {
+    if (!catalogSubCategoriesData?.items) return [];
+    return catalogSubCategoriesData.items;
+  }, [catalogSubCategoriesData]);
+
+  // ProductGroups için
+  const catalogProductGroups = useMemo(() => {
+    if (!catalogProductGroupsData?.items) return [];
+    return catalogProductGroupsData.items;
+  }, [catalogProductGroupsData]);
+
   // İlk 3 kategorinin subcategories'ini prefetch et (kullanıcı deneyimini iyileştirmek için)
   useEffect(() => {
     if (catalogCategories && catalogCategories.length > 0) {
@@ -146,7 +175,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   // API'den gelen kategorileri Category formatına dönüştür - useMemo ile cache'le
   // CachedImage zaten toImageSource'u çağırıyor, bu yüzden image'ı direkt geçirebiliriz
   const currentCategories = useMemo(() => {
-    if (!catalogCategories) return [];
+    if (!catalogCategories || catalogCategories.length === 0) return [];
     
     return catalogCategories.map(cat => {
       if (!cat.image || cat.image.trim() === '') {
@@ -165,7 +194,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
 
   // API'den gelen subcategories'i formatla - useMemo ile cache'le
   const currentSubCategories = useMemo(() => {
-    if (!catalogSubCategories) {
+    if (!catalogSubCategories || catalogSubCategories.length === 0) {
       return [];
     }
     
@@ -180,7 +209,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
 
   // API'den gelen product groups'u formatla - useMemo ile cache'le
   const currentProductGroups = useMemo(() => {
-    if (!catalogProductGroups) return [];
+    if (!catalogProductGroups || catalogProductGroups.length === 0) return [];
     
     return catalogProductGroups.map(productGroup => ({
       id: productGroup.productGroupId,
@@ -367,35 +396,8 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   };
 
   const handleProductPress = (product: CatalogProduct & { id: string; image: any; description?: string }) => {
-    // Get the current breadcrumb items (category, subcategory, productGroup, products)
-    const currentCategory = breadcrumbItems.find(item => item.type === 'category');
-    const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
-    const currentProductGroup = breadcrumbItems.find(item => item.type === 'productGroup');
-    
-    // Create product breadcrumb item
-    const productBreadcrumbItem: BreadcrumbItem = {
-      id: product.id,
-      name: product.name,
-      type: 'product',
-      data: product,
-    };
-
-    // Update breadcrumb items
-    setBreadcrumbItems(
-      [
-        currentCategory,
-        currentSubCategory,
-        currentProductGroup,
-        productBreadcrumbItem,
-      ].filter(Boolean) as BreadcrumbItem[]
-    );
-    
-    // Store selected product for CreatePostBottomSheet
-    setSelectedProductLocal(product);
-    // Store'a product ID'yi kaydet
-    setSelectedProduct(product.id);
-    
-    // If selectMode is 'event', navigate back to EventCreatePost with product
+    // If selectMode is 'event' and returnScreen is 'EventCreatePost', 
+    // navigate back to EventCreatePost with productId and clear all Catalog screens
     if (selectMode === 'event' && returnScreen === 'EventCreatePost') {
       // Get current EventCreatePost route params to preserve eventId
       // Try to get from navigation state first (more reliable)
@@ -429,32 +431,44 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
       }
       
       console.log('🔍 [ProductCatalogScreen] EventCreatePost params:', currentEventCreatePostParams);
+      console.log('✅ [ProductCatalogScreen] Selected product:', {
+        id: product.id,
+        name: product.name,
+      });
       
-      // Navigate back to EventCreatePost with selected product and preserve eventId
-      // Use goBack() to prevent stack loop (EventCreatePost -> CatalogScreen -> EventCreatePost)
-      // EventCreatePost will receive updated params via navigation and update state via useFocusEffect
-      if (navigation.canGoBack()) {
-        // Go back to EventCreatePost (removes CatalogScreen from stack)
-        // Then navigate with updated params - this will update the existing EventCreatePost screen
-        navigation.goBack();
-        
-        // Small delay to ensure goBack completes, then update params
-        setTimeout(() => {
-          navigationService.navigate(ROOT_ROUTES.EVENT, {
-            screen: 'EventCreatePost',
-            params: {
-              ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
-              selectedProduct: {
-                id: product.id,
-                name: product.name,
-                image: product.image,
-                description: product.description || '',
+      // Navigate back to EventCreatePost with selected productId
+      // Clear all Catalog screens from stack by going back to EventCreatePost
+      // Use CommonActions.reset to clear entire navigation stack and go directly to EventCreatePost
+      try {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: ROOT_ROUTES.EVENT as any,
+                state: {
+                  routes: [
+                    {
+                      name: 'EventCreatePost' as any,
+                      params: {
+                        ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
+                        selectedProduct: {
+                          id: product.id,
+                          name: product.name,
+                          image: product.image,
+                          description: product.description || '',
+                        },
+                      },
+                    },
+                  ],
+                },
               },
-            },
-          });
-        }, 50);
-      } else {
-        // Fallback: use navigationService (if can't go back)
+            ],
+          })
+        );
+      } catch (error) {
+        console.warn('[ProductCatalogScreen] Failed to reset navigation, using fallback:', error);
+        // Fallback: use navigationService (if reset fails)
         navigationService.navigate(ROOT_ROUTES.EVENT, {
           screen: 'EventCreatePost',
           params: {
@@ -468,8 +482,37 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
           },
         });
       }
-      return;
+      return; // Early return - don't navigate to PostsScreen
     }
+    
+    // Normal flow: Save to flow store and navigate to PostsScreen (only if not in event select mode)
+    // Get the current breadcrumb items (category, subcategory, productGroup, products)
+    const currentCategory = breadcrumbItems.find(item => item.type === 'category');
+    const currentSubCategory = breadcrumbItems.find(item => item.type === 'subCategory');
+    const currentProductGroup = breadcrumbItems.find(item => item.type === 'productGroup');
+    
+    // Create product breadcrumb item
+    const productBreadcrumbItem: BreadcrumbItem = {
+      id: product.id,
+      name: product.name,
+      type: 'product',
+      data: product,
+    };
+
+    // Update breadcrumb items
+    setBreadcrumbItems(
+      [
+        currentCategory,
+        currentSubCategory,
+        currentProductGroup,
+        productBreadcrumbItem,
+      ].filter(Boolean) as BreadcrumbItem[]
+    );
+    
+    // Store selected product for CreatePostBottomSheet
+    setSelectedProductLocal(product);
+    // Store'a product ID'yi kaydet
+    setSelectedProduct(product.id);
     
     // Save to flow store for CreatePostScreen
     setFlowContext(ProductInfoType.PRODUCT, product.id, {
@@ -749,13 +792,72 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
       determinedContextType = ProductInfoType.PRODUCT_GROUP;
       determinedContextId = selectedProductGroupId;
+      
+      // ProductGroup için image ve name bilgilerini al
+      const selectedProductGroup = currentProductGroups.find(pg => pg.id === selectedProductGroupId);
+      if (selectedProductGroup) {
+        // SubCategory bilgisini de al (subName için)
+        const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
+        const subCategoryName = subCategoryItem?.name || '';
+        
+        productInfoSnapshot = {
+          image: selectedProductGroup.image,
+          title: selectedProductGroup.name,
+          subName: subCategoryName,
+        };
+      }
     } else if (selectedSubCategoryId) {
       determinedContextType = ProductInfoType.SUB_CATEGORY;
       determinedContextId = selectedSubCategoryId;
+      
+      // SubCategory için image ve name bilgilerini al
+      const selectedSubCategory = currentSubCategories.find(sc => sc.id === selectedSubCategoryId);
+      if (selectedSubCategory) {
+        // Category bilgisini de al (subName için)
+        const categoryItem = breadcrumbItems.find(item => item.type === 'category');
+        const categoryName = categoryItem?.name || '';
+        
+        productInfoSnapshot = {
+          image: selectedSubCategory.image,
+          title: selectedSubCategory.name,
+          subName: categoryName,
+        };
+      }
     }
     
     // Navigate to appropriate screen based on post type
     if (type === 'free') {
+      // ProductGroup için image ve name bilgilerini al (eğer henüz alınmadıysa)
+      if (determinedContextType === ProductInfoType.PRODUCT_GROUP && determinedContextId && !productInfoSnapshot) {
+        const selectedProductGroup = currentProductGroups.find(pg => pg.id === determinedContextId);
+        if (selectedProductGroup) {
+          // SubCategory bilgisini de al (subName için)
+          const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
+          const subCategoryName = subCategoryItem?.name || '';
+          
+          productInfoSnapshot = {
+            image: selectedProductGroup.image,
+            title: selectedProductGroup.name,
+            subName: subCategoryName,
+          };
+        }
+      }
+      // SubCategory için image ve name bilgilerini al (eğer henüz alınmadıysa)
+      else if (determinedContextType === ProductInfoType.SUB_CATEGORY && determinedContextId && !productInfoSnapshot) {
+        const selectedSubCategory = currentSubCategories.find(sc => sc.id === determinedContextId);
+        if (selectedSubCategory) {
+          // Category bilgisini de al (subName için)
+          const categoryItem = breadcrumbItems.find(item => item.type === 'category');
+          const categoryName = categoryItem?.name || '';
+          
+          productInfoSnapshot = {
+            image: selectedSubCategory.image,
+            title: selectedSubCategory.name,
+            subName: categoryName,
+          };
+        }
+      }
+      
       // Save to flow store if context is available
       if (determinedContextType && determinedContextId) {
         setFlowContext(determinedContextType, determinedContextId, productInfoSnapshot);
@@ -792,9 +894,37 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
         determinedContextId = selectedProductGroupId;
+        
+        // ProductGroup için image ve name bilgilerini al
+        const selectedProductGroup = currentProductGroups.find(pg => pg.id === selectedProductGroupId);
+        if (selectedProductGroup) {
+          // SubCategory bilgisini de al (subName için)
+          const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
+          const subCategoryName = subCategoryItem?.name || '';
+          
+          productInfoSnapshot = {
+            image: selectedProductGroup.image,
+            title: selectedProductGroup.name,
+            subName: subCategoryName,
+          };
+        }
       } else if (selectedSubCategoryId) {
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = selectedSubCategoryId;
+        
+        // SubCategory için image ve name bilgilerini al
+        const selectedSubCategory = currentSubCategories.find(sc => sc.id === selectedSubCategoryId);
+        if (selectedSubCategory) {
+          // Category bilgisini de al (subName için)
+          const categoryItem = breadcrumbItems.find(item => item.type === 'category');
+          const categoryName = categoryItem?.name || '';
+          
+          productInfoSnapshot = {
+            image: selectedSubCategory.image,
+            title: selectedSubCategory.name,
+            subName: categoryName,
+          };
+        }
       }
       
       // Store'da ID yoksa hata göster
@@ -834,9 +964,37 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       } else if (selectedProductGroupId && (currentView === 'products' || currentView === 'productgroups')) {
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
         determinedContextId = selectedProductGroupId;
+        
+        // ProductGroup için image ve name bilgilerini al
+        const selectedProductGroup = currentProductGroups.find(pg => pg.id === selectedProductGroupId);
+        if (selectedProductGroup) {
+          // SubCategory bilgisini de al (subName için)
+          const subCategoryItem = breadcrumbItems.find(item => item.type === 'subCategory');
+          const subCategoryName = subCategoryItem?.name || '';
+          
+          productInfoSnapshot = {
+            image: selectedProductGroup.image,
+            title: selectedProductGroup.name,
+            subName: subCategoryName,
+          };
+        }
       } else if (selectedSubCategoryId) {
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = selectedSubCategoryId;
+        
+        // SubCategory için image ve name bilgilerini al
+        const selectedSubCategory = currentSubCategories.find(sc => sc.id === selectedSubCategoryId);
+        if (selectedSubCategory) {
+          // Category bilgisini de al (subName için)
+          const categoryItem = breadcrumbItems.find(item => item.type === 'category');
+          const categoryName = categoryItem?.name || '';
+          
+          productInfoSnapshot = {
+            image: selectedSubCategory.image,
+            title: selectedSubCategory.name,
+            subName: categoryName,
+          };
+        }
       }
       
       // Store'da ID yoksa hata göster
@@ -893,7 +1051,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
         },
       });
     }
-  }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId]);
+  }, [navigation, selectedProduct, closeBottomSheet, setFlowContext, currentView, selectedSubCategoryId, selectedProductGroupId, currentSubCategories, currentProductGroups, breadcrumbItems]);
 
   const handleCreatePost = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view
@@ -1036,7 +1194,10 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       )}
 
       {/* Dynamic Grid */}
-      <ScrollView flex={1} px="$4">
+      <ScrollView 
+        flex={1} 
+        px="$4"
+      >
         <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
           {/* Loading skeleton */}
           {(currentView === 'categories' && isLoadingCategories) ||
@@ -1135,7 +1296,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
               </HStack>
             );
           })}
-            </>
+          </>
           )}
         </VStack>
       </ScrollView>

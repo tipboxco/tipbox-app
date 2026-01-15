@@ -64,16 +64,52 @@ export const getNotifications = async (
       }>;
     }>('/notifications', { params });
     
-    // Response data kontrolü
-    if (!response.data || !response.data.data || !Array.isArray(response.data.data)) {
+    // DEBUG: API response formatını logla
+    console.log('[getNotifications] 📦 Raw API Response:', {
+      hasResponse: !!response,
+      hasData: !!response?.data,
+      responseDataType: typeof response?.data,
+      isResponseDataArray: Array.isArray(response?.data),
+      hasResponseDataData: !!(response?.data as any)?.data,
+      isResponseDataDataArray: Array.isArray((response?.data as any)?.data),
+      responseDataKeys: response?.data ? Object.keys(response.data) : [],
+      params,
+    });
+    
+    // Response data kontrolü - Backend farklı formatlar döndürebilir
+    // Format 1: { success: boolean, data: Array<...> }
+    // Format 2: Backend direkt array döndürebilir
+    let notificationsArray: any[] = [];
+    
+    if (response.data) {
+      // Format 1: { success, data: [...] }
+      if ((response.data as any).data && Array.isArray((response.data as any).data)) {
+        notificationsArray = (response.data as any).data;
+      }
+      // Format 2: Backend direkt array döndürüyor
+      else if (Array.isArray(response.data)) {
+        console.warn('[getNotifications] ⚠️ Backend returned array directly, using it');
+        notificationsArray = response.data;
+      }
+      // Format 3: Response.data zaten array (nested)
+      else if (Array.isArray((response.data as any))) {
+        notificationsArray = response.data as any;
+      }
+    }
+    
+    if (notificationsArray.length === 0) {
+      console.warn('[getNotifications] ⚠️ No notifications found in response:', {
+        responseData: response.data,
+        params,
+      });
       return {
-        success: response.data?.success ?? false,
+        success: (response.data as any)?.success ?? false,
         data: [],
       };
     }
     
     // API response'u type'a map et
-    const mappedData = response.data.data.map((item) => {
+    const mappedData = notificationsArray.map((item) => {
       // Backend'den gelen `data` veya `metadata` field'ını `metadata`'ya map et
       const rawMetadata = item.metadata || item.data;
       const metadata = rawMetadata ? {
@@ -106,10 +142,24 @@ export const getNotifications = async (
       };
     });
     
-    return {
-      success: response.data.success,
+    const result = {
+      success: (response.data as any)?.success ?? true,
       data: mappedData,
     };
+    
+    // DEBUG: Mapped data'yı logla
+    console.log('[getNotifications] ✅ Mapped result:', {
+      success: result.success,
+      dataLength: result.data.length,
+      firstItem: result.data[0] ? {
+        id: result.data[0].id,
+        type: result.data[0].type,
+        message: result.data[0].message,
+        read: result.data[0].read,
+      } : null,
+    });
+    
+    return result;
   } catch (error: any) {
     console.error('[getNotifications] ❌ API Error:', {
       url: '/notifications',
@@ -134,24 +184,7 @@ export const getUnreadCount = async (): Promise<UnreadCountResponse> => {
     );
     return response.data;
   } catch (error: any) {
-    // 500 hatası için daha az detaylı log (backend hatası, log spam'ı azalt)
-    const status = error.response?.status;
-    if (status >= 500) {
-      // Server error için sadece kısa log
-      console.error('[getUnreadCount] API Error (500):', {
-        status,
-        message: error.response?.data?.message || error.message,
-      });
-    } else {
-      // Client error için detaylı log
-      console.error('[getUnreadCount] API Error:', {
-        url: '/notifications/unread-count',
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
-    }
+    // Silent fail - error will be thrown
     throw error;
   }
 };
@@ -298,25 +331,7 @@ export const registerPushToken = async (
       throw error;
     }
     
-    // 500 hatası için daha az detaylı log (backend hatası, log spam'ı azalt)
-    if (status >= 500) {
-      // Server error için sadece kısa log
-      console.error('[registerPushToken] API Error (500):', {
-        status,
-        message: error.response?.data?.message || error.message,
-      });
-    } else {
-      // Diğer client error'lar için detaylı log
-      console.error('[registerPushToken] API Error:', {
-        url: '/notifications/push-token',
-        method: 'POST',
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        requestData: data,
-        responseData: error.response?.data,
-        message: error.message,
-      });
-    }
+    // Silent fail - error will be thrown
     throw error;
   }
 };

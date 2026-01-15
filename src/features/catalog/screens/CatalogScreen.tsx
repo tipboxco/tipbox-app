@@ -163,11 +163,35 @@ const CatalogScreenComponent = () => {
         // ProductGroup selected
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
         determinedContextId = storeState.selectedProductGroupId;
+        
+        // ProductGroup için image ve name bilgilerini breadcrumb'dan al
+        const productGroupBreadcrumb = breadcrumbItems.find(item => item.type === 'productGroup');
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        
+        if (productGroupBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: productGroupBreadcrumb.data.image,
+            title: productGroupBreadcrumb.name,
+            subName: subCategoryBreadcrumb?.name || '',
+          };
+        }
       } else if (storeState.selectedSubCategoryId) {
         // SubCategory selected - Check if SubCategory is selected (currentView can be 'subcategories' or 'productgroups')
         // If we're in productgroups view but have a selectedSubCategoryId, it means SubCategory was selected
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = storeState.selectedSubCategoryId;
+        
+        // SubCategory için image ve name bilgilerini breadcrumb'dan al
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+        
+        if (subCategoryBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: subCategoryBreadcrumb.data.image,
+            title: subCategoryBreadcrumb.name,
+            subName: categoryBreadcrumb?.name || '',
+          };
+        }
       }
       
       // Save to flow store if context is available
@@ -211,11 +235,35 @@ const CatalogScreenComponent = () => {
         // ProductGroup selected
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
         determinedContextId = storeState.selectedProductGroupId;
+        
+        // ProductGroup için image ve name bilgilerini breadcrumb'dan al
+        const productGroupBreadcrumb = breadcrumbItems.find(item => item.type === 'productGroup');
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        
+        if (productGroupBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: productGroupBreadcrumb.data.image,
+            title: productGroupBreadcrumb.name,
+            subName: subCategoryBreadcrumb?.name || '',
+          };
+        }
       } else if (storeState.selectedSubCategoryId) {
         // SubCategory selected - Check if SubCategory is selected (currentView can be 'subcategories' or 'productgroups')
         // If we're in productgroups view but have a selectedSubCategoryId, it means SubCategory was selected
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = storeState.selectedSubCategoryId;
+        
+        // SubCategory için image ve name bilgilerini breadcrumb'dan al
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+        
+        if (subCategoryBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: subCategoryBreadcrumb.data.image,
+            title: subCategoryBreadcrumb.name,
+            subName: categoryBreadcrumb?.name || '',
+          };
+        }
       }
       
       // Store'da ID yoksa hata göster
@@ -259,11 +307,35 @@ const CatalogScreenComponent = () => {
         // ProductGroup selected
         determinedContextType = ProductInfoType.PRODUCT_GROUP;
         determinedContextId = storeState.selectedProductGroupId;
+        
+        // ProductGroup için image ve name bilgilerini breadcrumb'dan al
+        const productGroupBreadcrumb = breadcrumbItems.find(item => item.type === 'productGroup');
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        
+        if (productGroupBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: productGroupBreadcrumb.data.image,
+            title: productGroupBreadcrumb.name,
+            subName: subCategoryBreadcrumb?.name || '',
+          };
+        }
       } else if (storeState.selectedSubCategoryId) {
         // SubCategory selected - Check if SubCategory is selected (currentView can be 'subcategories' or 'productgroups')
         // If we're in productgroups view but have a selectedSubCategoryId, it means SubCategory was selected
         determinedContextType = ProductInfoType.SUB_CATEGORY;
         determinedContextId = storeState.selectedSubCategoryId;
+        
+        // SubCategory için image ve name bilgilerini breadcrumb'dan al
+        const subCategoryBreadcrumb = breadcrumbItems.find(item => item.type === 'subCategory');
+        const categoryBreadcrumb = breadcrumbItems.find(item => item.type === 'category');
+        
+        if (subCategoryBreadcrumb?.data) {
+          productInfoSnapshot = {
+            image: subCategoryBreadcrumb.data.image,
+            title: subCategoryBreadcrumb.name,
+            subName: categoryBreadcrumb?.name || '',
+          };
+        }
       }
       
       // Store'da ID yoksa hata göster

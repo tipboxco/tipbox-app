@@ -128,7 +128,7 @@ export const TabNavigator = () => {
     let IconComponent: React.ComponentType<any> | null = null;
 
     switch (route.name) {
-      case 'FeedScreen':
+      case 'FeedStack':
         IconComponent = focused ? HomeIconSolid : HomeIconOutline;
         break;
       case 'ExploreStack':
@@ -192,11 +192,11 @@ export const TabNavigator = () => {
   // React Navigation'ın useScrollToTop hook'u sadece aktif tab için çalışır
   // Bu handler hem aktif hem inactive durumda çalışır
   // 
-  // IMPORTANT: Tab press event'i zaten FeedScreen'e navigate edecek
+  // IMPORTANT: Tab press event'i zaten FeedStack'e navigate edecek
   // Bu handler sadece scroll yapmak için - navigation otomatik
   const handleFeedTabPress = useCallback(() => {
     // CRITICAL FIX: Double requestAnimationFrame - native view'in mount olmasını bekle
-    // React Navigation tab press event'i FeedScreen'e navigate edecek
+    // React Navigation tab press event'i FeedStack'e navigate edecek
     // Navigate tamamlandıktan sonra scroll yapmak için delay ekle
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -248,7 +248,7 @@ export const TabNavigator = () => {
           })}
         >
           <Tab.Screen
-            name="FeedScreen"
+            name="FeedStack"
             component={FeedNavigator}
             listeners={{
               tabPress: handleFeedTabPress,
