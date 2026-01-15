@@ -16,7 +16,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 export type ProfileStackParamList = {
   ProfileMain: { userId?: string } | undefined;
   ProfileEdit: undefined;
-  InventoryList: { userId: string };
+  InventoryList: { userId: string; selectMode?: 'event'; returnScreen?: string };
   InventoryDetail: { itemId: string };
   Collections: undefined;
   TrustList: { userId: string; initialTab?: 'trust' | 'truster' };

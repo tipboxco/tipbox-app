@@ -449,6 +449,16 @@ export const createEventPostNew = async (
   eventId: string,
   data: CreateEventPostRequestNew
 ): Promise<CreateEventPostResponseNew> => {
+  // Validate eventId before making API call
+  if (!eventId || eventId.trim() === '') {
+    const error = new Error('Event ID is required');
+    console.error('[createEventPostNew] Validation Error:', {
+      eventId: eventId || 'undefined',
+      error: error.message,
+    });
+    throw error;
+  }
+  
   try {
     const response = await apiService.getClient().post<CreateEventPostResponseNew>(
       `/events/${eventId}/posts`,

@@ -20,6 +20,8 @@ import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import { catalogData } from '@/src/mock/catalog/productCatalog';
 import { Category as CatalogCategory } from '@/src/mock/catalog/productCatalog/types';
 import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { useAppStore } from '@/src/store/appStore';
 
 type CreateEventPostBottomSheetNavigationProp = NativeStackNavigationProp<EventStackParamList>;
 
@@ -52,6 +54,7 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { user } = useAppStore();
     const [currentView, setCurrentView] = useState<'options' | 'inventory' | 'catalog'>('options');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -67,7 +70,17 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
 
     const handleInventoryPress = () => {
         onClose();
-        navigation.navigate('EventCreatePost', { productSource: 'Inventory' });
+        // Navigate to user's own InventoryScreen with selectMode
+        if (user?.id) {
+            navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                screen: 'InventoryList',
+                params: {
+                    userId: user.id,
+                    selectMode: 'event',
+                    returnScreen: 'EventCreatePost',
+                },
+            });
+        }
     };
 
     const handleCatalogPress = () => {

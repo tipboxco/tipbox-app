@@ -6,7 +6,7 @@ import { BreadcrumbItem } from '@/src/types/breadcrumb';
 import CategoryCard from '../components/CategoryCard';
 import Breadcrumb from '@/src/components/Breadcrumb';
 import ActionButtons from '../components/ActionButtons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -397,18 +397,77 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     
     // If selectMode is 'event', navigate back to EventCreatePost with product
     if (selectMode === 'event' && returnScreen === 'EventCreatePost') {
-      // Navigate to EventCreatePost with selected product
-      navigationService.navigate(ROOT_ROUTES.EVENT, {
-        screen: 'EventCreatePost',
-        params: {
-          selectedProduct: {
-            id: product.id,
-            name: product.name,
-            image: product.image,
-            description: product.description || '',
+      // Get current EventCreatePost route params to preserve eventId
+      // Try to get from navigation state first (more reliable)
+      let currentEventCreatePostParams: any = null;
+      try {
+        const navState = navigation.getState();
+        // Find EventCreatePost in navigation state
+        const findEventCreatePost = (routes: any[]): any => {
+          for (const route of routes) {
+            if (route.name === 'EventCreatePost' && route.params) {
+              return route.params;
+            }
+            if (route.state?.routes) {
+              const found = findEventCreatePost(route.state.routes);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        currentEventCreatePostParams = findEventCreatePost(navState.routes || []);
+      } catch (error) {
+        console.warn('[ProductCatalogScreen] Failed to get navigation state:', error);
+      }
+      
+      // Fallback to getCurrentRoute if navigation state doesn't work
+      if (!currentEventCreatePostParams) {
+        const currentRoute = navigationService.getCurrentRoute();
+        currentEventCreatePostParams = currentRoute?.name === 'EventCreatePost' 
+          ? currentRoute.params 
+          : null;
+      }
+      
+      console.log('🔍 [ProductCatalogScreen] EventCreatePost params:', currentEventCreatePostParams);
+      
+      // Navigate back to EventCreatePost with selected product and preserve eventId
+      // Use goBack() to prevent stack loop (EventCreatePost -> CatalogScreen -> EventCreatePost)
+      // EventCreatePost will receive updated params via navigation and update state via useFocusEffect
+      if (navigation.canGoBack()) {
+        // Go back to EventCreatePost (removes CatalogScreen from stack)
+        // Then navigate with updated params - this will update the existing EventCreatePost screen
+        navigation.goBack();
+        
+        // Small delay to ensure goBack completes, then update params
+        setTimeout(() => {
+          navigationService.navigate(ROOT_ROUTES.EVENT, {
+            screen: 'EventCreatePost',
+            params: {
+              ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
+              selectedProduct: {
+                id: product.id,
+                name: product.name,
+                image: product.image,
+                description: product.description || '',
+              },
+            },
+          });
+        }, 50);
+      } else {
+        // Fallback: use navigationService (if can't go back)
+        navigationService.navigate(ROOT_ROUTES.EVENT, {
+          screen: 'EventCreatePost',
+          params: {
+            ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
+            selectedProduct: {
+              id: product.id,
+              name: product.name,
+              image: product.image,
+              description: product.description || '',
+            },
           },
-        },
-      });
+        });
+      }
       return;
     }
     

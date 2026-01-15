@@ -1326,6 +1326,7 @@ const EventDetailScreen: React.FC = () => {
                             
                             // EventDetailScreen EventNavigator stack'inde olduğu için
                             // Aynı stack içindeki EventCreatePost'a direkt navigate edebiliriz
+                            console.log('🚀 [EventDetailScreen] Navigating to EventCreatePost with eventId:', eventId);
                             navigation.navigate('EventCreatePost', {
                                 eventId: eventId,
                                 eventType: eventTypeForNav,

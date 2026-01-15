@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { FlatList, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -48,14 +48,15 @@ const InventoryScreen = () => {
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
   
-  // Route params'tan userId al
-  const { userId } = route.params;
+  // Route params'tan userId, selectMode ve returnScreen al
+  const { userId, selectMode, returnScreen } = route.params;
   
   // SecureStore'daki user_id (appStore'dan)
   const currentUserId = user?.id;
   
   // Create Button'u sadece kendi envanteri ise göster
-  const showCreateButton = currentUserId === userId;
+  // EventCreatePost'tan geliyorsa (selectMode === 'event') Create butonunu gizle
+  const showCreateButton = currentUserId === userId && selectMode !== 'event';
 
   // Get user profile to display name in header
   const { data: userProfile } = useUserProfile(userId);
@@ -239,7 +240,85 @@ const InventoryScreen = () => {
             <InventoryCard
               item={item}
               width={CARD_WIDTH}
-              onPress={() => navigation.navigate('InventoryDetail', { itemId: item.id })}
+              onPress={() => {
+                // If selectMode is 'event', navigate back to EventCreatePost with product
+                if (selectMode === 'event' && returnScreen === 'EventCreatePost') {
+                  // Get current EventCreatePost route params to preserve eventId
+                  // Try to get from navigation state first (more reliable)
+                  let currentEventCreatePostParams: any = null;
+                  try {
+                    const navState = navigation.getState();
+                    // Find EventCreatePost in navigation state
+                    const findEventCreatePost = (routes: any[]): any => {
+                      for (const route of routes) {
+                        if (route.name === 'EventCreatePost' && route.params) {
+                          return route.params;
+                        }
+                        if (route.state?.routes) {
+                          const found = findEventCreatePost(route.state.routes);
+                          if (found) return found;
+                        }
+                      }
+                      return null;
+                    };
+                    currentEventCreatePostParams = findEventCreatePost(navState.routes || []);
+                  } catch (error) {
+                    console.warn('[InventoryScreen] Failed to get navigation state:', error);
+                  }
+                  
+                  // Fallback to getCurrentRoute if navigation state doesn't work
+                  if (!currentEventCreatePostParams) {
+                    const currentRoute = navigationService.getCurrentRoute();
+                    currentEventCreatePostParams = currentRoute?.name === 'EventCreatePost' 
+                      ? currentRoute.params 
+                      : null;
+                  }
+                  
+                  console.log('🔍 [InventoryScreen] EventCreatePost params:', currentEventCreatePostParams);
+                  
+                  // Navigate back to EventCreatePost with selected product and preserve eventId
+                  // Use goBack() to prevent stack loop (EventCreatePost -> InventoryScreen -> EventCreatePost)
+                  // Then navigate with updated params - EventCreatePost will handle the update via route params
+                  if (navigation.canGoBack()) {
+                    // Go back to EventCreatePost (removes InventoryScreen from stack)
+                    navigation.goBack();
+                    
+                    // Update EventCreatePost params after goBack
+                    // Use a small delay to ensure goBack completes
+                    setTimeout(() => {
+                      navigationService.navigate(ROOT_ROUTES.EVENT, {
+                        screen: 'EventCreatePost',
+                        params: {
+                          ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
+                          selectedProduct: {
+                            id: item.id,
+                            name: `${item.brand.name} ${item.brand.model}`,
+                            image: item.image,
+                            description: item.brand.specs || '',
+                          },
+                        },
+                      });
+                    }, 100);
+                  } else {
+                    // Fallback: use navigationService (if can't go back)
+                    navigationService.navigate(ROOT_ROUTES.EVENT, {
+                      screen: 'EventCreatePost',
+                      params: {
+                        ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
+                        selectedProduct: {
+                          id: item.id,
+                          name: `${item.brand.name} ${item.brand.model}`,
+                          image: item.image,
+                          description: item.brand.specs || '',
+                        },
+                      },
+                    });
+                  }
+                } else {
+                  // Normal flow: navigate to InventoryDetail
+                  navigation.navigate('InventoryDetail', { itemId: item.id });
+                }
+              }}
               onUpdateExperience={handleUpdateExperience}
               onDeleteProduct={handleDeleteProduct}
               isOwnProfile={showCreateButton}

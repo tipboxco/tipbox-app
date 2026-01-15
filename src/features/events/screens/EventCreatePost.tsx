@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -33,6 +34,8 @@ import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateEventPostNew } from '../api/hooks';
+import { useCreateFreePost } from '@/src/features/post/api/hooks';
+import type { ApiContextType } from '@/src/features/post/types';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventStackParamList, 'EventCreatePost'>;
@@ -58,14 +61,106 @@ const EventCreatePost: React.FC = () => {
     const insets = useSafeAreaInsets();
     
     // Get eventId, eventType, product, productSource, and selectedProduct from route params
-    const eventId = route.params?.eventId;
+    const routeEventId = route.params?.eventId;
     const eventType = route.params?.eventType;
     const eventProduct = route.params?.product;
     const routeProductSource = route.params?.productSource;
     const selectedProductFromCatalog = route.params?.selectedProduct;
     
-    // YENİ: Event post mutation hook (/events/{eventId}/posts endpoint kullanır)
-    const createPostMutation = useCreateEventPostNew(eventId || '');
+    // Debug log - Initial route params
+    useEffect(() => {
+        console.log('🚀 [EventCreatePost] Component Mount / Route Params Changed:', {
+            routeParams: route.params,
+            routeEventId: routeEventId || 'undefined',
+            eventType: eventType || 'undefined',
+            eventProduct: eventProduct ? 'exists' : 'undefined',
+            routeProductSource: routeProductSource || 'undefined',
+            selectedProductFromCatalog: selectedProductFromCatalog ? 'exists' : 'undefined',
+        });
+    }, [route.params, routeEventId, eventType, eventProduct, routeProductSource, selectedProductFromCatalog]);
+    
+    // Store eventId in state to preserve it when navigating from Catalog/Inventory
+    // eventId is preserved in state so it remains available when user navigates to Catalog/Inventory
+    // and comes back to EventCreatePost
+    // Use useRef to persist eventId across navigation changes
+    const eventIdRef = useRef<string | undefined>(routeEventId);
+    const [eventId, setEventId] = useState<string | undefined>(routeEventId);
+    
+    // Try to get eventId from navigation state if route params don't have it (initial mount)
+    useEffect(() => {
+        if (!routeEventId && !eventId) {
+            try {
+                const navState = navigation.getState();
+                // Find EventCreatePost in navigation state
+                const findEventCreatePost = (routes: any[]): any => {
+                    for (const route of routes) {
+                        if (route.name === 'EventCreatePost' && route.params?.eventId) {
+                            return route.params.eventId;
+                        }
+                        if (route.state?.routes) {
+                            const found = findEventCreatePost(route.state.routes);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                const eventIdFromState = findEventCreatePost(navState.routes || []);
+                if (eventIdFromState) {
+                    console.log('🔄 [EventCreatePost] Found eventId from navigation state:', eventIdFromState);
+                    setEventId(eventIdFromState);
+                    eventIdRef.current = eventIdFromState;
+                }
+            } catch (error) {
+                console.warn('[EventCreatePost] Failed to get eventId from navigation state:', error);
+            }
+        }
+    }, []); // Only run once on mount
+    
+    // Update ref when route params change
+    useEffect(() => {
+        if (routeEventId) {
+            eventIdRef.current = routeEventId;
+        }
+    }, [routeEventId]);
+    
+    // Debug log - eventId state tracking
+    useEffect(() => {
+        console.log('🔍 [EventCreatePost] eventId State Update:', {
+            routeEventId: routeEventId || 'undefined',
+            stateEventId: eventId || 'undefined',
+            refEventId: eventIdRef.current || 'undefined',
+            willUpdate: !!routeEventId,
+            willPreserve: !routeEventId && !!eventId,
+        });
+    }, [routeEventId, eventId]);
+    
+    // Update eventId when route params change, but preserve if route params don't have it
+    // This ensures eventId is preserved when navigating from Catalog/Inventory screens
+    useEffect(() => {
+        if (routeEventId) {
+            console.log('✅ [EventCreatePost] Updating eventId from route params:', routeEventId);
+            setEventId(routeEventId);
+            eventIdRef.current = routeEventId;
+        } else if (eventIdRef.current && !eventId) {
+            // If route params don't have eventId but ref has it, restore from ref
+            console.log('🔄 [EventCreatePost] Restoring eventId from ref:', eventIdRef.current);
+            setEventId(eventIdRef.current);
+        } else if (!routeEventId && eventId) {
+            // Preserve existing state eventId
+            console.log('⚠️ [EventCreatePost] No eventId in route params, preserving state:', eventId);
+        }
+    }, [routeEventId, eventId]);
+    
+    // YENİ: Free post mutation hook (/posts/free endpoint kullanır)
+    // Bu endpoint eventId'yi optional olarak alır ve contextType/contextId gerektirir
+    const createFreePostMutation = useCreateFreePost();
+    
+    // Debug log - eventId validation before API call
+    useEffect(() => {
+        if (!eventId) {
+            console.warn('⚠️ [EventCreatePost] eventId is undefined! Post will be created without eventId.');
+        }
+    }, [eventId]);
     
     // Auto-select product if eventType is TYPE2
     useEffect(() => {
@@ -88,7 +183,8 @@ const EventCreatePost: React.FC = () => {
         }
     }, [routeProductSource]);
 
-    // Handle selected product from CatalogScreen
+    // Handle selected product from CatalogScreen or InventoryScreen
+    // selectedProduct is stored in state and preserved when navigating back from Catalog/Inventory
     useEffect(() => {
         if (selectedProductFromCatalog) {
             const productCategory: Category = {
@@ -104,6 +200,26 @@ const EventCreatePost: React.FC = () => {
             navigation.setParams({ selectedProduct: undefined });
         }
     }, [selectedProductFromCatalog, navigation]);
+    
+    // Handle focus effect - when returning from Catalog/Inventory, update params
+    // This ensures params are updated even if navigation.goBack() was used
+    useFocusEffect(
+        useCallback(() => {
+            // When screen comes into focus, check if selectedProduct param exists
+            // This handles the case when we navigate back from Catalog/Inventory
+            if (selectedProductFromCatalog) {
+                const productCategory: Category = {
+                    id: selectedProductFromCatalog.id,
+                    name: selectedProductFromCatalog.name,
+                    image: selectedProductFromCatalog.image,
+                    category: undefined,
+                };
+                setSelectedProduct(productCategory);
+                setShowProductSelector(false);
+                setProductSource(null);
+            }
+        }, [selectedProductFromCatalog])
+    );
 
     // handleProductSelect'i önce tanımla (handleSelectProduct'ta kullanılıyor)
     const handleProductSelect = useCallback((product: Category) => {
@@ -220,27 +336,7 @@ const EventCreatePost: React.FC = () => {
 
     const handleShare = async () => {
         try {
-            // Validation
-            if (!eventId) {
-                showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Event ID not found.',
-                    action: 'error',
-                });
-                return;
-            }
-
-            // Title validation (max 200 char)
-            if (!title.trim()) {
-                showCustomToast(toast, {
-                    title: 'Error',
-                    description: 'Title is required.',
-                    action: 'error',
-                });
-                return;
-            }
-
-            // Body validation (max 2000 char)
+            // Validation - Content is required
             if (!content.trim()) {
                 showCustomToast(toast, {
                     title: 'Error',
@@ -250,15 +346,36 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Product seçimi opsiyonel (EVENT_GUIDE.MD'ye göre)
-            // Product seçilmediyse productId undefined olarak gönderilir
+            // Validation - Product seçimi zorunlu (contextType ve contextId için)
+            if (!selectedProduct) {
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Please select a product before sharing.',
+                    action: 'error',
+                });
+                return;
+            }
 
-            // YENİ API çağrısı - /events/{eventId}/posts endpoint'ini kullan
-            // NOT: Artık /posts/free yerine /events/{eventId}/posts kullanılıyor!
-            const response = await createPostMutation.mutateAsync({
-                title: title.trim(),
-                body: content.trim(),
-                productId: selectedProduct?.id, // Opsiyonel
+            // Title ve content'i birleştirerek description oluştur
+            // Eğer title varsa, title + content şeklinde birleştir
+            const description = title.trim() 
+                ? `${title.trim()}\n\n${content.trim()}`
+                : content.trim();
+
+            // ContextType ve contextId belirleme
+            // Product seçildiğinde, contextType'ı "product" olarak varsay
+            // Kullanıcının gösterdiği örnekte "product_group" var ama şu anda Category interface'inde bu bilgi yok
+            // Şimdilik "product" olarak kullanacağız, gerekirse daha sonra güncellenebilir
+            const contextType: ApiContextType = 'product'; // Varsayılan olarak "product"
+            const contextId = selectedProduct.id;
+
+            // YENİ API çağrısı - /posts/free endpoint'ini kullan
+            const response = await createFreePostMutation.mutateAsync({
+                contextType,
+                contextId,
+                description,
+                images: selectedImages.length > 0 ? selectedImages : undefined,
+                eventId: eventId || undefined, // Optional - eventId varsa gönder
             });
 
             console.log('Event post created:', response);
@@ -275,9 +392,9 @@ const EventCreatePost: React.FC = () => {
         } catch (error: any) {
             console.error('Event post creation error:', error);
             
-            // Backend hata mesajlarını parse et (EVENT_GUIDE.MD Section 7)
+            // Backend hata mesajlarını parse et
             const errorCode = error?.response?.data?.error?.code;
-            const errorMessage = error?.response?.data?.error?.message;
+            const errorMessage = error?.response?.data?.error?.message || error?.response?.data?.message;
             
             let displayMessage = 'An error occurred while creating the post. Please try again.';
             
@@ -304,25 +421,44 @@ const EventCreatePost: React.FC = () => {
     };
 
     // Check if share button should be enabled
-    // Product seçimi opsiyonel (EVENT_GUIDE.MD'ye göre)
-    // Her durumda title, content ve eventId gereklidir
-    const hasEventId = !!eventId;
-    const hasTitle = title.trim().length > 0;
+    // /posts/free endpoint'i için:
+    // - content (description) zorunlu
+    // - selectedProduct zorunlu (contextType ve contextId için)
+    // - eventId opsiyonel
     const hasContent = content.trim().length > 0;
+    const hasProduct = !!selectedProduct;
     
-    const isShareEnabled = hasEventId && hasTitle && hasContent;
+    const isShareEnabled = hasContent && hasProduct;
     
-    // Debug log (can be removed later)
-    if (__DEV__) {
-        console.log('Share button state:', {
-            hasEventId,
-            hasTitle,
+    // Debug log - Share button state kontrolü
+    useEffect(() => {
+        console.log('🔍 [EventCreatePost] Share Button State:', {
             hasContent,
-            eventType,
-            selectedProduct: selectedProduct ? 'selected' : 'null',
+            hasProduct,
             isShareEnabled,
+            eventId: eventId || 'undefined',
+            title: title || 'empty',
+            titleLength: title.length,
+            titleTrimmed: title.trim().length,
+            content: content || 'empty',
+            contentLength: content.length,
+            contentTrimmed: content.trim().length,
+            selectedProduct: selectedProduct ? {
+                id: selectedProduct.id,
+                name: selectedProduct.name
+            } : 'null',
+            routeParams: {
+                eventId: route.params?.eventId || 'undefined',
+                eventType: route.params?.eventType || 'undefined',
+                selectedProduct: route.params?.selectedProduct ? 'exists' : 'undefined',
+            },
+            state: {
+                eventId: eventId || 'undefined',
+                title: title || 'empty',
+                content: content || 'empty',
+            }
         });
-    }
+    }, [hasContent, hasProduct, isShareEnabled, eventId, title, content, selectedProduct, route.params]);
 
     // Show product selector if productSource is set
     if (showProductSelector && productSource) {
