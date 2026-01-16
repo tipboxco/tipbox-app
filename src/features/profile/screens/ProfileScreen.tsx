@@ -306,6 +306,7 @@ interface TabContentProps {
   tabKey: TabKey;
   targetUserId: string;
   isDark: boolean;
+  onQueryRef?: (tabKey: TabKey, query: any) => void;
 }
 
 // TabsBar Component - Basitleştirilmiş versiyon (sadece tab seçimi)
@@ -343,7 +344,7 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
           position="relative"
           space="md"
         >
-          {TABS.map((tab) => {
+          {TABS.map((tab, index) => {
             const isActive = tab.key === activeTab;
             return (
               <Pressable
@@ -366,41 +367,37 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
                     {tab.title}
                   </Text>
                 </VStack>
+                {/* Active indicator */}
+                {isActive && (
+                  <Box
+                    position="absolute"
+                    bottom={0}
+                    left="50%"
+                    height={2}
+                    width={20}
+                    backgroundColor={isDark ? '#FFFFFF' : '#000000'}
+                    style={{
+                      transform: [{ translateX: -10 }],
+                    }}
+                  />
+                )}
               </Pressable>
             );
           })}
-
-          {/* Simple Indicator */}
-          <Box
-            position="absolute"
-            bottom={0}
-            left={0}
-            height={2}
-            backgroundColor={isDark ? '#FFFFFF' : '#000000'}
-            style={{
-              width: '100%',
-              transform: [{ translateX: 0 }],
-            }}
-          />
         </HStack>
       </ScrollView>
     </Box>
   );
 };
 
-// Tab Page Component - Her tab için ayrı bir sayfa
-const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomPadding, listHeaderComponent, onRefresh, refreshing }) => {
-  // Scroll position state - en üstteyken pull-to-refresh'i engellemek için
-  const [scrollOffset, setScrollOffset] = useState(0);
-  const [isAtTop, setIsAtTop] = useState(true);
-  const flatListRef = useRef<FlatList>(null);
-
-  // API hooks for each tab
-  const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
-  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: tabKey === 'benchmarks' });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: tabKey === 'tips' });
-  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: tabKey === 'replies' });
+// Tab Content Component - Sadece içeriği render eder (FlatList yok)
+const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef }) => {
+  // API hooks for each tab - tüm tab'lar için query'leri enable et
+  const feedQuery = useUserPosts(targetUserId, 5, { enabled: true });
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: true });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: true });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: true });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: true });
   
   // Get active tab query
   const activeTabQuery = useMemo(() => {
@@ -413,6 +410,13 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
       default: return feedQuery;
     }
   }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, repliesQuery]) as typeof feedQuery;
+  
+  // Query ref'ini parent'a gönder
+  useEffect(() => {
+    if (onQueryRef && activeTabQuery) {
+      onQueryRef(tabKey, activeTabQuery);
+    }
+  }, [tabKey, activeTabQuery, onQueryRef]);
   
   // Flatten and map posts based on active tab
   const mappedPosts = useMemo(() => {
@@ -480,32 +484,6 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
     return mapped;
   }, [activeTabQuery.data, tabKey]);
   
-  // Handle load more
-  const handleLoadMore = useCallback(() => {
-    if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
-      activeTabQuery.fetchNextPage();
-    }
-  }, [activeTabQuery]);
-
-  // Handle scroll - scroll position'ı track et
-  const handleScroll = useCallback((event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    setScrollOffset(offsetY);
-    // ARCHITECTURE FIX: En üstte olup olmadığını kontrol et (küçük bir threshold ile)
-    // 5px threshold - küçük scroll hatalarını göz ardı et
-    setIsAtTop(offsetY <= 5);
-  }, []);
-
-  // Handle refresh - sadece en üstte değilse refresh yap
-  const handleRefresh = useCallback(() => {
-    // ARCHITECTURE FIX: En üstteyken (isAtTop === true) pull-to-refresh'i engelle
-    // Kullanıcı zaten en üstte olduğu için görünecek bir şey yok
-    // Sadece aşağı scroll edilmişse (isAtTop === false) refresh yap
-    if (!isAtTop && onRefresh) {
-      onRefresh();
-    }
-  }, [isAtTop, onRefresh]);
-  
   // Render post card
   const renderPostCard = useCallback((postData: MappedPost) => {
     switch (postData.type) {
@@ -526,65 +504,46 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, targetUserId, isDark, bottomP
   // Render LadderTab
   if (tabKey === 'ladders') {
     return (
-      <Box flex={1}>
+      <Box>
         <LadderTab />
       </Box>
     );
   }
 
-  // Dikey FlatList kullan - her tab kendi scroll'unu yönetir
+  // Loading state
+  if (activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0])) {
+    return (
+      <Box py={20}>
+        <FeedSkeleton count={3} />
+      </Box>
+    );
+  }
+
+  // Empty state
+  if (mappedPosts.length === 0) {
+    return (
+      <Box py={20} alignItems="center">
+        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+          No content found yet.
+        </Text>
+      </Box>
+    );
+  }
+
+  // Render posts
   return (
-    <FlatList
-      ref={flatListRef}
-      data={mappedPosts}
-      keyExtractor={(item) => item.id}
-      ListHeaderComponent={listHeaderComponent}
-      ListEmptyComponent={
-        activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
-          <FeedSkeleton count={3} />
-        ) : (
-          <Box py={20} alignItems="center">
-            <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-              No content found yet.
-            </Text>
-          </Box>
-        )
-      }
-      renderItem={({ item }) => (
-        <Box px={16}>
+    <Box>
+      {mappedPosts.map((item) => (
+        <Box key={item.id} px={16} mb={16}>
           {renderPostCard(item)}
         </Box>
+      ))}
+      {activeTabQuery.isFetchingNextPage && (
+        <Box py={20} alignItems="center">
+          <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+        </Box>
       )}
-      onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={
-        activeTabQuery.isFetchingNextPage ? (
-          <Box py={20} alignItems="center">
-            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-          </Box>
-        ) : null
-      }
-      contentContainerStyle={{
-        paddingBottom: bottomPadding,
-      }}
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
-      refreshControl={
-        onRefresh ? (
-          <RefreshControl
-            refreshing={refreshing || false}
-            onRefresh={handleRefresh}
-            tintColor={isDark ? '#FFFFFF' : '#000000'}
-            colors={isDark ? ['#FFFFFF'] : ['#000000']}
-          />
-        ) : undefined
-      }
-      showsVerticalScrollIndicator={true}
-      scrollEnabled={true}
-      nestedScrollEnabled={false}
-      bounces={false}
-      alwaysBounceVertical={false}
-    />
+    </Box>
   );
 };
 
@@ -756,54 +715,23 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const pagerRef = useRef<PagerView>(null);
-  const tabContainerRef = useRef<any>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const tabSectionPositions = useRef<{ [key: string]: number }>({});
   
-  // 🎯 CORE: Shared progress value for tab animations
-  const progress = useSharedValue(0);
-  
-  // Tab index'i bul
-  const getTabIndex = useCallback((tabKey: TabKey) => {
-    return TABS.findIndex(tab => tab.key === tabKey);
+  // Tab section y pozisyonunu kaydet
+  const handleTabSectionLayout = useCallback((tabKey: TabKey, y: number) => {
+    tabSectionPositions.current[tabKey] = y;
   }, []);
   
-  // Tab değiştiğinde PagerView'ı programatik olarak değiştir
+  // Tab değiştiğinde ilgili section'a scroll et
   const handleTabChange = useCallback((tabKey: TabKey) => {
-    const index = getTabIndex(tabKey);
-    if (index !== -1 && pagerRef.current) {
-      // PagerView'ı native animasyon ile değiştir
-      pagerRef.current.setPage(index);
+    setActiveTab(tabKey);
+    
+    // İlgili section'a scroll et
+    const yPosition = tabSectionPositions.current[tabKey];
+    if (yPosition !== undefined && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: yPosition, animated: true });
     }
-  }, [getTabIndex]);
-  
-  // PagerView scroll handler - realtime progress güncelleme
-  const handlePageScroll = useCallback(
-    (e: any) => {
-      'worklet';
-      const { position, offset } = e.nativeEvent;
-      progress.value = position + offset;
-    },
-    [progress]
-  );
-
-  // PagerView page selected handler - snap sonrası sync
-  const handlePageSelected = useCallback(
-    (e: any) => {
-      const position = e.nativeEvent.position;
-      progress.value = withTiming(position, { duration: 0 });
-      
-      // Active tab'ı güncelle (sadece snap tamamlandıktan sonra)
-      const tabKey = TABS[position]?.key;
-      if (tabKey) {
-        setActiveTab(tabKey);
-      }
-    },
-    [progress]
-  );
-  
-  // Tab container width için callback
-  const handleTabContainerLayout = useCallback((width: number) => {
-    // Tab container width'i state'e kaydet (gerekirse)
   }, []);
   
   // Action button handlers
@@ -1445,6 +1373,29 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     return renderProfileHeader(activeTab, handleTabChange, isProfileLoading);
   }, [renderProfileHeader, activeTab, handleTabChange, isProfileLoading, refreshing]);
   
+  // Tab query refs - load more için
+  const tabQueriesRef = useRef<{ [key: string]: any }>({});
+  
+  // Tab query'yi kaydet
+  const handleTabQueryRef = useCallback((tabKey: TabKey, query: any) => {
+    tabQueriesRef.current[tabKey] = query;
+  }, []);
+  
+  // Scroll handler - load more için
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 200; // 200px kala load more yap
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    if (isCloseToBottom) {
+      // Aktif tab'ın query'sine load more yap
+      const activeQuery = tabQueriesRef.current[activeTab];
+      if (activeQuery && activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
+        activeQuery.fetchNextPage();
+      }
+    }
+  }, [activeTab]);
+  
   if (isProfileLoading) {
     return (
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
@@ -1477,33 +1428,44 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           activeTab={activeTab} 
           onChangeTab={handleTabChange} 
           isDark={isDark}
-          progress={progress}
-          tabContainerRef={tabContainerRef}
-          onTabContainerLayout={handleTabContainerLayout}
         />
 
-        {/* Alt Kısım: PagerView - Sadece FlatList'ler değişir */}
-        <AnimatedPagerView
-          ref={pagerRef}
-          style={{ flex: 1 }}
-          initialPage={0}
-          onPageScroll={handlePageScroll}
-          onPageSelected={handlePageSelected}
+        {/* Ana ScrollView - Tüm tab içerikleri burada */}
+        <ScrollView
+          ref={scrollViewRef}
+          showsVerticalScrollIndicator={true}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing || false}
+              onRefresh={handleRefresh}
+              tintColor={isDark ? '#FFFFFF' : '#000000'}
+              colors={isDark ? ['#FFFFFF'] : ['#000000']}
+            />
+          }
+          contentContainerStyle={{
+            paddingBottom: bottomPadding,
+          }}
         >
-          {TABS.map((tab, index) => (
-            <Box key={tab.key} flex={1}>
-              <TabPage
+          {/* Her tab için bir section */}
+          {TABS.map((tab) => (
+            <Box
+              key={tab.key}
+              onLayout={(event) => {
+                const { y } = event.nativeEvent.layout;
+                handleTabSectionLayout(tab.key, y);
+              }}
+            >
+              <TabContent
                 tabKey={tab.key}
                 targetUserId={targetUserId || ''}
                 isDark={isDark}
-                bottomPadding={bottomPadding}
-                listHeaderComponent={null}
-                onRefresh={handleRefresh}
-                refreshing={refreshing}
+                onQueryRef={handleTabQueryRef}
               />
             </Box>
           ))}
-        </AnimatedPagerView>
+        </ScrollView>
       </VStack>
 
       {/* Context Menu Backdrop - Boş bir yere tıklandığında context menu'yu kapat */}
@@ -1546,6 +1508,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               data={selectedBadge}
               onClose={handleCloseModal}
               hideFollowLadder={isOwnProfile}
+              eventId="" // Profile badge'leri event'e bağlı değil
             />
           </ModalContent>
         ) : null}

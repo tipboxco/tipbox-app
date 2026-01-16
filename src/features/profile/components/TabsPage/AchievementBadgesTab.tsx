@@ -85,84 +85,12 @@ export const AchievementBadgesTab: React.FC<AchievementBadgesTabProps> = ({
     return achievements.map(mapAchievementToBadge);
   }, [achievements]);
 
-  // Console log: API'den gelen veriyi göster
-  useEffect(() => {
-    if (data?.pages) {
-      console.log('[AchievementBadgesTab] ========================================');
-      console.log('[AchievementBadgesTab] API Response Data:');
-      console.log('[AchievementBadgesTab] Total Pages:', data.pages.length);
-      
-      data.pages.forEach((page, pageIndex) => {
-        console.log(`[AchievementBadgesTab] Page ${pageIndex + 1}:`, {
-          itemsCount: page.items?.length || 0,
-          pagination: page.pagination,
-          items: page.items?.map((item) => ({
-            id: item.id,
-            title: item.title,
-            image: item.image,
-            description: item.description,
-            current: item.current,
-            total: item.total,
-            status: item.status,
-          })) || [],
-        });
-      });
-      
-      console.log('[AchievementBadgesTab] All Achievements (after flattening):', {
-        totalCount: achievements.length,
-        achievementIds: achievements.map((item) => item.id),
-        achievements: achievements.map((item) => ({
-          id: item.id,
-          title: item.title,
-          image: item.image,
-          description: item.description,
-          current: item.current,
-          total: item.total,
-          status: item.status,
-        })),
-      });
-      
-      console.log('[AchievementBadgesTab] Mapped Badges:', {
-        totalCount: mappedBadges.length,
-        badgeIds: mappedBadges.map((badge) => badge.id),
-        badges: mappedBadges.map((badge) => ({
-          id: badge.id,
-          title: badge.title,
-          rarity: badge.rarity,
-          category: badge.category,
-        })),
-      });
-      
-      console.log('[AchievementBadgesTab] Infinite Scroll State:', {
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading,
-        error: error ? error.message : null,
-      });
-      
-      console.log('[AchievementBadgesTab] ========================================');
-    }
-  }, [data, achievements, mappedBadges, hasNextPage, isFetchingNextPage, isLoading, error]);
 
   const handleLoadMore = useCallback(() => {
-    console.log('[AchievementBadgesTab] 🔄 Scroll Event Triggered:', {
-      hasNextPage,
-      isFetchingNextPage,
-      currentAchievementsCount: achievements.length,
-      currentBadgesCount: mappedBadges.length,
-    });
-    
     if (hasNextPage && !isFetchingNextPage) {
-      console.log('[AchievementBadgesTab] ✅ Fetching next page...');
       fetchNextPage();
-    } else {
-      console.log('[AchievementBadgesTab] ⏸️ Skipping fetch:', {
-        reason: !hasNextPage ? 'No more pages' : 'Already fetching',
-        hasNextPage,
-        isFetchingNextPage,
-      });
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage, achievements.length, mappedBadges.length]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Footer için activity indicator
   const activityIndicatorColor = useMemo(() => isDark ? '#FFFFFF' : '#000000', [isDark]);

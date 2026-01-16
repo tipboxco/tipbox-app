@@ -294,7 +294,6 @@ const ProfileEditScreen: React.FC = () => {
         // CRITICAL FIX: Avatar seçildiğinde sadece local URI'yi kaydet, upload etme
         // Upload işlemi Save butonuna tıklandığında yapılacak
         setSelectedAvatarUri(result.asset.uri);
-        console.log('[ProfileEditScreen] Avatar selected (local URI):', result.asset.uri);
       } else {
         toast.show({
           placement: 'top',
@@ -379,7 +378,6 @@ const ProfileEditScreen: React.FC = () => {
 
     // Sadece modal'ı kapat, upload işlemi Save butonuna tıklandığında yapılacak
     setIsAvatarModalVisible(false);
-    console.log('[ProfileEditScreen] Avatar selected from modal (local URI):', selectedAvatarUri);
   };
 
   const handleBannerChange = async () => {
@@ -390,7 +388,6 @@ const ProfileEditScreen: React.FC = () => {
         // CRITICAL FIX: Banner seçildiğinde sadece local URI'yi kaydet, upload etme
         // Upload işlemi Save butonuna tıklandığında yapılacak
         setSelectedBannerUri(result.asset.uri);
-        console.log('[ProfileEditScreen] Banner selected (local URI):', result.asset.uri);
       } else {
         toast.show({
           placement: 'top',

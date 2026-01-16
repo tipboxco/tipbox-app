@@ -101,26 +101,9 @@ export const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ data, on
 
   // Avatar yüklenme hatası durumunda default avatar'a geçiş
   const handleAvatarError = (error: Error) => {
-    console.log('[SupportRequestCard] Avatar load error, using default avatar:', {
-      requestId: data.id,
-      userName: data.userName,
-      error: error.message,
-      attemptedSource: avatarSource,
-    });
     setAvatarSource(DEFAULT_USER_AVATAR);
   };
 
-  // Avatar URL logları
-  React.useEffect(() => {
-    console.log('[SupportRequestCard] Avatar URLs:', {
-      requestId: data.id,
-      userName: data.userName,
-      rawUserAvatar: data.userAvatar,
-      userAvatarType: typeof data.userAvatar,
-      userAvatarAfterToImageSource: data.userAvatar ? toImageSource(data.userAvatar) : null,
-      finalAvatarSource: avatarSource,
-    });
-  }, [data.id, data.userName, data.userAvatar, avatarSource]);
 
   return (
     <Pressable

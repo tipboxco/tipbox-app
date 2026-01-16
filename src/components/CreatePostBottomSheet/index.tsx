@@ -140,14 +140,6 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
         }
     }, [stage]);
 
-    // CRITICAL DEBUG: Log filtered options
-    console.log('[CreatePostBottomSheet] 📋 Filtered post options:', {
-      stage,
-      filteredCount: filteredPostOptions.length,
-      options: filteredPostOptions.map(o => o.id),
-      currentView,
-      showExperienceOptionsDirectly,
-    });
 
     const handlePostTypePress = (type: PostType) => {
         console.log('Selected post type:', type);

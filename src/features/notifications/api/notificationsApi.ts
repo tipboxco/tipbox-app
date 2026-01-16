@@ -74,18 +74,6 @@ export const getNotifications = async (
       }>;
     }>('/notifications', { params });
     
-    // DEBUG: API response formatını logla
-    console.log('[getNotifications] 📦 Raw API Response:', {
-      hasResponse: !!response,
-      hasData: !!response?.data,
-      responseDataType: typeof response?.data,
-      isResponseDataArray: Array.isArray(response?.data),
-      hasResponseDataData: !!(response?.data as any)?.data,
-      isResponseDataDataArray: Array.isArray((response?.data as any)?.data),
-      responseDataKeys: response?.data ? Object.keys(response.data) : [],
-      params,
-    });
-    
     // Response data kontrolü - Backend formatı: { success: boolean, data: Array<...>, pagination: {...} }
     let notificationsArray: any[] = [];
     let pagination: any = null;
@@ -98,7 +86,6 @@ export const getNotifications = async (
       }
       // Format 2: Backend direkt array döndürüyor (fallback)
       else if (Array.isArray(response.data)) {
-        console.warn('[getNotifications] ⚠️ Backend returned array directly, using it');
         notificationsArray = response.data;
       }
       // Format 3: Response.data zaten array (nested - fallback)
@@ -108,10 +95,6 @@ export const getNotifications = async (
     }
     
     if (notificationsArray.length === 0) {
-      console.warn('[getNotifications] ⚠️ No notifications found in response:', {
-        responseData: response.data,
-        params,
-      });
       return {
         success: (response.data as any)?.success ?? false,
         data: [],
@@ -150,33 +133,8 @@ export const getNotifications = async (
       pagination: pagination || undefined,
     };
     
-    // DEBUG: Mapped data'yı logla
-    console.log('[getNotifications] ✅ Mapped result:', {
-      success: result.success,
-      dataLength: result.data.length,
-      firstItem: result.data[0] ? {
-        id: result.data[0].id,
-        type: result.data[0].type,
-        title: result.data[0].title,
-        message: result.data[0].message,
-        avatar: result.data[0].avatar || result.data[0].avatarUrl, // CRITICAL FIX: avatarUrl → avatar (backend format), backward compatibility için avatarUrl de kontrol ediliyor
-        imageUrl: result.data[0].imageUrl,
-        data: result.data[0].data,
-        read: result.data[0].read,
-      } : null,
-      pagination: result.pagination,
-    });
-    
     return result;
   } catch (error: any) {
-    console.error('[getNotifications] ❌ API Error:', {
-      url: '/notifications',
-      params,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      responseData: error.response?.data,
-      message: error.message,
-    });
     throw error;
   }
 };

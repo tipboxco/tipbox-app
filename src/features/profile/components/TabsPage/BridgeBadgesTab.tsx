@@ -90,46 +90,6 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
     return bridges.map(mapBridgeToBadge);
   }, [bridges]);
 
-  // Console log: API'den gelen veriyi göster - sadece data gerçekten değiştiğinde
-  const prevDataKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (data?.pages) {
-      // Sadece pages sayısı ve her page'in item sayısı değiştiğinde log bas
-      const dataKey = `${data.pages.length}-${data.pages.map(p => p.items?.length || 0).join(',')}`;
-      
-      if (prevDataKeyRef.current !== dataKey) {
-        prevDataKeyRef.current = dataKey;
-        
-        console.log('[BridgeBadgesTab] ========================================');
-        console.log('[BridgeBadgesTab] API Response Data:');
-        console.log('[BridgeBadgesTab] Total Pages:', data.pages.length);
-        
-        data.pages.forEach((page, pageIndex) => {
-          console.log(`[BridgeBadgesTab] Page ${pageIndex + 1}:`, {
-            itemsCount: page.items?.length || 0,
-            pagination: page.pagination,
-            itemIds: page.items?.map((item) => item.id) || [],
-          });
-        });
-        
-        console.log('[BridgeBadgesTab] All Bridges (after flattening & deduplication):', {
-          totalCount: bridges.length,
-          bridgeIds: bridges.map((item) => item.id),
-          note: 'Backend 10 item döndürdü ama duplicate ID\'ler var, unique filter sonrası 6 item kaldı',
-        });
-        
-        console.log('[BridgeBadgesTab] Infinite Scroll State:', {
-          hasNextPage,
-          isFetchingNextPage,
-          totalPages: data.pages.length,
-          lastPageHasMore: data.pages[data.pages.length - 1]?.pagination?.hasMore,
-          lastPageCursor: data.pages[data.pages.length - 1]?.pagination?.cursor,
-        });
-        
-        console.log('[BridgeBadgesTab] ========================================');
-      }
-    }
-  }, [data, bridges]);
 
   // Loading state için state - scroll yaptığında loading gösterilsin
   const [isManuallyLoading, setIsManuallyLoading] = useState(false);
@@ -157,7 +117,6 @@ export const BridgeBadgesTab: React.FC<BridgeBadgesTabProps> = ({
         setIsManuallyLoading(false);
       })
       .catch((error) => {
-        console.error('[BridgeBadgesTab] ❌ Fetch error:', error);
         setIsManuallyLoading(false);
       });
   }, [hasNextPage, isFetchingNextPage, fetchNextPage, isManuallyLoading]);

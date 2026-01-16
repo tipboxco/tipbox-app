@@ -33,18 +33,6 @@ export const GlobalBottomSheet: React.FC = () => {
   const { state, closeBottomSheet } = context;
   const { content, index, options } = state;
   
-  // Debug: Log state changes (only in development)
-  React.useEffect(() => {
-    if (__DEV__ && content && index >= 0) {
-      console.log('[GlobalBottomSheet] 📱 Sheet state:', { 
-        hasContent: !!content, 
-        index, 
-        detached: options?.detached,
-        snapPoints: options?.snapPoints,
-        enableDynamicSizing: options?.enableDynamicSizing,
-      });
-    }
-  }, [content, index, options]);
 
   // CRITICAL FIX: Son index değerini track et (onChange race condition'ını önlemek için)
   const lastIndexRef = useRef<number>(index);

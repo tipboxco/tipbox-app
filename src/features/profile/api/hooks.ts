@@ -703,11 +703,6 @@ export const useUserCollectionBridges = (
       // Backend'den cursor geliyorsa onu kullan, yoksa son item'ın id'sini cursor olarak kullan
       const cursor = lastPage.pagination.cursor || (lastPage.items.length > 0 ? lastPage.items[lastPage.items.length - 1].id : undefined);
       
-      // Log'u sadece önemli durumlarda bas (re-render'ları azaltmak için)
-      if (cursor) {
-        console.log('[useUserCollectionBridges] getNextPageParam: Will fetch next page with cursor:', cursor);
-      }
-      
       return cursor;
     },
     enabled: !!userId,

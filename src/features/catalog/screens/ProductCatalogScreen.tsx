@@ -178,9 +178,6 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     if (!catalogCategories || catalogCategories.length === 0) return [];
     
     return catalogCategories.map(cat => {
-      if (!cat.image || cat.image.trim() === '') {
-        console.warn(`[ProductCatalogScreen] ⚠️ Category "${cat.name}" has no image URL`);
-      }
       
       return {
         id: cat.categoryId,
