@@ -33,9 +33,9 @@ export const GlobalBottomSheet: React.FC = () => {
   const { state, closeBottomSheet } = context;
   const { content, index, options } = state;
   
-  // Debug: Log state changes
+  // Debug: Log state changes (only in development)
   React.useEffect(() => {
-    if (content && index >= 0) {
+    if (__DEV__ && content && index >= 0) {
       console.log('[GlobalBottomSheet] 📱 Sheet state:', { 
         hasContent: !!content, 
         index, 

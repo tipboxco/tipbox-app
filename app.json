@@ -33,6 +33,9 @@
         "NSCameraUsageDescription": "Fotoğraf çekmek için kameraya ihtiyaç var.",
         "NSMicrophoneUsageDescription": "Video kaydı için mikrofona ihtiyaç var.",
         "NSUserNotificationsUsageDescription": "Bildirimleri almak için izin gereklidir.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -95,7 +98,8 @@
         "expo-notifications",
         {
           "icon": "./assets/tipbox-white-logo.jpg",
-          "color": "#ffffff"
+          "color": "#ffffff",
+          "enableBackgroundRemoteNotifications": true
         }
       ],
       [

@@ -10,7 +10,6 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
   getPostTypeFilterOptions,
   getAllowedPostTypesForContext,
@@ -80,8 +79,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
   const hasFilters = selectedPostType !== 'All' || selectedSort !== 'newest';
 
   return (
-    <BottomSheetScrollView>
-      <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} width="100%">
+    <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} width="100%">
         <VStack px="$4" py="$3" pb="$8" space="md">
           {/* Header */}
           <HStack alignItems="center" justifyContent="center" mb="$1">
@@ -255,6 +253,5 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
           </HStack>
         </VStack>
       </Box>
-    </BottomSheetScrollView>
   );
 };

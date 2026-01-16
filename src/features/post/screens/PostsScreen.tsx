@@ -54,6 +54,12 @@ export const PostsScreen = () => {
   const routeParams = useMemo(() => route.params, [route.params]);
   const { stage, name, productInfo, selectedProduct, contextType, contextId } = routeParams;
   
+  // Capitalize first letter of name for header
+  const capitalizedName = useMemo(() => {
+    if (!name) return '';
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }, [name]);
+  
   const selectedProductPayload = useMemo(() => {
     if (!selectedProduct) return undefined;
     return {
@@ -126,30 +132,74 @@ export const PostsScreen = () => {
   // Determine which API to use based on context type
   // Use catalog posts endpoints for better hierarchical feed support
   // Map frontend post type to backend filter parameter
-  const backendFilter = filters.postType && filters.postType !== 'All' 
+  const rawBackendFilter = filters.postType && filters.postType !== 'All' 
     ? mapPostTypeToFilter(filters.postType, feedContextType || 'sub_category')
     : 'all';
   
+  // Filter out invalid filter values based on context type
+  const backendFilter = useMemo(() => {
+    if (!rawBackendFilter || rawBackendFilter === 'all') return 'all';
+    
+    // Sub category and product group only support: all, free, tips_and_tricks, questions
+    if (feedContextType === 'sub_category' || feedContextType === 'product_group') {
+      if (['free', 'tips_and_tricks', 'questions'].includes(rawBackendFilter)) {
+        return rawBackendFilter as 'free' | 'tips_and_tricks' | 'questions';
+      }
+      return 'all';
+    }
+    
+    // Product supports all filter types
+    if (feedContextType === 'product') {
+      return rawBackendFilter as 'free' | 'tips_and_tricks' | 'questions' | 'updates' | 'benchmarks' | 'reviews';
+    }
+    
+    return 'all';
+  }, [rawBackendFilter, feedContextType]);
+  
   // Map frontend sort to backend sort parameter
-  const backendSort = filters.sort || 'newest';
+  const backendSort = useMemo(() => {
+    const sort = filters.sort || 'newest';
+    if (sort === 'popular') {
+      return 'most_popular' as const;
+    }
+    return sort as 'newest' | 'oldest' | 'most_popular';
+  }, [filters.sort]);
+
+  // Type-safe filter values for sub category and product group
+  const subCategoryProductGroupFilter = useMemo(() => {
+    if (backendFilter === 'all') return undefined;
+    if (['free', 'tips_and_tricks', 'questions'].includes(backendFilter)) {
+      return backendFilter as 'free' | 'tips_and_tricks' | 'questions';
+    }
+    return undefined;
+  }, [backendFilter]);
 
   const subCategoryPostsQuery = useSubCategoryPosts(
     feedContextType === 'sub_category' ? feedContextId : undefined,
-    backendFilter !== 'all' ? backendFilter : undefined,
+    subCategoryProductGroupFilter,
     backendSort !== 'newest' ? backendSort : undefined,
     20
   );
 
   const productGroupPostsQuery = useProductGroupPosts(
     feedContextType === 'product_group' ? feedContextId : undefined,
-    backendFilter !== 'all' ? backendFilter : undefined,
+    subCategoryProductGroupFilter,
     backendSort !== 'newest' ? backendSort : undefined,
     20
   );
 
+  // Type-safe filter value for product
+  const productFilter = useMemo(() => {
+    if (backendFilter === 'all') return undefined;
+    if (['free', 'tips_and_tricks', 'questions', 'updates', 'benchmarks', 'reviews'].includes(backendFilter)) {
+      return backendFilter as 'free' | 'tips_and_tricks' | 'questions' | 'updates' | 'benchmarks' | 'reviews';
+    }
+    return undefined;
+  }, [backendFilter]);
+
   const catalogProductPostsQuery = useCatalogProductPosts(
     feedContextType === 'product' ? feedContextId : undefined,
-    backendFilter !== 'all' ? backendFilter : undefined,
+    productFilter,
     backendSort !== 'newest' ? backendSort : undefined,
     20
   );
@@ -868,8 +918,8 @@ export const PostsScreen = () => {
 
   // PERFORMANCE FIX: Memoize contentContainerStyle - FeedScreen ile aynı yapı
   const contentContainerStyle = useMemo(
-    () => ({ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomOffset }),
-    [bottomOffset]
+    () => ({ paddingHorizontal: 16, paddingTop: 8 }),
+    []
   );
 
   // PERFORMANCE FIX: Memoize keyExtractor
@@ -995,11 +1045,11 @@ export const PostsScreen = () => {
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, getCatalogStage, handlePostTypeSelect]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
       {/* Header */}
       <Header
-        title={name}
+        title={capitalizedName}
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
         rightAction={

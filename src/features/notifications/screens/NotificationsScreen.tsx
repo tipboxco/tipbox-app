@@ -21,25 +21,7 @@ import {
     Spinner,
 } from '@gluestack-ui/themed';
 import {
-  XMarkIcon,
-  HeartIcon,
-  GiftIcon,
-  ChatBubbleLeftIcon,
-  UserPlusIcon,
-  TrophyIcon,
-  CalendarIcon,
-  BellIcon,
   MagnifyingGlassIcon,
-  ArrowTopRightOnSquareIcon,
-  BookmarkIcon,
-  ChatBubbleLeftRightIcon,
-  EnvelopeIcon,
-  CheckCircleIcon,
-  AcademicCapIcon,
-  CurrencyDollarIcon,
-  PaperAirplaneIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
 } from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -48,15 +30,13 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { notification_filters } from '@/src/mock/notifications';
 import { NotificationFilter } from '@/src/mock/notifications/types';
 import { Header } from '@/src/components/Header';
-import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
 import {
     useNotifications,
-    useMarkNotificationAsRead,
     useMarkAllNotificationsAsRead,
-    useDeleteNotification,
     notificationKeys,
 } from '../api/hooks';
-import type { Notification, NotificationType } from '../api/types';
+import type { Notification } from '../api/types';
+import { NotificationCard } from '../components/NotificationCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationAssetCache } from '@/src/services/NotificationAssetCache';
 import { navigationService } from '@/src/services/NavigationService';
@@ -74,351 +54,6 @@ const { width } = Dimensions.get('window');
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 type NotificationsScreenNavigationProp = NativeStackNavigationProp<NotificationsStackParamList, 'NotificationsScreen'>;
-
-const NotificationCard: React.FC<{ 
-    notification: Notification;
-    onPress?: () => void;
-    onMarkAsRead?: () => void;
-    onDelete?: () => void;
-}> = ({ notification, onPress, onMarkAsRead, onDelete }) => {
-    const { colorMode } = useColorMode();
-    const isDark = colorMode === 'dark';
-    const markAsReadMutation = useMarkNotificationAsRead();
-    const deleteMutation = useDeleteNotification();
-
-    const getIconComponent = (type: NotificationType): React.ComponentType<{ width?: number; height?: number; color?: string }> => {
-        switch (type) {
-            // Post ile ilgili
-            case 'POST_LIKED':
-                return HeartIcon;
-            case 'POST_COMMENTED':
-                return ChatBubbleLeftIcon;
-            case 'POST_SHARED':
-                return ArrowTopRightOnSquareIcon;
-            case 'POST_FAVORITED':
-                return BookmarkIcon;
-
-            // Yorum ile ilgili
-            case 'COMMENT_LIKED':
-                return HeartIcon;
-            case 'COMMENT_REPLIED':
-                return ChatBubbleLeftRightIcon;
-
-            // Trust/Follow ile ilgili
-            case 'NEW_TRUSTER':
-            case 'NEW_TRUSTED_BY':
-                return UserPlusIcon;
-
-            // Mesajlaşma ile ilgili
-            case 'NEW_MESSAGE':
-                return ChatBubbleLeftIcon;
-            case 'DM_REQUEST_RECEIVED':
-                return EnvelopeIcon;
-            case 'DM_REQUEST_ACCEPTED':
-                return CheckCircleIcon;
-
-            // Gamification ile ilgili
-            case 'NEW_BADGE':
-            case 'ACHIEVEMENT_UNLOCKED':
-                return TrophyIcon;
-            case 'REWARD_EARNED':
-                return GiftIcon;
-
-            // Expert ile ilgili
-            case 'EXPERT_REQUEST_AVAILABLE':
-            case 'EXPERT_REQUEST_ANSWERED':
-                return AcademicCapIcon;
-
-            // Sistem/Tips ile ilgili
-            case 'SYSTEM_ANNOUNCEMENT':
-                return BellIcon;
-            case 'TIPS_RECEIVED':
-                return GiftIcon;
-            case 'TIPS_SENT':
-                return PaperAirplaneIcon;
-
-            // Event ile ilgili
-            case 'EVENT_STARTED':
-                return CalendarIcon;
-            case 'EVENT_ENDING_SOON':
-                return ClockIcon;
-            case 'EVENT_REWARD_AVAILABLE':
-                return GiftIcon;
-
-            default:
-                return BellIcon;
-        }
-    };
-
-    const handlePress = () => {
-        if (!notification.read && onMarkAsRead) {
-            markAsReadMutation.mutate(notification.id, {
-                onSuccess: () => {
-                    onMarkAsRead();
-                },
-            });
-        }
-        if (onPress) {
-            onPress();
-        }
-    };
-
-    const handleDelete = () => {
-        if (onDelete) {
-            deleteMutation.mutate(notification.id, {
-                onSuccess: () => {
-                    onDelete();
-                },
-            });
-        }
-    };
-
-    // Backend formatına göre: avatar direkt olarak geliyor, data objesi içinde ek bilgiler var
-    const userAvatar = notification.avatar 
-        ? toImageSource(notification.avatar)
-        : DEFAULT_USER_AVATAR;
-    
-    // data veya metadata'dan kullanıcı adını al (backward compatibility)
-    const userName = notification.data?.userName || 
-                     notification.data?.likerName || 
-                     notification.data?.commenterName || 
-                     notification.data?.senderName ||
-                     notification.metadata?.userName || 
-                     'Kullanıcı';
-    
-    const IconComponent = getIconComponent(notification.type);
-    
-    // Backend'den gelen data objesinden veya metadata'dan ekstra içerikleri al (backward compatibility)
-    const data = notification.data || notification.metadata || {};
-    const postId = data.postId;
-    const commentId = data.commentId;
-    const eventId = data.eventId;
-    const eventName = data.eventName;
-    const commentContent = data.messagePreview || data.commentContent || data.commentText;
-    const tipsAmount = data.amount || data.rewardAmount;
-    
-    // imageUrl varsa göster (event veya post görseli için)
-    const showImageUrl = notification.imageUrl;
-    
-    // Post card gösterimi için kontrol
-    const showPostCard = (notification.type === 'POST_LIKED' || 
-                         notification.type === 'POST_COMMENTED' || 
-                         notification.type === 'POST_FAVORITED' || 
-                         notification.type === 'POST_SHARED') && 
-                         (postId || showImageUrl);
-    
-    // Tips badge gösterimi
-    const showTipsBadge = (notification.type === 'TIPS_RECEIVED' || notification.type === 'TIPS_SENT') && tipsAmount;
-    
-    // Yorum metni veya mesaj önizlemesi gösterimi
-    const showCommentText = ((notification.type === 'POST_COMMENTED' || 
-                              notification.type === 'COMMENT_REPLIED' || 
-                              notification.type === 'NEW_MESSAGE') && commentContent);
-    
-    // Trust butonu gösterimi
-    const showTrustButton = (notification.type === 'NEW_TRUSTER' || notification.type === 'NEW_TRUSTED_BY');
-    
-    // Event bilgisi gösterimi
-    const showEventInfo = (notification.type === 'EVENT_STARTED' || 
-                          notification.type === 'EVENT_ENDING_SOON' || 
-                          notification.type === 'EVENT_REWARD_AVAILABLE') && 
-                          (eventName || showImageUrl);
-
-    return (
-        <Pressable 
-            onPress={handlePress}
-            py={12}
-            px={16}
-            borderBottomWidth={1}
-            borderBottomColor={isDark ? '#333' : '#E9E9E9'}
-        >
-            <VStack space="xs">
-                {/* Main Notification Row */}
-                <HStack space="md" alignItems="flex-start">
-                    {/* Avatar - Mor/pembe border ile */}
-                    <Box position="relative">
-                        <Box
-                            width={48}
-                            height={48}
-                            borderRadius={24}
-                            borderWidth={2.5}
-                            borderColor="#C084FC"
-                            justifyContent="center"
-                            alignItems="center"
-                        >
-                            <Image
-                                source={userAvatar}
-                                alt="User avatar"
-                                width={44}
-                                height={44}
-                                borderRadius={22}
-                            />
-                        </Box>
-                        {!notification.read && (
-                            <Box
-                                position="absolute"
-                                top={-2}
-                                right={-2}
-                                width={12}
-                                height={12}
-                                borderRadius={6}
-                                bg="#E8FF6B"
-                                borderWidth={2}
-                                borderColor={isDark ? '#000000' : '#FFFFFF'}
-                            />
-                        )}
-                    </Box>
-
-                    {/* Content - Ortada */}
-                    <VStack flex={1} space="xs" mr="$2">
-                        <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$normal"
-                        >
-                            {notification.message}
-                        </Text>
-                    </VStack>
-
-                    {/* Time and Icon - Sağda */}
-                    <VStack alignItems="flex-end" space="xs" justifyContent="flex-start">
-                        <Text
-                            color="#8C8C8C"
-                            fontSize="$xs"
-                            fontWeight="$medium"
-                        >
-                            {formatRelativeTime(notification.createdAt)}
-                        </Text>
-                        <IconComponent width={20} height={20} color="#7D7D7D" />
-                    </VStack>
-                </HStack>
-
-                {/* Extra Content - Altında */}
-                {showTipsBadge && (
-                    <Box ml={56} mt="$1">
-                        <Box
-                            bg="#E8FF6B"
-                            borderRadius={20}
-                            px="$3"
-                            py="$1"
-                            alignSelf="flex-start"
-                        >
-                            <Text
-                                color="#000000"
-                                fontSize="$xs"
-                                fontWeight="$bold"
-                            >
-                                +{tipsAmount} TIPS
-                            </Text>
-                        </Box>
-                    </Box>
-                )}
-
-                {showCommentText && (
-                    <Box ml={56} mt="$1" mr="$2">
-                        <Text
-                            color={isDark ? '#B9B9B9' : '#666666'}
-                            fontSize="$xs"
-                            fontWeight="$normal"
-                        >
-                            {commentContent}
-                        </Text>
-                    </Box>
-                )}
-
-                {showPostCard && (
-                    <Box ml={56} mt="$2" mr="$2">
-                        <Box
-                            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                            borderRadius={8}
-                            p="$3"
-                        >
-                            {showImageUrl && (
-                                <Image
-                                    source={toImageSource(notification.imageUrl!)}
-                                    alt="Post image"
-                                    style={{ width: '100%' }}
-                                    height={120}
-                                    borderRadius={8}
-                                    mb="$2"
-                                    resizeMode="cover"
-                                />
-                            )}
-                            <Text
-                                color={isDark ? '#FFFFFF' : '#000000'}
-                                fontSize="$sm"
-                                fontWeight="$bold"
-                            >
-                                {notification.title}
-                            </Text>
-                        </Box>
-                    </Box>
-                )}
-
-                {showEventInfo && (
-                    <Box ml={56} mt="$2" mr="$2">
-                        <Box
-                            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                            borderRadius={8}
-                            p="$3"
-                        >
-                            {showImageUrl && (
-                                <Image
-                                    source={toImageSource(notification.imageUrl!)}
-                                    alt="Event image"
-                                    style={{ width: '100%' }}
-                                    height={120}
-                                    borderRadius={8}
-                                    mb="$2"
-                                    resizeMode="cover"
-                                />
-                            )}
-                            {eventName && (
-                                <Text
-                                    color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize="$sm"
-                                    fontWeight="$bold"
-                                    
-                                >
-                                    {eventName}
-                                </Text>
-                            )}
-                            <Text
-                                color={isDark ? '#B9B9B9' : '#666666'}
-                                fontSize="$xs"
-                                fontWeight="$normal"
-                            >
-                                {notification.message}
-                            </Text>
-                        </Box>
-                    </Box>
-                )}
-
-                {showTrustButton && (
-                    <Box ml={56} mt={-10}>
-                        <Pressable
-                            bg="#E8FF6B"
-                            borderRadius={20}
-                            px="$4"
-                            py="$2"
-                            alignSelf="flex-start"
-                            onPress={onPress}
-                        >
-                            <Text
-                                color="#000000"
-                                fontSize="$xs"
-                                fontWeight="$semibold"
-                            >
-                                Profili Görüntüle
-                            </Text>
-                        </Pressable>
-                    </Box>
-                )}
-            </VStack>
-        </Pressable>
-    );
-};
-
 
 const NotificationsScreenComponent: React.FC = () => {
     const navigation = useNavigation<NotificationsScreenNavigationProp>();
@@ -442,22 +77,8 @@ const NotificationsScreenComponent: React.FC = () => {
     // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
     const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
 
-    // Get active filter based on current page
-    const activeFilter = filters[currentPage] || filters[0];
-
     // API hooks - shouldFetchNotifications tanımı useFocusEffect'ten önce olmalı
     const shouldFetchNotifications = isAuthenticated && isAuthReady;
-    const unreadOnly = activeFilter?.id === 'unread';
-    
-    // CRITICAL FIX: Backend API formatına göre type parametresini map et
-    // Backend: type=all, type=tips, type=truster, type=replies
-    const notificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = useMemo(() => {
-      if (!activeFilter || activeFilter.id === 'all' || activeFilter.id === 'unread') {
-        return undefined; // Backend'de type parametresi gönderme (tüm bildirimler)
-      }
-      // Filter ID'leri backend formatına göre map et
-      return activeFilter.id as 'all' | 'tips' | 'truster' | 'replies';
-    }, [activeFilter]);
 
     // Debounce search query for API calls
     useEffect(() => {
@@ -467,63 +88,84 @@ const NotificationsScreenComponent: React.FC = () => {
       return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // API hooks - useNotifications hook'unu useFocusEffect'ten önce çağır (infinite query)
-    const { 
-        data: notificationsResponse, 
-        isLoading, 
-        error, 
-        refetch,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-    } = useNotifications({
-        limit: 20, // Backend default limit
-        unreadOnly: unreadOnly,
-        type: notificationType, // CRITICAL FIX: Backend API formatına göre type parametresi
+    // CRITICAL FIX: Her filter için ayrı query yap - her tab kendi verilerini çekmeli
+    // PERFORMANCE FIX: Sadece aktif tab'ın query'sini enabled yap - aynı anda 4 istek atmayı önle
+    // Diğer tab'lar cache'den okuyacak, tab değiştiğinde o tab'ın query'si enable olacak
+    
+    // Filter 0: All/Unread
+    const allFilter = filters[0];
+    const allUnreadOnly = allFilter?.id === 'unread';
+    const allNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = undefined;
+    const allQueryEnabled = shouldFetchNotifications && currentPage === 0;
+    const allQuery = useNotifications({
+        limit: 20,
+        unreadOnly: allUnreadOnly,
+        type: allNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, shouldFetchNotifications); // Sadece authenticated ve auth ready olduğunda query çalışsın
+    }, allQueryEnabled);
+
+    // Filter 1: Replies
+    const repliesFilter = filters[1];
+    const repliesUnreadOnly = repliesFilter?.id === 'unread';
+    const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
+    const repliesQueryEnabled = shouldFetchNotifications && currentPage === 1;
+    const repliesQuery = useNotifications({
+        limit: 20,
+        unreadOnly: repliesUnreadOnly,
+        type: repliesNotificationType,
+        search: debouncedSearchQuery || undefined,
+    }, repliesQueryEnabled);
+
+    // Filter 2: Trust
+    const trustFilter = filters[2];
+    const trustUnreadOnly = trustFilter?.id === 'unread';
+    const trustNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'truster';
+    const trustQueryEnabled = shouldFetchNotifications && currentPage === 2;
+    const trustQuery = useNotifications({
+        limit: 20,
+        unreadOnly: trustUnreadOnly,
+        type: trustNotificationType,
+        search: debouncedSearchQuery || undefined,
+    }, trustQueryEnabled);
+
+    // Filter 3: Tips
+    const tipsFilter = filters[3];
+    const tipsUnreadOnly = tipsFilter?.id === 'unread';
+    const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
+    const tipsQueryEnabled = shouldFetchNotifications && currentPage === 3;
+    const tipsQuery = useNotifications({
+        limit: 20,
+        unreadOnly: tipsUnreadOnly,
+        type: tipsNotificationType,
+        search: debouncedSearchQuery || undefined,
+    }, tipsQueryEnabled);
+
+    // Her filter için query sonuçlarını map et - useMemo ile memoize et (sonsuz döngü önleme)
+    const filterQueryResults = useMemo(() => [allQuery, repliesQuery, trustQuery, tipsQuery], [allQuery, repliesQuery, trustQuery, tipsQuery]);
 
     // Mark all notifications as read mutation
     const markAllAsReadMutation = useMarkAllNotificationsAsRead();
-
-    // DEBUG: API response formatını kontrol et
-    useEffect(() => {
-        if (notificationsResponse) {
-            const pages = notificationsResponse.pages;
-            const firstPage = pages?.[0];
-            console.log('[NotificationsScreen] 📦 API Response:', {
-                hasResponse: !!notificationsResponse,
-                hasPages: !!pages,
-                pagesCount: pages?.length || 0,
-                hasData: !!firstPage?.data,
-                dataType: Array.isArray(firstPage?.data) ? 'array' : typeof firstPage?.data,
-                dataLength: Array.isArray(firstPage?.data) ? firstPage.data.length : 'N/A',
-                success: firstPage?.success,
-                fullResponse: notificationsResponse,
-            });
-        }
-    }, [notificationsResponse]);
-
-    // CRITICAL FIX: refetch ve markAllAsReadMutation'ı useRef ile wrap et - stable referans için
-    const refetchRef = useRef(refetch);
     const markAllAsReadMutationRef = useRef(markAllAsReadMutation);
     
-    // Ref'leri güncelle
+    // Ref'i güncelle
     useEffect(() => {
-        refetchRef.current = refetch;
         markAllAsReadMutationRef.current = markAllAsReadMutation;
-    }, [refetch, markAllAsReadMutation]);
+    }, [markAllAsReadMutation]);
 
-    // CRITICAL FIX: Tab değiştiğinde query'yi invalidate et ve refetch et - önceki tab'ın verilerini göstermemek için
+    // PERFORMANCE FIX: Tab değiştiğinde aktif tab'ın query'sini refetch et (cache invalid ise)
+    // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi
+    const filterQueryResultsRef = useRef(filterQueryResults);
     useEffect(() => {
-        if (shouldFetchNotifications) {
-            // Tab değiştiğinde önceki query'yi invalidate et (cache'den temizle)
-            // Bu sayede yeni tab için doğru veriler çekilir
-            queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-            // Yeni filtreye göre verileri çek
-            refetch();
+        filterQueryResultsRef.current = filterQueryResults;
+    }, [filterQueryResults]);
+
+    useEffect(() => {
+        if (shouldFetchNotifications && filterQueryResultsRef.current[currentPage]) {
+            const activeQuery = filterQueryResultsRef.current[currentPage];
+            // Cache invalid ise refetch et (staleTime kontrolü yapılır)
+            activeQuery.refetch();
         }
-    }, [currentPage, shouldFetchNotifications, refetch, queryClient]);
+    }, [currentPage, shouldFetchNotifications]);
 
     useFocusEffect(
         useCallback(() => {
@@ -578,9 +220,12 @@ const NotificationsScreenComponent: React.FC = () => {
                     },
                 });
                 
-                // Bildirimleri refetch et (yeni bildirimler için)
+                // PERFORMANCE FIX: Sadece aktif tab'ı refetch et (yeni bildirimler için)
+                // Diğer tab'lar cache'den okuyacak, tab değiştiğinde o tab'ın query'si enable olacak
                 // CRITICAL FIX: ref ile çağır - dependency array'den kaldırıldı
-                refetchRef.current();
+                if (filterQueryResultsRef.current[currentPage]) {
+                    filterQueryResultsRef.current[currentPage].refetch();
+                }
             }
             
             return () => {
@@ -589,9 +234,8 @@ const NotificationsScreenComponent: React.FC = () => {
                 // CRITICAL: Ref'i resetle - bir sonraki focus'ta tekrar çalışsın
                 hasMarkedAllAsReadRef.current = false;
             };
-        }, [setGestureEnabled, shouldFetchNotifications, queryClient])
-        // CRITICAL FIX: refetch ve markAllAsReadMutation dependency'den kaldırıldı
-        // useRef ile wrap edildi, callback içinde ref.current ile çağrılıyor
+        }, [setGestureEnabled, shouldFetchNotifications, queryClient, currentPage])
+        // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi
     );
     
     // PERFORMANCE FIX: Memoize background colors to prevent re-renders
@@ -601,59 +245,28 @@ const NotificationsScreenComponent: React.FC = () => {
     // 🎯 CORE: Shared progress value (0 = All, 1 = Replies, 2 = Trust, 3 = Tips)
     const progress = useSharedValue(0);
 
-    // SAFETY FIX: Ensure notifications is always an array
-    // Infinite query response format: { pages: Array<{ success, data: Notification[], pagination }>, pageParams }
-    const notifications = useMemo(() => {
-        if (!notificationsResponse) {
-            console.log('[NotificationsScreen] ⚠️ No notificationsResponse');
+    // Helper function: Infinite query response'dan notifications array'i çıkar
+    const extractNotificationsFromResponse = useCallback((response: any): Notification[] => {
+        if (!response) {
             return [];
         }
         
-        // Infinite query format: { pages: [...], pageParams: [...] }
-        // ÖNEMLİ: pages undefined olabilir, bu yüzden güvenli kontrol yap
-        const pages = notificationsResponse.pages;
+        const pages = response.pages;
         if (pages && Array.isArray(pages) && pages.length > 0) {
-            // Tüm sayfalardaki bildirimleri birleştir
-            // Güvenli kontrol: Her page'in data'sı olmalı ve array olmalı
             const allNotifications = pages.flatMap((page: any) => {
-                // Page undefined veya null olabilir
                 if (!page) {
                     return [];
                 }
-                // Page.data undefined veya array değilse boş array döndür
                 if (page.data && Array.isArray(page.data)) {
                     return page.data;
                 }
                 return [];
             });
-            
-            console.log('[NotificationsScreen] ✅ Found notifications from infinite query:', {
-                totalPages: pages.length,
-                totalCount: allNotifications.length,
-                hasNextPage: hasNextPage,
-                firstItem: allNotifications[0] ? {
-                    id: allNotifications[0].id,
-                    type: allNotifications[0].type,
-                    title: allNotifications[0].title,
-                } : null,
-            });
-            
             return allNotifications;
         }
         
-        // Fallback: Eski format (backward compatibility) - InfiniteData'da data property yok
-        // Bu durum zaten yukarıda pages kontrolü ile ele alınıyor
-        
-        console.warn('[NotificationsScreen] ⚠️ Unexpected response format:', {
-            response: notificationsResponse,
-            type: typeof notificationsResponse,
-            isArray: Array.isArray(notificationsResponse),
-            hasPages: !!(notificationsResponse as any)?.pages,
-            hasData: !!(notificationsResponse as any)?.data,
-        });
-        
         return [];
-    }, [notificationsResponse, hasNextPage]);
+    }, []);
     
     // Tab press handler - PagerView native animasyonu ile geçiş
     const handleTabPress = useCallback((index: number) => {
@@ -680,12 +293,6 @@ const NotificationsScreenComponent: React.FC = () => {
         [progress]
     );
 
-    // CRITICAL FIX: handleRefresh'i useCallback ile memoize et - sonsuz döngü önleme
-    const handleRefresh = useCallback(async () => {
-        setRefreshing(true);
-        await refetch();
-        setRefreshing(false);
-    }, [refetch]); // refetch React Query'den geldiği için genellikle stable, ama dependency'de tutuyoruz
 
     /**
      * Notification'a tıklandığında navigation action'ı al
@@ -762,56 +369,17 @@ const NotificationsScreenComponent: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
     }, [queryClient]);
 
-    // Get filtered notifications for a specific filter
-    // CRITICAL FIX: Backend filtering yapıldığı için client-side filtering sadece fallback olarak kullanılıyor
-    const getFilteredNotificationsForFilter = useCallback((filter: NotificationFilter): Notification[] => {
-        // SAFETY FIX: Ensure notifications is always an array before filtering
-        if (!Array.isArray(notifications)) {
-            console.warn('[NotificationsScreen] ⚠️ notifications is not an array:', notifications);
-            return [];
-        }
-
-        // Backend'den zaten filtrelenmiş data geldiği için direkt kullan
-        // Sadece search query için client-side filtering yap
-        let filtered = notifications;
-
-        // CRITICAL FIX: Backend filtering yapıldığı için type-based filtering kaldırıldı
-        // Backend'den gelen data zaten filtrelenmiş (type parametresi ile)
-        // Sadece search query için client-side filtering yapılıyor
-
-        if (searchQuery && Array.isArray(filtered)) {
-            filtered = filtered.filter(notification => {
-                // SAFETY FIX: Ensure notification properties exist before accessing
-                if (!notification || typeof notification !== 'object') {
-                    return false;
-                }
-                
-                const message = notification.message?.toLowerCase() || '';
-                const title = notification.title?.toLowerCase() || '';
-                // Backend formatına göre: userName data veya metadata içinde olabilir
-                const userName = (notification.data?.userName || 
-                                 notification.data?.likerName || 
-                                 notification.data?.commenterName || 
-                                 notification.data?.senderName ||
-                                 notification.metadata?.userName || '').toLowerCase();
-                const query = searchQuery.toLowerCase();
-                
-                return message.includes(query) || 
-                       title.includes(query) || 
-                       userName.includes(query);
-            });
-        }
-
-        // SAFETY FIX: Ensure return value is always an array
-        return Array.isArray(filtered) ? filtered : [];
-    }, [notifications, searchQuery]);
-
-    // Asset pre-caching - notifications yüklendiğinde images'ı cache'le
+    // Asset pre-caching - tüm tab'lardaki notifications yüklendiğinde images'ı cache'le
+    // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - her query'nin data'sını dependency olarak kullan
     useEffect(() => {
-        if (notifications.length > 0) {
-            notificationAssetCache.cacheBatchNotifications(notifications);
+        const allNotifications = filterQueryResultsRef.current.flatMap((queryResult) => {
+            return extractNotificationsFromResponse(queryResult.data);
+        });
+        
+        if (allNotifications.length > 0) {
+            notificationAssetCache.cacheBatchNotifications(allNotifications);
         }
-    }, [notifications.length]);
+    }, [allQuery.data, repliesQuery.data, trustQuery.data, tipsQuery.data, extractNotificationsFromResponse]);
 
     // Tab label color animations - her tab için ayrı style
     const activeColor = isDark ? '#FFFFFF' : '#000000';
@@ -893,9 +461,57 @@ const NotificationsScreenComponent: React.FC = () => {
     const keyExtractor = React.useCallback((item: Notification) => item.id, []);
 
     // Render notifications list for a specific filter
+    // CRITICAL FIX: Her tab kendi query'sini kullanır - cache invalid olana kadar backend'e istek atmaz
     const renderNotificationsList = useCallback((filterIndex: number) => {
         const filter = filters[filterIndex];
-        const filtered = getFilteredNotificationsForFilter(filter);
+        // CRITICAL FIX: ref ile çağır - dependency array'den kaldırıldı (sonsuz döngü önleme)
+        const queryResult = filterQueryResultsRef.current[filterIndex];
+        
+        if (!queryResult) {
+            return (
+                <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+                    <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
+                        Bildirimler yüklenirken bir hata oluştu.
+                    </Text>
+                </Box>
+            );
+        }
+
+        const {
+            data: notificationsResponse,
+            isLoading,
+            error,
+            refetch,
+            fetchNextPage,
+            hasNextPage,
+            isFetchingNextPage,
+        } = queryResult;
+
+        // Her tab için kendi notifications'ını çıkar
+        const notifications = extractNotificationsFromResponse(notificationsResponse);
+        
+        // Search query için client-side filtering (backend'den zaten filtrelenmiş geliyor)
+        let filtered = notifications;
+        if (searchQuery && Array.isArray(filtered)) {
+            filtered = filtered.filter(notification => {
+                if (!notification || typeof notification !== 'object') {
+                    return false;
+                }
+                
+                const message = notification.message?.toLowerCase() || '';
+                const title = notification.title?.toLowerCase() || '';
+                const userName = (notification.data?.userName || 
+                                 notification.data?.likerName || 
+                                 notification.data?.commenterName || 
+                                 notification.data?.senderName ||
+                                 notification.metadata?.userName || '').toLowerCase();
+                const query = searchQuery.toLowerCase();
+                
+                return message.includes(query) || 
+                       title.includes(query) || 
+                       userName.includes(query);
+            });
+        }
         
         // SAFETY FIX: Ensure filtered is always an array
         if (!Array.isArray(filtered)) {
@@ -909,7 +525,7 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        if (isLoading && !notifications.length) {
+        if (isLoading && filtered.length === 0) {
             return (
                 <Box flex={1} justifyContent="center" alignItems="center">
                     <Spinner size="large" />
@@ -959,7 +575,10 @@ const NotificationsScreenComponent: React.FC = () => {
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
-                        onRefresh={handleRefresh}
+                        onRefresh={() => {
+                            setRefreshing(true);
+                            refetch().finally(() => setRefreshing(false));
+                        }}
                         tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
                     />
                 }
@@ -981,22 +600,16 @@ const NotificationsScreenComponent: React.FC = () => {
             />
         );
     }, [
-        isLoading, 
-        notifications.length, 
-        error, 
-        searchQuery, 
-        isDark, 
-        renderNotificationItem, 
-        keyExtractor, 
-        refreshing, 
-        handleRefresh, 
-        filters, 
-        getFilteredNotificationsForFilter, 
-        hasNextPage, 
-        isFetchingNextPage, 
-        fetchNextPage
+        filters,
+        extractNotificationsFromResponse,
+        searchQuery,
+        isDark,
+        renderNotificationItem,
+        keyExtractor,
+        refreshing,
+        // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi (sonsuz döngü önleme)
+        // Query sonuçları değiştiğinde React Query otomatik olarak component'i re-render eder
     ]);
-    // CRITICAL FIX: refetch dependency'den kaldırıldı - handleRefresh zaten refetch'i kullanıyor
 
     return (
         <SafeAreaView edges={['top']} style={{ flex: 1 }}>
