@@ -29,13 +29,11 @@ import { EventProduct } from '@/src/mock/events/communityEvents/types';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
-import { InventoryItem } from '@/src/mock/inventory/types';
+import { InventoryItem } from '@/src/features/profile/types';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateEventPostNew } from '../api/hooks';
-import { useCreateFreePost } from '@/src/features/post/api/hooks';
-import type { ApiContextType } from '@/src/features/post/types';
+import { useCreateEventPostWithContext } from '../api/hooks';
 
 type EventCreatePostNavigationProp = NativeStackNavigationProp<EventStackParamList, 'EventCreatePost'>;
 type EventCreatePostRouteProp = RouteProp<EventStackParamList, 'EventCreatePost'>;
@@ -46,7 +44,6 @@ const EventCreatePost: React.FC = () => {
     const navigation = useNavigation<EventCreatePostNavigationProp>();
     const route = useRoute<EventCreatePostRouteProp>();
 
-    const [title, setTitle] = useState(''); // YENİ: Title field (max 200 char)
     const [content, setContent] = useState(''); // Body field (max 2000 char)
     const [selectedProduct, setSelectedProduct] = useState<Category | null>(null);
     const [showProductSelector, setShowProductSelector] = useState(false);
@@ -66,6 +63,7 @@ const EventCreatePost: React.FC = () => {
     const eventProduct = route.params?.product;
     const routeProductSource = route.params?.productSource;
     const selectedProductFromCatalog = route.params?.selectedProduct;
+    const selectedProductFromInventory = route.params?.selectedInventoryProduct; // ✅ YENİ
     
     // Debug log - Initial route params
     useEffect(() => {
@@ -76,8 +74,13 @@ const EventCreatePost: React.FC = () => {
             eventProduct: eventProduct ? 'exists' : 'undefined',
             routeProductSource: routeProductSource || 'undefined',
             selectedProductFromCatalog: selectedProductFromCatalog ? 'exists' : 'undefined',
+            selectedProductFromInventory: selectedProductFromInventory ? {
+                id: selectedProductFromInventory.id,
+                hasProductId: !!selectedProductFromInventory.productId,
+                brand: selectedProductFromInventory.brand?.name,
+            } : 'undefined', // ✅ YENİ
         });
-    }, [route.params, routeEventId, eventType, eventProduct, routeProductSource, selectedProductFromCatalog]);
+    }, [route.params, routeEventId, eventType, eventProduct, routeProductSource, selectedProductFromCatalog, selectedProductFromInventory]);
     
     // Store eventId in state to preserve it when navigating from Catalog/Inventory
     // eventId is preserved in state so it remains available when user navigates to Catalog/Inventory
@@ -151,9 +154,8 @@ const EventCreatePost: React.FC = () => {
         }
     }, [routeEventId, eventId]);
     
-    // YENİ: Free post mutation hook (/posts/free endpoint kullanır)
-    // Bu endpoint eventId'yi optional olarak alır ve contextType/contextId gerektirir
-    const createFreePostMutation = useCreateFreePost();
+    // YENİ: /posts/{eventId}/post endpoint'ini kullanan mutation hook
+    const createPostMutation = useCreateEventPostWithContext();
     
     // Debug log - eventId validation before API call
     useEffect(() => {
@@ -201,6 +203,23 @@ const EventCreatePost: React.FC = () => {
         }
     }, [selectedProductFromCatalog, navigation]);
     
+    // ✅ YENİ: Handle selected product from Inventory
+    useEffect(() => {
+        if (selectedProductFromInventory) {
+            console.log('🔍 [EventCreatePost] Inventory product received from navigation:', {
+                inventoryItemId: selectedProductFromInventory.id,
+                productId: selectedProductFromInventory.productId,
+                brand: selectedProductFromInventory.brand,
+                image: selectedProductFromInventory.image,
+            });
+            
+            handleInventoryProductSelect(selectedProductFromInventory);
+            
+            // Clear from params
+            navigation.setParams({ selectedInventoryProduct: undefined });
+        }
+    }, [selectedProductFromInventory, navigation, handleInventoryProductSelect]);
+    
     // Handle focus effect - when returning from Catalog/Inventory, update params
     // This ensures params are updated even if navigation.goBack() was used
     useFocusEffect(
@@ -218,7 +237,17 @@ const EventCreatePost: React.FC = () => {
                 setShowProductSelector(false);
                 setProductSource(null);
             }
-        }, [selectedProductFromCatalog])
+            
+            // ✅ YENİ: Handle inventory product from focus
+            if (selectedProductFromInventory) {
+                console.log('🔍 [EventCreatePost] Inventory product received on focus:', {
+                    inventoryItemId: selectedProductFromInventory.id,
+                    productId: selectedProductFromInventory.productId,
+                });
+                
+                handleInventoryProductSelect(selectedProductFromInventory);
+            }
+        }, [selectedProductFromCatalog, selectedProductFromInventory, handleInventoryProductSelect])
     );
 
     // handleProductSelect'i önce tanımla (handleSelectProduct'ta kullanılıyor)
@@ -249,12 +278,26 @@ const EventCreatePost: React.FC = () => {
     }, [openBottomSheet, closeBottomSheet, handleProductSelect, navigation]);
 
     const handleCatalogProductSelect = (product: Product) => {
+        console.log('🔍 [EventCreatePost] Catalog product selected:', {
+            id: product.id,
+            name: product.name,
+            image: product.image,
+            fullProduct: product,
+        });
+        
         const productCategory: Category = {
             id: product.id,
             name: product.name,
             image: product.image,
             category: undefined,
         };
+        
+        console.log('✅ [EventCreatePost] Product category created:', {
+            id: productCategory.id,
+            name: productCategory.name,
+            category: productCategory.category,
+        });
+        
         setSelectedProduct(productCategory);
         setShowProductSelector(false);
         setProductSource(null);
@@ -262,19 +305,51 @@ const EventCreatePost: React.FC = () => {
         navigation.setParams({ productSource: undefined });
     };
 
-    const handleInventoryProductSelect = (product: InventoryItem) => {
-        const productCategory: Category = {
-            id: product.id,
-            name: `${product.brand} ${product.model}`,
+    const handleInventoryProductSelect = useCallback((product: InventoryItem) => {
+        console.log('🔍 [EventCreatePost] Inventory product selected (API):', {
+            inventoryItemId: product.id,
+            productId: product.productId,
+            brand: product.brand,
             image: product.image,
-            category: product.brand,
+            willSendInventoryId: true,
+        });
+        
+        // Backend inventoryId'den productId'yi bulacak
+        const brandName = product.brand?.name || 'Unknown';
+        const brandModel = product.brand?.model || '';
+        
+        const productCategory: Category = {
+            id: product.id, // Inventory item ID (UI'da gösterim için)
+            name: brandModel ? `${brandName} ${brandModel}` : brandName,
+            image: product.image,
+            category: brandName,
+            inventoryId: product.id, // ✅ Backend için inventory ID
         };
+        
+        console.log('✅ [EventCreatePost] Product category created from inventory:', {
+            inventoryItemId: product.id,
+            categoryId: productCategory.id,
+            categoryInventoryId: productCategory.inventoryId,
+            name: productCategory.name,
+            inventoryId: productCategory.inventoryId,
+            willSendInventoryIdToBackend: true,
+            backendWillFetchProductId: true,
+            CHECK: {
+                hasInventoryId: !!productCategory.inventoryId ? '✅ YES' : '❌ NO',
+                inventoryIdValue: productCategory.inventoryId,
+            }
+        });
+        
+        // CRITICAL: inventoryId yoksa hata ver
+        if (!productCategory.inventoryId) {
+            console.error('❌ [EventCreatePost] CRITICAL: inventoryId is missing after creation!');
+        }
+        
         setSelectedProduct(productCategory);
         setShowProductSelector(false);
         setProductSource(null);
-        // Clear route params to prevent re-triggering
         navigation.setParams({ productSource: undefined });
-    };
+    }, [navigation]);
 
     const handleCloseProductSelector = () => {
         setShowProductSelector(false);
@@ -346,7 +421,7 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Validation - Product seçimi zorunlu (contextType ve contextId için)
+            // Validation - Product seçimi zorunlu (inventoryId için)
             if (!selectedProduct) {
                 showCustomToast(toast, {
                     title: 'Error',
@@ -356,29 +431,66 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
-            // Title ve content'i birleştirerek description oluştur
-            // Eğer title varsa, title + content şeklinde birleştir
-            const description = title.trim() 
-                ? `${title.trim()}\n\n${content.trim()}`
-                : content.trim();
+            // Validation - inventoryId zorunlu
+            if (!selectedProduct.inventoryId) {
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Please select a product from inventory.',
+                    action: 'error',
+                });
+                return;
+            }
 
-            // ContextType ve contextId belirleme
-            // Product seçildiğinde, contextType'ı "product" olarak varsay
-            // Kullanıcının gösterdiği örnekte "product_group" var ama şu anda Category interface'inde bu bilgi yok
-            // Şimdilik "product" olarak kullanacağız, gerekirse daha sonra güncellenebilir
-            const contextType: ApiContextType = 'product'; // Varsayılan olarak "product"
-            const contextId = selectedProduct.id;
+            // Validation - eventId zorunlu
+            if (!eventId) {
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Event ID is missing. Please try again.',
+                    action: 'error',
+                });
+                return;
+            }
 
-            // YENİ API çağrısı - /posts/free endpoint'ini kullan
-            const response = await createFreePostMutation.mutateAsync({
-                contextType,
-                contextId,
-                description,
-                images: selectedImages.length > 0 ? selectedImages : undefined,
-                eventId: eventId || undefined, // Optional - eventId varsa gönder
+            // Sadece inventoryId gönder - Backend her şeyi halleder
+            const inventoryId = selectedProduct.inventoryId;
+            
+            const requestPayload = {
+                eventId,
+                body: content.trim(),
+                inventoryId,
+                imageCount: selectedImages.length,
+                images: selectedImages.length > 0 ? selectedImages.map((uri, i) => ({
+                    index: i,
+                    uri: uri.substring(0, 80) + '...'
+                })) : [],
+            };
+            
+            console.log('📤 [EventCreatePost] Request Payload (JSON):', JSON.stringify(requestPayload, null, 2));
+            
+            console.log('🔍 [EventCreatePost] Request preparation:', {
+                inventoryId: inventoryId,
+                selectedProduct: selectedProduct.name,
+                backendWillHandle: 'productId lookup, contextType, contextId',
             });
 
-            console.log('Event post created:', response);
+            // Debug log - Request data
+            console.log('🚀 [EventCreatePost] Sending post creation request:', {
+                eventId,
+                body: content.trim().substring(0, 50) + '...',
+                bodyLength: content.trim().length,
+                inventoryId,
+                imageCount: selectedImages.length,
+            });
+
+            // API çağrısı - Sadece inventoryId gönder
+            const response = await createPostMutation.mutateAsync({
+                eventId,
+                body: content.trim(),
+                inventoryId, // ✅ Backend her şeyi halleder
+                images: selectedImages.length > 0 ? selectedImages : undefined,
+            });
+
+            console.log('✅ [EventCreatePost] Post created successfully (JSON):', JSON.stringify(response, null, 2));
 
             // Başarılı toast göster
             showCustomToast(toast, {
@@ -390,7 +502,15 @@ const EventCreatePost: React.FC = () => {
             // Event detail ekranına geri dön
             navigation.goBack();
         } catch (error: any) {
-            console.error('Event post creation error:', error);
+            const errorJson = {
+                errorType: 'PostCreationError',
+                status: error?.response?.status,
+                errorData: error?.response?.data,
+                errorMessage: error?.message,
+                timestamp: new Date().toISOString(),
+            };
+            
+            console.error('❌ [EventCreatePost] Post creation error (JSON):', JSON.stringify(errorJson, null, 2));
             
             // Backend hata mesajlarını parse et
             const errorCode = error?.response?.data?.error?.code;
@@ -421,44 +541,40 @@ const EventCreatePost: React.FC = () => {
     };
 
     // Check if share button should be enabled
-    // /posts/free endpoint'i için:
-    // - content (description) zorunlu
-    // - selectedProduct zorunlu (contextType ve contextId için)
-    // - eventId opsiyonel
+    // /posts/{eventId}/post endpoint'i için:
+    // - content (body) zorunlu
+    // - selectedProduct zorunlu (inventoryId için)
+    // - selectedProduct.inventoryId zorunlu
+    // - eventId zorunlu
     const hasContent = content.trim().length > 0;
     const hasProduct = !!selectedProduct;
+    const hasInventoryId = !!selectedProduct?.inventoryId;
+    const hasEventId = !!eventId;
     
-    const isShareEnabled = hasContent && hasProduct;
+    const isShareEnabled = hasContent && hasProduct && hasInventoryId && hasEventId;
     
     // Debug log - Share button state kontrolü
     useEffect(() => {
-        console.log('🔍 [EventCreatePost] Share Button State:', {
+        console.log('🔘 [EventCreatePost] Share Button State (DEBUG):', {
             hasContent,
             hasProduct,
+            hasInventoryId,
+            hasEventId,
             isShareEnabled,
-            eventId: eventId || 'undefined',
-            title: title || 'empty',
-            titleLength: title.length,
-            titleTrimmed: title.trim().length,
-            content: content || 'empty',
-            contentLength: content.length,
-            contentTrimmed: content.trim().length,
-            selectedProduct: selectedProduct ? {
-                id: selectedProduct.id,
-                name: selectedProduct.name
-            } : 'null',
-            routeParams: {
-                eventId: route.params?.eventId || 'undefined',
-                eventType: route.params?.eventType || 'undefined',
-                selectedProduct: route.params?.selectedProduct ? 'exists' : 'undefined',
+            details: {
+                content: content ? `"${content.substring(0, 30)}..."` : 'EMPTY',
+                contentLength: content.length,
+                selectedProduct: selectedProduct ? {
+                    id: selectedProduct.id,
+                    name: selectedProduct.name,
+                    inventoryId: selectedProduct.inventoryId || 'MISSING ❌',
+                    hasInventoryId: !!selectedProduct.inventoryId
+                } : 'NULL ❌',
+                eventId: eventId || 'MISSING ❌',
             },
-            state: {
-                eventId: eventId || 'undefined',
-                title: title || 'empty',
-                content: content || 'empty',
-            }
+            verdict: isShareEnabled ? '✅ ENABLED' : '❌ DISABLED',
         });
-    }, [hasContent, hasProduct, isShareEnabled, eventId, title, content, selectedProduct, route.params]);
+    }, [hasContent, hasProduct, hasInventoryId, hasEventId, isShareEnabled, eventId, content, selectedProduct]);
 
     // Show product selector if productSource is set
     if (showProductSelector && productSource) {
@@ -504,46 +620,6 @@ const EventCreatePost: React.FC = () => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <VStack space="lg" p="$4">
-                    {/* Title Field - YENİ (EVENT_GUIDE.MD Section 3.1) */}
-                    <VStack space="xs">
-                        <Text
-                            color={isDark ? '$textDark200' : '#999999'}
-                            fontSize={14}
-                        >
-                            Post Title
-                        </Text>
-                        <Textarea
-                            bg={isDark ? '#1A1A1A' : '#FDFDFD'}
-                            borderWidth={1}
-                            borderColor={isDark ? '#333' : '#D9D9D9'}
-                            borderRadius={8}
-                            height={60}
-                        >
-                            <TextareaInput
-                                placeholder="Enter title... (max 200 characters)"
-                                value={title}
-                                onChangeText={(text) => {
-                                    if (text.length <= 200) {
-                                        setTitle(text);
-                                    }
-                                }}
-                                color={isDark ? '$textDark50' : '$textLight900'}
-                                placeholderTextColor={isDark ? '#666' : '#999'}
-                                fontSize={15}
-                                multiline
-                            />
-                        </Textarea>
-                        <Text
-                            position="absolute"
-                            bottom={8}
-                            right={12}
-                            color="#CCCCCC"
-                            fontSize={12}
-                        >
-                            {title.length}/200
-                        </Text>
-                    </VStack>
-                    
                     {/* Select Product Button or Selected Product Card */}
                     {/* Show product selection if eventType is TYPE1 or undefined (default events) */}
                     {(eventType === EventType.TYPE1 || eventType === undefined) && (
@@ -637,15 +713,13 @@ const EventCreatePost: React.FC = () => {
                         </Text>
                     </VStack>
 
-                    {/* Images Section - OPSIYONEL (şimdilik UI'da var ama yeni API'de image desteği yok) */}
-                    {/* YENİ API'de images field'ı yok, bu bölümü gizliyoruz */}
-                    {/* 
+                    {/* Images Section */}
                     <VStack space="xs">
                         <Text
                             color={isDark ? '$textDark200' : '#999999'}
                             fontSize={14}
                         >
-                            Images
+                            Images (Optional)
                         </Text>
                         <HStack space="sm" flexWrap="wrap">
                             {selectedImages.map((imageUri, index) => (
@@ -664,7 +738,7 @@ const EventCreatePost: React.FC = () => {
                                         resizeMode="cover"
                                         alt={`Selected image ${index + 1}`}
                                     />
-                        <Pressable
+                                    <Pressable
                                         position="absolute"
                                         top={2}
                                         right={2}
@@ -688,27 +762,26 @@ const EventCreatePost: React.FC = () => {
                             {selectedImages.length < 10 && (
                                 <Pressable onPress={handleAddPhoto}>
                                     <Box
-                            width={64}
-                            height={64}
+                                        width={64}
+                                        height={64}
                                         bg={isDark ? '$backgroundDark800' : '#F5F5F5'}
                                         borderWidth={1}
                                         borderColor="#9E9E9E"
                                         borderStyle="dashed"
                                         borderRadius={5}
-                            justifyContent="center"
-                            alignItems="center"
-                        >
-                            <Feather
-                                name="plus"
+                                        justifyContent="center"
+                                        alignItems="center"
+                                    >
+                                        <Feather
+                                            name="plus"
                                             size={24}
                                             color={isDark ? '#C1BEBF' : '#C1BEBF'}
-                            />
+                                        />
                                     </Box>
-                        </Pressable>
+                                </Pressable>
                             )}
                         </HStack>
                     </VStack>
-                    */}
                 </VStack>
             </ScrollView>
 

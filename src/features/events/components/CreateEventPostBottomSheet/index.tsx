@@ -486,18 +486,20 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
             {/* Options Grid */}
             <Box px="$4" mt="$6">
                 <HStack space="md">
-                    {/* Select Product Catalog */}
+                    {/* Select Product Catalog - DEVRE DIŞI */}
                     <Pressable
                         flex={1}
                         onPress={handleCatalogPress}
-                        bg={isDark ? '#2A2A2A' : '#FFFFFF'}
+                        bg={isDark ? '#1F1F1F' : '#F5F5F5'}
                         borderRadius={12}
                         p="$6"
                         alignItems="center"
                         justifyContent="center"
                         borderWidth={1}
-                        borderColor={isDark ? '#333' : '#E5E5E5'}
+                        borderColor={isDark ? '#2A2A2A' : '#E0E0E0'}
                         minHeight={120}
+                        opacity={0.5}
+                        disabled={true}
                     >
                         <VStack space="md" alignItems="center">
                             <Image
@@ -505,14 +507,23 @@ export const CreateEventPostBottomSheet: React.FC<CreateEventPostBottomSheetProp
                                 alt="Add Post"
                                 width={24}
                                 height={24}
+                                style={{ opacity: 0.5 }}
                             />
                             <Text
                                 fontSize={15}
                                 fontWeight="$semibold"
-                                color={isDark ? '$textDark50' : '#000000'}
+                                color={isDark ? '$textDark400' : '$textLight500'}
                                 textAlign="center"
                             >
                                 Select Product Catalog
+                            </Text>
+                            <Text
+                                fontSize={11}
+                                color={isDark ? '$textDark600' : '$textLight400'}
+                                textAlign="center"
+                                mt="$1"
+                            >
+                                Not Available
                             </Text>
                         </VStack>
                     </Pressable>

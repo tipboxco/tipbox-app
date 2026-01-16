@@ -13,6 +13,7 @@ export interface Category {
     name: string;
     image: any;
     category?: string;
+    inventoryId?: string; // ✅ YENİ: Inventory'den seçildiyse, backend productId'yi bulacak
 }
 
 interface CategoryCardProps {

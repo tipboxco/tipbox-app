@@ -275,6 +275,11 @@ const InventoryScreen = () => {
                   }
                   
                   console.log('🔍 [InventoryScreen] EventCreatePost params:', currentEventCreatePostParams);
+                  console.log('📦 [InventoryScreen] Selected inventory item:', {
+                    inventoryItemId: item.id,
+                    productId: item.productId,
+                    brand: item.brand,
+                  });
                   
                   // Navigate back to EventCreatePost with selected product and preserve eventId
                   // Use goBack() to prevent stack loop (EventCreatePost -> InventoryScreen -> EventCreatePost)
@@ -290,12 +295,7 @@ const InventoryScreen = () => {
                         screen: 'EventCreatePost',
                         params: {
                           ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
-                          selectedProduct: {
-                            id: item.id,
-                            name: `${item.brand.name} ${item.brand.model}`,
-                            image: item.image,
-                            description: item.brand.specs || '',
-                          },
+                          selectedInventoryProduct: item, // ✅ Tüm InventoryItem'ı gönder (inventoryId + productId var)
                         },
                       });
                     }, 100);
@@ -305,12 +305,7 @@ const InventoryScreen = () => {
                       screen: 'EventCreatePost',
                       params: {
                         ...(currentEventCreatePostParams || {}), // Preserve existing params (eventId, eventType, etc.)
-                        selectedProduct: {
-                          id: item.id,
-                          name: `${item.brand.name} ${item.brand.model}`,
-                          image: item.image,
-                          description: item.brand.specs || '',
-                        },
+                        selectedInventoryProduct: item, // ✅ Tüm InventoryItem'ı gönder
                       },
                     });
                   }

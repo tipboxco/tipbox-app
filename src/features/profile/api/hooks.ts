@@ -357,10 +357,10 @@ export const useInventory = (limit: number = 20) => {
       // Son item'ın id'sini cursor olarak kullan
       return lastPage.pagination.cursor;
     },
-    // List-based caching: Liste scroll'unda anında yüklenmiş ekran göster
-    staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
-    gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    // CACHE DİSABLED: Her zaman fresh data çek (inventory güncel olmalı)
+    staleTime: 0,  // Cache yok - her zaman fresh data
+    gcTime: 0,     // Cache'de tutma - hemen temizle
+    refetchOnMount: 'always',  // Her mount'ta yeniden fetch
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
     retry: 1,
     // PERFORMANCE FIX: Sadece data, hasNextPage ve error değişikliklerinde render et
@@ -880,6 +880,8 @@ export const useUpdateInventoryItem = () => {
     onSuccess: (data, variables) => {
       // Inventory listesini invalidate et
       queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
+      // Cache'i tamamen temizle
+      queryClient.removeQueries({ queryKey: profileKeys.inventory() });
       console.log('[useUpdateInventoryItem] ✅ Inventory item updated successfully', { inventoryId: variables.inventoryId });
     },
     onError: (error) => {
@@ -906,6 +908,8 @@ export const useDeleteInventoryItem = () => {
     onSuccess: (data, inventoryId) => {
       // Inventory listesini invalidate et
       queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
+      // Cache'i tamamen temizle
+      queryClient.removeQueries({ queryKey: profileKeys.inventory() });
       console.log('[useDeleteInventoryItem] ✅ Inventory item deleted successfully', { inventoryId });
     },
     onError: (error) => {
