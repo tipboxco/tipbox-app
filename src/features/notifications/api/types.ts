@@ -51,6 +51,8 @@ export type NotificationType =
   | 'NEW_MESSAGE'
   | 'DM_REQUEST_RECEIVED'
   | 'DM_REQUEST_ACCEPTED'
+  | 'DM_REQUEST_DECLINED'
+  | 'SUPPORT_REQUEST_ACCEPTED'
   | 'NEW_BADGE'
   | 'ACHIEVEMENT_UNLOCKED'
   | 'REWARD_EARNED'
@@ -61,7 +63,9 @@ export type NotificationType =
   | 'TIPS_SENT'
   | 'EVENT_STARTED'
   | 'EVENT_ENDING_SOON'
-  | 'EVENT_REWARD_AVAILABLE';
+  | 'EVENT_REWARD_AVAILABLE'
+  | 'COLLECTION_POST_ADDED'
+  | 'COLLECTION_SHARED';
 
 export interface NotificationMetadata {
   userId?: string;

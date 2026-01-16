@@ -264,8 +264,8 @@ const HeaderComponent = ({
             bg={rightButton.backgroundColor || (isDark ? '#8B5CF6' : '#8B5CF6')}
             borderWidth={rightButton.borderWidth !== undefined ? rightButton.borderWidth : 0}
             borderColor={rightButton.borderColor || 'transparent'}
-            px={'$4'}
-            py={'$2'}
+            px={rightButton.paddingX !== undefined ? rightButton.paddingX : 16}
+            py={rightButton.paddingY !== undefined ? rightButton.paddingY : 8}
             borderRadius={rightButton.borderRadius !== undefined ? rightButton.borderRadius : 8}
           >
             <Text

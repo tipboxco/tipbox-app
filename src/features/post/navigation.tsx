@@ -12,6 +12,7 @@ export type PostStackParamList = {
     type?: 'post' | 'tipsAndTricks' | 'question' | 'benchmark' | 'experience' | 'update'; 
     showRelatedPost?: boolean; 
     relatedPostData?: any;
+    commentId?: string; // Notification'dan gelen commentId (yorumu highlight etmek için)
   };
   PostsScreen: { 
     stage: 'SubCategories' | 'ProductGroup' | 'Product'; 

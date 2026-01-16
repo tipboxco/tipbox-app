@@ -48,6 +48,7 @@ import { useDrawerStore } from '@/src/store/drawerStore';
 import { useNotificationStore } from '@/src/store/notificationStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/src/providers/AuthProvider';
+import { useBottomOffset } from '@/src/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -66,13 +67,24 @@ const NotificationsScreenComponent: React.FC = () => {
     const tabContainerRef = useRef<any>(null);
     const [tabContainerWidth, setTabContainerWidth] = useState(0);
     const [currentPage, setCurrentPage] = useState(0);
-    const [filters] = useState<NotificationFilter[]>(notification_filters);
+    // CRITICAL FIX: Replies ve Tips tabları yer değiştirmeli
+    // Yeni sıralama: All/Unread, Tips, Trust, Replies
+    const [filters] = useState<NotificationFilter[]>(() => {
+        const originalFilters = [...notification_filters];
+        // filters[1] = Replies, filters[3] = Tips
+        // Yer değiştir: Tips -> index 1, Replies -> index 3
+        const [allFilter, repliesFilter, trustFilter, tipsFilter] = originalFilters;
+        return [allFilter, tipsFilter, trustFilter, repliesFilter];
+    });
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     
     // CRITICAL: Mark all as read işleminin sadece bir kez çalışması için ref
     const hasMarkedAllAsReadRef = useRef(false);
+    
+    // Bottom offset for content padding (matches FeedScreen structure)
+    const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
 
     // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
     const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
@@ -93,10 +105,13 @@ const NotificationsScreenComponent: React.FC = () => {
     // Diğer tab'lar cache'den okuyacak, tab değiştiğinde o tab'ın query'si enable olacak
     
     // Filter 0: All/Unread
+    // CRITICAL FIX: İlk açılışta query'nin başlaması için ilk tab'ı her zaman enable et
     const allFilter = filters[0];
     const allUnreadOnly = allFilter?.id === 'unread';
     const allNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = undefined;
-    const allQueryEnabled = shouldFetchNotifications && currentPage === 0;
+    // İlk tab için: auth ready ise her zaman enable et (ilk açılışta başlasın)
+    // Diğer tablar için: sadece o tab aktif olduğunda enable et
+    const allQueryEnabled = shouldFetchNotifications; // İlk tab için her zaman enable
     const allQuery = useNotifications({
         limit: 20,
         unreadOnly: allUnreadOnly,
@@ -104,17 +119,18 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, allQueryEnabled);
 
-    // Filter 1: Replies
-    const repliesFilter = filters[1];
-    const repliesUnreadOnly = repliesFilter?.id === 'unread';
-    const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
-    const repliesQueryEnabled = shouldFetchNotifications && currentPage === 1;
-    const repliesQuery = useNotifications({
-        limit: 20,
-        unreadOnly: repliesUnreadOnly,
-        type: repliesNotificationType,
+    // Filter 1: Tips (Replies ile yer değiştirildi)
+    // CRITICAL FIX: Endpoint: GET /notifications?limit=10&offset=0&type=tips
+    const tipsFilter = filters[1];
+    const tipsUnreadOnly = tipsFilter?.id === 'unread';
+    const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
+    const tipsQueryEnabled = shouldFetchNotifications && currentPage === 1;
+    const tipsQuery = useNotifications({
+        limit: 10, // CRITICAL FIX: limit=10 olarak değiştirildi
+        unreadOnly: tipsUnreadOnly,
+        type: tipsNotificationType, // type=tips
         search: debouncedSearchQuery || undefined,
-    }, repliesQueryEnabled);
+    }, tipsQueryEnabled);
 
     // Filter 2: Trust
     const trustFilter = filters[2];
@@ -128,20 +144,21 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, trustQueryEnabled);
 
-    // Filter 3: Tips
-    const tipsFilter = filters[3];
-    const tipsUnreadOnly = tipsFilter?.id === 'unread';
-    const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
-    const tipsQueryEnabled = shouldFetchNotifications && currentPage === 3;
-    const tipsQuery = useNotifications({
+    // Filter 3: Replies (Tips ile yer değiştirildi)
+    const repliesFilter = filters[3];
+    const repliesUnreadOnly = repliesFilter?.id === 'unread';
+    const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
+    const repliesQueryEnabled = shouldFetchNotifications && currentPage === 3;
+    const repliesQuery = useNotifications({
         limit: 20,
-        unreadOnly: tipsUnreadOnly,
-        type: tipsNotificationType,
+        unreadOnly: repliesUnreadOnly,
+        type: repliesNotificationType,
         search: debouncedSearchQuery || undefined,
-    }, tipsQueryEnabled);
+    }, repliesQueryEnabled);
 
     // Her filter için query sonuçlarını map et - useMemo ile memoize et (sonsuz döngü önleme)
-    const filterQueryResults = useMemo(() => [allQuery, repliesQuery, trustQuery, tipsQuery], [allQuery, repliesQuery, trustQuery, tipsQuery]);
+    // CRITICAL FIX: Sıralama değişti: All, Tips, Trust, Replies
+    const filterQueryResults = useMemo(() => [allQuery, tipsQuery, trustQuery, repliesQuery], [allQuery, tipsQuery, trustQuery, repliesQuery]);
 
     // Mark all notifications as read mutation
     const markAllAsReadMutation = useMarkAllNotificationsAsRead();
@@ -162,8 +179,14 @@ const NotificationsScreenComponent: React.FC = () => {
     useEffect(() => {
         if (shouldFetchNotifications && filterQueryResultsRef.current[currentPage]) {
             const activeQuery = filterQueryResultsRef.current[currentPage];
-            // Cache invalid ise refetch et (staleTime kontrolü yapılır)
-            activeQuery.refetch();
+            // İlk yüklemede veya tab değiştiğinde query'yi başlat/refetch et
+            // Eğer query enabled değilse ve data yoksa, query'yi manuel olarak başlat
+            if (!activeQuery.data && !activeQuery.isLoading && !activeQuery.isFetching) {
+                activeQuery.refetch();
+            } else if (activeQuery.data) {
+                // Cache invalid ise refetch et (staleTime kontrolü yapılır)
+                activeQuery.refetch();
+            }
         }
     }, [currentPage, shouldFetchNotifications]);
 
@@ -232,9 +255,11 @@ const NotificationsScreenComponent: React.FC = () => {
                 // Ekran blur olduğunda drawer gesture'ı tekrar enable et
                 setGestureEnabled(true);
                 // CRITICAL: Ref'i resetle - bir sonraki focus'ta tekrar çalışsın
+                // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde ref resetlenmemeli
                 hasMarkedAllAsReadRef.current = false;
             };
-        }, [setGestureEnabled, shouldFetchNotifications, queryClient, currentPage])
+        }, [setGestureEnabled, shouldFetchNotifications, queryClient])
+        // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde useFocusEffect tekrar çalışmamalı
         // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi
     );
     
@@ -379,7 +404,7 @@ const NotificationsScreenComponent: React.FC = () => {
         if (allNotifications.length > 0) {
             notificationAssetCache.cacheBatchNotifications(allNotifications);
         }
-    }, [allQuery.data, repliesQuery.data, trustQuery.data, tipsQuery.data, extractNotificationsFromResponse]);
+    }, [allQuery.data, tipsQuery.data, trustQuery.data, repliesQuery.data, extractNotificationsFromResponse]);
 
     // Tab label color animations - her tab için ayrı style
     const activeColor = isDark ? '#FFFFFF' : '#000000';
@@ -395,7 +420,7 @@ const NotificationsScreenComponent: React.FC = () => {
         return { color };
     }, [isDark]);
 
-    // Tab 1 (Replies)
+    // Tab 1 (Tips - Replies ile yer değiştirildi)
     const tab1Style = useAnimatedStyle(() => {
         const color = interpolateColor(
             progress.value,
@@ -415,7 +440,7 @@ const NotificationsScreenComponent: React.FC = () => {
         return { color };
     }, [isDark]);
 
-    // Tab 3 (Tips)
+    // Tab 3 (Replies - Tips ile yer değiştirildi)
     const tab3Style = useAnimatedStyle(() => {
         const color = interpolateColor(
             progress.value,
@@ -480,36 +505,55 @@ const NotificationsScreenComponent: React.FC = () => {
         const {
             data: notificationsResponse,
             isLoading,
+            isFetching,
             error,
             refetch,
             fetchNextPage,
             hasNextPage,
             isFetchingNextPage,
+            isPending,
+            status,
         } = queryResult;
+
+        // Query enabled durumunu kontrol et
+        // CRITICAL FIX: Sıralama değişti: All (0), Tips (1), Trust (2), Replies (3)
+        const isQueryEnabled = filterIndex === 0 ? (shouldFetchNotifications && currentPage === 0) :
+                              filterIndex === 1 ? (shouldFetchNotifications && currentPage === 1) :
+                              filterIndex === 2 ? (shouldFetchNotifications && currentPage === 2) :
+                              (shouldFetchNotifications && currentPage === 3);
+        
+        // Loading state: 
+        // 1. Query loading durumunda (isLoading, isFetching, isPending)
+        // 2. Query enabled değilse ve data yoksa (henüz başlamamış)
+        // 3. Auth ready değilse
+        const isActuallyLoading = (isLoading || isFetching || isPending) || 
+                                  (!isQueryEnabled && !notificationsResponse && shouldFetchNotifications) ||
+                                  (!isAuthReady && !notificationsResponse);
 
         // Her tab için kendi notifications'ını çıkar
         const notifications = extractNotificationsFromResponse(notificationsResponse);
         
+        // SAFETY FIX: notifications her zaman array olmalı
+        const safeNotifications = Array.isArray(notifications) ? notifications : [];
+        
+        // CRITICAL FIX: Tips tabında client-side filtering kaldırıldı
+        // Backend'den zaten type=tips ile filtrelenmiş veriler geliyor
+        // Endpoint: GET /notifications?limit=10&offset=0&type=tips
+        let filtered = safeNotifications;
+        
         // Search query için client-side filtering (backend'den zaten filtrelenmiş geliyor)
-        let filtered = notifications;
+        // Minimal yapı: title ve userName field'ları kaldırıldı, sadece message var
         if (searchQuery && Array.isArray(filtered)) {
             filtered = filtered.filter(notification => {
                 if (!notification || typeof notification !== 'object') {
                     return false;
                 }
                 
+                // Minimal yapı: sadece message field'ı var
                 const message = notification.message?.toLowerCase() || '';
-                const title = notification.title?.toLowerCase() || '';
-                const userName = (notification.data?.userName || 
-                                 notification.data?.likerName || 
-                                 notification.data?.commenterName || 
-                                 notification.data?.senderName ||
-                                 notification.metadata?.userName || '').toLowerCase();
                 const query = searchQuery.toLowerCase();
                 
-                return message.includes(query) || 
-                       title.includes(query) || 
-                       userName.includes(query);
+                return message.includes(query);
             });
         }
         
@@ -525,7 +569,8 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        if (isLoading && filtered.length === 0) {
+        // Loading state kontrolü - query enabled değilse veya data yoksa loading göster
+        if (isActuallyLoading && filtered.length === 0) {
             return (
                 <Box flex={1} justifyContent="center" alignItems="center">
                     <Spinner size="large" />
@@ -569,7 +614,7 @@ const NotificationsScreenComponent: React.FC = () => {
                 contentContainerStyle={{ 
                     paddingHorizontal: 16,
                     paddingTop: 8,
-                    paddingBottom: estimatedItemHeight, // 1 item boyutu kadar padding
+                    paddingBottom: bottomOffset, // BUG FIX: FeedScreen ile aynı yapı - bottomOffset kullan
                 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -612,7 +657,7 @@ const NotificationsScreenComponent: React.FC = () => {
     ]);
 
     return (
-        <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
         <Box flex={1} bg={backgroundColor}>
             {/* Header */}
             <Header 

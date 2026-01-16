@@ -145,7 +145,7 @@ const ProfileEditScreen: React.FC = () => {
     return badge ? badge.label : 'Badge Seç';
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate name (min 2 characters)
     if (name.trim().length < 2) {
       Alert.alert('Error', 'Name must be at least 2 characters');
@@ -161,71 +161,129 @@ const ProfileEditScreen: React.FC = () => {
     // Collect badge IDs (filter out empty strings)
     const badgeIds = [badge1, badge2, badge3].filter((badge) => badge.trim().length > 0);
 
-    // Prepare update data - API formatına uygun
-    // Tüm field'ları gönder (boş string'ler yerine undefined/null kullan)
-    const updateData: {
-      name?: string;
-      biography?: string;
-      badge?: string[];
-      cosmetic?: string | null;
-      avatar?: string | null;
-      banner?: string | null;
-    } = {};
+    try {
+      // CRITICAL FIX: Önce avatar ve banner'ı upload et (eğer local URI ise)
+      let avatarUrl: string | null = null;
+      let bannerUrl: string | null = null;
 
-    // Name zorunlu - her zaman gönder
-    if (name.trim().length > 0) {
-      updateData.name = name.trim();
+      // Avatar upload - eğer local URI ise (http ile başlamıyorsa)
+      if (selectedAvatarUri && !selectedAvatarUri.startsWith('http')) {
+        setIsUploadingAvatar(true);
+        try {
+          const uploadResponse = await uploadAvatar(selectedAvatarUri);
+          if (uploadResponse.success && uploadResponse.data.avatarUrl) {
+            avatarUrl = uploadResponse.data.avatarUrl;
+            console.log('[ProfileEditScreen] ✅ Avatar uploaded:', avatarUrl);
+          } else {
+            throw new Error('Avatar yüklenemedi');
+          }
+        } catch (error: any) {
+          console.error('[ProfileEditScreen] ❌ Avatar upload error:', error);
+          Alert.alert('Hata', error?.message || 'Avatar yüklenirken bir hata oluştu');
+          setIsUploadingAvatar(false);
+          return;
+        } finally {
+          setIsUploadingAvatar(false);
+        }
+      } else if (selectedAvatarUri && selectedAvatarUri.startsWith('http')) {
+        // Zaten upload edilmiş (URL formatında)
+        avatarUrl = selectedAvatarUri;
+      }
+
+      // Banner upload - eğer local URI ise (http ile başlamıyorsa)
+      if (selectedBannerUri && !selectedBannerUri.startsWith('http')) {
+        setIsUploadingBanner(true);
+        try {
+          const uploadResponse = await uploadBanner(selectedBannerUri);
+          if (uploadResponse.success && uploadResponse.data.bannerUrl) {
+            bannerUrl = uploadResponse.data.bannerUrl;
+            console.log('[ProfileEditScreen] ✅ Banner uploaded:', bannerUrl);
+          } else {
+            throw new Error('Banner yüklenemedi');
+          }
+        } catch (error: any) {
+          console.error('[ProfileEditScreen] ❌ Banner upload error:', error);
+          Alert.alert('Hata', error?.message || 'Banner yüklenirken bir hata oluştu');
+          setIsUploadingBanner(false);
+          return;
+        } finally {
+          setIsUploadingBanner(false);
+        }
+      } else if (selectedBannerUri && selectedBannerUri.startsWith('http')) {
+        // Zaten upload edilmiş (URL formatında)
+        bannerUrl = selectedBannerUri;
+      }
+
+      // Prepare update data - API formatına uygun
+      // Tüm field'ları gönder (boş string'ler yerine undefined/null kullan)
+      const updateData: {
+        name?: string;
+        biography?: string;
+        badge?: string[];
+        cosmetic?: string | null;
+        avatar?: string | null;
+        banner?: string | null;
+      } = {};
+
+      // Name zorunlu - her zaman gönder
+      if (name.trim().length > 0) {
+        updateData.name = name.trim();
+      }
+
+      // Biography sadece doluysa ekle (boş string gönderme)
+      if (bio.trim().length > 0) {
+        updateData.biography = bio.trim();
+      }
+
+      // Badge array'i sadece varsa ekle
+      if (badgeIds.length > 0) {
+        updateData.badge = badgeIds;
+      }
+
+      // Avatar - upload edilmiş URL'i ekle
+      if (avatarUrl) {
+        updateData.avatar = avatarUrl;
+      }
+
+      // Banner - upload edilmiş URL'i ekle
+      if (bannerUrl) {
+        updateData.banner = bannerUrl;
+      }
+
+      // Request data'yı logla
+      console.log('[ProfileEditScreen] Sending update request:', JSON.stringify(updateData, null, 2));
+      
+      // Profile update
+      updateProfileMutation.mutate(updateData, {
+        onSuccess: (data) => {
+          console.log('[ProfileEditScreen] ✅ Profile updated successfully:', data);
+          Alert.alert('Success', 'Profile updated successfully!', [
+            { text: 'OK', onPress: () => navigation.goBack() }
+          ]);
+        },
+        onError: (error: any) => {
+          console.error('[ProfileEditScreen] ❌ Update profile error:', {
+            error,
+            message: error?.message,
+            response: error?.response,
+            responseData: error?.response?.data,
+            responseStatus: error?.response?.status,
+            requestData: updateData,
+          });
+          
+          // Backend'den gelen detaylı hata mesajını göster
+          const errorMessage = error?.response?.data?.message || 
+                             error?.response?.data?.error ||
+                             error?.message || 
+                             'Profil güncellenirken bir hata oluştu';
+          
+          Alert.alert('Hata', errorMessage);
+        },
+      });
+    } catch (error: any) {
+      console.error('[ProfileEditScreen] ❌ Save error:', error);
+      Alert.alert('Hata', error?.message || 'Profil kaydedilirken bir hata oluştu');
     }
-
-    // Biography sadece doluysa ekle (boş string gönderme)
-    if (bio.trim().length > 0) {
-      updateData.biography = bio.trim();
-    }
-
-    // Badge array'i sadece varsa ekle
-    if (badgeIds.length > 0) {
-      updateData.badge = badgeIds;
-    }
-
-    // Avatar - eğer seçildiyse ve upload edildiyse (URL formatında)
-    if (selectedAvatarUri && selectedAvatarUri.startsWith('http')) {
-      updateData.avatar = selectedAvatarUri;
-    }
-
-    // Banner - eğer seçildiyse ve upload edildiyse (URL formatında)
-    if (selectedBannerUri && selectedBannerUri.startsWith('http')) {
-      updateData.banner = selectedBannerUri;
-    }
-
-    // Request data'yı logla
-    console.log('[ProfileEditScreen] Sending update request:', JSON.stringify(updateData, null, 2));
-    
-    updateProfileMutation.mutate(updateData, {
-      onSuccess: (data) => {
-        console.log('[ProfileEditScreen] ✅ Profile updated successfully:', data);
-        Alert.alert('Success', 'Profile updated successfully!', [
-          { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
-      },
-      onError: (error: any) => {
-        console.error('[ProfileEditScreen] ❌ Update profile error:', {
-          error,
-          message: error?.message,
-          response: error?.response,
-          responseData: error?.response?.data,
-          responseStatus: error?.response?.status,
-          requestData: updateData,
-        });
-        
-        // Backend'den gelen detaylı hata mesajını göster
-        const errorMessage = error?.response?.data?.message || 
-                           error?.response?.data?.error ||
-                           error?.message || 
-                           'Profil güncellenirken bir hata oluştu';
-        
-        Alert.alert('Hata', errorMessage);
-      },
-    });
   };
 
   const handleAvatarChange = async () => {
@@ -233,48 +291,10 @@ const ProfileEditScreen: React.FC = () => {
       const result = await imagePickerService.pickFromGallery();
       
       if (result.success && result.asset) {
-        setIsUploadingAvatar(true);
-        try {
-          // Avatar'ı direkt upload et
-          const uploadResponse = await uploadAvatar(result.asset.uri);
-          
-          if (uploadResponse.success && uploadResponse.data.avatarUrl) {
-            setSelectedAvatarUri(uploadResponse.data.avatarUrl);
-            
-            toast.show({
-              placement: 'top',
-              render: ({ id }: { id: string }) => {
-                return (
-                  <Box maxWidth="90%" alignSelf="center" px="$4">
-                    <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                      <ToastTitle>Başarılı</ToastTitle>
-                      <ToastDescription>Avatar değiştirildi. Değişiklikleri kaydetmek için Save butonuna basın.</ToastDescription>
-                    </Toast>
-                  </Box>
-                );
-              },
-            });
-          } else {
-            throw new Error('Avatar yüklenemedi');
-          }
-        } catch (error: any) {
-          console.error('[ProfileEditScreen] Avatar upload error:', error);
-          toast.show({
-            placement: 'top',
-            render: ({ id }: { id: string }) => {
-              return (
-                <Box maxWidth="90%" alignSelf="center" px="$4">
-                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                    <ToastTitle>Hata</ToastTitle>
-                    <ToastDescription>{error?.message || 'Avatar yüklenirken bir hata oluştu'}</ToastDescription>
-                  </Toast>
-                </Box>
-              );
-            },
-          });
-        } finally {
-          setIsUploadingAvatar(false);
-        }
+        // CRITICAL FIX: Avatar seçildiğinde sadece local URI'yi kaydet, upload etme
+        // Upload işlemi Save butonuna tıklandığında yapılacak
+        setSelectedAvatarUri(result.asset.uri);
+        console.log('[ProfileEditScreen] Avatar selected (local URI):', result.asset.uri);
       } else {
         toast.show({
           placement: 'top',
@@ -349,57 +369,17 @@ const ProfileEditScreen: React.FC = () => {
   };
 
   const handleSaveAvatarChange = async () => {
+    // CRITICAL FIX: Modal'dan avatar seçildiğinde sadece local URI'yi kaydet, upload etme
+    // Upload işlemi Save butonuna tıklandığında yapılacak
     if (!selectedAvatarUri) {
       // Eğer fotoğraf seçilmediyse sadece modal'ı kapat
       setIsAvatarModalVisible(false);
       return;
     }
 
-    setIsUploadingAvatar(true);
-    try {
-      // Önce avatar'ı upload et
-      const uploadResponse = await uploadAvatar(selectedAvatarUri);
-      
-      if (uploadResponse.success && uploadResponse.data.avatarUrl) {
-        // Avatar URL'ini state'e kaydet (handleSave'de kullanılacak)
-        setSelectedAvatarUri(uploadResponse.data.avatarUrl);
-        
-        toast.show({
-          placement: 'top',
-          render: ({ id }: { id: string }) => {
-            return (
-              <Box maxWidth="90%" alignSelf="center" px="$4">
-                <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                  <ToastTitle>Başarılı</ToastTitle>
-                  <ToastDescription>Avatar yüklendi. Değişiklikleri kaydetmek için Save butonuna basın.</ToastDescription>
-                </Toast>
-              </Box>
-            );
-          },
-        });
-        
-        setIsAvatarModalVisible(false);
-      } else {
-        throw new Error('Avatar yüklenemedi');
-      }
-    } catch (error: any) {
-      console.error('[ProfileEditScreen] Avatar upload error:', error);
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>{error?.message || 'Avatar yüklenirken bir hata oluştu'}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
-      });
-    } finally {
-      setIsUploadingAvatar(false);
-    }
+    // Sadece modal'ı kapat, upload işlemi Save butonuna tıklandığında yapılacak
+    setIsAvatarModalVisible(false);
+    console.log('[ProfileEditScreen] Avatar selected from modal (local URI):', selectedAvatarUri);
   };
 
   const handleBannerChange = async () => {
@@ -407,48 +387,10 @@ const ProfileEditScreen: React.FC = () => {
       const result = await imagePickerService.pickFromGallery();
       
       if (result.success && result.asset) {
-        setIsUploadingBanner(true);
-        try {
-          // Banner'ı direkt upload et
-          const uploadResponse = await uploadBanner(result.asset.uri);
-          
-          if (uploadResponse.success && uploadResponse.data.bannerUrl) {
-            setSelectedBannerUri(uploadResponse.data.bannerUrl);
-            
-            toast.show({
-              placement: 'top',
-              render: ({ id }: { id: string }) => {
-                return (
-                  <Box maxWidth="90%" alignSelf="center" px="$4">
-                    <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                      <ToastTitle>Başarılı</ToastTitle>
-                      <ToastDescription>Banner değiştirildi. Değişiklikleri kaydetmek için Save butonuna basın.</ToastDescription>
-                    </Toast>
-                  </Box>
-                );
-              },
-            });
-          } else {
-            throw new Error('Banner yüklenemedi');
-          }
-        } catch (error: any) {
-          console.error('[ProfileEditScreen] Banner upload error:', error);
-          toast.show({
-            placement: 'top',
-            render: ({ id }: { id: string }) => {
-              return (
-                <Box maxWidth="90%" alignSelf="center" px="$4">
-                  <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                    <ToastTitle>Hata</ToastTitle>
-                    <ToastDescription>{error?.message || 'Banner yüklenirken bir hata oluştu'}</ToastDescription>
-                  </Toast>
-                </Box>
-              );
-            },
-          });
-        } finally {
-          setIsUploadingBanner(false);
-        }
+        // CRITICAL FIX: Banner seçildiğinde sadece local URI'yi kaydet, upload etme
+        // Upload işlemi Save butonuna tıklandığında yapılacak
+        setSelectedBannerUri(result.asset.uri);
+        console.log('[ProfileEditScreen] Banner selected (local URI):', result.asset.uri);
       } else {
         toast.show({
           placement: 'top',
@@ -495,17 +437,18 @@ const ProfileEditScreen: React.FC = () => {
         title="Edit Profile"
         showBackButton
         onBackPress={() => navigation.goBack()}
-        rightAction={
-          <Pressable onPress={handleSave}>
-            <Text
-              color="#E8FF6B"
-              fontSize={15}
-              fontWeight="$semibold"
-            >
-              Save
-            </Text>
-          </Pressable>
-        }
+        rightButton={{
+          text: 'Save',
+          backgroundColor: '#D0F205',
+          borderWidth: 1,
+          borderColor: '#B8CC04',
+          textColor: '#111111',
+          fontSize: 11,
+          borderRadius: 25,
+          paddingX: 16, // CreatePostScreen'deki 22'den daha az (sola almak için)
+          paddingY: 8,
+          onPress: handleSave,
+        }}
       />
 
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">

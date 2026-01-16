@@ -917,9 +917,10 @@ export const PostsScreen = () => {
   }, [isFetchingNextPage, isDark]);
 
   // PERFORMANCE FIX: Memoize contentContainerStyle - FeedScreen ile aynı yapı
+  // BUG FIX: paddingBottom eklenmeli - FeedScreen'de bottomPadding kullanılıyor
   const contentContainerStyle = useMemo(
-    () => ({ paddingHorizontal: 16, paddingTop: 8 }),
-    []
+    () => ({ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomOffset }),
+    [bottomOffset]
   );
 
   // PERFORMANCE FIX: Memoize keyExtractor

@@ -168,8 +168,9 @@ const PostCard: React.FC<{
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    const imageUrl = notification.imageUrl;
-    const postTitle = notification.title;
+    // Minimal yapı: sadece imageUrl var (dokümana göre)
+    const imageUrl = data.imageUrl;
+    // title field'ı kaldırıldı, sadece message var
     const postContent = data.postContent || data.content || notification.message;
 
     return (
@@ -229,17 +230,6 @@ const PostCard: React.FC<{
                 )}
             </HStack>
 
-            {postTitle && (
-                <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$sm"
-                    fontWeight="$bold"
-                    mb="$1"
-                >
-                    {postTitle}
-                </Text>
-            )}
-            
             {postContent && (
                 <Text
                     color={isDark ? '#B9B9B9' : '#666666'}
@@ -324,12 +314,14 @@ const CommentCard: React.FC<{
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    const commentContent = data.messagePreview || data.commentContent || data.commentText || data.message;
+    // Minimal yapı: Sadece DM_REQUEST_RECEIVED için data.message var
+    // Diğer comment bildirimlerinde message preview yok
+    const commentContent = data.message;
 
     if (!commentContent) return null;
 
     return (
-        <Box mt={8} mr="$2">
+        <Box mt={4} mr="$2">
             <Text
                 color={isDark ? '#B9B9B9' : '#666666'}
                 fontSize="$xs"
@@ -351,8 +343,9 @@ const EventCard: React.FC<{
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    const eventName = data.eventName || notification.title;
-    const imageUrl = notification.imageUrl;
+    // Minimal yapı: eventName kaldırıldı, sadece eventId ve imageUrl var
+    const imageUrl = data.imageUrl;
+    // title field'ı kaldırıldı, sadece message var
     const eventDescription = notification.message;
 
     return (
@@ -372,17 +365,6 @@ const EventCard: React.FC<{
                     mb="$2"
                     resizeMode="cover"
                 />
-            )}
-            
-            {eventName && (
-                <Text
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$sm"
-                    fontWeight="$bold"
-                    mb="$1"
-                >
-                    {eventName}
-                </Text>
             )}
             
             {eventDescription && (
@@ -408,8 +390,9 @@ const GamificationCard: React.FC<{
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    const badgeName = data.badgeName || notification.title;
-    const rewardAmount = data.rewardAmount;
+    // Minimal yapı: badgeName kaldırıldı (mesajda zaten var), achievementId kaldırıldı
+    // Sadece badgeId, imageUrl ve amount var
+    const rewardAmount = data.amount || data.rewardAmount;
 
     return (
         <Box
@@ -421,20 +404,11 @@ const GamificationCard: React.FC<{
             <HStack space="sm" alignItems="center">
                 <TrophyIcon width={24} height={24} color="#E8FF6B" />
                 <VStack flex={1}>
-                    {badgeName && (
+                    {notification.message && (
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize="$sm"
                             fontWeight="$bold"
-                        >
-                            {badgeName}
-                        </Text>
-                    )}
-                    {notification.message && (
-                        <Text
-                            color={isDark ? '#B9B9B9' : '#666666'}
-                            fontSize="$xs"
-                            fontWeight="$normal"
                         >
                             {notification.message}
                         </Text>
@@ -486,25 +460,123 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             });
         }
 
-        // Navigation based on notification type
+        // Navigation based on notification type (dokümana göre güncellendi)
         try {
             const data = notification.data || notification.metadata || {};
-            const category = getNotificationCategory(notification.type);
+            const type = notification.type;
 
-            // Event bildirimleri → EventDetailScreen (eventId ile)
-            if (category === 'event' && data.eventId) {
-                navigationService.navigate(ROOT_ROUTES.EVENT, {
-                    screen: 'EventDetailScreen',
-                    params: { eventId: data.eventId },
-                }, {
-                    priority: 'high',
-                    force: false,
-                });
+            // 1. Post Etkileşimleri → PostDetailScreen (postId ile)
+            if (type === 'POST_LIKED' || type === 'POST_COMMENTED' || type === 'POST_SHARED' || type === 'POST_FAVORITED') {
+                if (data.postId) {
+                    navigationService.navigate(ROOT_ROUTES.POST, {
+                        screen: 'PostDetailScreen',
+                        params: {
+                            postData: { id: data.postId },
+                            postId: data.postId,
+                            type: 'post',
+                        },
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // 2. Yorum Etkileşimleri → PostDetailScreen (postId + commentId ile, yorumu highlight et)
+            if (type === 'COMMENT_LIKED' || type === 'COMMENT_REPLIED') {
+                if (data.postId) {
+                    navigationService.navigate(ROOT_ROUTES.POST, {
+                        screen: 'PostDetailScreen',
+                        params: {
+                            postData: { id: data.postId },
+                            postId: data.postId,
+                            type: 'post',
+                            // commentId PostStackParamList'e eklendi (yorumu highlight etmek için)
+                            commentId: data.commentId,
+                        },
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // 3. Trust & Follow → ProfileScreen (userId root seviyede)
+            if (type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY') {
+                if (notification.userId) {
+                    navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                        screen: 'ProfileMain',
+                        params: { userId: notification.userId },
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // 4. Mesajlaşma Bildirimleri → MessageDetail veya SupportMessageDetail
+            if (type === 'DM_REQUEST_RECEIVED' || type === 'DM_REQUEST_ACCEPTED') {
+                if (data.threadId) {
+                    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+                        messageId: data.threadId,
+                        threadId: data.threadId,
+                        recipientUserId: notification.userId,
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // DM_REQUEST_DECLINED → Özel ekrana yönlendirme gerekmez (dokümana göre)
+            if (type === 'DM_REQUEST_DECLINED') {
+                // Bildirim gösterilir, özel bir ekrana yönlendirme gerekmez
+                if (onPress) onPress();
                 return;
             }
 
-            // Tips bildirimleri → WalletScreen
-            if (category === 'tips') {
+            // SUPPORT_REQUEST_ACCEPTED → SupportMessageDetail (threadId ile)
+            // CRITICAL: Backend'den requestId de gelmeli (SupportMessageDetail için gerekli)
+            if (type === 'SUPPORT_REQUEST_ACCEPTED') {
+                if (data.threadId) {
+                    // SupportMessageDetail için gerekli parametreleri hazırla
+                    // Backend'den threadId geliyor, requestId de gelmeli (eksik field)
+                    navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
+                        requestId: data.requestId || data.threadId, // requestId backend'den gelmeli
+                        threadId: data.threadId,
+                        expertName: notification.userId ? 'Expert' : 'User', // Backend'den gelmeli
+                        expertTitle: '',
+                        expertAvatar: notification.avatar || null,
+                        recipientUserId: notification.userId,
+                        status: 'active',
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // 5. Gamification (Badge & Achievement) → Profile → Collections (badgeId ile)
+            if (type === 'NEW_BADGE' || type === 'ACHIEVEMENT_UNLOCKED') {
+                if (data.badgeId) {
+                    // Profile → Collections ekranına yönlendir (badge detayı burada gösterilir)
+                    navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                        screen: 'Collections',
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // REWARD_EARNED → WalletScreen
+            if (type === 'REWARD_EARNED') {
                 navigationService.navigate(ROOT_ROUTES.WALLET, {
                     screen: 'WalletScreen',
                 }, {
@@ -514,12 +586,58 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 return;
             }
 
-            // Trust/Profil bildirimleri → ProfileScreen (userId ile)
-            if (category === 'trust' && (data.userId || notification.userId)) {
-                const userId = data.userId || notification.userId;
-                navigationService.navigate(ROOT_ROUTES.PROFILE, {
-                    screen: 'ProfileMain',
-                    params: { userId },
+            // 6. Event Bildirimleri → EventDetailScreen (eventId ile)
+            if (type === 'EVENT_STARTED' || type === 'EVENT_ENDING_SOON' || type === 'EVENT_REWARD_AVAILABLE') {
+                if (data.eventId) {
+                    navigationService.navigate(ROOT_ROUTES.EVENT, {
+                        screen: 'EventDetailScreen',
+                        params: { eventId: data.eventId },
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // 7. Expert Bildirimleri → SupportMessageDetail (requestId ile)
+            // CRITICAL: Backend'den expertName, expertTitle, expertAvatar gelmeli (eksik field'lar)
+            if (type === 'EXPERT_REQUEST_AVAILABLE' || type === 'EXPERT_REQUEST_ANSWERED') {
+                if (data.requestId) {
+                    navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
+                        requestId: data.requestId,
+                        threadId: data.threadId || null, // EXPERT_REQUEST_ANSWERED için threadId gelmeli
+                        expertName: data.expertName || notification.userId ? 'Expert' : 'User', // Backend'den gelmeli
+                        expertTitle: data.expertTitle || '', // Backend'den gelmeli
+                        expertAvatar: data.expertAvatar || notification.avatar || null, // Backend'den gelmeli
+                        recipientUserId: notification.userId,
+                        status: type === 'EXPERT_REQUEST_ANSWERED' ? 'active' : 'pending',
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // 8. Collection Bildirimleri → Profile → Collections (collectionId ile)
+            if (type === 'COLLECTION_POST_ADDED' || type === 'COLLECTION_SHARED') {
+                if (data.collectionId) {
+                    // CollectionsScreen'e yönlendir (collectionId ile detay gösterilebilir)
+                    navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                        screen: 'Collections',
+                    }, {
+                        priority: 'high',
+                        force: false,
+                    });
+                    return;
+                }
+            }
+
+            // 9. Tips Bildirimleri → WalletScreen
+            if (type === 'TIPS_RECEIVED' || type === 'TIPS_SENT') {
+                navigationService.navigate(ROOT_ROUTES.WALLET, {
+                    screen: 'WalletScreen',
                 }, {
                     priority: 'high',
                     force: false,
@@ -527,22 +645,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 return;
             }
 
-            // Post bildirimleri → PostDetailScreen (postId ile)
-            if ((category === 'post' || category === 'comment') && data.postId) {
-                navigationService.navigate(ROOT_ROUTES.POST, {
-                    screen: 'PostDetailScreen',
-                    params: {
-                        postData: { id: data.postId },
-                        type: 'post',
-                    },
-                }, {
-                    priority: 'high',
-                    force: false,
-                });
-                return;
-            }
-
-            // Fallback: NotificationService kullan
+            // Fallback: NotificationService kullan (eski sistem)
             const action = notificationService.getNavigationAction(notification);
             if (action) {
                 const { route, params } = action;
@@ -589,20 +692,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     };
 
     const handleAvatarPress = () => {
-        // userId varsa ProfileScreen'e yönlendir
-        const data = notification.data || notification.metadata || {};
-        const avatarUserId = data.userId || 
-                            data.likerId || 
-                            data.commenterId || 
-                            data.senderId ||
-                            notification.metadata?.userId ||
-                            notification.userId;
-
-        if (avatarUserId) {
+        // Minimal yapı: userId root seviyede zaten var (avatar ile eşleşir)
+        // Data içinde duplicate userId field'ları kaldırıldı
+        if (notification.userId) {
             try {
                 navigationService.navigate(ROOT_ROUTES.PROFILE, {
                     screen: 'ProfileMain',
-                    params: { userId: avatarUserId },
+                    params: { userId: notification.userId },
                 }, {
                     priority: 'high',
                     force: false,
@@ -618,39 +714,29 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         ? toImageSource(notification.avatar)
         : DEFAULT_USER_AVATAR;
     
-    const userName = notification.data?.userName || 
-                     notification.data?.likerName || 
-                     notification.data?.commenterName || 
-                     notification.data?.senderName ||
-                     notification.metadata?.userName || 
-                     'Kullanıcı';
-    
+    // Minimal yapı: userName field'ları kaldırıldı (mesajda zaten var)
     const IconComponent = getIconComponent(notification.type);
     const category = getNotificationCategory(notification.type);
     
-    // Data extraction
+    // Data extraction - minimal yapıya göre güncellendi
     const data = notification.data || notification.metadata || {};
-    const tipsAmount = data.amount || data.rewardAmount;
-    const commentContent = data.messagePreview || data.commentContent || data.commentText;
+    const tipsAmount = data.amount; // rewardAmount kaldırıldı
+    const commentContent = data.message; // DM_REQUEST için, diğerleri için yok
     const postId = data.postId;
     const eventId = data.eventId;
-    const imageUrl = notification.imageUrl;
+    // Minimal yapı: imageUrl sadece gerekli yerlerde var (post, event, badge)
+    const imageUrl = data.imageUrl;
     
-    // UserId extraction - tüm olası alanlardan userId'yi al
-    const userId = data.userId || 
-                   data.likerId || 
-                   data.commenterId || 
-                   data.senderId ||
-                   notification.metadata?.userId ||
-                   notification.userId;
+    // Minimal yapı: userId root seviyede zaten var, data içinde duplicate yok
+    const userId = notification.userId;
 
-    // Category-based content rendering
+    // Category-based content rendering - minimal yapıya göre
     const showPostCard = category === 'post' && (postId || imageUrl);
     const showTipsBadge = category === 'tips' && tipsAmount;
     const showTrustButton = category === 'trust';
-    const showCommentText = (category === 'comment' || category === 'message') && commentContent;
-    const showEventInfo = category === 'event' && (data.eventName || imageUrl);
-    const showGamificationCard = category === 'gamification';
+    const showCommentText = (category === 'message') && commentContent; // Sadece DM_REQUEST için
+    const showEventInfo = category === 'event' && (eventId || imageUrl); // eventName kaldırıldı
+    const showGamificationCard = category === 'gamification' && (data.badgeId || imageUrl || tipsAmount);
 
     return (
         <Pressable 
@@ -667,43 +753,46 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 <HStack space="sm" alignItems="flex-start" justifyContent="flex-start">
 
                     {/* Avatar - Mor/pembe border ile */}
-                    <Pressable onPress={handleAvatarPress}>
-                        <Box  position="relative">
-                            <Box
-                                width={48}
-                                height={48}
-                                borderRadius={24}
-                                borderWidth={2.5}
-                                borderColor="#C084FC"
-                                justifyContent="center"
-                                alignItems="center"
-                            >
-                                <Image
-                                    source={userAvatar}
-                                    alt="User avatar"
-                                    width={44}
-                                    height={44}
-                                    borderRadius={22}
-                                />
-                            </Box>
-                            {!notification.read && (
+                    {/* CRITICAL FIX: Event ve badge bildirimlerinde avatar gösterilmez */}
+                    {!(showEventInfo || showGamificationCard) && (
+                        <Pressable onPress={handleAvatarPress}>
+                            <Box  position="relative">
                                 <Box
-                                    position="absolute"
-                                    top={-2}
-                                    right={-2}
-                                    width={12}
-                                    height={12}
-                                    borderRadius={6}
-                                    bg="#E8FF6B"
-                                    borderWidth={2}
-                                    borderColor={isDark ? '#000000' : '#FFFFFF'}
-                                />
-                            )}
-                        </Box>
-                    </Pressable>
+                                    width={48}
+                                    height={48}
+                                    borderRadius={24}
+                                    borderWidth={2.5}
+                                    borderColor="#C084FC"
+                                    justifyContent="center"
+                                    alignItems="center"
+                                >
+                                    <Image
+                                        source={userAvatar}
+                                        alt="User avatar"
+                                        width={44}
+                                        height={44}
+                                        borderRadius={22}
+                                    />
+                                </Box>
+                                {!notification.read && (
+                                    <Box
+                                        position="absolute"
+                                        top={-2}
+                                        right={-2}
+                                        width={12}
+                                        height={12}
+                                        borderRadius={6}
+                                        bg="#E8FF6B"
+                                        borderWidth={2}
+                                        borderColor={isDark ? '#000000' : '#FFFFFF'}
+                                    />
+                                )}
+                            </Box>
+                        </Pressable>
+                    )}
 
                     {/* Content - Ortada */}
-                    <VStack flex={1} mr="$2"  borderRadius={8} px="$2" py="$1" alignSelf="flex-start" space="xs">
+                    <VStack flex={1} mr="$2" borderRadius={8} px="$2" py="$1" alignSelf="flex-start" space="xs">
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize="$sm"
