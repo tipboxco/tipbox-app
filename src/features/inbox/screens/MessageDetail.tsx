@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest } from '../api/hooks';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead } from '../api/hooks';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
@@ -202,6 +202,7 @@ const MessageDetailScreen: React.FC = () => {
   const acceptSupportRequestMutation = useAcceptSupportRequest();
   const rejectSupportRequestMutation = useRejectSupportRequest();
   const cancelSupportRequestMutation = useCancelSupportRequest();
+  const markThreadAsReadMutation = useMarkThreadAsRead();
   const queryClient = useQueryClient();
   
   // Socket context
@@ -368,6 +369,33 @@ const MessageDetailScreen: React.FC = () => {
         console.log('[MessageDetail] 📥 Thread messages loaded:', threadMessages.length);
         console.log('[MessageDetail] 📥 Sample message:', JSON.stringify(threadMessages[0], null, 2));
         console.log('[MessageDetail] 📥 Params:', { senderName: params.senderName, hasAvatar: !!params.senderAvatar });
+        
+        // Okunmamış mesajlar var mı kontrol et (sadece alınan mesajlar için - isSent: false)
+        const hasUnreadMessages = threadMessages.some(
+          (msg) => !msg.isRead && msg.senderId !== user?.id
+        );
+        
+        // Okunmamış mesajlar varsa thread'i okundu olarak işaretle
+        if (hasUnreadMessages && threadId) {
+          console.log('[MessageDetail] 📖 Thread has unread messages, marking thread as read:', threadId);
+          
+          // Socket bağlıysa socket ile, değilse API ile işaretle
+          if (isConnected) {
+            socketMarkThreadRead(threadId);
+          } else {
+            // Socket bağlı değilse API ile bildir
+            console.log('[MessageDetail] 📡 Socket not connected, using API to mark thread as read');
+            markThreadAsReadMutation.mutate(threadId, {
+              onError: (error) => {
+                console.error('[MessageDetail] ❌ Failed to mark thread as read via API:', error);
+              },
+            });
+          }
+          
+          // Inbox listesini invalidate et (yeşil nokta kaldırılsın)
+          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+        }
+        
         // Normal FlatList için mesajları normal sırada tut (en eski başta, en yeni sonda)
         const convertedMessages: MessageDetailItem[] = threadMessages
           .map((msg) => {
@@ -456,6 +484,7 @@ const MessageDetailScreen: React.FC = () => {
             backend: convertedMessages.length,
             pending: pendingMessages.length,
             kept: pendingMessagesToKeep.length,
+            hasUnreadMessages,
             total: merged.length,
           });
           
@@ -476,7 +505,7 @@ const MessageDetailScreen: React.FC = () => {
       // Pending mesajları koru
       setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
     }
-  }, [threadMessages, isLoadingMessages, user?.id, params.senderName, params.senderAvatar]);
+  }, [threadMessages, isLoadingMessages, user?.id, params.senderName, params.senderAvatar, threadId, isConnected, socketMarkThreadRead, markThreadAsReadMutation, queryClient, safeScrollToEnd]);
 
   // 4️⃣ CHAT EKRANI AÇILDIĞINDA - Thread ID kontrolü, socket bağlantısı, thread join, event listener'lar
   useEffect(() => {
@@ -948,14 +977,26 @@ const MessageDetailScreen: React.FC = () => {
     console.log('[MessageDetail]    - Match:', data.threadId === threadId ? '✅' : '❌');
     
     // Thread'e katıldıktan sonra tüm mesajları okundu işaretle
-    if (data.threadId === threadId && isConnected) {
+    if (data.threadId === threadId) {
       console.log('[MessageDetail] 📖 Marking thread as read:', threadId);
-      socketMarkThreadRead(threadId);
+      
+      // Socket bağlıysa socket ile, değilse API ile işaretle
+      if (isConnected) {
+        socketMarkThreadRead(threadId);
+      } else {
+        // Socket bağlı değilse API ile bildir
+        console.log('[MessageDetail] 📡 Socket not connected, using API to mark thread as read');
+        markThreadAsReadMutation.mutate(threadId, {
+          onError: (error) => {
+            console.error('[MessageDetail] ❌ Failed to mark thread as read via API:', error);
+          },
+        });
+      }
       
       // Inbox listesini invalidate et (yeşil nokta kaldırılsın)
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     }
-  }, [threadId, isConnected, socketMarkThreadRead, queryClient]);
+  }, [threadId, isConnected, socketMarkThreadRead, markThreadAsReadMutation, queryClient]);
 
   const handleThreadLeft = useCallback((data: { threadId: string }) => {
     console.log('[MessageDetail] Thread left:', data.threadId);

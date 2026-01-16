@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useCallback, useState } from 'react';
-import { Platform, FlatList, ActivityIndicator } from 'react-native';
+import { Platform, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, Pressable, Text } from '@gluestack-ui/themed';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -52,15 +52,19 @@ export const PostsScreen = () => {
   const navigation = useNavigation<PostsScreenNavigationProp>();
   const route = useRoute<PostsScreenRouteProp>();
   
-  const { stage, name, productInfo, selectedProduct, contextType, contextId } = route.params;
-  const selectedProductPayload = selectedProduct
-    ? {
-        id: selectedProduct.id,
-        name: selectedProduct.name,
-        description: selectedProduct.description,
-        image: selectedProduct.image,
-      }
-    : undefined;
+  // PERFORMANCE FIX: Memoize route params to prevent unnecessary re-renders
+  const routeParams = useMemo(() => route.params, [route.params]);
+  const { stage, name, productInfo, selectedProduct, contextType, contextId } = routeParams;
+  
+  const selectedProductPayload = useMemo(() => {
+    if (!selectedProduct) return undefined;
+    return {
+      id: selectedProduct.id,
+      name: selectedProduct.name,
+      description: selectedProduct.description,
+      image: selectedProduct.image,
+    };
+  }, [selectedProduct]);
 
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -76,6 +80,9 @@ export const PostsScreen = () => {
     postType: undefined,
     sort: undefined,
   });
+  
+  // Pull to refresh state
+  const [refreshing, setRefreshing] = useState(false);
 
   // Determine contextType and contextId for feed API
   const feedContextType = useMemo((): 'sub_category' | 'product_group' | 'product' | undefined => {
@@ -198,22 +205,29 @@ export const PostsScreen = () => {
     error,
   } = queryResult;
 
-  // Flatten all pages into a single array and remove duplicates by ID
+  // PERFORMANCE FIX: Optimize feedItems calculation - lazy evaluation
+  // Only calculate when data is available, use early return for empty state
   const feedItems = useMemo(() => {
-    if (!data?.pages) return [];
+    if (!data?.pages || data.pages.length === 0) return [];
     
-    const allItems = data.pages.flatMap((page) => page.items);
+    // PERFORMANCE FIX: Use Set for faster duplicate checking
+    const seenIds = new Set<string>();
+    const uniqueItems: FeedApiItem[] = [];
     
-    // Remove duplicates by ID
-    const uniqueItemsMap = new Map<string, FeedApiItem>();
-    for (const item of allItems) {
-      const itemId = item.data.id;
-      if (!uniqueItemsMap.has(itemId)) {
-        uniqueItemsMap.set(itemId, item);
+    // Iterate through pages and items once
+    for (const page of data.pages) {
+      if (!page.items || page.items.length === 0) continue;
+      
+      for (const item of page.items) {
+        const itemId = item.data?.id;
+        if (itemId && !seenIds.has(itemId)) {
+          seenIds.add(itemId);
+          uniqueItems.push(item);
+        }
       }
     }
     
-    return Array.from(uniqueItemsMap.values());
+    return uniqueItems;
   }, [data?.pages]);
 
   // Convert stage from PostsScreen to CatalogStage format
@@ -854,8 +868,28 @@ export const PostsScreen = () => {
     };
   }, []);
 
+  // PERFORMANCE FIX: Memoize ListFooterComponent
+  const ListFooterComponent = useCallback(() => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <Box py={20} alignItems="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [isFetchingNextPage, isDark]);
+
+  // PERFORMANCE FIX: Memoize contentContainerStyle - FeedScreen ile aynı yapı
+  const contentContainerStyle = useMemo(
+    () => ({ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomOffset }),
+    [bottomOffset]
+  );
+
+  // PERFORMANCE FIX: Memoize keyExtractor
+  const keyExtractor = useCallback((item: FeedApiItem) => item.data.id, []);
+
   // Render feed item based on type (similar to FeedScreen)
-  const renderFeedItem = useCallback((item: FeedApiItem) => {
+  // PERFORMANCE FIX: FeedScreen ile aynı yapı - Box wrapper yok, sadece component return
+  const renderFeedItem = useCallback(({ item }: { item: FeedApiItem }) => {
     // Safety check
     if (!item || !item.data || !item.data.id) {
       return null;
@@ -869,67 +903,76 @@ export const PostsScreen = () => {
       case 'experience':
         if ('contextData' in item.data && 'content' in item.data && Array.isArray(item.data.content)) {
           return (
-            <Box px={16} py={8} key={itemId}>
-              <ExperiencePostCard
-                data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
-              />
-            </Box>
+            <ExperiencePostCard
+              key={itemId}
+              data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
+            />
           );
         }
         return null;
       case CardType.POST:
       case 'post':
         return (
-          <Box px={16} py={8} key={itemId}>
-            <PostCard
-              data={mapFeedToCardData(item.data as ProfilePost)}
-              hideProduct={true}
-            />
-          </Box>
+          <PostCard
+            key={itemId}
+            data={mapFeedToCardData(item.data as ProfilePost)}
+            hideProduct={true}
+          />
         );
       case CardType.BENCHMARK:
       case 'benchmark':
         return (
-          <Box px={16} py={8} key={itemId}>
-            <BenchmarkPostCard
-              data={mapBenchmarkToCardData(item.data as BenchmarkApiItem & { type: 'benchmark' })}
-            />
-          </Box>
+          <BenchmarkPostCard
+            key={itemId}
+            data={mapBenchmarkToCardData(item.data as BenchmarkApiItem & { type: 'benchmark' })}
+          />
         );
       case CardType.QUESTION:
       case 'question':
         if ('contextType' in item.data && 'contextData' in item.data && 'isBoosted' in item.data) {
           return (
-            <Box px={16} py={8} key={itemId}>
-              <QuestionPostCard
-                data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
-              />
-            </Box>
+            <QuestionPostCard
+              key={itemId}
+              data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
+            />
           );
         }
         return null;
       case CardType.TIPS_AND_TRICKS:
       case 'tipsAndTricks':
         return (
-          <Box px={16} py={8} key={itemId}>
-            <TipsAndTricksPostCard
-              data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
-            />
-          </Box>
+          <TipsAndTricksPostCard
+            key={itemId}
+            data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
+          />
         );
       case CardType.UPDATE:
       case 'update':
         return (
-          <Box px={16} py={8} key={itemId}>
-            <UpdatePostCard
-              data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
-            />
-          </Box>
+          <UpdatePostCard
+            key={itemId}
+            data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
+          />
         );
       default:
         return null;
     }
   }, [mapFeedToCardData, mapExperienceToCardData, mapBenchmarkToCardData, mapQuestionToCardData, mapTipsToCardData, mapUpdateToCardData]);
+
+  // Pull to refresh handler
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Refetch active query
+      if (activeQuery) {
+        await activeQuery.refetch();
+      }
+    } catch (error) {
+      console.error('[PostsScreen] Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeQuery]);
 
   const handleCreatePress = useCallback(() => {
     // Reset bottom sheet key to remount component and reset view
@@ -1018,24 +1061,33 @@ export const PostsScreen = () => {
         ) : (
           <FlatList
             data={feedItems}
-            renderItem={({ item }) => renderFeedItem(item)}
-            keyExtractor={(item) => item.data.id}
+            renderItem={renderFeedItem}
+            keyExtractor={keyExtractor}
             onEndReached={() => {
               if (hasNextPage && !isFetchingNextPage) {
                 fetchNextPage();
               }
             }}
             onEndReachedThreshold={0.1}
-            ListFooterComponent={() => {
-              if (!isFetchingNextPage) return null;
-              return (
-                <Box py={20} alignItems="center">
-                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                </Box>
-              );
-            }}
-            contentContainerStyle={{ paddingBottom: bottomOffset }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={isDark ? '#FFFFFF' : '#000000'}
+                colors={['#000000']}
+              />
+            }
+            ListFooterComponent={ListFooterComponent}
+            contentContainerStyle={contentContainerStyle}
             showsVerticalScrollIndicator={false}
+            // PERFORMANCE FIX: Optimize initial render
+            initialNumToRender={3}
+            maxToRenderPerBatch={3}
+            windowSize={5}
+            updateCellsBatchingPeriod={50}
+            removeClippedSubviews={true}
+            // PERFORMANCE FIX: extraData ile re-render kontrolü
+            extraData={feedItems.length}
           />
         )}
       </Box>

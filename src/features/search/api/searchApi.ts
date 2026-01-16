@@ -54,18 +54,18 @@ export interface SearchParams {
  * const results = await search({ keyword: 'iPhone', types: ['product', 'brand'], limit: 20 });
  */
 export const search = async (params: SearchParams): Promise<SearchResponse> => {
-  try {
-    const queryParams = new URLSearchParams();
-    queryParams.append('keyword', params.keyword);
-    
-    if (params.types && params.types.length > 0) {
-      queryParams.append('types', params.types.join(','));
-    }
-    
-    if (params.limit !== undefined) {
-      queryParams.append('limit', params.limit.toString());
-    }
+  const queryParams = new URLSearchParams();
+  queryParams.append('keyword', params.keyword);
+  
+  if (params.types && params.types.length > 0) {
+    queryParams.append('types', params.types.join(','));
+  }
+  
+  if (params.limit !== undefined) {
+    queryParams.append('limit', params.limit.toString());
+  }
 
+  try {
     const response = await apiService.getClient().get<SearchResponse>(
       `/search?${queryParams.toString()}`
     );

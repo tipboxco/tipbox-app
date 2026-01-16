@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getNotifications,
   getUnreadCount,
@@ -29,14 +29,35 @@ export const notificationKeys = {
 
 /**
  * Get Notifications Query Hook
+ * Pagination ile tüm bildirimleri çeker
  * 
  * @param enabled - Query'nin aktif olup olmayacağını kontrol eder (default: true)
  *                  Authenticated değilse false olmalı
  */
 export const useNotifications = (params?: GetNotificationsParams, enabled: boolean = true) => {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: notificationKeys.list(params),
-    queryFn: () => getNotifications(params),
+    queryFn: async ({ pageParam = 0 }) => {
+      const response = await getNotifications({
+        ...params,
+        limit: params?.limit || 20,
+        offset: pageParam,
+      });
+      return response;
+    },
+    getNextPageParam: (lastPage) => {
+      // Güvenli kontrol: lastPage undefined veya null olabilir
+      if (!lastPage) {
+        return undefined;
+      }
+      
+      // Pagination varsa ve hasMore true ise bir sonraki offset'i döndür
+      if (lastPage.pagination?.hasMore) {
+        return (lastPage.pagination.offset || 0) + (lastPage.pagination.limit || 20);
+      }
+      return undefined; // Daha fazla sayfa yok
+    },
+    initialPageParam: 0,
     enabled, // Authenticated kontrolü için
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 30 * 1000,  // 30 saniye - cache invalid olana kadar backend'e istek atma (daha kısa süre)

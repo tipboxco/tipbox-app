@@ -3,7 +3,7 @@ import { NotificationItem, NotificationFilter } from './types';
 export const notification_filters: NotificationFilter[] = [
   { id: 'all', label: 'All', isActive: true },
   { id: 'tips', label: 'Tips', isActive: false },
-  { id: 'trust', label: 'Truster', isActive: false },
+  { id: 'truster', label: 'Truster', isActive: false }, // CRITICAL FIX: trust → truster (backend API formatı)
   { id: 'replies', label: 'Replies', isActive: false },
 ];
 

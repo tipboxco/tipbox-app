@@ -35,6 +35,8 @@ export const getNotifications = async (
         type: string;
         title: string;
         message: string;
+        avatar?: string | null; // CRITICAL FIX: avatarUrl → avatar (backend format)
+        imageUrl?: string | null;
         data?: {
           senderId?: string;
           threadId?: string;
@@ -43,8 +45,16 @@ export const getNotifications = async (
           messagePreview?: string;
           userAvatar?: string;
           userName?: string;
+          likerId?: string;
+          likerName?: string;
+          commenterId?: string;
+          commenterName?: string;
           postId?: string;
           commentId?: string;
+          eventId?: string;
+          eventName?: string;
+          amount?: number;
+          rewardAmount?: number;
           [key: string]: any;
         };
         metadata?: {
@@ -76,22 +86,22 @@ export const getNotifications = async (
       params,
     });
     
-    // Response data kontrolü - Backend farklı formatlar döndürebilir
-    // Format 1: { success: boolean, data: Array<...> }
-    // Format 2: Backend direkt array döndürebilir
+    // Response data kontrolü - Backend formatı: { success: boolean, data: Array<...>, pagination: {...} }
     let notificationsArray: any[] = [];
+    let pagination: any = null;
     
     if (response.data) {
-      // Format 1: { success, data: [...] }
+      // Backend formatı: { success, data: [...], pagination: {...} }
       if ((response.data as any).data && Array.isArray((response.data as any).data)) {
         notificationsArray = (response.data as any).data;
+        pagination = (response.data as any).pagination;
       }
-      // Format 2: Backend direkt array döndürüyor
+      // Format 2: Backend direkt array döndürüyor (fallback)
       else if (Array.isArray(response.data)) {
         console.warn('[getNotifications] ⚠️ Backend returned array directly, using it');
         notificationsArray = response.data;
       }
-      // Format 3: Response.data zaten array (nested)
+      // Format 3: Response.data zaten array (nested - fallback)
       else if (Array.isArray((response.data as any))) {
         notificationsArray = response.data as any;
       }
@@ -110,41 +120,34 @@ export const getNotifications = async (
     
     // API response'u type'a map et
     const mappedData = notificationsArray.map((item) => {
-      // Backend'den gelen `data` veya `metadata` field'ını `metadata`'ya map et
-      const rawMetadata = item.metadata || item.data;
-      const metadata = rawMetadata ? {
-        userId: rawMetadata.senderId || rawMetadata.userId,
-        userName: rawMetadata.senderName || rawMetadata.userName,
-        userAvatar: rawMetadata.userAvatar,
-        threadId: rawMetadata.threadId,
-        postId: rawMetadata.postId,
-        commentId: rawMetadata.commentId,
-        eventId: rawMetadata.eventId,
-        eventName: rawMetadata.eventName,
-        rewardAmount: rawMetadata.rewardAmount,
-        ...rawMetadata,
-      } : undefined;
+      // Backend'den gelen `data` objesi (yeni format) veya `metadata` (eski format - backward compatibility)
+      const notificationData = item.data || item.metadata;
       
       // read/isRead field'ını normalize et
       const read = item.read ?? item.isRead ?? false;
       
       return {
         id: item.id,
+        userId: item.userId,
         type: item.type as any,
         title: item.title || '',
         message: item.message || '',
+        avatar: item.avatar || item.avatarUrl || null, // CRITICAL FIX: avatarUrl → avatar (backend format), backward compatibility için avatarUrl de kontrol ediliyor
+        imageUrl: item.imageUrl || null,
         read,
         readAt: item.readAt,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
-        metadata,
-        navigation: item.data?.navigation || item.metadata?.navigation,
+        data: notificationData, // Backend'den gelen data objesini direkt kullan
+        metadata: notificationData, // Backward compatibility için metadata'ya da kopyala
+        navigation: notificationData?.navigation,
       };
     });
     
-    const result = {
+    const result: GetNotificationsResponse = {
       success: (response.data as any)?.success ?? true,
       data: mappedData,
+      pagination: pagination || undefined,
     };
     
     // DEBUG: Mapped data'yı logla
@@ -154,9 +157,14 @@ export const getNotifications = async (
       firstItem: result.data[0] ? {
         id: result.data[0].id,
         type: result.data[0].type,
+        title: result.data[0].title,
         message: result.data[0].message,
+        avatar: result.data[0].avatar || result.data[0].avatarUrl, // CRITICAL FIX: avatarUrl → avatar (backend format), backward compatibility için avatarUrl de kontrol ediliyor
+        imageUrl: result.data[0].imageUrl,
+        data: result.data[0].data,
         read: result.data[0].read,
       } : null,
+      pagination: result.pagination,
     });
     
     return result;

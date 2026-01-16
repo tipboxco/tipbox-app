@@ -20,6 +20,9 @@ import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { profileKeys } from '@/src/features/profile/api/hooks';
+import { invalidateCatalogPosts } from '../api/hooks';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { CustomToast } from '@/src/components/CustomToast';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -336,12 +339,13 @@ export const CreateQuestionPostScreen = () => {
         },
       });
       
-      // Clear flow context on successful submit
-      clearFlow();
+      // Invalidate catalog posts to refresh the feed
+      if (apiContextType && contextId) {
+        invalidateCatalogPosts(queryClient, apiContextType, contextId);
+      }
       
-      // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
+      // Profil verilerini invalidate et - yeni post görünsün
       if (user?.id) {
-        // Profil verilerini invalidate et - yeni post görünsün
         queryClient.invalidateQueries({
           queryKey: profileKeys.userPosts(user.id),
         });
@@ -351,10 +355,70 @@ export const CreateQuestionPostScreen = () => {
         queryClient.invalidateQueries({
           queryKey: profileKeys.userReplies(user.id),
         });
+      }
+      
+      // Save context info before clearing flow
+      const savedContextType = contextType;
+      const savedContextId = contextId;
+      const savedProductInfo = productInfoSnapshot;
+      
+      // Clear flow context on successful submit
+      clearFlow();
+      
+      // Navigate to PostsScreen if context is available
+      // CRITICAL: Clear navigation stack to prevent going back to create post screens
+      if (savedContextType && savedContextId && savedProductInfo) {
+        // Determine stage from contextType
+        let stage: 'SubCategories' | 'ProductGroup' | 'Product' = 'SubCategories';
+        switch (savedContextType) {
+          case ProductInfoType.PRODUCT:
+            stage = 'Product';
+            break;
+          case ProductInfoType.PRODUCT_GROUP:
+            stage = 'ProductGroup';
+            break;
+          case ProductInfoType.SUB_CATEGORY:
+            stage = 'SubCategories';
+            break;
+        }
         
-        // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
-        // Kullanıcı gönderi oluşturduktan sonra CreatePostScreen'e geri dönmemeli
-        // App'in mevcut state'ini koru (hangi tab açıksa o kalır)
+        // Get current navigation state to preserve App state
+        const currentState = navigation.getState();
+        const appRoute = currentState?.routes?.find((route) => route.name === 'App');
+        
+        // Reset navigation stack and navigate to PostsScreen
+        // This clears all create post screens from the stack
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 1,
+            routes: [
+              {
+                name: 'App',
+                state: appRoute?.state,
+              },
+              {
+                name: ROOT_ROUTES.POST as any,
+                state: {
+                  routes: [
+                    {
+                      name: 'PostsScreen' as any,
+                      params: {
+                        stage,
+                        name: savedProductInfo.title,
+                        productInfo: savedProductInfo,
+                        contextType: savedContextType,
+                        contextId: savedContextId,
+                      },
+                    },
+                  ],
+                  index: 0,
+                },
+              },
+            ],
+          })
+        );
+      } else if (user?.id) {
+        // Fallback: ProfileScreen'e yönlendir
         const currentState = navigation.getState();
         const appRoute = currentState?.routes?.find((route) => route.name === 'App');
         
@@ -364,7 +428,7 @@ export const CreateQuestionPostScreen = () => {
             routes: [
               {
                 name: 'App',
-                state: appRoute?.state, // App'in mevcut state'ini koru
+                state: appRoute?.state,
               },
               {
                 name: 'Profile',

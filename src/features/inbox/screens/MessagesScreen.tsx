@@ -16,7 +16,7 @@ import MessageCard from '../components/MessageCard/index';
 import MessagesFilterGroup from '../components/MessagesFilterGroup/index';
 import type { InboxStackParamList } from '../navigation';
 import { useSafeAreaValues } from '@/src/utils';
-import { useMessages, inboxKeys } from '../api/hooks';
+import { useMessages, useMarkThreadAsRead, inboxKeys } from '../api/hooks';
 import type { InboxMessage } from '../types';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -45,6 +45,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();
     const { closeBottomSheet } = useGlobalBottomSheet();
+    const markThreadAsReadMutation = useMarkThreadAsRead();
     
     // Typing state: Hangi thread'de hangi kullanıcı typing yapıyor?
     // Format: { [threadId]: { userId: string, userName?: string } }
@@ -262,10 +263,15 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 // Socket ile bildir
                 markThreadRead(threadId);
             } else {
-                // Socket bağlı değilse API ile bildir (eğer endpoint varsa)
-                // Not: Backend'de thread okundu işaretleme için API endpoint'i olmayabilir
-                // Bu durumda socket bağlantısı kurulduğunda otomatik olarak işaretlenecek
-                console.warn('[MessagesScreen] ⚠️ Socket not connected, thread read status will be updated when socket connects');
+                // Socket bağlı değilse API ile bildir
+                console.log('[MessagesScreen] 📡 Socket not connected, using API to mark thread as read');
+                markThreadAsReadMutation.mutate(threadId, {
+                    onError: (error: Error) => {
+                        console.error('[MessagesScreen] ❌ Failed to mark thread as read via API:', error);
+                        // Hata durumunda optimistic update'i geri al (opsiyonel)
+                        // Şimdilik optimistic update'i bırakıyoruz, backend'den gelen veri ile düzelecek
+                    },
+                });
             }
             
             // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { Box, Text, HStack, Pressable, VStack, IToast } from '@gluestack-ui/themed';
+import { Box, Text, HStack, Pressable, VStack, Toast } from '@gluestack-ui/themed';
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react-native';
 import { Animated } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { IToastProps } from '@gluestack-ui/toast/lib/types';
 
 interface CustomToastProps {
   id: string;
@@ -21,11 +22,21 @@ export interface ShowToastOptions {
 }
 
 /**
+ * useToast hook'unun döndürdüğü tip
+ */
+type ToastInstance = {
+  show: (props: IToastProps) => string;
+  close: (id: string) => void;
+  closeAll: () => void;
+  isActive: (id: string) => boolean;
+};
+
+/**
  * Helper function to show CustomToast
  * Tüm ekranlarda aynı toast yapısını kullanmak için helper fonksiyon
  */
 export const showCustomToast = (
-  toast: IToast,
+  toast: ToastInstance,
   options: ShowToastOptions
 ) => {
   const { title, description, action = 'info', duration = 3000 } = options;
@@ -33,7 +44,7 @@ export const showCustomToast = (
   toast.show({
     placement: 'top',
     duration,
-    render: ({ id }) => {
+    render: ({ id }: { id: string }): React.ReactNode => {
       return (
         <CustomToast
           id={id}
@@ -43,6 +54,7 @@ export const showCustomToast = (
           duration={duration}
           onClose={() => toast.close(id)}
         />
+
       );
     },
   });

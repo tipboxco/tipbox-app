@@ -5,10 +5,18 @@ import { registerRootComponent } from 'expo';
 
 import App from './App';
 
-// Suppress Reanimated warnings from @gorhom/bottom-sheet internal scroll operations
-// These warnings are harmless and occur when bottom sheet tries to scroll before ref is initialized
+// Suppress warnings
 LogBox.ignoreLogs([
+  // Reanimated warnings from @gorhom/bottom-sheet internal scroll operations
+  // These warnings are harmless and occur when bottom sheet tries to scroll before ref is initialized
   '[Reanimated] Tried to dispatch command "scrollTo" with an uninitialized ref',
+  // SafeAreaView deprecated warning - Proje zaten react-native-safe-area-context kullanıyor
+  // Bu uyarı muhtemelen bir third-party dependency'den geliyor
+  'SafeAreaView has been deprecated',
+  // Expo Notifications Expo Go limitation - Development build kullanılıyor, bu uyarı sadece Expo Go için geçerli
+  'expo-notifications: Android Push notifications',
+  'expo-notifications',
+  'functionality is not fully supported in Expo Go',
 ]);
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

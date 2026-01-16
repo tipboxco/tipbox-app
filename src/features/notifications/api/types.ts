@@ -4,15 +4,39 @@
 
 export interface Notification {
   id: string;
+  userId?: string;
   type: NotificationType;
   title: string;
   message: string;
+  avatar?: string | null; // CRITICAL FIX: avatarUrl → avatar (backend format)
+  imageUrl?: string | null;
   read: boolean;
   readAt?: string;
   createdAt: string;
   updatedAt: string;
-  metadata?: NotificationMetadata;
+  data?: NotificationData;
+  metadata?: NotificationMetadata; // Backward compatibility
   navigation?: NotificationNavigation;
+}
+
+export interface NotificationData {
+  postId?: string;
+  commentId?: string;
+  threadId?: string;
+  userId?: string;
+  userName?: string;
+  likerId?: string;
+  likerName?: string;
+  commenterId?: string;
+  commenterName?: string;
+  senderId?: string;
+  senderName?: string;
+  eventId?: string;
+  eventName?: string;
+  messagePreview?: string;
+  amount?: number;
+  rewardAmount?: number;
+  [key: string]: any;
 }
 
 export type NotificationType =
@@ -70,11 +94,17 @@ export type NotificationCategory =
   | 'EVENT'
   | 'SYSTEM';
 
+/**
+ * Backend API Notification Type Filter
+ * Backend'den gelen type parametresi formatı
+ */
+export type NotificationFilterType = 'all' | 'tips' | 'truster' | 'replies';
+
 export interface GetNotificationsParams {
   limit?: number;
   offset?: number;
   unreadOnly?: boolean;
-  type?: NotificationType;
+  type?: NotificationFilterType; // CRITICAL FIX: Backend API formatına göre type parametresi (all, tips, truster, replies)
   category?: NotificationCategory;
   search?: string;
 }
@@ -84,6 +114,12 @@ export interface GetNotificationsResponse {
   data: Notification[];
   total?: number;
   unreadCount?: number;
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }
 
 export interface UnreadCountResponse {

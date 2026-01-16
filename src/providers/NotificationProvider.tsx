@@ -96,6 +96,40 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const { data: unreadCountData, error: unreadCountError } = useUnreadCount(isAuthenticated && isAuthReady);
   const unreadCount = unreadCountData?.data?.count || 0;
   
+  // Store'daki unread count cache'ini API'den gelen değerle sync et
+  // ÖNEMLİ: Sadece store null ise veya çok büyük fark varsa güncelle (optimistic update'i override etme)
+  useEffect(() => {
+    if (unreadCountData?.data?.count !== undefined && isAuthenticated && isAuthReady) {
+      const notificationStore = useNotificationStore.getState();
+      const storeCount = notificationStore.unreadCountCache;
+      const apiCount = unreadCountData.data.count;
+      
+      // Store count null ise API count'u kullan (ilk yükleme)
+      if (storeCount === null) {
+        notificationStore.setUnreadCountCache(apiCount);
+        if (__DEV__) {
+          console.log('[NotificationProvider] 🔄 Initial store unread count from API:', apiCount);
+        }
+      } else {
+        // Store count ile API count arasında çok büyük fark varsa (10'dan fazla) API'yi kullan
+        // Bu durumda muhtemelen başka bir cihazdan bildirim okundu veya sync sorunu var
+        const diff = Math.abs(storeCount - apiCount);
+        if (diff > 10) {
+          notificationStore.setUnreadCountCache(apiCount);
+          if (__DEV__) {
+            console.log('[NotificationProvider] 🔄 Large diff detected, syncing store from API:', {
+              storeCount,
+              apiCount,
+              diff,
+            });
+          }
+        }
+        // Küçük farklar için store count'u koru (optimistic update'i override etme)
+        // Örnek: Store 94, API 93 → Store'u koru (yeni bildirim geldi, henüz API sync olmadı)
+      }
+    }
+  }, [unreadCountData?.data?.count, isAuthenticated, isAuthReady]);
+  
   // Hata durumunda log (ama uygulamayı durdurma)
   // ÖNEMLİ: Sadece authenticated olduğunda hata logla (login ekranında hata göstermemek için)
   if (unreadCountError && isAuthenticated && isAuthReady) {
@@ -265,27 +299,33 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       }
 
-      // Foreground'da local notification göster (sadece gerekirse)
-      if (shouldShowNotification && isForeground && state.permissionStatus === 'granted') {
+      // Foreground'da local notification göster (OS push notification olarak)
+      // Background'da backend'den push notification gelir, burada sadece foreground için local notification gösteriyoruz
+      if (shouldShowNotification && state.permissionStatus === 'granted') {
         try {
+          // Foreground'da OS notification göster (üstten banner olarak)
           await notificationService.sendLocalNotification({
             title: notification.title || 'Yeni Bildirim',
             body: notification.message || '',
             data: {
               notificationId: notification.id,
               type: notification.type,
-              metadata: notification.metadata || {},
+              metadata: notification.metadata || notification.data || {},
               navigation: notification.navigation,
             },
+            // Foreground'da da OS notification göster
+            priority: 'high',
+            sound: true,
+            vibrate: true,
           });
         } catch (error) {
           console.error('[NotificationProvider] ❌ Error sending local notification:', error);
         }
-      } else if (!shouldShowNotification) {
       }
 
       // State Sync: Zustand store'a ekle (instant UI update için)
       // ÖNEMLİ: Bu optimistic update yapıyor, bildirim anında görünecek
+      // addNotification içinde zaten debounce ile invalidateQueries yapılıyor, burada tekrar yapmaya gerek yok
       notificationStateSync.addNotification(notification);
 
       // Domain Service'e yönlendir (EventService → NotificationService)
@@ -303,10 +343,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       );
 
-      // React Query cache'i invalidate et (tüm parametreli query'ler için)
-      // notificationKeys.lists() parametreli query key döndürür, bu yüzden tüm list query'lerini invalidate etmeliyiz
-      queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+      // NOT: React Query cache invalidate işlemi NotificationStateSync.addNotification içinde
+      // debounce ile yapılıyor (500ms). Burada tekrar invalidate etmeye gerek yok çünkü:
+      // 1. Optimistic update zaten yapıldı (store + cache)
+      // 2. Debounce ile API sync yapılacak
+      // 3. Çift invalidate flickering'e neden olur
     };
 
     // Register socket notification listener

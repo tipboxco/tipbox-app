@@ -317,6 +317,16 @@ const HeaderComponent = ({
   const headerBgColor = useMemo(() => backgroundColor || (isDark ? '#000000' : '#FFFFFF'), [backgroundColor, isDark]);
   const headerTextColor = useMemo(() => textColor || (isDark ? '#FFFFFF' : '#000000'), [textColor, isDark]);
 
+  // Truncate title to max 20 characters for header display
+  const truncatedTitle = useMemo(() => {
+    if (!title) return '';
+    const MAX_LENGTH = 20;
+    if (title.length > MAX_LENGTH) {
+      return title.substring(0, MAX_LENGTH).trim() + '...';
+    }
+    return title;
+  }, [title]);
+
   return (
     <VStack>
       <Box
@@ -348,8 +358,10 @@ const HeaderComponent = ({
                   fontSize="$md"
                   fontWeight="$bold"
                   textAlign="center"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
-                  {title}
+                  {truncatedTitle}
                 </Text>
               ) : null}
             </Box>

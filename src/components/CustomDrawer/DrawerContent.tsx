@@ -118,6 +118,22 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const previousAvatarRef = useRef<string | null>(null);
   
   // Avatar değiştiğinde state'i güncelle ve load durumunu resetle
+  // CRITICAL: useMemo ile avatar URI'sini hesapla - sonsuz döngü önleme
+  const computedAvatarUri = useMemo(() => {
+    if (userProfile?.avatar) {
+      const profileAvatar = toImageSource(userProfile.avatar);
+      if (profileAvatar) {
+        return typeof profileAvatar === 'string' ? profileAvatar : (profileAvatar as any)?.uri || null;
+      }
+    } else if (user?.avatar) {
+      const storeAvatar = toImageSource(user.avatar);
+      if (storeAvatar) {
+        return typeof storeAvatar === 'string' ? storeAvatar : (storeAvatar as any)?.uri || null;
+      }
+    }
+    return null;
+  }, [userProfile?.avatar, user?.avatar]);
+  
   useEffect(() => {
     // Yeni avatar source'u hesapla
     let newSource = DEFAULT_USER_AVATAR;
@@ -139,7 +155,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     
     // Eğer avatar source değişmediyse (aynı URI), state'i güncelleme
     // Bu, gereksiz re-render'ları ve avatar'ın gizlenmesini önler
-    if (newSourceUri && previousAvatarRef.current === newSourceUri) {
+    // CRITICAL: computedAvatarUri ile karşılaştır - sonsuz döngü önleme
+    if (newSourceUri && previousAvatarRef.current === newSourceUri && newSourceUri === computedAvatarUri) {
       return; // Avatar değişmedi, state'i güncelleme
     }
     
@@ -180,18 +197,23 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
         avatarLoadTimeoutRef.current = null;
       }
     };
-  }, [userProfile?.avatar, user?.avatar, user?.id]);
+  }, [computedAvatarUri]); // CRITICAL FIX: computedAvatarUri zaten userProfile?.avatar ve user?.avatar'a bağlı, redundant dependency'leri kaldır
   
   // Avatar başarıyla yüklendiğinde
+  // CRITICAL FIX: avatarSource dependency'sini kaldır - sonsuz döngü önleme
+  // avatarSource değiştiğinde callback yeniden oluşturulmamalı, sadece timeout temizlenmeli
   const handleAvatarLoad = useCallback(() => {
     // Timeout'u temizle - görsel başarıyla yüklendi, default avatar'a geçmeye gerek yok
     if (avatarLoadTimeoutRef.current) {
       clearTimeout(avatarLoadTimeoutRef.current);
       avatarLoadTimeoutRef.current = null;
     }
-  }, [user?.id, avatarSource]);
+  }, []); // Empty dependency array - callback stable kalmalı
   
   // Avatar yüklenme hatası durumunda default avatar'a geçiş
+  // CRITICAL FIX: avatarSource dependency'sini kaldır - sonsuz döngü önleme
+  // avatarSource değiştiğinde callback yeniden oluşturulmamalı
+  // setAvatarSource çağrısı zaten state güncellemesi yapıyor, dependency gerekmez
   const handleAvatarError = useCallback(() => {
     setAvatarSource(DEFAULT_USER_AVATAR);
     previousAvatarRef.current = null; // Default avatar'a geçtiğimiz için ref'i temizle
@@ -200,7 +222,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       clearTimeout(avatarLoadTimeoutRef.current);
       avatarLoadTimeoutRef.current = null;
     }
-  }, [user?.id, avatarSource]);
+  }, []); // Empty dependency array - callback stable kalmalı
   
   // Kullanıcı adı - profile'dan gelen name veya fallback
   const displayName = useMemo(() => {
@@ -235,7 +257,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       screen: 'ProfileMain',
       params: { userId: user.id },
     });
-  }, [handleCloseDrawer, user?.id, isOpen]);
+  }, [handleCloseDrawer, user?.id]); // CRITICAL FIX: isOpen dependency'sini kaldır - gereksiz re-render önleme
 
   const handleNavigateToWallet = useCallback(() => {
     handleCloseDrawer();
@@ -281,7 +303,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       screen: 'ProfileMain',
       params: { userId: user.id },
     });
-  }, [handleCloseDrawer, user?.id, isOpen]);
+  }, [handleCloseDrawer, user?.id]); // CRITICAL FIX: isOpen dependency'sini kaldır - gereksiz re-render önleme
 
   // PERFORMANCE FIX: Stats section handler'larını memoize et
   const handlePostsPress = useCallback(() => {

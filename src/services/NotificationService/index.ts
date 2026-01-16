@@ -287,13 +287,28 @@ class NotificationService {
   ): void {
     // Idempotency kontrolü - Aynı bildirimin tekrar işlenmesini önle
     const eventId = notification.id;
-    if (this.isEventProcessed(eventId)) {
-      console.log('[NotificationService] ⏭️ Duplicate notification ignored:', eventId);
+    
+    // Event ID yoksa veya undefined ise, unique bir ID oluştur
+    if (!eventId) {
+      console.warn('[NotificationService] ⚠️ Notification ID is missing, generating unique ID:', {
+        type: notification.type,
+        timestamp: notification.createdAt,
+      });
+      // Unique ID oluştur (timestamp + type + random)
+      const generatedId = `notification-${Date.now()}-${notification.type}-${Math.random().toString(36).substr(2, 9)}`;
+      // Notification objesine ID ekle (mutable ama gerekli)
+      (notification as any).id = generatedId;
+    }
+    
+    const finalEventId = notification.id;
+    
+    if (this.isEventProcessed(finalEventId)) {
+      console.log('[NotificationService] ⏭️ Duplicate notification ignored:', finalEventId);
       return;
     }
 
     // Event'i processed olarak işaretle
-    this.markEventAsProcessed(eventId);
+    this.markEventAsProcessed(finalEventId);
 
     const store = useNotificationStore.getState();
 
@@ -344,17 +359,25 @@ class NotificationService {
     // Burada sadece navigation execute ediyoruz
 
     // Navigation execute
+    // Güvenli kontrol: ROOT_ROUTES ve TAB_ROUTES undefined olabilir
+    if (!ROOT_ROUTES || !TAB_ROUTES) {
+      console.error('[NotificationService] ❌ ROOT_ROUTES or TAB_ROUTES is undefined');
+      return;
+    }
+    
     const rootRouteValues = Object.values(ROOT_ROUTES) as string[];
-    if (rootRouteValues.includes(action.route)) {
+    if (Array.isArray(rootRouteValues) && rootRouteValues.includes(action.route)) {
       navigationService.navigate(action.route as any, action.params);
       console.log('[NotificationService] ✅ Navigated to global screen:', action.route);
     } else {
       const tabRouteValues = Object.values(TAB_ROUTES) as string[];
-      if (tabRouteValues.includes(action.route)) {
+      if (Array.isArray(tabRouteValues) && tabRouteValues.includes(action.route)) {
         const screenName = action.params?.screen || 'FeedScreen';
         const screenParams = action.params?.params || {};
         navigationService.navigateNested(action.route as any, screenName as any, screenParams);
         console.log('[NotificationService] ✅ Navigated to tab screen:', action.route, screenName);
+      } else {
+        console.warn('[NotificationService] ⚠️ Route not found in ROOT_ROUTES or TAB_ROUTES:', action.route);
       }
     }
   }

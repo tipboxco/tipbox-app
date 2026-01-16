@@ -10,7 +10,6 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import {
   getPostTypeFilterOptions,
@@ -44,7 +43,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
     initialFilters?.postType || 'All'
   );
   const [selectedSort, setSelectedSort] = useState<'newest' | 'oldest' | 'popular' | undefined>(
-    initialFilters?.sort
+    initialFilters?.sort || 'newest'
   );
 
   // Get available post types for context
@@ -65,7 +64,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
   // Handle reset
   const handleReset = useCallback(() => {
     setSelectedPostType('All');
-    setSelectedSort(undefined);
+    setSelectedSort('newest');
   }, []);
 
   // Handle done
@@ -78,79 +77,76 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
   }, [selectedPostType, selectedSort, onFilterChange, onClose]);
 
   // Check if any filters are applied
-  const hasFilters = selectedPostType !== 'All' || selectedSort !== undefined;
+  const hasFilters = selectedPostType !== 'All' || selectedSort !== 'newest';
 
   return (
     <BottomSheetScrollView>
-      <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} minHeight={400} width="100%">
-        <VStack px="$4" py="$4" pb="$8" space="lg">
+      <Box bg={isDark ? '$backgroundDark950' : '#FDFDFB'} width="100%">
+        <VStack px="$4" py="$3" pb="$8" space="md">
           {/* Header */}
-          <HStack alignItems="center" space="md" mb="$2">
-            <Pressable onPress={onClose}>
-              <ChevronLeftIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
-            </Pressable>
-            <HStack flex={1} justifyContent="center" alignItems="center">
-              <Text
-                fontSize={16}
-                fontWeight="$bold"
-                color={isDark ? '#FFFFFF' : '#000000'}
-              >
-                Filter / Sort
-              </Text>
-            </HStack>
-            <Box w={24} />
+          <HStack alignItems="center" justifyContent="center" mb="$1">
+            <Text
+              fontSize={16}
+              fontWeight="$bold"
+              color={isDark ? '#FFFFFF' : '#000000'}
+            >
+              Filter / Sort
+            </Text>
           </HStack>
 
           {/* Filter Section */}
-          <VStack space="md">
+          <VStack space="sm">
             <Text
               fontSize={14}
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
-              mb="$2"
+              mb="$1"
             >
               Filter
             </Text>
 
-            <VStack space="sm">
+            <VStack space="xs">
               {postTypeOptions.map((option) => {
                 const isSelected = selectedPostType === option.value;
                 return (
                   <Pressable
                     key={option.value}
                     onPress={() => handlePostTypeSelect(option.value)}
-                    bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-                    borderWidth={1}
-                    borderColor={isSelected ? '#C2E607' : (isDark ? '#444444' : '#E9E9E9')}
-                    rounded={8}
-                    px="$4"
-                    py="$3"
+                    py="$1.5"
                   >
                     <HStack alignItems="center" space="md">
-                      {/* Radio Button */}
-                      <Box
-                        w={20}
-                        h={20}
-                        rounded="$full"
-                        borderWidth={2}
-                        borderColor={isSelected ? '#C2E607' : (isDark ? '#666666' : '#D4D4D4')}
-                        bg={isSelected ? '#C2E607' : 'transparent'}
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        {isSelected && (
+                      {/* Radio Button - Seçili: border siyah, merkez siyah, arası beyaz */}
+                      {isSelected ? (
+                        <Box
+                          w={20}
+                          h={20}
+                          rounded="$full"
+                          borderWidth={2}
+                          borderColor="#000000"
+                          bg="#FFFFFF"
+                          alignItems="center"
+                          justifyContent="center"
+                        >
                           <Box
                             w={8}
                             h={8}
                             rounded="$full"
-                            bg={isDark ? '#000000' : '#000000'}
+                            bg="#000000"
                           />
-                        )}
-                      </Box>
+                        </Box>
+                      ) : (
+                        <Box
+                          w={20}
+                          h={20}
+                          rounded="$full"
+                          borderWidth={2}
+                          borderColor={isDark ? '#666666' : '#D4D4D4'}
+                        />
+                      )}
                       <Text
                         fontSize={14}
-                        fontWeight={isSelected ? '$bold' : '$medium'}
-                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontWeight="$semibold"
+                        color={isSelected ? (isDark ? '#FFFFFF' : '#000000') : (isDark ? '#999999' : '#666666')}
                       >
                         {option.label}
                       </Text>
@@ -162,55 +158,58 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
           </VStack>
 
           {/* Sort Section */}
-          <VStack space="md">
+          <VStack space="sm">
             <Text
               fontSize={14}
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
-              mb="$2"
+              mb="$1"
             >
               Sort
             </Text>
 
-            <VStack space="sm">
+            <VStack space="xs">
               {SORT_OPTIONS.map((option) => {
                 const isSelected = selectedSort === option.value;
                 return (
                   <Pressable
                     key={option.value}
                     onPress={() => handleSortSelect(option.value)}
-                    bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
-                    borderWidth={1}
-                    borderColor={isSelected ? '#C2E607' : (isDark ? '#444444' : '#E9E9E9')}
-                    rounded={8}
-                    px="$4"
-                    py="$3"
+                    py="$1.5"
                   >
                     <HStack alignItems="center" space="md">
-                      {/* Radio Button */}
-                      <Box
-                        w={20}
-                        h={20}
-                        rounded="$full"
-                        borderWidth={2}
-                        borderColor={isSelected ? '#C2E607' : (isDark ? '#666666' : '#D4D4D4')}
-                        bg={isSelected ? '#C2E607' : 'transparent'}
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        {isSelected && (
+                      {/* Radio Button - Seçili: border siyah, merkez siyah, arası beyaz */}
+                      {isSelected ? (
+                        <Box
+                          w={20}
+                          h={20}
+                          rounded="$full"
+                          borderWidth={2}
+                          borderColor="#000000"
+                          bg="#FFFFFF"
+                          alignItems="center"
+                          justifyContent="center"
+                        >
                           <Box
                             w={8}
                             h={8}
                             rounded="$full"
-                            bg={isDark ? '#000000' : '#000000'}
+                            bg="#000000"
                           />
-                        )}
-                      </Box>
+                        </Box>
+                      ) : (
+                        <Box
+                          w={20}
+                          h={20}
+                          rounded="$full"
+                          borderWidth={2}
+                          borderColor={isDark ? '#666666' : '#D4D4D4'}
+                        />
+                      )}
                       <Text
                         fontSize={14}
-                        fontWeight={isSelected ? '$bold' : '$medium'}
-                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontWeight="$semibold"
+                        color={isSelected ? (isDark ? '#FFFFFF' : '#000000') : (isDark ? '#999999' : '#666666')}
                       >
                         {option.label}
                       </Text>
@@ -222,7 +221,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
           </VStack>
 
           {/* Action Buttons */}
-          <HStack space="md" mt="$4">
+          <HStack space="md" mt="$2">
             <Button
               flex={1}
               variant="outline"
@@ -242,7 +241,7 @@ export const FilterSortBottomSheet: React.FC<FilterSortBottomSheetProps> = ({
             </Button>
             <Button
               flex={1}
-              bg="#C2E607"
+              bg="#D8FF08"
               onPress={handleDone}
             >
               <ButtonText

@@ -82,9 +82,17 @@ export const ProductInfoCard = ({
             color={isDark ? '$textDark50' : '#A3A3A3'}
             fontSize={11}
             fontWeight="$bold"
-            numberOfLines={size === 'big' ? 3 : 2}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
-            {cleanNewlines(title)}
+            {(() => {
+              const cleanedTitle = cleanNewlines(title);
+              const MAX_LENGTH = 40;
+              if (cleanedTitle.length > MAX_LENGTH) {
+                return cleanedTitle.substring(0, MAX_LENGTH).trim() + '...';
+              }
+              return cleanedTitle;
+            })()}
           </Text>
           {subName && (
             <Text
@@ -92,8 +100,16 @@ export const ProductInfoCard = ({
               fontSize={11}
               fontWeight="$normal"
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
-              {cleanNewlines(subName)}
+              {(() => {
+                const cleanedSubName = cleanNewlines(subName);
+                const MAX_LENGTH = 40;
+                if (cleanedSubName.length > MAX_LENGTH) {
+                  return cleanedSubName.substring(0, MAX_LENGTH).trim() + '...';
+                }
+                return cleanedSubName;
+              })()}
             </Text>
           )}
           {/* Owned Status */}

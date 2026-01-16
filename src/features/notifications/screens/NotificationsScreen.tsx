@@ -52,6 +52,7 @@ import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/ut
 import {
     useNotifications,
     useMarkNotificationAsRead,
+    useMarkAllNotificationsAsRead,
     useDeleteNotification,
     notificationKeys,
 } from '../api/hooks';
@@ -64,6 +65,7 @@ import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
+import { useNotificationStore } from '@/src/store/notificationStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/src/providers/AuthProvider';
 
@@ -171,22 +173,56 @@ const NotificationCard: React.FC<{
         }
     };
 
-    const userAvatar = notification.metadata?.userAvatar 
-        ? toImageSource(notification.metadata.userAvatar)
+    // Backend formatına göre: avatar direkt olarak geliyor, data objesi içinde ek bilgiler var
+    const userAvatar = notification.avatar 
+        ? toImageSource(notification.avatar)
         : DEFAULT_USER_AVATAR;
-    const userName = notification.metadata?.userName || 'Kullanıcı';
+    
+    // data veya metadata'dan kullanıcı adını al (backward compatibility)
+    const userName = notification.data?.userName || 
+                     notification.data?.likerName || 
+                     notification.data?.commenterName || 
+                     notification.data?.senderName ||
+                     notification.metadata?.userName || 
+                     'Kullanıcı';
+    
     const IconComponent = getIconComponent(notification.type);
     
-    // Metadata'dan ekstra içerikleri al
-    const postContent = notification.metadata?.postContent || notification.metadata?.content;
-    const postTitle = notification.metadata?.postTitle || notification.metadata?.title;
-    const postTag = notification.metadata?.postTag || notification.metadata?.tag;
-    const commentContent = notification.metadata?.commentContent || notification.metadata?.commentText;
-    const tipsAmount = notification.metadata?.amount || notification.metadata?.rewardAmount;
-    const showPostCard = (notification.type === 'POST_LIKED' || notification.type === 'POST_COMMENTED') && (postContent || postTitle);
+    // Backend'den gelen data objesinden veya metadata'dan ekstra içerikleri al (backward compatibility)
+    const data = notification.data || notification.metadata || {};
+    const postId = data.postId;
+    const commentId = data.commentId;
+    const eventId = data.eventId;
+    const eventName = data.eventName;
+    const commentContent = data.messagePreview || data.commentContent || data.commentText;
+    const tipsAmount = data.amount || data.rewardAmount;
+    
+    // imageUrl varsa göster (event veya post görseli için)
+    const showImageUrl = notification.imageUrl;
+    
+    // Post card gösterimi için kontrol
+    const showPostCard = (notification.type === 'POST_LIKED' || 
+                         notification.type === 'POST_COMMENTED' || 
+                         notification.type === 'POST_FAVORITED' || 
+                         notification.type === 'POST_SHARED') && 
+                         (postId || showImageUrl);
+    
+    // Tips badge gösterimi
     const showTipsBadge = (notification.type === 'TIPS_RECEIVED' || notification.type === 'TIPS_SENT') && tipsAmount;
-    const showCommentText = notification.type === 'POST_COMMENTED' && commentContent;
+    
+    // Yorum metni veya mesaj önizlemesi gösterimi
+    const showCommentText = ((notification.type === 'POST_COMMENTED' || 
+                              notification.type === 'COMMENT_REPLIED' || 
+                              notification.type === 'NEW_MESSAGE') && commentContent);
+    
+    // Trust butonu gösterimi
     const showTrustButton = (notification.type === 'NEW_TRUSTER' || notification.type === 'NEW_TRUSTED_BY');
+    
+    // Event bilgisi gösterimi
+    const showEventInfo = (notification.type === 'EVENT_STARTED' || 
+                          notification.type === 'EVENT_ENDING_SOON' || 
+                          notification.type === 'EVENT_REWARD_AVAILABLE') && 
+                          (eventName || showImageUrl);
 
     return (
         <Pressable 
@@ -261,7 +297,7 @@ const NotificationCard: React.FC<{
                 {showTipsBadge && (
                     <Box ml={56} mt="$1">
                         <Box
-                            bg="#FFD700"
+                            bg="#E8FF6B"
                             borderRadius={20}
                             px="$3"
                             py="$1"
@@ -269,8 +305,8 @@ const NotificationCard: React.FC<{
                         >
                             <Text
                                 color="#000000"
-                                fontSize={12}
-                                fontWeight="700"
+                                fontSize="$xs"
+                                fontWeight="$bold"
                             >
                                 +{tipsAmount} TIPS
                             </Text>
@@ -297,64 +333,71 @@ const NotificationCard: React.FC<{
                             borderRadius={8}
                             p="$3"
                         >
-                            <HStack justifyContent="space-between" alignItems="flex-start" mb="$2">
-                                {postTag && (
-                                    <Box
-                                        bg="#A855F7"
-                                        borderRadius={12}
-                                        px="$2"
-                                        py="$1"
-                                    >
-                                        <Text
-                                            color="#FFFFFF"
-                                            fontSize="$xs"
-                                            fontWeight="$semibold"
-                                        >
-                                            {postTag}
-                                        </Text>
-                                    </Box>
-                                )}
-                                {notification.metadata?.postCategory && (
-                                    <HStack alignItems="center" space="xs">
-                                        <Text
-                                            color={isDark ? '#B9B9B9' : '#666666'}
-                                            fontSize="$xs"
-                                            fontWeight="$medium"
-                                        >
-                                            {notification.metadata.postCategory}
-                                        </Text>
-                                        <BookmarkIcon width={14} height={14} color={isDark ? '#B9B9B9' : '#666666'} />
-                                    </HStack>
-                                )}
-                            </HStack>
-                            {postTitle && (
+                            {showImageUrl && (
+                                <Image
+                                    source={toImageSource(notification.imageUrl!)}
+                                    alt="Post image"
+                                    style={{ width: '100%' }}
+                                    height={120}
+                                    borderRadius={8}
+                                    mb="$2"
+                                    resizeMode="cover"
+                                />
+                            )}
+                            <Text
+                                color={isDark ? '#FFFFFF' : '#000000'}
+                                fontSize="$sm"
+                                fontWeight="$bold"
+                            >
+                                {notification.title}
+                            </Text>
+                        </Box>
+                    </Box>
+                )}
+
+                {showEventInfo && (
+                    <Box ml={56} mt="$2" mr="$2">
+                        <Box
+                            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                            borderRadius={8}
+                            p="$3"
+                        >
+                            {showImageUrl && (
+                                <Image
+                                    source={toImageSource(notification.imageUrl!)}
+                                    alt="Event image"
+                                    style={{ width: '100%' }}
+                                    height={120}
+                                    borderRadius={8}
+                                    mb="$2"
+                                    resizeMode="cover"
+                                />
+                            )}
+                            {eventName && (
                                 <Text
                                     color={isDark ? '#FFFFFF' : '#000000'}
                                     fontSize="$sm"
                                     fontWeight="$bold"
-                                    mb="$1"
+                                    
                                 >
-                                    {postTitle}
+                                    {eventName}
                                 </Text>
                             )}
-                            {postContent && (
-                                <Text
-                                    color={isDark ? '#B9B9B9' : '#666666'}
-                                    fontSize="$xs"
-                                    fontWeight="$normal"
-                                    numberOfLines={3}
-                                >
-                                    {postContent}
-                                </Text>
-                            )}
+                            <Text
+                                color={isDark ? '#B9B9B9' : '#666666'}
+                                fontSize="$xs"
+                                fontWeight="$normal"
+                            >
+                                {notification.message}
+                            </Text>
                         </Box>
                     </Box>
                 )}
 
                 {showTrustButton && (
-                    <Box ml={56} mt="$2">
+                    <Box ml={56} mt={-10}>
                         <Pressable
-                            bg="#FFD700"
+                            bg="#E8FF6B"
                             borderRadius={20}
                             px="$4"
                             py="$2"
@@ -392,6 +435,9 @@ const NotificationsScreenComponent: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    
+    // CRITICAL: Mark all as read işleminin sadece bir kez çalışması için ref
+    const hasMarkedAllAsReadRef = useRef(false);
 
     // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
     const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
@@ -402,6 +448,16 @@ const NotificationsScreenComponent: React.FC = () => {
     // API hooks - shouldFetchNotifications tanımı useFocusEffect'ten önce olmalı
     const shouldFetchNotifications = isAuthenticated && isAuthReady;
     const unreadOnly = activeFilter?.id === 'unread';
+    
+    // CRITICAL FIX: Backend API formatına göre type parametresini map et
+    // Backend: type=all, type=tips, type=truster, type=replies
+    const notificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = useMemo(() => {
+      if (!activeFilter || activeFilter.id === 'all' || activeFilter.id === 'unread') {
+        return undefined; // Backend'de type parametresi gönderme (tüm bildirimler)
+      }
+      // Filter ID'leri backend formatına göre map et
+      return activeFilter.id as 'all' | 'tips' | 'truster' | 'replies';
+    }, [activeFilter]);
 
     // Debounce search query for API calls
     useEffect(() => {
@@ -411,43 +467,131 @@ const NotificationsScreenComponent: React.FC = () => {
       return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // API hooks - useNotifications hook'unu useFocusEffect'ten önce çağır
-    const { data: notificationsResponse, isLoading, error, refetch } = useNotifications({
-        limit: 50,
-        offset: 0,
+    // API hooks - useNotifications hook'unu useFocusEffect'ten önce çağır (infinite query)
+    const { 
+        data: notificationsResponse, 
+        isLoading, 
+        error, 
+        refetch,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useNotifications({
+        limit: 20, // Backend default limit
         unreadOnly: unreadOnly,
+        type: notificationType, // CRITICAL FIX: Backend API formatına göre type parametresi
         search: debouncedSearchQuery || undefined,
     }, shouldFetchNotifications); // Sadece authenticated ve auth ready olduğunda query çalışsın
+
+    // Mark all notifications as read mutation
+    const markAllAsReadMutation = useMarkAllNotificationsAsRead();
 
     // DEBUG: API response formatını kontrol et
     useEffect(() => {
         if (notificationsResponse) {
+            const pages = notificationsResponse.pages;
+            const firstPage = pages?.[0];
             console.log('[NotificationsScreen] 📦 API Response:', {
                 hasResponse: !!notificationsResponse,
-                hasData: !!notificationsResponse?.data,
-                dataType: Array.isArray(notificationsResponse?.data) ? 'array' : typeof notificationsResponse?.data,
-                dataLength: Array.isArray(notificationsResponse?.data) ? notificationsResponse.data.length : 'N/A',
-                success: notificationsResponse?.success,
+                hasPages: !!pages,
+                pagesCount: pages?.length || 0,
+                hasData: !!firstPage?.data,
+                dataType: Array.isArray(firstPage?.data) ? 'array' : typeof firstPage?.data,
+                dataLength: Array.isArray(firstPage?.data) ? firstPage.data.length : 'N/A',
+                success: firstPage?.success,
                 fullResponse: notificationsResponse,
             });
         }
     }, [notificationsResponse]);
+
+    // CRITICAL FIX: refetch ve markAllAsReadMutation'ı useRef ile wrap et - stable referans için
+    const refetchRef = useRef(refetch);
+    const markAllAsReadMutationRef = useRef(markAllAsReadMutation);
+    
+    // Ref'leri güncelle
+    useEffect(() => {
+        refetchRef.current = refetch;
+        markAllAsReadMutationRef.current = markAllAsReadMutation;
+    }, [refetch, markAllAsReadMutation]);
+
+    // CRITICAL FIX: Tab değiştiğinde query'yi invalidate et ve refetch et - önceki tab'ın verilerini göstermemek için
+    useEffect(() => {
+        if (shouldFetchNotifications) {
+            // Tab değiştiğinde önceki query'yi invalidate et (cache'den temizle)
+            // Bu sayede yeni tab için doğru veriler çekilir
+            queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+            // Yeni filtreye göre verileri çek
+            refetch();
+        }
+    }, [currentPage, shouldFetchNotifications, refetch, queryClient]);
 
     useFocusEffect(
         useCallback(() => {
             // Ekran focus aldığında drawer gesture'ı disable et
             setGestureEnabled(false);
             
-            // Ekran focus aldığında bildirimleri refetch et (yeni bildirimler için)
-            if (shouldFetchNotifications) {
-                refetch();
+            // Ekran focus aldığında tüm bildirimleri okunmuş olarak işaretle
+            // CRITICAL: Sadece bir kez çalışması için ref kontrolü (sonsuz döngü önleme)
+            if (shouldFetchNotifications && !hasMarkedAllAsReadRef.current) {
+                hasMarkedAllAsReadRef.current = true;
+                
+                // Optimistic update: Unread count'u 0'a düşür (anında görünsün)
+                const notificationStore = useNotificationStore.getState();
+                
+                // Store'daki unread count'u 0'a düşür
+                notificationStore.setUnreadCountCache(0);
+                
+                // React Query cache'deki unread count'u da 0'a düşür
+                queryClient.setQueryData(notificationKeys.unreadCount(), {
+                    success: true,
+                    data: { count: 0 },
+                });
+                
+                // Tüm bildirimleri okunmuş olarak işaretle (optimistic update)
+                const queryCache = queryClient.getQueryCache();
+                const listQueries = queryCache.findAll({ queryKey: notificationKeys.lists() });
+                
+                listQueries.forEach((query) => {
+                    const cachedData = query.state.data as { success: boolean; data: Notification[] } | undefined;
+                    
+                    if (cachedData && Array.isArray(cachedData.data)) {
+                        const updatedData = cachedData.data.map((notification) => ({
+                            ...notification,
+                            read: true,
+                        }));
+                        
+                        queryClient.setQueryData(query.queryKey, {
+                            ...cachedData,
+                            data: updatedData,
+                        });
+                    }
+                });
+                
+                // API'ye istek gönder (background'da)
+                // CRITICAL FIX: ref ile çağır - dependency array'den kaldırıldı
+                markAllAsReadMutationRef.current.mutate(undefined, {
+                    onError: (error) => {
+                        // Hata durumunda cache'i geri yükle (refetch yapacak)
+                        console.warn('[NotificationsScreen] ⚠️ Failed to mark all as read:', error);
+                        queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+                        queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+                    },
+                });
+                
+                // Bildirimleri refetch et (yeni bildirimler için)
+                // CRITICAL FIX: ref ile çağır - dependency array'den kaldırıldı
+                refetchRef.current();
             }
             
             return () => {
                 // Ekran blur olduğunda drawer gesture'ı tekrar enable et
                 setGestureEnabled(true);
+                // CRITICAL: Ref'i resetle - bir sonraki focus'ta tekrar çalışsın
+                hasMarkedAllAsReadRef.current = false;
             };
-        }, [setGestureEnabled, shouldFetchNotifications, refetch])
+        }, [setGestureEnabled, shouldFetchNotifications, queryClient])
+        // CRITICAL FIX: refetch ve markAllAsReadMutation dependency'den kaldırıldı
+        // useRef ile wrap edildi, callback içinde ref.current ile çağrılıyor
     );
     
     // PERFORMANCE FIX: Memoize background colors to prevent re-renders
@@ -458,37 +602,58 @@ const NotificationsScreenComponent: React.FC = () => {
     const progress = useSharedValue(0);
 
     // SAFETY FIX: Ensure notifications is always an array
-    // API response format: { success: boolean, data: Notification[] }
-    // Eğer backend direkt array döndürüyorsa, onu da handle et
+    // Infinite query response format: { pages: Array<{ success, data: Notification[], pagination }>, pageParams }
     const notifications = useMemo(() => {
         if (!notificationsResponse) {
+            console.log('[NotificationsScreen] ⚠️ No notificationsResponse');
             return [];
         }
         
-        // Format 1: { success, data: [...] }
-        if (notificationsResponse.data && Array.isArray(notificationsResponse.data)) {
-            return notificationsResponse.data;
+        // Infinite query format: { pages: [...], pageParams: [...] }
+        // ÖNEMLİ: pages undefined olabilir, bu yüzden güvenli kontrol yap
+        const pages = notificationsResponse.pages;
+        if (pages && Array.isArray(pages) && pages.length > 0) {
+            // Tüm sayfalardaki bildirimleri birleştir
+            // Güvenli kontrol: Her page'in data'sı olmalı ve array olmalı
+            const allNotifications = pages.flatMap((page: any) => {
+                // Page undefined veya null olabilir
+                if (!page) {
+                    return [];
+                }
+                // Page.data undefined veya array değilse boş array döndür
+                if (page.data && Array.isArray(page.data)) {
+                    return page.data;
+                }
+                return [];
+            });
+            
+            console.log('[NotificationsScreen] ✅ Found notifications from infinite query:', {
+                totalPages: pages.length,
+                totalCount: allNotifications.length,
+                hasNextPage: hasNextPage,
+                firstItem: allNotifications[0] ? {
+                    id: allNotifications[0].id,
+                    type: allNotifications[0].type,
+                    title: allNotifications[0].title,
+                } : null,
+            });
+            
+            return allNotifications;
         }
         
-        // Format 2: Backend direkt array döndürüyor olabilir (fallback)
-        if (Array.isArray(notificationsResponse)) {
-            console.warn('[NotificationsScreen] ⚠️ Backend returned array directly, wrapping in response format');
-            return notificationsResponse;
-        }
-        
-        // Format 3: Response'un kendisi array (axios response.data direkt array)
-        if (Array.isArray(notificationsResponse)) {
-            return notificationsResponse;
-        }
+        // Fallback: Eski format (backward compatibility) - InfiniteData'da data property yok
+        // Bu durum zaten yukarıda pages kontrolü ile ele alınıyor
         
         console.warn('[NotificationsScreen] ⚠️ Unexpected response format:', {
             response: notificationsResponse,
             type: typeof notificationsResponse,
             isArray: Array.isArray(notificationsResponse),
+            hasPages: !!(notificationsResponse as any)?.pages,
+            hasData: !!(notificationsResponse as any)?.data,
         });
         
         return [];
-    }, [notificationsResponse]);
+    }, [notificationsResponse, hasNextPage]);
     
     // Tab press handler - PagerView native animasyonu ile geçiş
     const handleTabPress = useCallback((index: number) => {
@@ -515,11 +680,12 @@ const NotificationsScreenComponent: React.FC = () => {
         [progress]
     );
 
-    const handleRefresh = async () => {
+    // CRITICAL FIX: handleRefresh'i useCallback ile memoize et - sonsuz döngü önleme
+    const handleRefresh = useCallback(async () => {
         setRefreshing(true);
         await refetch();
         setRefreshing(false);
-    };
+    }, [refetch]); // refetch React Query'den geldiği için genellikle stable, ama dependency'de tutuyoruz
 
     /**
      * Notification'a tıklandığında navigation action'ı al
@@ -597,6 +763,7 @@ const NotificationsScreenComponent: React.FC = () => {
     }, [queryClient]);
 
     // Get filtered notifications for a specific filter
+    // CRITICAL FIX: Backend filtering yapıldığı için client-side filtering sadece fallback olarak kullanılıyor
     const getFilteredNotificationsForFilter = useCallback((filter: NotificationFilter): Notification[] => {
         // SAFETY FIX: Ensure notifications is always an array before filtering
         if (!Array.isArray(notifications)) {
@@ -604,31 +771,13 @@ const NotificationsScreenComponent: React.FC = () => {
             return [];
         }
 
+        // Backend'den zaten filtrelenmiş data geldiği için direkt kullan
+        // Sadece search query için client-side filtering yap
         let filtered = notifications;
 
-        if (filter.id !== 'all' && filter.id !== 'unread') {
-            filtered = notifications.filter(notification => {
-                // SAFETY FIX: Ensure notification is valid
-                if (!notification || typeof notification !== 'object') {
-                    return false;
-                }
-                
-                switch (filter.id) {
-                    case 'replies':
-                        return notification.type === 'POST_COMMENTED' || 
-                               notification.type === 'COMMENT_REPLIED' ||
-                               notification.type === 'COMMENT_LIKED';
-                    case 'trust':
-                        return notification.type === 'NEW_TRUSTER' || 
-                               notification.type === 'NEW_TRUSTED_BY';
-                    case 'tips':
-                        return notification.type === 'TIPS_RECEIVED' || 
-                               notification.type === 'TIPS_SENT';
-                    default:
-                        return true;
-                }
-            });
-        }
+        // CRITICAL FIX: Backend filtering yapıldığı için type-based filtering kaldırıldı
+        // Backend'den gelen data zaten filtrelenmiş (type parametresi ile)
+        // Sadece search query için client-side filtering yapılıyor
 
         if (searchQuery && Array.isArray(filtered)) {
             filtered = filtered.filter(notification => {
@@ -639,7 +788,12 @@ const NotificationsScreenComponent: React.FC = () => {
                 
                 const message = notification.message?.toLowerCase() || '';
                 const title = notification.title?.toLowerCase() || '';
-                const userName = notification.metadata?.userName?.toLowerCase() || '';
+                // Backend formatına göre: userName data veya metadata içinde olabilir
+                const userName = (notification.data?.userName || 
+                                 notification.data?.likerName || 
+                                 notification.data?.commenterName || 
+                                 notification.data?.senderName ||
+                                 notification.metadata?.userName || '').toLowerCase();
                 const query = searchQuery.toLowerCase();
                 
                 return message.includes(query) || 
@@ -809,10 +963,40 @@ const NotificationsScreenComponent: React.FC = () => {
                         tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
                     />
                 }
+                onEndReached={() => {
+                    // Daha fazla sayfa varsa yükle
+                    if (hasNextPage && !isFetchingNextPage) {
+                        fetchNextPage();
+                    }
+                }}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={
+                    isFetchingNextPage ? (
+                        <Box py="$4" alignItems="center">
+                            <Spinner size="small" />
+                        </Box>
+                    ) : null
+                }
                 style={{ flex: 1 }}
             />
         );
-    }, [isLoading, notifications.length, error, searchQuery, isDark, renderNotificationItem, keyExtractor, refreshing, handleRefresh, refetch, filters, getFilteredNotificationsForFilter]);
+    }, [
+        isLoading, 
+        notifications.length, 
+        error, 
+        searchQuery, 
+        isDark, 
+        renderNotificationItem, 
+        keyExtractor, 
+        refreshing, 
+        handleRefresh, 
+        filters, 
+        getFilteredNotificationsForFilter, 
+        hasNextPage, 
+        isFetchingNextPage, 
+        fetchNextPage
+    ]);
+    // CRITICAL FIX: refetch dependency'den kaldırıldı - handleRefresh zaten refetch'i kullanıyor
 
     return (
         <SafeAreaView edges={['top']} style={{ flex: 1 }}>

@@ -15,6 +15,7 @@ import type { Notification } from '@/src/features/notifications/api/types';
 class NotificationStateSync {
   private queryClient: QueryClient | null = null;
   private syncInterval: NodeJS.Timeout | null = null;
+  private invalidateTimeout: NodeJS.Timeout | null = null;
 
   /**
    * Initialize state sync
@@ -38,7 +39,8 @@ class NotificationStateSync {
     const store = useNotificationStore.getState();
     const realtimeNotifications = store.getRealtimeNotificationsArray();
 
-    if (realtimeNotifications.length === 0) {
+    // CRITICAL FIX: Güvenli array kontrolü - undefined/null durumunda hata önleme
+    if (!Array.isArray(realtimeNotifications) || realtimeNotifications.length === 0) {
       return;
     }
 
@@ -89,11 +91,21 @@ class NotificationStateSync {
     }
 
     // Unread count'u güncelle
-    const unreadCount = mergedNotifications.filter((n) => !n.read).length;
+    // CRITICAL FIX: Güvenli array kontrolü - undefined durumunda hata önleme
+    const unreadCount = Array.isArray(mergedNotifications) 
+      ? mergedNotifications.filter((n) => !n.read).length 
+      : 0;
     this.queryClient.setQueryData(notificationKeys.unreadCount(), {
       success: true,
       data: { count: unreadCount },
     });
+    
+    // Store'daki count'u da güncelle (sync için)
+    // Not: store zaten 39. satırda tanımlanmış, tekrar tanımlamaya gerek yok
+    if (store.unreadCountCache === null || Math.abs(store.unreadCountCache - unreadCount) > 1) {
+      // Store count null ise veya büyük fark varsa güncelle
+      store.setUnreadCountCache(unreadCount);
+    }
 
       return mergedNotifications;
   }
@@ -147,26 +159,62 @@ class NotificationStateSync {
         }
       });
       
-      // Unread count'u increment et (optimistic)
-      store.incrementUnreadCount();
+      // Unread count'u increment et (optimistic) - ÖNCE store'da
+      // ÖNEMLİ: Sadece okunmamış bildirimler için count'u artır
+      if (!notification.read) {
+        store.incrementUnreadCount();
+      }
       
-      // Unread count query'sini güncelle
+      // Store'dan güncel count'u al (increment'ten sonra)
+      const storeCount = store.unreadCountCache;
+      
+      // Unread count query'sini güncelle (optimistic)
+      // ÖNEMLİ: Store'dan gelen count'u kullan (daha güvenilir - realtime update için)
       const unreadCountData = this.queryClient.getQueryData<{ success: boolean; data: { count: number } }>(
         notificationKeys.unreadCount()
       );
       
-      if (unreadCountData) {
-        const currentCount = unreadCountData.data?.count || 0;
-        this.queryClient.setQueryData(notificationKeys.unreadCount(), {
-          ...unreadCountData,
-          data: { count: currentCount + 1 },
+      // Store count varsa onu kullan (realtime update için öncelikli)
+      // Yoksa cache'den al ve +1 yap (sadece okunmamış bildirimler için)
+      let newCount: number;
+      if (storeCount !== null) {
+        // Store count varsa onu kullan (realtime update - socket ile gelen bildirim için)
+        newCount = storeCount;
+      } else {
+        // Store count yoksa cache'den al ve +1 yap (sadece okunmamış bildirimler için)
+        const currentCacheCount = unreadCountData?.data?.count || 0;
+        newCount = notification.read ? currentCacheCount : currentCacheCount + 1;
+      }
+      
+      // Cache'i güncelle (store count'u kullan - realtime update için)
+      this.queryClient.setQueryData(notificationKeys.unreadCount(), {
+        success: true,
+        data: { count: newCount },
+      });
+      
+      // Debug log (sadece development'ta)
+      if (__DEV__) {
+        console.log('[NotificationStateSync] 📊 Unread count updated:', {
+          storeCount,
+          cacheCount: unreadCountData?.data?.count,
+          newCount,
+          notificationId: notification.id,
         });
       }
       
       // Background'da API'den gerçek data'yı getir (sync için)
-      // Invalidate et ki API'den fresh data gelsin
-      this.queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-      this.queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+      // Debounce: Birden fazla notification geldiğinde tek bir invalidate yap
+      // Bu flickering'i önler (optimistic update → API response → tekrar optimistic update döngüsü)
+      if (this.invalidateTimeout) {
+        clearTimeout(this.invalidateTimeout);
+      }
+      
+      this.invalidateTimeout = setTimeout(() => {
+        // Sadece bir kez invalidate et (debounce)
+        this.queryClient?.invalidateQueries({ queryKey: notificationKeys.lists() });
+        this.queryClient?.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+        this.invalidateTimeout = null;
+      }, 500); // 500ms debounce - birden fazla notification geldiğinde tek bir API call
     }
   }
 
@@ -221,6 +269,11 @@ class NotificationStateSync {
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
+    }
+    
+    if (this.invalidateTimeout) {
+      clearTimeout(this.invalidateTimeout);
+      this.invalidateTimeout = null;
     }
     
     this.queryClient = null;

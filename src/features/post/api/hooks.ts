@@ -27,6 +27,7 @@ import type {
 import { feedKeys } from '@/src/features/feed/api/hooks';
 import { eventsKeys } from '@/src/features/events/api/hooks';
 import { profileKeys } from '@/src/features/profile/api/hooks';
+import { catalogKeys } from '@/src/features/catalog/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 
 /**
@@ -72,6 +73,40 @@ const invalidateContextFeed = (
   queryClient.invalidateQueries({ 
     queryKey: feedKeys.feed(undefined, undefined, contextType, contextId) 
   });
+};
+
+/**
+ * Helper function to invalidate catalog posts queries
+ * Catalog posts (subCategoryPosts, productGroupPosts, catalogProductPosts) için invalidate eder
+ */
+export const invalidateCatalogPosts = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  contextType: ApiContextType,
+  contextId: string
+) => {
+  switch (contextType) {
+    case 'product':
+      // Invalidate catalog product posts
+      queryClient.invalidateQueries({ 
+        queryKey: catalogKeys.catalogProductPosts(contextId),
+        exact: false
+      });
+      break;
+    case 'product_group':
+      // Invalidate product group posts
+      queryClient.invalidateQueries({ 
+        queryKey: catalogKeys.productGroupPosts(contextId),
+        exact: false
+      });
+      break;
+    case 'sub_category':
+      // Invalidate sub category posts
+      queryClient.invalidateQueries({ 
+        queryKey: catalogKeys.subCategoryPosts(contextId),
+        exact: false
+      });
+      break;
+  }
 };
 
 /**

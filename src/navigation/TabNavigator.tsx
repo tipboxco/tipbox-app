@@ -10,6 +10,7 @@ import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/no
 import { useMessages } from '@/src/features/inbox/api/hooks';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useAppStore } from '@/src/store/appStore';
+import { useNotificationStore } from '@/src/store/notificationStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { getHeavyTabFreezeRule } from './rules/freezeRules';
@@ -64,7 +65,27 @@ export const TabNavigator = () => {
   // Sadece authenticated ve auth ready ise çalıştır
   const shouldFetchNotifications = isAuthenticated && isAuthReady;
   const { data: unreadCountData } = useUnreadCount(shouldFetchNotifications);
-  const unreadCount = useMemo(() => unreadCountData?.data?.count || 0, [unreadCountData?.data?.count]);
+  
+  // Zustand store'dan optimistic count'u al (realtime update için)
+  const storeUnreadCount = useNotificationStore((state) => state.unreadCountCache);
+  
+  // ÖNEMLİ: Store count ile API count'u karşılaştır, daha büyük olanı kullan
+  // Bu sayede hem optimistic update hem de API sync doğru çalışır
+  const unreadCount = useMemo(() => {
+    const apiCount = unreadCountData?.data?.count || 0;
+    
+    // Store count null ise API count'u kullan
+    if (storeUnreadCount === null) {
+      return apiCount;
+    }
+    
+    // Store count ile API count'u karşılaştır, daha büyük olanı kullan
+    // Bu sayede:
+    // - Yeni bildirim geldiğinde store count daha büyük olur (optimistic update)
+    // - API sync olduğunda API count daha büyük olabilir (başka cihazdan bildirim)
+    // - Her iki durumda da doğru count gösterilir
+    return Math.max(storeUnreadCount, apiCount);
+  }, [storeUnreadCount, unreadCountData?.data?.count]);
   
   // PERFORMANCE FIX: Unread messages - inbox badge için
   // Sadece authenticated ve auth ready ise çalıştır

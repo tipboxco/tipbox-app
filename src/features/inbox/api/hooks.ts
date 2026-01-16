@@ -11,6 +11,7 @@ import {
   cancelSupportRequest,
   closeSupportRequest,
   reportSupportRequest,
+  markThreadAsRead,
   type GetMessagesParams,
 } from './messagesApi';
 import type { InboxMessage } from '../types';
@@ -311,6 +312,41 @@ export const useReportSupportRequest = () => {
     onSuccess: () => {
       // Support request listesini invalidate et
       queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Mark Thread As Read mutation hook
+ * Thread'deki tüm mesajları okundu olarak işaretler
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const markReadMutation = useMarkThreadAsRead();
+ * markReadMutation.mutate('thread-123');
+ */
+export const useMarkThreadAsRead = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: markThreadAsRead,
+    onSuccess: (_, threadId) => {
+      // Optimistic update: Local state'te thread'i okundu olarak işaretle
+      queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map((msg) => 
+          msg.id === threadId 
+            ? { ...msg, isUnread: false, unreadCount: 0 }
+            : msg
+        );
+      });
+      
+      // Thread mesajlarını da invalidate et (eğer cache'de varsa)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(threadId) });
+      
+      // Mesaj listesini invalidate et (backend'den güncel veri gelsin)
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     },
   });

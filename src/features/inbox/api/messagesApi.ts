@@ -451,6 +451,28 @@ export const reportSupportRequest = async (requestId: string, data: ReportSuppor
 };
 
 /**
+ * Mark Thread As Read endpoint
+ * Thread'deki tüm mesajları okundu olarak işaretler
+ * 
+ * @param threadId - Thread ID
+ * @returns Promise<void> - 200 OK
+ */
+export const markThreadAsRead = async (threadId: string): Promise<void> => {
+  try {
+    await apiService.getClient().post(`/messages/threads/${threadId}/read`);
+  } catch (error: any) {
+    // 404 hatası: Thread read endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      console.warn('[markThreadAsRead] Thread read endpoint not found (404). Backend may not have implemented this endpoint yet.');
+      // 404 hatasını sessizce yut (socket ile işaretleme yapılabilir)
+      return;
+    }
+    // Diğer hataları olduğu gibi fırlat
+    throw error;
+  }
+};
+
+/**
  * Message Feed Response Item
  */
 export interface MessageFeedItem {
