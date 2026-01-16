@@ -357,11 +357,20 @@ export const getNewsDetail = async (
  * - Alt product group'ların gönderileri
  * - Alt product'ların gönderileri (sadece Free, Tips, Question)
  * 
- * Otomatik Post Type Filtreleme:
- * - Experience, Update, Benchmark otomatik olarak filtrelenir
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - free: Sadece Free gönderiler
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * - questions: Sadece Question gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
  * 
  * @param subCategoryId - Sub category ID'si
- * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param filter - Post filter (all | free | tips_and_tricks | questions) - opsiyonel, default: all
+ * @param sort - Sort order (newest | oldest | most_popular) - opsiyonel, default: newest
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns FeedApiResponse - Feed items ve pagination bilgisi
@@ -370,13 +379,17 @@ export const getNewsDetail = async (
  */
 export const getSubCategoryPosts = async (
   subCategoryId: string,
-  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  filter?: 'all' | 'free' | 'tips_and_tricks' | 'questions',
+  sort?: 'newest' | 'oldest' | 'most_popular',
   cursor?: string,
   limit: number = 20
 ): Promise<FeedApiResponse> => {
   const params = new URLSearchParams();
-  if (type) {
-    params.append('type', type);
+  if (filter && filter !== 'all') {
+    params.append('filter', filter);
+  }
+  if (sort && sort !== 'newest') {
+    params.append('sort', sort);
   }
   if (cursor) {
     params.append('cursor', cursor);
@@ -418,11 +431,20 @@ export const getSubCategoryPosts = async (
  * - Product group'a ait gönderiler
  * - Alt product'ların gönderileri (sadece Free, Tips, Question)
  * 
- * Otomatik Post Type Filtreleme:
- * - Experience, Update, Benchmark otomatik olarak filtrelenir
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - free: Sadece Free gönderiler
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * - questions: Sadece Question gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
  * 
  * @param productGroupId - Product group ID'si
- * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param filter - Post filter (all | free | tips_and_tricks | questions) - opsiyonel, default: all
+ * @param sort - Sort order (newest | oldest | most_popular) - opsiyonel, default: newest
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns FeedApiResponse - Feed items ve pagination bilgisi
@@ -431,13 +453,17 @@ export const getSubCategoryPosts = async (
  */
 export const getProductGroupPosts = async (
   productGroupId: string,
-  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  filter?: 'all' | 'free' | 'tips_and_tricks' | 'questions',
+  sort?: 'newest' | 'oldest' | 'most_popular',
   cursor?: string,
   limit: number = 20
 ): Promise<FeedApiResponse> => {
   const params = new URLSearchParams();
-  if (type) {
-    params.append('type', type);
+  if (filter && filter !== 'all') {
+    params.append('filter', filter);
+  }
+  if (sort && sort !== 'newest') {
+    params.append('sort', sort);
   }
   if (cursor) {
     params.append('cursor', cursor);
@@ -475,12 +501,23 @@ export const getProductGroupPosts = async (
  * Get Product Posts endpoint function (Catalog API)
  * /catalog/products/:productId/posts endpoint'inden product postlarını getirir
  * 
- * Post Type Filtreleme:
- * - Tüm post tipleri gösterilir (filtreleme yok)
- * - type parametresi ile manuel filtreleme yapılabilir
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - free: Sadece Free gönderiler
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * - questions: Sadece Question gönderileri
+ * - updates: Sadece Update gönderileri
+ * - benchmarks: Sadece Benchmark gönderileri
+ * - reviews: Sadece Experience (Review) gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
  * 
  * @param productId - Product ID'si
- * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param filter - Post filter (all | free | tips_and_tricks | questions | updates | benchmarks | reviews) - opsiyonel, default: all
+ * @param sort - Sort order (newest | oldest | most_popular) - opsiyonel, default: newest
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns FeedApiResponse - Feed items ve pagination bilgisi
@@ -492,13 +529,17 @@ export const getProductGroupPosts = async (
  */
 export const getCatalogProductPosts = async (
   productId: string,
-  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  filter?: 'all' | 'free' | 'tips_and_tricks' | 'questions' | 'updates' | 'benchmarks' | 'reviews',
+  sort?: 'newest' | 'oldest' | 'most_popular',
   cursor?: string,
   limit: number = 20
 ): Promise<FeedApiResponse> => {
   const params = new URLSearchParams();
-  if (type) {
-    params.append('type', type);
+  if (filter && filter !== 'all') {
+    params.append('filter', filter);
+  }
+  if (sort && sort !== 'newest') {
+    params.append('sort', sort);
   }
   if (cursor) {
     params.append('cursor', cursor);

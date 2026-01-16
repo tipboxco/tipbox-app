@@ -22,7 +22,6 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { useCatalogUIStore } from '@/src/features/catalog/store/catalogUIStore';
 import { useBottomOffset, toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useFeed, useFeedFiltered } from '@/src/features/feed/api/hooks';
 import { useSubCategoryPosts, useProductGroupPosts, useCatalogProductPosts } from '@/src/features/catalog/api/hooks';
 import { mapProductInfoTypeToContextType } from '../types';
 import type { FeedApiItem } from '@/src/features/feed/api/feedApi';
@@ -40,8 +39,7 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 import { FeedSkeleton } from '@/src/components/Skeletons';
 import { CardType } from '@/src/types/common';
 import { FilterSortBottomSheet, type FilterSortState } from '../components/FilterSortBottomSheet';
-import { mapPostTypeToTag, mapPostTypeToCatalogType, mapSortToBackend } from '../utils/postTypeMapping';
-import type { FeedFilterParams } from '@/src/features/feed/api/feedApi';
+import { mapPostTypeToFilter } from '../utils/postTypeMapping';
 
 type PostsScreenRouteProp = RouteProp<PostStackParamList, 'PostsScreen'>;
 type PostsScreenNavigationProp = NativeStackNavigationProp<PostStackParamList>;
@@ -127,46 +125,38 @@ export const PostsScreen = () => {
 
   // Determine which API to use based on context type
   // Use catalog posts endpoints for better hierarchical feed support
+  // Map frontend post type to backend filter parameter
+  const backendFilter = filters.postType && filters.postType !== 'All' 
+    ? mapPostTypeToFilter(filters.postType, feedContextType || 'sub_category')
+    : 'all';
+  
+  // Map frontend sort to backend sort parameter
+  const backendSort = filters.sort || 'newest';
+
   const subCategoryPostsQuery = useSubCategoryPosts(
     feedContextType === 'sub_category' ? feedContextId : undefined,
-    filters.postType ? mapPostTypeToCatalogType(filters.postType) : undefined,
+    backendFilter !== 'all' ? backendFilter : undefined,
+    backendSort !== 'newest' ? backendSort : undefined,
     20
   );
 
   const productGroupPostsQuery = useProductGroupPosts(
     feedContextType === 'product_group' ? feedContextId : undefined,
-    filters.postType ? mapPostTypeToCatalogType(filters.postType) : undefined,
+    backendFilter !== 'all' ? backendFilter : undefined,
+    backendSort !== 'newest' ? backendSort : undefined,
     20
   );
 
   const catalogProductPostsQuery = useCatalogProductPosts(
     feedContextType === 'product' ? feedContextId : undefined,
-    filters.postType ? mapPostTypeToCatalogType(filters.postType) : undefined,
+    backendFilter !== 'all' ? backendFilter : undefined,
+    backendSort !== 'newest' ? backendSort : undefined,
     20
   );
 
-  // Use filtered feed if filters are applied, otherwise use catalog posts endpoints
-  const hasFilters = filters.postType !== undefined && filters.postType !== 'All' || filters.sort !== undefined;
-  
-  const filteredFeedQuery = useFeedFiltered(
-    20,
-    hasFilters ? {
-      tags: filters.postType && filters.postType !== 'All' 
-        ? [mapPostTypeToTag(filters.postType)].filter((tag): tag is string => !!tag)
-        : undefined,
-      sort: filters.sort ? mapSortToBackend(filters.sort) : undefined,
-    } as FeedFilterParams : undefined,
-    feedContextType,
-    feedContextId,
-    hasFilters // Only enable if filters are applied
-  );
-
   // Select the appropriate query based on context type
+  // Catalog posts endpoints now support filter and sort parameters directly
   const activeQuery = useMemo(() => {
-    if (hasFilters && feedContextType) {
-      return filteredFeedQuery;
-    }
-    
     switch (feedContextType) {
       case 'sub_category':
         return subCategoryPostsQuery;
@@ -179,11 +169,9 @@ export const PostsScreen = () => {
     }
   }, [
     feedContextType,
-    hasFilters,
     subCategoryPostsQuery,
     productGroupPostsQuery,
     catalogProductPostsQuery,
-    filteredFeedQuery,
   ]);
 
   // Extract data from active query

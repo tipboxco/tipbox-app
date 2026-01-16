@@ -34,12 +34,12 @@ export const catalogKeys = {
     [...catalogKeys.all, 'productNews', productId, cursor, limit] as const,
   newsDetail: (newsId: string) => [...catalogKeys.all, 'newsDetail', newsId] as const,
   // Catalog Posts endpoints
-  subCategoryPosts: (subCategoryId: string, type?: string, cursor?: string, limit?: number) =>
-    [...catalogKeys.all, 'subCategoryPosts', subCategoryId, type, cursor, limit] as const,
-  productGroupPosts: (productGroupId: string, type?: string, cursor?: string, limit?: number) =>
-    [...catalogKeys.all, 'productGroupPosts', productGroupId, type, cursor, limit] as const,
-  catalogProductPosts: (productId: string, type?: string, cursor?: string, limit?: number) =>
-    [...catalogKeys.all, 'catalogProductPosts', productId, type, cursor, limit] as const,
+  subCategoryPosts: (subCategoryId: string, filter?: string, sort?: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'subCategoryPosts', subCategoryId, filter, sort, cursor, limit] as const,
+  productGroupPosts: (productGroupId: string, filter?: string, sort?: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'productGroupPosts', productGroupId, filter, sort, cursor, limit] as const,
+  catalogProductPosts: (productId: string, filter?: string, sort?: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'catalogProductPosts', productId, filter, sort, cursor, limit] as const,
 };
 
 /**
@@ -666,30 +666,40 @@ export const useBrandStats = (brandId: string | undefined) => {
  * - Alt product group'ların gönderileri
  * - Alt product'ların gönderileri (sadece Free, Tips, Question)
  * 
- * Otomatik Post Type Filtreleme:
- * - Experience, Update, Benchmark otomatik olarak filtrelenir
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - free: Sadece Free gönderiler
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * - questions: Sadece Question gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
  *
  * @param subCategoryId - Sub category ID'si
- * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param filter - Post filter (all | free | tips_and_tricks | questions) - opsiyonel, default: all
+ * @param sort - Sort order (newest | oldest | most_popular) - opsiyonel, default: newest
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSubCategoryPosts('sub-category-123', 'tips');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSubCategoryPosts('sub-category-123', 'tips_and_tricks', 'newest');
  */
 export const useSubCategoryPosts = (
   subCategoryId: string | undefined,
-  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  filter?: 'all' | 'free' | 'tips_and_tricks' | 'questions',
+  sort?: 'newest' | 'oldest' | 'most_popular',
   limit: number = 20
 ) => {
   return useInfiniteQuery({
-    queryKey: subCategoryId ? catalogKeys.subCategoryPosts(subCategoryId, type, undefined, limit) : ['catalog', 'subCategoryPosts', 'disabled'],
+    queryKey: subCategoryId ? catalogKeys.subCategoryPosts(subCategoryId, filter, sort, undefined, limit) : ['catalog', 'subCategoryPosts', 'disabled'],
     queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
       if (!subCategoryId) {
         throw new Error('SubCategory ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getSubCategoryPosts(subCategoryId, type, cursor, limit);
+      return getSubCategoryPosts(subCategoryId, filter, sort, cursor, limit);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -728,30 +738,40 @@ export const useSubCategoryPosts = (
  * - Product group'a ait gönderiler
  * - Alt product'ların gönderileri (sadece Free, Tips, Question)
  * 
- * Otomatik Post Type Filtreleme:
- * - Experience, Update, Benchmark otomatik olarak filtrelenir
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - free: Sadece Free gönderiler
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * - questions: Sadece Question gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
  *
  * @param productGroupId - Product group ID'si
- * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param filter - Post filter (all | free | tips_and_tricks | questions) - opsiyonel, default: all
+ * @param sort - Sort order (newest | oldest | most_popular) - opsiyonel, default: newest
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductGroupPosts('product-group-123', 'tips');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductGroupPosts('product-group-123', 'tips_and_tricks', 'newest');
  */
 export const useProductGroupPosts = (
   productGroupId: string | undefined,
-  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  filter?: 'all' | 'free' | 'tips_and_tricks' | 'questions',
+  sort?: 'newest' | 'oldest' | 'most_popular',
   limit: number = 20
 ) => {
   return useInfiniteQuery({
-    queryKey: productGroupId ? catalogKeys.productGroupPosts(productGroupId, type, undefined, limit) : ['catalog', 'productGroupPosts', 'disabled'],
+    queryKey: productGroupId ? catalogKeys.productGroupPosts(productGroupId, filter, sort, undefined, limit) : ['catalog', 'productGroupPosts', 'disabled'],
     queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
       if (!productGroupId) {
         throw new Error('ProductGroup ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getProductGroupPosts(productGroupId, type, cursor, limit);
+      return getProductGroupPosts(productGroupId, filter, sort, cursor, limit);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -786,31 +806,43 @@ export const useProductGroupPosts = (
  * Get Catalog Product Posts infinite query hook
  * /catalog/products/:productId/posts endpoint'inden product postlarını infinite scroll ile getirir
  * 
- * Post Type Filtreleme:
- * - Tüm post tipleri gösterilir (filtreleme yok)
- * - type parametresi ile manuel filtreleme yapılabilir
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - free: Sadece Free gönderiler
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * - questions: Sadece Question gönderileri
+ * - updates: Sadece Update gönderileri
+ * - benchmarks: Sadece Benchmark gönderileri
+ * - reviews: Sadece Experience (Review) gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
  *
  * @param productId - Product ID'si
- * @param type - Post type (tips, experience, comments, benchmark) - opsiyonel
+ * @param filter - Post filter (all | free | tips_and_tricks | questions | updates | benchmarks | reviews) - opsiyonel, default: all
+ * @param sort - Sort order (newest | oldest | most_popular) - opsiyonel, default: newest
  * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCatalogProductPosts('product-123', 'experience');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCatalogProductPosts('product-123', 'reviews', 'newest');
  */
 export const useCatalogProductPosts = (
   productId: string | undefined,
-  type?: 'tips' | 'experience' | 'comments' | 'benchmark',
+  filter?: 'all' | 'free' | 'tips_and_tricks' | 'questions' | 'updates' | 'benchmarks' | 'reviews',
+  sort?: 'newest' | 'oldest' | 'most_popular',
   limit: number = 20
 ) => {
   return useInfiniteQuery({
-    queryKey: productId ? catalogKeys.catalogProductPosts(productId, type, undefined, limit) : ['catalog', 'catalogProductPosts', 'disabled'],
+    queryKey: productId ? catalogKeys.catalogProductPosts(productId, filter, sort, undefined, limit) : ['catalog', 'catalogProductPosts', 'disabled'],
     queryFn: ({ pageParam }: { pageParam: string | undefined }) => {
       if (!productId) {
         throw new Error('Product ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getCatalogProductPosts(productId, type, cursor, limit);
+      return getCatalogProductPosts(productId, filter, sort, cursor, limit);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

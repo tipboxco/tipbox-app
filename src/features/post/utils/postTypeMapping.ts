@@ -42,8 +42,91 @@ export const mapTagToPostType = (tag: string): string => {
 };
 
 /**
- * Frontend Post Type → Backend `type` Parametresi Mapping
- * Catalog posts endpoint'lerinde kullanılan `type` parametresine çevirir
+ * Frontend Post Type → Backend Filter Parametresi Mapping
+ * Catalog posts endpoint'lerinde kullanılan `filter` parametresine çevirir
+ * 
+ * Backend filter değerleri:
+ * - all | free | tips_and_tricks | questions | updates | benchmarks | reviews
+ */
+export const mapPostTypeToFilter = (
+  postType: string,
+  contextType: 'sub_category' | 'product_group' | 'product'
+): 'all' | 'free' | 'tips_and_tricks' | 'questions' | 'updates' | 'benchmarks' | 'reviews' | undefined => {
+  const mapping: Record<string, 'all' | 'free' | 'tips_and_tricks' | 'questions' | 'updates' | 'benchmarks' | 'reviews' | undefined> = {
+    'All': 'all',
+    'Generals': 'free', // Free posts
+    'Tips & Tricks': 'tips_and_tricks',
+    'Questions': 'questions',
+    'Updates': 'updates',
+    'Benchmarks': 'benchmarks',
+    'Reviews': 'reviews', // Experience posts
+  };
+  
+  const filter = mapping[postType];
+  
+  // Context seviyesine göre filtre kontrolü
+  if (contextType === 'sub_category' || contextType === 'product_group') {
+    // Sub category ve product group'da sadece all, free, tips_and_tricks, questions
+    if (filter && !['all', 'free', 'tips_and_tricks', 'questions'].includes(filter)) {
+      return 'all'; // Geçersiz filter için default
+    }
+  }
+  
+  return filter;
+};
+
+/**
+ * Backend Filter → Frontend Post Type Mapping
+ * Backend'den gelen filter değerini frontend post type'ına çevirir
+ */
+export const mapFilterToPostType = (filter: string): string => {
+  const mapping: Record<string, string> = {
+    'all': 'All',
+    'free': 'Generals',
+    'tips_and_tricks': 'Tips & Tricks',
+    'questions': 'Questions',
+    'updates': 'Updates',
+    'benchmarks': 'Benchmarks',
+    'reviews': 'Reviews',
+  };
+  
+  return mapping[filter] || 'All';
+};
+
+/**
+ * Frontend Sort → Backend Sort Mapping
+ * Filter/Sort bottom sheet'te kullanılan sort değerlerini backend sort değerlerine çevirir
+ * 
+ * Backend sort değerleri: newest | oldest | most_popular
+ */
+export const mapSortToBackend = (sort: 'newest' | 'oldest' | 'popular'): 'newest' | 'oldest' | 'most_popular' => {
+  const mapping: Record<string, 'newest' | 'oldest' | 'most_popular'> = {
+    'newest': 'newest',
+    'oldest': 'oldest',
+    'popular': 'most_popular',
+  };
+  
+  return mapping[sort] || 'newest';
+};
+
+/**
+ * Backend Sort → Frontend Sort Mapping
+ * Backend'den gelen sort değerlerini frontend sort değerlerine çevirir
+ */
+export const mapSortFromBackend = (sort: string): 'newest' | 'oldest' | 'popular' => {
+  const mapping: Record<string, 'newest' | 'oldest' | 'popular'> = {
+    'newest': 'newest',
+    'oldest': 'oldest',
+    'most_popular': 'popular',
+  };
+  
+  return mapping[sort] || 'newest';
+};
+
+/**
+ * Frontend Post Type → Backend `type` Parametresi Mapping (DEPRECATED)
+ * Eski API için geriye dönük uyumluluk - artık filter kullanılıyor
+ * @deprecated Use mapPostTypeToFilter instead
  */
 export const mapPostTypeToCatalogType = (postType: string): 'tips' | 'experience' | 'comments' | 'benchmark' | undefined => {
   const mapping: Record<string, 'tips' | 'experience' | 'comments' | 'benchmark' | undefined> = {
@@ -94,32 +177,6 @@ export const getAllowedPostTypesForContext = (
   }
 };
 
-/**
- * Frontend Sort → Backend Sort Mapping
- * Filter/Sort bottom sheet'te kullanılan sort değerlerini backend sort değerlerine çevirir
- */
-export const mapSortToBackend = (sort: 'newest' | 'oldest' | 'popular'): 'recent' | 'top' => {
-  const mapping: Record<string, 'recent' | 'top'> = {
-    'newest': 'recent',
-    'oldest': 'recent', // Backend'de oldest için ayrı bir sort yok, recent kullanılır
-    'popular': 'top',
-  };
-  
-  return mapping[sort] || 'recent';
-};
-
-/**
- * Backend Sort → Frontend Sort Mapping
- * Backend'den gelen sort değerlerini frontend sort değerlerine çevirir
- */
-export const mapSortFromBackend = (sort: 'recent' | 'top'): 'newest' | 'oldest' | 'popular' => {
-  const mapping: Record<string, 'newest' | 'oldest' | 'popular'> = {
-    'recent': 'newest',
-    'top': 'popular',
-  };
-  
-  return mapping[sort] || 'newest';
-};
 
 /**
  * Post Type Filter Options
