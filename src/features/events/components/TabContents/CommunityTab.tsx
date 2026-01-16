@@ -8,11 +8,12 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import EventCard from '@/src/components/EventCard';
-import { useActiveEvents, useUpcomingEvents } from '../../api/hooks';
+import { useActiveEvents, useUpcomingEvents, eventsKeys } from '../../api/hooks';
 import type { EventApiItem, UpcomingEventApiItem } from '@/src/types/EventCard';
 import type { EventCardData, UpcomingEventCardData } from '@/src/types/EventCard';
 import { useSafeAreaValues } from '@/src/utils';
 import { EventSkeleton } from '@/src/components/Skeletons';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { width } = Dimensions.get('window');
 // EventCard genişliği: Daha kompakt, peek effect daha belirgin
@@ -76,6 +77,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
+  const queryClient = useQueryClient();
   
   // Current scroll position for pagination dots
   const [currentActiveIndex, setCurrentActiveIndex] = useState(0);
@@ -89,7 +91,6 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     isFetchingNextPage: isFetchingNextActivePage,
     isLoading: isActiveEventsLoading,
     error: activeEventsError,
-    refetch: refetchActiveEvents, // Pull-to-refresh için
     isRefetching: isRefetchingActiveEvents, // Refresh durumu
   } = useActiveEvents(20);
 
@@ -101,7 +102,6 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     isFetchingNextPage: isFetchingNextUpcomingPage,
     isLoading: isUpcomingEventsLoading,
     error: upcomingEventsError,
-    refetch: refetchUpcomingEvents, // Pull-to-refresh için
     isRefetching: isRefetchingUpcomingEvents, // Refresh durumu
   } = useUpcomingEvents(4);
 
@@ -185,18 +185,24 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     }, 1000);
   }, [fetchNextUpcomingPageOriginal, hasNextUpcomingPage, isFetchingNextUpcomingPage, upcomingEvents.length]);
 
-  // Pull-to-Refresh handler - Smart refresh pattern
-  // Cache'den anında göster, arka planda fresh data fetch et
+  // Pull-to-Refresh handler - Cache'i invalidate et, fresh data fetch et
+  // CRITICAL: Cache'i bypass ederek her zaman fresh data getir
   const isRefetching = isRefetchingActiveEvents || isRefetchingUpcomingEvents;
   const handleRefresh = useCallback(async () => {
-    // Cache'den göster (zaten gösteriliyor - React Query otomatik yapıyor)
-    // Arka planda fresh data fetch et
+    // Cache'i invalidate et ve fresh data fetch et (cache bypass)
     await Promise.all([
-      refetchActiveEvents(),    // Active events refresh
-      refetchUpcomingEvents(),  // Upcoming events refresh
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.active(),
+        refetchType: 'active',
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.upcoming(),
+        refetchType: 'active',
+      }),
     ]);
-    // Fresh data geldiğinde React Query otomatik UI'ı günceller
-  }, [refetchActiveEvents, refetchUpcomingEvents]);
+    // React Query otomatik olarak invalidate edilmiş query'leri refetch eder
+    // UI otomatik güncellenir
+  }, [queryClient]);
 
   // Upcoming Events için scroll handler - nested scroll durumunda onEndReached düzgün çalışmayabilir
   const handleUpcomingEventsScroll = useCallback(

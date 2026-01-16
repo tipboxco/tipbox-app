@@ -3,6 +3,7 @@ import { TouchableOpacity } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
+import { Check } from 'lucide-react-native';
 
 interface BadgeCardProps {
   data: SeeAllReward;
@@ -12,6 +13,12 @@ interface BadgeCardProps {
 export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+
+  // Progress percentage hesapla (current target'ı geçebilir, max %100)
+  const progressPercentage = Math.min(
+    ((data.completed || 0) / (data.task || 1)) * 100,
+    100
+  );
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
@@ -29,6 +36,24 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
         shadowOpacity={0.25}
         shadowRadius={3}
       >
+        {/* Completed Badge Tik İşareti - Sağ Üst */}
+        {data.isUnlocked && (
+          <Box
+            position="absolute"
+            top={8}
+            right={8}
+            bg="#0C7A24"
+            borderRadius={20}
+            width={28}
+            height={28}
+            alignItems="center"
+            justifyContent="center"
+            zIndex={10}
+          >
+            <Check size={18} color="#FFFFFF" strokeWidth={3} />
+          </Box>
+        )}
+
         <Image
           source={data.image || require('@/assets/defaultImages/default-badge.png')}
           alt={data.title}
@@ -77,7 +102,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ data, onPress }) => {
               overflow="hidden"
             >
               <Box
-                w={`${((data.completed || 0) / (data.task || 1)) * 100}%`}
+                w={`${progressPercentage}%`}
                 h="100%"
                 bg={data.isUnlocked ? '#0C7A24' : '#686868'}
               />

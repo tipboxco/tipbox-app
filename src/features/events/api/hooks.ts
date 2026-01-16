@@ -4,7 +4,8 @@ import {
   getUpcomingEvents, 
   getEventDetail, 
   getEventPosts, 
-  getEventBadges, 
+  getEventBadges,
+  getEventBadgeDetail,
   getLimitedEvent, 
   getAchievements, 
   createEventPost, 
@@ -19,6 +20,7 @@ import {
   addEventPostComment,
   getEventPostComments,
   deleteEventPostComment,
+  createEventPostWithContext,
   type CreateEventPostRequest, 
   type CreateEventPostResponse, 
   type EventBadgesResponse, 
@@ -30,9 +32,11 @@ import {
   type ToggleLikeResponse,
   type CommentResponse,
   type CommentsResponse,
+  type CreateEventPostWithContextRequest,
+  type CreateEventPostWithContextResponse,
 } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgesApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgeDetailResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 import { feedKeys } from '@/src/features/feed/api/hooks';
 
@@ -56,6 +60,9 @@ export const eventsKeys = {
     [...eventsKeys.all, 'posts', 'comments', eventId, postId, cursor, limit] as const,
   badges: (eventId: string, cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'badges', eventId, cursor, limit] as const,
+  // YENİ: Badge detail için key
+  badgeDetail: (eventId: string, badgeId: string) =>
+    [...eventsKeys.all, 'badges', 'detail', eventId, badgeId] as const,
   limited: () => [...eventsKeys.all, 'limited'] as const,
   achievements: (cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'achievements', cursor, limit] as const,
@@ -229,6 +236,33 @@ export const useEventBadges = (eventId: string, limit: number = 20) => {
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
+    retry: 1,
+  });
+};
+
+/**
+ * Get Event Badge Detail query hook
+ * Belirli bir event badge'inin detaylarını ve kullanıcının o badge'deki ilerlemesini getirir
+ * 
+ * Screen-based caching: Badge detail modal açılışında anında veri göster
+ *
+ * @param eventId - Event ID
+ * @param badgeId - Badge ID
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useEventBadgeDetail('eventId123', 'badgeId456');
+ */
+export const useEventBadgeDetail = (eventId: string, badgeId: string) => {
+  return useQuery<EventBadgeDetailResponse, Error>({
+    queryKey: eventsKeys.badgeDetail(eventId, badgeId),
+    queryFn: () => getEventBadgeDetail(eventId, badgeId),
+    enabled: !!eventId && !!badgeId, // Her iki ID de varsa query çalışır
+    // Screen-based caching: Badge detail modal açılışında anında veri göster
+    staleTime: 5 * 60 * 1000,  // 5 dakika - Badge progress güncel olmalı
+    gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
+    refetchOnMount: false,     // Cache varsa kullan
+    refetchOnWindowFocus: false, // Modal açılışında refetch yapma
     retry: 1,
   });
 };
@@ -683,37 +717,32 @@ export const useDeleteEventPostComment = () => {
 };
 
 /**
- * Create Event Free Post mutation hook
- * Event içerisinde free post oluşturmak için mutation hook
- * POST /events/{eventId}/posts endpoint'ine istek gönderir
- * 
- * Payload yapısı:
- * - eventId: string (URL'de, zorunlu)
- * - productId: string (body'de, zorunlu)
- * - title: string (body'de, zorunlu)
- * - content: string (body'de, zorunlu)
- * - isOwned?: boolean (body'de, opsiyonel)
- * - iTried?: boolean (body'de, opsiyonel)
+ * Create Event Post with Context mutation hook (YENİ)
+ * /posts/{eventId}/post endpoint'ine POST request göndererek event post oluşturur
+ * Bu hook contextType ve contextId ile post oluşturur (multipart/form-data)
  *
- * @param eventId - Event ID
- * @returns React Query mutation hook result
+ * @returns React Query mutation hook
  *
  * @example
- * const createPost = useCreateEventFreePost('event-123');
- * createPost.mutate({
- *   productId: 'product-456',
- *   title: 'Post Title',
- *   content: 'Post content',
- *   isOwned: true,
- *   iTried: false
+ * const createPost = useCreateEventPostWithContext();
+ * createPost.mutate({ 
+ *   eventId: 'event-123', 
+ *   body: 'Content', 
+ *   contextType: 'product', 
+ *   contextId: 'prod-456',
+ *   images: ['uri1', 'uri2']
  * });
  */
-export const useCreateEventFreePost = (eventId: string) => {
+export const useCreateEventPostWithContext = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<CreateEventPostResponseNew, Error, CreateEventFreePostRequest>({
-    mutationFn: (data) => createEventFreePost(eventId, data),
-    onSuccess: () => {
+  return useMutation<
+    CreateEventPostWithContextResponse, 
+    Error, 
+    { eventId: string } & CreateEventPostWithContextRequest
+  >({
+    mutationFn: ({ eventId, ...data }) => createEventPostWithContext(eventId, data),
+    onSuccess: (_, { eventId }) => {
       // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
       queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
       // 2. Event detail'i invalidate et (post sayısı değişebilir)

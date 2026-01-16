@@ -1,29 +1,98 @@
 import React from 'react';
 import { VStack, HStack, Text, Image, Box, Pressable } from '@gluestack-ui/themed';
 import { X } from 'lucide-react-native';
+import { ActivityIndicator } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
+import { useEventBadgeDetail } from '../../api/hooks';
+import { toImageSource } from '@/src/utils';
 
 interface BadgeBottomSheetProps {
   data: SeeAllReward;
   onClose: () => void;
   hideFollowLadder?: boolean; // Eğer true ise "Follow Ladder" butonu gösterilmez (completed badge'ler için)
+  eventId: string;
+  badgeId?: string;
 }
 
-const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, onClose, hideFollowLadder = false }) => {
+const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ 
+  data, 
+  onClose, 
+  hideFollowLadder = false,
+  eventId,
+  badgeId,
+}) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
+  // API'den badge detail verisini al
+  const { 
+    data: badgeDetailData, 
+    isLoading, 
+    error 
+  } = useEventBadgeDetail(
+    eventId, 
+    badgeId || data?.id || ''
+  );
+
+  // API verisi kullanılabilirse onu kullan, yoksa props'tan gelen data'yı kullan (fallback)
+  const displayData = badgeDetailData || data;
+
   // Progress percentage hesapla
-  const progressPercentage = data.task && data.task > 0 
-    ? ((data.completed || 0) / data.task) * 100 
-    : 0;
-  const isCompleted = data.isUnlocked || progressPercentage >= 100;
+  const progressPercentage = badgeDetailData
+    ? badgeDetailData.userProgress.progressPercentage
+    : (data.task && data.task > 0 
+        ? ((data.completed || 0) / data.task) * 100 
+        : 0);
+  
+  const isCompleted = badgeDetailData
+    ? badgeDetailData.userProgress.isCompleted
+    : (data.isUnlocked || progressPercentage >= 100);
 
   // Açıklama metni oluştur
-  const descriptionText = data.task && data.task > 0 && !isCompleted
-    ? `"${data.title}" rozetini kazanmak için en az ${data.task} gönderi paylaşmalısın.`
-    : data.description || '';
+  const descriptionText = badgeDetailData
+    ? badgeDetailData.description
+    : (data.task && data.task > 0 && !isCompleted
+        ? `"${data.title}" rozetini kazanmak için en az ${data.task} gönderi paylaşmalısın.`
+        : data.description || '');
+
+  // Badge image source
+  const imageSource = badgeDetailData?.imageUrl
+    ? toImageSource(badgeDetailData.imageUrl)
+    : (data.image || require('@/assets/defaultImages/default-badge.png'));
+
+  // Progress değerleri
+  const currentProgress = badgeDetailData
+    ? badgeDetailData.userProgress.current
+    : (data.completed || 0);
+  
+  const targetProgress = badgeDetailData
+    ? badgeDetailData.userProgress.target
+    : (data.task || 1);
+
+  if (isLoading) {
+    return (
+      <VStack space="lg" p="$6" minHeight={500} alignItems="center" justifyContent="center">
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+        <Text mt="$4" fontSize={14} color="$textLight500" $dark-color="$textDark400">
+          Loading badge details...
+        </Text>
+      </VStack>
+    );
+  }
+
+  if (error) {
+    return (
+      <VStack space="lg" p="$6" minHeight={500} alignItems="center" justifyContent="center">
+        <Text fontSize={14} color="$error500" textAlign="center">
+          Badge detayları yüklenirken bir hata oluştu
+        </Text>
+        <Pressable mt="$4" onPress={onClose} bg="#C2E607" borderRadius={12} h={52} px="$6">
+          <Text color="#000000" fontWeight="$bold">Kapat</Text>
+        </Pressable>
+      </VStack>
+    );
+  }
 
   return (
     <VStack space="lg" p="$6" minHeight={500}>
@@ -45,7 +114,7 @@ const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, on
             color={isDark ? '#FFFFFF' : '#000000'}
             textAlign="center"
           >
-            {data.title}
+            {badgeDetailData?.title || data.title}
           </Text>
         </Box>
         
@@ -76,8 +145,8 @@ const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, on
         mb="$6"
       >
         <Image
-          source={data.image || require('@/assets/defaultImages/default-badge.png')}
-          alt={data.title}
+          source={imageSource}
+          alt={badgeDetailData?.title || data.title}
           style={{
             width: 250,
             height: 250,
@@ -107,7 +176,16 @@ const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, on
           textAlign="center"
           fontWeight="$normal"
         >
-          {`${data.completed || 0}/${data.task || 1}`}
+          {isCompleted && badgeDetailData?.userProgress.completedAt
+            ? `Completed - ${new Date(badgeDetailData.userProgress.completedAt).toLocaleDateString('tr-TR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}`
+            : isCompleted
+              ? 'Completed'
+              : `${currentProgress}/${targetProgress}`
+          }
         </Text>
       </VStack>
 
@@ -162,10 +240,8 @@ const BadgeBottomSheet: React.FC<BadgeBottomSheetProps> = React.memo(({ data, on
   // Prevents unnecessary re-renders that slow down modal opening
   return (
     prevProps.data?.id === nextProps.data?.id &&
-    prevProps.data?.title === nextProps.data?.title &&
-    prevProps.data?.completed === nextProps.data?.completed &&
-    prevProps.data?.task === nextProps.data?.task &&
-    prevProps.data?.isUnlocked === nextProps.data?.isUnlocked &&
+    prevProps.badgeId === nextProps.badgeId &&
+    prevProps.eventId === nextProps.eventId &&
     prevProps.hideFollowLadder === nextProps.hideFollowLadder
   );
 });

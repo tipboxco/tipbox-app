@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Platform, FlatList, ActivityIndicator, Share, Dimensions, ScrollView, Animated } from 'react-native';
+import { Platform, FlatList, ActivityIndicator, Share, Dimensions, ScrollView, Animated, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
@@ -22,6 +22,8 @@ import type { EventStackParamList } from '../EventNavigator';
 import { navigationService } from '@/src/services/NavigationService';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { Header } from '@/src/components/Header';
+import { useQueryClient } from '@tanstack/react-query';
+import { eventsKeys } from '../api/hooks';
 import {
   ChevronLeftIcon,
   ArrowTopRightOnSquareIcon,
@@ -69,6 +71,7 @@ const EventDetailScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<EventDetailScreenNavigationProp>();
     const route = useRoute<EventDetailScreenRouteProp>();
+    const queryClient = useQueryClient();
 
     // EventDetailScreen artık sadece EventNavigator'dan çağrılır
     const eventId = route.params?.eventId;
@@ -112,6 +115,8 @@ const EventDetailScreen: React.FC = () => {
         isFetchingNextPage: isFetchingNextPostsPage,
         isLoading: isPostsLoading,
         error: postsError,
+        refetch: refetchPosts, // Pull-to-refresh için
+        isRefetching: isRefetchingPosts, // Refresh durumu
     } = useEventPosts(eventId, 20);
     
     // Join/Leave Event mutations
@@ -656,9 +661,10 @@ const EventDetailScreen: React.FC = () => {
 
     // Handle badge press - open modal
     const handleBadgePress = useCallback((reward: EventDetailReward) => {
-        const badgeData = mapRewardToSeeAllReward(reward);
-        setSelectedBadge(badgeData);
-    }, [mapRewardToSeeAllReward]);
+        // Badge'e tıklandığında RewardsBadgesScreen'e yönlendir (aynı stack içinde)
+        // RewardsBadgesScreen artık EventNavigator stack'inde, direkt navigate edebiliriz
+        navigation.navigate('RewardsBadgesScreen', { eventId: eventId });
+    }, [eventId, navigation]);
 
     // Handle modal close
     const handleCloseModal = useCallback(() => {
@@ -732,6 +738,19 @@ const EventDetailScreen: React.FC = () => {
         { useNativeDriver: true }
     );
 
+    // Pull-to-Refresh handler - Event Feed'i cache'siz fresh data ile yenile
+    const isRefreshing = isRefetchingPosts;
+    const handleRefresh = useCallback(async () => {
+        // CRITICAL: Cache'i invalidate et, ardından fresh data fetch et (cache bypass)
+        // Bu sayede pull-to-refresh yapıldığında her zaman fresh data gelir
+        await queryClient.invalidateQueries({ 
+            queryKey: eventsKeys.posts(eventId),
+            refetchType: 'active', // Sadece aktif query'leri refetch et
+        });
+        // React Query otomatik olarak invalidate edilmiş query'leri refetch eder
+        // UI otomatik güncellenir
+    }, [queryClient, eventId]);
+
     // Loading state
     if (isLoading) {
         return (
@@ -788,6 +807,15 @@ const EventDetailScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+                        // iOS için progressViewOffset ekle (banner altından başlaması için)
+                        progressViewOffset={Platform.OS === 'ios' ? 0 : undefined}
+                    />
+                }
                 onMomentumScrollEnd={(event) => {
                     // Infinite scroll için scroll pozisyonunu kontrol et
                     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
@@ -1011,10 +1039,9 @@ const EventDetailScreen: React.FC = () => {
                             {/* See All Button */}
                             {event.rewards && event.rewards.length > 0 && (
                                 <Pressable onPress={() => {
-                                    // Profile → Collections ekranına yönlendir (AchievementBadgesTab burada)
-                                    navigationService.navigate('Profile', {
-                                        screen: 'Collections',
-                                    });
+                                    // RewardsBadgesScreen'e yönlendir - aynı stack içinde
+                                    // RewardsBadgesScreen artık EventNavigator stack'inde
+                                    navigation.navigate('RewardsBadgesScreen', { eventId: eventId });
                                 }}>
                                     <Text
                                         color={isDark ? '#FFFFFF' : '#000000'}
@@ -1279,6 +1306,8 @@ const EventDetailScreen: React.FC = () => {
                         <BadgeBottomSheet
                             data={selectedBadge}
                             onClose={handleCloseModal}
+                            eventId={eventId}
+                            badgeId={selectedBadge?.id}
                         />
                     </ModalContent>
                 ) : null}

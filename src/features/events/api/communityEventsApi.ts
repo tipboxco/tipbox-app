@@ -1,6 +1,6 @@
 import { apiService } from '../../../services/ApiService';
 import type { EventApiItem, EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
-import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgesApiResponse } from '../types';
+import type { EventDetailApiResponse, LimitedEventApiResponse, AchievementsApiResponse, EventBadgesApiResponse, EventBadgeDetailResponse } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
 /**
@@ -291,8 +291,21 @@ export const getEventPosts = async (
 export interface EventBadge {
   id: string;
   title: string;
-  image: string;
   description: string;
+  imageUrl: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  category: string;
+  
+  userProgress: {
+    current: number;
+    target: number;
+    isCompleted: boolean;
+    completedAt?: string;
+    progressPercentage: number;
+  };
+  
+  eventId: string;
+  createdAt: string;
 }
 
 export interface EventBadgesResponse {
@@ -837,7 +850,7 @@ export const getEventBadges = async (
   eventId: string,
   cursor?: string,
   limit: number = 20
-): Promise<EventBadgesApiResponse> => {
+): Promise<EventBadgesResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
@@ -845,7 +858,7 @@ export const getEventBadges = async (
   params.append('limit', limit.toString());
 
   try {
-    const response = await apiService.getClient().get<EventBadgesApiResponse>(
+    const response = await apiService.getClient().get<EventBadgesResponse>(
       `/events/${eventId}/badges?${params.toString()}`
     );
     return response.data;
@@ -857,6 +870,163 @@ export const getEventBadges = async (
       data: error.response?.data,
       message: error.message,
     });
+    throw error;
+  }
+};
+
+/**
+ * Get Event Badge Detail endpoint function
+ * Belirli bir event badge'inin detaylarını ve kullanıcının o badge'deki ilerlemesini getirir
+ *
+ * @param eventId - Event ID
+ * @param badgeId - Badge ID
+ * @returns EventBadgeDetailResponse - Badge detay ve ilerleme bilgisi
+ */
+export const getEventBadgeDetail = async (
+  eventId: string,
+  badgeId: string
+): Promise<EventBadgeDetailResponse> => {
+  try {
+    const response = await apiService.getClient().get<EventBadgeDetailResponse>(
+      `/events/${eventId}/badges/${badgeId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getEventBadgeDetail] API Error:', {
+      url: `/events/${eventId}/badges/${badgeId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Create Event Post with Context (YENİ)
+ * /posts/{eventId}/post endpoint'ine POST request göndererek event post oluşturur
+ * Bu endpoint multipart/form-data kullanır ve contextType/contextId ile post oluşturur
+ *
+ * @param eventId - Event ID
+ * @param data - { body, contextType, contextId, images? }
+ * @returns CreateEventPostWithContextResponse
+ */
+export interface CreateEventPostWithContextRequest {
+  body: string; // Content (max 2000 char)
+  inventoryId: string; // ✅ Sadece inventory ID - Backend her şeyi halleder
+  images?: string[]; // Opsiyonel: Array of image URIs
+}
+
+export interface CreateEventPostWithContextResponse {
+  id: string;
+  message: string;
+}
+
+export const createEventPostWithContext = async (
+  eventId: string,
+  data: CreateEventPostWithContextRequest
+): Promise<CreateEventPostWithContextResponse> => {
+  const client = apiService.getClient();
+  
+  // FormData oluştur (multipart/form-data için)
+  const formData = new FormData();
+  formData.append('body', data.body);
+  formData.append('inventoryId', data.inventoryId);
+  
+  // Request bilgilerini JSON formatında log'la
+  const requestJson = {
+    endpoint: `/posts/${eventId}/post`,
+    method: 'POST',
+    contentType: 'multipart/form-data',
+    fields: {
+      body: data.body,
+      inventoryId: data.inventoryId,
+    },
+    imageCount: data.images?.length || 0,
+    images: data.images?.map((uri, index) => ({
+      index,
+      uri: uri.substring(0, 80) + '...',
+    })) || [],
+  };
+  
+  console.log('📤 [createEventPostWithContext] Request JSON:', JSON.stringify(requestJson, null, 2));
+  
+  // Images varsa ekle
+  if (data.images && data.images.length > 0) {
+    data.images.forEach((imageUri, index) => {
+      // React Native'de FormData için image object formatı
+      let fileExtension = 'jpg';
+      let mimeType = 'image/jpeg';
+      
+      // URI'den dosya uzantısını çıkar (eğer varsa)
+      const uriLower = imageUri.toLowerCase();
+      if (uriLower.includes('.')) {
+        const ext = imageUri.split('.').pop()?.toLowerCase();
+        if (ext === 'png') {
+          fileExtension = 'png';
+          mimeType = 'image/png';
+        } else if (ext === 'jpg' || ext === 'jpeg') {
+          fileExtension = 'jpg';
+          mimeType = 'image/jpeg';
+        } else if (ext === 'gif') {
+          fileExtension = 'gif';
+          mimeType = 'image/gif';
+        } else if (ext === 'webp') {
+          fileExtension = 'webp';
+          mimeType = 'image/webp';
+        }
+      }
+      
+      // React Native FormData image format
+      // Platform'a göre URI format değişebilir:
+      // - iOS: ph://... veya file://...
+      // - Android: file://... veya content://...
+      const imageFile = {
+        uri: imageUri,
+        type: mimeType,
+        name: `image_${index}.${fileExtension}`,
+      };
+      
+      formData.append('images', imageFile as any);
+    });
+  }
+  
+  try {
+    const response = await client.post<CreateEventPostWithContextResponse>(
+      `/posts/${eventId}/post`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        // React Native için timeout'u artır (image upload uzun sürebilir)
+        timeout: 30000, // 30 saniye
+      }
+    );
+    
+    console.log('✅ [createEventPostWithContext] Success Response (JSON):', JSON.stringify({
+      postId: response.data.id,
+      message: response.data.message,
+      fullResponse: response.data,
+    }, null, 2));
+    
+    return response.data;
+  } catch (error: any) {
+    const errorJson = {
+      endpoint: `/posts/${eventId}/post`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      errorData: error.response?.data,
+      errorMessage: error.message,
+      requestData: {
+        body: data.body?.substring(0, 50) + '...',
+        inventoryId: data.inventoryId,
+        imageCount: data.images?.length || 0,
+      },
+    };
+    
+    console.error('❌ [createEventPostWithContext] Error Response (JSON):', JSON.stringify(errorJson, null, 2));
     throw error;
   }
 };

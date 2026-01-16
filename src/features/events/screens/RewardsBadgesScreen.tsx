@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Dimensions, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Dimensions, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     Box,
@@ -12,18 +12,20 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { EventsStackParamList } from '../navigation';
+import type { EventStackParamList } from '../EventNavigator';
 import { Header } from '@/src/components/Header';
 import BadgeCard from '../components/BadgeCard';
 import BadgeDetailModal from '../components/BadgeDetailModal';
-import { useEventBadges } from '../api/hooks';
+import { useEventBadges, eventsKeys } from '../api/hooks';
 import { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import { toImageSource } from '@/src/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import type { EventBadge, EventBadgesResponse } from '../api/communityEventsApi';
 
 const { width } = Dimensions.get('window');
 
-type RewardsBadgesScreenNavigationProp = NativeStackNavigationProp<EventsStackParamList, 'RewardsBadges'>;
-type RewardsBadgesScreenRouteProp = RouteProp<EventsStackParamList, 'RewardsBadges'>;
+type RewardsBadgesScreenNavigationProp = NativeStackNavigationProp<EventStackParamList, 'RewardsBadgesScreen'>;
+type RewardsBadgesScreenRouteProp = RouteProp<EventStackParamList, 'RewardsBadgesScreen'>;
 
 const RewardsBadgesScreen: React.FC = () => {
     const { colorMode } = useColorMode();
@@ -31,11 +33,19 @@ const RewardsBadgesScreen: React.FC = () => {
     const navigation = useNavigation<RewardsBadgesScreenNavigationProp>();
     const route = useRoute<RewardsBadgesScreenRouteProp>();
     const { eventId } = route.params;
+    const queryClient = useQueryClient();
     const [selectedReward, setSelectedReward] = useState<SeeAllReward | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
 
     // API hook - event-specific badges
-    const { data: badgesData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useEventBadges(eventId, 20);
+    const { 
+        data: badgesData, 
+        isLoading, 
+        fetchNextPage, 
+        hasNextPage, 
+        isFetchingNextPage,
+        isRefetching,
+    } = useEventBadges(eventId, 20);
 
     // Transform API badges data to SeeAllReward format
     const rewards = useMemo(() => {
@@ -43,22 +53,25 @@ const RewardsBadgesScreen: React.FC = () => {
             return [];
         }
         const allBadges: SeeAllReward[] = [];
-        badgesData.pages.forEach((page) => {
+        (badgesData.pages as EventBadgesResponse[]).forEach((page) => {
             if (page.items) {
-                page.items.forEach((item) => {
-                    // Map EventBadgeApiItem to SeeAllReward format
-                    // EventDetailScreen'de de aynı default görsel kullanılıyor
-                    const imageSource = item.image ? toImageSource(item.image) : require('@/assets/defaultImages/default-badge.png');
+                page.items.forEach((badge: EventBadge) => {
+                    // Backend'den gelen user progress'i kullan
+                    const imageSource = badge.imageUrl 
+                        ? toImageSource(badge.imageUrl) 
+                        : require('@/assets/defaultImages/default-badge.png');
                     
                     const reward: SeeAllReward = {
-                        id: item.id,
-                        title: item.title || '',
-                        description: '', // Badge API'sinde description yok
+                        id: badge.id,
+                        title: badge.title,
+                        description: badge.description,
                         image: imageSource,
-                        category: '', // Badge API'sinde category yok
-                        isUnlocked: true, // Badge görünüyorsa unlocked kabul ediyoruz
-                        completed: 0, // Badge API'sinde progress yok
-                        task: 0, // Badge API'sinde task yok
+                        category: badge.category,
+                        
+                        // User progress artık backend'den geliyor
+                        isUnlocked: badge.userProgress.isCompleted,
+                        completed: badge.userProgress.current,
+                        task: badge.userProgress.target,
                     };
                     allBadges.push(reward);
                 });
@@ -76,6 +89,16 @@ const RewardsBadgesScreen: React.FC = () => {
         setIsModalVisible(false);
         setSelectedReward(null);
     };
+
+    // Pull-to-Refresh handler - Badge listesini cache'siz fresh data ile yenile
+    const handleRefresh = useCallback(async () => {
+        // CRITICAL: Cache'i invalidate et, ardından fresh data fetch et (cache bypass)
+        await queryClient.invalidateQueries({ 
+            queryKey: eventsKeys.badges(eventId),
+            refetchType: 'active',
+        });
+        // React Query otomatik olarak invalidate edilmiş query'leri refetch eder
+    }, [queryClient, eventId]);
 
     return (
         <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -116,6 +139,13 @@ const RewardsBadgesScreen: React.FC = () => {
                         </Box>
                     )}
                     keyExtractor={(item) => item.id}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefetching}
+                            onRefresh={handleRefresh}
+                            tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
+                        />
+                    }
                     onEndReached={() => {
                         if (hasNextPage && !isFetchingNextPage) {
                             fetchNextPage();
@@ -137,6 +167,8 @@ const RewardsBadgesScreen: React.FC = () => {
                 isVisible={isModalVisible}
                 onClose={handleCloseModal}
                 data={selectedReward}
+                eventId={eventId}
+                badgeId={selectedReward?.id}
             />
         </Box>
         </SafeAreaView>

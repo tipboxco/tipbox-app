@@ -28,6 +28,7 @@ export interface InventoryBrand {
  */
 export interface InventoryItem {
   id: string;
+  productId: string; // ✅ Product tablosundaki gerçek product ID'si
   brand: InventoryBrand;
   image: string;
   reviews: InventoryReview[];
