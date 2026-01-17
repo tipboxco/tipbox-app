@@ -904,8 +904,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     return (
         <Pressable 
             onPress={handlePress}
-            py={4}
-            px={16}
+            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+            p="$3"
+            position="relative"
             borderBottomWidth={1}
             borderBottomColor={isDark ? '#333' : '#E9E9E9'}
         >
@@ -913,43 +914,28 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 
                 {/* Main Notification Row */}
 
-                <HStack space="sm" alignItems="flex-start" justifyContent="flex-start">
+                <HStack space="md" alignItems="flex-start" justifyContent="flex-start">
 
                     {/* Avatar - Mor/pembe border ile */}
                     {/* Dokümana göre: Gamification/Event/Expert bildirimlerinde avatar = null */}
                     {notification.avatar ? (
                         <Pressable onPress={handleAvatarPress}>
-                            <Box position="relative">
-                                <Box
-                                    width={48}
-                                    height={48}
-                                    borderRadius={24}
-                                    borderWidth={2.5}
-                                    borderColor="#C084FC"
-                                    justifyContent="center"
-                                    alignItems="center"
-                                >
-                                    <Image
-                                        source={userAvatar}
-                                        alt="User avatar"
-                                        width={44}
-                                        height={44}
-                                        borderRadius={22}
-                                    />
-                                </Box>
-                                {!notification.read && (
-                                    <Box
-                                        position="absolute"
-                                        top={-2}
-                                        right={-2}
-                                        width={12}
-                                        height={12}
-                                        borderRadius={6}
-                                        bg="#E8FF6B"
-                                        borderWidth={2}
-                                        borderColor={isDark ? '#000000' : '#FFFFFF'}
-                                    />
-                                )}
+                            <Box
+                                width={48}
+                                height={48}
+                                borderRadius={24}
+                                borderWidth={2.5}
+                                borderColor="#C084FC"
+                                justifyContent="center"
+                                alignItems="center"
+                            >
+                                <Image
+                                    source={userAvatar}
+                                    alt="User avatar"
+                                    width={44}
+                                    height={44}
+                                    borderRadius={22}
+                                />
                             </Box>
                         </Pressable>
                     ) : (
@@ -967,7 +953,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     )}
 
                     {/* Content - Ortada */}
-                    <VStack flex={1} mr="$2" borderRadius={8} px="$2" py="$1" alignSelf="flex-start" space="xs">
+                    <VStack flex={1} space="xs">
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize="$sm"
@@ -1039,40 +1025,62 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         )}
                     </VStack>
 
-                    {/* Image Thumbnail, Time - Sağda (Instagram benzeri) */}
+                    {/* Image Thumbnail - Sağda (Instagram benzeri) */}
                     {/* Event bildirimlerinde görsel mesajın altında olduğu için sağda gösterilmez */}
-                    <HStack alignItems="flex-end" space="xs" justifyContent="flex-start">
-                        {/* Post görseli - sağda küçük (Instagram benzeri) - sadece data.imageUrl varsa göster */}
-                        {/* Event görseli mesajın altında gösterildiği için burada gösterilmez */}
-                        {showPostImage && (
-                            <Image
-                                source={toImageSource(data.imageUrl)}
-                                alt="Post image"
-                                width={40}
-                                height={40}
-                                borderRadius={4}
-                                resizeMode="cover"
-                            />
-                        )}
-                        {/* Badge görseli - post değilse ve event değilse göster */}
-                        {!showPostImage && !showEventImage && imageUrl && (
-                            <Image
-                                source={toImageSource(imageUrl)}
-                                alt="Content image"
-                                width={40}
-                                height={40}
-                                borderRadius={4}
-                                resizeMode="cover"
-                            />
-                        )}
-                        <Text
-                            color="#8C8C8C"
-                            fontSize="$xs"
-                            fontWeight="$medium"
-                        >
-                            {formatRelativeTime(notification.createdAt)}
-                        </Text>
-                    </HStack>
+                    {(showPostImage || (!showPostImage && !showEventImage && imageUrl)) && (
+                        <Box>
+                            {/* Post görseli - sağda küçük (Instagram benzeri) - sadece data.imageUrl varsa göster */}
+                            {/* Event görseli mesajın altında gösterildiği için burada gösterilmez */}
+                            {showPostImage && (
+                                <Image
+                                    source={toImageSource(data.imageUrl)}
+                                    alt="Post image"
+                                    width={40}
+                                    height={40}
+                                    borderRadius={4}
+                                    resizeMode="cover"
+                                />
+                            )}
+                            {/* Badge görseli - post değilse ve event değilse göster */}
+                            {!showPostImage && !showEventImage && imageUrl && (
+                                <Image
+                                    source={toImageSource(imageUrl)}
+                                    alt="Content image"
+                                    width={40}
+                                    height={40}
+                                    borderRadius={4}
+                                    resizeMode="cover"
+                                />
+                            )}
+                        </Box>
+                    )}
+                </HStack>
+
+                {/* Timestamp and Unread Badge - Position Absolute (MessageCard ile aynı) */}
+                <HStack
+                    position="absolute"
+                    top="$3"
+                    right="$3"
+                    space="xs"
+                    alignItems="center"
+                >
+                    <Text
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        fontSize="$xs"
+                        fontWeight="$medium"
+                    >
+                        {formatRelativeTime(notification.createdAt)}
+                    </Text>
+                    {!notification.read && (
+                        <Box
+                            width={8}
+                            height={8}
+                            borderRadius={4}
+                            bg="#E8FF6B"
+                            alignItems="center"
+                            justifyContent="center"
+                        />
+                    )}
                 </HStack>
             </VStack>
         </Pressable>
