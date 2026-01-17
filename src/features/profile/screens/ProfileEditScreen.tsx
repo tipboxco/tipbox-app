@@ -54,6 +54,7 @@ const ProfileEditScreen: React.FC = () => {
   const [badge1, setBadge1] = useState('');
   const [badge2, setBadge2] = useState('');
   const [badge3, setBadge3] = useState('');
+  const [cosmetic, setCosmetic] = useState<string | null>(null); // Cosmetic ID
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [selectedAvatarType, setSelectedAvatarType] = useState<'picture' | 'cosmetic'>('picture');
   const [selectedBadgeSlot, setSelectedBadgeSlot] = useState<1 | 2 | 3 | null>(null);
@@ -179,40 +180,15 @@ const ProfileEditScreen: React.FC = () => {
           }
         } catch (error: any) {
           console.error('[ProfileEditScreen] ❌ Avatar upload error:', error);
+          setIsUploadingAvatar(false);
           
-          // Backend'de /users/me/avatar endpoint'i yok (404 hatası)
-          // 404 hatası durumunda avatar olmadan devam et
-          if (error?.response?.status === 404) {
-            console.warn('[ProfileEditScreen] ⚠️ Avatar upload endpoint not found (404). Continuing without avatar.');
-            avatarUrl = null;
-            // Kullanıcıya bilgi ver (non-blocking)
-            Alert.alert(
-              'Bilgi', 
-              'Avatar yükleme özelliği şu anda kullanılamıyor. Profil diğer bilgilerle güncellenecek.'
-            );
-          } else {
-            // Diğer hatalar için kullanıcıya sor
-            Alert.alert(
-              'Avatar Yüklenemedi', 
-              error?.message || 'Avatar yüklenirken bir hata oluştu',
-              [
-                {
-                  text: 'Devam Et',
-                  style: 'default'
-                },
-                {
-                  text: 'İptal',
-                  onPress: () => {
-                    setIsUploadingAvatar(false);
-                    return;
-                  },
-                  style: 'cancel'
-                }
-              ]
-            );
-            setIsUploadingAvatar(false);
-            return;
-          }
+          // Hata mesajını kullanıcıya göster
+          const errorMessage = error?.response?.data?.message 
+            || error?.message 
+            || 'Avatar yüklenirken bir hata oluştu';
+          
+          Alert.alert('Avatar Yüklenemedi', errorMessage);
+          return;
         } finally {
           setIsUploadingAvatar(false);
         }
@@ -234,40 +210,15 @@ const ProfileEditScreen: React.FC = () => {
           }
         } catch (error: any) {
           console.error('[ProfileEditScreen] ❌ Banner upload error:', error);
+          setIsUploadingBanner(false);
           
-          // Backend'de /users/me/banner endpoint'i yok (404 hatası)
-          // 404 hatası durumunda banner olmadan devam et
-          if (error?.response?.status === 404) {
-            console.warn('[ProfileEditScreen] ⚠️ Banner upload endpoint not found (404). Continuing without banner.');
-            bannerUrl = null;
-            // Kullanıcıya bilgi ver (non-blocking)
-            Alert.alert(
-              'Bilgi', 
-              'Banner yükleme özelliği şu anda kullanılamıyor. Profil diğer bilgilerle güncellenecek.'
-            );
-          } else {
-            // Diğer hatalar için kullanıcıya sor
-            Alert.alert(
-              'Banner Yüklenemedi', 
-              error?.message || 'Banner yüklenirken bir hata oluştu',
-              [
-                {
-                  text: 'Devam Et',
-                  style: 'default'
-                },
-                {
-                  text: 'İptal',
-                  onPress: () => {
-                    setIsUploadingBanner(false);
-                    return;
-                  },
-                  style: 'cancel'
-                }
-              ]
-            );
-            setIsUploadingBanner(false);
-            return;
-          }
+          // Hata mesajını kullanıcıya göster
+          const errorMessage = error?.response?.data?.message 
+            || error?.message 
+            || 'Banner yüklenirken bir hata oluştu';
+          
+          Alert.alert('Banner Yüklenemedi', errorMessage);
+          return;
         } finally {
           setIsUploadingBanner(false);
         }
@@ -277,14 +228,13 @@ const ProfileEditScreen: React.FC = () => {
       }
 
       // Prepare update data - API formatına uygun
-      // Tüm field'ları gönder (boş string'ler yerine undefined/null kullan)
+      // NOT: Avatar ve banner ayrı endpoint'lerle yüklenir (POST /users/me/avatar, POST /users/me/banner)
+      // Bu endpoint sadece metin alanlarını günceller (name, biography, cosmetic, badge)
       const updateData: {
         name?: string;
         biography?: string;
         badge?: string[];
         cosmetic?: string | null;
-        avatar?: string | null;
-        banner?: string | null;
       } = {};
 
       // Name zorunlu - her zaman gönder
@@ -302,15 +252,14 @@ const ProfileEditScreen: React.FC = () => {
         updateData.badge = badgeIds;
       }
 
-      // Avatar - upload edilmiş URL'i ekle
-      if (avatarUrl) {
-        updateData.avatar = avatarUrl;
+      // Cosmetic - seçili cosmetic ID'sini ekle (null olabilir)
+      if (cosmetic !== undefined) {
+        updateData.cosmetic = cosmetic;
       }
 
-      // Banner - upload edilmiş URL'i ekle
-      if (bannerUrl) {
-        updateData.banner = bannerUrl;
-      }
+      // NOT: Avatar ve banner URL'leri burada gönderilmez
+      // Avatar ve banner upload endpoint'leri (POST /users/me/avatar, POST /users/me/banner)
+      // başarılı olduğunda backend otomatik olarak kullanıcının profilini günceller
 
       // Request data'yı logla
       console.log('[ProfileEditScreen] Sending update request:', JSON.stringify(updateData, null, 2));

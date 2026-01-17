@@ -2401,7 +2401,7 @@ const MessageDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+    <SafeAreaView  style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -2520,7 +2520,7 @@ const MessageDetailScreen: React.FC = () => {
 
           {/* Mesaj Input - En altta, KeyboardAvoidingView ile otomatik yönetilir */}
           <Box 
-            pb={isKeyboardVisible ? (Platform.OS === 'ios' ? 8 : insets.bottom) : insets.bottom}
+            pb={isKeyboardVisible ? (Platform.OS === 'ios' ? 8 : 0) : 0}
             zIndex={1001}
             elevation={1001}
             position="relative"

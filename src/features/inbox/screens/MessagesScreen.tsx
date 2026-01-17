@@ -405,9 +405,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             </VStack>
 
             {/* Messages List - Full Height */}
-            {isLoading && !messages && !isRefetching ? (
-                <MessageSkeleton count={5} />
-            ) : error ? (
+            {error ? (
                 <Box py={20} alignItems="center">
                     <Text color="#CE4A4A">Hata: {error.message}</Text>
                 </Box>
@@ -430,11 +428,25 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                         );
                     }}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: bottomInset }}
+                    contentContainerStyle={{ 
+                        paddingHorizontal: 16, 
+                        paddingTop: 0, 
+                        paddingBottom: bottomInset,
+                        flexGrow: getFilteredMessages().length === 0 ? 1 : 0,
+                    }}
+                    ListEmptyComponent={
+                        !isLoading ? (
+                            <Box py={40} alignItems="center" justifyContent="center" flex={1}>
+                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz mesajınız yok</Text>
+                            </Box>
+                        ) : null
+                    }
                     refreshControl={
                         <RefreshControl
-                            refreshing={isRefetching}
-                            onRefresh={() => refetch()}
+                            refreshing={isRefetching && !isLoading}
+                            onRefresh={() => {
+                                refetch();
+                            }}
                             tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
                         />
                     }

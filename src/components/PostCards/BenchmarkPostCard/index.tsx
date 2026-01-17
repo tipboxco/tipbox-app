@@ -54,10 +54,9 @@ const renderProduct = ({ product, isDark, isDetailMode = false }: { product: Ben
     return (
     <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : '#E9E9E9'} borderRadius={10} position="relative">
         <VStack padding={6} flex={1} >
-            <Box position="relative" w={'$full'} overflow='hidden'>
+            <Box position="relative" w={'$full'} overflow='hidden' aspectRatio={1}>
                 <Image
                     w={'$full'}
-                    h={'$full'}
                     aspectRatio={1}
                     borderRadius={10}
                     source={productImageSource}

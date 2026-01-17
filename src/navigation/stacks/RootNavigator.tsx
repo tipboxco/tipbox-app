@@ -113,6 +113,13 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="MessageDetail"
               component={MessageDetailScreen}
+              options={{
+                // Safe area padding'lerini devre dışı bırak
+                contentStyle: {
+                  flex: 1,
+                  backgroundColor: 'transparent',
+                },
+              }}
             />
             <RootStack.Screen
               name="SupportMessageDetail"

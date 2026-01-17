@@ -731,15 +731,21 @@ export const useAddToTrustList = () => {
 
   return useMutation<void, Error, string>({
     mutationFn: (targetUserId: string) => addToTrustList(targetUserId),
-    onSuccess: () => {
+    onSuccess: (_, targetUserId) => {
       // Trust listesini invalidate et - güncel listeyi göster
       if (user?.id) {
         queryClient.invalidateQueries({
           queryKey: profileKeys.trusts(),
         });
-        // Profil bilgilerini de invalidate et - trust sayısı güncellenecek
+        // Kendi profil bilgilerini invalidate et - trust sayısı güncellenecek
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(user.id),
+        });
+      }
+      // Target user'ın profil bilgilerini de invalidate et - truster sayısı güncellenecek
+      if (targetUserId) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(targetUserId),
         });
       }
     },
@@ -765,15 +771,21 @@ export const useRemoveFromTrustList = () => {
 
   return useMutation<void, Error, string>({
     mutationFn: (targetUserId: string) => removeFromTrustList(targetUserId),
-    onSuccess: () => {
+    onSuccess: (_, targetUserId) => {
       // Trust listesini invalidate et - güncel listeyi göster
       if (user?.id) {
         queryClient.invalidateQueries({
           queryKey: profileKeys.trusts(),
         });
-        // Profil bilgilerini de invalidate et - trust sayısı güncellenecek
+        // Kendi profil bilgilerini invalidate et - trust sayısı güncellenecek
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(user.id),
+        });
+      }
+      // Target user'ın profil bilgilerini de invalidate et - truster sayısı güncellenecek
+      if (targetUserId) {
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(targetUserId),
         });
       }
     },

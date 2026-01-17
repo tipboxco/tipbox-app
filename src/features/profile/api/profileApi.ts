@@ -25,14 +25,14 @@ import type {
 
 /**
  * Update Profile Request Interface
+ * Avatar ve banner ayrı endpoint'lerle yüklenir (POST /users/me/avatar, POST /users/me/banner)
+ * Bu endpoint sadece metin alanlarını günceller
  */
 export interface UpdateProfileRequest {
-  name?: string;
-  biography?: string;
-  banner?: string | null;
-  avatar?: string | null;
-  cosmetic?: string | null;
-  badge?: string[];
+  name?: string;           // Opsiyonel - min 2 karakter
+  biography?: string;      // Opsiyonel - max 500 karakter
+  cosmetic?: string | null; // Opsiyonel - Cosmetic ID
+  badge?: string[];        // Opsiyonel - Badge ID array (max 3)
 }
 
 /**
@@ -122,6 +122,8 @@ export interface UploadAvatarResponse {
 
 export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarResponse> => {
   try {
+    console.log('[uploadAvatar] Starting upload, URI:', avatarUri);
+    
     const formData = new FormData();
     
     // React Native'de FormData için image object formatı
@@ -140,30 +142,49 @@ export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarRespo
       }
     }
     
-    formData.append('avatar', {
+    // iOS'ta ph:// veya assets-library:// URI'leri için varsayılan JPEG kullan
+    // Expo Image Picker zaten görsel formatlarını destekliyor
+    const fileObject = {
       uri: avatarUri,
       type: mimeType,
       name: `avatar.${fileExtension}`,
-    } as any);
+    };
+    
+    console.log('[uploadAvatar] File object:', {
+      uri: avatarUri.substring(0, 50) + '...',
+      type: mimeType,
+      name: fileObject.name,
+    });
+    
+    formData.append('avatar', fileObject as any);
+    
+    // React Native'de FormData gönderirken Content-Type header'ını manuel ayarlama
+    // Axios otomatik olarak boundary'yi ekler
+    console.log('[uploadAvatar] Sending request to /users/me/avatar');
     
     const response = await apiService.getClient().post<UploadAvatarResponse>(
       '/users/me/avatar',
       formData,
       {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        timeout: 30000, // 30 saniye timeout (büyük dosyalar için)
       }
     );
     
+    console.log('[uploadAvatar] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('[uploadAvatar] API Error:', {
+    console.error('[uploadAvatar] ❌ API Error:', {
       url: '/users/me/avatar',
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      code: error.code,
+      request: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+      },
     });
     throw error;
   }
@@ -185,6 +206,8 @@ export interface UploadBannerResponse {
 
 export const uploadBanner = async (bannerUri: string): Promise<UploadBannerResponse> => {
   try {
+    console.log('[uploadBanner] Starting upload, URI:', bannerUri);
+    
     const formData = new FormData();
     
     // React Native'de FormData için image object formatı
@@ -203,30 +226,49 @@ export const uploadBanner = async (bannerUri: string): Promise<UploadBannerRespo
       }
     }
     
-    formData.append('banner', {
+    // iOS'ta ph:// veya assets-library:// URI'leri için varsayılan JPEG kullan
+    // Expo Image Picker zaten görsel formatlarını destekliyor
+    const fileObject = {
       uri: bannerUri,
       type: mimeType,
       name: `banner.${fileExtension}`,
-    } as any);
+    };
+    
+    console.log('[uploadBanner] File object:', {
+      uri: bannerUri.substring(0, 50) + '...',
+      type: mimeType,
+      name: fileObject.name,
+    });
+    
+    formData.append('banner', fileObject as any);
+    
+    // React Native'de FormData gönderirken Content-Type header'ını manuel ayarlama
+    // Axios otomatik olarak boundary'yi ekler
+    console.log('[uploadBanner] Sending request to /users/me/banner');
     
     const response = await apiService.getClient().post<UploadBannerResponse>(
       '/users/me/banner',
       formData,
       {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        timeout: 30000, // 30 saniye timeout (büyük dosyalar için)
       }
     );
     
+    console.log('[uploadBanner] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('[uploadBanner] API Error:', {
+    console.error('[uploadBanner] ❌ API Error:', {
       url: '/users/me/banner',
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      code: error.code,
+      request: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+      },
     });
     throw error;
   }

@@ -46,13 +46,48 @@ export const register = async (
 export const login = async (
   credentials: LoginCredentials
 ): Promise<ApiLoginResponse> => {
-  const response = await apiService.getClient().post<ApiLoginResponse>(
-    '/auth/login',
-    credentials
-  );
+  try {
+    const client = apiService.getClient();
+    const baseURL = client.defaults.baseURL;
+    const fullURL = `${baseURL}/auth/login`;
+    
+    console.log('[login] Request details:', {
+      baseURL,
+      endpoint: '/auth/login',
+      fullURL,
+      method: 'POST',
+      credentials: {
+        email: credentials.email,
+        password: '***', // Güvenlik için password'ü gizle
+      },
+    });
+    
+    const response = await client.post<ApiLoginResponse>(
+      '/auth/login',
+      credentials
+    );
 
-  // Backend'den gelen ham response'u direkt döndür (store'da transform edilecek)
-  return response.data;
+    console.log('[login] ✅ Success:', {
+      status: response.status,
+      userId: response.data.id,
+      email: response.data.email,
+    });
+
+    // Backend'den gelen ham response'u direkt döndür (store'da transform edilecek)
+    return response.data;
+  } catch (error: any) {
+    console.error('[login] ❌ API Error:', {
+      url: '/auth/login',
+      baseURL: apiService.getClient().defaults.baseURL,
+      fullURL: `${apiService.getClient().defaults.baseURL}/auth/login`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      code: error.code,
+    });
+    throw error;
+  }
 };
 
 /**

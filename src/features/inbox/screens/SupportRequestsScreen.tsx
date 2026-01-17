@@ -31,7 +31,6 @@ const SupportRequestsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [activeFilter, setActiveFilter] = useState<string>('pending');
-  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<SupportRequestsScreenNavigationProp>();
   const queryClient = useQueryClient();
   const { isConnected, on, off } = useSocket();
@@ -217,10 +216,8 @@ const SupportRequestsScreen: React.FC = () => {
     setActiveFilter(filterId);
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
+  const handleRefresh = () => {
+    refetch();
   };
 
   // Filter options for UI
@@ -244,9 +241,7 @@ const SupportRequestsScreen: React.FC = () => {
         </Box>
 
         {/* Support Requests List - Full Width */}
-        {isLoading && !supportRequests ? (
-          <SupportRequestSkeleton count={5} />
-        ) : error ? (
+        {error ? (
           <Box py={20} alignItems="center">
             <Text color="#CE4A4A">Hata: {error.message}</Text>
           </Box>
@@ -263,17 +258,22 @@ const SupportRequestsScreen: React.FC = () => {
             )}
             keyExtractor={(item) => item.id}
             style={{ flex: 1 }}
+            contentContainerStyle={{
+              flexGrow: supportRequestsArray.length === 0 ? 1 : 0,
+            }}
             refreshControl={
               <RefreshControl
-                refreshing={refreshing || isRefetching}
+                refreshing={isRefetching && !isLoading}
                 onRefresh={handleRefresh}
                 tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
               />
             }
             ListEmptyComponent={
-              <Box py={20} alignItems="center">
-                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No support requests found</Text>
-              </Box>
+              !isLoading ? (
+                <Box py={40} alignItems="center" justifyContent="center" flex={1}>
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz destek talebiniz yok</Text>
+                </Box>
+              ) : null
             }
           />
         )}
