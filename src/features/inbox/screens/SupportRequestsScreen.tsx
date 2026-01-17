@@ -31,6 +31,7 @@ const SupportRequestsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [activeFilter, setActiveFilter] = useState<string>('pending');
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const navigation = useNavigation<SupportRequestsScreenNavigationProp>();
   const queryClient = useQueryClient();
   const { isConnected, on, off } = useSocket();
@@ -51,7 +52,7 @@ const SupportRequestsScreen: React.FC = () => {
     limit: 50,
   };
 
-  const { data: supportRequests, isLoading, error, refetch, isRefetching } = useSupportRequests(apiParams);
+  const { data: supportRequests, isLoading, error, refetch } = useSupportRequests(apiParams);
   const supportRequestsArray = Array.isArray(supportRequests) ? supportRequests : [];
 
   // Socket event handlers
@@ -216,8 +217,13 @@ const SupportRequestsScreen: React.FC = () => {
     setActiveFilter(filterId);
   };
 
-  const handleRefresh = () => {
-    refetch();
+  const handleRefresh = async () => {
+    setIsManualRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
   };
 
   // Filter options for UI
@@ -263,7 +269,7 @@ const SupportRequestsScreen: React.FC = () => {
             }}
             refreshControl={
               <RefreshControl
-                refreshing={isRefetching && !isLoading}
+                refreshing={isManualRefreshing}
                 onRefresh={handleRefresh}
                 tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
               />

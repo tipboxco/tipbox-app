@@ -46,7 +46,23 @@ interface BenchmarkPostCardProps {
     isDetailMode?: boolean;
 }
 
-const renderProduct = ({ product, isDark, isDetailMode = false }: { product: BenchmarkProduct; isDark: boolean; isDetailMode?: boolean; }) => {
+const ProductCard = ({ 
+    product, 
+    isDark, 
+    isDetailMode = false,
+    isNameExpanded,
+    isSubNameExpanded,
+    onNameToggle,
+    onSubNameToggle
+}: { 
+    product: BenchmarkProduct; 
+    isDark: boolean; 
+    isDetailMode?: boolean;
+    isNameExpanded: boolean;
+    isSubNameExpanded: boolean;
+    onNameToggle: () => void;
+    onSubNameToggle: () => void;
+}) => {
     const productImageSource = product.image 
         ? toImageSource(product.image) || require('@/assets/inventory/product_01.png')
         : require('@/assets/inventory/product_01.png');
@@ -54,14 +70,15 @@ const renderProduct = ({ product, isDark, isDetailMode = false }: { product: Ben
     return (
     <HStack flex={1} borderWidth={1} borderColor={product.choice ? '#87BB33' : '#E9E9E9'} borderRadius={10} position="relative">
         <VStack padding={6} flex={1} >
-            <Box position="relative" w={'$full'} overflow='hidden' aspectRatio={1}>
+            <Box position="relative" w={'$full'} justifyContent="center" alignItems="center" overflow='hidden' aspectRatio={1}>
                 <Image
-                    w={'$full'}
-                    aspectRatio={1}
+                    width={140}
+                    height={130}
+                    
                     borderRadius={10}
                     source={productImageSource}
                     alt={product.name}
-                    resizeMode='cover'
+                    resizeMode='contain'
                 />
                 {product.isOwned && (
                     <Box
@@ -81,20 +98,26 @@ const renderProduct = ({ product, isDark, isDetailMode = false }: { product: Ben
                 )}
             </Box>
             <VStack flex={1} pt={8}>
-                <Text
-                    color={isDark ? '$textDark50' : '#000'}
-                    fontSize={isDetailMode ? "$xs" : 9}
-                    fontWeight="$bold"
-                >
-                    {product.name}
-                </Text>
-                <Text
-                    color={isDark ? '$textDark50' : '#000'}
-                    fontSize={isDetailMode ? "$xs" : 8}
-                    fontWeight="$semibold"
-                >
-                    {product.subName}
-                </Text>
+                <Pressable onPress={onNameToggle}>
+                    <Text
+                        color={isDark ? '$textDark50' : '#000'}
+                        fontSize={isDetailMode ? "$xs" : 9}
+                        fontWeight="$bold"
+                        numberOfLines={isNameExpanded ? undefined : 2}
+                    >
+                        {product.name}
+                    </Text>
+                </Pressable>
+                <Pressable onPress={onSubNameToggle}>
+                    <Text
+                        color={isDark ? '$textDark50' : '#000'}
+                        fontSize={isDetailMode ? "$xs" : 8}
+                        fontWeight="$semibold"
+                        numberOfLines={isSubNameExpanded ? undefined : 2}
+                    >
+                        {product.subName}
+                    </Text>
+                </Pressable>
             </VStack>
         </VStack>
     </HStack>
@@ -118,6 +141,10 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     const [sharesCount, setSharesCount] = useState(data.stats.shares);
     const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+    
+    // Product text expansion states - tüm ürünler için ortak
+    const [isNameExpanded, setIsNameExpanded] = useState(false);
+    const [isSubNameExpanded, setIsSubNameExpanded] = useState(false);
     const contextMenuCloseRef = useRef<(() => void) | null>(null);
     const { openBottomSheet } = useGlobalBottomSheet();
 
@@ -465,7 +492,15 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                         <HStack justifyContent="space-between" width="100%">
                             {data.products.map((product, index) => (
                                 <Box key={product.id} flex={1} mx={4}>
-                                    {renderProduct({ product, isDark, isDetailMode })}
+                                    <ProductCard 
+                                        product={product} 
+                                        isDark={isDark} 
+                                        isDetailMode={isDetailMode}
+                                        isNameExpanded={isNameExpanded}
+                                        isSubNameExpanded={isSubNameExpanded}
+                                        onNameToggle={() => setIsNameExpanded(!isNameExpanded)}
+                                        onSubNameToggle={() => setIsSubNameExpanded(!isSubNameExpanded)}
+                                    />
                                 </Box>
                             ))}
                         </HStack>
@@ -498,7 +533,15 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             <HStack justifyContent="space-between" width="100%">
                                 {data.products.map((product, index) => (
                                     <Box key={product.id} flex={1} mx={4}>
-                                        {renderProduct({ product, isDark, isDetailMode })}
+                                        <ProductCard 
+                                            product={product} 
+                                            isDark={isDark} 
+                                            isDetailMode={isDetailMode}
+                                            isNameExpanded={isNameExpanded}
+                                            isSubNameExpanded={isSubNameExpanded}
+                                            onNameToggle={() => setIsNameExpanded(!isNameExpanded)}
+                                            onSubNameToggle={() => setIsSubNameExpanded(!isSubNameExpanded)}
+                                        />
                                     </Box>
                                 ))}
                             </HStack>

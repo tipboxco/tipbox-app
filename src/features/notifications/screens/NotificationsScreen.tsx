@@ -176,24 +176,52 @@ const NotificationsScreenComponent: React.FC = () => {
         filterQueryResultsRef.current = filterQueryResults;
     }, [filterQueryResults]);
 
+    // CRITICAL FIX: İlk açılışta query'nin direkt başlaması için useEffect eklendi
+    // İlk tab için query enabled olsa bile, React Query bazen query'yi başlatmıyor
+    // Bu durumda manuel olarak query'yi başlatıyoruz
     useEffect(() => {
-        if (shouldFetchNotifications && filterQueryResultsRef.current[currentPage]) {
-            const activeQuery = filterQueryResultsRef.current[currentPage];
-            // İlk yüklemede veya tab değiştiğinde query'yi başlat/refetch et
-            // Eğer query enabled değilse ve data yoksa, query'yi manuel olarak başlat
-            if (!activeQuery.data && !activeQuery.isLoading && !activeQuery.isFetching) {
-                activeQuery.refetch();
-            } else if (activeQuery.data) {
-                // Cache invalid ise refetch et (staleTime kontrolü yapılır)
-                activeQuery.refetch();
+        // İlk tab için: shouldFetchNotifications true ise ve query enabled ise ama henüz başlamamışsa başlat
+        if (shouldFetchNotifications && allQueryEnabled) {
+            const queryStatus = allQuery.status;
+            const hasNoData = !allQuery.data;
+            const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
+            
+            // Query henüz başlamamışsa (idle) veya pending durumunda takılı kalmışsa başlat
+            // CRITICAL: Query enabled olsa bile, React Query bazen query'yi başlatmıyor
+            // Bu durumda manuel olarak refetch çağırarak query'yi başlatıyoruz
+            if (hasNoData && isNotLoading) {
+                // Query status'u kontrol et - idle veya pending ise başlat
+                if (queryStatus === 'idle' || queryStatus === 'pending' || queryStatus === 'error') {
+                    // Query'yi başlat - refetch çağrısı query'yi başlatacak
+                    allQuery.refetch().catch((error) => {
+                        console.warn('[NotificationsScreen] Failed to refetch allQuery:', error);
+                    });
+                }
             }
         }
-    }, [currentPage, shouldFetchNotifications]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [shouldFetchNotifications, allQueryEnabled]);
 
     useFocusEffect(
         useCallback(() => {
             // Ekran focus aldığında drawer gesture'ı disable et
             setGestureEnabled(false);
+            
+            // CRITICAL FIX: İlk açılışta query'yi başlat
+            // Query enabled olsa bile, React Query bazen query'yi başlatmıyor
+            // Bu durumda manuel olarak query'yi başlatıyoruz
+            if (shouldFetchNotifications && allQueryEnabled) {
+                const queryStatus = allQuery.status;
+                const hasNoData = !allQuery.data;
+                const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
+                
+                // Query henüz başlamamışsa başlat
+                if (hasNoData && isNotLoading && (queryStatus === 'idle' || queryStatus === 'pending')) {
+                    allQuery.refetch().catch((error) => {
+                        console.warn('[NotificationsScreen] Failed to refetch allQuery on focus:', error);
+                    });
+                }
+            }
             
             // Ekran focus aldığında tüm bildirimleri okunmuş olarak işaretle
             // CRITICAL: Sadece bir kez çalışması için ref kontrolü (sonsuz döngü önleme)
@@ -258,9 +286,10 @@ const NotificationsScreenComponent: React.FC = () => {
                 // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde ref resetlenmemeli
                 hasMarkedAllAsReadRef.current = false;
             };
-        }, [setGestureEnabled, shouldFetchNotifications, queryClient])
+        }, [setGestureEnabled, shouldFetchNotifications, queryClient, allQueryEnabled, allQuery.status, allQuery.data])
         // BUG FIX: currentPage dependency'den kaldırıldı - tab değişikliğinde useFocusEffect tekrar çalışmamalı
         // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi
+        // CRITICAL FIX: allQuery objesi yerine spesifik değerleri dependency array'e ekledik (sonsuz döngü önleme)
     );
     
     // PERFORMANCE FIX: Memoize background colors to prevent re-renders
@@ -516,19 +545,21 @@ const NotificationsScreenComponent: React.FC = () => {
         } = queryResult;
 
         // Query enabled durumunu kontrol et
-        // CRITICAL FIX: Sıralama değişti: All (0), Tips (1), Trust (2), Replies (3)
-        const isQueryEnabled = filterIndex === 0 ? (shouldFetchNotifications && currentPage === 0) :
+        // CRITICAL FIX: İlk tab (All) için her zaman enabled, diğer tablar için sadece aktif tab enabled
+        const isQueryEnabled = filterIndex === 0 ? shouldFetchNotifications :
                               filterIndex === 1 ? (shouldFetchNotifications && currentPage === 1) :
                               filterIndex === 2 ? (shouldFetchNotifications && currentPage === 2) :
                               (shouldFetchNotifications && currentPage === 3);
         
         // Loading state: 
-        // 1. Query loading durumunda (isLoading, isFetching, isPending)
-        // 2. Query enabled değilse ve data yoksa (henüz başlamamış)
-        // 3. Auth ready değilse
+        // CRITICAL FIX: Sadece gerçekten loading durumunda loading göster
+        // 1. Query aktif olarak yükleniyor (isLoading, isFetching, isPending)
+        // 2. Query enabled değilse ve data yoksa (henüz başlamamış - bu durumda loading göster)
+        // 3. Auth ready değilse ve data yoksa (henüz başlamamış - bu durumda loading göster)
+        // NOT: Query enabled ise ve data yoksa ama loading değilse, bu bir hata durumu olabilir - loading gösterme
         const isActuallyLoading = (isLoading || isFetching || isPending) || 
                                   (!isQueryEnabled && !notificationsResponse && shouldFetchNotifications) ||
-                                  (!isAuthReady && !notificationsResponse);
+                                  (!isAuthReady && !notificationsResponse && shouldFetchNotifications);
 
         // Her tab için kendi notifications'ını çıkar
         const notifications = extractNotificationsFromResponse(notificationsResponse);

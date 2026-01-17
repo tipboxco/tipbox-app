@@ -40,7 +40,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
     
-    const { data: messages, isLoading, error, refetch, isRefetching } = useMessages();
+    const { data: messages, isLoading, error, refetch } = useMessages();
+    const [isManualRefreshing, setIsManualRefreshing] = useState(false);
     const queryClient = useQueryClient();
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();
@@ -379,7 +380,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     );
 
     return (
-        <VStack flex={1} space="sm">
+        <VStack flex={1} space={0}>
             {/* Sol kenardan drawer açma gesture alanı - PagerView swipe'ını engellememek için küçük alan */}
             {isActiveTab && onDrawerOpen && (
                 <GestureDetector gesture={drawerGesture}>
@@ -395,7 +396,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 </GestureDetector>
             )}
             {/* Filters */}
-            <VStack px="$4" pt="$2" pb="$2">
+            <VStack px="$4" pt="$1" pb="$1">
                 {/* Filter Buttons - TODO: API'ye taşındığında categories de buradan gelecek */}
                 <MessagesFilterGroup
                     categories={[]}
@@ -443,9 +444,14 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     }
                     refreshControl={
                         <RefreshControl
-                            refreshing={isRefetching && !isLoading}
-                            onRefresh={() => {
-                                refetch();
+                            refreshing={isManualRefreshing}
+                            onRefresh={async () => {
+                                setIsManualRefreshing(true);
+                                try {
+                                    await refetch();
+                                } finally {
+                                    setIsManualRefreshing(false);
+                                }
                             }}
                             tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
                         />
