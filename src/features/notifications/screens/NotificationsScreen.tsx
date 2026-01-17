@@ -22,6 +22,7 @@ import {
 } from '@gluestack-ui/themed';
 import {
   MagnifyingGlassIcon,
+  ChevronDownIcon,
 } from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -83,8 +84,8 @@ const NotificationsScreenComponent: React.FC = () => {
     // CRITICAL: Mark all as read işleminin sadece bir kez çalışması için ref
     const hasMarkedAllAsReadRef = useRef(false);
     
-    // Bottom offset for content padding (matches FeedScreen structure)
-    const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
+    // Bottom offset for content padding (NotificationsScreen tab bar içinde olduğu için includeTabBar: true)
+    const bottomOffset = useBottomOffset({ includeTabBar: true, extraPadding: 24 });
 
     // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
     const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
@@ -368,6 +369,56 @@ const NotificationsScreenComponent: React.FC = () => {
         
         return [];
     }, []);
+
+    // Helper function: Bildirimleri tarihe göre grupla (Instagram benzeri)
+    const groupNotificationsByDate = useCallback((notifications: Notification[]): Array<{ type: 'header' | 'notification'; data: any }> => {
+        if (!notifications || notifications.length === 0) {
+            return [];
+        }
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const thisWeek = new Date(today);
+        thisWeek.setDate(thisWeek.getDate() - 7);
+        const thisMonth = new Date(today);
+        thisMonth.setMonth(thisMonth.getMonth() - 1);
+
+        const grouped: Array<{ type: 'header' | 'notification'; data: any }> = [];
+        let currentGroup: string | null = null;
+
+        notifications.forEach((notification) => {
+            const notificationDate = new Date(notification.createdAt);
+            const notificationDateOnly = new Date(notificationDate.getFullYear(), notificationDate.getMonth(), notificationDate.getDate());
+
+            let groupLabel: string;
+            if (notificationDateOnly.getTime() === today.getTime()) {
+                groupLabel = 'Today';
+            } else if (notificationDateOnly.getTime() === yesterday.getTime()) {
+                groupLabel = 'Yesterday';
+            } else if (notificationDate >= thisWeek) {
+                groupLabel = 'This Week';
+            } else if (notificationDate >= thisMonth) {
+                groupLabel = 'This Month';
+            } else {
+                // Month and year format: "January 2024"
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                groupLabel = `${monthNames[notificationDate.getMonth()]} ${notificationDate.getFullYear()}`;
+            }
+
+            // Yeni grup başladıysa header ekle
+            if (currentGroup !== groupLabel) {
+                currentGroup = groupLabel;
+                grouped.push({ type: 'header', data: groupLabel });
+            }
+
+            // Bildirimi ekle
+            grouped.push({ type: 'notification', data: notification });
+        });
+
+        return grouped;
+    }, []);
     
     // Tab press handler - PagerView native animasyonu ile geçiş
     const handleTabPress = useCallback((index: number) => {
@@ -569,19 +620,38 @@ const NotificationsScreenComponent: React.FC = () => {
     });
 
     // FlatList renderItem - useCallback ile memoize et
-    const renderNotificationItem = React.useCallback(({ item }: { item: Notification }) => {
+    const renderNotificationItem = React.useCallback(({ item }: { item: { type: 'header' | 'notification'; data: any } }) => {
+        if (item.type === 'header') {
+            return (
+                <Box px={16} py={12} bg={backgroundColor}>
+                    <Text
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        fontSize={13}
+                        fontWeight="$semibold"
+                    >
+                        {item.data}
+                    </Text>
+                </Box>
+            );
+        }
+
         return (
             <NotificationCard
-                notification={item}
-                onPress={() => handleNotificationPress(item)}
+                notification={item.data}
+                onPress={() => handleNotificationPress(item.data)}
                 onMarkAsRead={handleMarkAsRead}
                 onDelete={handleDelete}
             />
         );
-    }, [handleNotificationPress, handleMarkAsRead, handleDelete]);
+    }, [handleNotificationPress, handleMarkAsRead, handleDelete, isDark, backgroundColor]);
     
     // Key extractor - unique ID kullan
-    const keyExtractor = React.useCallback((item: Notification) => item.id, []);
+    const keyExtractor = React.useCallback((item: { type: 'header' | 'notification'; data: any }, index: number) => {
+        if (item.type === 'header') {
+            return `header-${item.data}-${index}`;
+        }
+        return item.data.id;
+    }, []);
 
     // Render notifications list for a specific filter
     // CRITICAL FIX: Her tab kendi query'sini kullanır - cache invalid olana kadar backend'e istek atmaz
@@ -594,7 +664,7 @@ const NotificationsScreenComponent: React.FC = () => {
             return (
                 <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
-                        Bildirimler yüklenirken bir hata oluştu.
+                        An error occurred while loading notifications.
                     </Text>
                 </Box>
             );
@@ -663,7 +733,7 @@ const NotificationsScreenComponent: React.FC = () => {
             return (
                 <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
-                        Bildirimler yüklenirken bir hata oluştu.
+                        An error occurred while loading notifications.
                     </Text>
                 </Box>
             );
@@ -682,11 +752,11 @@ const NotificationsScreenComponent: React.FC = () => {
             return (
                 <Box flex={1} justifyContent="center" alignItems="center" px="$4">
                     <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize={14} textAlign="center">
-                        Bildirimler yüklenirken bir hata oluştu.
+                        An error occurred while loading notifications.
                     </Text>
                     <Pressable onPress={() => refetch()} mt="$4" bg="#E8FF6B" px="$4" py="$2" borderRadius={10}>
                         <Text color="#000000" fontSize={12} fontWeight="$semibold">
-                            Tekrar Dene
+                            Try Again
                         </Text>
                     </Pressable>
                 </Box>
@@ -703,18 +773,40 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
+        // Bildirimleri tarihe göre grupla (Instagram benzeri)
+        const groupedData = groupNotificationsByDate(filtered);
+        
+        // DEBUG: hasNextPage değerini kontrol et
+        // CRITICAL FIX: hasNextPage undefined olabilir, bu durumda false olarak değerlendir
+        // Backend'den pagination gelmeyebilir, bu durumda hasNextPage false olur
+        // Eğer data varsa ve son sayfada limit kadar bildirim varsa, muhtemelen daha fazla sayfa var
+        const currentPageData = notificationsResponse?.pages?.[notificationsResponse.pages.length - 1];
+        const currentPageNotifications = currentPageData?.data || [];
+        // Son sayfada limit kadar bildirim varsa, muhtemelen daha fazla sayfa var
+        // Limit bilgisini query'den al (default: 20)
+        const limit = filterIndex === 1 ? 10 : 20; // Tips tabında limit=10, diğerlerinde 20
+        const hasMoreData = currentPageNotifications.length >= limit;
+        
+        // hasNextPage true ise göster, yoksa ama data limit kadar varsa da göster (backend pagination sorunu olabilir)
+        const shouldShowLoadMore = hasNextPage === true || (hasNextPage !== false && hasMoreData && filtered.length > 0);
+        
+        // DEBUG: Console log ekle (production'da kaldırılabilir)
+        if (__DEV__) {
+            console.log('[NotificationsScreen] hasNextPage:', hasNextPage, 'hasMoreData:', hasMoreData, 'filtered.length:', filtered.length, 'currentPageNotifications.length:', currentPageNotifications.length, 'limit:', limit, 'shouldShowLoadMore:', shouldShowLoadMore);
+        }
+        
         // Estimated item height: avatar (48px) + content + extra content (post card, comment, etc.) + margins (~150px)
         const estimatedItemHeight = 150;
         
         return (
             <FlashList
-                data={filtered}
+                data={groupedData}
                 renderItem={renderNotificationItem}
                 keyExtractor={keyExtractor}
                 contentContainerStyle={{ 
-                    paddingHorizontal: 16,
+                    paddingHorizontal: 0,
                     paddingTop: 8,
-                    paddingBottom: bottomOffset, // BUG FIX: FeedScreen ile aynı yapı - bottomOffset kullan
+                    // paddingBottom kaldırıldı - sadece ListFooterComponent'te padding var
                 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
@@ -727,17 +819,41 @@ const NotificationsScreenComponent: React.FC = () => {
                         tintColor={isDark ? '#E2FF46' : '#8B5CF6'}
                     />
                 }
-                onEndReached={() => {
-                    // Daha fazla sayfa varsa yükle
-                    if (hasNextPage && !isFetchingNextPage) {
-                        fetchNextPage();
-                    }
-                }}
-                onEndReachedThreshold={0.5}
                 ListFooterComponent={
-                    isFetchingNextPage ? (
-                        <Box py="$4" alignItems="center">
-                            <Spinner size="small" />
+                    shouldShowLoadMore ? (
+                        <Box px={16} py={24} pb={bottomOffset} alignItems="center">
+                            <Pressable
+                                onPress={() => {
+                                    if (!isFetchingNextPage && hasNextPage) {
+                                        fetchNextPage();
+                                    }
+                                }}
+                                disabled={isFetchingNextPage}
+                            >
+                                <HStack
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    space="sm"
+                                >
+                                    <Text
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                        fontSize={14}
+                                        fontWeight="$medium"
+                                    >
+                                        Show More
+                                    </Text>
+                                    <ChevronDownIcon
+                                        width={20}
+                                        height={20}
+                                        color={isDark ? '#FFFFFF' : '#000000'}
+                                    />
+                                </HStack>
+                            </Pressable>
+                            {isFetchingNextPage && (
+                                <Box mt={8}>
+                                    <Spinner size="small" />
+                                </Box>
+                            )}
                         </Box>
                     ) : null
                 }
@@ -747,13 +863,19 @@ const NotificationsScreenComponent: React.FC = () => {
     }, [
         filters,
         extractNotificationsFromResponse,
+        groupNotificationsByDate,
         searchQuery,
         isDark,
         renderNotificationItem,
         keyExtractor,
         refreshing,
+        bottomOffset,
+        isAuthReady,
+        shouldFetchNotifications,
+        currentPage,
         // CRITICAL FIX: filterQueryResults dependency'den kaldırıldı - useRef ile wrap edildi (sonsuz döngü önleme)
         // Query sonuçları değiştiğinde React Query otomatik olarak component'i re-render eder
+        // hasNextPage, isFetchingNextPage, fetchNextPage queryResult içinde olduğu için dependency'ye eklenmez
     ]);
 
     return (
@@ -788,7 +910,7 @@ const NotificationsScreenComponent: React.FC = () => {
                     />
                     <Input flex={1} borderWidth={0} bg="transparent">
                         <InputField
-                            placeholder="Search in notifications"
+                            placeholder="Search notifications"
                             placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                             color={isDark ? '#000' : '#000'}
                             fontSize="$xs"

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, ActivityIndicator, FlatList } from 'react-native';
+import { Platform, ActivityIndicator, FlatList, Pressable } from 'react-native';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
@@ -127,6 +127,10 @@ const FeedScreenInner = React.memo(() => {
   // Filtre state'i
   // @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
   // 
+  // FIX: Filter panel açık/kapalı durumu ve kapatma fonksiyonu - overlay için
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const closeFilterPanelRef = useRef<(() => void) | null>(null);
+  
   // Filtre Parametreleri:
   // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
   //   NOTE: INVENTORY_MATCH temporarily disabled due to backend Prisma schema issue
@@ -137,9 +141,6 @@ const FeedScreenInner = React.memo(() => {
   //   Backend'de interests ile birleştirilir (OR mantığı)
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
-  
-  // FIX: Filter panel açık/kapalı durumu - overlay için
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance

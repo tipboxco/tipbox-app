@@ -43,6 +43,7 @@ import { Alert } from 'react-native';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
+import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface TipsAndTricksPostCardProps {
     data: TipsCardData;
@@ -455,21 +456,25 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
             </Pressable>
 
             {/* Images */}
-            {data.images && data.images?.length > 0 && (
-                <Pressable
-                    onPress={() => {
-                        if (isDetailMode) return; // Detay modunda navigation yapma
-                        navigationService.navigate(ROOT_ROUTES.POST, {
-                            screen: 'PostDetailScreen',
-                            params: { postData: data, type: 'tipsAndTricks' }
-                        });
-                    }}
-                >
-                <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
-                    <CardImageCarousel images={data.images.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)} />
-                </VStack>
-                </Pressable>
-            )}
+            {(() => {
+                const validImages = data.images?.map(img => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) || [];
+                if (validImages.length === 0) return null;
+                return (
+                    <Pressable
+                        onPress={() => {
+                            if (isDetailMode) return; // Detay modunda navigation yapma
+                            navigationService.navigate(ROOT_ROUTES.POST, {
+                                screen: 'PostDetailScreen',
+                                params: { postData: data, type: 'tipsAndTricks' }
+                            });
+                        }}
+                    >
+                        <VStack px={12} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
+                            <CardImageCarousel images={validImages} />
+                        </VStack>
+                    </Pressable>
+                );
+            })()}
 
             {/* Stats */}
             <HStack
@@ -491,25 +496,34 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             ) : (
                                 <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                {likesCount}
-                            </Text>
+                            <AnimatedCounter
+                                value={likesCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleComment}>
                     <HStack mr={10} alignItems="center">
                         <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                {commentsCount}
-                            </Text>
+                            <AnimatedCounter
+                                value={commentsCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleShare}>
                     <HStack mr={10} alignItems="center">
                         <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                {sharesCount}
-                            </Text>
+                            <AnimatedCounter
+                                value={sharesCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                     </HStack>
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
@@ -519,9 +533,12 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             ) : (
                                 <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                {bookmarksCount}
-                            </Text>
+                            <AnimatedCounter
+                                value={bookmarksCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                     </HStack>
                     </Pressable>
                 </HStack>

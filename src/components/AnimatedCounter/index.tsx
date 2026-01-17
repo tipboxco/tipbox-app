@@ -1,110 +1,136 @@
-import React, { useEffect, useRef } from 'react';
-import { TextInput, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { View, StyleSheet, Text } from 'react-native';
 import Animated, {
   useSharedValue,
-  useAnimatedProps,
+  useAnimatedStyle,
   withTiming,
   withSpring,
-  Easing,
-  interpolate,
-  useAnimatedStyle,
-  withSequence,
 } from 'react-native-reanimated';
-
-// Create animated TextInput component
-Animated.addWhitelistedNativeProps({ text: true });
-const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+import { config } from '@/src/components/ui/gluestack-ui-provider/config';
 
 interface AnimatedCounterProps {
   value: number;
-  fontSize?: number;
-  fontWeight?: string;
   color?: string;
-  darkColor?: string;
-  decimalPlaces?: number;
-  duration?: number;
-  prefix?: string;
-  suffix?: string;
+  fontSize?: string | number;
   ml?: number;
-  mr?: number;
-  mt?: number;
-  mb?: number;
 }
+
+// Token'ı gerçek renk değerine çevir
+const resolveColorToken = (colorToken: string | undefined): string | undefined => {
+  if (!colorToken) return undefined;
+  
+  // Eğer zaten hex color ise direkt döndür
+  if (colorToken.startsWith('#')) {
+    return colorToken;
+  }
+  
+  // Token ise (örn: $textDark50) gerçek renk değerini al
+  if (colorToken.startsWith('$')) {
+    const tokenName = colorToken.substring(1); // $ işaretini kaldır
+    const colorValue = config.tokens.colors[tokenName as keyof typeof config.tokens.colors];
+    return colorValue || colorToken; // Token bulunamazsa orijinal değeri döndür
+  }
+  
+  return colorToken;
+};
+
+// Font size'ı sayıya çevir (Gluestack token'ları için)
+const resolveFontSize = (fontSize: string | number | undefined): number => {
+  if (typeof fontSize === 'number') {
+    return fontSize;
+  }
+  
+  if (typeof fontSize === 'string') {
+    // Gluestack font size token'ları
+    const fontSizeMap: Record<string, number> = {
+      '$4xs': 8,
+      '$3xs': 9,
+      '$2xs': 10,
+      '$xs': 12,
+      '$sm': 14,
+      '$md': 16,
+      '$lg': 18,
+      '$xl': 20,
+    };
+    
+    return fontSizeMap[fontSize] || 10; // Default: $2xs
+  }
+  
+  return 10; // Default
+};
 
 export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   value,
-  fontSize = 38,
-  fontWeight = 'bold',
-  color = '#000000',
-  darkColor = '#FFFFFF',
-  decimalPlaces = 2,
-  duration = 1000,
-  prefix = '',
-  suffix = '',
-  ml = 0,
-  mr = 0,
-  mt = 0,
-  mb = 0,
+  color,
+  fontSize = '$2xs',
+  ml = 4,
 }) => {
-  const animatedValue = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const prevValueRef = useRef(0);
+  // Token'ı gerçek renk değerine çevir
+  const resolvedColor = useMemo(() => resolveColorToken(color), [color]);
+  
+  // Font size'ı sayıya çevir
+  const resolvedFontSize = useMemo(() => resolveFontSize(fontSize), [fontSize]);
+
+  // Her rakam için animasyon değerleri
+  const valueString = value.toString();
+  const digits = valueString.split('');
+
+  return (
+    <View style={[styles.container, { marginLeft: ml, flexDirection: 'row' }]}>
+      {digits.map((digit, index) => (
+        <AnimatedDigit
+          key={`${digit}-${index}-${value}`}
+          digit={digit}
+          fontSize={resolvedFontSize}
+          color={resolvedColor || '#000'}
+        />
+      ))}
+    </View>
+  );
+};
+
+interface AnimatedDigitProps {
+  digit: string;
+  fontSize: number;
+  color: string;
+}
+
+const AnimatedDigit: React.FC<AnimatedDigitProps> = ({ digit, fontSize, color }) => {
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(1);
 
   useEffect(() => {
-    const prevValue = prevValueRef.current;
+    // Yeni rakam geldiğinde animasyonu tetikle
+    translateY.value = 10; // Aşağıdan başla
+    opacity.value = 0;
     
-    // Animate the counter value
-    animatedValue.value = withTiming(value, {
-      duration,
-      easing: Easing.out(Easing.exp),
+    translateY.value = withSpring(0, {
+      damping: 20,
+      stiffness: 250,
     });
-
-    // Add scale animation when value changes
-    if (prevValue !== value && prevValue !== 0) {
-      scale.value = withSequence(
-        withSpring(1.1, { damping: 10, stiffness: 100 }),
-        withSpring(1, { damping: 10, stiffness: 100 })
-      );
-    }
-
-    prevValueRef.current = value;
-  }, [value, animatedValue, duration, scale]);
-
-  const animatedProps = useAnimatedProps(() => {
-    const displayValue = animatedValue.value.toFixed(decimalPlaces);
-    return {
-      text: `${prefix}${displayValue}${suffix}`,
-    } as any;
-  });
+    opacity.value = withTiming(1, { duration: 120 });
+  }, [digit]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ scale: scale.value }],
+      transform: [{ translateY: translateY.value }],
+      opacity: opacity.value,
     };
   });
 
   return (
-    <Animated.View style={[animatedStyle, { marginLeft: ml, marginRight: mr, marginTop: mt, marginBottom: mb }]}>
-      <AnimatedTextInput
-        animatedProps={animatedProps}
-        editable={false}
-        style={[
-          styles.text,
-          {
-            fontSize,
-            fontWeight: fontWeight as any,
-            color: color,
-          },
-        ]}
-        defaultValue="0.00"
-      />
+    <Animated.View style={[styles.digitContainer, animatedStyle]}>
+      <Text style={{ fontSize, color }}>{digit}</Text>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  text: {
-    textAlign: 'center',
+  container: {
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  digitContainer: {
+    overflow: 'hidden',
   },
 });
-

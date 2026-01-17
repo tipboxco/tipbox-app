@@ -39,6 +39,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 import { useDeviceLocale } from '@/src/hooks/useDeviceLocale';
 import { usePostTranslation } from '@/src/hooks/usePostTranslation';
+import { AnimatedCounter } from '@/src/components/AnimatedCounter';
 
 interface BenchmarkPostCardProps {
     data: BenchmarkCardData;
@@ -585,15 +586,12 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             ) : (
                                 <HeartIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {data.stats.likes}
-                                </Text>
-                            ) : (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {likesCount}
-                                </Text>
-                            )}
+                            <AnimatedCounter
+                                value={isDetailMode ? data.stats.likes : likesCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                         </HStack>
                     </Pressable>
                     <Pressable 
@@ -603,29 +601,23 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     >
                         <HStack mr={10} alignItems="center">
                             <ChatBubbleLeftIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {data.stats.comments}
-                                </Text>
-                            ) : (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {commentsCount}
-                                </Text>
-                            )}
+                            <AnimatedCounter
+                                value={isDetailMode ? data.stats.comments : commentsCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                         </HStack>
                     </Pressable>
                     <Pressable onPress={handleShare}>
                         <HStack mr={10} alignItems="center">
                             <PaperAirplaneIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
-                            {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {data.stats.shares}
-                                </Text>
-                            ) : (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {sharesCount}
-                                </Text>
-                            )}
+                            <AnimatedCounter
+                                value={isDetailMode ? data.stats.shares : sharesCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                         </HStack>
                     </Pressable>
                     <Pressable onPress={handleBookmark}>
@@ -635,15 +627,12 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             ) : (
                                 <BookmarkIcon width={24} height={24} color={isDark ? '#fff' : '#000'} />
                             )}
-                            {isDetailMode ? (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {data.stats.bookmarks}
-                                </Text>
-                            ) : (
-                                <Text color={isDark ? '$textDark50' : '#000'} ml={4} fontSize={10}>
-                                    {bookmarksCount}
-                                </Text>
-                            )}
+                            <AnimatedCounter
+                                value={isDetailMode ? data.stats.bookmarks : bookmarksCount}
+                                color={isDark ? '$textDark50' : '#000'}
+                                fontSize={10}
+                                ml={4}
+                            />
                         </HStack>
                     </Pressable>
                 </HStack>

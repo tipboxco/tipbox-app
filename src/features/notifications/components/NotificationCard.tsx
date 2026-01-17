@@ -116,86 +116,86 @@ const getIconComponent = (type: NotificationType): React.ComponentType<{ width?:
  * Dokümana göre: message field'ı yok, tüm bilgiler data objesi içinde
  */
 const getNotificationMessage = (type: NotificationType, data: any): string => {
-    const username = data?.username || data?.userName || data?.senderName || data?.likerName || data?.commenterName || data?.expertName || 'Kullanıcı';
+    const username = data?.username || data?.userName || data?.senderName || data?.likerName || data?.commenterName || data?.expertName || 'User';
     
     switch (type) {
-        // POST ETKİLEŞİMLERİ
+        // POST INTERACTIONS
         case 'POST_LIKED':
-            return `${username} beğendi`;
+            return `${username} liked`;
         case 'POST_COMMENTED':
-            return `${username} yorum yaptı`;
+            return `${username} commented`;
         case 'POST_SHARED':
-            return `${username} paylaştı`;
+            return `${username} shared`;
         case 'POST_FAVORITED':
-            return `${username} favorilere ekledi`;
+            return `${username} favorited`;
         
-        // YORUM ETKİLEŞİMLERİ
+        // COMMENT INTERACTIONS
         case 'COMMENT_LIKED':
-            return `${username} yorumunu beğendi`;
+            return `${username} liked your comment`;
         case 'COMMENT_REPLIED':
-            return `${username} cevap verdi`;
+            return `${username} replied`;
         
-        // TRUST/FOLLOW BİLDİRİMLERİ
+        // TRUST/FOLLOW NOTIFICATIONS
         case 'NEW_TRUSTER':
-            return `${username} seni takip etmeye başladı`;
+            return `${username} started following you`;
         case 'NEW_TRUSTED_BY':
-            return `${username} seni takip ediyor`;
+            return `${username} is following you`;
         
-        // MESAJLAŞMA BİLDİRİMLERİ
+        // MESSAGING NOTIFICATIONS
         case 'DM_REQUEST_RECEIVED':
-            return `${username} mesaj isteği gönderdi`;
+            return `${username} sent a message request`;
         case 'DM_REQUEST_ACCEPTED':
-            return `${username} mesaj isteğini kabul etti`;
+            return `${username} accepted your message request`;
         case 'DM_REQUEST_DECLINED':
-            return `${username} mesaj isteğini reddetti`;
+            return `${username} declined your message request`;
         case 'SUPPORT_REQUEST_ACCEPTED':
             const expertName = data?.expertName || username;
-            return `${expertName} destek isteğini kabul etti`;
+            return `${expertName} accepted your support request`;
         case 'NEW_MESSAGE':
-            return `${username} yeni mesaj gönderdi`;
+            return `${username} sent a new message`;
         
-        // TIPS BİLDİRİMLERİ
+        // TIPS NOTIFICATIONS
         case 'TIPS_RECEIVED':
-            return `${username} size bahşiş gönderdi`;
+            return `${username} sent you a tip`;
         case 'TIPS_SENT':
-            return `${username} kullanıcısına bahşiş gönderildi`;
+            return `Tip sent to ${username}`;
         
-        // GAMIFICATION BİLDİRİMLERİ
+        // GAMIFICATION NOTIFICATIONS
         case 'NEW_BADGE':
-            return 'Yeni rozet kazandın!';
+            return 'You earned a new badge!';
         case 'ACHIEVEMENT_UNLOCKED':
-            return 'Başarı açıldı!';
+            return 'Achievement unlocked!';
         case 'REWARD_EARNED':
             const rewardAmount = data?.amount || 0;
-            return `${rewardAmount} TIPS ödülü kazandın!`;
+            return `You earned ${rewardAmount} TIPS reward!`;
         
-        // EXPERT BİLDİRİMLERİ
+        // EXPERT NOTIFICATIONS
         case 'EXPERT_REQUEST_AVAILABLE':
-            return 'Yeni expert sorusu mevcut';
+            return 'New expert question available';
         case 'EXPERT_REQUEST_ANSWERED':
             const expertNameAnswered = data?.expertName || username;
-            return `${expertNameAnswered} sorunu cevapladı`;
+            return `${expertNameAnswered} answered the question`;
         
-        // EVENT BİLDİRİMLERİ
+        // EVENT NOTIFICATIONS
         case 'EVENT_STARTED':
-            return 'Etkinlik başladı!';
+            return 'Event started!';
         case 'EVENT_ENDING_SOON':
-            return 'Etkinlik yakında bitiyor!';
+            return 'Event ending soon!';
         case 'EVENT_REWARD_AVAILABLE':
-            return 'Etkinlik ödülü mevcut!';
+            return 'Event reward available!';
         
-        // COLLECTION BİLDİRİMLERİ
+        // COLLECTION NOTIFICATIONS
         case 'COLLECTION_POST_ADDED':
-            return 'Post koleksiyona eklendi';
+            return 'Post added to collection';
         case 'COLLECTION_SHARED':
-            return 'Koleksiyon paylaşıldı';
+            return 'Collection shared';
         
-        // SYSTEM BİLDİRİMLERİ
+        // SYSTEM NOTIFICATIONS
         case 'SYSTEM_ANNOUNCEMENT':
-            return 'Sistem duyurusu';
+            return 'System announcement';
         
         default:
-            return 'Yeni bildirim';
+            return 'New notification';
     }
 };
 
@@ -280,7 +280,7 @@ const PostCard: React.FC<{
                 />
             )}
             
-            {/* İpucu Badge */}
+            {/* Tip Badge */}
             <HStack space="sm" alignItems="center" mb="$2">
                 <HStack
                     bg="#3B82F6"
@@ -296,7 +296,7 @@ const PostCard: React.FC<{
                         fontSize="$xs"
                         fontWeight="$semibold"
                     >
-                        İpucu
+                        Tip
                     </Text>
                 </HStack>
                 {data.categoryName && (
@@ -391,7 +391,7 @@ const TrustCard: React.FC<{
                 fontSize="$xs"
                 fontWeight="$semibold"
             >
-                Profili Görüntüle
+                View Profile
             </Text>
         </Pressable>
     );
@@ -419,7 +419,7 @@ const ChatButton: React.FC<{
                 fontSize="$xs"
                 fontWeight="$semibold"
             >
-                Sohbeti Görüntüle
+                Go to Chat
             </Text>
         </Pressable>
     );
@@ -821,6 +821,56 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         }
     };
 
+    // Handle Tips button press - Navigate to Wallet
+    const handleTipsPress = () => {
+        try {
+            navigationService.navigate(ROOT_ROUTES.WALLET, {
+                screen: 'WalletScreen',
+            }, {
+                priority: 'high',
+                force: false,
+            });
+        } catch (error) {
+            console.error('[NotificationCard] Tips navigation error:', error);
+        }
+    };
+
+    // Handle Trust button press - Navigate to Profile
+    const handleTrustPress = () => {
+        if (notification.userId) {
+            try {
+                navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                    screen: 'ProfileMain',
+                    params: { userId: notification.userId },
+                }, {
+                    priority: 'high',
+                    force: false,
+                });
+            } catch (error) {
+                console.error('[NotificationCard] Trust navigation error:', error);
+            }
+        }
+    };
+
+    // Handle Chat button press - Navigate to MessageDetail with threadId
+    const handleChatPress = () => {
+        const data = notification.data || notification.metadata || {};
+        if (data.threadId) {
+            try {
+                navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+                    messageId: data.threadId,
+                    threadId: data.threadId,
+                    recipientUserId: notification.userId,
+                }, {
+                    priority: 'high',
+                    force: false,
+                });
+            } catch (error) {
+                console.error('[NotificationCard] Chat navigation error:', error);
+            }
+        }
+    };
+
     // Avatar ve kullanıcı bilgileri
     const userAvatar = notification.avatar 
         ? toImageSource(notification.avatar)
@@ -854,7 +904,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     return (
         <Pressable 
             onPress={handlePress}
-            py={8}
+            py={4}
             px={16}
             borderBottomWidth={1}
             borderBottomColor={isDark ? '#333' : '#E9E9E9'}
@@ -955,7 +1005,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             <Box>
                                 <TipsCard 
                                     notification={notification} 
-                                    onPress={handleAvatarPress}
+                                    onPress={handleTipsPress}
                                 />
                             </Box>
                         )}
@@ -964,25 +1014,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             <Box>
                                 <ChatButton 
                                     notification={notification} 
-                                    onPress={() => {
-                                        // DM_REQUEST_ACCEPTED için sohbet ekranına yönlendir
-                                        const data = notification.data || notification.metadata || {};
-                                        if (data.threadId) {
-                                            navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
-                                                messageId: data.threadId,
-                                            }, {
-                                                priority: 'high',
-                                                force: false,
-                                            });
-                                        }
-                                    }}
+                                    onPress={handleChatPress}
                                 />
                             </Box>
                         )}
 
                         {showTrustButton && (
                             <Box>
-                                <TrustCard notification={notification} onPress={onPress} />
+                                <TrustCard notification={notification} onPress={handleTrustPress} />
                             </Box>
                         )}
 

@@ -1303,14 +1303,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             </Box>
           </Box>
         ) : (
-          profile.badges && profile.badges.length > 0 && (
-            <Box mt={6} px={15} pb={16}>
-              <Box
-                borderRadius={5}
-                p={14}
-                h={130}
-              >
-                <HStack space="md" justifyContent="flex-start">
+          <Box mt={6} px={15} pb={8}>
+            <Box
+              borderRadius={5}
+              p={profile.badges && profile.badges.length > 0 ? 14 : 8}
+            >
+              {profile.badges && profile.badges.length > 0 ? (
+                <HStack space="md" justifyContent="flex-start" alignItems="center" flex={1}>
                   {profile.badges.slice(0, 4).map((badge) => (
                     <Pressable
                       key={badge.id}
@@ -1346,6 +1345,43 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     </Pressable>
                   ))}
                 </HStack>
+              ) : (
+                <Box position="relative" flex={1} height={70}>
+                  {/* 1 tane dashed badge placeholder - solda */}
+                  <Box
+                    w={70}
+                    h={70}
+                    borderRadius={5}
+                    borderWidth={2}
+                    borderColor={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'}
+                    borderStyle="dashed"
+                    justifyContent="center"
+                    alignItems="center"
+                    bg={isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'}
+                  />
+                  {/* "Henüz badge yok" text - ortada (absolute position) */}
+                  <Box
+                    position="absolute"
+                    left={0}
+                    right={0}
+                    top={0}
+                    bottom={0}
+                    justifyContent="center"
+                    alignItems="center"
+                    pointerEvents="none"
+                  >
+                    <Text
+                      color={isDark ? '$textDark400' : '$textLight600'}
+                      fontSize="$xs"
+                      fontWeight="$regular"
+                      textAlign="center"
+                    >
+                      Henüz badge yok
+                    </Text>
+                  </Box>
+                </Box>
+              )}
+              {profile.badges && profile.badges.length > 0 && (
                 <Pressable
                   onPress={() => {
                     navigation.navigate('Collections');
@@ -1361,9 +1397,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     See More Collections
                   </Text>
                 </Pressable>
-              </Box>
+              )}
             </Box>
-          )
+          </Box>
         )}
       </Box>
     );
