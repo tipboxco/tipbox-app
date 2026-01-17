@@ -117,11 +117,19 @@ export const UpdatePostCardDetail = ({ data, showRelatedPost, relatedPostData, o
   };
 
   const handleOptionsPress = () => {
+    // Context bilgilerini relatedPost'tan veya data'dan al
+    const contextType = (data as any).contextType || (data.relatedPost?.product ? 'product' : undefined);
+    const contextId = (data as any).contextId || data.relatedPost?.product?.id || data.product?.id;
+    
     openBottomSheet(
       <PostOptionsMenu
         postId={data.id}
         postContent={data.content}
         postAuthorName={data.user.name}
+        postAuthorId={data.user.id}
+        postType="update"
+        postContextType={contextType}
+        postContextId={contextId}
       />
     );
   };

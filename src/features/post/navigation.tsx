@@ -44,7 +44,7 @@ export type PostStackParamList = {
   CreateQuestionPostScreen: undefined;
   CreateExperiencePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string }; fromInventory?: boolean; experienceOption?: 'own' | 'tried' };
   CreateBenchmarkPostScreen: { product?: { id: string; name: string; description?: string; image: any } };
-  CreateUpdatePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string } };
+  CreateUpdatePostScreen: { product?: { id: string; name: string; description?: string; image: any; brand?: string }; postId?: string }; // postId: Update modu için
 };
 
 const Stack = createNativeStackNavigator<PostStackParamList>();

@@ -412,6 +412,28 @@ export const getSubCategoryPosts = async (
     
     return safeResponse;
   } catch (error: any) {
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      // Sadece debug modunda log bas (production'da sessiz)
+      if (__DEV__) {
+        console.warn('[getSubCategoryPosts] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
+          url: `/catalog/sub-categories/${subCategoryId}/posts`,
+          subCategoryId,
+          message: 'This endpoint is not available on the backend server. Please contact backend team.',
+        });
+      }
+      
+      // Boş response döndür (kullanıcıya hata göstermek yerine boş feed göster)
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    
+    // 404 dışındaki hatalar için error log
     console.error('[getSubCategoryPosts] API Error:', {
       url: `/catalog/sub-categories/${subCategoryId}/posts?${params.toString()}`,
       status: error.response?.status,

@@ -31,7 +31,7 @@ interface ContextMenuReanimatedProps {
   children: React.ReactNode;
   onViewProfile?: () => void;
   onReport?: () => void;
-  // Optional: Custom menu items
+  // Optional: Custom menu items (if provided, replaces default items)
   menuItems?: Array<{
     label: string;
     icon?: React.ReactNode;
@@ -71,19 +71,30 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
   const progress = useSharedValue(0);
   
   // Calculate menu items - create icons dynamically
-  const items = menuItems || [
-    ...(onViewProfile ? [{ 
-      label: 'View Profile', 
-      icon: <UserIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />, 
-      onPress: onViewProfile 
-    }] : []),
-    ...(onReport ? [{ 
-      label: 'Report', 
-      icon: <FlagIcon width={20} height={20} color="#FF3040" />, 
-      onPress: onReport, 
-      color: '#FF3040' 
-    }] : []),
-  ];
+  // menuItems varsa onu kullan, yoksa default items'ı oluştur
+  const items = React.useMemo(() => {
+    if (menuItems && menuItems.length > 0) {
+      console.log('[ContextMenuReanimated] Using custom menuItems:', menuItems.length, 'items');
+      return menuItems;
+    }
+    
+    const defaultItems = [
+      ...(onViewProfile ? [{ 
+        label: 'View Profile', 
+        icon: <UserIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />, 
+        onPress: onViewProfile 
+      }] : []),
+      ...(onReport ? [{ 
+        label: 'Report', 
+        icon: <FlagIcon width={20} height={20} color="#FF3040" />, 
+        onPress: onReport, 
+        color: '#FF3040' 
+      }] : []),
+    ];
+    
+    console.log('[ContextMenuReanimated] Using default items:', defaultItems.length, 'items');
+    return defaultItems;
+  }, [menuItems, onViewProfile, onReport, isDark]);
   
   // Menu height: VStack padding (4 top + 12 bottom) + items (her item py={10} + text height ~15px = ~35px per item) + dividers (1px per divider)
   // Her item için: py={10} (20px padding) + text height (~15px) = ~35px
@@ -198,10 +209,19 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
 
   // Handle menu item press
   const handleMenuItemPress = useCallback((onPress: () => void) => {
+    console.log('[ContextMenuReanimated] Menu item pressed, onPress:', typeof onPress);
+    if (!onPress || typeof onPress !== 'function') {
+      console.error('[ContextMenuReanimated] ❌ onPress is not a function:', onPress);
+      return;
+    }
     closeMenu();
     // Small delay to allow close animation
     setTimeout(() => {
-      onPress();
+      try {
+        onPress();
+      } catch (error) {
+        console.error('[ContextMenuReanimated] ❌ Error executing onPress:', error);
+      }
     }, 150);
   }, [closeMenu]);
 

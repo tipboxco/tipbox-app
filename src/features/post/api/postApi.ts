@@ -715,16 +715,28 @@ export interface DeletePostResponse {
 }
 
 export const deletePost = async (postId: string): Promise<DeletePostResponse> => {
+  console.log('[deletePost] 🗑️ Sending DELETE request to /posts/' + postId);
+  
   try {
     const response = await apiService.getClient().delete<DeletePostResponse>(`/posts/${postId}`);
+    
+    console.log('[deletePost] ✅ Post deleted successfully:', {
+      postId,
+      response: response.data,
+      status: response.status,
+      timestamp: new Date().toISOString(),
+    });
+    
     return response.data;
   } catch (error: any) {
-    console.error('[deletePost] API Error:', {
+    console.error('[deletePost] ❌ API Error:', {
+      postId,
       url: `/posts/${postId}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      timestamp: new Date().toISOString(),
     });
     throw error;
   }

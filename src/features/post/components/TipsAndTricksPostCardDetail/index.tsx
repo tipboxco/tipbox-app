@@ -111,11 +111,19 @@ export const TipsAndTricksPostCardDetail = ({ data, onCommentPress }: TipsAndTri
     };
 
     const handleOptionsPress = () => {
+        // Context bilgilerini data'dan al
+        const contextType = (data as any).contextType;
+        const contextId = (data as any).contextId || (data as any).product?.id;
+        
         openBottomSheet(
             <PostOptionsMenu
                 postId={data.id}
                 postContent={data.content}
                 postAuthorName={data.user.name}
+                postAuthorId={data.user.id}
+                postType="tips_and_tricks"
+                postContextType={contextType}
+                postContextId={contextId}
             />
         );
     };

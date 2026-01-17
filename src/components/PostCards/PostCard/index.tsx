@@ -8,6 +8,8 @@ import {
   ChatBubbleLeftIcon,
   PaperAirplaneIcon,
   BookmarkIcon,
+  PencilIcon,
+  TrashIcon,
 } from 'react-native-heroicons/outline';
 import {
   HeartIcon as HeartIconSolid,
@@ -37,6 +39,9 @@ import {
   useReportUser,
 } from '@/src/features/profile/api/hooks';
 import { ContextMenuReanimated } from './ContextMenuReanimated';
+import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface PostCardProps {
   data: PostCardData;
@@ -64,6 +69,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
 
   // User profile check
   const targetUserId = data.user.id;
+  const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
   
   // Interaction hooks
   const likePostMutation = useLikePost();
@@ -75,6 +81,11 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   
   // User action hooks
   const { mutate: reportUser } = useReportUser();
+  const { openBottomSheet } = useGlobalBottomSheet();
+  
+  // Post owner actions
+  const updatePostMutation = useUpdatePost();
+  const deletePostMutation = useDeletePost();
 
   // Sync with post status from API
   useEffect(() => {
@@ -218,6 +229,79 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     );
   }, [targetUserId]);
 
+  // Post owner actions
+  const handleUpdate = useCallback(() => {
+    // Context bilgilerini data'dan al
+    const contextType = (data as any).contextType;
+    const contextId = (data as any).contextId || (data.contextData?.id);
+    const postType = (data as any).type || 'post';
+    
+    // PostOptionsMenu'yu bottom sheet olarak aç
+    openBottomSheet(
+      <PostOptionsMenu
+        postId={data.id}
+        postContent={data.content || (data as any).description}
+        postAuthorName={data.user.name}
+        postAuthorId={data.user.id}
+        postType={postType}
+        postContextType={contextType}
+        postContextId={contextId}
+      />
+    );
+  }, [data, openBottomSheet]);
+
+  const handleDelete = useCallback(() => {
+    console.log('[PostCard] 🗑️ Delete button clicked for post:', data.id);
+    
+    Alert.alert(
+      'Post\'u Sil',
+      'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+          onPress: () => {
+            console.log('[PostCard] ❌ Delete cancelled by user');
+          },
+        },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('[PostCard] ✅ Delete confirmed, sending DELETE request to /posts/' + data.id);
+            
+            try {
+              const response = await deletePostMutation.mutateAsync(data.id);
+              
+              console.log('[PostCard] ✅ Post deleted successfully:', {
+                postId: data.id,
+                response,
+                timestamp: new Date().toISOString(),
+              });
+              
+              Alert.alert('Başarılı', 'Post başarıyla silindi.');
+            } catch (error: any) {
+              console.error('[PostCard] ❌ Delete post error:', {
+                postId: data.id,
+                url: `/posts/${data.id}`,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                message: error.message,
+                timestamp: new Date().toISOString(),
+              });
+              
+              Alert.alert(
+                'Hata',
+                error.response?.data?.message || 'Post silinirken bir hata oluştu.'
+              );
+            }
+          },
+        },
+      ]
+    );
+  }, [data.id, deletePostMutation]);
+
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
   const isGroupOrSubCategoryContext =
@@ -267,7 +351,20 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           </Pressable>
           <ContextMenuReanimated
             onViewProfile={handleViewProfile}
-            onReport={handleReport}
+            onReport={!isPostOwner ? handleReport : undefined}
+            menuItems={isPostOwner ? [
+              {
+                label: 'Güncelle',
+                icon: <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />,
+                onPress: handleUpdate,
+              },
+              {
+                label: 'Sil',
+                icon: <TrashIcon width={20} height={20} color="#FF3040" />,
+                onPress: handleDelete,
+                color: '#FF3040',
+              },
+            ] : undefined}
             onMenuStateChange={setIsContextMenuOpen}
             onCloseRef={(closeFn) => {
               contextMenuCloseRef.current = closeFn;

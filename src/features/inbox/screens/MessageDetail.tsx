@@ -179,6 +179,12 @@ const MessageDetailScreen: React.FC = () => {
     senderAvatar: undefined,
   };
 
+  // CRITICAL FIX: params değerlerini useRef ile sakla (dependency array'deki infinite loop'u önlemek için)
+  const paramsRef = useRef(params);
+  useEffect(() => {
+    paramsRef.current = params;
+  }, [params.senderName, params.senderTitle, params.senderAvatar, params.messageId, params.recipientUserId, params.threadId]);
+
   // Route params'dan recipientUserId'yi al
   const routeParams = (route.params as MessageDetailScreenParams) || {};
   const recipientUserId = routeParams.recipientUserId;
@@ -247,23 +253,26 @@ const MessageDetailScreen: React.FC = () => {
   const layoutSizeRef = useRef({ width: 0, height: 0 });
 
   // Güvenli scroll helper - Normal FlatList için scrollToEnd kullan
+  // CRITICAL FIX: useCallback yerine normal fonksiyon kullan (dependency loop'u önlemek için)
   const safeScrollToEnd = useCallback((animated: boolean = true) => {
     try {
       // Normal FlatList'te en yeni mesaj en altta, scrollToEnd en alta scroll yapar
-      if (messages.length > 0) {
-        flatListRef.current?.scrollToEnd({ animated });
+      if (flatListRef.current) {
+        flatListRef.current.scrollToEnd({ animated });
       }
     } catch (error) {
       // Hata durumunda scrollToOffset ile son mesajın offset'ini hesapla
       try {
         // Son mesajın yaklaşık offset'ini hesapla (her mesaj ~100px varsayarak)
-        const estimatedOffset = messages.length * 100;
+        // messages.length yerine ref kullan (dependency loop'u önlemek için)
+        const estimatedOffset = 10000; // Büyük bir değer kullan (en alta scroll için)
         flatListRef.current?.scrollToOffset({ offset: estimatedOffset, animated });
       } catch (offsetError) {
         // Sessizce yakala
       }
     }
-  }, [messages.length]);
+    // CRITICAL FIX: messages.length dependency'den çıkarıldı - flatListRef.current zaten güncel
+  }, []);
 
   // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth)
   const scrollByMessageHeight = useCallback((messageText: string) => {
@@ -296,7 +305,8 @@ const MessageDetailScreen: React.FC = () => {
       // Hata durumunda normal scroll yap
       safeScrollToEnd(true);
     }
-  }, [safeScrollToEnd]);
+    // CRITICAL FIX: safeScrollToEnd dependency'den çıkarıldı - flatListRef.current zaten güncel
+  }, []);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Thread mesajlarını yükle
@@ -397,16 +407,17 @@ const MessageDetailScreen: React.FC = () => {
         }
         
         // Normal FlatList için mesajları normal sırada tut (en eski başta, en yeni sonda)
+        const currentParams = paramsRef.current;
         const convertedMessages: MessageDetailItem[] = threadMessages
           .map((msg) => {
             const isSent = msg.senderId === user?.id;
             // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
             const senderName = isSent 
               ? undefined 
-              : (msg.senderName || params.senderName || 'Unknown');
+              : (msg.senderName || currentParams.senderName || 'Unknown');
             const senderAvatar = isSent 
               ? undefined 
-              : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : params.senderAvatar);
+              : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
             
             // Mesaj tipini belirle
             let messageType: 'message' | 'support_request' | 'tips' = 'message';
@@ -505,7 +516,10 @@ const MessageDetailScreen: React.FC = () => {
       // Pending mesajları koru
       setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
     }
-  }, [threadMessages, isLoadingMessages, user?.id, params.senderName, params.senderAvatar, threadId, isConnected, socketMarkThreadRead, markThreadAsReadMutation, queryClient, safeScrollToEnd]);
+    // CRITICAL FIX: params değerleri paramsRef.current üzerinden kullanılıyor, dependency'den çıkarıldı
+    // queryClient, socketMarkThreadRead, markThreadAsReadMutation stable olduğu için dependency'den çıkarıldı
+    // safeScrollToEnd dependency'den çıkarıldı - flatListRef.current zaten güncel
+  }, [threadMessages, isLoadingMessages, user?.id, threadId, isConnected]);
 
   // 4️⃣ CHAT EKRANI AÇILDIĞINDA - Thread ID kontrolü, socket bağlantısı, thread join, event listener'lar
   useEffect(() => {
@@ -702,22 +716,23 @@ const MessageDetailScreen: React.FC = () => {
     if (eventData.messageType === 'message') {
       // Normal mesaj
       const isSent = eventData.senderId === currentUserId;
+      const currentParams = paramsRef.current;
       console.log('[MessageDetail] 📨 New message event data:', {
         messageId: eventData.messageId,
         message: eventData.message,
         senderId: eventData.senderId,
         currentUserId,
         isSent,
-        senderName: params.senderName,
-        hasAvatar: !!params.senderAvatar,
+        senderName: currentParams.senderName,
+        hasAvatar: !!currentParams.senderAvatar,
       });
       const newMessage: MessageDetailItem = {
         id: eventData.messageId,
         text: eventData.message || eventData.text || '', // Fallback için birden fazla field kontrol et
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
         isSent,
-        senderName: isSent ? undefined : (params.senderName || 'Unknown'),
-        senderAvatar: isSent ? undefined : params.senderAvatar,
+        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         isRead: false, // Yeni mesaj henüz okunmadı
       };
       console.log('[MessageDetail] 📨 Created message item:', {
@@ -802,13 +817,14 @@ const MessageDetailScreen: React.FC = () => {
       const tipsAmount = eventData.amount || 0;
       const tipsMessageText = eventData.message || '';
       
+      const currentParams = paramsRef.current;
       const newTipsMessage: MessageDetailItem = {
         id: eventData.messageId,
         text: tipsMessageText,
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
         isSent,
-        senderName: isSent ? undefined : (params.senderName || 'Unknown'),
-        senderAvatar: isSent ? undefined : params.senderAvatar,
+        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: 'tips',
         tipsAmount: tipsAmount,
         isRead: false,
@@ -879,14 +895,12 @@ const MessageDetailScreen: React.FC = () => {
     // Mesaj listesini invalidate et (inbox listesini güncelle)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     
-    // Thread mesajlarını da invalidate et ve refetch yap (yeniden yüklensin)
+    // Thread mesajlarını da invalidate et (refetch otomatik olarak yapılacak)
     if (currentThreadId) {
       queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(currentThreadId) });
-      setTimeout(() => {
-        refetchMessages();
-      }, 500);
     }
-  }, [user?.id, threadId, params.senderName, params.senderAvatar, queryClient, isSocketReady, socketMarkMessageAsRead, refetchMessages]);
+    // CRITICAL FIX: refetchMessages dependency'den çıkarıldı - queryClient.invalidateQueries yeterli
+  }, [user?.id, threadId, isSocketReady]);
 
   // 9️⃣ SOCKET EVENT'LERİ ALINIR - message_sent event handler (gönderici onayı)
   const handleMessageSent = useCallback((eventData: any) => {
@@ -965,7 +979,8 @@ const MessageDetailScreen: React.FC = () => {
     if (threadId) {
       queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(threadId) });
     }
-  }, [threadId, queryClient]);
+    // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
+  }, [threadId]);
 
   // Thread event handlers
   const handleThreadJoined = useCallback((data: { threadId: string }) => {
@@ -996,7 +1011,8 @@ const MessageDetailScreen: React.FC = () => {
       // Inbox listesini invalidate et (yeşil nokta kaldırılsın)
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     }
-  }, [threadId, isConnected, socketMarkThreadRead, markThreadAsReadMutation, queryClient]);
+    // CRITICAL FIX: queryClient, socketMarkThreadRead, markThreadAsReadMutation stable olduğu için dependency'den çıkarıldı
+  }, [threadId, isConnected]);
 
   const handleThreadLeft = useCallback((data: { threadId: string }) => {
     console.log('[MessageDetail] Thread left:', data.threadId);
@@ -1087,7 +1103,8 @@ const MessageDetailScreen: React.FC = () => {
         }))
       );
     }
-  }, [threadId, queryClient]);
+    // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
+  }, [threadId]);
 
   const handleMessageRead = useCallback((data: { messageId: string; threadId: string; readBy: string; timestamp: string }) => {
     // Component unmount olduysa işlem yapma
@@ -1112,6 +1129,7 @@ const MessageDetailScreen: React.FC = () => {
         );
       }
     }
+    // CRITICAL FIX: threadId dependency olarak yeterli
   }, [threadId]);
 
   // Handle Go to Support Chat (accepted request'ler için)
@@ -1194,7 +1212,8 @@ const MessageDetailScreen: React.FC = () => {
         handleGoToSupportChat(data.threadId, data.requestId);
       }, 500);
     }
-  }, [queryClient, handleGoToSupportChat]);
+    // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
+  }, [handleGoToSupportChat]);
 
   const handleSupportRequestRejected = useCallback((data: { requestId: string }) => {
     console.log('[MessageDetail] ❌ Support request rejected event:', data);
@@ -1219,7 +1238,8 @@ const MessageDetailScreen: React.FC = () => {
     
     // Inbox listesini invalidate et
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-  }, [queryClient]);
+    // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
+  }, []);
 
   const handleSupportRequestCancelled = useCallback((data: { requestId: string }) => {
     console.log('[MessageDetail] 🚫 Support request cancelled event:', data);
@@ -1244,7 +1264,8 @@ const MessageDetailScreen: React.FC = () => {
     
     // Inbox listesini invalidate et
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-  }, [queryClient]);
+    // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
+  }, []);
 
   // Mesaj okundu işaretleme - Mesaj görünür olduğunda otomatik okundu işaretle
   const viewabilityConfig = {
@@ -1363,7 +1384,9 @@ const MessageDetailScreen: React.FC = () => {
         leaveThread(threadId);
       }
     };
-  }, [isConnected, threadId, on, off, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, handleThreadRead, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, socketStopTyping, leaveThread]);
+    // CRITICAL FIX: Socket fonksiyonları (on, off, socketStopTyping, leaveThread) stable olduğu için dependency array'den çıkarıldı
+    // Sadece handler callback'leri ve threadId, isConnected gibi değişken değerleri dependency olarak kalmalı
+  }, [isConnected, threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, handleThreadRead, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled]);
 
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number, message?: string) => {
@@ -1467,7 +1490,8 @@ const MessageDetailScreen: React.FC = () => {
         },
       }
     );
-  }, [user, route, sendGiftMutation, closeBottomSheet, effectiveRecipientUserId, threadId, queryClient, scrollByMessageHeight]);
+    // CRITICAL FIX: scrollByMessageHeight, queryClient dependency'den çıkarıldı
+  }, [user, route, sendGiftMutation, closeBottomSheet, effectiveRecipientUserId, threadId]);
 
   // Handle Send TIPS button press
   const handleSendTipsPress = () => {
@@ -1728,7 +1752,8 @@ const MessageDetailScreen: React.FC = () => {
         Alert.alert('Error', 'Recipient user information not found');
       }
     }
-  }, [user?.id, threadId, effectiveRecipientUserId, route, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation, queryClient, refetchMessages, scrollByMessageHeight]);
+    // CRITICAL FIX: scrollByMessageHeight, queryClient, refetchMessages dependency'den çıkarıldı
+  }, [user?.id, threadId, effectiveRecipientUserId, route, isConnected, isSocketReady, socketSendMessage, sendDirectMessageMutation]);
 
   // Typing indicator handlers
   const handleTypingStart = useCallback(() => {

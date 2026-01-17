@@ -10,8 +10,13 @@ import {
   getBoostOptions,
   getPostDetail,
   searchPosts,
+  updatePost,
+  deletePost,
   type PostDetailResponse,
   type SearchPostsResponse,
+  type UpdatePostRequest,
+  type UpdatePostResponse,
+  type DeletePostResponse,
 } from './postApi';
 import type { CreatePostRequest, CreatePostResponse, ApiContextType } from '../types';
 import type { 
@@ -427,3 +432,64 @@ export const useSearchPosts = (q: string, limit: number = 20) => {
   });
 };
 
+/**
+ * Update Post mutation hook
+ * Post'u güncellemek için mutation hook
+ *
+ * @example
+ * const updatePostMutation = useUpdatePost();
+ * updatePostMutation.mutate({
+ *   postId: 'post-123',
+ *   data: {
+ *     content: 'Updated content',
+ *     images: ['uri1', 'uri2']
+ *   }
+ * });
+ */
+export const useUpdatePost = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<UpdatePostResponse, Error, { postId: string; data: UpdatePostRequest }>({
+    mutationFn: ({ postId, data }) => updatePost(postId, data),
+    onSuccess: (data, variables) => {
+      // Post detail'i invalidate et
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(variables.postId) });
+      
+      // Tüm feed'leri invalidate et (post güncellendi)
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Catalog posts'ları da invalidate et
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    },
+  });
+};
+
+/**
+ * Delete Post mutation hook
+ * Post'u silmek için mutation hook
+ *
+ * @example
+ * const deletePostMutation = useDeletePost();
+ * deletePostMutation.mutate('post-123');
+ */
+export const useDeletePost = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<DeletePostResponse, Error, string>({
+    mutationFn: (postId) => deletePost(postId),
+    onSuccess: (data, postId) => {
+      // Post detail'i invalidate et
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
+      
+      // Tüm feed'leri invalidate et (post silindi)
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Catalog posts'ları da invalidate et
+      queryClient.invalidateQueries({ queryKey: catalogKeys.all });
+    },
+  });
+};

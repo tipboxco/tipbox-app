@@ -11,6 +11,8 @@ import {
   ChatBubbleLeftIcon,
   PaperAirplaneIcon,
   BookmarkIcon,
+  PencilIcon,
+  TrashIcon,
 } from 'react-native-heroicons/outline';
 import { ContextMenuReanimated } from '../PostCard/ContextMenuReanimated';
 import {
@@ -38,6 +40,9 @@ import {
 import { useReportUser } from '@/src/features/profile/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
+import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
 
 interface TipsAndTricksPostCardProps {
     data: TipsCardData;
@@ -51,8 +56,10 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     const navigation = useNavigation<any>();
   const { user } = useAppStore();
   const targetUserId = data.user.id;
+  const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const contextMenuCloseRef = useRef<(() => void) | null>(null);
+  const { openBottomSheet } = useGlobalBottomSheet();
     
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);
@@ -72,6 +79,8 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
     const sharePostMutation = useSharePost();
     const { data: postStatus } = usePostStatus(data.id);
     const { mutate: reportUser } = useReportUser();
+    const updatePostMutation = useUpdatePost();
+    const deletePostMutation = useDeletePost();
 
     // Sync with post status from API
     useEffect(() => {
@@ -173,6 +182,78 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
         );
     }, [user?.id, targetUserId, reportUser]);
 
+    // Post owner actions
+    const handleUpdate = React.useCallback(() => {
+        // Context bilgilerini data'dan al
+        const contextType = (data as any).contextType;
+        const contextId = (data as any).contextId || data.category?.product?.id || data.category?.id;
+        
+        // PostOptionsMenu'yu bottom sheet olarak aç
+        openBottomSheet(
+            <PostOptionsMenu
+                postId={data.id}
+                postContent={data.content}
+                postAuthorName={data.user.name}
+                postAuthorId={data.user.id}
+                postType="tips_and_tricks"
+                postContextType={contextType}
+                postContextId={contextId}
+            />
+        );
+    }, [data, openBottomSheet]);
+
+    const handleDelete = React.useCallback(() => {
+        console.log('[TipsAndTricksPostCard] 🗑️ Delete button clicked for post:', data.id);
+        
+        Alert.alert(
+            'Post\'u Sil',
+            'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+            [
+                {
+                    text: 'İptal',
+                    style: 'cancel',
+                    onPress: () => {
+                        console.log('[TipsAndTricksPostCard] ❌ Delete cancelled by user');
+                    },
+                },
+                {
+                    text: 'Sil',
+                    style: 'destructive',
+                    onPress: async () => {
+                        console.log('[TipsAndTricksPostCard] ✅ Delete confirmed, sending DELETE request to /posts/' + data.id);
+                        
+                        try {
+                            const response = await deletePostMutation.mutateAsync(data.id);
+                            
+                            console.log('[TipsAndTricksPostCard] ✅ Post deleted successfully:', {
+                                postId: data.id,
+                                response,
+                                timestamp: new Date().toISOString(),
+                            });
+                            
+                            Alert.alert('Başarılı', 'Post başarıyla silindi.');
+                        } catch (error: any) {
+                            console.error('[TipsAndTricksPostCard] ❌ Delete post error:', {
+                                postId: data.id,
+                                url: `/posts/${data.id}`,
+                                status: error.response?.status,
+                                statusText: error.response?.statusText,
+                                data: error.response?.data,
+                                message: error.message,
+                                timestamp: new Date().toISOString(),
+                            });
+                            
+                            Alert.alert(
+                                'Hata',
+                                error.response?.data?.message || 'Post silinirken bir hata oluştu.'
+                            );
+                        }
+                    },
+                },
+            ]
+        );
+    }, [data.id, deletePostMutation]);
+
     return (
         <VStack
             bg={isDark ? '$backgroundDark900' : '$white'}
@@ -215,7 +296,20 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                     </Pressable>
                     <ContextMenuReanimated
                         onViewProfile={handleViewProfile}
-                        onReport={handleReport}
+                        onReport={!isPostOwner ? handleReport : undefined}
+                        menuItems={isPostOwner ? [
+                            {
+                                label: 'Güncelle',
+                                icon: <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />,
+                                onPress: handleUpdate,
+                            },
+                            {
+                                label: 'Sil',
+                                icon: <TrashIcon width={20} height={20} color="#FF3040" />,
+                                onPress: handleDelete,
+                                color: '#FF3040',
+                            },
+                        ] : undefined}
                         onMenuStateChange={setIsContextMenuOpen}
                         onCloseRef={(closeFn) => {
                             contextMenuCloseRef.current = closeFn;

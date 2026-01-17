@@ -322,7 +322,7 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
 
   return (
     <Box
-      mb={16}
+      mb={0}
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       borderBottomWidth={StyleSheet.hairlineWidth}
       borderBottomColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
@@ -340,7 +340,7 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
           borderBottomWidth={1}
           borderColor="#E9E9E9"
           p={0}
-          mb="$2"
+          mb={0}
           position="relative"
           space="md"
         >
@@ -374,10 +374,10 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
                     bottom={0}
                     left="50%"
                     height={2}
-                    width={20}
+                    width={40}
                     backgroundColor={isDark ? '#FFFFFF' : '#000000'}
                     style={{
-                      transform: [{ translateX: -10 }],
+                      transform: [{ translateX: -15 }],
                     }}
                   />
                 )}
@@ -392,12 +392,12 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark }) => 
 
 // Tab Content Component - Sadece içeriği render eder (FlatList yok)
 const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, onQueryRef }) => {
-  // API hooks for each tab - tüm tab'lar için query'leri enable et
-  const feedQuery = useUserPosts(targetUserId, 5, { enabled: true });
-  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: true });
-  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: true });
-  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: true });
-  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: true });
+  // API hooks for each tab - sadece aktif tab'ın query'sini enable et
+  const feedQuery = useUserPosts(targetUserId, 5, { enabled: tabKey === 'feed' });
+  const reviewsQuery = useUserReviews(targetUserId, 5, { enabled: tabKey === 'reviews' });
+  const benchmarksQuery = useUserBenchmarks(targetUserId, 5, { enabled: tabKey === 'benchmarks' });
+  const tipsQuery = useUserTipsAndTricks(targetUserId, 5, { enabled: tabKey === 'tips' });
+  const repliesQuery = useUserReplies(targetUserId, 5, { enabled: tabKey === 'replies' });
   
   // Get active tab query
   const activeTabQuery = useMemo(() => {
@@ -505,7 +505,13 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
   if (tabKey === 'ladders') {
     return (
       <Box>
-        <LadderTab />
+        <LadderTab 
+          onQueryRef={(query) => {
+            if (onQueryRef) {
+              onQueryRef(tabKey, query);
+            }
+          }}
+        />
       </Box>
     );
   }
@@ -532,9 +538,9 @@ const TabContent: React.FC<TabContentProps> = ({ tabKey, targetUserId, isDark, o
 
   // Render posts
   return (
-    <Box>
+    <Box px={16} pt={8}>
       {mappedPosts.map((item) => (
-        <Box key={item.id} px={16} mb={16}>
+        <Box key={item.id} mb={16}>
           {renderPostCard(item)}
         </Box>
       ))}
@@ -716,21 +722,14 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
   const scrollViewRef = useRef<ScrollView>(null);
-  const tabSectionPositions = useRef<{ [key: string]: number }>({});
   
-  // Tab section y pozisyonunu kaydet
-  const handleTabSectionLayout = useCallback((tabKey: TabKey, y: number) => {
-    tabSectionPositions.current[tabKey] = y;
-  }, []);
-  
-  // Tab değiştiğinde ilgili section'a scroll et
+  // Tab değiştiğinde scroll pozisyonunu sıfırla
   const handleTabChange = useCallback((tabKey: TabKey) => {
     setActiveTab(tabKey);
     
-    // İlgili section'a scroll et
-    const yPosition = tabSectionPositions.current[tabKey];
-    if (yPosition !== undefined && scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: yPosition, animated: true });
+    // Tab değiştiğinde scroll pozisyonunu en üste al
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: false });
     }
   }, []);
   
@@ -756,14 +755,17 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   }, [user?.id, targetUserId]);
 
   const handleDM = useCallback(() => {
-    if (!user?.id || !targetUserId) return;
+    if (!user?.id || !targetUserId || !userProfile) return;
     // MessageDetail screen'ine navigate et
     navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
       messageId: targetUserId,
       threadId: targetUserId,
       recipientUserId: targetUserId,
+      senderName: userProfile.name || 'Unknown',
+      senderTitle: userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : '',
+      senderAvatar: userProfile.avatar ? toImageSource(userProfile.avatar) : require('@/assets/avatar/default-useravatar.png'),
     });
-  }, [user?.id, targetUserId]);
+  }, [user?.id, targetUserId, userProfile]);
 
   const handleShare = useCallback(async () => {
     if (!userProfile) return;
@@ -1417,56 +1419,46 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <StatusBar style="light" />
-      <VStack flex={1}>
-        {/* Üst Kısım: Profile Header - SABIT (scroll edilmez) */}
+      {/* Tüm ekran scroll edilebilir - Banner, Header, Tab Bar ve Content hepsi içinde */}
+      <ScrollView
+        ref={scrollViewRef}
+        showsVerticalScrollIndicator={true}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={false}
+        overScrollMode="never"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing || false}
+            onRefresh={handleRefresh}
+            tintColor={isDark ? '#FFFFFF' : '#000000'}
+            colors={isDark ? ['#FFFFFF'] : ['#000000']}
+          />
+        }
+        contentContainerStyle={{
+          paddingBottom: bottomPadding,
+        }}
+      >
+        {/* Profile Header - Scroll edilebilir */}
         <Box>
           {profileHeader}
         </Box>
 
-        {/* Tab Bar - SABIT (scroll edilmez) */}
+        {/* Tab Bar - Scroll edilebilir */}
         <TabsBar 
           activeTab={activeTab} 
           onChangeTab={handleTabChange} 
           isDark={isDark}
         />
 
-        {/* Ana ScrollView - Tüm tab içerikleri burada */}
-        <ScrollView
-          ref={scrollViewRef}
-          showsVerticalScrollIndicator={true}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing || false}
-              onRefresh={handleRefresh}
-              tintColor={isDark ? '#FFFFFF' : '#000000'}
-              colors={isDark ? ['#FFFFFF'] : ['#000000']}
-            />
-          }
-          contentContainerStyle={{
-            paddingBottom: bottomPadding,
-          }}
-        >
-          {/* Her tab için bir section */}
-          {TABS.map((tab) => (
-            <Box
-              key={tab.key}
-              onLayout={(event) => {
-                const { y } = event.nativeEvent.layout;
-                handleTabSectionLayout(tab.key, y);
-              }}
-            >
-              <TabContent
-                tabKey={tab.key}
-                targetUserId={targetUserId || ''}
-                isDark={isDark}
-                onQueryRef={handleTabQueryRef}
-              />
-            </Box>
-          ))}
-        </ScrollView>
-      </VStack>
+        {/* Tab Content - Scroll edilebilir */}
+        <TabContent
+          tabKey={activeTab}
+          targetUserId={targetUserId || ''}
+          isDark={isDark}
+          onQueryRef={handleTabQueryRef}
+        />
+      </ScrollView>
 
       {/* Context Menu Backdrop - Boş bir yere tıklandığında context menu'yu kapat */}
       {isContextMenuOpen && (

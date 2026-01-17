@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { FlatList, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager, ActivityIndicator } from 'react-native';
+import { Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager, ActivityIndicator } from 'react-native';
 import { VStack, HStack, Text, Image, Box } from '@gluestack-ui/themed';
 import { CheckIcon } from 'react-native-heroicons/solid';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -11,6 +11,7 @@ import BadgeDetailModal from '../BadgeDetailModal';
 
 interface LadderTabProps {
   onLadderSelect?: (ladder: ProfileLadderBadge) => void;
+  onQueryRef?: (query: any) => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -24,7 +25,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
+const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect, onQueryRef }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const userId = useCurrentUserIdOrLogout();
@@ -34,6 +35,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   const prevValuesRef = useRef<any>({});
   
   // Ladder Badges API hook with infinite scroll
+  const ladderQuery = useUserLadderBadges(userId, 5);
   const {
     data: ladderBadgesData,
     fetchNextPage,
@@ -41,7 +43,14 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
     isFetchingNextPage,
     isLoading,
     error,
-  } = useUserLadderBadges(userId, 5);
+  } = ladderQuery;
+  
+  // Query ref'ini parent'a gönder (load more için)
+  useEffect(() => {
+    if (onQueryRef && ladderQuery) {
+      onQueryRef(ladderQuery);
+    }
+  }, [ladderQuery, onQueryRef]);
 
   useEffect(() => {
     renderCountRef.current += 1;
@@ -84,38 +93,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  // onEndReached loop'unu önlemek için ref
-  const isLoadingMoreRef = useRef(false);
-
-  // ladderBadges.length değiştiğinde ref'i güncelle
-  useEffect(() => {
-    // Item sayısı değiştiğinde flag'i reset et (yeni veri geldi demektir)
-    isLoadingMoreRef.current = false;
-  }, [ladderBadges.length]);
-
-  const handleLoadMore = useCallback(() => {
-    // Eğer zaten yükleme yapılıyorsa, tekrar tetikleme
-    if (isLoadingMoreRef.current) {
-      return;
-    }
-
-    // Eğer hasNextPage false ise veya zaten fetch yapılıyorsa, işlem yapma
-    if (!hasNextPage || isFetchingNextPage) {
-      return;
-    }
-
-    // Flag'i set et
-    isLoadingMoreRef.current = true;
-
-    fetchNextPage()
-      .finally(() => {
-        // Fetch tamamlandığında flag'i reset et
-        // Kısa bir delay ekle ki onEndReached tekrar tetiklenmesin
-        setTimeout(() => {
-          isLoadingMoreRef.current = false;
-        }, 1000);
-      });
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage, ladderBadges.length]);
+  // Load more artık ProfileScreen'deki ana ScrollView'ın handleScroll'unda yapılacak
 
   // Filtreleme değiştiğinde animasyon için
   const handleFilterChange = (newFilter: 'all' | 'in_progress' | 'completed') => {
@@ -159,7 +137,7 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
     return badge.total >= badge.current;
   };
 
-  const renderItem = ({ item: badge }: { item: ProfileLadderBadge }) => {
+  const renderBadgeCard = (badge: ProfileLadderBadge) => {
     const isCompleted = getIsCompleted(badge);
     const imageSource = badge.image ? toImageSource(badge.image) : undefined;
     const defaultImage = require('@/assets/defaultImages/default-badge.png');
@@ -309,8 +287,8 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
   }
 
   return (
-    <Box flex={1} position="relative">
-      <VStack flex={1} px={CARD_MARGIN} py={10}>
+    <Box position="relative">
+      <VStack px={CARD_MARGIN} py={10}>
         <HStack space="sm" mb={15}>
           <Box
             bg={selectedFilter === 'all' ? (isDark ? '$backgroundDark800' : 'rgba(229, 229, 229, 0.8)') : 'transparent'}
@@ -370,32 +348,43 @@ const LadderTabComponent: React.FC<LadderTabProps> = ({ onLadderSelect }) => {
           </Box>
         </HStack>
         <Animated.View style={{ opacity: fadeAnim }}>
-          <FlatList
-            data={filteredBadges}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            numColumns={NUM_COLUMNS}
-            columnWrapperStyle={{
-              justifyContent: 'space-between',
-              gap: COLUMN_GAP,
-            }}
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
-            scrollEnabled={true}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              isFetchingNextPage ? (
-                <Box py={20} alignItems="center">
-                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                </Box>
-              ) : null
-            }
-            // Layout animasyonu için
-            onLayout={() => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            }}
-          />
+          <Box>
+            {/* 2 sütunlu grid layout - FlatList yerine direkt map */}
+            <VStack space="md">
+              {Array.from({ length: Math.ceil(filteredBadges.length / NUM_COLUMNS) }).map((_, rowIndex) => {
+                const startIndex = rowIndex * NUM_COLUMNS;
+                const rowItems = filteredBadges.slice(startIndex, startIndex + NUM_COLUMNS);
+                
+                return (
+                  <HStack
+                    key={rowIndex}
+                    space={COLUMN_GAP}
+                    justifyContent="space-between"
+                    px={0}
+                  >
+                    {rowItems.map((badge) => (
+                      <Box key={badge.id} width={CARD_WIDTH}>
+                        {renderBadgeCard(badge)}
+                      </Box>
+                    ))}
+                    {/* Eksik sütunları doldur (2 sütunlu grid için) */}
+                    {rowItems.length < NUM_COLUMNS && (
+                      Array.from({ length: NUM_COLUMNS - rowItems.length }).map((_, emptyIndex) => (
+                        <Box key={`empty-${emptyIndex}`} width={CARD_WIDTH} />
+                      ))
+                    )}
+                  </HStack>
+                );
+              })}
+            </VStack>
+            
+            {/* Load more indicator */}
+            {isFetchingNextPage && (
+              <Box py={20} alignItems="center">
+                <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+              </Box>
+            )}
+          </Box>
         </Animated.View>
       </VStack>
 

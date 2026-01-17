@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, useToast } from '@gluestack-ui/themed';
@@ -15,7 +15,7 @@ import { useUpdatePostForm } from '../hooks/useUpdatePostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ControlledImagePicker } from '../components/FormFields/ControlledImagePicker';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
-import { useCreateUpdatePost } from '../api/hooks';
+import { useCreateUpdatePost, useUpdatePost, usePostDetail } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
@@ -34,13 +34,34 @@ export const CreateUpdatePostScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<CreateUpdatePostScreenNavigationProp>();
   const route = useRoute<CreateUpdatePostScreenRouteProp>();
-  const { product } = route.params || {};
+  const { product, postId } = route.params || {}; // postId: Update modu için
   const methods = useUpdatePostForm();
-  const { handleSubmit, formState, getValues, setValue, watch } = methods;
+  const { handleSubmit, formState, getValues, setValue, watch, reset } = methods;
   const toast = useToast();
   const createUpdatePostMutation = useCreateUpdatePost();
+  const updatePostMutation = useUpdatePost();
   const { user } = useAppStore();
   const queryClient = useQueryClient();
+  
+  // Update modu kontrolü
+  const isUpdateMode = !!postId;
+  
+  // Post detayını fetch et (update modu için)
+  const { data: postDetail, isLoading: isLoadingPost } = usePostDetail(
+    postId,
+    isUpdateMode, // Sadece update modunda fetch et
+    false
+  );
+  
+  // Post detayı yüklendiğinde form'a yükle
+  useEffect(() => {
+    if (isUpdateMode && postDetail) {
+      reset({
+        description: postDetail.content || '',
+        selectedImages: postDetail.images || [],
+      });
+    }
+  }, [postDetail, isUpdateMode, reset]);
   
   // Flow store'dan context bilgilerini al
   const contextType = useCreatePostFlowStore((state) => state.contextType);
@@ -76,12 +97,15 @@ export const CreateUpdatePostScreen = () => {
       navigation.goBack();
     } else {
       // Fallback: Navigate to Feed screen
-      navigation.navigate('Main', {
-        screen: 'Feed',
+      navigation.navigate('App', {
+        screen: 'MainTabs',
         params: {
-          screen: 'FeedScreen',
+          screen: 'FeedStack',
+          params: {
+            screen: 'FeedScreen',
+          },
         },
-      });
+      } as any);
     }
   };
 
@@ -142,98 +166,123 @@ export const CreateUpdatePostScreen = () => {
   const onSubmit = async (data: UpdatePostFormData) => {
     console.log('[CreateUpdatePostScreen] Form submitted:', data);
     console.log('[CreateUpdatePostScreen] Product from route params:', product);
-    
-    // ContextType ve contextId kontrolü
-    if (!contextType || !contextId) {
-      showCustomToast(toast, {
-        title: 'Hata',
-        description: 'Context bilgisi bulunamadı. Lütfen tekrar deneyin.',
-        action: 'error',
-      });
-      return;
-    }
-    
-    // API contextType'a çevir
-    const apiContextType = mapProductInfoTypeToContextType(contextType);
+    console.log('[CreateUpdatePostScreen] Is update mode:', isUpdateMode);
     
     try {
-      const response = await createUpdatePostMutation.mutateAsync({
-        contextType: apiContextType,
-        contextId: contextId,
-        content: data.description, // API'de "content" field'ı kullanılıyor
-        images: data.selectedImages || [],
-      });
-      
-      console.log('[CreateUpdatePostScreen] ✅ API Response:', response);
-      
-      // Başarılı toast göster
-      showCustomToast(toast, {
-        title: 'Post Oluşturuldu',
-        description: 'Update gönderiniz başarıyla oluşturuldu!',
-        action: 'success',
-      });
-      
-      // Clear flow context on successful submit
-      clearFlow();
-      
-      // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
-      if (user?.id) {
-        // Profil verilerini invalidate et - yeni post görünsün
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.userPosts(user.id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: profileKeys.profile(user.id),
+      if (isUpdateMode && postId) {
+        // Update modu: Mevcut post'u güncelle
+        const response = await updatePostMutation.mutateAsync({
+          postId,
+          data: {
+            content: data.description,
+            images: data.selectedImages || [],
+          },
         });
         
-        // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
-        // Kullanıcı gönderi oluşturduktan sonra CreatePostScreen'e geri dönmemeli
-        // App'in mevcut state'ini koru (hangi tab açıksa o kalır)
-        const currentState = navigation.getState();
-        const appRoute = currentState?.routes?.find((route) => route.name === 'App');
+        console.log('[CreateUpdatePostScreen] ✅ Post Updated:', response);
         
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 1,
-            routes: [
-              {
-                name: 'App',
-                state: appRoute?.state, // App'in mevcut state'ini koru
-              },
-              {
-                name: 'Profile',
-                params: {
-                  screen: 'ProfileMain',
-                  params: { userId: user.id },
-                },
-              },
-            ],
-          })
-        );
+        // Başarılı toast göster
+        showCustomToast(toast, {
+          title: 'Post Güncellendi',
+          description: 'Postunuz başarıyla güncellendi!',
+          action: 'success',
+        });
+        
+        // Geri dön
+        navigation.goBack();
       } else {
-        // Fallback: Feed ekranına yönlendir
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'App',
-                state: {
-                  routes: [
-                    {
-                      name: 'MainTabs',
-                      state: {
-                        routes: [{ name: 'FeedScreen' }],
-                        index: 0,
-                      },
-                    },
-                  ],
-                  index: 0,
+        // Create modu: Yeni post oluştur
+        // ContextType ve contextId kontrolü
+        if (!contextType || !contextId) {
+          showCustomToast(toast, {
+            title: 'Hata',
+            description: 'Context bilgisi bulunamadı. Lütfen tekrar deneyin.',
+            action: 'error',
+          });
+          return;
+        }
+        
+        // API contextType'a çevir
+        const apiContextType = mapProductInfoTypeToContextType(contextType);
+        
+        const response = await createUpdatePostMutation.mutateAsync({
+          contextType: apiContextType,
+          contextId: contextId,
+          content: data.description, // API'de "content" field'ı kullanılıyor
+          images: data.selectedImages || [],
+        });
+        
+        console.log('[CreateUpdatePostScreen] ✅ API Response:', response);
+        
+        // Başarılı toast göster
+        showCustomToast(toast, {
+          title: 'Post Oluşturuldu',
+          description: 'Update gönderiniz başarıyla oluşturuldu!',
+          action: 'success',
+        });
+        
+        // Clear flow context on successful submit
+        clearFlow();
+        
+        // Başarılı olursa ProfileScreen'e yönlendir ve Post stack'ini temizle
+        if (user?.id) {
+          // Profil verilerini invalidate et - yeni post görünsün
+          queryClient.invalidateQueries({
+            queryKey: profileKeys.userPosts(user.id),
+          });
+          queryClient.invalidateQueries({
+            queryKey: profileKeys.profile(user.id),
+          });
+          
+          // CRITICAL: Post stack'ini temizle ve ProfileScreen'e yönlendir
+          // Kullanıcı gönderi oluşturduktan sonra CreatePostScreen'e geri dönmemeli
+          // App'in mevcut state'ini koru (hangi tab açıksa o kalır)
+          const currentState = navigation.getState();
+          const appRoute = currentState?.routes?.find((route) => route.name === 'App');
+          
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 1,
+              routes: [
+                {
+                  name: 'App',
+                  state: appRoute?.state as any, // App'in mevcut state'ini koru
                 },
-              },
-            ],
-          })
-        );
+                {
+                  name: 'Profile',
+                  params: {
+                    screen: 'ProfileMain',
+                    params: { userId: user.id },
+                  },
+                },
+              ],
+            })
+          );
+        } else {
+          // Fallback: Feed ekranına yönlendir
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'App',
+                  state: {
+                    routes: [
+                      {
+                        name: 'MainTabs',
+                        state: {
+                          routes: [{ name: 'FeedScreen' }],
+                          index: 0,
+                        },
+                      },
+                    ],
+                    index: 0,
+                  },
+                },
+              ],
+            })
+          );
+        }
       }
     } catch (error: any) {
       console.error('[CreateUpdatePostScreen] ❌ API Error:', error);

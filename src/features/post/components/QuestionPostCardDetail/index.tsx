@@ -110,11 +110,19 @@ export const QuestionPostCardDetail = ({ data, onCommentPress }: QuestionPostCar
     };
 
     const handleOptionsPress = () => {
+        // Context bilgilerini data'dan al
+        const contextType = (data as any).contextType;
+        const contextId = (data as any).contextId || (data as any).product?.id;
+        
         openBottomSheet(
             <PostOptionsMenu
                 postId={data.id}
                 postContent={data.content}
                 postAuthorName={data.user.name}
+                postAuthorId={data.user.id}
+                postType="question"
+                postContextType={contextType}
+                postContextId={contextId}
             />
         );
     };
