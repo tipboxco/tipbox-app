@@ -179,9 +179,40 @@ const ProfileEditScreen: React.FC = () => {
           }
         } catch (error: any) {
           console.error('[ProfileEditScreen] ❌ Avatar upload error:', error);
-          Alert.alert('Hata', error?.message || 'Avatar yüklenirken bir hata oluştu');
-          setIsUploadingAvatar(false);
-          return;
+          
+          // Backend'de /users/me/avatar endpoint'i yok (404 hatası)
+          // 404 hatası durumunda avatar olmadan devam et
+          if (error?.response?.status === 404) {
+            console.warn('[ProfileEditScreen] ⚠️ Avatar upload endpoint not found (404). Continuing without avatar.');
+            avatarUrl = null;
+            // Kullanıcıya bilgi ver (non-blocking)
+            Alert.alert(
+              'Bilgi', 
+              'Avatar yükleme özelliği şu anda kullanılamıyor. Profil diğer bilgilerle güncellenecek.'
+            );
+          } else {
+            // Diğer hatalar için kullanıcıya sor
+            Alert.alert(
+              'Avatar Yüklenemedi', 
+              error?.message || 'Avatar yüklenirken bir hata oluştu',
+              [
+                {
+                  text: 'Devam Et',
+                  style: 'default'
+                },
+                {
+                  text: 'İptal',
+                  onPress: () => {
+                    setIsUploadingAvatar(false);
+                    return;
+                  },
+                  style: 'cancel'
+                }
+              ]
+            );
+            setIsUploadingAvatar(false);
+            return;
+          }
         } finally {
           setIsUploadingAvatar(false);
         }
@@ -203,9 +234,40 @@ const ProfileEditScreen: React.FC = () => {
           }
         } catch (error: any) {
           console.error('[ProfileEditScreen] ❌ Banner upload error:', error);
-          Alert.alert('Hata', error?.message || 'Banner yüklenirken bir hata oluştu');
-          setIsUploadingBanner(false);
-          return;
+          
+          // Backend'de /users/me/banner endpoint'i yok (404 hatası)
+          // 404 hatası durumunda banner olmadan devam et
+          if (error?.response?.status === 404) {
+            console.warn('[ProfileEditScreen] ⚠️ Banner upload endpoint not found (404). Continuing without banner.');
+            bannerUrl = null;
+            // Kullanıcıya bilgi ver (non-blocking)
+            Alert.alert(
+              'Bilgi', 
+              'Banner yükleme özelliği şu anda kullanılamıyor. Profil diğer bilgilerle güncellenecek.'
+            );
+          } else {
+            // Diğer hatalar için kullanıcıya sor
+            Alert.alert(
+              'Banner Yüklenemedi', 
+              error?.message || 'Banner yüklenirken bir hata oluştu',
+              [
+                {
+                  text: 'Devam Et',
+                  style: 'default'
+                },
+                {
+                  text: 'İptal',
+                  onPress: () => {
+                    setIsUploadingBanner(false);
+                    return;
+                  },
+                  style: 'cancel'
+                }
+              ]
+            );
+            setIsUploadingBanner(false);
+            return;
+          }
         } finally {
           setIsUploadingBanner(false);
         }

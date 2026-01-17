@@ -703,13 +703,27 @@ const ExploreScreen: React.FC = () => {
               <HottestTab 
                 searchQuery={debouncedSearchQuery}
                 headerComponent={
-                  /* Marketplace Banners Carousel - Scrollable */
-                  !isLoadingBanners && banners && banners.length > 0 ? (
+                  /* Marketplace Banners Carousel - Always show, use default if no banners */
+                  !isLoadingBanners ? (
                     <Box
                       mb="$4"
                       onLayout={handleBannerLayout}
                     >
-                      <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
+                      <BannerCarousel 
+                        banners={
+                          banners && banners.length > 0 
+                            ? banners 
+                            : [{
+                                id: 'default-banner',
+                                title: 'Tipbox\'a Hoş Geldiniz',
+                                description: 'En yeni ürünler ve deneyimler için keşfetmeye başlayın',
+                                imageUrl: '', // Empty string will trigger default image in BannerCarousel
+                                linkUrl: '',
+                              }]
+                        } 
+                        isDark={isDark} 
+                        onBannerPress={handleBannerPress} 
+                      />
                     </Box>
                   ) : null
                 }

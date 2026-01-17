@@ -480,12 +480,33 @@ const HottestTabComponent: React.FC<HottestTabProps> = ({ searchQuery, headerCom
     );
   }
 
+  // Empty state - Show banner carousel and empty message
   if (hottestItems.length === 0) {
     return (
-      <Box py="$8" alignItems="center">
-        <Text color={isDark ? '#FFFFFF' : '#000000'}>
-          No content found yet.
-        </Text>
+      <Box flex={1} pt={0} mt={0}>
+        <FlatList
+          data={[]}
+          renderItem={() => null}
+          keyExtractor={() => 'empty'}
+          ListHeaderComponent={
+            <>
+              {headerComponent}
+              <Box py="$8" alignItems="center" px="$4">
+                <Text 
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                  fontSize="$md"
+                  textAlign="center"
+                >
+                  Henüz gönderi yok
+                </Text>
+              </Box>
+            </>
+          }
+          contentContainerStyle={{ paddingTop: 16, paddingBottom: bottomPadding }}
+          scrollEnabled={true}
+          nestedScrollEnabled={false}
+          showsVerticalScrollIndicator={true}
+        />
       </Box>
     );
   }

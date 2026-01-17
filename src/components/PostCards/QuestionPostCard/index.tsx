@@ -473,7 +473,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           <Text
             color={isDark ? '$textDark50' : '#000'}
             fontSize="$xs"
-            numberOfLines={data.images && data.images.length > 0 ? 3 : 6}
+            numberOfLines={isDetailMode ? undefined : (data.images && data.images.length > 0 ? 3 : 6)}
           >
             {data.content}
           </Text>

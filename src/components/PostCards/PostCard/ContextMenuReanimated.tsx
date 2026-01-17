@@ -214,15 +214,18 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
       console.error('[ContextMenuReanimated] ❌ onPress is not a function:', onPress);
       return;
     }
-    closeMenu();
-    // Small delay to allow close animation
+    
+    // Önce onPress'i çağır, sonra menu'yu kapat
+    try {
+      onPress();
+    } catch (error) {
+      console.error('[ContextMenuReanimated] ❌ Error executing onPress:', error);
+    }
+    
+    // Menu'yu kapat (kısa delay ile animasyon için)
     setTimeout(() => {
-      try {
-        onPress();
-      } catch (error) {
-        console.error('[ContextMenuReanimated] ❌ Error executing onPress:', error);
-      }
-    }, 150);
+      closeMenu();
+    }, 100);
   }, [closeMenu]);
 
   return (
@@ -275,10 +278,12 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
               elevation: 10, // Android
             },
           ]}
-          pointerEvents="box-none"
+          pointerEvents="auto"
         >
           <RNPressable 
-            onPress={(e) => e.stopPropagation()}
+            onPress={(e) => {
+              e.stopPropagation();
+            }}
             style={{ flex: 1 }}
           >
             <VStack pt={4} pb={12} px={12} width="100%">
@@ -299,7 +304,10 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
                     />
                   )}
                   <Pressable
-                    onPress={() => handleMenuItemPress(item.onPress)}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleMenuItemPress(item.onPress);
+                    }}
                     py={10}
                   >
                     <HStack alignItems="center" justifyContent="flex-start" space="xs">

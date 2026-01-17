@@ -404,9 +404,9 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               </HStack>
               <Text
                 color={isDark ? '$textDark50' : '#000'}
-                numberOfLines={data.images && data.images!.length > 0 ? 3 : 6}
                 fontSize="$xs"
                 ml={26}
+                numberOfLines={isDetailMode ? undefined : (data.images && data.images!.length > 0 ? 3 : 6)}
               >
                 {item.text}
               </Text>
