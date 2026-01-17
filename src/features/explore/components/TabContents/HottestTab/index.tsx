@@ -37,9 +37,12 @@ const mapFeedToCardData = (item: ProfilePost): PostCardData => {
     ? item.content.map((contentItem) => contentItem.content || '').join(' ')
     : (item.content || '');
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-  const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+  // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
+  const mappedImages = Array.isArray(item.images)
+    ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+    : [];
+  const images = mappedImages;
 
   // contextData.image için fallback
   const contextImage = item.contextData?.image
@@ -295,9 +298,12 @@ const mapUpdateToCardData = (item: UpdateApiItem & { type: 'update' }): UpdateCa
         })
     : [];
 
-  // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
-  const mappedImages = item.images?.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img) ?? [];
-  const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+  // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+  // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
+  const mappedImages = Array.isArray(item.images)
+    ? item.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
+    : [];
+  const images = mappedImages;
 
   return {
     id: item.id,

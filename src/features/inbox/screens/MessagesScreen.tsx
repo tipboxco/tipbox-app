@@ -67,7 +67,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         // thread'i okunmamış olarak işaretle (optimistic update)
         // Not: Eğer kullanıcı MessageDetail ekranındaysa, MessageDetail'deki handleNewMessage mesajı okundu olarak işaretleyecek
         if (eventData.threadId) {
-            queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+            // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
+            queryClient.setQueryData([...inboxKeys.messages(), undefined], (oldData: InboxMessage[] | undefined) => {
                 if (!oldData) {
                     // Eğer data yoksa, backend'den çekilecek (invalidate ile)
                     return oldData;
@@ -124,7 +125,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         console.log('[MessagesScreen] 📖 Thread read event received:', eventData);
         
         // Optimistic update: Local state'te thread'i okundu olarak işaretle (hemen UI'da göster)
-        queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+        // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
+        queryClient.setQueryData([...inboxKeys.messages(), undefined], (oldData: InboxMessage[] | undefined) => {
             if (!oldData) return oldData;
             return oldData.map((msg) => 
                 msg.id === eventData.threadId 
@@ -250,7 +252,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             console.log('[MessagesScreen] 📖 Marking thread as read:', threadId);
             
             // Optimistic update: Local state'i güncelle (hemen UI'da göster)
-            queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+            // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
+            queryClient.setQueryData([...inboxKeys.messages(), undefined], (oldData: InboxMessage[] | undefined) => {
                 if (!oldData) return oldData;
                 return oldData.map((msg) => 
                     msg.id === messageId 

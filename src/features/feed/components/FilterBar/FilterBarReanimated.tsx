@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Text as RNText } from 'react-native';
+import { Text as RNText, ScrollView } from 'react-native';
 import { HStack, Pressable, Text, Box, VStack } from '@gluestack-ui/themed';
 import Animated, {
   useSharedValue,
@@ -50,11 +50,12 @@ export const TAG_OPTIONS = [
 
 export const INTEREST_OPTIONS = [
   { value: 'CATEGORY_MATCH', label: 'Category Match' },
-  { value: 'MUTUAL_TRUST', label: 'Mutual Trust' },
-  { value: 'ENGAGEMENT_HIGH', label: 'Trending' },
+  { value: 'TRUSTER', label: 'Truster' },
+  { value: 'ENGAGEMENT_HIGH', label: 'Trending' }, // Backend'de TRENDING olarak gönderilecek
   { value: 'NEW_USER', label: 'New User' },
   { value: 'BOOSTED', label: 'Boosted' },
-  { value: 'TRUSTER', label: 'Truster' },
+  // NOTE: MUTUAL_TRUST backend'de desteklenmiyor, kaldırıldı
+  // NOTE: INVENTORY_MATCH ve PRODUCT_GROUP_MATCH backend'de destekleniyor ama UI'da gösterilmiyor
 ] as const;
 
 export const SORT_OPTIONS = [
@@ -77,6 +78,10 @@ interface FilterBarProps {
   onFiltersChange: (filters: FeedFilterParams) => void;
   // Expose sharedValues for direct access (better performance)
   onSharedValuesReady?: (values: { progress: SharedValue<number>; panelHeight: SharedValue<number> }) => void;
+  // FIX: Panel açık/kapalı durumunu parent'a bildir (overlay için)
+  onPanelStateChange?: (isOpen: boolean) => void;
+  // FIX: Panel kapatma fonksiyonunu expose et (overlay için)
+  onClosePanelRef?: (closeFn: () => void) => void;
 }
 
 /**
@@ -88,6 +93,8 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   filters,
   onFiltersChange,
   onSharedValuesReady,
+  onPanelStateChange,
+  onClosePanelRef,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -96,6 +103,10 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   const [openFilterId, setOpenFilterId] = useState<string | null>(null);
   const [lastOpenFilterId, setLastOpenFilterId] = useState<string | null>(null);
   const filterBarHeight = useSharedValue(0);
+  
+  // FIX: Category için eş zamanlı scroll için ref'ler
+  const categoryFirstRowScrollRef = useRef<ScrollView>(null);
+  const categorySecondRowScrollRef = useRef<ScrollView>(null);
 
   // 🎯 CORE: Single progress sharedValue (0 = closed, 1 = open)
   const progress = useSharedValue(0);
@@ -106,7 +117,26 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   const openFilterIdShared = useSharedValue<string | null>(null);
   
   // Calculate panel height based on number of rows
-  const calculatePanelHeight = useCallback((optionsCount: number) => {
+  const calculatePanelHeight = useCallback((optionsCount: number, filterId: string) => {
+    // FIX: Category ve Tags için aynı yükseklik (2 satır)
+    // Tags: 6 seçenek = 2 satır x 3 sütun
+    // Category: 2 satır yatay scrollable
+    if (filterId === 'category' || filterId === 'tag') {
+      const rowHeight = 28; // minHeight of each option
+      const rowSpacing = 4; // space="xs" between rows (VStack space="xs")
+      const topPadding = 8; // py="$2" = 8px (VStack py="$2")
+      const bottomPadding = 0; // Category için alt padding yok (paddingBottom: 0)
+      const buttonTopPadding = 4; // pt="$1" = 4px
+      const buttonBottomPadding = 8; // pb="$2" = 8px
+      const buttonHeight = 32; // button minHeight
+      const rows = 2; // Category ve Tags için sabit 2 satır
+      
+      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + bottomPadding + buttonTopPadding + buttonHeight + buttonBottomPadding
+      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonTopPadding + buttonHeight + buttonBottomPadding;
+      return totalHeight;
+    }
+    
+    // Diğer filtreler için dinamik yükseklik
     const rows = Math.ceil(optionsCount / 3);
     const rowHeight = 28; // minHeight of each option
     const rowSpacing = 4; // space="xs" between rows
@@ -121,9 +151,20 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   }, []);
 
   // Categories
-  const { data: catalogCategories } = useCatalogCategories();
+  const { data: catalogCategoriesData } = useCatalogCategories();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const { data: catalogSubCategories } = useCatalogSubCategories(selectedCategoryId || undefined);
+  const { data: catalogSubCategoriesData } = useCatalogSubCategories(selectedCategoryId || undefined);
+
+  // FIX: API'den gelen data'yı items array'inden çıkar
+  const catalogCategories = useMemo(() => {
+    if (!catalogCategoriesData?.items) return [];
+    return catalogCategoriesData.items;
+  }, [catalogCategoriesData]);
+
+  const catalogSubCategories = useMemo(() => {
+    if (!catalogSubCategoriesData?.items) return [];
+    return catalogSubCategoriesData.items;
+  }, [catalogSubCategoriesData]);
 
   // Auto-select first category
   useEffect(() => {
@@ -132,7 +173,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     }
   }, [catalogCategories, selectedCategoryId]);
 
-  // Merge categories
+  // Merge categories - FIX: Tüm kategorileri göster (filtreleme kaldırıldı)
   const allCategories = useMemo(() => {
     const categoriesMap = new Map<string, { id: string; name: string; type: 'main' | 'sub' }>();
     const normalizedNamesMap = new Map<string, string>();
@@ -153,6 +194,11 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         });
     };
 
+    if (__DEV__ && catalogCategories && catalogCategories.length > 0) {
+      console.log('[FilterBarReanimated] Available categories:', catalogCategories.map(c => c.name));
+    }
+
+    // FIX: Tüm kategorileri ekle (filtreleme yok)
     if (catalogCategories && Array.isArray(catalogCategories)) {
       catalogCategories.forEach((cat: CatalogCategory) => {
         const normalizedName = normalizeName(cat.name);
@@ -160,9 +206,14 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         categoriesMap.set(cat.categoryId, { id: cat.categoryId, name: cat.name, type: 'main' });
         normalizedNamesMap.set(normalizedName, cat.categoryId);
         seenIds.add(cat.categoryId);
+        
+        if (__DEV__) {
+          console.log('[FilterBarReanimated] Added category:', cat.name);
+        }
       });
     }
 
+    // FIX: Tüm alt kategorileri ekle (filtreleme yok)
     if (catalogSubCategories && Array.isArray(catalogSubCategories)) {
       catalogSubCategories.forEach((subCat: CatalogSubCategory) => {
         const normalizedName = normalizeName(subCat.name);
@@ -175,6 +226,10 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         normalizedNamesMap.set(normalizedName, subCat.subCategoryId);
         seenIds.add(subCat.subCategoryId);
       });
+    }
+
+    if (__DEV__) {
+      console.log('[FilterBarReanimated] Final categories count:', categoriesMap.size);
     }
 
     return Array.from(categoriesMap.values());
@@ -252,39 +307,76 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     }
   }, []);
 
+  // FIX: Panel kapatma fonksiyonu
+  const closePanel = useCallback(() => {
+    setOpenFilterId(null);
+    openFilterIdShared.value = null;
+    progress.value = withSpring(0, SPRING_CONFIG);
+    // Kapanma animasyonu tamamlandıktan sonra lastOpenFilterId'yi temizle
+    setTimeout(() => {
+      setLastOpenFilterId(null);
+    }, 400);
+  }, [progress, openFilterIdShared]);
+
+  // FIX: Panel kapatma fonksiyonunu parent'a expose et
+  useEffect(() => {
+    if (onClosePanelRef) {
+      onClosePanelRef(closePanel);
+    }
+  }, [onClosePanelRef, closePanel]);
+
+  // FIX: Panel durumu değiştiğinde parent'a bildir
+  useEffect(() => {
+    if (onPanelStateChange) {
+      onPanelStateChange(!!(openFilterId || lastOpenFilterId));
+    }
+  }, [openFilterId, lastOpenFilterId, onPanelStateChange]);
+
   // Toggle filter panel
   const handleFilterToggle = useCallback(
     (filterId: string) => {
+      if (__DEV__) {
+        console.log('[FilterBarReanimated] handleFilterToggle:', { filterId, openFilterId });
+      }
+      
       if (openFilterId === filterId) {
         // Close
-        setOpenFilterId(null);
-        openFilterIdShared.value = null;
-        progress.value = withSpring(0, SPRING_CONFIG);
+        closePanel();
       } else {
         // Open - calculate dynamic height based on filter type
         const optionsCount = getOptionsCount(filterId, allCategories.length);
-        const calculatedHeight = calculatePanelHeight(optionsCount);
-        panelHeight.value = calculatedHeight;
+        const calculatedHeight = calculatePanelHeight(optionsCount, filterId);
         
+        if (__DEV__) {
+          console.log('[FilterBarReanimated] Opening panel:', { filterId, optionsCount, calculatedHeight, filterBarHeight: filterBarHeight.value });
+        }
+        
+        // FIX: Önce state'leri güncelle, sonra animasyonu başlat
+        // Bu sayede panel render edilir ve animasyon düzgün çalışır
         setLastOpenFilterId(openFilterId || filterId);
         setOpenFilterId(filterId);
         openFilterIdShared.value = filterId;
-        progress.value = withSpring(1, SPRING_CONFIG);
+        
+        // Panel height'ı güncelle (animasyon başlamadan önce)
+        panelHeight.value = calculatedHeight;
+        
+        // FIX: requestAnimationFrame ile animasyonu başlat - DOM'un hazır olmasını bekle
+        requestAnimationFrame(() => {
+          progress.value = withSpring(1, SPRING_CONFIG);
+        });
       }
     },
-    [openFilterId, progress, openFilterIdShared, panelHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
+    [openFilterId, progress, openFilterIdShared, panelHeight, filterBarHeight, getOptionsCount, calculatePanelHeight, allCategories.length]
   );
 
   // Apply filters (close panel)
   const handleApply = useCallback(() => {
     // Close: Keep panelHeight constant, only animate progress
     // Keep lastOpenFilterId for smooth close animation
-    setOpenFilterId(null);
-    openFilterIdShared.value = null;
-    progress.value = withSpring(0, SPRING_CONFIG);
+    closePanel();
     // Don't change panelHeight - it should stay constant during close animation
     // Note: lastOpenFilterId is kept for renderFilterPanel to show content during close animation
-  }, [progress, openFilterIdShared]);
+  }, [closePanel]);
 
   // Clear filters
   const handleClear = useCallback(() => {
@@ -319,16 +411,20 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     'worklet';
     const height = interpolate(progress.value, [0, 1], [0, panelHeight.value]);
     const opacity = interpolate(progress.value, [0, 1], [0, 1]);
+    // FIX: filterBarHeight 0 ise varsayılan bir değer kullan (filter bar'ın yüksekliği yaklaşık 50px)
+    const topPosition = filterBarHeight.value > 0 ? filterBarHeight.value : 50;
     return {
       position: 'absolute' as const,
-      top: filterBarHeight.value, // CRITICAL FIX: Shared value'ları .value ile eriş
+      top: topPosition,
       left: 0,
       right: 0,
       height,
       opacity,
-      overflow: 'hidden' as const,
+      overflow: 'hidden' as const, // Animasyon için gerekli
       zIndex: 1000,
       elevation: 10, // Android
+      // FIX: Panel içeriği tıklanabilir olmalı (overlay'in üstünde)
+      pointerEvents: 'auto' as const,
     };
   });
 
@@ -430,6 +526,206 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         return null;
     }
 
+    // FIX: Category için özel render - 2 satır, eş zamanlı yatay scrollable
+    if (filterIdToRender === 'category') {
+      // İlk 2 satıra böl (her satırda yatay scrollable, eş zamanlı scroll)
+      const firstRowOptions = options.slice(0, Math.ceil(options.length / 2));
+      const secondRowOptions = options.slice(Math.ceil(options.length / 2));
+
+      // FIX: Eş zamanlı scroll handler
+      const handleFirstRowScroll = (event: any) => {
+        const offsetX = event.nativeEvent.contentOffset.x;
+        categorySecondRowScrollRef.current?.scrollTo({ x: offsetX, animated: false });
+      };
+
+      const handleSecondRowScroll = (event: any) => {
+        const offsetX = event.nativeEvent.contentOffset.x;
+        categoryFirstRowScrollRef.current?.scrollTo({ x: offsetX, animated: false });
+      };
+
+      return (
+        <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
+          {options.length === 0 ? (
+            <VStack px={12} py="$2" alignItems="center" justifyContent="center" minHeight={50}>
+              <RNText
+                style={{
+                  fontSize: 12,
+                  color: isDark ? '#FFFFFF' : '#666666',
+                  fontWeight: '500',
+                }}
+              >
+                Loading...
+              </RNText>
+            </VStack>
+          ) : (
+            <VStack px={12} py="$2" space="xs" width="100%" style={{ paddingBottom: 0 }}>
+              {/* İlk satır - yatay scrollable, eş zamanlı scroll */}
+              <ScrollView 
+                ref={categoryFirstRowScrollRef}
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: 12 }}
+                onScroll={handleFirstRowScroll}
+                scrollEventThrottle={16}
+              >
+                <HStack space="xs" alignItems="center">
+                  {firstRowOptions.map((option) => {
+                    const selected = isSelected(option.value);
+                    return (
+                      <Pressable key={option.value} onPress={() => onSelect(option.value)}>
+                        <Box
+                          bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
+                          borderWidth={selected ? 1 : 0}
+                          borderColor={selected ? '#829905' : 'transparent'}
+                          borderRadius={6}
+                          px="$2"
+                          py="$1"
+                          minHeight={28}
+                        >
+                          <HStack alignItems="center" space="xs">
+                            <Box
+                              width={16}
+                              height={16}
+                              borderWidth={1.5}
+                              borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
+                              borderRadius={4}
+                              bg={selected ? '#829905' : 'transparent'}
+                              justifyContent="center"
+                              alignItems="center"
+                              flexShrink={0}
+                            >
+                              {selected && <CheckIconSolid width={10} height={10} color="#FFFFFF" />}
+                            </Box>
+                            <RNText
+                              style={{
+                                color: isDark ? '#FFFFFF' : '#000000',
+                                fontSize: 11,
+                                fontWeight: selected ? '600' : '500',
+                                lineHeight: 14,
+                              }}
+                              numberOfLines={1}
+                            >
+                              {option.label}
+                            </RNText>
+                          </HStack>
+                        </Box>
+                      </Pressable>
+                    );
+                  })}
+                </HStack>
+              </ScrollView>
+
+              {/* İkinci satır - yatay scrollable, eş zamanlı scroll */}
+              <ScrollView 
+                ref={categorySecondRowScrollRef}
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: 12 }}
+                onScroll={handleSecondRowScroll}
+                scrollEventThrottle={16}
+                style={{ marginBottom: 0 }}
+              >
+                <HStack space="xs" alignItems="center">
+                  {secondRowOptions.map((option) => {
+                    const selected = isSelected(option.value);
+                    return (
+                      <Pressable key={option.value} onPress={() => onSelect(option.value)}>
+                        <Box
+                          bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
+                          borderWidth={selected ? 1 : 0}
+                          borderColor={selected ? '#829905' : 'transparent'}
+                          borderRadius={6}
+                          px="$2"
+                          py="$1"
+                          minHeight={28}
+                        >
+                          <HStack alignItems="center" space="xs">
+                            <Box
+                              width={16}
+                              height={16}
+                              borderWidth={1.5}
+                              borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
+                              borderRadius={4}
+                              bg={selected ? '#829905' : 'transparent'}
+                              justifyContent="center"
+                              alignItems="center"
+                              flexShrink={0}
+                            >
+                              {selected && <CheckIconSolid width={10} height={10} color="#FFFFFF" />}
+                            </Box>
+                            <RNText
+                              style={{
+                                color: isDark ? '#FFFFFF' : '#000000',
+                                fontSize: 11,
+                                fontWeight: selected ? '600' : '500',
+                                lineHeight: 14,
+                              }}
+                              numberOfLines={1}
+                            >
+                              {option.label}
+                            </RNText>
+                          </HStack>
+                        </Box>
+                      </Pressable>
+                    );
+                  })}
+                </HStack>
+              </ScrollView>
+            </VStack>
+          )}
+
+          {/* Clear ve Apply butonları */}
+          <Box px={12} pt="$1" pb="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 8 }}>
+            <HStack space="xs" justifyContent="space-between" width="100%">
+              <Pressable onPress={handleClear} flex={1}>
+                <Box
+                  py="$1.5"
+                  bg="transparent"
+                  borderWidth={1}
+                  borderColor={isDark ? '#444444' : '#E9E9E9'}
+                  borderRadius={6}
+                  alignItems="center"
+                  justifyContent="center"
+                  minHeight={32}
+                >
+                  <RNText
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: isDark ? '#FFFFFF' : '#666666',
+                    }}
+                  >
+                    Clear
+                  </RNText>
+                </Box>
+              </Pressable>
+              <Pressable onPress={handleApply} flex={1}>
+                <Box
+                  py="$1.5"
+                  bg="#829905"
+                  borderRadius={6}
+                  alignItems="center"
+                  justifyContent="center"
+                  minHeight={32}
+                >
+                  <RNText
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '700',
+                      color: '#FFFFFF',
+                    }}
+                  >
+                    Apply
+                  </RNText>
+                </Box>
+              </Pressable>
+            </HStack>
+          </Box>
+        </VStack>
+      );
+    }
+
+    // Diğer filtreler için mevcut grid yapısı (3 sütun)
     // Group options into rows of 3
     const rows: Array<Array<{ value: string; label: string }>> = [];
     for (let i = 0; i < options.length; i += 3) {
@@ -439,7 +735,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     const displayRows = rows;
 
     return (
-      <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%" >
+      <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
         {options.length === 0 ? (
           <VStack px={12} py="$2" alignItems="center" justifyContent="center" minHeight={50}>
             <RNText
@@ -507,7 +803,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
           </VStack>
         )}
 
-        <Box px={12} pt="$1" pb="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+        <Box px={12} pt="$1" pb="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'} style={{ paddingTop: 4, paddingBottom: 8 }}>
           <HStack space="xs" justifyContent="space-between" width="100%">
             <Pressable onPress={handleClear} flex={1}>
               <Box
@@ -626,6 +922,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         mt="$2"
         onLayout={(event) => {
           const { height } = event.nativeEvent.layout;
+          // FIX: filterBarHeight'ı hemen güncelle (animasyon başlamadan önce)
           filterBarHeight.value = height;
         }}
       >
@@ -640,14 +937,15 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
       </Box>
 
       {/* Animated Panel - Absolute positioned, z-index on top */}
+      {/* FIX: Panel'i her zaman render et, sadece opacity ve height ile kontrol et */}
       <Animated.View
         style={[
           panelStyle,
           {
             backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-            borderTopWidth: openFilterId || lastOpenFilterId ? 1 : 0,
+            borderTopWidth: (openFilterId || lastOpenFilterId) ? 1 : 0,
             borderTopColor: isDark ? '#333333' : '#E9E9E9',
-            borderBottomWidth: openFilterId || lastOpenFilterId ? 1 : 0,
+            borderBottomWidth: (openFilterId || lastOpenFilterId) ? 1 : 0,
             borderBottomColor: isDark ? '#333333' : '#E9E9E9',
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
@@ -655,30 +953,12 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
             shadowRadius: 4,
           },
         ]}
+        pointerEvents={(openFilterId || lastOpenFilterId) ? 'auto' : 'none'}
       >
         {(openFilterId || lastOpenFilterId) && renderFilterPanel()}
       </Animated.View>
 
-      {/* Overlay - Boşluğa tıklanınca paneli kapat */}
-      {(openFilterId || lastOpenFilterId) && (
-        <Pressable
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          zIndex={999}
-          onPress={() => {
-            // Panel kapatma işlemi
-            setOpenFilterId(null);
-            openFilterIdShared.value = null;
-            progress.value = withSpring(0, SPRING_CONFIG);
-          }}
-          style={{
-            backgroundColor: 'transparent',
-          }}
-        />
-      )}
+      {/* FIX: Overlay kaldırıldı - FeedScreen seviyesinde overlay kullanılıyor */}
     </Box>
   );
 };

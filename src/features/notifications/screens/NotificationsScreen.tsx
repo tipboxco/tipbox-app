@@ -119,16 +119,16 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, allQueryEnabled);
 
-    // Filter 1: Tips (Replies ile yer değiştirildi)
-    // CRITICAL FIX: Endpoint: GET /notifications?limit=10&offset=0&type=tips
+    // Filter 1: Tips (UI'da Tips tabı ama backend'de replies type'ı kullanılıyor)
+    // CRITICAL FIX: Tips tabında Replies bildirimleri görünüyor, bu yüzden type=replies kullanıyoruz
     const tipsFilter = filters[1];
     const tipsUnreadOnly = tipsFilter?.id === 'unread';
-    const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
+    const tipsNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
     const tipsQueryEnabled = shouldFetchNotifications && currentPage === 1;
     const tipsQuery = useNotifications({
         limit: 10, // CRITICAL FIX: limit=10 olarak değiştirildi
         unreadOnly: tipsUnreadOnly,
-        type: tipsNotificationType, // type=tips
+        type: tipsNotificationType, // type=replies (Tips tabında Replies bildirimleri gösteriliyor)
         search: debouncedSearchQuery || undefined,
     }, tipsQueryEnabled);
 
@@ -144,15 +144,16 @@ const NotificationsScreenComponent: React.FC = () => {
         search: debouncedSearchQuery || undefined,
     }, trustQueryEnabled);
 
-    // Filter 3: Replies (Tips ile yer değiştirildi)
+    // Filter 3: Replies (UI'da Replies tabı ama backend'de tips type'ı kullanılıyor)
+    // CRITICAL FIX: Replies tabında Tips bildirimleri görünüyor, bu yüzden type=tips kullanıyoruz
     const repliesFilter = filters[3];
     const repliesUnreadOnly = repliesFilter?.id === 'unread';
-    const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'replies';
+    const repliesNotificationType: 'all' | 'tips' | 'truster' | 'replies' | undefined = 'tips';
     const repliesQueryEnabled = shouldFetchNotifications && currentPage === 3;
     const repliesQuery = useNotifications({
         limit: 20,
         unreadOnly: repliesUnreadOnly,
-        type: repliesNotificationType,
+        type: repliesNotificationType, // type=tips (Replies tabında Tips bildirimleri gösteriliyor)
         search: debouncedSearchQuery || undefined,
     }, repliesQueryEnabled);
 
@@ -186,21 +187,64 @@ const NotificationsScreenComponent: React.FC = () => {
             const hasNoData = !allQuery.data;
             const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
             
-            // Query henüz başlamamışsa (idle) veya pending durumunda takılı kalmışsa başlat
+            // Query henüz başlamamışsa (pending) veya error durumunda takılı kalmışsa başlat
             // CRITICAL: Query enabled olsa bile, React Query bazen query'yi başlatmıyor
             // Bu durumda manuel olarak refetch çağırarak query'yi başlatıyoruz
             if (hasNoData && isNotLoading) {
-                // Query status'u kontrol et - idle veya pending ise başlat
-                if (queryStatus === 'idle' || queryStatus === 'pending' || queryStatus === 'error') {
+                // Query status'u kontrol et - pending veya error ise başlat
+                if (queryStatus === 'pending' || queryStatus === 'error') {
                     // Query'yi başlat - refetch çağrısı query'yi başlatacak
-                    allQuery.refetch().catch((error) => {
-                        console.warn('[NotificationsScreen] Failed to refetch allQuery:', error);
-                    });
+                    const refetchFn = (allQuery as { refetch?: () => Promise<unknown> }).refetch;
+                    if (refetchFn) {
+                        refetchFn().catch((error: unknown) => {
+                            console.warn('[NotificationsScreen] Failed to refetch allQuery:', error);
+                        });
+                    }
                 }
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shouldFetchNotifications, allQueryEnabled]);
+
+    // CRITICAL FIX: Tab değiştiğinde aktif tab'ın query'sini başlat
+    useEffect(() => {
+        if (!shouldFetchNotifications) {
+            return;
+        }
+        
+        // Aktif tab'ın query'sini al
+        const activeQuery = filterQueryResultsRef.current[currentPage];
+        if (!activeQuery) {
+            return;
+        }
+        
+        // Query enabled kontrolü
+        const isQueryEnabled = 
+            currentPage === 0 ? allQueryEnabled :
+            currentPage === 1 ? tipsQueryEnabled :
+            currentPage === 2 ? trustQueryEnabled :
+            repliesQueryEnabled;
+        
+        if (!isQueryEnabled) {
+            return;
+        }
+        
+        // Query durumunu kontrol et
+        const queryStatus = activeQuery.status;
+        const hasNoData = !activeQuery.data;
+        const isNotLoading = !activeQuery.isLoading && !activeQuery.isFetching && !activeQuery.isPending;
+        
+        // Query henüz başlamamışsa (pending) veya error durumunda başlat
+        if (hasNoData && isNotLoading && (queryStatus === 'pending' || queryStatus === 'error')) {
+            const refetchFn = (activeQuery as { refetch?: () => Promise<unknown> }).refetch;
+            if (refetchFn) {
+                refetchFn().catch((error: unknown) => {
+                    console.warn(`[NotificationsScreen] Failed to refetch query for tab ${currentPage}:`, error);
+                });
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, shouldFetchNotifications, allQueryEnabled, tipsQueryEnabled, trustQueryEnabled, repliesQueryEnabled]);
 
     useFocusEffect(
         useCallback(() => {
@@ -216,10 +260,13 @@ const NotificationsScreenComponent: React.FC = () => {
                 const isNotLoading = !allQuery.isLoading && !allQuery.isFetching && !allQuery.isPending;
                 
                 // Query henüz başlamamışsa başlat
-                if (hasNoData && isNotLoading && (queryStatus === 'idle' || queryStatus === 'pending')) {
-                    allQuery.refetch().catch((error) => {
-                        console.warn('[NotificationsScreen] Failed to refetch allQuery on focus:', error);
-                    });
+                if (hasNoData && isNotLoading && queryStatus === 'pending') {
+                    const refetchFn = (allQuery as { refetch?: () => Promise<unknown> }).refetch;
+                    if (refetchFn) {
+                        refetchFn().catch((error: unknown) => {
+                            console.warn('[NotificationsScreen] Failed to refetch allQuery on focus:', error);
+                        });
+                    }
                 }
             }
             
@@ -343,8 +390,30 @@ const NotificationsScreenComponent: React.FC = () => {
             const position = e.nativeEvent.position;
             progress.value = withTiming(position, { duration: 0 });
             setCurrentPage(position);
+            
+            // CRITICAL FIX: Tab değiştiğinde aktif tab'ın query'sini başlat
+            // Query enabled olsa bile, React Query bazen query'yi başlatmıyor
+            // Bu durumda manuel olarak query'yi başlatıyoruz
+            if (shouldFetchNotifications) {
+                const activeQuery = filterQueryResultsRef.current[position];
+                if (activeQuery) {
+                    const queryStatus = activeQuery.status;
+                    const hasNoData = !activeQuery.data;
+                    const isNotLoading = !activeQuery.isLoading && !activeQuery.isFetching && !activeQuery.isPending;
+                    
+                    // Query henüz başlamamışsa (pending) veya error durumunda başlat
+                    if (hasNoData && isNotLoading && (queryStatus === 'pending' || queryStatus === 'error')) {
+                        const refetchFn = (activeQuery as { refetch?: () => Promise<unknown> }).refetch;
+                        if (refetchFn) {
+                            refetchFn().catch((error: unknown) => {
+                                console.warn(`[NotificationsScreen] Failed to refetch query for tab ${position}:`, error);
+                            });
+                        }
+                    }
+                }
+            }
         },
-        [progress]
+        [progress, shouldFetchNotifications]
     );
 
 

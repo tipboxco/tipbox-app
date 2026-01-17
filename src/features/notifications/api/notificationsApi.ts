@@ -27,6 +27,8 @@ export const getNotifications = async (
   params?: GetNotificationsParams
 ): Promise<GetNotificationsResponse> => {
   try {
+    // CRITICAL FIX: Log'ları kaldırdık - sürekli istek sorununu önlemek için
+    // Sadece hata durumunda log basılacak
     const response = await apiService.getClient().get<{
       success: boolean;
       data: Array<{
@@ -102,26 +104,30 @@ export const getNotifications = async (
     }
     
     // API response'u type'a map et
+    // Dokümana göre: message field'ı yok, tüm bilgiler data objesi içinde
     const mappedData = notificationsArray.map((item) => {
       // Backend'den gelen `data` objesi (yeni format) veya `metadata` (eski format - backward compatibility)
-      const notificationData = item.data || item.metadata;
+      const notificationData = item.data || item.metadata || {};
       
       // read/isRead field'ını normalize et
       const read = item.read ?? item.isRead ?? false;
+      
+      // Dokümana göre: imageUrl data objesi içinde (post, event, badge için)
+      const imageUrl = notificationData?.imageUrl || item.imageUrl || null;
       
       return {
         id: item.id,
         userId: item.userId,
         type: item.type as any,
-        title: item.title || '',
-        message: item.message || '',
-        avatar: item.avatar || item.avatarUrl || null, // CRITICAL FIX: avatarUrl → avatar (backend format), backward compatibility için avatarUrl de kontrol ediliyor
-        imageUrl: item.imageUrl || null,
+        title: item.title || '', // Dokümana göre: title field'ı yok, boş bırak
+        message: '', // Dokümana göre: message field'ı yok, frontend'de type ve data'ya göre oluşturulacak
+        avatar: item.avatar || item.avatarUrl || null, // Dokümana göre: avatar root seviyede
+        imageUrl, // imageUrl data objesi içinde veya root seviyede olabilir
         read,
         readAt: item.readAt,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
-        data: notificationData, // Backend'den gelen data objesini direkt kullan
+        data: notificationData, // Backend'den gelen data objesini direkt kullan (username, postId, imageUrl, vb. içerir)
         metadata: notificationData, // Backward compatibility için metadata'ya da kopyala
         navigation: notificationData?.navigation,
       };
@@ -133,8 +139,24 @@ export const getNotifications = async (
       pagination: pagination || undefined,
     };
     
+    // CRITICAL FIX: Log'ları kaldırdık - sürekli istek sorununu önlemek için
+    
     return result;
   } catch (error: any) {
+    // CRITICAL FIX: Hata durumunu logla
+    console.error('[getNotifications] ❌ Backend isteği başarısız:', {
+      error: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      params: {
+        limit: params?.limit || 20,
+        offset: params?.offset || 0,
+        unreadOnly: params?.unreadOnly,
+        type: params?.type,
+        search: params?.search,
+      },
+    });
     throw error;
   }
 };

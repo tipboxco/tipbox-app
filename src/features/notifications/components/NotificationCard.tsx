@@ -112,6 +112,94 @@ const getIconComponent = (type: NotificationType): React.ComponentType<{ width?:
 };
 
 /**
+ * Bildirim tipine ve data objesine göre mesaj oluşturur
+ * Dokümana göre: message field'ı yok, tüm bilgiler data objesi içinde
+ */
+const getNotificationMessage = (type: NotificationType, data: any): string => {
+    const username = data?.username || data?.userName || data?.senderName || data?.likerName || data?.commenterName || data?.expertName || 'Kullanıcı';
+    
+    switch (type) {
+        // POST ETKİLEŞİMLERİ
+        case 'POST_LIKED':
+            return `${username} beğendi`;
+        case 'POST_COMMENTED':
+            return `${username} yorum yaptı`;
+        case 'POST_SHARED':
+            return `${username} paylaştı`;
+        case 'POST_FAVORITED':
+            return `${username} favorilere ekledi`;
+        
+        // YORUM ETKİLEŞİMLERİ
+        case 'COMMENT_LIKED':
+            return `${username} yorumunu beğendi`;
+        case 'COMMENT_REPLIED':
+            return `${username} cevap verdi`;
+        
+        // TRUST/FOLLOW BİLDİRİMLERİ
+        case 'NEW_TRUSTER':
+            return `${username} seni takip etmeye başladı`;
+        case 'NEW_TRUSTED_BY':
+            return `${username} seni takip ediyor`;
+        
+        // MESAJLAŞMA BİLDİRİMLERİ
+        case 'DM_REQUEST_RECEIVED':
+            return `${username} mesaj isteği gönderdi`;
+        case 'DM_REQUEST_ACCEPTED':
+            return `${username} mesaj isteğini kabul etti`;
+        case 'DM_REQUEST_DECLINED':
+            return `${username} mesaj isteğini reddetti`;
+        case 'SUPPORT_REQUEST_ACCEPTED':
+            const expertName = data?.expertName || username;
+            return `${expertName} destek isteğini kabul etti`;
+        case 'NEW_MESSAGE':
+            return `${username} yeni mesaj gönderdi`;
+        
+        // TIPS BİLDİRİMLERİ
+        case 'TIPS_RECEIVED':
+            return `${username} size bahşiş gönderdi`;
+        case 'TIPS_SENT':
+            return `${username} kullanıcısına bahşiş gönderildi`;
+        
+        // GAMIFICATION BİLDİRİMLERİ
+        case 'NEW_BADGE':
+            return 'Yeni rozet kazandın!';
+        case 'ACHIEVEMENT_UNLOCKED':
+            return 'Başarı açıldı!';
+        case 'REWARD_EARNED':
+            const rewardAmount = data?.amount || 0;
+            return `${rewardAmount} TIPS ödülü kazandın!`;
+        
+        // EXPERT BİLDİRİMLERİ
+        case 'EXPERT_REQUEST_AVAILABLE':
+            return 'Yeni expert sorusu mevcut';
+        case 'EXPERT_REQUEST_ANSWERED':
+            const expertNameAnswered = data?.expertName || username;
+            return `${expertNameAnswered} sorunu cevapladı`;
+        
+        // EVENT BİLDİRİMLERİ
+        case 'EVENT_STARTED':
+            return 'Etkinlik başladı!';
+        case 'EVENT_ENDING_SOON':
+            return 'Etkinlik yakında bitiyor!';
+        case 'EVENT_REWARD_AVAILABLE':
+            return 'Etkinlik ödülü mevcut!';
+        
+        // COLLECTION BİLDİRİMLERİ
+        case 'COLLECTION_POST_ADDED':
+            return 'Post koleksiyona eklendi';
+        case 'COLLECTION_SHARED':
+            return 'Koleksiyon paylaşıldı';
+        
+        // SYSTEM BİLDİRİMLERİ
+        case 'SYSTEM_ANNOUNCEMENT':
+            return 'Sistem duyurusu';
+        
+        default:
+            return 'Yeni bildirim';
+    }
+};
+
+/**
  * Bildirim tipini kategoriye göre gruplar
  */
 const getNotificationCategory = (type: NotificationType): 'post' | 'comment' | 'trust' | 'message' | 'tips' | 'event' | 'gamification' | 'expert' | 'system' => {
@@ -246,34 +334,38 @@ const PostCard: React.FC<{
 
 /**
  * Tips Card Component
- * Tips bildirimleri için özel badge tasarımı
+ * Tips bildirimleri için özel buton tasarımı
+ * Profili Görüntüle butonu gibi ama içinde +X TIPS yazıyor
  */
 const TipsCard: React.FC<{
     notification: Notification;
-}> = ({ notification }) => {
+    onPress?: () => void;
+}> = ({ notification, onPress }) => {
     const data = notification.data || notification.metadata || {};
-    const tipsAmount = data.amount || data.rewardAmount;
+    // Dokümana göre: TIPS_RECEIVED ve TIPS_SENT için data.amount kullanılır
+    const tipsAmount = data.amount;
 
+    // Amount yoksa buton gösterilmez
     if (!tipsAmount) return null;
 
     return (
-        <Box mt={4}>
-            <Box
-                bg="#E8FF6B"
-                borderRadius={20}
-                px="$3"
-                py="$1"
-                alignSelf="flex-start"
+        <Pressable
+            bg="#E8FF6B"
+            borderRadius={20}
+            px="$4"
+            py="$2"
+            alignSelf="flex-start"
+            onPress={onPress}
+            mt={4}
+        >
+            <Text
+                color="#000000"
+                fontSize="$xs"
+                fontWeight="$semibold"
             >
-                <Text
-                    color="#000000"
-                    fontSize="$xs"
-                    fontWeight="$bold"
-                >
-                    +{tipsAmount} TIPS
-                </Text>
-            </Box>
-        </Box>
+                +{tipsAmount} TIPS
+            </Text>
+        </Pressable>
     );
 };
 
@@ -300,6 +392,34 @@ const TrustCard: React.FC<{
                 fontWeight="$semibold"
             >
                 Profili Görüntüle
+            </Text>
+        </Pressable>
+    );
+};
+
+/**
+ * Chat Button Component
+ * Mesaj isteği kabul edildi bildirimleri için özel buton tasarımı
+ */
+const ChatButton: React.FC<{
+    notification: Notification;
+    onPress?: () => void;
+}> = ({ notification, onPress }) => {
+    return (
+        <Pressable
+            bg="#E8FF6B"
+            borderRadius={20}
+            px="$4"
+            py="$2"
+            alignSelf="flex-start"
+            onPress={onPress}
+        >
+            <Text
+                color="#000000"
+                fontSize="$xs"
+                fontWeight="$semibold"
+            >
+                Sohbeti Görüntüle
             </Text>
         </Pressable>
     );
@@ -460,10 +580,19 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             });
         }
 
+        // CRITICAL: Tips, Sohbeti Görüntüle ve Profili Görüntüle butonları olan bildirimlerde
+        // item'e tıklanınca navigation yapılmasın, sadece butonlara tıklanınca yapılsın
+        const type = notification.type;
+        if (type === 'TIPS_RECEIVED' || type === 'TIPS_SENT' || 
+            type === 'DM_REQUEST_ACCEPTED' || 
+            type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY') {
+            // Bu bildirimlerde sadece butonlara tıklanınca navigation yapılacak
+            return;
+        }
+
         // Navigation based on notification type (dokümana göre güncellendi)
         try {
             const data = notification.data || notification.metadata || {};
-            const type = notification.type;
 
             // 1. Post Etkileşimleri → PostDetailScreen (postId ile)
             if (type === 'POST_LIKED' || type === 'POST_COMMENTED' || type === 'POST_SHARED' || type === 'POST_FAVORITED') {
@@ -504,21 +633,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             }
 
             // 3. Trust & Follow → ProfileScreen (userId root seviyede)
-            if (type === 'NEW_TRUSTER' || type === 'NEW_TRUSTED_BY') {
-                if (notification.userId) {
-                    navigationService.navigate(ROOT_ROUTES.PROFILE, {
-                        screen: 'ProfileMain',
-                        params: { userId: notification.userId },
-                    }, {
-                        priority: 'high',
-                        force: false,
-                    });
-                    return;
-                }
-            }
+            // NOT: NEW_TRUSTER ve NEW_TRUSTED_BY handlePress başında return edildiği için buraya gelmez
+            // Navigation sadece butonlara tıklanınca yapılacak
 
             // 4. Mesajlaşma Bildirimleri → MessageDetail veya SupportMessageDetail
-            if (type === 'DM_REQUEST_RECEIVED' || type === 'DM_REQUEST_ACCEPTED') {
+            if (type === 'DM_REQUEST_RECEIVED') {
                 if (data.threadId) {
                     navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
                         messageId: data.threadId,
@@ -635,15 +754,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             }
 
             // 9. Tips Bildirimleri → WalletScreen
-            if (type === 'TIPS_RECEIVED' || type === 'TIPS_SENT') {
-                navigationService.navigate(ROOT_ROUTES.WALLET, {
-                    screen: 'WalletScreen',
-                }, {
-                    priority: 'high',
-                    force: false,
-                });
-                return;
-            }
+            // NOT: TIPS_RECEIVED ve TIPS_SENT handlePress başında return edildiği için buraya gelmez
+            // Navigation sadece butonlara tıklanınca yapılacak
 
             // Fallback: NotificationService kullan (eski sistem)
             const action = notificationService.getNavigationAction(notification);
@@ -718,25 +830,26 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const IconComponent = getIconComponent(notification.type);
     const category = getNotificationCategory(notification.type);
     
-    // Data extraction - minimal yapıya göre güncellendi
+    // Data extraction - dokümana göre güncellendi
     const data = notification.data || notification.metadata || {};
-    const tipsAmount = data.amount; // rewardAmount kaldırıldı
+    // Dokümana göre: TIPS_RECEIVED ve TIPS_SENT için data.amount kullanılır
+    const tipsAmount = data.amount;
     const commentContent = data.message; // DM_REQUEST için, diğerleri için yok
     const postId = data.postId;
     const eventId = data.eventId;
-    // Minimal yapı: imageUrl sadece gerekli yerlerde var (post, event, badge)
-    const imageUrl = data.imageUrl;
+    // Dokümana göre: imageUrl data objesi içinde (post, event, badge için)
+    const imageUrl = data.imageUrl || notification.imageUrl;
     
     // Minimal yapı: userId root seviyede zaten var, data içinde duplicate yok
     const userId = notification.userId;
 
-    // Category-based content rendering - minimal yapıya göre
-    const showPostCard = category === 'post' && (postId || imageUrl);
-    const showTipsBadge = category === 'tips' && tipsAmount;
+    // Category-based content rendering - Instagram benzeri tasarım
+    const showTipsButton = category === 'tips' && tipsAmount; // Tips bildirimlerinde buton gösterilecek
     const showTrustButton = category === 'trust';
     const showCommentText = (category === 'message') && commentContent; // Sadece DM_REQUEST için
-    const showEventInfo = category === 'event' && (eventId || imageUrl); // eventName kaldırıldı
-    const showGamificationCard = category === 'gamification' && (data.badgeId || imageUrl || tipsAmount);
+    const showChatButton = notification.type === 'DM_REQUEST_ACCEPTED'; // Mesaj isteği kabul edildi bildirimi için
+    const showEventImage = category === 'event' && imageUrl; // Event bildirimlerinde görsel mesajın altında gösterilecek
+    const showPostImage = (category === 'post' || category === 'comment') && postId && data.imageUrl; // Post bildirimlerinde data.imageUrl varsa sağda küçük görsel gösterilecek
 
     return (
         <Pressable 
@@ -753,10 +866,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 <HStack space="sm" alignItems="flex-start" justifyContent="flex-start">
 
                     {/* Avatar - Mor/pembe border ile */}
-                    {/* CRITICAL FIX: Event ve badge bildirimlerinde avatar gösterilmez */}
-                    {!(showEventInfo || showGamificationCard) && (
+                    {/* Dokümana göre: Gamification/Event/Expert bildirimlerinde avatar = null */}
+                    {notification.avatar ? (
                         <Pressable onPress={handleAvatarPress}>
-                            <Box  position="relative">
+                            <Box position="relative">
                                 <Box
                                     width={48}
                                     height={48}
@@ -789,6 +902,18 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                 )}
                             </Box>
                         </Pressable>
+                    ) : (
+                        // Gamification/Event/Expert bildirimlerinde avatar yok, placeholder göster
+                        <Box
+                            width={48}
+                            height={48}
+                            borderRadius={24}
+                            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                            justifyContent="center"
+                            alignItems="center"
+                        >
+                            <IconComponent width={24} height={24} color={isDark ? '#B9B9B9' : '#666666'} />
+                        </Box>
                     )}
 
                     {/* Content - Ortada */}
@@ -799,37 +924,59 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             fontWeight="$normal"
                             lineHeight={18}
                         >
-                            {notification.message}
+                            {(() => {
+                                // Dokümana göre: message field'ı yok, type ve data'ya göre mesaj oluştur
+                                const message = getNotificationMessage(notification.type, data);
+                                const username = data?.username || data?.userName || data?.senderName || data?.likerName || data?.commenterName || data?.expertName;
+                                
+                                // Username'i bold yap (Instagram benzeri) - font size küçük
+                                if (username && message.includes(username)) {
+                                    const parts = message.split(username);
+                                    return (
+                                        <>
+                                            {parts[0]}
+                                            <Text fontWeight="$bold" fontSize="$sm">{username}</Text>
+                                            {parts[1]}
+                                        </>
+                                    );
+                                }
+                                return message;
+                            })()}
                         </Text>
 
                         {/* Content altında listelenecek yapılar */}
-                        {showTipsBadge && (
-                            <Box>
-                                <TipsCard notification={notification} />
-                            </Box>
-                        )}
-
                         {showCommentText && (
                             <Box>
                                 <CommentCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
-                        {showPostCard && (
+                        {showTipsButton && (
                             <Box>
-                                <PostCard notification={notification} isDark={isDark} />
+                                <TipsCard 
+                                    notification={notification} 
+                                    onPress={handleAvatarPress}
+                                />
                             </Box>
                         )}
 
-                        {showEventInfo && (
+                        {showChatButton && (
                             <Box>
-                                <EventCard notification={notification} isDark={isDark} />
-                            </Box>
-                        )}
-
-                        {showGamificationCard && (
-                            <Box>
-                                <GamificationCard notification={notification} isDark={isDark} />
+                                <ChatButton 
+                                    notification={notification} 
+                                    onPress={() => {
+                                        // DM_REQUEST_ACCEPTED için sohbet ekranına yönlendir
+                                        const data = notification.data || notification.metadata || {};
+                                        if (data.threadId) {
+                                            navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+                                                messageId: data.threadId,
+                                            }, {
+                                                priority: 'high',
+                                                force: false,
+                                            });
+                                        }
+                                    }}
+                                />
                             </Box>
                         )}
 
@@ -838,10 +985,47 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                 <TrustCard notification={notification} onPress={onPress} />
                             </Box>
                         )}
+
+                        {/* Event görseli - mesajın altında, dikey olarak */}
+                        {showEventImage && (
+                            <Box mt={8} width="100%">
+                                <Image
+                                    source={toImageSource(imageUrl)}
+                                    alt="Event image"
+                                    style={{ width: '100%', height: 200 }}
+                                    borderRadius={8}
+                                    resizeMode="cover"
+                                />
+                            </Box>
+                        )}
                     </VStack>
 
-                    {/* Time and Icon - Sağda */}
-                    <VStack alignItems="flex-end" space="xs" justifyContent="flex-start">
+                    {/* Image Thumbnail, Time - Sağda (Instagram benzeri) */}
+                    {/* Event bildirimlerinde görsel mesajın altında olduğu için sağda gösterilmez */}
+                    <HStack alignItems="flex-end" space="xs" justifyContent="flex-start">
+                        {/* Post görseli - sağda küçük (Instagram benzeri) - sadece data.imageUrl varsa göster */}
+                        {/* Event görseli mesajın altında gösterildiği için burada gösterilmez */}
+                        {showPostImage && (
+                            <Image
+                                source={toImageSource(data.imageUrl)}
+                                alt="Post image"
+                                width={40}
+                                height={40}
+                                borderRadius={4}
+                                resizeMode="cover"
+                            />
+                        )}
+                        {/* Badge görseli - post değilse ve event değilse göster */}
+                        {!showPostImage && !showEventImage && imageUrl && (
+                            <Image
+                                source={toImageSource(imageUrl)}
+                                alt="Content image"
+                                width={40}
+                                height={40}
+                                borderRadius={4}
+                                resizeMode="cover"
+                            />
+                        )}
                         <Text
                             color="#8C8C8C"
                             fontSize="$xs"
@@ -849,8 +1033,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         >
                             {formatRelativeTime(notification.createdAt)}
                         </Text>
-                        <IconComponent width={20} height={20} color="#7D7D7D" />
-                    </VStack>
+                    </HStack>
                 </HStack>
             </VStack>
         </Pressable>

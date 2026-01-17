@@ -166,26 +166,27 @@ export const getFilteredFeed = async (
   }
   params.append('limit', limit.toString());
   
-  // İlgi Alanı (Interests) - Array olarak gönderilir
+  // İlgi Alanı (Interests) - Backend virgülle ayrılmış string bekliyor
+  // Backend format: interests=TRUSTER,CATEGORY_MATCH,TRENDING
   // Backend'de category ile birleştirilir (OR mantığı)
-  // Query: interests[]=category-id-1&interests[]=category-id-2
   if (filters?.interests && Array.isArray(filters.interests) && filters.interests.length > 0) {
-    filters.interests.forEach((interest) => {
-      if (interest) {
-        params.append('interests[]', interest);
+    // ENGAGEMENT_HIGH -> TRENDING mapping (backend TRENDING bekliyor)
+    const mappedInterests = filters.interests.map((interest) => {
+      if (interest === 'ENGAGEMENT_HIGH') {
+        return 'TRENDING';
       }
+      return interest;
     });
+    // Virgülle ayrılmış string olarak gönder
+    params.append('interests', mappedInterests.join(','));
   }
   
-  // Etiket (Tags) - Array olarak gönderilir
+  // Etiket (Tags) - Backend virgülle ayrılmış string bekliyor
+  // Backend format: tags=Review,Benchmark,Tips
   // Desteklenen: Review, Benchmark, Tips, Question, Experience, Update
-  // Query: tags[]=Review&tags[]=Benchmark
   if (filters?.tags && Array.isArray(filters.tags) && filters.tags.length > 0) {
-    filters.tags.forEach((tag) => {
-      if (tag) {
-        params.append('tags[]', tag);
-      }
-    });
+    // Virgülle ayrılmış string olarak gönder
+    params.append('tags', filters.tags.join(','));
   }
   
   // Kategori (Category) - Backend tek bir kategori ID bekliyor

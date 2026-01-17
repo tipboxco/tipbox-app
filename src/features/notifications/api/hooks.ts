@@ -62,8 +62,8 @@ export const useNotifications = (params?: GetNotificationsParams, enabled: boole
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 30 * 1000,  // 30 saniye - cache invalid olana kadar backend'e istek atma (daha kısa süre)
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
-    refetchOnMount: 'always',     // Her mount'ta refetch yap (yeni bildirimler için)
-    refetchOnWindowFocus: true, // Ekran focus olduğunda refetch yap (yeni bildirimler için)
+    refetchOnMount: false,     // CRITICAL FIX: Cache varsa kullan, yoksa fetch et (sonsuz döngü önleme)
+    refetchOnWindowFocus: false, // CRITICAL FIX: Cache varsa kullan, yoksa fetch et (sonsuz döngü önleme)
     retry: (failureCount, error: any) => {
       // 500 hatası için retry yapma (backend sorunu)
       if (error?.response?.status === 500) {

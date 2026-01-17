@@ -137,6 +137,9 @@ const FeedScreenInner = React.memo(() => {
   //   Backend'de interests ile birleştirilir (OR mantığı)
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
+  
+  // FIX: Filter panel açık/kapalı durumu - overlay için
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
@@ -715,10 +718,12 @@ const FeedScreenInner = React.memo(() => {
         content: relatedPostContent,
         tags: (item.relatedPost.tags && Array.isArray(item.relatedPost.tags)) ? item.relatedPost.tags : [],
         images: (() => {
+          // images array'i boşsa veya görseller yüklenemediyse boş array döndür (görsel alanı gösterilmez)
+          // Kullanıcı post oluştururken görsel eklemek istememiş olabilir, bu durumda görsel alanı gösterilmemeli
           const relatedPostImages = (item.relatedPost?.images && Array.isArray(item.relatedPost.images))
             ? item.relatedPost.images.map((img) => toImageSource(img)).filter((img): img is NonNullable<typeof img> => !!img)
             : [];
-          return relatedPostImages.length > 0 ? relatedPostImages : [defaultPostImage];
+          return relatedPostImages;
         })(),
       } : undefined,
     };
@@ -925,7 +930,14 @@ const FeedScreenInner = React.memo(() => {
             <AssetAccessCard onTabChange={handleTabChange} />
           </Box>
           <Box pt={0}>
-            <FilterBarReanimated filters={filters} onFiltersChange={setFilters} />
+            <FilterBarReanimated 
+              filters={filters} 
+              onFiltersChange={setFilters}
+              onPanelStateChange={setIsFilterPanelOpen}
+              onClosePanelRef={(closeFn) => {
+                closeFilterPanelRef.current = closeFn;
+              }}
+            />
           </Box>
         </VStack>
         <Box flex={1}>
@@ -1014,6 +1026,8 @@ const FeedScreenInner = React.memo(() => {
                   ScrollRegistry.register('feed', feedListRef);
                 }
               }}
+              // FIX: Filter panel açıkken FlatList tıklamalarını engelle - overlay önce çalışsın
+              pointerEvents={isFilterPanelOpen ? 'none' : 'auto'}
             />
           )}
         </Box>
@@ -1022,6 +1036,30 @@ const FeedScreenInner = React.memo(() => {
           visible={isSearchVisible}
           onClose={handleSearchClose}
         />
+
+        {/* FIX: Filter panel açıkken overlay - tüm ekranı kaplar, paneli kapatır */}
+        {/* Overlay z-index: 998 (panel: 1000) - overlay panel'in altında, sadece panel dışındaki alanları kapsar */}
+        {isFilterPanelOpen && (
+          <Pressable
+            position="absolute"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            zIndex={998}
+            onPress={() => {
+              // Panel kapatma işlemi - FilterBar'daki closePanel fonksiyonunu çağır
+              if (closeFilterPanelRef.current) {
+                closeFilterPanelRef.current();
+              }
+            }}
+            style={{
+              backgroundColor: 'transparent',
+            }}
+            // FIX: Overlay panel'in altında (z-index: 998) ama tüm ekranı kaplar
+            // Panel'in z-index'i 1000 olduğu için panel içeriği tıklanabilir kalır
+          />
+        )}
 
       </Box>
     </SafeAreaView>
