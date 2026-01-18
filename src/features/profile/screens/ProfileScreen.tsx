@@ -1241,8 +1241,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           </HStack>
         </Box>
 
-        {/* Inventory Header */}
-        <Box mt={20} px={15}>
+        {/* Inventory Header - Her zaman göster (kendi ve başkasının profili için) */}
+        <Box mt={20} px={15} zIndex={1}>
           <Box
             w="100%"
             h={34}
@@ -1264,6 +1264,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               h="100%"
               justifyContent="center"
               alignItems="center"
+              zIndex={2}
               onPress={() => {
                 navigation.navigate('InventoryList', {
                   userId: profile.id,

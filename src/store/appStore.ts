@@ -272,6 +272,16 @@ export const useAppStore = create<AppState>()(
             await TokenService.clearTokens();
             clearTokenCache(); // PERFORMANCE FIX: Clear token cache
             
+            // CRITICAL: React Query cache'i temizle (user-specific data)
+            // Lazy import to break circular dependency
+            try {
+              const { queryClient } = require('../../providers/QueryProvider');
+              queryClient.clear(); // Tüm cache'i temizle (logout sonrası eski kullanıcı verileri görünmemeli)
+            } catch (queryError) {
+              // QueryClient yüklenemezse silent fail (kritik değil)
+              console.warn('[logout] QueryClient clear failed:', queryError);
+            }
+            
             // ARKA PLANDA: Wallet ve image cache temizleme (await etmeden)
             // Kullanıcı zaten çıkış yaptı, bu işlemler arka planda tamamlanabilir
             Promise.all([

@@ -348,12 +348,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     // Drawer'ı hemen kapat
     handleCloseDrawer();
     
-    // Navigation'ı hemen reset et (kullanıcı anında çıkış görsün)
-    // CRITICAL: NavigationService kullan - NavigationContainer dışında olduğumuz için useNavigation() çalışmaz
-    navigationService.reset('Auth', undefined);
-    
-    // Logout işlemini arka planda yap (token temizleme vs.)
-    // State zaten logout() içinde güncelleniyor, bu yüzden navigation reset yeterli
+    // Logout işlemini başlat
+    // State güncellenince RootNavigator otomatik olarak Auth'a yönlendirecek
+    // (RootNavigator'da isAuthenticated=false olduğunda Auth screen'i gösteriliyor)
+    // Manuel reset yapmaya gerek yok - RootNavigator otomatik yönetiyor
     logout().catch((error) => {
       console.error('❌ Logout hatası (arka plan):', error);
     });

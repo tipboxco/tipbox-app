@@ -262,8 +262,15 @@ export const setupApiInterceptors = (client: AxiosInstance) => {
           processQueue(refreshError as AxiosError, null);
           clearTokenCache(); // PERFORMANCE FIX: Clear cache on refresh failure
           await TokenService.clearTokens();
+          
+          // CRITICAL: Logout'u await etmeden çağır (sonsuz döngü önleme)
+          // Logout fonksiyonu zaten state'i güncelliyor, burada sadece tetikliyoruz
           const { useAppStore } = require('../../store/appStore');
-          useAppStore.getState().logout();
+          // Logout'u arka planda çağır (await etme - sonsuz döngü riski)
+          useAppStore.getState().logout().catch((error: any) => {
+            console.error('[interceptors] Logout error (silent):', error);
+          });
+          
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
