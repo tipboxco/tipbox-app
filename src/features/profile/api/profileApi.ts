@@ -82,18 +82,29 @@ interface GetUserProfileApiResponse {
 export const getUserProfile = async (
   userId: string
 ): Promise<UserProfile> => {
-  const response = await apiService.getClient().get<GetUserProfileApiResponse>(
+  const response = await apiService.getClient().get<any>(
     `/users/${userId}/profile`
   );
   
-  // Backend response formatını UserProfile tipine map et
-  const apiData = response.data.data;
+  // Backend response formatı: { success: true, data: {...} } veya direkt object
+  const responseData = response.data;
+  const apiData = (responseData as any)?.data ?? responseData;
+  
+  // Eğer apiData undefined ise hata fırlat
+  if (!apiData || !apiData.id) {
+    console.error('[getUserProfile] Invalid response format:', {
+      url: `/users/${userId}/profile`,
+      responseData,
+      apiData,
+    });
+    throw new Error('Invalid user profile response format');
+  }
   
   return {
     id: apiData.id,
-    name: apiData.name,
-    avatar: apiData.avatarUrl, // avatarUrl → avatar mapping
-    bannerUrl: apiData.bannerUrl,
+    name: apiData.name || '',
+    avatar: apiData.avatarUrl || '', // avatarUrl → avatar mapping
+    bannerUrl: apiData.bannerUrl || '',
     biography: apiData.biography || '',
     titles: apiData.titles || [],
     stats: {
@@ -663,7 +674,8 @@ export const getUserPosts = async (
       `/users/${userId}/feed?${params.toString()}`
     );
     
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
     
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
@@ -747,7 +759,8 @@ export const getUserReviews = async (
       `/users/${userId}/reviews?${params.toString()}`
     );
     
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
     
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
@@ -832,7 +845,8 @@ export const getUserBenchmarks = async (
       `/users/${userId}/benchmarks?${params.toString()}`
     );
     
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
 
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
@@ -914,7 +928,8 @@ export const getUserTipsAndTricks = async (
       `/users/${userId}/tips?${params.toString()}`
     );
     
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
     
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
@@ -996,7 +1011,8 @@ export const getUserLadderBadges = async (
       `/users/${userId}/ladder/badges?${params.toString()}`
     );
     
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
     
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
@@ -1078,7 +1094,8 @@ export const getUserReplies = async (
       `/users/${userId}/questions?${params.toString()}`
     );
     
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
 
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
@@ -1233,8 +1250,8 @@ export const getUserCollectionAchievements = async (
       `/users/${userId}/collections/achievements?${params.toString()}`
     );
     
-    // Backend response formatını kontrol et ve normalize et
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
     
     // Detaylı log: Backend'den ne geldi?
     console.log('[getUserCollectionAchievements] API Request:', {
@@ -1360,8 +1377,8 @@ export const getUserCollectionBridges = async (
       `/users/${userId}/collections/bridges?${params.toString()}`
     );
     
-    // Backend response formatını kontrol et ve normalize et
-    const responseData = response.data;
+    // Backend response formatı: { success: true, data: [...] } veya direkt array
+    const responseData = (response.data as any)?.data ?? response.data;
     
     // Detaylı log: Backend'den ne geldi?
     console.log('[getUserCollectionBridges] API Request:', {
@@ -1493,11 +1510,12 @@ export const getTrustList = async (
   searchQuery?: string
 ): Promise<TrustUser[]> => {
   const params = searchQuery ? { q: searchQuery } : {};
-  const response = await apiService.getClient().get<TrustUser[]>(
+  const response = await apiService.getClient().get<any>(
     `/users/${userId}/trusts`,
     { params }
   );
-  return response.data;
+  // Backend response formatı: { success: true, data: [...] } veya direkt array
+  return (response.data as any)?.data ?? response.data;
 };
 
 /**
@@ -1532,11 +1550,12 @@ export const getTrusterList = async (
     params.sort = sort;
   }
   
-  const response = await apiService.getClient().get<TrusterUser[]>(
+  const response = await apiService.getClient().get<any>(
     `/users/${userId}/trusters`,
     { params: Object.keys(params).length > 0 ? params : undefined }
   );
-  return response.data;
+  // Backend response formatı: { success: true, data: [...] } veya direkt array
+  return (response.data as any)?.data ?? response.data;
 };
 
 /**
@@ -1687,20 +1706,23 @@ export const getSuggestedUsers = async (
   params.append('limit', limit.toString());
 
   try {
-    const response = await apiService.getClient().get<SuggestedUsersApiResponse>(
+    const response = await apiService.getClient().get<any>(
       `/users/suggested?${params.toString()}`
     );
     
+    // Backend response formatı: { success: true, data: {...} } veya direkt object
+    const responseData = (response.data as any)?.data ?? response.data;
+    
     console.log('[getSuggestedUsers] 📥 API Response:', {
       url: `/users/suggested?${params.toString()}`,
-      itemsCount: response.data?.items?.length || 0,
-      hasMore: response.data?.pagination?.hasMore,
-      nextCursor: response.data?.pagination?.nextCursor,
-      firstUser: response.data?.items?.[0]?.name,
-      lastUser: response.data?.items?.[response.data.items.length - 1]?.name,
+      itemsCount: responseData?.items?.length || 0,
+      hasMore: responseData?.pagination?.hasMore,
+      nextCursor: responseData?.pagination?.nextCursor,
+      firstUser: responseData?.items?.[0]?.name,
+      lastUser: responseData?.items?.[responseData.items.length - 1]?.name,
     });
     
-    return response.data;
+    return responseData as SuggestedUsersApiResponse;
   } catch (error: any) {
     console.error('[getSuggestedUsers] ❌ API Error:', {
       url: `/users/suggested?${params.toString()}`,
