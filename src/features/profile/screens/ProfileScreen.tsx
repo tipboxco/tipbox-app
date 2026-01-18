@@ -1150,7 +1150,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               fontSize="$xs"
               fontWeight="$bold"
             >
-              {profile.stats.posts}
+              {profile.stats?.posts ?? 0}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
@@ -1180,7 +1180,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {profile.stats.trust}
+                  {profile.stats?.trust ?? 0}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1212,7 +1212,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {profile.stats.truster > 999 ? `${Math.floor(profile.stats.truster / 1000)}K` : profile.stats.truster}
+                  {(profile.stats?.truster ?? 0) > 999 ? `${Math.floor((profile.stats?.truster ?? 0) / 1000)}K` : (profile.stats?.truster ?? 0)}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}

@@ -220,17 +220,18 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         };
     }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping]);
 
-    // PERFORMANCE FIX: useFocusEffect kaldırıldı
-    // Tab'a geçildiğinde otomatik refetch yapılmıyor
-    // Mesajlar socket event'leri ile otomatik güncelleniyor (handleNewMessage, handleThreadRead)
-    // Kullanıcı manuel olarak pull to refresh yapabilir
-    
     // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
+    // ve mesajları refetch et (MessageDetail'den geri dönüldüğünde okundu durumu güncellensin)
     useFocusEffect(
         useCallback(() => {
             // Screen focus olduğunda bottom sheet'i kapat
             closeBottomSheet();
-        }, [closeBottomSheet])
+            
+            // MessageDetail'den geri dönüldüğünde mesajları refetch et
+            // Bu sayede okundu durumu güncellenmiş mesajlar gösterilir
+            queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+            refetch();
+        }, [closeBottomSheet, queryClient, refetch])
     );
     
     const handleMessagePress = (messageId: string) => {

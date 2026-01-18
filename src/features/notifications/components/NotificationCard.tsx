@@ -114,51 +114,53 @@ const getIconComponent = (type: NotificationType): React.ComponentType<{ width?:
 /**
  * Bildirim tipine ve data objesine göre mesaj oluşturur
  * Dokümana göre: message field'ı yok, tüm bilgiler data objesi içinde
+ * Username notification.username alanından alınır
  */
-const getNotificationMessage = (type: NotificationType, data: any): string => {
-    const username = data?.username || data?.userName || data?.senderName || data?.likerName || data?.commenterName || data?.expertName || 'User';
+const getNotificationMessage = (type: NotificationType, username: string, data: any): string => {
+    // Username direkt notification.username'den gelir
+    const displayUsername = username || 'User';
     
     switch (type) {
         // POST INTERACTIONS
         case 'POST_LIKED':
-            return `${username} liked`;
+            return `${displayUsername} liked your post`;
         case 'POST_COMMENTED':
-            return `${username} commented`;
+            return `${displayUsername} commented on your post`;
         case 'POST_SHARED':
-            return `${username} shared`;
+            return `${displayUsername} shared your post`;
         case 'POST_FAVORITED':
-            return `${username} favorited`;
+            return `${displayUsername} favorited your post`;
         
         // COMMENT INTERACTIONS
         case 'COMMENT_LIKED':
-            return `${username} liked your comment`;
+            return `${displayUsername} liked your comment`;
         case 'COMMENT_REPLIED':
-            return `${username} replied`;
+            return `${displayUsername} replied`;
         
         // TRUST/FOLLOW NOTIFICATIONS
         case 'NEW_TRUSTER':
-            return `${username} started following you`;
+            return `${displayUsername} started following you`;
         case 'NEW_TRUSTED_BY':
-            return `${username} is following you`;
+            return `${displayUsername} is following you`;
         
         // MESSAGING NOTIFICATIONS
         case 'DM_REQUEST_RECEIVED':
-            return `${username} sent a message request`;
+            return `${displayUsername} sent a message request`;
         case 'DM_REQUEST_ACCEPTED':
-            return `${username} accepted your message request`;
+            return `${displayUsername} accepted your message request`;
         case 'DM_REQUEST_DECLINED':
-            return `${username} declined your message request`;
+            return `${displayUsername} declined your message request`;
         case 'SUPPORT_REQUEST_ACCEPTED':
-            const expertName = data?.expertName || username;
+            const expertName = data?.expertName || displayUsername;
             return `${expertName} accepted your support request`;
         case 'NEW_MESSAGE':
-            return `${username} sent a new message`;
+            return `${displayUsername} sent a new message`;
         
         // TIPS NOTIFICATIONS
         case 'TIPS_RECEIVED':
-            return `${username} sent you a tip`;
+            return `${displayUsername} sent you a tip`;
         case 'TIPS_SENT':
-            return `Tip sent to ${username}`;
+            return `Tip sent to ${displayUsername}`;
         
         // GAMIFICATION NOTIFICATIONS
         case 'NEW_BADGE':
@@ -173,7 +175,7 @@ const getNotificationMessage = (type: NotificationType, data: any): string => {
         case 'EXPERT_REQUEST_AVAILABLE':
             return 'New expert question available';
         case 'EXPERT_REQUEST_ANSWERED':
-            const expertNameAnswered = data?.expertName || username;
+            const expertNameAnswered = data?.expertName || displayUsername;
             return `${expertNameAnswered} answered the question`;
         
         // EVENT NOTIFICATIONS
@@ -248,47 +250,72 @@ const getNotificationCategory = (type: NotificationType): 'post' | 'comment' | '
 };
 
 /**
+ * Post Type'ı Türkçe'ye çevirir
+ * Backend tag'lerini frontend gösterim değerlerine çevirir
+ */
+const translatePostType = (postType: string | undefined): string => {
+    if (!postType) return 'İpucu';
+    
+    const mapping: Record<string, string> = {
+        'QUESTION': 'Soru',
+        'Tips': 'İpucu',
+        'TIP': 'İpucu',
+        'Review': 'İnceleme',
+        'REVIEW': 'İnceleme',
+        'Experience': 'Deneyim',
+        'EXPERIENCE': 'Deneyim',
+        'Update': 'Güncelleme',
+        'UPDATE': 'Güncelleme',
+        'Benchmark': 'Karşılaştırma',
+        'BENCHMARK': 'Karşılaştırma',
+        'FREE': 'Genel',
+        'PREMIUM': 'Premium',
+    };
+    
+    return mapping[postType] || postType;
+};
+
+/**
  * Post Card Component
  * Post ile ilgili bildirimler için özel card tasarımı
+ * Görseldeki tasarım: Büyük card, "İpucu" tag'i sol üstte, başlık ve içerik, kategori sağ üstte
  */
 const PostCard: React.FC<{
     notification: Notification;
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    // Minimal yapı: sadece imageUrl var (dokümana göre)
-    const imageUrl = data.imageUrl;
-    // title field'ı kaldırıldı, sadece message var
-    const postContent = data.postContent || data.content || notification.message;
+    const postContent = data.postContent;
+    const description = data.description; // POST_COMMENTED için yorum metni
+    const postTypeRaw = data.postType;
+    const postType = translatePostType(postTypeRaw); // Türkçe'ye çevir
+    const categoryName = data.categoryName;
+
+    // Post içeriği yoksa gösterilmez
+    if (!postContent) {
+        return null;
+    }
 
     return (
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-            borderRadius={8}
-            p="$3"
-            mt={12}
+            borderRadius={12}
+            p="$4"
+            mt={8}
+            position="relative"
+            minHeight={160}
         >
-            {imageUrl && (
-                <Image
-                    source={toImageSource(imageUrl)}
-                    alt="Post image"
-                    style={{ width: '100%' }}
-                    height={120}
-                    borderRadius={8}
-                    mb="$2"
-                    resizeMode="cover"
-                />
-            )}
-            
-            {/* Tip Badge */}
-            <HStack space="sm" alignItems="center" mb="$2">
+            {/* Post tipi badge (İpucu) - Sol üstte */}
+            {postType && (
                 <HStack
                     bg="#3B82F6"
                     borderRadius={20}
                     px="$3"
-                    py="$1"
+                    py="$1.5"
                     alignItems="center"
                     space="xs"
+                    alignSelf="flex-start"
+                    mb="$3"
                 >
                     <LightBulbIcon width={14} height={14} color="#FFFFFF" />
                     <Text
@@ -296,34 +323,45 @@ const PostCard: React.FC<{
                         fontSize="$xs"
                         fontWeight="$semibold"
                     >
-                        Tip
+                        {postType}
                     </Text>
                 </HStack>
-                {data.categoryName && (
-                    <HStack alignItems="center" space="xs">
-                        <Text
-                            color={isDark ? '#B9B9B9' : '#666666'}
-                            fontSize="$xs"
-                            fontWeight="$normal"
-                        >
-                            {data.categoryName}
-                        </Text>
-                        <Box
-                            width={16}
-                            height={16}
-                            bg={isDark ? '#3A3A3A' : '#E0E0E0'}
-                            borderRadius={4}
-                        />
-                    </HStack>
-                )}
-            </HStack>
+            )}
 
+            {/* Kategori bilgisi - Sağ üstte */}
+            {categoryName && (
+                <HStack
+                    position="absolute"
+                    top="$4"
+                    right="$4"
+                    alignItems="center"
+                    space="xs"
+                >
+                    <Text
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        fontSize="$xs"
+                        fontWeight="$normal"
+                    >
+                        {categoryName}
+                    </Text>
+                    <Box
+                        width={16}
+                        height={16}
+                        bg={isDark ? '#3A3A3A' : '#E0E0E0'}
+                        borderRadius={4}
+                    />
+                </HStack>
+            )}
+
+            {/* Post içeriği - Truncated */}
             {postContent && (
                 <Text
-                    color={isDark ? '#B9B9B9' : '#666666'}
-                    fontSize="$xs"
+                    color={isDark ? '#666666' : '#666666'}
+                    fontSize="$sm"
                     fontWeight="$normal"
-                    numberOfLines={3}
+                    numberOfLines={4}
+                    lineHeight={22}
+                    mt="$2"
                 >
                     {postContent}
                 </Text>
@@ -428,15 +466,17 @@ const ChatButton: React.FC<{
 /**
  * Comment/Message Card Component
  * Yorum ve mesaj bildirimleri için özel metin önizlemesi
+ * POST_COMMENTED için description, DM_REQUEST için message kullanılır
  */
 const CommentCard: React.FC<{
     notification: Notification;
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    // Minimal yapı: Sadece DM_REQUEST_RECEIVED için data.message var
-    // Diğer comment bildirimlerinde message preview yok
-    const commentContent = data.message;
+    // POST_COMMENTED için description, DM_REQUEST_RECEIVED için message kullanılır
+    const commentContent = notification.type === 'POST_COMMENTED' 
+        ? data.description 
+        : data.message;
 
     if (!commentContent) return null;
 
@@ -463,42 +503,11 @@ const EventCard: React.FC<{
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    // Minimal yapı: eventName kaldırıldı, sadece eventId ve imageUrl var
-    const imageUrl = data.imageUrl;
-    // title field'ı kaldırıldı, sadece message var
-    const eventDescription = notification.message;
+    // Minimal yapı: eventName, title ve message field'ları kaldırıldı
+    // Event bildirimleri için sadece eventId var, mesaj getNotificationMessage ile oluşturuluyor
+    // Event card gösterilmez, sadece mesaj gösterilir
 
-    return (
-        <Box
-            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-            borderRadius={8}
-            p="$3"
-            mt={12}
-        >
-            {imageUrl && (
-                <Image
-                    source={toImageSource(imageUrl)}
-                    alt="Event image"
-                    style={{ width: '100%' }}
-                    height={120}
-                    borderRadius={8}
-                    mb="$2"
-                    resizeMode="cover"
-                />
-            )}
-            
-            {eventDescription && (
-                <Text
-                    color={isDark ? '#B9B9B9' : '#666666'}
-                    fontSize="$xs"
-                    fontWeight="$normal"
-                    numberOfLines={2}
-                >
-                    {eventDescription}
-                </Text>
-            )}
-        </Box>
-    );
+    return null;
 };
 
 /**
@@ -510,9 +519,14 @@ const GamificationCard: React.FC<{
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    // Minimal yapı: badgeName kaldırıldı (mesajda zaten var), achievementId kaldırıldı
-    // Sadece badgeId, imageUrl ve amount var
+    // Minimal yapı: badgeName, message field'ları kaldırıldı (mesaj getNotificationMessage ile oluşturuluyor)
+    // achievementId kaldırıldı, sadece badgeId ve amount var
     const rewardAmount = data.amount || data.rewardAmount;
+
+    // Sadece reward amount varsa göster
+    if (!rewardAmount) {
+        return null;
+    }
 
     return (
         <Box
@@ -524,32 +538,22 @@ const GamificationCard: React.FC<{
             <HStack space="sm" alignItems="center">
                 <TrophyIcon width={24} height={24} color="#E8FF6B" />
                 <VStack flex={1}>
-                    {notification.message && (
-                        <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$sm"
-                            fontWeight="$bold"
-                        >
-                            {notification.message}
-                        </Text>
-                    )}
+                    {/* Mesaj getNotificationMessage ile oluşturuluyor, burada gösterilmez */}
                 </VStack>
-                {rewardAmount && (
-                    <Box
-                        bg="#E8FF6B"
-                        borderRadius={12}
-                        px="$2"
-                        py="$1"
+                <Box
+                    bg="#E8FF6B"
+                    borderRadius={12}
+                    px="$2"
+                    py="$1"
+                >
+                    <Text
+                        color="#000000"
+                        fontSize="$xs"
+                        fontWeight="$bold"
                     >
-                        <Text
-                            color="#000000"
-                            fontSize="$xs"
-                            fontWeight="$bold"
-                        >
-                            +{rewardAmount}
-                        </Text>
-                    </Box>
-                )}
+                        +{rewardAmount}
+                    </Text>
+                </Box>
             </HStack>
         </Box>
     );
@@ -565,6 +569,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     onMarkAsRead,
     onDelete,
 }) => {
+    // Log bildirim verisi
+    React.useEffect(() => {
+        console.log('[NotificationCard] 📨 Bildirim verisi:', JSON.stringify(notification, null, 2));
+    }, [notification]);
+
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const markAsReadMutation = useMarkNotificationAsRead();
@@ -806,18 +815,25 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const handleAvatarPress = () => {
         // Minimal yapı: userId root seviyede zaten var (avatar ile eşleşir)
         // Data içinde duplicate userId field'ları kaldırıldı
-        if (notification.userId) {
-            try {
-                navigationService.navigate(ROOT_ROUTES.PROFILE, {
-                    screen: 'ProfileMain',
-                    params: { userId: notification.userId },
-                }, {
-                    priority: 'high',
-                    force: false,
-                });
-            } catch (error) {
-                console.error('[NotificationCard] Avatar navigation error:', error);
-            }
+        const userId = notification.userId;
+        
+        if (!userId) {
+            console.warn('[NotificationCard] Avatar press: userId is missing', notification);
+            return;
+        }
+        
+        try {
+            console.log('[NotificationCard] Navigating to profile with userId:', userId);
+            navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                screen: 'ProfileMain',
+                params: { userId: String(userId) }, // String'e çevir (güvenlik için)
+            }, {
+                priority: 'high',
+                force: false,
+            });
+        } catch (error) {
+            console.error('[NotificationCard] Avatar navigation error:', error);
+            console.error('[NotificationCard] Notification data:', notification);
         }
     };
 
@@ -884,22 +900,18 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const data = notification.data || notification.metadata || {};
     // Dokümana göre: TIPS_RECEIVED ve TIPS_SENT için data.amount kullanılır
     const tipsAmount = data.amount;
-    const commentContent = data.message; // DM_REQUEST için, diğerleri için yok
+    const commentContent = data.description || data.message; // POST_COMMENTED için description, DM_REQUEST için message
     const postId = data.postId;
     const eventId = data.eventId;
-    // Dokümana göre: imageUrl data objesi içinde (post, event, badge için)
-    const imageUrl = data.imageUrl || notification.imageUrl;
-    
     // Minimal yapı: userId root seviyede zaten var, data içinde duplicate yok
     const userId = notification.userId;
 
     // Category-based content rendering - Instagram benzeri tasarım
     const showTipsButton = category === 'tips' && tipsAmount; // Tips bildirimlerinde buton gösterilecek
     const showTrustButton = category === 'trust';
-    const showCommentText = (category === 'message') && commentContent; // Sadece DM_REQUEST için
+    const showCommentText = ((category === 'post' && notification.type === 'POST_COMMENTED') || category === 'message') && commentContent; // POST_COMMENTED ve DM_REQUEST için
     const showChatButton = notification.type === 'DM_REQUEST_ACCEPTED'; // Mesaj isteği kabul edildi bildirimi için
-    const showEventImage = category === 'event' && imageUrl; // Event bildirimlerinde görsel mesajın altında gösterilecek
-    const showPostImage = (category === 'post' || category === 'comment') && postId && data.imageUrl; // Post bildirimlerinde data.imageUrl varsa sağda küçük görsel gösterilecek
+    const showPostCard = (category === 'post' || category === 'comment') && postId && data.postContent; // Post bildirimlerinde post içeriği varsa PostCard gösterilecek (görsel YOK)
 
     return (
         <Pressable 
@@ -909,12 +921,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             position="relative"
             borderBottomWidth={1}
             borderBottomColor={isDark ? '#333' : '#E9E9E9'}
+            minHeight={showPostCard ? undefined : 80}
+            height={showPostCard ? undefined : 80}
         >
-            <VStack alignItems="flex-start" justifyContent="flex-start">
-                
-                {/* Main Notification Row */}
-
-                <HStack space="md" alignItems="flex-start" justifyContent="flex-start">
+            <HStack space="md" alignItems="flex-start" flex={1}>
 
                     {/* Avatar - Mor/pembe border ile */}
                     {/* Dokümana göre: Gamification/Event/Expert bildirimlerinde avatar = null */}
@@ -953,19 +963,22 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     )}
 
                     {/* Content - Ortada */}
-                    <VStack flex={1} space="xs">
+                    <VStack flex={1} space="xs" justifyContent="flex-start">
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize="$sm"
                             fontWeight="$normal"
                             lineHeight={18}
+                            numberOfLines={2}
                         >
                             {(() => {
-                                // Dokümana göre: message field'ı yok, type ve data'ya göre mesaj oluştur
-                                const message = getNotificationMessage(notification.type, data);
-                                const username = data?.username || data?.userName || data?.senderName || data?.likerName || data?.commenterName || data?.expertName;
+                                // Username notification objesinden geliyor
+                                const username = notification.username || 'User';
                                 
-                                // Username'i bold yap (Instagram benzeri) - font size küçük
+                                // Dokümana göre: message field'ı yok, type, username ve data'ya göre mesaj oluştur
+                                const message = getNotificationMessage(notification.type, username, data);
+                                
+                                // Username'i bold yap (aynı font size, sadece bold)
                                 if (username && message.includes(username)) {
                                     const parts = message.split(username);
                                     return (
@@ -981,80 +994,44 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         </Text>
 
                         {/* Content altında listelenecek yapılar */}
-                        {showCommentText && (
-                            <Box>
+                        {/* Yorum metni (POST_COMMENTED için) - PostCard'dan önce */}
+                        {showCommentText && notification.type === 'POST_COMMENTED' && (
+                            <Box mt={4}>
                                 <CommentCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
-                        {showTipsButton && (
+                        {/* Post Card - Post içeriği (görsel YOK) */}
+                        {showPostCard && (
                             <Box>
-                                <TipsCard 
-                                    notification={notification} 
-                                    onPress={handleTipsPress}
-                                />
+                                <PostCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
-                        {showChatButton && (
-                            <Box>
-                                <ChatButton 
-                                    notification={notification} 
-                                    onPress={handleChatPress}
-                                />
-                            </Box>
-                        )}
-
-                        {showTrustButton && (
-                            <Box>
-                                <TrustCard notification={notification} onPress={handleTrustPress} />
-                            </Box>
-                        )}
-
-                        {/* Event görseli - mesajın altında, dikey olarak */}
-                        {showEventImage && (
-                            <Box mt={8} width="100%">
-                                <Image
-                                    source={toImageSource(imageUrl)}
-                                    alt="Event image"
-                                    style={{ width: '100%', height: 200 }}
-                                    borderRadius={8}
-                                    resizeMode="cover"
-                                />
-                            </Box>
+                        {/* Butonlar */}
+                        {(showTipsButton || showChatButton || showTrustButton) && (
+                            <HStack space="xs" mt={4} flexWrap="wrap">
+                                {showTipsButton && (
+                                    <TipsCard 
+                                        notification={notification} 
+                                        onPress={handleTipsPress}
+                                    />
+                                )}
+                                {showChatButton && (
+                                    <ChatButton 
+                                        notification={notification} 
+                                        onPress={handleChatPress}
+                                    />
+                                )}
+                                {showTrustButton && (
+                                    <TrustCard notification={notification} onPress={handleTrustPress} />
+                                )}
+                            </HStack>
                         )}
                     </VStack>
 
-                    {/* Image Thumbnail - Sağda (Instagram benzeri) */}
-                    {/* Event bildirimlerinde görsel mesajın altında olduğu için sağda gösterilmez */}
-                    {(showPostImage || (!showPostImage && !showEventImage && imageUrl)) && (
-                        <Box>
-                            {/* Post görseli - sağda küçük (Instagram benzeri) - sadece data.imageUrl varsa göster */}
-                            {/* Event görseli mesajın altında gösterildiği için burada gösterilmez */}
-                            {showPostImage && (
-                                <Image
-                                    source={toImageSource(data.imageUrl)}
-                                    alt="Post image"
-                                    width={40}
-                                    height={40}
-                                    borderRadius={4}
-                                    resizeMode="cover"
-                                />
-                            )}
-                            {/* Badge görseli - post değilse ve event değilse göster */}
-                            {!showPostImage && !showEventImage && imageUrl && (
-                                <Image
-                                    source={toImageSource(imageUrl)}
-                                    alt="Content image"
-                                    width={40}
-                                    height={40}
-                                    borderRadius={4}
-                                    resizeMode="cover"
-                                />
-                            )}
-                        </Box>
-                    )}
-                </HStack>
+                    {/* Image Thumbnail - Kaldırıldı: imageUrl hiçbir zaman kullanılmayacak */}
+            </HStack>
 
                 {/* Timestamp and Unread Badge - Position Absolute (MessageCard ile aynı) */}
                 <HStack
@@ -1082,7 +1059,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         />
                     )}
                 </HStack>
-            </VStack>
         </Pressable>
     );
 };

@@ -119,15 +119,16 @@ export const getNotifications = async (
         id: item.id,
         userId: item.userId,
         type: item.type as any,
-        title: item.title || '', // Dokümana göre: title field'ı yok, boş bırak
-        message: '', // Dokümana göre: message field'ı yok, frontend'de type ve data'ya göre oluşturulacak
+        username: item.username || undefined, // Backend'den gelen username alanı
+        title: item.title || '', // Dokümana göre: title field'ı yok, boş bırak (backward compatibility)
+        message: '', // Dokümana göre: message field'ı yok, frontend'de type ve data'ya göre oluşturulacak (backward compatibility)
         avatar: item.avatar || item.avatarUrl || null, // Dokümana göre: avatar root seviyede
         imageUrl, // imageUrl data objesi içinde veya root seviyede olabilir
         read,
         readAt: item.readAt,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
-        data: notificationData, // Backend'den gelen data objesini direkt kullan (username, postId, imageUrl, vb. içerir)
+        data: notificationData, // Backend'den gelen data objesini direkt kullan (postId, imageUrl, description, vb. içerir)
         metadata: notificationData, // Backward compatibility için metadata'ya da kopyala
         navigation: notificationData?.navigation,
       };

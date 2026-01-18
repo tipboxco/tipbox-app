@@ -703,6 +703,11 @@ const NotificationsScreenComponent: React.FC = () => {
         // Her tab için kendi notifications'ını çıkar
         const notifications = extractNotificationsFromResponse(notificationsResponse);
         
+        // Log bildirim verileri
+        if (notifications && notifications.length > 0) {
+            console.log(`[NotificationsScreen] 📨 Tab ${filterIndex} (${filter?.label}) - ${notifications.length} bildirim:`, JSON.stringify(notifications, null, 2));
+        }
+        
         // SAFETY FIX: notifications her zaman array olmalı
         const safeNotifications = Array.isArray(notifications) ? notifications : [];
         
@@ -712,18 +717,22 @@ const NotificationsScreenComponent: React.FC = () => {
         let filtered = safeNotifications;
         
         // Search query için client-side filtering (backend'den zaten filtrelenmiş geliyor)
-        // Minimal yapı: title ve userName field'ları kaldırıldı, sadece message var
+        // Minimal yapı: title, userName ve message field'ları kaldırıldı
+        // Mesajlar getNotificationMessage ile dinamik oluşturuluyor
+        // Arama için username ve postContent kullanılır
         if (searchQuery && Array.isArray(filtered)) {
             filtered = filtered.filter(notification => {
                 if (!notification || typeof notification !== 'object') {
                     return false;
                 }
                 
-                // Minimal yapı: sadece message field'ı var
-                const message = notification.message?.toLowerCase() || '';
                 const query = searchQuery.toLowerCase();
+                const username = notification.username?.toLowerCase() || '';
+                const data = notification.data || notification.metadata || {};
+                const postContent = data.postContent?.toLowerCase() || '';
                 
-                return message.includes(query);
+                // Username veya postContent'te arama yap
+                return username.includes(query) || postContent.includes(query);
             });
         }
         

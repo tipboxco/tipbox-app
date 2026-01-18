@@ -2401,12 +2401,12 @@ const MessageDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView  style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
-          keyboardVerticalOffset={0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           enabled={true}
         >
           {/* Header */}
@@ -2473,7 +2473,13 @@ const MessageDetailScreen: React.FC = () => {
 
           {/* Typing Indicator */}
           {isTyping && typingUserId && typingUserId !== user?.id && (
-            <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+            <Box 
+              px="$4" 
+              py="$2" 
+              bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+              zIndex={1002}
+              elevation={1002}
+            >
               <HStack space="xs" alignItems="center">
                 <Text
                   color={isDark ? '#8C8C8C' : '#8C8C8C'}
@@ -2509,20 +2515,28 @@ const MessageDetailScreen: React.FC = () => {
             </Box>
           )}
 
-          {/* Action Buttons - Klavye ile birlikte yukarı kayar (KeyboardAvoidingView içinde) */}
-          <MessageDetailActionButtons
-            onSendTipsPress={handleSendTipsPress}
-            onRequestSupportPress={handleRequestSupportPress}
-            keyboardHeight={keyboardHeight}
-            isKeyboardVisible={isKeyboardVisible}
-            keyboardAnim={null}
-          />
+          {/* Action Buttons - Klavye ve input üstünde görünmeli */}
+          <Box
+            position="absolute"
+            bottom={Platform.OS === 'ios' ? (isKeyboardVisible ? keyboardHeight + 60 : 60) : (isKeyboardVisible ? keyboardHeight + 60 : 60)}
+            right={16}
+            zIndex={1003}
+            elevation={1003}
+          >
+            <MessageDetailActionButtons
+              onSendTipsPress={handleSendTipsPress}
+              onRequestSupportPress={handleRequestSupportPress}
+              keyboardHeight={keyboardHeight}
+              isKeyboardVisible={isKeyboardVisible}
+              keyboardAnim={null}
+            />
+          </Box>
 
-          {/* Mesaj Input - En altta, KeyboardAvoidingView ile otomatik yönetilir */}
+          {/* Mesaj Input - Klavye üstünde görünmeli */}
           <Box 
-            pb={isKeyboardVisible ? (Platform.OS === 'ios' ? 8 : 0) : 0}
-            zIndex={1001}
-            elevation={1001}
+            pb={isKeyboardVisible ? (Platform.OS === 'ios' ? 4 : 0) : 0}
+            zIndex={1004}
+            elevation={1004}
             position="relative"
             bg={isDark ? '#1A1A1A' : '#FFFFFF'}
           >

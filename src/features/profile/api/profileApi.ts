@@ -44,6 +44,35 @@ export interface UpdateProfileResponse {
 }
 
 /**
+ * Get User Profile API Response Interface
+ * Backend'den gelen response formatı
+ */
+interface GetUserProfileApiResponse {
+  success: boolean;
+  data: {
+    id: string;
+    name: string;
+    avatarUrl: string;
+    bannerUrl: string;
+    biography: string;
+    titles: string[];
+    stats: {
+      posts: number;
+      trust: number;
+      truster: number;
+    };
+    userName?: string;
+    country?: string;
+    badges?: Array<{
+      id: string;
+      title: string;
+      image?: string;
+    }>;
+    isTrusted?: boolean | null;
+  };
+}
+
+/**
  * Get User Profile endpoint function
  * Kullanıcı profil bilgilerini getirir
  * 
@@ -53,11 +82,28 @@ export interface UpdateProfileResponse {
 export const getUserProfile = async (
   userId: string
 ): Promise<UserProfile> => {
-  const response = await apiService.getClient().get<UserProfile>(
+  const response = await apiService.getClient().get<GetUserProfileApiResponse>(
     `/users/${userId}/profile`
   );
   
-  return response.data;
+  // Backend response formatını UserProfile tipine map et
+  const apiData = response.data.data;
+  
+  return {
+    id: apiData.id,
+    name: apiData.name,
+    avatar: apiData.avatarUrl, // avatarUrl → avatar mapping
+    bannerUrl: apiData.bannerUrl,
+    biography: apiData.biography || '',
+    titles: apiData.titles || [],
+    stats: {
+      posts: apiData.stats?.posts ?? 0,
+      trust: apiData.stats?.trust ?? 0,
+      truster: apiData.stats?.truster ?? 0,
+    },
+    badges: apiData.badges || [], // Default: boş array
+    isTrusted: apiData.isTrusted ?? null, // Default: null
+  };
 };
 
 /**

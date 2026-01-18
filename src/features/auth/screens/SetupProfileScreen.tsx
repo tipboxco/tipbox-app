@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Image, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle, Camera, User } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { toImageSource } from '@/src/utils';
@@ -13,11 +14,13 @@ import { useSetupProfile } from '../api/hooks';
 import { Alert } from 'react-native';
 
 type SetupProfileScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SetupProfile'>;
+type SetupProfileScreenRouteProp = RouteProp<AuthStackParamList, 'SetupProfile'>;
 
 export const SetupProfileScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SetupProfileScreenNavigationProp>();
+  const route = useRoute<SetupProfileScreenRouteProp>();
   const setupProfileMutation = useSetupProfile();
   const insets = useSafeAreaInsets();
   
@@ -29,25 +32,43 @@ export const SetupProfileScreen = () => {
   const [isUsernameValid, setIsUsernameValid] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
+  // SelectAvatar ekranından dönen avatar bilgisini al
+  useFocusEffect(
+    React.useCallback(() => {
+      const params = route.params as any;
+      if (params?.avatarData) {
+        if (params.avatarData.type === 'upload') {
+          setProfileImage(params.avatarData.uri);
+        } else if (params.avatarData.type === 'avatar') {
+          // Avatar ID'si için mock URI oluştur (gerçek uygulamada API'den alınacak)
+          // Şimdilik sadece ID'yi sakla, API'ye gönderirken kullanılacak
+          setProfileImage(`avatar://${params.avatarData.id}`);
+        }
+        // Params'ı temizle
+        navigation.setParams({ avatarData: undefined } as any);
+      }
+    }, [route.params, navigation])
+  );
+
   const validateUsername = (text: string) => {
     const usernameRegex = /^[a-zA-Z0-9._]{3,}$/;
     setUsername(text);
     setIsUsernameValid(usernameRegex.test(text));
   };
 
-  const handleTakePhoto = async () => {
-    try {
-      const result = await imagePickerService.pickFromCamera();
-      if (result.success && result.asset) {
-        setProfileImage(result.asset.uri);
-      } else {
-        console.error('Photo capture error:', result.error);
-        // TODO: Hata mesajını kullanıcıya göster
-      }
-    } catch (error) {
-      console.error('Camera error:', error);
-      // TODO: Hata mesajını kullanıcıya göster
-    }
+  const handleSelectAvatar = () => {
+    // Avatar seçim ekranına yönlendir
+    navigation.navigate('SelectAvatar', {
+      onSelectAvatar: (avatarData) => {
+        // Callback ile avatar bilgisini al
+        if (avatarData.type === 'upload') {
+          setProfileImage(avatarData.uri);
+        } else if (avatarData.type === 'avatar') {
+          // Avatar ID'si için mock URI oluştur
+          setProfileImage(`avatar://${avatarData.id}`);
+        }
+      },
+    });
   };
 
   const handleNext = async () => {
@@ -114,10 +135,17 @@ export const SetupProfileScreen = () => {
               overflow="hidden"
               style={{ width: 120, height: 120, borderWidth: 1, borderColor: 'red' }}
             >
-              {profileImage ? (
+              {profileImage && !profileImage.startsWith('avatar://') ? (
                 <Image
                   source={toImageSource(profileImage)}
                   alt="Profile Photo"
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              ) : profileImage && profileImage.startsWith('avatar://') ? (
+                <Image
+                  source={require('@/assets/avatar/default-useravatar.png')}
+                  alt="Avatar"
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />
@@ -134,7 +162,7 @@ export const SetupProfileScreen = () => {
               rounded="$full"
               borderWidth={1}
               borderColor="$gray200"
-              onPress={handleTakePhoto}
+              onPress={handleSelectAvatar}
               style={{
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },

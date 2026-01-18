@@ -57,6 +57,8 @@ export interface PostCardData {
   isLiked?: boolean;
   isBookmarked?: boolean;
   isShared?: boolean;
+  // Post source (e.g., "BOOSTED")
+  source?: string;
 }
 
 /**

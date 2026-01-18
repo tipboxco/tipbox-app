@@ -310,6 +310,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     (data.contextType === ProductInfoType.PRODUCT_GROUP ||
       data.contextType === ProductInfoType.SUB_CATEGORY);
 
+  const isBoosted = data.source === 'BOOSTED';
+
   return (
     <VStack
       bg={isDark ? '$backgroundDark900' : '$white'}
@@ -617,6 +619,26 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           </Pressable>
         </HStack>
       </HStack>
+      
+      {/* Boosted Icon - Card'ın sağ alt köşesi */}
+      {isBoosted && (
+        <Box
+          position="absolute"
+          bottom={8}
+          right={12}
+          width={24}
+          height={24}
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Image
+            source={require('@/assets/boost.svg')}
+            alt="boosted"
+            width={24}
+            height={24}
+          />
+        </Box>
+      )}
 
       {/* Overlay - menu açıkken PostCard'a tıklamayı engellemek için */}
       {isContextMenuOpen && (

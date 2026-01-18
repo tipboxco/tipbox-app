@@ -6,23 +6,27 @@ export interface Notification {
   id: string;
   userId?: string;
   type: NotificationType;
-  title: string;
-  message: string;
+  username?: string; // Backend'den gelen username alanı
   avatar?: string | null; // CRITICAL FIX: avatarUrl → avatar (backend format)
   imageUrl?: string | null;
   read: boolean;
   readAt?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   data?: NotificationData;
   metadata?: NotificationMetadata; // Backward compatibility
   navigation?: NotificationNavigation;
+  // DEPRECATED: title ve message field'ları backend'den gelmiyor, kaldırıldı
+  // Mesajlar getNotificationMessage fonksiyonu ile dinamik oluşturuluyor
+  title?: string; // Backward compatibility - kullanılmıyor
+  message?: string; // Backward compatibility - kullanılmıyor
 }
 
 export interface NotificationData {
   postId?: string;
   commentId?: string;
   threadId?: string;
+  requestId?: string;
   userId?: string;
   userName?: string;
   likerId?: string;
@@ -31,9 +35,21 @@ export interface NotificationData {
   commenterName?: string;
   senderId?: string;
   senderName?: string;
+  expertName?: string;
+  expertTitle?: string;
+  expertAvatar?: string;
   eventId?: string;
   eventName?: string;
+  badgeId?: string;
+  collectionId?: string;
+  postContent?: string; // Post içeriği
+  postType?: string; // QUESTION, TIP, REVIEW, etc.
+  categoryName?: string; // Kategori adı
+  description?: string; // POST_COMMENTED için yorum metni
+  message?: string; // DM_REQUEST_RECEIVED için mesaj önizlemesi
   messagePreview?: string;
+  imageUrl?: string; // Post veya badge image URL
+  shareType?: string; // POST_SHARED için share tipi
   amount?: number;
   rewardAmount?: number;
   [key: string]: any;
