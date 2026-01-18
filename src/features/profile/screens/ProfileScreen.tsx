@@ -181,7 +181,7 @@ const mapBenchmarkToCardData = (item: BenchmarkApiItem): BenchmarkCardData | nul
     return null;
   }
   
-  const avatarSource = toImageSource(item.user.avatar)!;
+  const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
   const products: BenchmarkProduct[] = (item?.products || [])
     .filter((p) => p?.id) // Filter out invalid products
     .map((p) => ({
@@ -213,7 +213,7 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
     return null;
   }
   
-  const avatarSource = toImageSource(item?.user?.avatar)!;
+  const avatarSource = toImageSource(item?.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
   const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: TipsProduct = {
     id: item.contextData.id,
@@ -253,7 +253,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
     return null;
   }
   
-  const avatarSource = toImageSource(item?.user?.avatar)!;
+  const avatarSource = toImageSource(item?.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
   const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: QuestionCardProduct = {
     id: item.contextData.id,
@@ -763,7 +763,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       recipientUserId: targetUserId,
       senderName: userProfile.name || 'Unknown',
       senderTitle: userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : '',
-      senderAvatar: userProfile.avatar ? toImageSource(userProfile.avatar) : require('@/assets/avatar/default-useravatar.png'),
+      senderAvatar: userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png'),
     });
   }, [user?.id, targetUserId, userProfile]);
 
@@ -987,13 +987,29 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               borderWidth={2}
               borderColor="$white"
               flexShrink={0}
+              position="relative"
+              bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
             >
+              {/* Default avatar - her zaman arka planda */}
               <Image
-                source={toImageSource(profile.avatar) || require('@/assets/avatar/default-useravatar.png') }
-                alt={profile.name}
+                source={require('@/assets/avatar/default-useravatar.png')}
+                alt="Default Avatar"
+                position="absolute"
                 w="100%"
                 h="100%"
+                resizeMode="cover"
               />
+              {/* Kullanıcı avatar'ı - varsa üstte göster */}
+              {profile.avatar && toImageSource(profile.avatar) && (
+                <Image
+                  source={toImageSource(profile.avatar)}
+                  alt={profile.name}
+                  position="absolute"
+                  w="100%"
+                  h="100%"
+                  resizeMode="cover"
+                />
+              )}
             </Box>
 
             {/* Action Buttons */}
