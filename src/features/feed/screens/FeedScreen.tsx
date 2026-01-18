@@ -141,6 +141,9 @@ const FeedScreenInner = React.memo(() => {
   //   Backend'de interests ile birleştirilir (OR mantığı)
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
+  
+  // FIX: Filter panel kapatma fonksiyonu için ref
+  const closeFilterPanelRef = useRef<(() => void) | null>(null);
 
 
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
