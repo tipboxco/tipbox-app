@@ -52,7 +52,20 @@ export const LoginScreen = () => {
           email,
           password,
         });
-
+        if(result.success) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Main' as never }],
+          });
+        }
+        else {
+          showCustomToast(toast, {
+            title: 'Login Failed',
+            description: result.message,
+            action: 'error',
+            duration: 4000,
+          });
+        }
         // Console'da response'u göster (sadece development modunda)
         if (__DEV__) {
           console.log('[LoginScreen] ✅ Login successful:', {
