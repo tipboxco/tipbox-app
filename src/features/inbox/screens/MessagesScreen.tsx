@@ -43,6 +43,44 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const { data: messages, isLoading, error, refetch } = useMessages();
     const [isManualRefreshing, setIsManualRefreshing] = useState(false);
     const queryClient = useQueryClient();
+    
+    // 🔍 DEBUG: Mesaj listesi yüklendiğinde isRead durumunu logla
+    useEffect(() => {
+        if (messages && messages.length > 0) {
+            console.log('[MessagesScreen] 📋 MESAJ LİSTESİ YÜKLENDİ - isRead Durumları:');
+            messages.forEach((msg) => {
+                console.log(`[MessagesScreen]   - Thread ID: ${msg.id}`);
+                console.log(`[MessagesScreen]     Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]     isUnread: ${msg.isUnread}`);
+                console.log(`[MessagesScreen]     unreadCount: ${msg.unreadCount || 0}`);
+                console.log(`[MessagesScreen]     Last Message: ${msg.lastMessage?.substring(0, 50) || 'N/A'}...`);
+                console.log('[MessagesScreen]     ---');
+            });
+            console.log(`[MessagesScreen] 📊 TOPLAM: ${messages.length} mesaj, ${messages.filter(m => m.isUnread || (m.unreadCount || 0) > 0).length} okunmamış`);
+        }
+    }, [messages]);
+    
+    // 🔍 DEBUG: Ekrana geri dönüldüğünde cache'deki durumu logla
+    useFocusEffect(
+        useCallback(() => {
+            console.log('[MessagesScreen] 🔄 EKRANA GERİ DÖNÜLDÜ - Cache durumu kontrol ediliyor');
+            const queryKey = [...inboxKeys.messages(), undefined];
+            const cacheData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+            if (cacheData && cacheData.length > 0) {
+                console.log('[MessagesScreen] 📋 Cache\'deki mesaj durumları:');
+                cacheData.forEach((msg) => {
+                    console.log(`[MessagesScreen]   - Thread ID: ${msg.id}`);
+                    console.log(`[MessagesScreen]     Sender: ${msg.senderName || 'Unknown'}`);
+                    console.log(`[MessagesScreen]     isUnread: ${msg.isUnread}`);
+                    console.log(`[MessagesScreen]     unreadCount: ${msg.unreadCount || 0}`);
+                    console.log('[MessagesScreen]     ---');
+                });
+                console.log(`[MessagesScreen] 📊 Cache TOPLAM: ${cacheData.length} mesaj, ${cacheData.filter(m => m.isUnread || (m.unreadCount || 0) > 0).length} okunmamış`);
+            } else {
+                console.log('[MessagesScreen] ⚠️ Cache boş veya null');
+            }
+        }, [queryClient])
+    );
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();
     const { closeBottomSheet } = useGlobalBottomSheet();
@@ -121,19 +159,69 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     }, [queryClient, user?.id]);
 
     // Socket event handler - thread_read event (thread okundu olarak işaretlendiğinde)
-    const handleThreadRead = useCallback((eventData: { threadId: string; readBy: string; timestamp: string }) => {
-        console.log('[MessagesScreen] 📖 Thread read event received:', eventData);
+    // ✅ Backend iyileştirmesi: thread_read event'ine unreadCount ve isUnread eklendi
+    const handleThreadRead = useCallback((eventData: { 
+        threadId: string; 
+        readBy: string; 
+        timestamp: string;
+        unreadCount?: number;  // YENİ - Backend'den gelen unreadCount
+        isUnread?: boolean;    // YENİ - Backend'den gelen isUnread
+    }) => {
+        console.log('[MessagesScreen] 📖 THREAD_READ EVENT ALINDI:', {
+            threadId: eventData.threadId,
+            readBy: eventData.readBy,
+            timestamp: eventData.timestamp,
+            unreadCount: eventData.unreadCount,
+            isUnread: eventData.isUnread,
+        });
+        
+        // ✅ Backend'den gelen unreadCount ve isUnread değerlerini kullan
+        const unreadCount = eventData.unreadCount !== undefined ? eventData.unreadCount : 0;
+        const isUnread = eventData.isUnread !== undefined ? eventData.isUnread : false;
         
         // Optimistic update: Local state'te thread'i okundu olarak işaretle (hemen UI'da göster)
         // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
-        queryClient.setQueryData([...inboxKeys.messages(), undefined], (oldData: InboxMessage[] | undefined) => {
-            if (!oldData) return oldData;
-            return oldData.map((msg) => 
+        const queryKey = [...inboxKeys.messages(), undefined];
+        console.log('[MessagesScreen] 🔑 Query key for thread_read event:', queryKey);
+        
+        queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
+            console.log('[MessagesScreen] 📊 THREAD_READ UPDATE - Önceki durum:', oldData?.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
+            if (!oldData) {
+                console.warn('[MessagesScreen] ⚠️ Old data is null/undefined in thread_read handler');
+                return oldData;
+            }
+            
+            const threadBefore = oldData.find(m => m.id === eventData.threadId);
+            if (threadBefore) {
+                console.log('[MessagesScreen]   Thread önceki durumu:');
+                console.log(`[MessagesScreen]     Thread ID: ${threadBefore.id}`);
+                console.log(`[MessagesScreen]     Sender: ${threadBefore.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]     isUnread: ${threadBefore.isUnread}`);
+                console.log(`[MessagesScreen]     unreadCount: ${threadBefore.unreadCount || 0}`);
+            }
+            
+            // ✅ Backend'den gelen değerleri kullan
+            const updatedData = oldData.map((msg) => 
                 msg.id === eventData.threadId 
-                    ? { ...msg, isUnread: false, unreadCount: 0 }
+                    ? { ...msg, isUnread, unreadCount }
                     : msg
             );
+            
+            const threadAfter = updatedData.find(m => m.id === eventData.threadId);
+            if (threadAfter) {
+                console.log(`[MessagesScreen]   Thread sonraki durumu (Backend'den gelen değerler):`);
+                console.log(`[MessagesScreen]     Thread ID: ${threadAfter.id}`);
+                console.log(`[MessagesScreen]     isUnread: ${threadAfter.isUnread} (ÖNCE: ${threadBefore?.isUnread}, Backend: ${isUnread})`);
+                console.log(`[MessagesScreen]     unreadCount: ${threadAfter.unreadCount || 0} (ÖNCE: ${threadBefore?.unreadCount || 0}, Backend: ${unreadCount})`);
+            }
+            
+            console.log('[MessagesScreen] ✅ THREAD_READ UPDATE - Sonraki durum:', updatedData.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
+            return updatedData;
         });
+        
+        // Query data'yı tekrar kontrol et
+        const currentData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+        console.log('[MessagesScreen] 🔍 Cache kontrolü - thread_read setQueryData sonrası:', currentData?.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
         
         // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)
         // Refetch yapmıyoruz çünkü optimistic update yeterli ve isRefetching state'ini true yapıp loader'ı takılı bırakıyor
@@ -240,6 +328,51 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
 
         const threadId = message.id; // message.id = thread ID (DM_THREAD.md'ye göre)
         
+        // 🔍 DEBUG: Mesaja tıklandığında önceki durumu logla
+        console.log('[MessagesScreen] ========================================');
+        console.log('[MessagesScreen] 🖱️ MESAJ TIKLANDI - ÖNCEKİ DURUM');
+        console.log('[MessagesScreen] ========================================');
+        console.log(`[MessagesScreen]   Thread ID: ${threadId}`);
+        console.log(`[MessagesScreen]   Sender: ${message.senderName || 'Unknown'}`);
+        console.log(`[MessagesScreen]   isUnread: ${message.isUnread}`);
+        console.log(`[MessagesScreen]   unreadCount: ${message.unreadCount || 0}`);
+        
+        // 🔍 TÜM MESAJ LİSTESİNİ LOGLA (ÖNCE)
+        console.log('[MessagesScreen] 📋 TÜM MESAJ LİSTESİ (ÖNCE - messages state):');
+        if (messages && messages.length > 0) {
+            messages.forEach((msg, index) => {
+                console.log(`[MessagesScreen]   [${index}] Thread ID: ${msg.id}`);
+                console.log(`[MessagesScreen]       Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]       isUnread: ${msg.isUnread}`);
+                console.log(`[MessagesScreen]       unreadCount: ${msg.unreadCount || 0}`);
+                console.log(`[MessagesScreen]       Last Message: ${msg.lastMessage?.substring(0, 30) || 'N/A'}...`);
+            });
+        } else {
+            console.log('[MessagesScreen]   ⚠️ Mesaj listesi boş');
+        }
+        
+        // Query cache'deki mevcut durumu logla
+        const queryKey = [...inboxKeys.messages(), undefined];
+        const currentCacheData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+        console.log(`[MessagesScreen] 📋 CACHE'DEKİ TÜM MESAJLAR (ÖNCE):`);
+        if (currentCacheData && currentCacheData.length > 0) {
+            currentCacheData.forEach((msg, index) => {
+                console.log(`[MessagesScreen]   [${index}] Thread ID: ${msg.id}`);
+                console.log(`[MessagesScreen]       Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]       isUnread: ${msg.isUnread}`);
+                console.log(`[MessagesScreen]       unreadCount: ${msg.unreadCount || 0}`);
+            });
+        } else {
+            console.log('[MessagesScreen]   ⚠️ Cache boş');
+        }
+        
+        const cachedMessage = currentCacheData?.find(m => m.id === messageId);
+        if (cachedMessage) {
+            console.log('[MessagesScreen]   Cache\'deki seçili mesaj durumu:');
+            console.log(`[MessagesScreen]     isUnread: ${cachedMessage.isUnread}`);
+            console.log(`[MessagesScreen]     unreadCount: ${cachedMessage.unreadCount || 0}`);
+        }
+        
         // ✅ Backend'den gelen recipientUserId direkt kullanılıyor (geçici çözüm kaldırıldı)
         const recipientUserId = message.recipientUserId;
         
@@ -248,40 +381,92 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             // Fallback: MessageDetail ekranında thread'den alınacak
         }
         
-        // Okunmamış mesaj ise thread'i okundu olarak işaretle
-        if (message.isUnread || message.unreadCount > 0) {
-            console.log('[MessagesScreen] 📖 Marking thread as read:', threadId);
-            
-            // Optimistic update: Local state'i güncelle (hemen UI'da göster)
-            // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
-            queryClient.setQueryData([...inboxKeys.messages(), undefined], (oldData: InboxMessage[] | undefined) => {
-                if (!oldData) return oldData;
-                return oldData.map((msg) => 
-                    msg.id === messageId 
-                        ? { ...msg, isUnread: false, unreadCount: 0 }
-                        : msg
-                );
-            });
-            
-            // Backend'e bildir: Socket bağlıysa socket ile, değilse API ile
-            if (isConnected) {
-                // Socket ile bildir
-                markThreadRead(threadId);
-            } else {
-                // Socket bağlı değilse API ile bildir
-                console.log('[MessagesScreen] 📡 Socket not connected, using API to mark thread as read');
-                markThreadAsReadMutation.mutate(threadId, {
-                    onError: (error: Error) => {
-                        console.error('[MessagesScreen] ❌ Failed to mark thread as read via API:', error);
-                        // Hata durumunda optimistic update'i geri al (opsiyonel)
-                        // Şimdilik optimistic update'i bırakıyoruz, backend'den gelen veri ile düzelecek
-                    },
-                });
+        // ✅ CRITICAL FIX: Backend otomatik okundu işaretleme yaptığı için her zaman optimistic update yap
+        // Backend GET /inbox/:threadId çağrıldığında otomatik olarak thread'i okundu olarak işaretliyor
+        // Bu yüzden mesaja tıklandığında hemen optimistic update yapalım (yeşil nokta anında kaybolsun)
+        console.log('[MessagesScreen] ========================================');
+        console.log('[MessagesScreen] 📖 OPTIMISTIC UPDATE BAŞLIYOR');
+        console.log('[MessagesScreen] ========================================');
+        console.log('[MessagesScreen]   Thread ID:', threadId);
+        console.log('[MessagesScreen]   Message ID:', messageId);
+        console.log('[MessagesScreen]   Önceki isUnread:', message.isUnread);
+        console.log('[MessagesScreen]   Önceki unreadCount:', message.unreadCount || 0);
+        
+        // Optimistic update: Local state'i güncelle (hemen UI'da göster - yeşil nokta anında kaybolsun)
+        queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
+            console.log('[MessagesScreen] 📊 setQueryData callback - Önceki durum:');
+            if (!oldData) {
+                console.warn('[MessagesScreen] ⚠️ Old data is null/undefined, cannot update');
+                return oldData;
             }
             
-            // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)
-            // Refetch yapmıyoruz çünkü optimistic update yeterli ve isRefetching state'ini true yapıp loader'ı takılı bırakıyor
-            queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+            // Önceki durumu detaylı logla
+            console.log('[MessagesScreen]   Önceki cache durumu (tüm mesajlar):');
+            oldData.forEach((msg, index) => {
+                const isTarget = msg.id === messageId;
+                console.log(`[MessagesScreen]     [${index}] ${isTarget ? '👉 TARGET' : '   '} Thread ID: ${msg.id}`);
+                console.log(`[MessagesScreen]         Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]         isUnread: ${msg.isUnread}`);
+                console.log(`[MessagesScreen]         unreadCount: ${msg.unreadCount || 0}`);
+            });
+            
+            const updatedData = oldData.map((msg) => 
+                msg.id === messageId 
+                    ? { ...msg, isUnread: false, unreadCount: 0 }
+                    : msg
+            );
+            
+            // Sonraki durumu detaylı logla
+            console.log('[MessagesScreen] ✅ setQueryData callback - Sonraki durum:');
+            updatedData.forEach((msg, index) => {
+                const isTarget = msg.id === messageId;
+                const changed = oldData[index]?.isUnread !== msg.isUnread || oldData[index]?.unreadCount !== msg.unreadCount;
+                console.log(`[MessagesScreen]     [${index}] ${isTarget ? '👉 TARGET' : '   '} ${changed ? '🔄 CHANGED' : '   '} Thread ID: ${msg.id}`);
+                console.log(`[MessagesScreen]         Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]         isUnread: ${msg.isUnread} ${isTarget ? `(ÖNCE: ${oldData.find(m => m.id === messageId)?.isUnread})` : ''}`);
+                console.log(`[MessagesScreen]         unreadCount: ${msg.unreadCount || 0} ${isTarget ? `(ÖNCE: ${oldData.find(m => m.id === messageId)?.unreadCount || 0})` : ''}`);
+            });
+            
+            return updatedData;
+        });
+        
+        // Query data'yı tekrar kontrol et
+        const currentData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+        console.log('[MessagesScreen] ========================================');
+        console.log('[MessagesScreen] 🔍 CACHE KONTROLÜ - setQueryData SONRASI');
+        console.log('[MessagesScreen] ========================================');
+        if (currentData && currentData.length > 0) {
+            currentData.forEach((msg, index) => {
+                const isTarget = msg.id === messageId;
+                console.log(`[MessagesScreen]   [${index}] ${isTarget ? '👉 TARGET' : '   '} Thread ID: ${msg.id}`);
+                console.log(`[MessagesScreen]       Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]       isUnread: ${msg.isUnread}`);
+                console.log(`[MessagesScreen]       unreadCount: ${msg.unreadCount || 0}`);
+            });
+        } else {
+            console.log('[MessagesScreen]   ⚠️ Cache boş');
+        }
+        
+        // ✅ Backend otomatik okundu işaretleme yaptığı için manuel markThreadRead çağırmaya gerek yok
+        // Backend GET /inbox/:threadId çağrıldığında otomatik olarak thread'i okundu olarak işaretliyor
+        // ve thread_read socket event'i gönderiyor. thread_read event'i geldiğinde zaten güncellenecek.
+        // Ancak socket bağlı değilse API ile bildirebiliriz (fallback)
+        if (!isConnected) {
+            console.log('[MessagesScreen] 📡 Socket not connected, using API to mark thread as read (fallback)');
+            markThreadAsReadMutation.mutate(threadId, {
+                onError: (error: Error) => {
+                    console.error('[MessagesScreen] ❌ Failed to mark thread as read via API:', error);
+                    // Hata durumunda optimistic update'i geri al
+                    queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
+                        if (!oldData) return oldData;
+                        return oldData.map((msg) => 
+                            msg.id === messageId 
+                                ? { ...msg, isUnread: message.isUnread, unreadCount: message.unreadCount || 0 }
+                                : msg
+                        );
+                    });
+                },
+            });
         }
         
         // MessageDetail ekranına git (backend'den gelen recipientUserId ile)
@@ -301,6 +486,19 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
 
     const getFilteredMessages = () => {
         let filtered: InboxMessage[] = messages || [];
+        
+        // 🔍 DEBUG: getFilteredMessages çağrıldığında mesaj listesini logla
+        console.log('[MessagesScreen] 📋 getFilteredMessages çağrıldı - messages state:');
+        if (messages && messages.length > 0) {
+            messages.forEach((msg, index) => {
+                console.log(`[MessagesScreen]   [${index}] Thread ID: ${msg.id}`);
+                console.log(`[MessagesScreen]       Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]       isUnread: ${msg.isUnread}`);
+                console.log(`[MessagesScreen]       unreadCount: ${msg.unreadCount || 0}`);
+            });
+        } else {
+            console.log('[MessagesScreen]   ⚠️ Mesaj listesi boş');
+        }
 
         // Aynı recipientUserId'ye sahip thread'leri birleştir
         // Aynı kullanıcıdan gelen mesajlar tek bir thread'de gösterilmeli
@@ -442,7 +640,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     ListEmptyComponent={
                         !isLoading ? (
                             <Box py={40} alignItems="center" justifyContent="center" flex={1}>
-                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz mesajınız yok</Text>
+                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Bir konuşma başlat</Text>
                             </Box>
                         ) : null
                     }

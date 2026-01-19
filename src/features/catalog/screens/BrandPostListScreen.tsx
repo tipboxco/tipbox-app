@@ -37,33 +37,96 @@ const BrandPostListScreen: React.FC = () => {
     }
     const allPosts: PostCardData[] = [];
     feedData.pages.forEach((page) => {
-      if (page.items) {
-        page.items.forEach((item: BrandFeedPost) => {
-          const postCard: PostCardData = {
-            id: item.id,
-            type: item.type as CardType,
-            user: {
-              id: item.user?.id || '',
-              name: item.user?.name || '',
-              avatar: item.user?.avatar || null,
+      // BrandFeedResponse'da posts array'i var
+      const pagePosts = page.posts || [];
+      pagePosts.forEach((item: BrandFeedPost) => {
+        // Sadece 'post' type'ını PostCard olarak göster
+        if (item.type !== 'post') {
+          return; // Experience, Benchmark, Tips, Question gibi diğer type'ları atla
+        }
+        
+        const postData = item.data as import('@/src/features/profile/types').ProfilePost;
+        if (!postData?.id || !postData?.user?.id) {
+          return; // Geçersiz post'ları atla
+        }
+        
+        const avatarSource = toImageSource(postData.user.avatar) || require('@/assets/avatar/default-useravatar.png');
+        
+        // content array ise string'e çevir
+        const contentString = Array.isArray(postData.content)
+          ? postData.content.map((item) => item?.content || '').join(' ')
+          : (postData.content || '');
+        
+        // images array'i boşsa veya görseller yüklenemediyse default görsel ekle
+        const defaultPostImage = require('@/assets/defaultImages/default-post.png');
+        const mappedImages = postData.images
+          ?.map((img: string) => toImageSource(img))
+          .filter((imgSource: any): imgSource is NonNullable<typeof imgSource> => !!imgSource) ?? [];
+        const images = mappedImages.length > 0 ? mappedImages : [defaultPostImage];
+        
+        // contextData.image için güvenli mapping
+        const defaultProductImage = require('@/assets/product/product_01.png');
+        let contextImage: any = defaultProductImage;
+        if (postData.contextData?.image) {
+          const mappedContextImage = toImageSource(postData.contextData.image);
+          if (mappedContextImage) {
+            contextImage = mappedContextImage;
+          } else {
+            console.warn('[BrandPostListScreen] Failed to map contextData.image:', {
+              postId: postData.id,
+              contextDataId: postData.contextData?.id,
+              contextDataName: postData.contextData?.name,
+              originalImage: postData.contextData.image,
+              imageType: typeof postData.contextData.image,
+            });
+          }
+        }
+        
+        // Log contextData bilgileri
+        if (postData.contextData) {
+          console.log('[BrandPostListScreen] Post with contextData:', {
+            postId: postData.id,
+            contextType: postData.contextType,
+            contextData: {
+              id: postData.contextData.id,
+              name: postData.contextData.name,
+              subName: postData.contextData.subName,
+              image: postData.contextData.image,
+              imageType: typeof postData.contextData.image,
+              mappedImage: contextImage,
             },
-            content: item.content || '',
-            images: item.images || [],
-            stats: {
-              likes: item.stats?.likes || 0,
-              comments: item.stats?.comments || 0,
-              shares: item.stats?.shares || 0,
-            },
-            createdAt: item.createdAt || new Date().toISOString(),
-            product: item.product ? {
-              id: item.product.id,
-              name: item.product.name,
-              image: item.product.image,
-            } : undefined,
-          };
-          allPosts.push(postCard);
-        });
-      }
+          });
+        }
+        
+        const postCard: PostCardData = {
+          id: postData.id,
+          type: 'post' as CardType,
+          user: {
+            id: postData.user.id,
+            name: postData.user.name || '',
+            title: postData.user.title || '',
+            avatar: avatarSource,
+          },
+          content: contentString,
+          images,
+          stats: {
+            likes: postData.stats?.likes || 0,
+            comments: postData.stats?.comments || 0,
+            shares: postData.stats?.shares || 0,
+            bookmarks: postData.stats?.bookmarks || 0,
+          },
+          createdAt: postData.createdAt || new Date().toISOString(),
+          contextType: postData.contextType,
+          contextData: postData.contextData ? {
+            id: postData.contextData.id,
+            name: postData.contextData.name || '',
+            subName: postData.contextData.subName || '',
+            image: contextImage, // Her zaman geçerli bir image source
+            isOwned: postData.contextData.isOwned || false,
+          } : undefined,
+        };
+        allPosts.push(postCard);
+      });
     });
     return allPosts;
   }, [feedData]);
@@ -122,7 +185,5 @@ const BrandPostListScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
-
-BrandPostListScreen.displayName = 'BrandPostListScreen';
 
 export default BrandPostListScreen;

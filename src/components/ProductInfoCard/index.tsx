@@ -45,8 +45,25 @@ export const ProductInfoCard = ({
   // Determine image size based on size prop
   const imageSize = size === 'big' ? 58 : 42;
 
-  const imageSource =
-    toImageSource(image) || require('@/assets/product/product_01.png');
+  // Log image source mapping
+  const rawImageSource = toImageSource(image);
+  const imageSource = rawImageSource || require('@/assets/product/product_01.png');
+  
+  if (!rawImageSource) {
+    console.warn('[ProductInfoCard] Image source is undefined/null, using default:', {
+      title,
+      subName,
+      imageProp: image,
+      imageType: typeof image,
+    });
+  } else {
+    console.log('[ProductInfoCard] Image source mapped successfully:', {
+      title,
+      subName,
+      imageProp: image,
+      mappedSource: rawImageSource,
+    });
+  }
 
   // Determine what to show based on type prop
   const shouldShowAverageRating = type === ProductInfoType.PRODUCT || (type === undefined && showAverageRating);

@@ -33,7 +33,40 @@ const BrandHistoryScreen: React.FC = () => {
   const { brandId } = route.params;
 
   // API hook
-  const { data: brandHistory, isLoading, error } = useBrandHistory(brandId);
+  const { data: brandHistory, isLoading, error, refetch } = useBrandHistory(brandId);
+  
+  // 🔍 DEBUG: Brand history durumunu logla
+  React.useEffect(() => {
+    console.log('[BrandHistoryScreen] 📋 Brand History Durumu:', {
+      brandId,
+      isLoading,
+      hasError: !!error,
+      hasData: !!brandHistory,
+      data: brandHistory ? {
+        brandId: brandHistory.brandId,
+        name: brandHistory.name,
+        totalPoints: brandHistory.totalPoints,
+        stats: brandHistory.stats,
+        badgesCount: brandHistory.badges?.length || 0,
+        pointsHistoryCount: brandHistory.pointsHistory?.length || 0,
+      } : null,
+    });
+    
+    if (error) {
+      console.error('[BrandHistoryScreen] ❌ Error:', error);
+    }
+    
+    if (brandHistory) {
+      console.log('[BrandHistoryScreen] ✅ Data loaded:', {
+        brandId: brandHistory.brandId,
+        name: brandHistory.name,
+        totalPoints: brandHistory.totalPoints,
+        stats: brandHistory.stats,
+        badges: brandHistory.badges,
+        pointsHistory: brandHistory.pointsHistory,
+      });
+    }
+  }, [brandId, isLoading, error, brandHistory]);
 
 
   return (

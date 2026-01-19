@@ -207,13 +207,16 @@ const SupportMessageDetailScreen: React.FC = () => {
     };
   }, [threadId, isConnected, joinThread, leaveThread]);
 
-  // Thread joined handler - mesajları okundu işaretle
+  // Thread joined handler
   const handleThreadJoined = useCallback((data: { threadId: string }) => {
+    // ✅ Backend iyileştirmesi: GET /inbox/:threadId çağrıldığında backend otomatik olarak
+    // tüm okunmamış mesajları isRead: true yapıyor ve thread_read socket event'i gönderiyor.
+    // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
+    // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
     if (data.threadId === threadId && isConnected) {
-      console.log('[SupportMessageDetail] 📖 Marking thread as read:', threadId);
-      socketMarkThreadRead(threadId);
+      console.log('[SupportMessageDetail] ✅ Thread joined. Backend automatically marks messages as read when GET /inbox/:threadId is called.');
     }
-  }, [threadId, isConnected, socketMarkThreadRead]);
+  }, [threadId, isConnected]);
 
   // New message handler
   const handleNewMessage = useCallback((eventData: any) => {

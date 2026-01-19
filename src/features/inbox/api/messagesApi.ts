@@ -20,8 +20,18 @@ export interface GetMessagesParams {
  * @param params - Query parameters (search, unreadOnly, threadType, limit)
  */
 export const getMessages = async (params?: GetMessagesParams): Promise<InboxMessage[]> => {
-  const response = await apiService.getClient().get<InboxMessage[]>('/messages', { params });
-  return response.data;
+  try {
+    const response = await apiService.getClient().get<InboxMessage[]>('/inbox', { params });
+    return response.data;
+  } catch (error: any) {
+    // 404 hatası: Endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      console.error('[getMessages] 404 - Endpoint not found. Backend may not have implemented /inbox endpoint yet.');
+      // Boş array döndür (UI'da hata göstermek yerine boş liste göster)
+      return [];
+    }
+    throw error;
+  }
 };
 
 /**
@@ -42,7 +52,7 @@ export interface ThreadResponse {
 
 export const getOrCreateThread = async (recipientId: string): Promise<ThreadResponse> => {
   try {
-    const response = await apiService.getClient().post<ThreadResponse>('/messages/threads', {
+    const response = await apiService.getClient().post<ThreadResponse>('/inbox/threads', {
       recipientId,
     });
     return response.data;
@@ -69,7 +79,7 @@ export const getOrCreateThread = async (recipientId: string): Promise<ThreadResp
  */
 export const getThreadDetail = async (threadId: string): Promise<ThreadResponse> => {
   try {
-    const response = await apiService.getClient().get<ThreadResponse>(`/messages/threads/${threadId}`);
+    const response = await apiService.getClient().get<ThreadResponse>(`/inbox/threads/${threadId}`);
     return response.data;
   } catch (error: any) {
     // 404 hatası: Thread detail endpoint backend'de henüz implement edilmemiş olabilir
@@ -150,7 +160,7 @@ export interface ThreadMessage {
  */
 export const getThreadMessages = async (threadId: string): Promise<ThreadMessage[]> => {
   try {
-    const response = await apiService.getClient().get<ThreadMessageResponse[]>(`/messages/${threadId}`);
+    const response = await apiService.getClient().get<ThreadMessageResponse[]>(`/inbox/${threadId}`);
     
     // Backend response'unu normalize et
     const normalizedMessages: ThreadMessage[] = response.data.map((item) => {
@@ -235,7 +245,7 @@ export interface SendGiftRequest {
 export const sendGift = async (data: SendGiftRequest): Promise<void> => {
   try {
     console.log('[sendGift] 📤 Request Details:', {
-      url: '/messages/tips',
+      url: '/inbox/tips',
       method: 'POST',
       data: {
         senderUserId: data.senderUserId,
@@ -249,7 +259,7 @@ export const sendGift = async (data: SendGiftRequest): Promise<void> => {
       amountValue: data.amount,
     });
 
-    const response = await apiService.getClient().post('/messages/tips', data);
+    const response = await apiService.getClient().post('/inbox/tips', data);
 
     console.log('[sendGift] ✅ Response Details:', {
       status: response.status,
@@ -307,7 +317,7 @@ export interface SupportRequestCreate {
  * @returns Promise<void> - 201 Created (no body)
  */
 export const createSupportRequest = async (data: SupportRequestCreate): Promise<void> => {
-  await apiService.getClient().post('/messages/support-requests', data);
+  await apiService.getClient().post('/inbox/support-requests', data);
 };
 
 /**
@@ -326,24 +336,43 @@ export interface DirectMessageRequest {
  * @returns Promise<void> - 201 Created (no body)
  */
 export const sendDirectMessage = async (data: DirectMessageRequest): Promise<void> => {
-  await apiService.getClient().post('/messages', data);
+  await apiService.getClient().post('/inbox', data);
 };
 
 /**
  * Support Request Response Interface
  */
+/**
+ * Sender User Interface (Ortak Type)
+ */
+export interface SenderUser {
+  id: string;
+  senderName: string;
+  senderTitle: string;
+  senderAvatar: string;
+}
+
+/**
+ * Support Request Interface
+ * Backend'den gelen yeni response formatına göre güncellendi
+ */
 export interface SupportRequest {
   id: string;
-  userName: string;
-  userTitle: string;
-  userAvatar: string | null;
-  requestDescription: string;
-  status: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
-  threadId: string | null;
-  type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
-  message?: string;
-  amount?: string;
-  timestamp?: string;
+  sender: SenderUser;
+  type: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
+  message: string;
+  amount: number;
+  status: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
+  timestamp: string;
+  threadId?: string | null;
+  requestId?: string;
+  fromUserId: string;
+  toUserId: string;
+  // Backward compatibility için eski field'lar (opsiyonel)
+  userName?: string;
+  userTitle?: string;
+  userAvatar?: string | null;
+  requestDescription?: string;
 }
 
 /**
@@ -360,10 +389,20 @@ export interface GetSupportRequestsParams {
 }
 
 export const getSupportRequests = async (params?: GetSupportRequestsParams): Promise<SupportRequest[]> => {
-  const response = await apiService.getClient().get<SupportRequest[]>('/messages/support-requests', {
-    params,
-  });
-  return response.data;
+  try {
+    const response = await apiService.getClient().get<SupportRequest[]>('/inbox/support-requests', {
+      params,
+    });
+    return response.data;
+  } catch (error: any) {
+    // 404 hatası: Endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      console.error('[getSupportRequests] 404 - Endpoint not found. Backend may not have implemented /inbox/support-requests endpoint yet.');
+      // Boş array döndür (UI'da hata göstermek yerine boş liste göster)
+      return [];
+    }
+    throw error;
+  }
 };
 
 /**
@@ -383,7 +422,7 @@ export interface AcceptSupportRequestResponse {
  */
 export const acceptSupportRequest = async (requestId: string): Promise<AcceptSupportRequestResponse> => {
   const response = await apiService.getClient().post<AcceptSupportRequestResponse>(
-    `/messages/support-requests/${requestId}/accept`
+    `/inbox/support-requests/${requestId}/accept`
   );
   return response.data;
 };
@@ -396,7 +435,7 @@ export const acceptSupportRequest = async (requestId: string): Promise<AcceptSup
  * @returns Promise<void> - 200 OK
  */
 export const rejectSupportRequest = async (requestId: string): Promise<void> => {
-  await apiService.getClient().post(`/messages/support-requests/${requestId}/reject`);
+  await apiService.getClient().post(`/inbox/support-requests/${requestId}/reject`);
 };
 
 /**
@@ -407,7 +446,7 @@ export const rejectSupportRequest = async (requestId: string): Promise<void> => 
  * @returns Promise<void> - 200 OK
  */
 export const cancelSupportRequest = async (requestId: string): Promise<void> => {
-  await apiService.getClient().post(`/messages/support-requests/${requestId}/cancel`);
+  await apiService.getClient().post(`/inbox/support-requests/${requestId}/cancel`);
 };
 
 /**
@@ -427,7 +466,7 @@ export interface CloseSupportRequestRequest {
  * @returns Promise<void> - 200 OK
  */
 export const closeSupportRequest = async (requestId: string, data: CloseSupportRequestRequest): Promise<void> => {
-  await apiService.getClient().post(`/messages/support-requests/${requestId}/close`, data);
+  await apiService.getClient().post(`/inbox/support-requests/${requestId}/close`, data);
 };
 
 /**
@@ -447,7 +486,7 @@ export interface ReportSupportRequestRequest {
  * @returns Promise<void> - 200 OK
  */
 export const reportSupportRequest = async (requestId: string, data: ReportSupportRequestRequest): Promise<void> => {
-  await apiService.getClient().post(`/messages/support-requests/${requestId}/report`, data);
+  await apiService.getClient().post(`/inbox/support-requests/${requestId}/report`, data);
 };
 
 /**
@@ -459,7 +498,7 @@ export const reportSupportRequest = async (requestId: string, data: ReportSuppor
  */
 export const markThreadAsRead = async (threadId: string): Promise<void> => {
   try {
-    await apiService.getClient().post(`/messages/threads/${threadId}/read`);
+    await apiService.getClient().post(`/inbox/threads/${threadId}/read`);
   } catch (error: any) {
     // 404 hatası: Thread read endpoint backend'de henüz implement edilmemiş olabilir
     if (error?.response?.status === 404) {
@@ -510,12 +549,12 @@ export const getMessageFeed = async (limit: number = 50): Promise<MessageFeedIte
     params.append('limit', Math.min(limit, 100).toString());
 
     const response = await apiService.getClient().get<MessageFeedItem[]>(
-      `/messages/feed?${params.toString()}`
+      `/inbox/feed?${params.toString()}`
     );
     return response.data;
   } catch (error: any) {
     console.error('[getMessageFeed] API Error:', {
-      url: `/messages/feed?${params.toString()}`,
+      url: `/inbox/feed?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

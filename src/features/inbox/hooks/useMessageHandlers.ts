@@ -412,10 +412,31 @@ export const useMessageHandlers = ({
   }, [threadId, isMountedRef, setMessages]);
 
   // Thread read handler
-  const handleThreadRead = useCallback((data: { threadId: string; readBy: string; timestamp: string }) => {
+  // ✅ Backend iyileştirmesi: thread_read event'ine unreadCount ve isUnread eklendi
+  const handleThreadRead = useCallback((data: { 
+    threadId: string; 
+    readBy: string; 
+    timestamp: string;
+    unreadCount?: number;  // YENİ - Backend'den gelen unreadCount
+    isUnread?: boolean;    // YENİ - Backend'den gelen isUnread
+  }) => {
     if (!isMountedRef.current || data.threadId !== threadId) {
       return;
     }
+    
+    // ✅ Backend'den gelen unreadCount ve isUnread değerlerini kullanarak cache'i güncelle
+    const unreadCount = data.unreadCount !== undefined ? data.unreadCount : 0;
+    const isUnread = data.isUnread !== undefined ? data.isUnread : false;
+    
+    const queryKey = [...inboxKeys.messages(), undefined];
+    queryClient.setQueryData(queryKey, (oldData: any[] | undefined) => {
+      if (!oldData) return oldData;
+      return oldData.map((msg: any) => 
+        msg.id === data.threadId 
+          ? { ...msg, isUnread, unreadCount }
+          : msg
+      );
+    });
     
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     
@@ -431,11 +452,14 @@ export const useMessageHandlers = ({
 
   // Thread joined handler
   const handleThreadJoined = useCallback((data: { threadId: string }) => {
+    // ✅ Backend iyileştirmesi: GET /inbox/:threadId çağrıldığında backend otomatik olarak
+    // tüm okunmamış mesajları isRead: true yapıyor ve thread_read socket event'i gönderiyor.
+    // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
+    // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
     if (data.threadId === threadId && isSocketReady) {
-      socketMarkThreadRead(threadId);
-      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      console.log('[useMessageHandlers] ✅ Thread joined. Backend automatically marks messages as read when GET /inbox/:threadId is called.');
     }
-  }, [threadId, isSocketReady, socketMarkThreadRead, queryClient]);
+  }, [threadId, isSocketReady]);
 
   // Support request handlers
   const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string }) => {

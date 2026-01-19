@@ -49,6 +49,8 @@ export const inboxKeys = {
  * const { data, isLoading, error } = useMessages({ threadType: 'DM', search: 'ahmet' });
  */
 export const useMessages = (params?: GetMessagesParams) => {
+  const queryClient = useQueryClient();
+  
   return useQuery<InboxMessage[], Error>({
     queryKey: [...inboxKeys.messages(), params],
     queryFn: () => getMessages(params),
@@ -61,6 +63,75 @@ export const useMessages = (params?: GetMessagesParams) => {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: 1,
+    // ✅ Backend iyileştirmesi: Backend artık doğru veriyi döndürüyor (unreadCount, isUnread)
+    // Cache ile merge et - Eğer cache'de optimistic update varsa (okundu olarak işaretlenmişse), backend verisini override et
+    select: (data) => {
+      const queryKey = [...inboxKeys.messages(), params];
+      const cachedData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+      
+      // Eğer cache'de optimistic update varsa, backend verisini merge et
+      if (cachedData && cachedData.length > 0) {
+        console.log('[useMessages] 🔄 Backend verisi cache ile merge ediliyor');
+        console.log(`[useMessages]   Backend'den gelen: ${data.length} thread`);
+        console.log(`[useMessages]   Cache'de: ${cachedData.length} thread`);
+        
+        // Backend'den gelen veriyi cache ile merge et
+        const mergedData = data.map((backendMsg) => {
+          const cachedMsg = cachedData.find((c) => c.id === backendMsg.id);
+          
+          if (!cachedMsg) {
+            // Cache'de yoksa backend verisini kullan (backend artık doğru veriyi döndürüyor)
+            return backendMsg;
+          }
+          
+          // ✅ Backend artık doğru veriyi döndürüyor, ama cache'de optimistic update varsa koru
+          // Eğer cache'de okundu olarak işaretlenmişse (optimistic update), backend verisini override et
+          // Backend henüz güncellenmemiş olabilir (race condition), bu yüzden cache'deki durumu koru
+          const isCachedRead = !cachedMsg.isUnread && (cachedMsg.unreadCount || 0) === 0;
+          const isBackendUnread = backendMsg.isUnread || (backendMsg.unreadCount || 0) > 0;
+          
+          // Eğer cache'de okundu ama backend'de okunmamış görünüyorsa, cache'i koru
+          // Bu durum genellikle optimistic update yapıldıktan hemen sonra backend'den eski veri gelirse oluşur
+          if (isCachedRead && isBackendUnread) {
+            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... cache'de okundu, backend verisi override ediliyor`);
+            console.log(`[useMessages]     Backend: isUnread=${backendMsg.isUnread}, unreadCount=${backendMsg.unreadCount || 0}`);
+            console.log(`[useMessages]     Cache: isUnread=${cachedMsg.isUnread}, unreadCount=${cachedMsg.unreadCount || 0}`);
+            return {
+              ...backendMsg,
+              isUnread: false,
+              unreadCount: 0,
+            };
+          }
+          
+          // ✅ Backend doğru veriyi döndürüyorsa (unreadCount === 0), backend verisini kullan
+          // Cache'deki diğer alanları da koru (lastMessage, timestamp gibi güncel olabilir)
+          if (isCachedRead && !isBackendUnread) {
+            // Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
+            return backendMsg;
+          }
+          
+          // Cache'de okunmamışsa backend verisini kullan (backend artık doğru veriyi döndürüyor)
+          return backendMsg;
+        });
+        
+        // Cache'de olup backend'de olmayan thread'leri ekle (optimistic update'ler için)
+        const cacheOnlyThreads = cachedData.filter(
+          (cachedMsg) => !data.find((backendMsg) => backendMsg.id === cachedMsg.id)
+        );
+        
+        if (cacheOnlyThreads.length > 0) {
+          console.log(`[useMessages]   📝 ${cacheOnlyThreads.length} cache-only thread eklendi`);
+          return [...mergedData, ...cacheOnlyThreads];
+        }
+        
+        console.log(`[useMessages]   ✅ Merge tamamlandı: ${mergedData.length} thread`);
+        return mergedData;
+      }
+      
+      // Cache yoksa backend verisini direkt döndür (backend artık doğru veriyi döndürüyor)
+      console.log('[useMessages]   ⚠️ Cache boş, backend verisi direkt kullanılıyor');
+      return data;
+    },
   });
 };
 

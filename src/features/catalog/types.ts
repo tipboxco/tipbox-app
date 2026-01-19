@@ -201,6 +201,26 @@ export interface BrandProductBookResponse {
 }
 
 /**
+ * Brand Product Detail - /brands/{brandId}/products/{productId} endpoint'inden dönen product detay bilgisi
+ */
+export interface BrandProductDetail {
+  productId: string;
+  name: string;
+  subName?: string;
+  description?: string;
+  image: string | null;
+  brand?: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+  specs?: string[];
+  price?: number;
+  currency?: string;
+  stats?: BrandProductStats;
+}
+
+/**
  * Survey - /brands/{brandId}/surveys endpoint'inden gelen survey bilgisi
  * API'den gelen status değerleri: "start", "continue", "viewresults" (normalize edilerek "view_results" olarak dönüştürülür)
  */
@@ -341,6 +361,93 @@ export interface NewsDetail {
   image: string | null;
   author?: string;
   tags?: string[];
+  likesCount?: number;
+  commentsCount?: number;
+  sharesCount?: number;
+  favoritesCount?: number;
+  viewsCount?: number;
+}
+
+/**
+ * News Comment - /news/{newsId}/comments endpoint'inden gelen yorum bilgisi
+ */
+export interface NewsComment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  comment: string;
+  likesCount: number;
+  createdAt: string;
+  replies?: NewsComment[];
+  parentId?: string;
+}
+
+/**
+ * News Comments Response - /news/{newsId}/comments endpoint'inden dönen response
+ */
+export interface NewsCommentsResponse {
+  success: boolean;
+  data: NewsComment[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+/**
+ * News Comment Create Request - /news/{newsId}/comment endpoint'ine gönderilen request
+ */
+export interface NewsCommentCreateRequest {
+  comment: string;
+  parentId?: string;
+}
+
+/**
+ * News Comment Create Response - /news/{newsId}/comment endpoint'inden dönen response
+ */
+export interface NewsCommentCreateResponse {
+  success: boolean;
+  data: NewsComment;
+}
+
+/**
+ * News Share Request - /news/{newsId}/share endpoint'ine gönderilen request
+ */
+export interface NewsShareRequest {
+  shareType: 'INTERNAL_REPOST' | 'EXTERNAL_SHARE';
+  platform?: string;
+}
+
+/**
+ * News Share Response - /news/{newsId}/share endpoint'inden dönen response
+ */
+export interface NewsShareResponse {
+  success: boolean;
+  message: string;
+}
+
+/**
+ * News API Response - Genel API response formatı
+ */
+export interface NewsApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+/**
+ * Brand Product Group Products Response - /brands/groups/{productGroupId}/products endpoint'inden dönen response
+ */
+export interface BrandProductGroupProductsResponse {
+  items: BrandProduct[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
 }
 
 /**

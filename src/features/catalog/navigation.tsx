@@ -18,7 +18,7 @@ export type CatalogStackParamList = {
   CategoryProducts: { categoryId: string };
   BrandDetailScreen: { brandId: string };
   BrandProductBookScreen: { brandId: string };
-  BrandProductDetailScreen: { productId: string; productName?: string; productImage?: any };
+  BrandProductDetailScreen: { brandId: string; productId: string; productName?: string; productImage?: any };
   NewsDetailScreen: { newsId: string };
   SurveyScreen: { brandId: string };
   BrandEventsDetailScreen: { eventId: string };

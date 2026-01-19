@@ -382,7 +382,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
       {!hideProduct && isProductContext && data.contextData ? (
         (() => {
           const context = data.contextData;
-          const imageSource = toImageSource(context.image)!;
+          // Güvenli image source - undefined ise ProductInfoCard kendi default'unu kullanacak
+          const imageSource = context.image || require('@/assets/product/product_01.png');
           return (
             <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
               <ProductInfoCard
@@ -393,28 +394,49 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // Product için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) return;
-                  
-                  navigationService.navigate(ROOT_ROUTES.POST, {
-                    screen: 'PostsScreen',
-                    params: {
-                      stage: 'Product',
-                      name: context.name,
-                      productInfo: {
-                        image: imageSource,
-                        title: context.name,
-                        subName: context.subName,
-                      },
-                      selectedProduct: {
-                        id: context.id,
-                        name: context.name,
-                        description: context.subName,
-                        image: imageSource,
-                      },
-                      contextType: data.contextType,
-                      contextId: context.id,
-                    },
+                  console.log('[PostCard] Product clicked:', {
+                    productId: context.id,
+                    productName: context.name,
+                    contextType: data.contextType,
+                    contextImage: context.image,
+                    imageSource: imageSource,
+                    fullContextData: context,
+                    fullPostData: data,
                   });
+                  
+                  if (!context.id || !data.contextType) {
+                    console.warn('[PostCard] Missing required data for navigation:', {
+                      hasContextId: !!context.id,
+                      hasContextType: !!data.contextType,
+                    });
+                    return;
+                  }
+                  
+                  try {
+                    navigationService.navigate(ROOT_ROUTES.POST, {
+                      screen: 'PostsScreen',
+                      params: {
+                        stage: 'Product',
+                        name: context.name,
+                        productInfo: {
+                          image: imageSource,
+                          title: context.name,
+                          subName: context.subName,
+                        },
+                        selectedProduct: {
+                          id: context.id,
+                          name: context.name,
+                          description: context.subName,
+                          image: imageSource,
+                        },
+                        contextType: data.contextType,
+                        contextId: context.id,
+                      },
+                    });
+                    console.log('[PostCard] Navigation successful');
+                  } catch (error) {
+                    console.error('[PostCard] Navigation error:', error);
+                  }
                 }}
               />
             </Box>
@@ -423,7 +445,8 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
       ) : !hideProduct && isGroupOrSubCategoryContext && data.contextData ? (
         (() => {
           const context = data.contextData;
-          const imageSource = toImageSource(context.image)!;
+          // Güvenli image source - undefined ise ProductInfoCard kendi default'unu kullanacak
+          const imageSource = context.image || require('@/assets/product/product_01.png');
           return (
             <Box px={12} py={8} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
               <ProductInfoCard
@@ -436,26 +459,45 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // ProductGroup veya SubCategory için PostsScreen'e navigate et
-                  if (!context.id || !data.contextType) return;
+                  console.log('[PostCard] ProductGroup/SubCategory clicked:', {
+                    contextId: context.id,
+                    contextName: context.name,
+                    contextType: data.contextType,
+                    contextImage: context.image,
+                    imageSource: imageSource,
+                  });
+                  
+                  if (!context.id || !data.contextType) {
+                    console.warn('[PostCard] Missing required data for navigation:', {
+                      hasContextId: !!context.id,
+                      hasContextType: !!data.contextType,
+                    });
+                    return;
+                  }
                   
                   const stage = data.contextType === ProductInfoType.PRODUCT_GROUP 
                     ? 'ProductGroup' 
                     : 'SubCategories';
                   
-                  navigationService.navigate(ROOT_ROUTES.POST, {
-                    screen: 'PostsScreen',
-                    params: {
-                      stage,
-                      name: context.name,
-                      productInfo: {
-                        image: imageSource,
-                        title: context.name,
-                        subName: context.subName,
+                  try {
+                    navigationService.navigate(ROOT_ROUTES.POST, {
+                      screen: 'PostsScreen',
+                      params: {
+                        stage,
+                        name: context.name,
+                        productInfo: {
+                          image: imageSource,
+                          title: context.name,
+                          subName: context.subName,
+                        },
+                        contextType: data.contextType,
+                        contextId: context.id,
                       },
-                      contextType: data.contextType,
-                      contextId: context.id,
-                    },
-                  });
+                    });
+                    console.log('[PostCard] Navigation successful for ProductGroup/SubCategory');
+                  } catch (error) {
+                    console.error('[PostCard] Navigation error for ProductGroup/SubCategory:', error);
+                  }
                 }}
               />
             </Box>

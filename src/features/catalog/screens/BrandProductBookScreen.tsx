@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import {
@@ -21,6 +21,7 @@ import {
   ChevronRightIcon,
   MagnifyingGlassIcon,
 } from 'react-native-heroicons/outline';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandProductBook } from '../api/hooks';
 import type { BrandProductGroup, BrandProduct } from '../types';
@@ -53,7 +54,17 @@ const BrandProductBookScreen: React.FC = () => {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        refetch,
     } = useBrandProductBook(brandId);
+
+    // İlk mount'ta cache'i yenile (test sonuçları için)
+    useEffect(() => {
+        if (brandId) {
+            // Sadece ilk mount'ta refetch yap
+            refetch();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [brandId]); // brandId değiştiğinde de refetch yap
 
     // Flatten all pages into a single array
     const allProductGroups = useMemo(() => {
@@ -83,6 +94,7 @@ const BrandProductBookScreen: React.FC = () => {
         return (
         <Pressable
             onPress={() => navigation.navigate('BrandProductDetailScreen', { 
+                brandId: route.params.brandId,
                 productId: cardData.id,
                 productName: cardData.name,
                 productImage: cardData.image,
@@ -143,11 +155,10 @@ const BrandProductBookScreen: React.FC = () => {
                 {/* Stats */}
                 <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
                     <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Box
-                            width={12}
-                            height={12}
-                            bg="#D9D9D9"
-                            borderRadius={2}
+                        <Feather
+                            name="message-circle"
+                            size={12}
+                            color={isDark ? '#FFFFFF' : '#000000'}
                         />
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
@@ -160,15 +171,14 @@ const BrandProductBookScreen: React.FC = () => {
                     </HStack>
 
                     <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Box
-                            width={12}
-                            height={12}
-                            bg="#D9D9D9"
-                            borderRadius={2}
+                        <Feather
+                            name="heart"
+                            size={12}
+                            color={isDark ? '#FFFFFF' : '#000000'}
                         />
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={8}
+                            fontSize="$2xs"
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
@@ -177,15 +187,14 @@ const BrandProductBookScreen: React.FC = () => {
                     </HStack>
 
                     <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Box
-                            width={12}
-                            height={12}
-                            bg="#D9D9D9"
-                            borderRadius={2}
+                        <Feather
+                            name="share-2"
+                            size={12}
+                            color={isDark ? '#FFFFFF' : '#000000'}
                         />
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={8}
+                            fontSize="$2xs"
                             fontWeight="$medium"
                             numberOfLines={1}
                         >

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
-import { VStack, Text, Box, Pressable, HStack } from '@gluestack-ui/themed';
+import { VStack, Text, Box, Pressable, HStack, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,7 +16,21 @@ import PostCard from '@/src/components/PostCards/PostCard';
 import QuestionPostCard from '@/src/components/PostCards/QuestionPostCard';
 import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostCard';
 import { useSafeAreaValues, toImageSource, useBottomOffset } from '@/src/utils';
-import { useProductDetail, useProductPosts, useProductNews, useCatalogProductPosts } from '../api/hooks';
+import { useAppStore } from '@/src/store/appStore';
+import { useUserProfile } from '@/src/features/profile/api/hooks';
+import { 
+  useBrandProductDetail, 
+  useBrandProductFeed, 
+  useBrandProductReviews, 
+  useBrandProductBenchmarks, 
+  useBrandProductTips, 
+  useBrandProductQuestions, 
+  useBrandProductExperiences, 
+  useBrandProductComparisons, 
+  useBrandProductNews,
+  useBrandStats,
+  useBrandCatalog
+} from '../api/hooks';
 import type { BrandFeedPost } from '../types';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { BenchmarkCardData } from '@/src/types/BenchmarkCard';
@@ -46,6 +60,8 @@ const TABS = [
   { key: 'benchmarks', title: 'Benchmarks' },
   { key: 'tips', title: 'Tips & Tricks' },
   { key: 'questions', title: 'Questions' },
+  { key: 'experiences', title: 'Experiences' },
+  { key: 'comparisons', title: 'Comparisons' },
   { key: 'news', title: 'News' },
 ] as const;
 
@@ -298,6 +314,7 @@ type MappedPost =
 
 interface TabPageProps {
   tabKey: TabKey;
+  brandId: string;
   productId: string;
   isDark: boolean;
   bottomPadding: number;
@@ -497,17 +514,51 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
   );
 };
 
-const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadding }) => {
+const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, bottomPadding }) => {
   const flatListRef = useRef<FlatList>(null);
   const navigation = useNavigation();
 
-  // API hooks for each tab - enabled kontrolü query key'de yapılacak
-  const feedQuery = useCatalogProductPosts(tabKey === 'feed' ? productId : undefined);
-  const reviewsQuery = useProductPosts(tabKey === 'reviews' ? productId : undefined, 'experience', 20);
-  const benchmarksQuery = useProductPosts(tabKey === 'benchmarks' ? productId : undefined, 'benchmark', 20);
-  const tipsQuery = useCatalogProductPosts(tabKey === 'tips' ? productId : undefined, 'tips');
-  const questionsQuery = useCatalogProductPosts(tabKey === 'questions' ? productId : undefined);
-  const newsQuery = useProductNews(tabKey === 'news' ? productId : undefined, 20);
+  // API hooks for each tab - Brand product endpoint'leri kullanıyoruz
+  const feedQuery = useBrandProductFeed(
+    tabKey === 'feed' ? brandId : undefined, 
+    tabKey === 'feed' ? productId : undefined, 
+    20
+  );
+  const reviewsQuery = useBrandProductReviews(
+    tabKey === 'reviews' ? brandId : undefined, 
+    tabKey === 'reviews' ? productId : undefined, 
+    20
+  );
+  const benchmarksQuery = useBrandProductBenchmarks(
+    tabKey === 'benchmarks' ? brandId : undefined, 
+    tabKey === 'benchmarks' ? productId : undefined, 
+    20
+  );
+  const tipsQuery = useBrandProductTips(
+    tabKey === 'tips' ? brandId : undefined, 
+    tabKey === 'tips' ? productId : undefined, 
+    20
+  );
+  const questionsQuery = useBrandProductQuestions(
+    tabKey === 'questions' ? brandId : undefined, 
+    tabKey === 'questions' ? productId : undefined, 
+    20
+  );
+  const experiencesQuery = useBrandProductExperiences(
+    tabKey === 'experiences' ? brandId : undefined, 
+    tabKey === 'experiences' ? productId : undefined, 
+    20
+  );
+  const comparisonsQuery = useBrandProductComparisons(
+    tabKey === 'comparisons' ? brandId : undefined, 
+    tabKey === 'comparisons' ? productId : undefined, 
+    20
+  );
+  const newsQuery = useBrandProductNews(
+    tabKey === 'news' ? brandId : undefined, 
+    tabKey === 'news' ? productId : undefined, 
+    20
+  );
   
   const activeTabQuery = useMemo(() => {
     switch (tabKey) {
@@ -516,10 +567,12 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadd
       case 'benchmarks': return benchmarksQuery;
       case 'tips': return tipsQuery;
       case 'questions': return questionsQuery;
+      case 'experiences': return experiencesQuery;
+      case 'comparisons': return comparisonsQuery;
       case 'news': return newsQuery;
       default: return feedQuery;
     }
-  }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, questionsQuery, newsQuery]);
+  }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, questionsQuery, experiencesQuery, comparisonsQuery, newsQuery]);
   
   const mappedPosts = useMemo(() => {
     if (tabKey === 'news') {
@@ -538,13 +591,8 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadd
     const queryData = activeTabQuery.data as any;
     if (!queryData?.pages) return [];
     
-    const allItems = queryData.pages.flatMap((page: any) => {
-      if (tabKey === 'reviews' || tabKey === 'benchmarks') {
-        return page?.items ?? [];
-      }
-      // Feed, Tips, Questions için FeedApiItem formatı
-      return page?.items ?? [];
-    }) ?? [];
+    // Tüm tab'lar için BrandFeedPost formatı geliyor (/brands/{brandId}/products/{productId}/... endpoint'lerinden)
+    const allItems = queryData.pages.flatMap((page: any) => page?.posts ?? []) ?? [];
     
     const validItems = allItems.filter((item: any) => item?.id || item?.data?.id);
     const uniqueItems = validItems.filter((item: any, index: number, self: any[]) => {
@@ -557,7 +605,7 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadd
     for (const item of uniqueItems) {
       let mappedItem: MappedPost | null = null;
       
-      // BrandFeedPost formatı (reviews, benchmarks)
+      // BrandFeedPost formatı (tüm tab'lar için)
       if ('type' in item && 'data' in item) {
         const brandPost = item as BrandFeedPost;
         switch (brandPost.type) {
@@ -573,47 +621,23 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadd
               mappedItem = { type: 'benchmark', id: benchmarkData.id, data: benchmarkData };
             }
             break;
-        }
-      }
-      // FeedApiItem formatı (feed, tips, questions) - useCatalogProductPosts'den gelen
-      else if ('type' in item && 'data' in item) {
-        const feedItem = item as FeedApiItem;
-        switch (feedItem.type) {
-          case 'post':
-            const postData = mapPostToCardData(feedItem.data as ProfilePost);
-            if (postData) {
-              mappedItem = { type: 'post', id: postData.id, data: postData };
-            }
-            break;
-          case 'experience':
-            // FeedApiItem içinde experience varsa BrandFeedPost formatına çevir
-            const expData = feedItem.data as any;
-            if (expData?.contextData && Array.isArray(expData?.content)) {
-              const experienceData = mapExperienceToCardData({ type: 'experience', data: expData } as BrandFeedPost);
-              if (experienceData) {
-                mappedItem = { type: 'experience', id: experienceData.id, data: experienceData };
-              }
-            }
-            break;
-          case 'benchmark':
-            const benchData = feedItem.data as any;
-            if (benchData?.products) {
-              const benchmarkData = mapBenchmarkToCardData({ type: 'benchmark', data: benchData } as BrandFeedPost);
-              if (benchmarkData) {
-                mappedItem = { type: 'benchmark', id: benchmarkData.id, data: benchmarkData };
-              }
-            }
-            break;
           case 'tipsAndTricks':
-            const tipsData = mapTipsToCardData(feedItem);
+            const tipsData = mapTipsToCardData(brandPost);
             if (tipsData) {
               mappedItem = { type: 'tips', id: tipsData.id, data: tipsData };
             }
             break;
           case 'question':
-            const questionData = mapQuestionToCardData(feedItem);
+            const questionData = mapQuestionToCardData(brandPost);
             if (questionData) {
               mappedItem = { type: 'question', id: questionData.id, data: questionData };
+            }
+            break;
+          case 'post':
+            // Free post için
+            const postData = mapPostToCardData(brandPost.data as ProfilePost);
+            if (postData) {
+              mappedItem = { type: 'post', id: postData.id, data: postData };
             }
             break;
         }
@@ -622,26 +646,6 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadd
       if (mappedItem) {
         mapped.push(mappedItem);
       }
-    }
-    
-    // Questions tab için sadece question type'ları filtrele
-    if (tabKey === 'questions') {
-      return mapped.filter(item => item.type === 'question');
-    }
-    
-    // Tips tab için sadece tips type'ları filtrele
-    if (tabKey === 'tips') {
-      return mapped.filter(item => item.type === 'tips');
-    }
-    
-    // Reviews tab için sadece experience type'ları filtrele
-    if (tabKey === 'reviews') {
-      return mapped.filter(item => item.type === 'experience');
-    }
-    
-    // Benchmarks tab için sadece benchmark type'ları filtrele
-    if (tabKey === 'benchmarks') {
-      return mapped.filter(item => item.type === 'benchmark');
     }
     
     return mapped;
@@ -767,119 +771,209 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, productId, isDark, bottomPadd
 };
 
 const BrandProductDetailScreen: React.FC = () => {
-    const { colorMode } = useColorMode();
-    const isDark = colorMode === 'dark';
-    const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
-    const route = useRoute<BrandProductDetailScreenRouteProp>();
-    const bottomInset = useSafeAreaValues('bottom');
-    const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
+  const route = useRoute<BrandProductDetailScreenRouteProp>();
+  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
 
-    const { productId, productName: initialProductName, productImage: initialProductImage } = route.params;
+  const { brandId, productId, productName: initialProductName, productImage: initialProductImage } = route.params;
 
-    // API hooks
-    const { data: productDetail, isLoading: isLoadingProduct } = useProductDetail(productId);
-    
-    // Seçilen product bilgisi (navigation'dan gelen veya API'den gelen)
-    const displayProductName = productDetail?.name || initialProductName || '';
-    const displayProductImage = productDetail?.image 
-        ? toImageSource(productDetail.image) 
-        : (initialProductImage || require('@/assets/events/card-icon.png'));
+  // API hooks - Brand product detail
+  const { data: productDetail, isLoading: isLoadingProduct } = useBrandProductDetail(brandId, productId);
+  const { data: brandStats } = useBrandStats(brandId);
+  const { data: brandCatalog } = useBrandCatalog(brandId);
+  const { user } = useAppStore();
+  const { data: userProfile } = useUserProfile(user?.id);
+  
+  // Seçilen product bilgisi (navigation'dan gelen veya API'den gelen)
+  const displayProductName = productDetail?.name || initialProductName || '';
+  const displayProductImage = productDetail?.image 
+    ? toImageSource(productDetail.image) 
+    : (initialProductImage || require('@/assets/events/card-icon.png'));
+  
+  // Brand bilgisi
+  const brandName = brandCatalog?.name || productDetail?.brand?.name;
+  const brandImage = brandCatalog?.logo || productDetail?.brand?.image;
+  const userPoints = brandStats?.totalPoints;
+  
+  // User bilgisi
+  const userName = userProfile?.name || user?.name || 'User';
+  const userAvatar = userProfile?.avatar || user?.avatar;
 
-    // Active tab state
-    const [activeTab, setActiveTab] = useState<TabKey>('feed');
-    const pagerRef = useRef<PagerView>(null);
-    const tabContainerRef = useRef<any>(null);
-    const progress = useSharedValue(0);
-    
-    const getTabIndex = useCallback((tabKey: TabKey) => {
-        return TABS.findIndex(tab => tab.key === tabKey);
-    }, []);
-    
-    const handleTabChange = useCallback((tabKey: TabKey) => {
-        const index = getTabIndex(tabKey);
-        if (index !== -1 && pagerRef.current) {
-            pagerRef.current.setPage(index);
-        }
-    }, [getTabIndex]);
-    
-    const handlePageScroll = useCallback(
-        (e: any) => {
-            'worklet';
-            const { position, offset } = e.nativeEvent;
-            progress.value = position + offset;
-        },
-        [progress]
-    );
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<TabKey>('feed');
+  const pagerRef = useRef<PagerView>(null);
+  const tabContainerRef = useRef<any>(null);
+  const progress = useSharedValue(0);
+  
+  const getTabIndex = useCallback((tabKey: TabKey) => {
+    return TABS.findIndex(tab => tab.key === tabKey);
+  }, []);
+  
+  const handleTabChange = useCallback((tabKey: TabKey) => {
+    const index = getTabIndex(tabKey);
+    if (index !== -1 && pagerRef.current) {
+      pagerRef.current.setPage(index);
+    }
+  }, [getTabIndex]);
+  
+  const handlePageScroll = useCallback(
+    (e: any) => {
+      'worklet';
+      const { position, offset } = e.nativeEvent;
+      progress.value = position + offset;
+    },
+    [progress]
+  );
 
-    const handlePageSelected = useCallback(
-        (e: any) => {
-            const position = e.nativeEvent.position;
-            progress.value = withTiming(position, { duration: 0 });
-            
-            const tabKey = TABS[position]?.key;
-            if (tabKey) {
-                setActiveTab(tabKey);
-            }
-        },
-        [progress]
-    );
-    
-    const handleTabContainerLayout = useCallback((width: number) => {
-        // Tab container width'i state'e kaydet (gerekirse)
-    }, []);
+  const handlePageSelected = useCallback(
+    (e: any) => {
+      const position = e.nativeEvent.position;
+      progress.value = withTiming(position, { duration: 0 });
+      
+      const tabKey = TABS[position]?.key;
+      if (tabKey) {
+        setActiveTab(tabKey);
+      }
+    },
+    [progress]
+  );
+  
+  const handleTabContainerLayout = useCallback((width: number) => {
+    // Tab container width'i state'e kaydet (gerekirse)
+  }, []);
 
-    return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-            <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-                {/* Header */}
-                <Header
-                    title="Product Details"
-                    showBackButton={true}
-                    onBackPress={() => navigation.goBack()}
+  return (
+    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+        {/* Header */}
+        <Header
+          title="Product Details"
+          showBackButton={true}
+          onBackPress={() => navigation.goBack()}
+        />
+
+        {/* Product Info Card and User Points Card */}
+        <Box px="$4" pt="$4" pb="$3">
+          <HStack space="sm" alignItems="stretch">
+            {/* Product Info Card */}
+            {(displayProductName || initialProductName) && (
+              <Box flex={1}>
+                <BrandProductInfoCard
+                  productName={displayProductName}
+                  productImage={displayProductImage}
+                  brandName={brandName}
+                  brandImage={brandImage}
                 />
+              </Box>
+            )}
 
-                {/* Product Info Card - Seçilen product bilgisi gösteriliyor */}
-                {(displayProductName || initialProductName) && (
-                    <Box px="$4" pt="$4" pb="$3">
-                        <BrandProductInfoCard
-                            productName={displayProductName}
-                            productImage={displayProductImage}
+            {/* User Points Card */}
+            {userPoints !== undefined && (
+              <Box
+                bg={isDark ? '#1A1A1A' : '#FDFDFD'}
+                borderWidth={1}
+                borderColor="#E9E9E9"
+                borderRadius={10}
+                px='$3'
+                py='$2'
+                minWidth={80}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <VStack alignItems="center" space="xs">
+                  {/* User Info - Üstte */}
+                  <HStack alignItems="center" space="xs">
+                    {userAvatar && (
+                      <Box
+                        width={20}
+                        height={20}
+                        borderRadius={10}
+                        bg="#F6F6F6"
+                        alignItems="center"
+                        justifyContent="center"
+                        overflow="hidden"
+                      >
+                        <Image
+                          source={toImageSource(userAvatar) || require('@/assets/avatar/default-useravatar.png')}
+                          alt={userName}
+                          style={{
+                            width: 20,
+                            height: 20,
+                          }}
+                          resizeMode="cover"
                         />
-                    </Box>
-                )}
+                      </Box>
+                    )}
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize={9}
+                      fontWeight="$semibold"
+                      numberOfLines={1}
+                    >
+                      {userName}
+                    </Text>
+                  </HStack>
 
-                {/* Tab Bar */}
-                <TabsBar 
-                    activeTab={activeTab} 
-                    onChangeTab={handleTabChange} 
-                    isDark={isDark}
-                    progress={progress}
-                    tabContainerRef={tabContainerRef}
-                    onTabContainerLayout={handleTabContainerLayout}
-                />
+                  {/* Points - Altta */}
+                  <VStack alignItems="center" space={0}>
+                    <Text
+                      color="#3CA241"
+                      fontSize={14}
+                      fontWeight="$bold"
+                      lineHeight={16}
+                    >
+                      {userPoints.toLocaleString()}
+                    </Text>
+                    <Text
+                      color="#3CA241"
+                      fontSize={10}
+                      fontWeight="$bold"
+                      lineHeight={12}
+                    >
+                      Points
+                    </Text>
+                  </VStack>
+                </VStack>
+              </Box>
+            )}
+          </HStack>
+        </Box>
 
-                {/* PagerView */}
-                <AnimatedPagerView
-                    ref={pagerRef}
-                    style={{ flex: 1 }}
-                    initialPage={0}
-                    onPageScroll={handlePageScroll}
-                    onPageSelected={handlePageSelected}
-                >
-                    {TABS.map((tab) => (
-                        <Box key={tab.key} flex={1}>
-                            <TabPage
-                                tabKey={tab.key}
-                                productId={productId}
-                                isDark={isDark}
-                                bottomPadding={bottomPadding}
-                            />
-                        </Box>
-                    ))}
-                </AnimatedPagerView>
-            </VStack>
-        </SafeAreaView>
-    );
+        {/* Tab Bar */}
+        <TabsBar 
+          activeTab={activeTab} 
+          onChangeTab={handleTabChange} 
+          isDark={isDark}
+          progress={progress}
+          tabContainerRef={tabContainerRef}
+          onTabContainerLayout={handleTabContainerLayout}
+        />
+
+        {/* PagerView */}
+        <AnimatedPagerView
+          ref={pagerRef}
+          style={{ flex: 1 }}
+          initialPage={0}
+          onPageScroll={handlePageScroll}
+          onPageSelected={handlePageSelected}
+        >
+          {TABS.map((tab) => (
+            <Box key={tab.key} flex={1}>
+              <TabPage
+                tabKey={tab.key}
+                brandId={brandId}
+                productId={productId}
+                isDark={isDark}
+                bottomPadding={bottomPadding}
+              />
+            </Box>
+          ))}
+        </AnimatedPagerView>
+      </VStack>
+    </SafeAreaView>
+  );
 };
 
 export default BrandProductDetailScreen;
