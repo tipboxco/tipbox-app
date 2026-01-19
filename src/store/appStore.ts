@@ -265,7 +265,7 @@ export const useAppStore = create<AppState>()(
 
 
 
-            try {
+         /*   try {
               const client = apiService.getClient();
               const baseURL = client.defaults.baseURL;
               const fullURL = `${baseURL}/auth0/logout`;
@@ -278,8 +278,7 @@ export const useAppStore = create<AppState>()(
                 set({ isLoading: false, error: error as Error });
                 return;
               }
-              // Cevap geldi ama non-2xx olabilir; yine de logout akışına devam et
-            }
+            }*/
 
 
             // ÖNCE: Backend'e logout bildirimi gönder (token'lar temizlenmeden önce)
