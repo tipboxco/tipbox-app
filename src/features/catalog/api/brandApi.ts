@@ -787,10 +787,11 @@ export const getBrandProductComparisons = async (
 /**
  * Get Brand Product News endpoint function
  * /brands/{brandId}/products/{productId}/news endpoint'inden brand product news'lerini getirir
+ * Backend'den array olarak geliyor, normalize ediyoruz
  *
  * @param brandId - Brand ID'si
  * @param productId - Product ID'si
- * @param cursor - Pagination cursor (opsiyonel)
+ * @param cursor - Pagination cursor (opsiyonel, page number olarak kullanılır)
  * @param limit - Sayfa başına item sayısı (default: 20)
  * @returns ProductNewsResponse - Brand product news'leri ve pagination bilgisi
  */
@@ -801,19 +802,94 @@ export const getBrandProductNews = async (
   limit: number = 20
 ): Promise<import('../types').ProductNewsResponse> => {
   const params = new URLSearchParams();
-  if (cursor) {
-    params.append('cursor', cursor);
+  // Backend page-based pagination kullanıyor, cursor'ı page number'a çevir
+  const page = cursor ? parseInt(cursor, 10) : 1;
+  if (page > 1) {
+    params.append('page', page.toString());
   }
   params.append('limit', limit.toString());
 
   try {
-    const response = await apiService.getClient().get<import('../types').ProductNewsResponse>(
+    console.log('[getBrandProductNews] 📡 API Request:', {
+      url: `/brands/${brandId}/products/${productId}/news?${params.toString()}`,
+      brandId,
+      productId,
+      page,
+      limit,
+      cursor,
+    });
+    
+    // Backend'den array olarak geliyor, normalize ediyoruz
+    const response = await apiService.getClient().get<import('../types').NewsItem[]>(
       `/brands/${brandId}/products/${productId}/news?${params.toString()}`
     );
-    return response.data;
+    
+    console.log('[getBrandProductNews] ✅ API Response:', {
+      status: response.status,
+      dataType: Array.isArray(response.data) ? 'array' : typeof response.data,
+      dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
+      data: response.data,
+    });
+    
+    const newsItems = Array.isArray(response.data) ? response.data : [];
+    
+    console.log('[getBrandProductNews] 📊 News Items:', {
+      count: newsItems.length,
+      items: newsItems.map(item => ({
+        id: item.id,
+        title: item.title,
+        source: item.source,
+        date: item.date,
+      })),
+    });
+    
+    // Response'u normalize et: array'i {items, pagination} formatına çevir
+    const normalizedResponse = {
+      items: newsItems,
+      pagination: {
+        cursor: newsItems.length >= limit ? (page + 1).toString() : undefined,
+        hasMore: newsItems.length >= limit,
+        limit,
+      },
+    };
+    
+    console.log('[getBrandProductNews] 🔄 Normalized Response:', normalizedResponse);
+    
+    return normalizedResponse;
   } catch (error: any) {
     console.error('[getBrandProductNews] API Error:', {
       url: `/brands/${brandId}/products/${productId}/news?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product News Detail endpoint function
+ * /brands/{brandId}/products/{productId}/news/{newsId} endpoint'inden news detay bilgilerini getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param newsId - News ID'si
+ * @returns NewsDetail - News detay bilgileri
+ */
+export const getBrandProductNewsDetail = async (
+  brandId: string,
+  productId: string,
+  newsId: string
+): Promise<import('../types').NewsDetail> => {
+  try {
+    const response = await apiService.getClient().get<import('../types').NewsDetail>(
+      `/brands/${brandId}/products/${productId}/news/${newsId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductNewsDetail] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/news/${newsId}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

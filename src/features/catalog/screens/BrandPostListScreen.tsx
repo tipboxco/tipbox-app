@@ -38,7 +38,7 @@ const BrandPostListScreen: React.FC = () => {
     const allPosts: PostCardData[] = [];
     feedData.pages.forEach((page) => {
       // BrandFeedResponse'da posts array'i var
-      const pagePosts = page.posts || [];
+      const pagePosts = page.items || page.posts || [];
       pagePosts.forEach((item: BrandFeedPost) => {
         // Sadece 'post' type'ını PostCard olarak göster
         if (item.type !== 'post') {

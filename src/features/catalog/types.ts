@@ -147,11 +147,10 @@ export interface BrandFeedPost {
 
 /**
  * Brand Feed Response - /brands/{brandId}/feed endpoint'inden dönen response
+ * Backend'den items array'i olarak geliyor
  */
 export interface BrandFeedResponse {
-  brandId: string;
-  name: string;
-  posts: BrandFeedPost[];
+  items: BrandFeedPost[];
   pagination?: {
     cursor?: string;
     hasMore: boolean;
@@ -335,6 +334,12 @@ export interface NewsItem {
   source: string;
   date: string;
   image: string | null;
+  stats?: {
+    likes: number;
+    comments: number;
+    share: number;
+    bookmarks: number;
+  };
 }
 
 /**
@@ -350,22 +355,26 @@ export interface ProductNewsResponse {
 }
 
 /**
- * News Detail - /news/{newsId} endpoint'inden gelen news detay bilgisi
+ * News Detail - /news/{newsId} veya /brands/{brandId}/products/{productId}/news/{newsId} endpoint'inden gelen news detay bilgisi
  */
 export interface NewsDetail {
   id: string;
   title: string;
-  content: string;
+  content: string; // Haberin tam içeriği
   source: string;
-  date: string;
-  image: string | null;
-  author?: string;
+  date: string; // ISO 8601 formatında
+  banner: string | null; // Banner image URL
+  image?: string | null; // Backward compatibility için (banner yerine kullanılabilir)
+  author?: string | null;
   tags?: string[];
-  likesCount?: number;
-  commentsCount?: number;
-  sharesCount?: number;
-  favoritesCount?: number;
-  viewsCount?: number;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  favoritesCount: number;
+  viewsCount: number;
+  isLiked: boolean; // Kullanıcının beğenip beğenmediği
+  isFavorited: boolean; // Kullanıcının favorilere ekleyip eklemediği
+  isShared: boolean; // Kullanıcının paylaşıp paylaşmadığı
 }
 
 /**

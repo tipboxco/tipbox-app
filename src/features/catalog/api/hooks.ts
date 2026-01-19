@@ -906,6 +906,40 @@ export const useCatalogProductPosts = (
 };
 
 /**
+ * useBrandProductNewsDetail - Brand product news detay bilgilerini getirir
+ * /brands/{brandId}/products/{productId}/news/{newsId} endpoint'inden news detay bilgilerini getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param newsId - News ID'si
+ * @returns React Query hook result
+ */
+export const useBrandProductNewsDetail = (
+  brandId: string | undefined,
+  productId: string | undefined,
+  newsId: string | undefined
+) => {
+  return useQuery<NewsDetail, Error>({
+    queryKey: brandId && productId && newsId
+      ? [...catalogKeys.all, 'brandProductNewsDetail', brandId, productId, newsId]
+      : ['catalog', 'brandProductNewsDetail', 'disabled'],
+    queryFn: async () => {
+      if (!brandId || !productId || !newsId) {
+        throw new Error('Brand ID, Product ID and News ID are required');
+      }
+      const { getBrandProductNewsDetail } = await import('./brandApi');
+      return getBrandProductNewsDetail(brandId, productId, newsId);
+    },
+    enabled: !!brandId && !!productId && !!newsId,
+    staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
+    gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
+
+/**
  * Like News mutation hook
  * /news/{newsId}/like endpoint'ine POST request gönderir
  *
@@ -914,11 +948,17 @@ export const useCatalogProductPosts = (
 export const useLikeNews = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<NewsApiResponse, Error, string>({
-    mutationFn: (newsId: string) => likeNews(newsId),
-    onSuccess: (_, newsId) => {
+  return useMutation<NewsApiResponse, Error, { newsId: string; brandId?: string; productId?: string }>({
+    mutationFn: ({ newsId }) => likeNews(newsId),
+    onSuccess: (_, { newsId, brandId, productId }) => {
       // News detail'i invalidate et
       queryClient.invalidateQueries({ queryKey: catalogKeys.newsDetail(newsId) });
+      // Brand product news detail'i de invalidate et (eğer varsa)
+      if (brandId && productId) {
+        queryClient.invalidateQueries({ 
+          queryKey: [...catalogKeys.all, 'brandProductNewsDetail', brandId, productId, newsId] 
+        });
+      }
     },
   });
 };
@@ -932,11 +972,17 @@ export const useLikeNews = () => {
 export const useUnlikeNews = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<NewsApiResponse, Error, string>({
-    mutationFn: (newsId: string) => unlikeNews(newsId),
-    onSuccess: (_, newsId) => {
+  return useMutation<NewsApiResponse, Error, { newsId: string; brandId?: string; productId?: string }>({
+    mutationFn: ({ newsId }) => unlikeNews(newsId),
+    onSuccess: (_, { newsId, brandId, productId }) => {
       // News detail'i invalidate et
       queryClient.invalidateQueries({ queryKey: catalogKeys.newsDetail(newsId) });
+      // Brand product news detail'i de invalidate et (eğer varsa)
+      if (brandId && productId) {
+        queryClient.invalidateQueries({ 
+          queryKey: [...catalogKeys.all, 'brandProductNewsDetail', brandId, productId, newsId] 
+        });
+      }
     },
   });
 };
@@ -1037,11 +1083,17 @@ export const useUnlikeNewsComment = () => {
 export const useShareNews = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<NewsShareResponse, Error, { newsId: string; request: NewsShareRequest }>({
+  return useMutation<NewsShareResponse, Error, { newsId: string; request: NewsShareRequest; brandId?: string; productId?: string }>({
     mutationFn: ({ newsId, request }) => shareNews(newsId, request),
-    onSuccess: (_, variables) => {
+    onSuccess: (_, { newsId, brandId, productId }) => {
       // News detail'i invalidate et (sharesCount güncellenmesi için)
-      queryClient.invalidateQueries({ queryKey: catalogKeys.newsDetail(variables.newsId) });
+      queryClient.invalidateQueries({ queryKey: catalogKeys.newsDetail(newsId) });
+      // Brand product news detail'i de invalidate et (eğer varsa)
+      if (brandId && productId) {
+        queryClient.invalidateQueries({ 
+          queryKey: [...catalogKeys.all, 'brandProductNewsDetail', brandId, productId, newsId] 
+        });
+      }
     },
   });
 };
@@ -1055,11 +1107,17 @@ export const useShareNews = () => {
 export const useFavoriteNews = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<NewsApiResponse, Error, string>({
-    mutationFn: (newsId: string) => favoriteNews(newsId),
-    onSuccess: (_, newsId) => {
+  return useMutation<NewsApiResponse, Error, { newsId: string; brandId?: string; productId?: string }>({
+    mutationFn: ({ newsId }) => favoriteNews(newsId),
+    onSuccess: (_, { newsId, brandId, productId }) => {
       // News detail'i invalidate et (favoritesCount güncellenmesi için)
       queryClient.invalidateQueries({ queryKey: catalogKeys.newsDetail(newsId) });
+      // Brand product news detail'i de invalidate et (eğer varsa)
+      if (brandId && productId) {
+        queryClient.invalidateQueries({ 
+          queryKey: [...catalogKeys.all, 'brandProductNewsDetail', brandId, productId, newsId] 
+        });
+      }
     },
   });
 };
@@ -1073,11 +1131,17 @@ export const useFavoriteNews = () => {
 export const useUnfavoriteNews = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<NewsApiResponse, Error, string>({
-    mutationFn: (newsId: string) => unfavoriteNews(newsId),
-    onSuccess: (_, newsId) => {
+  return useMutation<NewsApiResponse, Error, { newsId: string; brandId?: string; productId?: string }>({
+    mutationFn: ({ newsId }) => unfavoriteNews(newsId),
+    onSuccess: (_, { newsId, brandId, productId }) => {
       // News detail'i invalidate et (favoritesCount güncellenmesi için)
       queryClient.invalidateQueries({ queryKey: catalogKeys.newsDetail(newsId) });
+      // Brand product news detail'i de invalidate et (eğer varsa)
+      if (brandId && productId) {
+        queryClient.invalidateQueries({ 
+          queryKey: [...catalogKeys.all, 'brandProductNewsDetail', brandId, productId, newsId] 
+        });
+      }
     },
   });
 };
@@ -1176,6 +1240,7 @@ export const useBrandProductFeed = (
 /**
  * useBrandProductReviews - Brand product review postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/reviews endpoint'ini kullanır
+ * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
  */
 export const useBrandProductReviews = (
   brandId: string | undefined,
@@ -1201,15 +1266,18 @@ export const useBrandProductReviews = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
+    refetchOnWindowFocus: false, // Window focus'ta fetch etme
   });
 };
 
 /**
  * useBrandProductBenchmarks - Brand product benchmark postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/benchmarks endpoint'ini kullanır
+ * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
  */
 export const useBrandProductBenchmarks = (
   brandId: string | undefined,
@@ -1235,15 +1303,18 @@ export const useBrandProductBenchmarks = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
+    refetchOnWindowFocus: false, // Window focus'ta fetch etme
   });
 };
 
 /**
  * useBrandProductTips - Brand product tips postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/tips endpoint'ini kullanır
+ * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
  */
 export const useBrandProductTips = (
   brandId: string | undefined,
@@ -1269,15 +1340,18 @@ export const useBrandProductTips = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
+    refetchOnWindowFocus: false, // Window focus'ta fetch etme
   });
 };
 
 /**
  * useBrandProductQuestions - Brand product question postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/questions endpoint'ini kullanır
+ * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
  */
 export const useBrandProductQuestions = (
   brandId: string | undefined,
@@ -1303,9 +1377,11 @@ export const useBrandProductQuestions = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
+    refetchOnWindowFocus: false, // Window focus'ta fetch etme
   });
 };
 
@@ -1337,9 +1413,11 @@ export const useBrandProductExperiences = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
+    refetchOnWindowFocus: false, // Window focus'ta fetch etme
   });
 };
 
@@ -1371,9 +1449,11 @@ export const useBrandProductComparisons = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
+    refetchOnWindowFocus: false, // Window focus'ta fetch etme
   });
 };
 
@@ -1394,19 +1474,34 @@ export const useBrandProductNews = (
       if (!brandId || !productId) {
         throw new Error('Brand ID and Product ID are required');
       }
+      // pageParam undefined ise ilk sayfa (page=1), yoksa page number olarak kullan
       const cursor = pageParam as string | undefined;
+      console.log('[useBrandProductNews] Query Function:', {
+        brandId,
+        productId,
+        pageParam,
+        cursor,
+        limit,
+      });
       const { getBrandProductNews } = await import('./brandApi');
       return getBrandProductNews(brandId, productId, cursor, limit);
     },
-    initialPageParam: undefined,
+    initialPageParam: undefined, // undefined = ilk sayfa (page=1)
     getNextPageParam: (lastPage) => {
+      console.log('[useBrandProductNews] getNextPageParam:', {
+        hasMore: lastPage.pagination?.hasMore,
+        cursor: lastPage.pagination?.cursor,
+        itemsCount: lastPage.items?.length || 0,
+      });
       if (!lastPage.pagination?.hasMore) {
         return undefined;
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
+    gcTime: 10 * 60 * 1000, // 10 dakika
+    refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
+    refetchOnWindowFocus: false, // Window focus'ta fetch etme
   });
 };

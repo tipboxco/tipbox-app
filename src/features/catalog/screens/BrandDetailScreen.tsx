@@ -308,7 +308,7 @@ const BrandDetailScreen: React.FC = () => {
     const allPosts = useMemo(() => {
         if (!brandFeedData?.pages) return [];
         
-        const allItems = brandFeedData.pages.flatMap((page) => page.posts);
+        const allItems = brandFeedData.pages.flatMap((page) => page.items || page.posts || []);
         
         // Remove duplicates by ID (cursor pagination'da aynı item tekrar gelebilir)
         const uniqueItemsMap = new Map<string, BrandFeedPost>();
