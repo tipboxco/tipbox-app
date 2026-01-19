@@ -4,7 +4,6 @@ import { CatalogScreen } from './screens/CatalogScreen';
 import BrandDetailScreen from './screens/BrandDetailScreen';
 import BrandProductBookScreen from './screens/BrandProductBookScreen';
 import BrandProductDetailScreen from './screens/BrandProductDetailScreen';
-import NewsDetailScreen from './screens/NewsDetailScreen';
 import SurveyScreen from './screens/SurveyScreen';
 import BrandEventsDetailScreen from './screens/BrandEventsDetailScreen';
 import BrandHistoryScreen from './screens/BrandHistoryScreen';
@@ -19,7 +18,6 @@ export type CatalogStackParamList = {
   BrandDetailScreen: { brandId: string };
   BrandProductBookScreen: { brandId: string };
   BrandProductDetailScreen: { brandId: string; productId: string; productName?: string; productImage?: any };
-  NewsDetailScreen: { newsId: string; brandId?: string; productId?: string };
   SurveyScreen: { brandId: string };
   BrandEventsDetailScreen: { eventId: string };
   BrandHistoryScreen: { brandId: string };
@@ -53,10 +51,6 @@ export const CatalogNavigator = () => {
         <CatalogStack.Screen
           name="BrandProductDetailScreen"
           component={BrandProductDetailScreen}
-        />
-        <CatalogStack.Screen
-          name="NewsDetailScreen"
-          component={NewsDetailScreen}
         />
         <CatalogStack.Screen
           name="SurveyScreen"

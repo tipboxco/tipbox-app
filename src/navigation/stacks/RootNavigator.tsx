@@ -11,6 +11,7 @@ import { WalletNavigator } from '@/src/features/wallet';
 import { BookmarksNavigator } from '@/src/features/bookmarks/navigation';
 import { MarketplaceNavigator } from '@/src/features/marketplace/navigation';
 import { EventNavigator } from '@/src/features/events/EventNavigator';
+import { NewsNavigator } from '@/src/features/catalog/NewsNavigator';
 import MessageDetailScreen from '@/src/features/inbox/screens/MessageDetail';
 import SupportMessageDetailScreen from '@/src/features/inbox/screens/SupportMessageDetail';
 import type { RootStackParamList } from '../types/root.types';
@@ -109,6 +110,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name="Event"
               component={EventNavigator}
+            />
+            <RootStack.Screen
+              name="News"
+              component={NewsNavigator}
             />
             <RootStack.Screen
               name="MessageDetail"

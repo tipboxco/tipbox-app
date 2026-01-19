@@ -31,36 +31,36 @@ const BrandProductInfoCard: React.FC<BrandProductInfoCardProps> = ({
       <HStack alignItems="center" space="sm" justifyContent="space-between">
         {/* Left: Product Image and Name */}
         <HStack alignItems="center" space="sm" flex={1}>
-          {/* Product Image */}
-          <Box
-            width={44}
-            height={44}
-            borderRadius={5}
-            bg="#F6F6F6"
-            alignItems="center"
-            justifyContent="center"
-          >
-            <Image
-              source={productImage}
-              alt={productName}
-              style={{
-                width: 44,
-                height: 44,
-              }}
-              resizeMode="contain"
-            />
-          </Box>
+        {/* Product Image */}
+        <Box
+          width={44}
+          height={44}
+          borderRadius={5}
+          bg="#F6F6F6"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Image
+            source={productImage}
+            alt={productName}
+            style={{
+              width: 44,
+              height: 44,
+            }}
+            resizeMode="contain"
+          />
+        </Box>
 
-          {/* Product Name */}
-          <Text
-            color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize={12}
-            fontWeight="$bold"
-            flex={1}
+        {/* Product Name */}
+        <Text
+          color={isDark ? '#FFFFFF' : '#000000'}
+          fontSize={12}
+          fontWeight="$bold"
+          flex={1}
             numberOfLines={1}
-          >
-            {productName}
-          </Text>
+        >
+          {productName}
+        </Text>
         </HStack>
 
         {/* Right: Brand Info */}

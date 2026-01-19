@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, createNewsComment, getNewsComments, likeNewsComment, unlikeNewsComment, shareNews, favoriteNews, unfavoriteNews, type CatalogPaginationResponse } from './catalogApi';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, type CatalogPaginationResponse } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse } from '../types';
 
@@ -34,8 +34,6 @@ export const catalogKeys = {
   productNews: (productId: string, cursor?: string, limit?: number) => 
     [...catalogKeys.all, 'productNews', productId, cursor, limit] as const,
   newsDetail: (newsId: string) => [...catalogKeys.all, 'newsDetail', newsId] as const,
-  newsComments: (newsId: string, limit?: number, offset?: number) => 
-    [...catalogKeys.all, 'newsComments', newsId, limit, offset] as const,
   // Catalog Posts endpoints
   subCategoryPosts: (subCategoryId: string, filter?: string, sort?: string, cursor?: string, limit?: number) =>
     [...catalogKeys.all, 'subCategoryPosts', subCategoryId, filter, sort, cursor, limit] as const,
@@ -988,48 +986,35 @@ export const useUnlikeNews = () => {
 };
 
 /**
- * Create News Comment mutation hook
- * /news/{newsId}/comment endpoint'ine POST request gönderir
+ * Get Brand Product News Comments query hook
+ * /brands/{brandId}/products/{productId}/news/{newsId}/comments endpoint'inden news yorumlarını getirir
  *
- * @returns React Query mutation hook
- */
-export const useCreateNewsComment = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation<NewsCommentCreateResponse, Error, { newsId: string; request: NewsCommentCreateRequest }>({
-    mutationFn: ({ newsId, request }) => createNewsComment(newsId, request),
-    onSuccess: (_, variables) => {
-      // News comments'ı invalidate et
-      queryClient.invalidateQueries({ queryKey: catalogKeys.newsComments(variables.newsId) });
-      // News detail'i invalidate et (commentsCount güncellenmesi için)
-      queryClient.invalidateQueries({ queryKey: catalogKeys.newsDetail(variables.newsId) });
-    },
-  });
-};
-
-/**
- * Get News Comments query hook
- * /news/{newsId}/comments endpoint'inden news yorumlarını getirir
- *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
  * @param newsId - News ID'si
  * @param limit - Sayfa başına yorum sayısı (default: 50)
  * @param offset - Offset değeri (default: 0)
  * @returns React Query hook result
  */
-export const useNewsComments = (
+export const useBrandProductNewsComments = (
+  brandId: string | undefined,
+  productId: string | undefined,
   newsId: string | undefined,
   limit: number = 50,
   offset: number = 0
 ) => {
   return useQuery<NewsCommentsResponse, Error>({
-    queryKey: newsId ? catalogKeys.newsComments(newsId, limit, offset) : ['catalog', 'newsComments', 'disabled'],
-    queryFn: () => {
-      if (!newsId) {
-        throw new Error('News ID is required');
+    queryKey: (brandId && productId && newsId) 
+      ? [...catalogKeys.all, 'brandProductNewsComments', brandId, productId, newsId, limit, offset] 
+      : ['catalog', 'brandProductNewsComments', 'disabled'],
+    queryFn: async () => {
+      if (!brandId || !productId || !newsId) {
+        throw new Error('Brand ID, Product ID and News ID are required');
       }
-      return getNewsComments(newsId, limit, offset);
+      const { getBrandProductNewsComments } = await import('./brandApi');
+      return getBrandProductNewsComments(brandId, productId, newsId, limit, offset);
     },
-    enabled: !!newsId,
+    enabled: !!brandId && !!productId && !!newsId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat
     gcTime: 4 * 60 * 60 * 1000, // 4 saat
     refetchOnMount: false,
@@ -1039,37 +1024,28 @@ export const useNewsComments = (
 };
 
 /**
- * Like News Comment mutation hook
- * /news/{newsId}/comment/{commentId}/like endpoint'ine POST request gönderir
+ * Create Brand Product News Comment mutation hook
+ * /brands/{brandId}/products/{productId}/news/{newsId}/comment endpoint'ine POST request gönderir
  *
  * @returns React Query mutation hook
  */
-export const useLikeNewsComment = () => {
+export const useCreateBrandProductNewsComment = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<NewsApiResponse, Error, { newsId: string; commentId: string }>({
-    mutationFn: ({ newsId, commentId }) => likeNewsComment(newsId, commentId),
-    onSuccess: (_, variables) => {
-      // News comments'ı invalidate et
-      queryClient.invalidateQueries({ queryKey: catalogKeys.newsComments(variables.newsId) });
+  return useMutation<NewsCommentCreateResponse, Error, { brandId: string; productId: string; newsId: string; request: NewsCommentCreateRequest }>({
+    mutationFn: async ({ brandId, productId, newsId, request }) => {
+      const { createBrandProductNewsComment } = await import('./brandApi');
+      return createBrandProductNewsComment(brandId, productId, newsId, request);
     },
-  });
-};
-
-/**
- * Unlike News Comment mutation hook
- * /news/{newsId}/comment/{commentId}/like endpoint'ine DELETE request gönderir
- *
- * @returns React Query mutation hook
- */
-export const useUnlikeNewsComment = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation<NewsApiResponse, Error, { newsId: string; commentId: string }>({
-    mutationFn: ({ newsId, commentId }) => unlikeNewsComment(newsId, commentId),
     onSuccess: (_, variables) => {
-      // News comments'ı invalidate et
-      queryClient.invalidateQueries({ queryKey: catalogKeys.newsComments(variables.newsId) });
+      // Brand product news comments'ı invalidate et
+      queryClient.invalidateQueries({ 
+        queryKey: [...catalogKeys.all, 'brandProductNewsComments', variables.brandId, variables.productId, variables.newsId] 
+      });
+      // Brand product news detail'i invalidate et (commentsCount güncellenmesi için)
+      queryClient.invalidateQueries({ 
+        queryKey: [...catalogKeys.all, 'brandProductNewsDetail', variables.brandId, variables.productId, variables.newsId] 
+      });
     },
   });
 };

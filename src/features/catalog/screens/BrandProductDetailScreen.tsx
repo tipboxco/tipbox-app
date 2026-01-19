@@ -18,6 +18,7 @@ import TipsAndTricksPostCard from '@/src/components/PostCards/TipsAndTricksPostC
 import { useSafeAreaValues, toImageSource, useBottomOffset, formatRelativeTime } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 import { useUserProfile } from '@/src/features/profile/api/hooks';
+import { navigationService } from '@/src/services/NavigationService';
 import { 
   useBrandProductDetail, 
   useBrandProductFeed, 
@@ -232,7 +233,9 @@ const mapTipsToCardData = (item: FeedApiItem | BrandFeedPost): TipsCardData | nu
   // Backend'den contextData veya product gelebilir
   const contextData = postData.contextData || postData.product;
   if (!contextData || !contextData.id) {
-    console.log('[mapTipsToCardData] Missing contextData or product:', postData);
+    if (__DEV__) {
+      console.log('[mapTipsToCardData] Missing contextData or product:', postData);
+    }
     return null;
   }
   
@@ -286,17 +289,23 @@ const mapQuestionToCardData = (item: FeedApiItem | BrandFeedPost): QuestionCardD
   
   // Data validation
   if (!postData) {
-    console.log('[mapQuestionToCardData] Missing postData');
+    if (__DEV__) {
+      console.log('[mapQuestionToCardData] Missing postData');
+    }
     return null;
   }
   
   if (!postData.contextData || !postData.contextData.id) {
-    console.log('[mapQuestionToCardData] Missing contextData:', postData);
+    if (__DEV__) {
+      console.log('[mapQuestionToCardData] Missing contextData:', postData);
+    }
     return null;
   }
   
   if (!postData.user || !postData.user.id) {
-    console.log('[mapQuestionToCardData] Missing user:', postData);
+    if (__DEV__) {
+      console.log('[mapQuestionToCardData] Missing user:', postData);
+    }
     return null;
   }
   
@@ -364,7 +373,7 @@ interface TabsBarProps {
   onTabContainerLayout: (width: number) => void;
 }
 
-const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
+const TabsBar: React.FC<TabsBarProps> = React.memo(({ activeTab, onChangeTab, isDark, progress, tabContainerRef, onTabContainerLayout }) => {
   const activeColor = isDark ? '#FFFFFF' : '#000000';
   const inactiveColor = '#A3A3A3';
   const scrollViewRef = useRef<Animated.ScrollView>(null);
@@ -547,37 +556,23 @@ const TabsBar: React.FC<TabsBarProps> = ({ activeTab, onChangeTab, isDark, progr
       </Animated.ScrollView>
     </Box>
   );
-};
+}, (prevProps, nextProps) => {
+  return prevProps.activeTab === nextProps.activeTab && 
+         prevProps.isDark === nextProps.isDark;
+});
 
-const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, bottomPadding }) => {
+const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId, isDark, bottomPadding }) => {
   const flatListRef = useRef<FlatList>(null);
   const navigation = useNavigation();
 
   // API hooks for each tab - Brand product endpoint'leri kullanıyoruz
-  // İlk yüklemede sadece feed aktif, diğerleri arka planda yüklenecek
+  // Lazy loading: Sadece aktif tab'ın query'si enabled
   const feedQuery = useBrandProductFeed(brandId, productId, 20);
   const reviewsQuery = useBrandProductReviews(brandId, productId, 20);
   const benchmarksQuery = useBrandProductBenchmarks(brandId, productId, 20);
   const tipsQuery = useBrandProductTips(brandId, productId, 20);
   const questionsQuery = useBrandProductQuestions(brandId, productId, 20);
   const newsQuery = useBrandProductNews(brandId, productId, 20);
-  
-  // Debug: News query durumunu logla
-  useEffect(() => {
-    if (tabKey === 'news') {
-      console.log('[BrandProductDetailScreen] News Query Hook State:', {
-        brandId: brandId,
-        productId: productId,
-        enabled: tabKey === 'news',
-        isLoading: newsQuery.isLoading,
-        isError: newsQuery.isError,
-        error: newsQuery.error,
-        isFetching: newsQuery.isFetching,
-        hasData: !!newsQuery.data,
-        dataPages: newsQuery.data?.pages?.length || 0,
-      });
-    }
-  }, [tabKey, brandId, productId, newsQuery.isLoading, newsQuery.isError, newsQuery.error, newsQuery.isFetching, newsQuery.data]);
   
   const activeTabQuery = useMemo(() => {
     switch (tabKey) {
@@ -591,59 +586,36 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
     }
   }, [tabKey, feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, questionsQuery, newsQuery]);
   
+  // Mapping cache - aynı item'ları tekrar map etmemek için
+  const mappingCacheRef = useRef<Map<string, MappedPost | { type: 'news'; id: string; data: any }>>(new Map());
+  
   const mappedPosts = useMemo(() => {
     if (tabKey === 'news') {
-      // News için özel mapping
-      console.log('[BrandProductDetailScreen] News Tab - Query State:', {
-        isLoading: newsQuery.isLoading,
-        isError: newsQuery.isError,
-        error: newsQuery.error,
-        isFetching: newsQuery.isFetching,
-        data: newsQuery.data,
-        hasData: !!newsQuery.data,
-      });
-      
       const queryData = newsQuery.data as any;
-      console.log('[BrandProductDetailScreen] News Query Data:', JSON.stringify(queryData, null, 2));
       
       if (!queryData?.pages) {
-        console.log('[BrandProductDetailScreen] ⚠️ No pages in news query data');
-        console.log('[BrandProductDetailScreen] Query data keys:', queryData ? Object.keys(queryData) : 'null/undefined');
         return [];
       }
       
-      console.log('[BrandProductDetailScreen] Pages count:', queryData.pages.length);
-      
-      const allNews = queryData.pages.flatMap((page: any, pageIndex: number) => {
-        console.log(`[BrandProductDetailScreen] News Page ${pageIndex}:`, {
-          hasItems: !!page?.items,
-          itemsCount: page?.items?.length || 0,
-          page: JSON.stringify(page, null, 2),
-        });
-        return page?.items ?? [];
-      }) ?? [];
-      
-      console.log('[BrandProductDetailScreen] All News Items:', allNews.length);
-      console.log('[BrandProductDetailScreen] News Items Data:', JSON.stringify(allNews, null, 2));
+      const allNews = queryData.pages.flatMap((page: any) => page?.items ?? []) ?? [];
       
       const mappedNews = allNews.map((item: any) => {
-        console.log('[BrandProductDetailScreen] Mapping News Item:', {
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          source: item.source,
-          date: item.date,
-          image: item.image,
-          stats: item.stats,
-        });
-        return {
+        // Cache check
+        const cached = mappingCacheRef.current.get(item.id);
+        if (cached && cached.type === 'news') {
+          return cached;
+        }
+        
+        const mapped = {
           type: 'news' as const,
           id: item.id,
           data: item,
         };
+        
+        mappingCacheRef.current.set(item.id, mapped);
+        return mapped;
       });
       
-      console.log('[BrandProductDetailScreen] ✅ Mapped News:', mappedNews.length, 'items');
       return mappedNews;
     }
     
@@ -665,6 +637,15 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
     const mapped: MappedPost[] = [];
     
     for (const item of uniqueItems) {
+      const itemId = item?.id || item?.data?.id;
+      
+      // Cache check
+      const cached = mappingCacheRef.current.get(itemId);
+      if (cached && cached.type !== 'news') {
+        mapped.push(cached as MappedPost);
+        continue;
+      }
+      
       let mappedItem: MappedPost | null = null;
       
       // BrandFeedPost formatı (tüm tab'lar için)
@@ -707,6 +688,7 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
       }
       
       if (mappedItem) {
+        mappingCacheRef.current.set(itemId, mappedItem);
         mapped.push(mappedItem);
       }
     }
@@ -714,56 +696,56 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
     return mapped;
   }, [activeTabQuery.data, tabKey, newsQuery.data]);
   
-  const handleLoadMore = useCallback(() => {
-    if (activeTabQuery.hasNextPage && !activeTabQuery.isFetchingNextPage) {
-      activeTabQuery.fetchNextPage();
-    }
-  }, [activeTabQuery]);
-  
-  // Pull to refresh - Tüm tab'ları yeniden yükle
+  // Pull to refresh - Sadece aktif tab'ı yeniden yükle
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Tüm tab query'lerini refetch et
-      await Promise.all([
-        feedQuery.refetch(),
-        reviewsQuery.refetch(),
-        benchmarksQuery.refetch(),
-        tipsQuery.refetch(),
-        questionsQuery.refetch(),
-        newsQuery.refetch(),
-      ]);
+      await activeTabQuery.refetch();
     } catch (error) {
-      console.error('[BrandProductDetailScreen] Refresh error:', error);
+      if (__DEV__) {
+        console.error('[BrandProductDetailScreen] Refresh error:', error);
+      }
     } finally {
       setRefreshing(false);
     }
-  }, [feedQuery, reviewsQuery, benchmarksQuery, tipsQuery, questionsQuery, newsQuery]);
+  }, [activeTabQuery]);
+  
+  const ListFooterComponent = useMemo(() => {
+    if (!activeTabQuery.isFetchingNextPage) return null;
+    return (
+      <Box py={20} alignItems="center">
+        <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }, [activeTabQuery.isFetchingNextPage, isDark]);
+  
+  const ListEmptyComponent = useMemo(() => {
+    if (activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0])) {
+      return (
+        <Box py={20} alignItems="center">
+          <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+        </Box>
+      );
+    }
+    return (
+      <Box py={20} alignItems="center">
+        <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
+          {tabKey === 'news' ? 'No news found yet.' : 'No content found yet.'}
+        </Text>
+      </Box>
+    );
+  }, [activeTabQuery.isLoading, activeTabQuery.data, tabKey, isDark]);
   
   const renderPostCard = useCallback((postData: MappedPost | { type: 'news'; id: string; data: any }) => {
     if (postData.type === 'news') {
-      console.log('[BrandProductDetailScreen] Rendering News Card:', {
-        id: postData.id,
-        dataId: postData.data?.id,
-        title: postData.data?.title,
-        description: postData.data?.description,
-        source: postData.data?.source,
-        date: postData.data?.date,
-        image: postData.data?.image,
-        stats: postData.data?.stats,
-        fullData: postData.data,
-      });
-      
       // Date formatını relative time'a çevir (örn: "2h", "3d")
       const formattedDate = postData.data?.date ? formatRelativeTime(postData.data.date) : '';
-      console.log('[BrandProductDetailScreen] Formatted Date:', formattedDate, 'from:', postData.data?.date);
       
       // Image fallback - boş string veya null ise default image kullan
       const newsImage = postData.data?.image && postData.data.image.trim() !== ''
         ? toImageSource(postData.data.image)
         : require('@/assets/defaultImages/default-post.png');
-      console.log('[BrandProductDetailScreen] News Image:', newsImage);
       
       return (
         <NewsCard
@@ -774,11 +756,17 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
           source={postData.data?.source || 'Unknown'}
           date={formattedDate}
           image={newsImage}
-          onPress={() => (navigation as any).navigate('NewsDetailScreen', { 
-            newsId: postData.data?.id || postData.id,
-            brandId: brandId,
-            productId: productId,
-          })}
+          onPress={() => {
+            // RootNavigator'dan NewsDetailScreen'e navigate et (full screen için)
+            navigationService.navigate('News', { 
+              screen: 'NewsDetailScreen', 
+              params: { 
+                newsId: postData.data?.id || postData.id,
+                brandId: brandId,
+                productId: productId,
+              } 
+            });
+          }}
         />
       );
     }
@@ -796,7 +784,36 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
       default:
         return <PostCard key={postData.id} data={postData.data} />;
     }
-  }, [navigation, brandId, productId]);
+  }, [brandId, productId]);
+  
+  const renderItem = useCallback(({ item }: { item: MappedPost | { type: 'news'; id: string; data: any } }) => {
+    return (
+      <Box px={16}>
+        {renderPostCard(item)}
+      </Box>
+    );
+  }, [renderPostCard]);
+  
+  const keyExtractor = useCallback((item: MappedPost | { type: 'news'; id: string; data: any }) => {
+    return item.id;
+  }, []);
+  
+  const contentContainerStyle = useMemo(() => ({
+    paddingBottom: bottomPadding,
+  }), [bottomPadding]);
+  
+  const isLoadingMoreRef = useRef(false);
+  const handleLoadMore = useCallback(() => {
+    if (isLoadingMoreRef.current || !activeTabQuery.hasNextPage || activeTabQuery.isFetchingNextPage) {
+      return;
+    }
+    isLoadingMoreRef.current = true;
+    activeTabQuery.fetchNextPage().finally(() => {
+      setTimeout(() => {
+        isLoadingMoreRef.current = false;
+      }, 500);
+    });
+  }, [activeTabQuery]);
   
   // Tek bir FlatList - tüm tab'lar için (news dahil)
   // renderPostCard zaten tüm tipleri handle ediyor (news, experience, benchmark, tips, question, post)
@@ -804,7 +821,8 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
     <FlatList
       ref={flatListRef}
       data={mappedPosts}
-      keyExtractor={(item) => item.id}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -813,40 +831,29 @@ const TabPage: React.FC<TabPageProps> = ({ tabKey, brandId, productId, isDark, b
           colors={['#000000']}
         />
       }
-      ListEmptyComponent={
-        activeTabQuery.isLoading && !((activeTabQuery.data as any)?.pages?.[0]) ? (
-          <Box py={20} alignItems="center">
-            <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-          </Box>
-        ) : (
-          <Box py={20} alignItems="center">
-            <Text color={isDark ? '$textLight400' : '$textDark400'} fontSize="$sm">
-              {tabKey === 'news' ? 'No news found yet.' : 'No content found yet.'}
-            </Text>
-          </Box>
-        )
-      }
-      renderItem={({ item }) => (
-        <Box px={16}>
-          {renderPostCard(item)}
-        </Box>
-      )}
+      ListEmptyComponent={ListEmptyComponent}
+      ListFooterComponent={ListFooterComponent}
       onEndReached={handleLoadMore}
       onEndReachedThreshold={0.5}
-      ListFooterComponent={
-        activeTabQuery.isFetchingNextPage ? (
-          <Box py={20} alignItems="center">
-            <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-          </Box>
-        ) : null
-      }
-      contentContainerStyle={{
-        paddingBottom: bottomPadding,
-      }}
+      contentContainerStyle={contentContainerStyle}
       showsVerticalScrollIndicator={true}
+      // PERFORMANCE OPTIMIZATIONS
+      removeClippedSubviews={true}
+      initialNumToRender={3}
+      maxToRenderPerBatch={3}
+      windowSize={5}
+      updateCellsBatchingPeriod={50}
+      getItemLayout={undefined} // Dynamic height için undefined
     />
   );
-};
+}, (prevProps, nextProps) => {
+  // Sadece tabKey değiştiğinde veya brandId/productId değiştiğinde re-render
+  return prevProps.tabKey === nextProps.tabKey &&
+         prevProps.brandId === nextProps.brandId &&
+         prevProps.productId === nextProps.productId &&
+         prevProps.isDark === nextProps.isDark &&
+         prevProps.bottomPadding === nextProps.bottomPadding;
+});
 
 const BrandProductDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
@@ -1029,16 +1036,17 @@ const BrandProductDetailScreen: React.FC = () => {
           onTabContainerLayout={handleTabContainerLayout}
         />
 
-        {/* PagerView */}
+        {/* PagerView - Lazy loading: Sadece aktif ve komşu tab'lar render edilir */}
         <AnimatedPagerView
           ref={pagerRef}
           style={{ flex: 1 }}
           initialPage={0}
           onPageScroll={handlePageScroll}
           onPageSelected={handlePageSelected}
+          offscreenPageLimit={1}
         >
           {TABS.map((tab) => (
-            <Box key={tab.key} flex={1}>
+            <Box key={tab.key} flex={1} collapsable={false}>
               <TabPage
                 tabKey={tab.key}
                 brandId={brandId}

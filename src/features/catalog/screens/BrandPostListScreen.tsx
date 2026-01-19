@@ -109,12 +109,12 @@ const BrandPostListScreen: React.FC = () => {
           },
           content: contentString,
           images,
-          stats: {
+            stats: {
             likes: postData.stats?.likes || 0,
             comments: postData.stats?.comments || 0,
             shares: postData.stats?.shares || 0,
             bookmarks: postData.stats?.bookmarks || 0,
-          },
+            },
           createdAt: postData.createdAt || new Date().toISOString(),
           contextType: postData.contextType,
           contextData: postData.contextData ? {
@@ -123,10 +123,10 @@ const BrandPostListScreen: React.FC = () => {
             subName: postData.contextData.subName || '',
             image: contextImage, // Her zaman geçerli bir image source
             isOwned: postData.contextData.isOwned || false,
-          } : undefined,
-        };
-        allPosts.push(postCard);
-      });
+            } : undefined,
+          };
+          allPosts.push(postCard);
+        });
     });
     return allPosts;
   }, [feedData]);

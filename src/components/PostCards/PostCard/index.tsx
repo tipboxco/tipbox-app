@@ -413,26 +413,26 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                   }
                   
                   try {
-                    navigationService.navigate(ROOT_ROUTES.POST, {
-                      screen: 'PostsScreen',
-                      params: {
-                        stage: 'Product',
-                        name: context.name,
-                        productInfo: {
-                          image: imageSource,
-                          title: context.name,
-                          subName: context.subName,
-                        },
-                        selectedProduct: {
-                          id: context.id,
-                          name: context.name,
-                          description: context.subName,
-                          image: imageSource,
-                        },
-                        contextType: data.contextType,
-                        contextId: context.id,
+                  navigationService.navigate(ROOT_ROUTES.POST, {
+                    screen: 'PostsScreen',
+                    params: {
+                      stage: 'Product',
+                      name: context.name,
+                      productInfo: {
+                        image: imageSource,
+                        title: context.name,
+                        subName: context.subName,
                       },
-                    });
+                      selectedProduct: {
+                        id: context.id,
+                        name: context.name,
+                        description: context.subName,
+                        image: imageSource,
+                      },
+                      contextType: data.contextType,
+                      contextId: context.id,
+                    },
+                  });
                     console.log('[PostCard] Navigation successful');
                   } catch (error) {
                     console.error('[PostCard] Navigation error:', error);
@@ -480,20 +480,20 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                     : 'SubCategories';
                   
                   try {
-                    navigationService.navigate(ROOT_ROUTES.POST, {
-                      screen: 'PostsScreen',
-                      params: {
-                        stage,
-                        name: context.name,
-                        productInfo: {
-                          image: imageSource,
-                          title: context.name,
-                          subName: context.subName,
-                        },
-                        contextType: data.contextType,
-                        contextId: context.id,
+                  navigationService.navigate(ROOT_ROUTES.POST, {
+                    screen: 'PostsScreen',
+                    params: {
+                      stage,
+                      name: context.name,
+                      productInfo: {
+                        image: imageSource,
+                        title: context.name,
+                        subName: context.subName,
                       },
-                    });
+                      contextType: data.contextType,
+                      contextId: context.id,
+                    },
+                  });
                     console.log('[PostCard] Navigation successful for ProductGroup/SubCategory');
                   } catch (error) {
                     console.error('[PostCard] Navigation error for ProductGroup/SubCategory:', error);

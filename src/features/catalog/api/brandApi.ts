@@ -898,3 +898,76 @@ export const getBrandProductNewsDetail = async (
     throw error;
   }
 };
+
+/**
+ * Get Brand Product News Comments endpoint function
+ * /brands/{brandId}/products/{productId}/news/{newsId}/comments endpoint'inden news yorumlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param newsId - News ID'si
+ * @param limit - Sayfa başına yorum sayısı (default: 50)
+ * @param offset - Offset değeri (default: 0)
+ * @returns NewsCommentsResponse - News comments ve pagination bilgisi
+ */
+export const getBrandProductNewsComments = async (
+  brandId: string,
+  productId: string,
+  newsId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<import('../types').NewsCommentsResponse> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+
+    const response = await apiService.getClient().get<import('../types').NewsCommentsResponse>(
+      `/brands/${brandId}/products/${productId}/news/${newsId}/comments?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductNewsComments] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/news/${newsId}/comments?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Create Brand Product News Comment endpoint function
+ * /brands/{brandId}/products/{productId}/news/{newsId}/comment endpoint'ine POST request gönderir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param newsId - News ID'si
+ * @param request - Comment create request
+ * @returns NewsCommentCreateResponse - Created comment response
+ */
+export const createBrandProductNewsComment = async (
+  brandId: string,
+  productId: string,
+  newsId: string,
+  request: import('../types').NewsCommentCreateRequest
+): Promise<import('../types').NewsCommentCreateResponse> => {
+  try {
+    const response = await apiService.getClient().post<import('../types').NewsCommentCreateResponse>(
+      `/brands/${brandId}/products/${productId}/news/${newsId}/comment`,
+      request
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[createBrandProductNewsComment] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/news/${newsId}/comment`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};

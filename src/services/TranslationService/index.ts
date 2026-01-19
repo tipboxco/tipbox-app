@@ -9,18 +9,22 @@ class TranslationService implements ITranslationService {
   private static instance: TranslationService;
   private config: TranslationServiceConfig;
   private apiEndpoint = 'https://translation.googleapis.com/language/translate/v2';
+  private isEnabled: boolean = false;
 
   private constructor() {
     this.config = {
-      apiKey: GOOGLE_TRANSLATE_API_KEY,
+      apiKey: GOOGLE_TRANSLATE_API_KEY || '',
       defaultSourceLanguage: 'en', // App İngilizce
       timeout: 10000, // 10 saniye
     };
 
-    // API key kontrolü
-    if (!this.config.apiKey || this.config.apiKey === 'AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXX') {
-      console.error('[TranslationService] ❌ GOOGLE_TRANSLATE_API_KEY eksik veya geçersiz!');
-      throw new Error('GOOGLE_TRANSLATE_API_KEY .env dosyasında tanımlanmalı');
+    // API key kontrolü - hata fırlatmak yerine service'i devre dışı bırak
+    if (!this.config.apiKey || this.config.apiKey === 'AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXX' || this.config.apiKey.trim() === '') {
+      console.warn('[TranslationService] ⚠️ GOOGLE_TRANSLATE_API_KEY eksik veya geçersiz! Translation service devre dışı.');
+      this.isEnabled = false;
+    } else {
+      this.isEnabled = true;
+      console.log('[TranslationService] ✅ Translation service aktif');
     }
   }
 
@@ -40,6 +44,12 @@ class TranslationService implements ITranslationService {
     targetLanguage: string,
     sourceLanguage: string = 'en'
   ): Promise<string> {
+    // Service devre dışıysa orijinal metni döndür
+    if (!this.isEnabled) {
+      console.warn('[TranslationService] ⚠️ Translation service devre dışı, orijinal metin döndürülüyor');
+      return text;
+    }
+
     try {
       console.log('[TranslationService] 🔄 Translating...');
       console.log('[TranslationService]    - Source:', sourceLanguage);
@@ -89,6 +99,12 @@ class TranslationService implements ITranslationService {
    * Google Cloud Translation API detection endpoint kullanır
    */
   async detectLanguage(text: string): Promise<string> {
+    // Service devre dışıysa default language döndür
+    if (!this.isEnabled) {
+      console.warn('[TranslationService] ⚠️ Translation service devre dışı, default language döndürülüyor');
+      return this.config.defaultSourceLanguage;
+    }
+
     try {
       const response = await axios.post(
         'https://translation.googleapis.com/language/translate/v2/detect',
@@ -110,6 +126,13 @@ class TranslationService implements ITranslationService {
       console.error('[TranslationService] ❌ Language detection error:', error);
       return this.config.defaultSourceLanguage; // Fallback to English
     }
+  }
+
+  /**
+   * Service'in aktif olup olmadığını kontrol eder
+   */
+  get enabled(): boolean {
+    return this.isEnabled;
   }
 }
 
