@@ -348,15 +348,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     // Drawer'ı hemen kapat
     handleCloseDrawer();
     
-    // Navigation'ı hemen reset et (kullanıcı anında çıkış görsün)
-    // CRITICAL: NavigationService kullan - NavigationContainer dışında olduğumuz için useNavigation() çalışmaz
-    navigationService.reset('Auth', undefined);
-    
-    // Logout işlemini arka planda yap (token temizleme vs.)
-    // State zaten logout() içinde güncelleniyor, bu yüzden navigation reset yeterli
-    logout().catch((error) => {
-      console.error('❌ Logout hatası (arka plan):', error);
-    });
+    // Çıkış isteği cevaplanmadan UI'ı Auth'a düşürme.
+    // Önce store.logout() tamamlanmalı; sonra navigation resetlenir.
+    try {
+      await logout();
+      // CRITICAL: NavigationService kullan - NavigationContainer dışında olduğumuz için useNavigation() çalışmaz
+      navigationService.reset('Auth', undefined);
+    } catch (error) {
+      console.error('❌ Logout hatası:', error);
+    }
   }, [handleCloseDrawer, logout]);
 
   // PERFORMANCE FIX: MENU_ITEMS array'ini useMemo ile memoize et

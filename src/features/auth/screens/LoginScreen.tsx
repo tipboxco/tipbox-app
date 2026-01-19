@@ -3,14 +3,14 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { CheckCircle, Mail, Eye, EyeOff } from 'lucide-react-native';
+import { CheckCircle, Eye, EyeOff } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
-import { useLogin, useGoogleLogin } from '../api/hooks';
-import { googleService } from '@/src/services/GoogleService';
+import { useLogin } from '../api/hooks';
 import { showCustomToast } from '@/src/components/CustomToast';
+import { GoogleLoginButton } from '../components/google-login-button';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -21,9 +21,7 @@ export const LoginScreen = () => {
   const { loginAsGuest } = useAppStore();
   const toast = useToast();
   const loginMutation = useLogin();
-  const googleLoginMutation = useGoogleLogin();
   const insets = useSafeAreaInsets();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
   // Edge-to-Edge Design: Top ve bottom insets için beyaz background
   const backgroundColor = '#FFFFFF';
@@ -125,45 +123,6 @@ export const LoginScreen = () => {
 
   const handleForgotPassword = () => {
     navigation.navigate('ForgotPassword' as never);
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      setIsGoogleLoading(true);
-
-      // Google OAuth ile giriş yap
-      const googleResult = await googleService.login();
-
-      // Backend'e ID token gönder
-      await googleLoginMutation.mutateAsync(googleResult.idToken);
-
-      // Başarılı toast göster
-      showCustomToast(toast, {
-        title: `Hoş geldin ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'Kullanıcı'}!`,
-        action: 'success',
-        duration: 3000,
-      });
-
-      // RootNavigator otomatik olarak isAuthenticated=true olduğunda
-      // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
-    } catch (error: any) {
-      console.error('[LoginScreen] ❌ Google login error:', error);
-
-      // Hata toast göster
-      const errorMessage =
-        error?.message ||
-        error?.response?.data?.message ||
-        'Google ile giriş yapılırken bir hata oluştu';
-
-      showCustomToast(toast, {
-        title: 'Google Login Failed',
-        description: errorMessage,
-        action: 'error',
-        duration: 4000,
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
   };
 
   return (
@@ -304,23 +263,7 @@ export const LoginScreen = () => {
           <Box flex={1} h={1} bg={isDark ? '$textDark300' : '$textLight600'} />
         </HStack>
 
-        <Button
-          variant="outline"
-          h={44}
-          rounded="$lg"
-          borderColor="$gray400"
-          borderWidth={1}
-          onPress={handleGoogleLogin}
-          isDisabled={isGoogleLoading || googleLoginMutation.isPending}
-          opacity={isGoogleLoading || googleLoginMutation.isPending ? 0.5 : 1}
-        >
-          <HStack space="md" alignItems="center">
-            <Icon as={Mail} size="md" color={isDark ? '$textDark300' : '$textLight600'} />
-            <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">
-              {isGoogleLoading || googleLoginMutation.isPending ? 'Signing in...' : 'Continue with Google'}
-            </ButtonText>
-          </HStack>
-        </Button>
+        <GoogleLoginButton />
 
         <Text
           fontSize="$xs"

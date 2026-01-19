@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
 import { ImageCacheService } from '../services/ImageCacheService';
+import { apiService } from '../services/ApiService';
 import { updateTokenCache, clearTokenCache } from '../services/ApiService/interceptors';
 
 // PERFORMANCE FIX: Debounced AsyncStorage wrapper to reduce I/O overhead
@@ -70,22 +71,22 @@ interface AppState {
   error: Error | null;
   user: User | null;
   accessToken: string | null;
-  
+
   // Wallet State (Web2-Ready)
   walletId: string | null;
   walletIdentifier: string | null;
   walletBalance: number | null;
-  
+
   // Theme State
   colorMode: ColorMode;
-  
+
   // App State Awareness - Kritik ekranlarda navigation'ı defer etmek için
   isUserBusy: boolean;
   busyReason?: 'form' | 'payment' | 'critical-action' | string;
-  
+
   // Active Thread ID - MessageDetail ekranındayken aktif thread ID'si (notification kontrolü için)
   activeThreadId: string | null;
-  
+
   // Auth Actions
   login: (userData: {
     id: string;
@@ -100,14 +101,14 @@ interface AppState {
   loginAsGuest: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   logout: () => Promise<void>;
-  
+
   // Theme Actions
   toggleColorMode: () => void;
   setColorMode: (mode: ColorMode) => void;
-  
+
   // App State Actions
   setUserBusy: (busy: boolean, reason?: string) => void;
-  
+
   // Active Thread Actions
   setActiveThreadId: (threadId: string | null) => void;
 }
@@ -122,22 +123,22 @@ export const useAppStore = create<AppState>()(
         error: null,
         user: null,
         accessToken: null,
-        
+
         // Initial Wallet State
         walletId: null,
         walletIdentifier: null,
         walletBalance: null,
-        
+
         // Initial Theme State
         colorMode: 'light',
-        
+
         // Initial App State Awareness
         isUserBusy: false,
         busyReason: undefined,
-        
+
         // Initial Active Thread ID
         activeThreadId: null,
-        
+
         // Auth Actions
         setTempUser: (user: User, accessToken: string) => {
           set({
@@ -147,20 +148,20 @@ export const useAppStore = create<AppState>()(
             error: null,
           });
         },
-        
+
         completeRegistration: () => {
           set((state) => ({
             isAuthenticated: true,
           }));
         },
-        
+
         login: async (userData) => {
           try {
             const loginStartTime = Date.now();
             set({ isLoading: true, error: null });
-            
+
             console.log('[AppStore] 📋 Login işlemi başlatılıyor...');
-            
+
             // Token'ları SecureStore'a kaydet
             console.log('[AppStore] 📋 Token\'lar SecureStore\'a kaydediliyor...');
             const tokenSaveStartTime = Date.now();
@@ -170,10 +171,10 @@ export const useAppStore = create<AppState>()(
             console.log('[AppStore]    - Access Token Length:', userData.token.length);
             console.log('[AppStore]    - Refresh Token Length:', userData.refreshToken.length);
             console.log('[AppStore]    - Save Time:', tokenSaveTime, 'ms');
-            
+
             // PERFORMANCE FIX: Update token cache for API interceptor
             updateTokenCache(userData.token);
-            
+
             // Wallet oluştur (eğer yoksa)
             console.log('[AppStore] 📋 Wallet oluşturuluyor...');
             try {
@@ -184,7 +185,7 @@ export const useAppStore = create<AppState>()(
               console.log('[AppStore]    - Wallet ID:', wallet.walletId);
               console.log('[AppStore]    - Wallet Identifier:', wallet.walletIdentifier);
               console.log('[AppStore]    - Wallet Time:', walletTime, 'ms');
-              
+
               // User bilgilerini ve wallet bilgilerini store'a kaydet
               set({
                 user: {
@@ -216,7 +217,7 @@ export const useAppStore = create<AppState>()(
                 error: null,
               });
             }
-            
+
             const loginTime = Date.now() - loginStartTime;
             console.log('[AppStore] ✅ Login işlemi tamamlandı');
             console.log('[AppStore]    - Total Time:', loginTime, 'ms');
@@ -226,7 +227,7 @@ export const useAppStore = create<AppState>()(
             set({ error: error as Error, isLoading: false });
           }
         },
-        
+
         loginAsGuest: async () => {
           try {
             set({ isLoading: true, error: null });
@@ -247,16 +248,46 @@ export const useAppStore = create<AppState>()(
             set({ error: error as Error, isLoading: false });
           }
         },
-        
+
         updateUser: (userData: Partial<User>) => {
           set((state) => ({
             user: state.user ? { ...state.user, ...userData } : null,
           }));
         },
-        
+
         logout: async () => {
+
+
           try {
-            // ÖNCE: State'i anında güncelle (kullanıcı anında çıkış görsün)
+            // Çıkış request'i sonuçlanmadan kullanıcıyı logout etme
+            // UX: bu sırada loading gösterilebilir
+            set({ isLoading: true, error: null });
+
+
+
+            try {
+              const client = apiService.getClient();
+              const baseURL = client.defaults.baseURL;
+              const fullURL = `${baseURL}/auth0/logout`;
+              const response = await client.get(fullURL);
+              console.log('[AppStore] 📋 Logout response:', response.data);
+
+            } catch (error: any) {
+              const hasResponse = Boolean(error?.response);
+              if (!hasResponse) {
+                set({ isLoading: false, error: error as Error });
+                return;
+              }
+              // Cevap geldi ama non-2xx olabilir; yine de logout akışına devam et
+            }
+
+
+            // ÖNCE: Backend'e logout bildirimi gönder (token'lar temizlenmeden önce)
+            // - Eğer server cevap dönerse (2xx veya error response), logout akışına devam edilir
+            // - Eğer cevap dönmezse (network error/timeout), logout yapılmaz
+
+
+            // SONRA: State'i güncelle (kullanıcı çıkış görsün)
             set({
               isAuthenticated: false,
               user: null,
@@ -267,11 +298,11 @@ export const useAppStore = create<AppState>()(
               isLoading: false,
               error: null,
             });
-            
-            // ÖNCE: Token'ları SecureStore'dan temizle (kritik - güvenlik)
+
+            // SONRA: Token'ları SecureStore'dan temizle (kritik - güvenlik)
             await TokenService.clearTokens();
             clearTokenCache(); // PERFORMANCE FIX: Clear token cache
-            
+
             // ARKA PLANDA: Wallet ve image cache temizleme (await etmeden)
             // Kullanıcı zaten çıkış yaptı, bu işlemler arka planda tamamlanabilir
             Promise.all([
@@ -306,15 +337,15 @@ export const useAppStore = create<AppState>()(
             });
           }
         },
-        
+
         // Theme Actions
         toggleColorMode: () =>
           set((state) => ({
             colorMode: state.colorMode === 'light' ? 'dark' : 'light',
           })),
-        
+
         setColorMode: (mode: ColorMode) => set({ colorMode: mode }),
-        
+
         // App State Actions
         setUserBusy: (busy: boolean, reason?: string) => {
           set({
@@ -323,7 +354,7 @@ export const useAppStore = create<AppState>()(
           });
           console.log('[AppStore] 🔒 User busy state:', busy, reason || '');
         },
-        
+
         // Active Thread Actions
         setActiveThreadId: (threadId: string | null) => {
           set({ activeThreadId: threadId });
