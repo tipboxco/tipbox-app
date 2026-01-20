@@ -5,5 +5,6 @@ export * from './ForgotPasswordScreen';
 export { AuthVerifyCodeScreen } from './VerifyCodeScreen';
 export * from './ResetPasswordScreen';
 export * from './SetupProfileScreen';
+export * from './SelectAvatarScreen';
 export * from './SelectCategoriesScreen';
 

@@ -26,9 +26,10 @@ export const ForgotPasswordScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (text: string) => {
+    const lowerText = text.toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmail(text);
-    setIsEmailValid(emailRegex.test(text));
+    setEmail(lowerText);
+    setIsEmailValid(emailRegex.test(lowerText));
   };
 
   const handleSendCode = async () => {

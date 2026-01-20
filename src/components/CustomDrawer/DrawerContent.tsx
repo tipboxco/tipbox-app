@@ -348,15 +348,13 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     // Drawer'ı hemen kapat
     handleCloseDrawer();
     
-    // Çıkış isteği cevaplanmadan UI'ı Auth'a düşürme.
-    // Önce store.logout() tamamlanmalı; sonra navigation resetlenir.
-    try {
-      await logout();
-      // CRITICAL: NavigationService kullan - NavigationContainer dışında olduğumuz için useNavigation() çalışmaz
-      navigationService.reset('Auth', undefined);
-    } catch (error) {
-      console.error('❌ Logout hatası:', error);
-    }
+    // Logout işlemini başlat
+    // State güncellenince RootNavigator otomatik olarak Auth'a yönlendirecek
+    // (RootNavigator'da isAuthenticated=false olduğunda Auth screen'i gösteriliyor)
+    // Manuel reset yapmaya gerek yok - RootNavigator otomatik yönetiyor
+    logout().catch((error) => {
+      console.error('❌ Logout hatası (arka plan):', error);
+    });
   }, [handleCloseDrawer, logout]);
 
   // PERFORMANCE FIX: MENU_ITEMS array'ini useMemo ile memoize et

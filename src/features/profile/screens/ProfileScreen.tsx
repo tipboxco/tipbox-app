@@ -181,7 +181,7 @@ const mapBenchmarkToCardData = (item: BenchmarkApiItem): BenchmarkCardData | nul
     return null;
   }
   
-  const avatarSource = toImageSource(item.user.avatar)!;
+  const avatarSource = toImageSource(item.user.avatar) || require('@/assets/avatar/default-useravatar.png');
   const products: BenchmarkProduct[] = (item?.products || [])
     .filter((p) => p?.id) // Filter out invalid products
     .map((p) => ({
@@ -213,7 +213,7 @@ const mapTipsToCardData = (item: TipsApiItem): TipsCardData | null => {
     return null;
   }
   
-  const avatarSource = toImageSource(item?.user?.avatar)!;
+  const avatarSource = toImageSource(item?.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
   const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: TipsProduct = {
     id: item.contextData.id,
@@ -253,7 +253,7 @@ const mapQuestionToCardData = (item: QuestionApiItem): QuestionCardData | null =
     return null;
   }
   
-  const avatarSource = toImageSource(item?.user?.avatar)!;
+  const avatarSource = toImageSource(item?.user?.avatar) || require('@/assets/avatar/default-useravatar.png');
   const contextImage = toImageSource(item.contextData?.image) || require('@/assets/inventory/product_01.png');
   const product: QuestionCardProduct = {
     id: item.contextData.id,
@@ -763,7 +763,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       recipientUserId: targetUserId,
       senderName: userProfile.name || 'Unknown',
       senderTitle: userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : '',
-      senderAvatar: userProfile.avatar ? toImageSource(userProfile.avatar) : require('@/assets/avatar/default-useravatar.png'),
+      senderAvatar: userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png'),
     });
   }, [user?.id, targetUserId, userProfile]);
 
@@ -987,13 +987,29 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               borderWidth={2}
               borderColor="$white"
               flexShrink={0}
+              position="relative"
+              bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
             >
+              {/* Default avatar - her zaman arka planda */}
               <Image
-                source={toImageSource(profile.avatar) || require('@/assets/avatar/default-useravatar.png') }
-                alt={profile.name}
+                source={require('@/assets/avatar/default-useravatar.png')}
+                alt="Default Avatar"
+                position="absolute"
                 w="100%"
                 h="100%"
+                resizeMode="cover"
               />
+              {/* Kullanıcı avatar'ı - varsa üstte göster */}
+              {profile.avatar && toImageSource(profile.avatar) && (
+                <Image
+                  source={toImageSource(profile.avatar)}
+                  alt={profile.name}
+                  position="absolute"
+                  w="100%"
+                  h="100%"
+                  resizeMode="cover"
+                />
+              )}
             </Box>
 
             {/* Action Buttons */}
@@ -1150,7 +1166,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               fontSize="$xs"
               fontWeight="$bold"
             >
-              {profile.stats.posts}
+              {profile.stats?.posts ?? 0}
             </Text>
             <Text
               color={isDark ? '$textDark400' : '$textLight600'}
@@ -1180,7 +1196,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {profile.stats.trust}
+                  {profile.stats?.trust ?? 0}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1212,7 +1228,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {profile.stats.truster > 999 ? `${Math.floor(profile.stats.truster / 1000)}K` : profile.stats.truster}
+                  {(profile.stats?.truster ?? 0) > 999 ? `${Math.floor((profile.stats?.truster ?? 0) / 1000)}K` : (profile.stats?.truster ?? 0)}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1225,8 +1241,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           </HStack>
         </Box>
 
-        {/* Inventory Header */}
-        <Box mt={20} px={15}>
+        {/* Inventory Header - Her zaman göster (kendi ve başkasının profili için) */}
+        <Box mt={20} px={15} zIndex={1}>
           <Box
             w="100%"
             h={34}
@@ -1248,6 +1264,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               h="100%"
               justifyContent="center"
               alignItems="center"
+              zIndex={2}
               onPress={() => {
                 navigation.navigate('InventoryList', {
                   userId: profile.id,

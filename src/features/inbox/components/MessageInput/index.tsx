@@ -91,9 +91,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       borderTopWidth={1}
       borderColor={isDark ? '#333' : '#E9E9E9'}
       px="$4"
-      py="$3"
-      zIndex={1001}
-      elevation={1001}
+      py="$2"
+      zIndex={1004}
+      elevation={1004}
       position="relative"
     >
       <HStack space="sm" alignItems="center" justifyContent="center">

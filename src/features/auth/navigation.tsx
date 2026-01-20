@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen, ForgotPasswordScreen, ResetPasswordScreen } from './screens';
+import { WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen, ForgotPasswordScreen, ResetPasswordScreen, SelectAvatarScreen } from './screens';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -14,7 +14,12 @@ export type AuthStackParamList = {
   ResetPassword: {
     email: string;
   };
-  SetupProfile: undefined;
+  SetupProfile: {
+    avatarData?: { type: 'avatar'; id: string } | { type: 'upload'; uri: string };
+  };
+  SelectAvatar: {
+    onSelectAvatar?: (avatarData: { type: 'avatar'; id: string } | { type: 'upload'; uri: string }) => void;
+  };
   SelectCategories: undefined;
 };
 
@@ -83,6 +88,14 @@ export const AuthNavigator = () => {
         options={{
           title: 'Profil', // FIX: "Profil Düzenle" → "Profil" (daha kısa)
           gestureEnabled: false,
+        }}
+      />
+      <AuthStack.Screen
+        name='SelectAvatar'
+        component={SelectAvatarScreen}
+        options={{
+          title: 'Avatar Seç',
+          gestureEnabled: true,
         }}
       />
       <AuthStack.Screen

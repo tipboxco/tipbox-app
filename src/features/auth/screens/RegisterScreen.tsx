@@ -30,9 +30,10 @@ export const RegisterScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = (text: string) => {
+    const lowerText = text.toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmail(text);
-    setIsEmailValid(emailRegex.test(text));
+    setEmail(lowerText);
+    setIsEmailValid(emailRegex.test(lowerText));
   };
 
   const validatePassword = (text: string) => {

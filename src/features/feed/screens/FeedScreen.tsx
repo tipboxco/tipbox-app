@@ -142,7 +142,6 @@ const FeedScreenInner = React.memo(() => {
   // - sort: 'recent' (Boost → Tarih) veya 'top' (Beğeni → Görüntülenme → Tarih)
   const [filters, setFilters] = useState<FeedFilterParams>({});
 
-
   // FEATURE: Log lastSeenPostId changes - REMOVED for performance
 
   // Filtre aktif mi kontrolü

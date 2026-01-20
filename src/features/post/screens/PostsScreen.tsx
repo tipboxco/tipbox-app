@@ -550,6 +550,7 @@ export const PostsScreen = () => {
       createdAt: item.createdAt,
       contextType: item.contextType,
       contextData,
+      source: item.source,
     };
   }, []);
 
