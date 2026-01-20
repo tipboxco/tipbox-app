@@ -12,10 +12,12 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView } from 'react-native';
+import { useNftTransferFlowStore } from '../store/nft-transfer-flow-store';
 
 interface NftItem {
     id: string;
     name: string;
+    username?: string;
     rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
     rarityColor: string;
     rarityBorderColor: string;
@@ -38,6 +40,8 @@ export const NftAssetDetailScreen: React.FC = () => {
     const route = useRoute();
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const setTransferNft = useNftTransferFlowStore((s) => s.setTransferNft);
+    const clearTransferFlow = useNftTransferFlowStore((s) => s.clear);
 
     // Get NFT data from route params
     const { nft } = (route.params as RouteParams) || {
@@ -131,6 +135,15 @@ export const NftAssetDetailScreen: React.FC = () => {
                             h={46}
                             alignItems="center"
                             justifyContent="center"
+                            onPress={() => {
+                                clearTransferFlow();
+                                setTransferNft({
+                                    nftId: nft.id,
+                                    listingId: nft.listing?.id,
+                                    listingStatus: nft.listing?.status,
+                                });
+                                navigation.navigate('NftTransferScreen');
+                            }}
                         >
                             <HStack alignItems="center" space="xs">
                                 <ArrowTopRightOnSquareIcon width={24} height={24} color={isDark ? '#FFFFFF' : '#000000'} />
@@ -252,7 +265,7 @@ export const NftAssetDetailScreen: React.FC = () => {
                                     Owners
                                 </Text>
                                 <Text fontSize={11} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50">
-                                    11049
+                                    {nft.username ? `@${nft.username}` : '-'}
                                 </Text>
                             </HStack>
 

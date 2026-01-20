@@ -318,7 +318,7 @@ const EventsScreen: React.FC = () => {
                       left: 0,
                       width: indicatorWidth,
                       height: 2,
-                      backgroundColor: isDark ? '#FFFFFF' : '#000000',
+                      backgroundColor: isDark ? '#cccccc' : '#000000',
                     },
                     indicatorStyle,
                   ]}

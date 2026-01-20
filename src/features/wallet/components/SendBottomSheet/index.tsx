@@ -18,7 +18,6 @@ import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useWalletTransactions, useWalletBalance, useSendTips } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { useTrusterList } from '@/src/features/profile/api/hooks';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 
 // Truster List Component for Bottom Sheet
 const TrusterListContent: React.FC<{
@@ -179,9 +178,6 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
   const [selectedFriend, setSelectedFriend] = useState<{ id: string; name: string; title?: string; bio?: string; avatar: any } | null>(null);
   const [previousView, setPreviousView] = useState<'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | null>(null);
   
-  // Global bottom sheet
-  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  
   // Debug: Log view changes
   React.useEffect(() => {
     console.log('[SendBottomSheet] 📱 View changed to:', view);
@@ -260,8 +256,8 @@ export const SendBottomSheet: React.FC<SendBottomSheetProps> = ({
     
     // Directly navigate to amount view (skip friend-selection)
     console.log('[SendBottomSheet] 🟢 Setting view to amount (skipping friend-selection)');
-    setPreviousView('friend-selection');
-    setView('truster-list');
+    setPreviousView('truster-list');
+    setView('amount');
     onViewChange?.('amount');
   };
 

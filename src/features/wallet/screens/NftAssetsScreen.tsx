@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, VStack, HStack, Text, Pressable, Image, ActivityIndicator } from '@gluestack-ui/themed';
+import { Box, VStack, HStack, Text, Pressable, Image } from '@gluestack-ui/themed';
 import {
   ChevronDownIcon,
   TrophyIcon,
@@ -8,39 +8,46 @@ import {
 import { Header } from '@/src/components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { ScrollView } from 'react-native';
+import { ActivityIndicator, ScrollView } from 'react-native';
 import { WalletCardInfo } from '../components/WalletCardInfo';
 import { useMyNFTs } from '@/src/features/marketplace/api/hooks';
 import { toImageSource } from '@/src/utils';
+import { useNftTransferFlowStore } from '../store/nft-transfer-flow-store';
 
 interface NftItem {
   id: string;
   name: string;
+  username?: string;
   rarity: 'Usual' | 'Rare';
   rarityColor: string;
   rarityBorderColor: string;
   rarityTextColor?: string;
   image: any;
+  listing?: {
+    id: string;
+    status: string;
+  };
 }
 
 export const NftAssetsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
+  const setTransferNft = useNftTransferFlowStore((s) => s.setTransferNft);
+  const clearTransferFlow = useNftTransferFlowStore((s) => s.clear);
 
   // API hook
-  const { data: nftsData, isLoading: isLoadingNFTs, fetchNextPage, hasNextPage, isFetchingNextPage } = useMyNFTs(12);
+  const { data: nftsData, isLoading: isLoadingNFTs } = useMyNFTs(12);
 
   // Transform API NFTs data
   const nfts: NftItem[] = useMemo(() => {
-    if (!nftsData?.pages) {
+    if (!nftsData) {
       return [];
     }
-    // Flatten all pages
-    const allNFTs = nftsData.pages.flat();
-    return allNFTs.map((nft: any) => ({
+    return nftsData.map((nft: any) => ({
       id: nft.id || nft.nftId || String(Math.random()),
       name: nft.title || nft.name || 'Unnamed NFT',
+      username: nft.username || nft.userName || undefined,
       rarity: (nft.rarity === 'Rare' || nft.rarity === 'EPIC' ? 'Rare' : 'Usual') as 'Usual' | 'Rare',
       rarityColor: nft.rarity === 'Rare' || nft.rarity === 'EPIC' 
         ? 'rgba(255, 8, 152, 0.4)' 
@@ -52,8 +59,28 @@ export const NftAssetsScreen: React.FC = () => {
         ? '#AB2847' 
         : undefined,
       image: nft.image ? toImageSource(nft.image) : require('@/assets/defaultImages/default-badge.png'),
+      listing: nft.listing
+        ? {
+            id: String(nft.listing.id),
+            status: String(nft.listing.status),
+          }
+        : undefined,
     }));
   }, [nftsData]);
+
+  const openTransferUserPicker = useCallback(
+    (nft: NftItem) => {
+      // Her açılışta önceki seçimi temizle (tek kişi seçilecek)
+      clearTransferFlow();
+      setTransferNft({
+        nftId: nft.id,
+        listingId: nft.listing?.id,
+        listingStatus: nft.listing?.status,
+      });
+      navigation.navigate('NftTransferScreen');
+    },
+    [clearTransferFlow, navigation, setTransferNft]
+  );
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
@@ -163,7 +190,10 @@ export const NftAssetsScreen: React.FC = () => {
                   <HStack key={rowIndex} space="md" justifyContent="space-between">
                     {row.map((nft) => (
                       <Box key={nft.id} flex={1}>
-                        <Pressable onPress={() => navigation.navigate('NftAssetDetailScreen', { nft })}>
+                        <Pressable
+                          onPress={() => navigation.navigate('NftAssetDetailScreen', { nft })}
+                          onLongPress={() => openTransferUserPicker(nft)}
+                        >
                           <Box
                             bg="$backgroundLight0"
                             $dark-bg="$backgroundDark800"
@@ -198,6 +228,18 @@ export const NftAssetsScreen: React.FC = () => {
                               <Text fontSize={12} fontWeight="$semibold" color="$textLight900" $dark-color="$textDark50" textAlign="center">
                                 {nft.name}
                               </Text>
+                              {!!nft.username && (
+                                <Text
+                                  fontSize={10}
+                                  fontWeight="$medium"
+                                  color="$textLight500"
+                                  $dark-color="$textDark400"
+                                  textAlign="center"
+                                  numberOfLines={1}
+                                >
+                                  @{nft.username}
+                                </Text>
+                              )}
                               {/* Rarity Badge */}
                               <HStack
                                 bg={nft.rarityColor}
@@ -229,23 +271,6 @@ export const NftAssetsScreen: React.FC = () => {
                     {row.length === 1 && <Box flex={1} />}
                   </HStack>
                 ))}
-                {/* Load More Button */}
-                {hasNextPage && (
-                  <Pressable
-                    onPress={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                    mt="$4"
-                    alignItems="center"
-                  >
-                    {isFetchingNextPage ? (
-                      <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-                    ) : (
-                      <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
-                        Load More
-                      </Text>
-                    )}
-                  </Pressable>
-                )}
               </VStack>
             )}
           </VStack>

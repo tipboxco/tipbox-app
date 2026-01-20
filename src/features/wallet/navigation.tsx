@@ -5,12 +5,14 @@ import { WalletConnection } from './screens/WalletConnection';
 import { SwapScreen } from './screens/SwapScreen';
 import { NftAssetsScreen } from './screens/NftAssetsScreen';
 import { NftAssetDetailScreen } from './screens/NftAssetDetailScreen';
+import { NftTransferScreen } from './screens/NftTransferScreen';
 import { WalletService } from '@/src/services/WalletService';
 import { useState, useEffect } from 'react';
 
 export interface NftItem {
   id: string;
   name: string;
+  username?: string;
   rarity: 'Usual' | 'Rare';
   rarityColor: string;
   rarityBorderColor: string;
@@ -24,6 +26,7 @@ export type WalletStackParamList = {
   SwapScreen: undefined;
   NftAssetsScreen: undefined;
   NftAssetDetailScreen: { nft: NftItem };
+  NftTransferScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<WalletStackParamList>();
@@ -72,6 +75,16 @@ export const WalletNavigator: React.FC = () => {
       <Stack.Screen name="SwapScreen" component={SwapScreen} />
       <Stack.Screen name="NftAssetsScreen" component={NftAssetsScreen} />
       <Stack.Screen name="NftAssetDetailScreen" component={NftAssetDetailScreen} />
+      <Stack.Screen
+        name="NftTransferScreen"
+        component={NftTransferScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
+        }}
+      />
     </Stack.Navigator>
   );
 };

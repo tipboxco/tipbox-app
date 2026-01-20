@@ -4,6 +4,7 @@ import {
   getWalletBalance,
   getWalletTransactions,
   sendTips,
+  transferNft,
   // Reward API
   getRewardSummary,
   getClaimableRewards,
@@ -25,6 +26,8 @@ import type {
   TransactionsResponse,
   SendTipRequest,
   SendTipResponse,
+  NftTransferRequest,
+  NftTransferResponse,
   // Reward types
   RewardSummary,
   RewardClaim,
@@ -35,6 +38,7 @@ import type {
   Wallet,
   ConnectWalletRequest,
 } from './walletApi';
+import { marketplaceKeys } from '@/src/features/marketplace/api/hooks';
 
 /**
  * ============================================
@@ -161,6 +165,24 @@ export const useWalletTransactions = (params?: {
     refetchOnMount: true,
     refetchOnWindowFocus: true, // Focus olduğunda refetch et
     retry: false, // Backend hatası varsa retry yapma
+  });
+};
+
+/**
+ * useNftTransfer Hook
+ *
+ * NFT transfer (User -> User)
+ * Backend endpoint: POST /transactions/nft-transfer
+ */
+export const useNftTransfer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<NftTransferResponse, Error, NftTransferRequest>({
+    mutationFn: (data) => transferNft(data),
+    onSuccess: () => {
+      // NFT listesi güncellensin
+      queryClient.invalidateQueries({ queryKey: marketplaceKeys.myNFTs() });
+    },
   });
 };
 

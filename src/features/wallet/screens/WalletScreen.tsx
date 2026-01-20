@@ -31,6 +31,8 @@ import { SwapBottomSheet } from '../components/SwapBottomSheet';
 import { SuccessBottomSheet } from '../components/SuccessBottomSheet';
 import { NFTFilterBottomSheet } from '../components/NFTFilterBottomSheet';
 import { NFTSortBottomSheet, SortOption } from '../components/NFTSortBottomSheet';
+import { TransactionFilterBottomSheet, TransactionFilterValue } from '../components/TransactionFilterBottomSheet';
+import { TransactionPeriodBottomSheet, TransactionPeriodValue } from '../components/TransactionPeriodBottomSheet';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { ScrollView, RefreshControl } from 'react-native';
@@ -130,6 +132,10 @@ export const WalletScreen: React.FC = () => {
   // NFT Filter & Sort States
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState<SortOption>('rarity_desc');
+  
+  // Transaction History Filter (single-select)
+  const [selectedTxFilter, setSelectedTxFilter] = useState<TransactionFilterValue>('all');
+  const [selectedTxPeriod, setSelectedTxPeriod] = useState<TransactionPeriodValue>('all');
 
   const handleSendSuccess = useCallback((transactionDetails: {
     sentAmount: string;
@@ -176,19 +182,19 @@ export const WalletScreen: React.FC = () => {
   const handleSendViewChange = useCallback((view: 'options' | 'wallet-address' | 'amount' | 'confirmation' | 'friend-selection' | 'truster-list') => {
     console.log('[WalletScreen] View changing to:', view);
     
-    // truster-list view'ı için maxDynamicContentSize ayarla (%50 ekran yüksekliği)
-    if (view === 'truster-list' && sendBottomSheetContent) {
-      setTimeout(() => {
-        openBottomSheet(
-          sendBottomSheetContent,
-          {
+    if (!sendBottomSheetContent) return;
+
+    // View'a göre bottom sheet davranışını güncelle (aynı content ile options update)
+    const optionsForView =
+      view === 'truster-list'
+        ? {
             enablePanDownToClose: true,
             enableOverDrag: false,
             enableHandlePanningGesture: true,
             enableContentPanningGesture: true,
             enableDynamicSizing: true,
             maxDynamicContentSize: 0.5, // %50 ekran yüksekliği - kullanıcı yukarı çekerek tamamını görebilir
-            animateOnMount: false,
+            animateOnMount: false, // hızlı view geçişlerinde daha stabil
             paddingBottom: bottomInset,
             handleIndicatorStyle: {
               backgroundColor: isDark ? '#333333' : '#B8B8B7',
@@ -196,9 +202,22 @@ export const WalletScreen: React.FC = () => {
               height: 5,
             },
           }
-        );
-      }, 50);
-    }
+        : {
+            enablePanDownToClose: true,
+            enableOverDrag: false,
+            enableHandlePanningGesture: true,
+            enableContentPanningGesture: true,
+            enableDynamicSizing: true,
+            animateOnMount: true,
+            paddingBottom: bottomInset,
+            handleIndicatorStyle: {
+              backgroundColor: isDark ? '#333333' : '#B8B8B7',
+              width: 70,
+              height: 5,
+            },
+          };
+
+    openBottomSheet(sendBottomSheetContent, optionsForView);
   }, [openBottomSheet, bottomInset, isDark, sendBottomSheetContent]);
 
   const handleSendPress = useCallback(() => {
@@ -383,6 +402,48 @@ export const WalletScreen: React.FC = () => {
     return transactionsData;
   }, [transactionsData]);
 
+  // Apply Transaction History filter (single-select)
+  const filteredTransactions = useMemo(() => {
+    const matchesFilter = (tx: any): boolean => {
+      if (selectedTxFilter === 'all') return true;
+
+      const status = tx?.status;
+      const type = tx?.type;
+      const actionType = tx?.actionType;
+
+      // Failed filter has priority
+      if (selectedTxFilter === 'failed') {
+        return status === 'failed';
+      }
+      // Exclude failed from other filters
+      if (status === 'failed') {
+        return false;
+      }
+
+      switch (selectedTxFilter) {
+        case 'nft':
+          return actionType === 'NFT_BUY' || actionType === 'NFT_SELL';
+        case 'claim':
+          return actionType === 'CLAIM_REWARD' || actionType === 'CLAIM_BADGE';
+        case 'airdrop':
+          return actionType === 'AIRDROP';
+        case 'sent':
+          return type === 'sent';
+        case 'received':
+          return type === 'received';
+        default:
+          return true;
+      }
+    };
+
+    return {
+      today: (transactions.today || []).filter(matchesFilter),
+      yesterday: (transactions.yesterday || []).filter(matchesFilter),
+      lastWeek: (transactions.lastWeek || []).filter(matchesFilter),
+      lastMonth: (transactions.lastMonth || []).filter(matchesFilter),
+    };
+  }, [transactions, selectedTxFilter]);
+
   // Calculate balance change from today's transactions
   const balanceChange = useMemo(() => {
     if (!transactions.today || transactions.today.length === 0) {
@@ -417,6 +478,59 @@ export const WalletScreen: React.FC = () => {
       isPositive: netChange >= 0,
     };
   }, [transactions.today, walletBalance]);
+
+  const handleTransactionFilterPress = useCallback(() => {
+    openBottomSheet(
+      <TransactionFilterBottomSheet
+        value={selectedTxFilter}
+        onChange={(next: TransactionFilterValue) => setSelectedTxFilter(next)}
+        onClose={closeBottomSheet}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomInset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, selectedTxFilter]);
+
+  const handleTransactionPeriodPress = useCallback(() => {
+    openBottomSheet(
+      <TransactionPeriodBottomSheet
+        value={selectedTxPeriod}
+        onChange={(next: TransactionPeriodValue) => setSelectedTxPeriod(next)}
+        onClose={closeBottomSheet}
+      />,
+      {
+        enablePanDownToClose: true,
+        enableOverDrag: false,
+        enableHandlePanningGesture: true,
+        enableContentPanningGesture: true,
+        enableDynamicSizing: true,
+        animateOnMount: true,
+        paddingBottom: bottomInset,
+        handleIndicatorStyle: {
+          backgroundColor: isDark ? '#333333' : '#B8B8B7',
+          width: 70,
+          height: 5,
+        },
+      }
+    );
+  }, [openBottomSheet, closeBottomSheet, bottomInset, isDark, selectedTxPeriod]);
+
+  const shouldShowPeriod = useCallback(
+    (period: TransactionPeriodValue) => selectedTxPeriod === 'all' || selectedTxPeriod === period,
+    [selectedTxPeriod]
+  );
 
   // NFT Item interface
   interface NftItem {
@@ -746,13 +860,9 @@ export const WalletScreen: React.FC = () => {
                     <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
                   ) : (
                     <AnimatedCounter
-                      value={walletBalance?.balance || 0}
+                      value={Number((walletBalance?.balance || 0).toFixed(2))}
                       fontSize={38}
-                      fontWeight="bold"
                       color={isDark ? '#FFFFFF' : '#000000'}
-                      darkColor={isDark ? '#FFFFFF' : '#000000'}
-                      decimalPlaces={2}
-                      duration={1000}
                     />
                   )}
                   <HStack space="sm" alignItems="center">
@@ -825,11 +935,27 @@ export const WalletScreen: React.FC = () => {
                   Transaction History
                 </Text>
                 <HStack space="sm" alignItems="center">
-                  <Pressable px={8} py={4} borderWidth={1} borderColor="$borderLight200" rounded={5}>
-                    <FunnelIcon width={16} height={16} color="#000000" />
+                  <Pressable
+                    onPress={handleTransactionFilterPress}
+                    px={8}
+                    py={4}
+                    borderWidth={1}
+                    borderColor="$borderLight200"
+                    $dark-borderColor="$borderDark600"
+                    rounded={5}
+                  >
+                    <FunnelIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                   </Pressable>
-                  <Pressable px={8} py={4} borderWidth={1} borderColor="$borderLight200" rounded={5}>
-                    <PresentationChartBarIcon width={16} height={16} color="#000000" />
+                  <Pressable
+                    onPress={handleTransactionPeriodPress}
+                    px={8}
+                    py={4}
+                    borderWidth={1}
+                    borderColor="$borderLight200"
+                    $dark-borderColor="$borderDark600"
+                    rounded={5}
+                  >
+                    <PresentationChartBarIcon width={16} height={16} color={isDark ? '#FFFFFF' : '#000000'} />
                   </Pressable>
                 </HStack>
               </HStack>
@@ -845,12 +971,12 @@ export const WalletScreen: React.FC = () => {
               ) : (
                 <>
                   {/* Today Section */}
-                  {transactions.today && transactions.today.length > 0 && (
+                  {shouldShowPeriod('today') && filteredTransactions.today && filteredTransactions.today.length > 0 && (
                     <VStack space="md">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
                         Today
                       </Text>
-                      {transactions.today.map((transaction: any, index: number) => (
+                      {filteredTransactions.today.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`today-${index}`}
                           type={transaction.description || transaction.actionType || 'Transaction'}
@@ -873,12 +999,12 @@ export const WalletScreen: React.FC = () => {
                   )}
 
                   {/* Yesterday Section */}
-                  {transactions.yesterday && transactions.yesterday.length > 0 && (
+                  {shouldShowPeriod('yesterday') && filteredTransactions.yesterday && filteredTransactions.yesterday.length > 0 && (
                     <VStack space="md" mt="$4">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
                         Yesterday
                       </Text>
-                      {transactions.yesterday.map((transaction: any, index: number) => (
+                      {filteredTransactions.yesterday.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`yesterday-${index}`}
                           type={transaction.description || transaction.actionType || 'Transaction'}
@@ -901,12 +1027,12 @@ export const WalletScreen: React.FC = () => {
                   )}
 
                   {/* Last Week Section */}
-                  {transactions.lastWeek && transactions.lastWeek.length > 0 && (
+                  {shouldShowPeriod('lastWeek') && filteredTransactions.lastWeek && filteredTransactions.lastWeek.length > 0 && (
                     <VStack space="md" mt="$4">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
                         Last Week
                       </Text>
-                      {transactions.lastWeek.map((transaction: any, index: number) => (
+                      {filteredTransactions.lastWeek.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`lastWeek-${index}`}
                           type={transaction.description || transaction.actionType || 'Transaction'}
@@ -929,12 +1055,12 @@ export const WalletScreen: React.FC = () => {
                   )}
 
                   {/* Last Month Section */}
-                  {transactions.lastMonth && transactions.lastMonth.length > 0 && (
+                  {shouldShowPeriod('lastMonth') && filteredTransactions.lastMonth && filteredTransactions.lastMonth.length > 0 && (
                     <VStack space="md" mt="$4">
                       <Text fontSize={14} fontWeight="$bold" color="$textLight500" $dark-color="$textDark400">
                         Last Month
                       </Text>
-                      {transactions.lastMonth.map((transaction: any, index: number) => (
+                      {filteredTransactions.lastMonth.map((transaction: any, index: number) => (
                         <HistoryCard
                           key={`lastMonth-${index}`}
                           type={transaction.description || transaction.actionType || 'Transaction'}
@@ -957,10 +1083,17 @@ export const WalletScreen: React.FC = () => {
                   )}
 
                   {/* Empty State */}
-                  {(!transactions.today || transactions.today.length === 0) &&
-                   (!transactions.yesterday || transactions.yesterday.length === 0) &&
-                   (!transactions.lastWeek || transactions.lastWeek.length === 0) &&
-                   (!transactions.lastMonth || transactions.lastMonth.length === 0) && (
+                  {(
+                    (selectedTxPeriod === 'all' &&
+                      (!filteredTransactions.today || filteredTransactions.today.length === 0) &&
+                      (!filteredTransactions.yesterday || filteredTransactions.yesterday.length === 0) &&
+                      (!filteredTransactions.lastWeek || filteredTransactions.lastWeek.length === 0) &&
+                      (!filteredTransactions.lastMonth || filteredTransactions.lastMonth.length === 0)) ||
+                    (selectedTxPeriod === 'today' && (!filteredTransactions.today || filteredTransactions.today.length === 0)) ||
+                    (selectedTxPeriod === 'yesterday' && (!filteredTransactions.yesterday || filteredTransactions.yesterday.length === 0)) ||
+                    (selectedTxPeriod === 'lastWeek' && (!filteredTransactions.lastWeek || filteredTransactions.lastWeek.length === 0)) ||
+                    (selectedTxPeriod === 'lastMonth' && (!filteredTransactions.lastMonth || filteredTransactions.lastMonth.length === 0))
+                  ) && (
                     <VStack alignItems="center" py="$8">
                       <Text fontSize={14} color="$textLight500" $dark-color="$textDark400">
                         No transactions found

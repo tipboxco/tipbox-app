@@ -24,7 +24,7 @@ import { CreateEventPostBottomSheet } from '../components/CreateEventPostBottomS
 import { Category } from '../components/CategoryCard';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
-import { EventType } from '@/src/utils';
+import { EventType, toImageSource } from '@/src/utils';
 import { EventProduct } from '@/src/mock/events/communityEvents/types';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
 import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
@@ -49,6 +49,8 @@ const EventCreatePost: React.FC = () => {
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    const [productStatus, setProductStatus] = useState<'own' | 'tried' | ''>('');
+    const [showProductStatusDropdown, setShowProductStatusDropdown] = useState(false);
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -61,9 +63,13 @@ const EventCreatePost: React.FC = () => {
     const routeEventId = route.params?.eventId;
     const eventType = route.params?.eventType;
     const eventProduct = route.params?.product;
+    const eventTypeRaw = route.params?.eventTypeRaw;
+    const roastProduct = route.params?.roastProduct;
     const routeProductSource = route.params?.productSource;
     const selectedProductFromCatalog = route.params?.selectedProduct;
     const selectedProductFromInventory = route.params?.selectedInventoryProduct; // ✅ YENİ
+
+    const isRoastsEvent = String(eventTypeRaw ?? '').toLowerCase() === 'roasts';
     
     // Debug log - Initial route params
     useEffect(() => {
@@ -71,7 +77,9 @@ const EventCreatePost: React.FC = () => {
             routeParams: route.params,
             routeEventId: routeEventId || 'undefined',
             eventType: eventType || 'undefined',
+            eventTypeRaw: eventTypeRaw || 'undefined',
             eventProduct: eventProduct ? 'exists' : 'undefined',
+            roastProduct: roastProduct ? 'exists' : 'undefined',
             routeProductSource: routeProductSource || 'undefined',
             selectedProductFromCatalog: selectedProductFromCatalog ? 'exists' : 'undefined',
             selectedProductFromInventory: selectedProductFromInventory ? {
@@ -80,7 +88,17 @@ const EventCreatePost: React.FC = () => {
                 brand: selectedProductFromInventory.brand?.name,
             } : 'undefined', // ✅ YENİ
         });
-    }, [route.params, routeEventId, eventType, eventProduct, routeProductSource, selectedProductFromCatalog, selectedProductFromInventory]);
+    }, [
+        route.params,
+        routeEventId,
+        eventType,
+        eventTypeRaw,
+        eventProduct,
+        roastProduct,
+        routeProductSource,
+        selectedProductFromCatalog,
+        selectedProductFromInventory,
+    ]);
     
     // Store eventId in state to preserve it when navigating from Catalog/Inventory
     // eventId is preserved in state so it remains available when user navigates to Catalog/Inventory
@@ -177,13 +195,26 @@ const EventCreatePost: React.FC = () => {
         }
     }, [eventType, eventProduct]);
 
+    // Auto-select product for Roasts event (EventDetail'den gelen product)
+    useEffect(() => {
+        if (isRoastsEvent && roastProduct?.id && roastProduct?.name) {
+            const productCategory: Category = {
+                id: roastProduct.id,
+                name: roastProduct.name,
+                image: toImageSource(roastProduct.image, require('@/assets/inventory/product_01.png')),
+                category: roastProduct.shortDescription ?? roastProduct.description ?? undefined,
+            };
+            setSelectedProduct(productCategory);
+        }
+    }, [isRoastsEvent, roastProduct]);
+
     // Show product selector if productSource is provided (only once)
     useEffect(() => {
-        if (routeProductSource) {
+        if (routeProductSource && !isRoastsEvent) {
             setProductSource(routeProductSource);
             setShowProductSelector(true);
         }
-    }, [routeProductSource]);
+    }, [routeProductSource, isRoastsEvent]);
 
     // Handle selected product from CatalogScreen or InventoryScreen
     // selectedProduct is stored in state and preserved when navigating back from Catalog/Inventory
@@ -202,6 +233,60 @@ const EventCreatePost: React.FC = () => {
             navigation.setParams({ selectedProduct: undefined });
         }
     }, [selectedProductFromCatalog, navigation]);
+
+    const handleInventoryProductSelect = useCallback((product: InventoryItem) => {
+        console.log('🔍 [EventCreatePost] Inventory product selected (API):', {
+            inventoryItemId: product.id,
+            productId: product.productId,
+            brand: product.brand,
+            image: product.image,
+            willSendInventoryId: true,
+        });
+        
+        // Backend inventoryId'den productId'yi bulacak
+        const brandName = product.brand?.name || 'Unknown';
+        const brandModel = product.brand?.model || '';
+        
+        const productCategory: Category = {
+            id: product.id, // Inventory item ID (UI'da gösterim için)
+            name: brandModel ? `${brandName} ${brandModel}` : brandName,
+            image: product.image,
+            category: brandName,
+            inventoryId: product.id, // ✅ Backend için inventory ID
+            productId: product.productId, // ✅ Backend'in beklediği productId
+        };
+        
+        console.log('✅ [EventCreatePost] Product category created from inventory:', {
+            inventoryItemId: product.id,
+            categoryId: productCategory.id,
+            categoryInventoryId: productCategory.inventoryId,
+            categoryProductId: productCategory.productId,
+            name: productCategory.name,
+            inventoryId: productCategory.inventoryId,
+            willSendInventoryIdToBackend: true,
+            backendWillFetchProductId: true,
+            CHECK: {
+                hasInventoryId: !!productCategory.inventoryId ? '✅ YES' : '❌ NO',
+                inventoryIdValue: productCategory.inventoryId,
+                hasProductId: !!productCategory.productId ? '✅ YES' : '❌ NO',
+                productIdValue: productCategory.productId,
+            }
+        });
+        
+        // CRITICAL: inventoryId yoksa hata ver
+        if (!productCategory.inventoryId) {
+            console.error('❌ [EventCreatePost] CRITICAL: inventoryId is missing after creation!');
+        }
+        // CRITICAL: productId yoksa hata ver (backend contextType=product için gerekli)
+        if (!productCategory.productId) {
+            console.error('❌ [EventCreatePost] CRITICAL: productId is missing on inventory item!');
+        }
+        
+        setSelectedProduct(productCategory);
+        setShowProductSelector(false);
+        setProductSource(null);
+        navigation.setParams({ productSource: undefined });
+    }, [navigation]);
     
     // ✅ YENİ: Handle selected product from Inventory
     useEffect(() => {
@@ -305,52 +390,6 @@ const EventCreatePost: React.FC = () => {
         navigation.setParams({ productSource: undefined });
     };
 
-    const handleInventoryProductSelect = useCallback((product: InventoryItem) => {
-        console.log('🔍 [EventCreatePost] Inventory product selected (API):', {
-            inventoryItemId: product.id,
-            productId: product.productId,
-            brand: product.brand,
-            image: product.image,
-            willSendInventoryId: true,
-        });
-        
-        // Backend inventoryId'den productId'yi bulacak
-        const brandName = product.brand?.name || 'Unknown';
-        const brandModel = product.brand?.model || '';
-        
-        const productCategory: Category = {
-            id: product.id, // Inventory item ID (UI'da gösterim için)
-            name: brandModel ? `${brandName} ${brandModel}` : brandName,
-            image: product.image,
-            category: brandName,
-            inventoryId: product.id, // ✅ Backend için inventory ID
-        };
-        
-        console.log('✅ [EventCreatePost] Product category created from inventory:', {
-            inventoryItemId: product.id,
-            categoryId: productCategory.id,
-            categoryInventoryId: productCategory.inventoryId,
-            name: productCategory.name,
-            inventoryId: productCategory.inventoryId,
-            willSendInventoryIdToBackend: true,
-            backendWillFetchProductId: true,
-            CHECK: {
-                hasInventoryId: !!productCategory.inventoryId ? '✅ YES' : '❌ NO',
-                inventoryIdValue: productCategory.inventoryId,
-            }
-        });
-        
-        // CRITICAL: inventoryId yoksa hata ver
-        if (!productCategory.inventoryId) {
-            console.error('❌ [EventCreatePost] CRITICAL: inventoryId is missing after creation!');
-        }
-        
-        setSelectedProduct(productCategory);
-        setShowProductSelector(false);
-        setProductSource(null);
-        navigation.setParams({ productSource: undefined });
-    }, [navigation]);
-
     const handleCloseProductSelector = () => {
         setShowProductSelector(false);
         setProductSource(null);
@@ -421,6 +460,82 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
+            // Roast event flow: product EventDetail'den gelir + productStatus zorunlu
+            if (isRoastsEvent) {
+                if (!selectedProduct) {
+                    showCustomToast(toast, {
+                        title: 'Error',
+                        description: 'Product is missing.',
+                        action: 'error',
+                    });
+                    return;
+                }
+
+                if (!productStatus) {
+                    showCustomToast(toast, {
+                        title: 'Error',
+                        description: 'Please select a product status.',
+                        action: 'error',
+                    });
+                    return;
+                }
+
+                if (!eventId) {
+                    showCustomToast(toast, {
+                        title: 'Error',
+                        description: 'Event ID is missing. Please try again.',
+                        action: 'error',
+                    });
+                    return;
+                }
+
+                const requestPayload = {
+                    eventId,
+                    body: content.trim(),
+                    contextType: 'product',
+                    contextId: selectedProduct.id,
+                    productId: selectedProduct.id,
+                    productStatus,
+                    imageCount: selectedImages.length,
+                    images: selectedImages.length > 0 ? selectedImages.map((uri, i) => ({
+                        index: i,
+                        uri: uri.substring(0, 80) + '...'
+                    })) : [],
+                };
+
+                console.log('📤 [EventCreatePost] Request Payload (JSON):', JSON.stringify(requestPayload, null, 2));
+
+                console.log('🚀 [EventCreatePost] Sending ROAST post creation request:', {
+                    eventId,
+                    body: content.trim().substring(0, 50) + '...',
+                    bodyLength: content.trim().length,
+                    productId: selectedProduct.id,
+                    productStatus,
+                    imageCount: selectedImages.length,
+                });
+
+                const response = await createPostMutation.mutateAsync({
+                    eventId,
+                    body: content.trim(),
+                    contextType: 'product',
+                    contextId: selectedProduct.id,
+                    productId: selectedProduct.id,
+                    productStatus,
+                    images: selectedImages.length > 0 ? selectedImages : undefined,
+                });
+
+                console.log('✅ [EventCreatePost] Post created successfully (JSON):', JSON.stringify(response, null, 2));
+
+                showCustomToast(toast, {
+                    title: 'Success',
+                    description: 'Post created successfully!',
+                    action: 'success',
+                });
+
+                navigation.goBack();
+                return;
+            }
+
             // Validation - Product seçimi zorunlu (inventoryId için)
             if (!selectedProduct) {
                 showCustomToast(toast, {
@@ -441,6 +556,16 @@ const EventCreatePost: React.FC = () => {
                 return;
             }
 
+            // Validation - productId zorunlu (inventory item içinden gelmeli)
+            if (!selectedProduct.productId) {
+                showCustomToast(toast, {
+                    title: 'Error',
+                    description: 'Selected inventory product has no productId. Please try another item.',
+                    action: 'error',
+                });
+                return;
+            }
+
             // Validation - eventId zorunlu
             if (!eventId) {
                 showCustomToast(toast, {
@@ -453,10 +578,14 @@ const EventCreatePost: React.FC = () => {
 
             // Sadece inventoryId gönder - Backend her şeyi halleder
             const inventoryId = selectedProduct.inventoryId;
+            const productId = selectedProduct.productId;
             
             const requestPayload = {
                 eventId,
                 body: content.trim(),
+                contextType: 'product',
+                contextId: productId,
+                productId,
                 inventoryId,
                 imageCount: selectedImages.length,
                 images: selectedImages.length > 0 ? selectedImages.map((uri, i) => ({
@@ -469,8 +598,9 @@ const EventCreatePost: React.FC = () => {
             
             console.log('🔍 [EventCreatePost] Request preparation:', {
                 inventoryId: inventoryId,
+                productId,
                 selectedProduct: selectedProduct.name,
-                backendWillHandle: 'productId lookup, contextType, contextId',
+                backendWillHandle: 'optional inventoryId cross-check / lookup',
             });
 
             // Debug log - Request data
@@ -486,7 +616,9 @@ const EventCreatePost: React.FC = () => {
             const response = await createPostMutation.mutateAsync({
                 eventId,
                 body: content.trim(),
-                inventoryId, // ✅ Backend her şeyi halleder
+                contextType: 'product',
+                contextId: productId,
+                inventoryId, // ekstra bilgi (backend isterse doğrulama/lookup yapabilir)
                 images: selectedImages.length > 0 ? selectedImages : undefined,
             });
 
@@ -550,16 +682,22 @@ const EventCreatePost: React.FC = () => {
     const hasProduct = !!selectedProduct;
     const hasInventoryId = !!selectedProduct?.inventoryId;
     const hasEventId = !!eventId;
+    const hasProductStatus = !isRoastsEvent || productStatus !== '';
     
-    const isShareEnabled = hasContent && hasProduct && hasInventoryId && hasEventId;
+    const isShareEnabled = isRoastsEvent
+        ? (hasContent && hasProduct && hasEventId && hasProductStatus)
+        : (hasContent && hasProduct && hasInventoryId && hasEventId);
     
     // Debug log - Share button state kontrolü
     useEffect(() => {
         console.log('🔘 [EventCreatePost] Share Button State (DEBUG):', {
+            isRoastsEvent,
             hasContent,
             hasProduct,
             hasInventoryId,
             hasEventId,
+            hasProductStatus,
+            productStatus,
             isShareEnabled,
             details: {
                 content: content ? `"${content.substring(0, 30)}..."` : 'EMPTY',
@@ -574,10 +712,22 @@ const EventCreatePost: React.FC = () => {
             },
             verdict: isShareEnabled ? '✅ ENABLED' : '❌ DISABLED',
         });
-    }, [hasContent, hasProduct, hasInventoryId, hasEventId, isShareEnabled, eventId, content, selectedProduct]);
+    }, [
+        isRoastsEvent,
+        hasContent,
+        hasProduct,
+        hasInventoryId,
+        hasEventId,
+        hasProductStatus,
+        productStatus,
+        isShareEnabled,
+        eventId,
+        content,
+        selectedProduct,
+    ]);
 
     // Show product selector if productSource is set
-    if (showProductSelector && productSource) {
+    if (showProductSelector && productSource && !isRoastsEvent) {
         if (productSource === 'Catalog') {
             return (
                 <AddProductFromCatalog
@@ -609,20 +759,34 @@ const EventCreatePost: React.FC = () => {
                     borderWidth: 1,
                     borderColor: isShareEnabled ? '#B8CC04' : '#B1B1B1',
                     textColor: isShareEnabled ? '#111111' : '#B1B1B1',
-                    fontSize: 12,
+                    fontSize: 11,
                     borderRadius: 25,
-                    paddingX: 24,
-                    paddingY: 8,
+                    paddingX: 16,
+                    paddingY: 7,
                     onPress: handleShare,
                     disabled: !isShareEnabled,
                 }}
             />
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                onScrollBeginDrag={() => setShowProductStatusDropdown(false)}
+            >
                 <VStack space="lg" p="$4">
                     {/* Select Product Button or Selected Product Card */}
+                    {/* Roasts: product EventDetail'den gelir, değiştirilemez */}
+                    {isRoastsEvent && selectedProduct && (
+                        <ProductInfoCard
+                            size="big"
+                            type={ProductInfoType.PRODUCT}
+                            image={selectedProduct.image}
+                            title={selectedProduct.name}
+                            subName={selectedProduct.category}
+                        />
+                    )}
+
                     {/* Show product selection if eventType is TYPE1 or undefined (default events) */}
-                    {(eventType === EventType.TYPE1 || eventType === undefined) && (
+                    {!isRoastsEvent && (eventType === EventType.TYPE1 || eventType === undefined) && (
                         <>
                             {selectedProduct ? (
                                 <ProductInfoCard
@@ -663,7 +827,7 @@ const EventCreatePost: React.FC = () => {
                     )}
                     
                     {/* Show selected product card if eventType is TYPE2 */}
-                    {eventType === EventType.TYPE2 && selectedProduct && (
+                    {!isRoastsEvent && eventType === EventType.TYPE2 && selectedProduct && (
                         <ProductInfoCard
                             size="big"
                             type={ProductInfoType.PRODUCT}
@@ -712,6 +876,111 @@ const EventCreatePost: React.FC = () => {
                             {content.length}/2000
                         </Text>
                     </VStack>
+
+                    {/* Product Status (Roasts) */}
+                    {isRoastsEvent ? (
+                        <VStack space="xs" position="relative">
+                            <Text
+                                color={isDark ? '$textDark200' : '#999999'}
+                                fontSize={14}
+                            >
+                                Product Status
+                            </Text>
+
+                            <Pressable onPress={() => setShowProductStatusDropdown((v) => !v)}>
+                                <Box
+                                    bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+                                    borderWidth={1}
+                                    borderColor="#E9E9E9"
+                                    borderTopLeftRadius={10}
+                                    borderTopRightRadius={10}
+                                    borderBottomLeftRadius={showProductStatusDropdown ? 0 : 10}
+                                    borderBottomRightRadius={showProductStatusDropdown ? 0 : 10}
+                                    height={44}
+                                    px={16}
+                                    justifyContent="center"
+                                >
+                                    <HStack
+                                        flex={1}
+                                        alignItems="center"
+                                        justifyContent="space-between"
+                                    >
+                                        <Text
+                                            color={
+                                                productStatus
+                                                    ? (isDark ? '$textDark50' : '#000000')
+                                                    : (isDark ? '#8C8C8C' : '#8C8C8C')
+                                            }
+                                            fontSize="$sm"
+                                            fontWeight="$medium"
+                                            flex={1}
+                                        >
+                                            {productStatus === 'own'
+                                                ? 'I Own the Product'
+                                                : productStatus === 'tried'
+                                                    ? 'Tried / Tested'
+                                                    : 'Product Status'}
+                                        </Text>
+                                        <Feather
+                                            name={showProductStatusDropdown ? 'chevron-up' : 'chevron-down'}
+                                            size={20}
+                                            color="#000000"
+                                        />
+                                    </HStack>
+                                </Box>
+                            </Pressable>
+
+                            {showProductStatusDropdown && (
+                                <Box
+                                    bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+                                    borderWidth={1}
+                                    borderColor="#E9E9E9"
+                                    borderTopWidth={0}
+                                    borderTopLeftRadius={0}
+                                    borderTopRightRadius={0}
+                                    borderBottomLeftRadius={10}
+                                    borderBottomRightRadius={10}
+                                    overflow="hidden"
+                                >
+                                    <VStack>
+                                        <Pressable
+                                            onPress={() => {
+                                                setProductStatus('own');
+                                                setShowProductStatusDropdown(false);
+                                            }}
+                                        >
+                                            <HStack px="$3" py="$3" alignItems="center" space="sm">
+                                                <Text
+                                                    color={isDark ? '$textDark50' : '#2F2F2F'}
+                                                    fontSize="$sm"
+                                                    fontWeight="$medium"
+                                                >
+                                                    I Own the Product
+                                                </Text>
+                                            </HStack>
+                                        </Pressable>
+                                        <Box height={1} bg="#E9E9E9" width="100%" />
+                                        <Pressable
+                                            onPress={() => {
+                                                setProductStatus('tried');
+                                                setShowProductStatusDropdown(false);
+                                            }}
+                                        >
+                                            <HStack px="$3" py="$3" alignItems="center" space="sm">
+                                                <Text
+                                                    color={isDark ? '$textDark50' : '#2F2F2F'}
+                                                    fontSize="$sm"
+                                                    fontWeight="$medium"
+                                                >
+                                                    Tried / Tested
+                                                </Text>
+                                            </HStack>
+                                        </Pressable>
+                                    </VStack>
+                                </Box>
+                            )}
+                        </VStack>
+                    ) : null}
 
                     {/* Images Section */}
                     <VStack space="xs">

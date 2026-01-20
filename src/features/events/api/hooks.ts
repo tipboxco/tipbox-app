@@ -32,7 +32,7 @@ import {
   type ToggleLikeResponse,
   type CommentResponse,
   type CommentsResponse,
-  type CreateEventPostWithContextRequest,
+  type CreateEventPostWithContextRequestV2 as CreateEventPostWithContextRequest,
   type CreateEventPostWithContextResponse,
 } from './communityEventsApi';
 import type { EventsApiResponse, UpcomingEventsApiResponse } from '@/src/types/EventCard';
@@ -744,7 +744,13 @@ export const useCreateEventPostWithContext = () => {
     mutationFn: ({ eventId, ...data }) => createEventPostWithContext(eventId, data),
     onSuccess: (_, { eventId }) => {
       // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
-      queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
+      // NOTE: eventsKeys.posts(eventId) -> ['events','posts',eventId, undefined, undefined] olduğu için
+      // useEventPosts'in key'i (limit içerdiğinden) ile eşleşmeyip invalidate kaçabiliyor.
+      // Bu yüzden prefix ile invalidate/refetch yapıyoruz.
+      queryClient.invalidateQueries({
+        queryKey: ['events', 'posts', eventId],
+        refetchType: 'active',
+      });
       // 2. Event detail'i invalidate et (post sayısı değişebilir)
       queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
       // 3. Ana feed'i invalidate et ki yeni post görünsün

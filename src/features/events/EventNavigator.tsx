@@ -4,6 +4,8 @@ import { EventDetailScreen, EventCreatePost, RewardsBadgesScreen } from './scree
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventType } from '@/src/utils';
 import { EventProduct } from '@/src/mock/events/communityEvents/types';
+import type { EventDetailProduct } from './types';
+import type { InventoryItem } from '@/src/features/profile/types';
 
 /**
  * Event Navigator - Root Navigator için
@@ -18,6 +20,8 @@ export type EventStackParamList = {
     eventId?: string; 
     eventType?: EventType; 
     product?: EventProduct; 
+    eventTypeRaw?: string;
+    roastProduct?: EventDetailProduct;
     productSource?: 'Catalog' | 'Inventory';
     selectedProduct?: {
       id: string;
@@ -25,6 +29,7 @@ export type EventStackParamList = {
       image: any;
       description?: string;
     };
+    selectedInventoryProduct?: InventoryItem;
   } | undefined;
   RewardsBadgesScreen: {
     eventId: string;

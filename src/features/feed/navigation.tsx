@@ -6,6 +6,7 @@ import { WalletConnection } from '@/src/features/wallet/screens/WalletConnection
 import { SwapScreen } from '@/src/features/wallet/screens/SwapScreen';
 import { NftAssetsScreen } from '@/src/features/wallet/screens/NftAssetsScreen';
 import { NftAssetDetailScreen } from '@/src/features/wallet/screens/NftAssetDetailScreen';
+import { NftTransferScreen } from '@/src/features/wallet/screens/NftTransferScreen';
 import type { NftItem } from '@/src/features/wallet/navigation';
 //import { ReviewDetail } from '@/src/components/ReviewDetail';
 
@@ -18,6 +19,7 @@ export type FeedStackParamList = {
   SwapScreen: undefined;
   NftAssetsScreen: undefined;
   NftAssetDetailScreen: { nft: NftItem };
+  NftTransferScreen: undefined;
 };
 
 const FeedStack = createNativeStackNavigator<FeedStackParamList>();
@@ -55,6 +57,16 @@ export const FeedNavigator = () => {
       <FeedStack.Screen
         name="NftAssetDetailScreen"
         component={NftAssetDetailScreen}
+      />
+      <FeedStack.Screen
+        name="NftTransferScreen"
+        component={NftTransferScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
+        }}
       />
       {/* <FeedStack.Screen
         name="ReviewDetail"

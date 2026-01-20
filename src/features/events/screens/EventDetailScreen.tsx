@@ -58,6 +58,7 @@ import type { ReviewApiItem } from '@/src/types/ReviewsCard';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
 import type { UpdateApiItem, UpdateCardData } from '@/src/types/UpdateCard';
 import { ProductInfoType } from '@/src/types/common';
+import RoastProductInfoCard from '../components/RoastProductInfoCard';
 
 const { width } = Dimensions.get('window');
 
@@ -739,17 +740,21 @@ const EventDetailScreen: React.FC = () => {
     );
 
     // Pull-to-Refresh handler - Event Feed'i cache'siz fresh data ile yenile
-    const isRefreshing = isRefetchingPosts;
+    const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+    const isRefreshing = isRefetchingPosts || isManualRefreshing;
     const handleRefresh = useCallback(async () => {
-        // CRITICAL: Cache'i invalidate et, ardından fresh data fetch et (cache bypass)
-        // Bu sayede pull-to-refresh yapıldığında her zaman fresh data gelir
-        await queryClient.invalidateQueries({ 
-            queryKey: eventsKeys.posts(eventId),
-            refetchType: 'active', // Sadece aktif query'leri refetch et
-        });
-        // React Query otomatik olarak invalidate edilmiş query'leri refetch eder
-        // UI otomatik güncellenir
-    }, [queryClient, eventId]);
+        // CRITICAL: Event Feed cache'ini tamamen temizle ve ilk sayfadan yeniden çek
+        // Bu sayede pull-to-refresh yapıldığında cache'ten değil network'ten fresh data gelir
+        const postsQueryKeyPrefix = ['events', 'posts', eventId] as const;
+        setIsManualRefreshing(true);
+        try {
+            await queryClient.cancelQueries({ queryKey: postsQueryKeyPrefix });
+            queryClient.removeQueries({ queryKey: postsQueryKeyPrefix, exact: false });
+            await refetchPosts();
+        } finally {
+            setIsManualRefreshing(false);
+        }
+    }, [queryClient, eventId, refetchPosts]);
 
     // Loading state
     if (isLoading) {
@@ -791,6 +796,10 @@ const EventDetailScreen: React.FC = () => {
         ? toImageSource(event.banner) 
         : (event.image ? toImageSource(event.image) : require('@/assets/defaultImages/default-event.png'));
     const participantAvatars = event.participants?.map(p => p.avatar) || [];
+    const isRoastsEvent = String(event.eventType ?? '').toLowerCase() === 'roasts';
+    const roastProductImageSource = event.product?.image ? toImageSource(event.product.image) : undefined;
+    const roastProductDescription =
+        event.product?.shortDescription ?? event.product?.description ?? '';
 
     return (
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
@@ -941,6 +950,25 @@ const EventDetailScreen: React.FC = () => {
                     >
                         {event.description}
                     </Text>
+
+                    {/* Roast Product Info (eventType: Roasts) */}
+                    {isRoastsEvent && event.product?.name ? (
+                        <VStack space="xs" mb="$3">
+                            <Text
+                                color={isDark ? '#FFFFFF' : '#000000'}
+                                fontSize={12}
+                                fontWeight="$bold"
+                            >
+                                Product
+                            </Text>
+
+                            <RoastProductInfoCard
+                                name={event.product.name}
+                                description={roastProductDescription}
+                                imageSource={roastProductImageSource}
+                            />
+                        </VStack>
+                    ) : null}
 
                     {/* Details Section */}
                     <VStack space="xs" mb="$3">
@@ -1335,6 +1363,8 @@ const EventDetailScreen: React.FC = () => {
                         shadowRadius={4.65}
                         elevation={8}
                         onPress={() => {
+                            const isRoastsEvent = String(event.eventType ?? '').toLowerCase() === 'roasts';
+
                             // eventType === 'product' ise product prop'u gönder, değilse undefined
                             // EventProduct tipine uygun hale getir (image field'ı ekle)
                             const product = event.eventType === 'product' && event.product
@@ -1360,6 +1390,8 @@ const EventDetailScreen: React.FC = () => {
                                 eventId: eventId,
                                 eventType: eventTypeForNav,
                                 product: product,
+                                eventTypeRaw: event.eventType,
+                                roastProduct: isRoastsEvent ? event.product : undefined,
                             });
                         }}
                     >

@@ -587,23 +587,23 @@ export const NFTSellScreen = () => {
         </ScrollView>
 
         {/* Footer with Action Buttons */}
-        {isListed && (
-          <Box
-            position="absolute"
-            bottom={0}
-            left={0}
-            right={0}
-            bg={isDark ? '$backgroundDark900' : '$backgroundLight0'}
-            borderTopWidth={1}
-            borderTopColor={isDark ? '$borderDark800' : '$borderLight200'}
-            px="$4"
-            py="$3"
-            onLayout={(event) => {
-              const { height } = event.nativeEvent.layout;
-              setFooterHeight(height);
-            }}
-          >
-            {/* DELIST AND UPDATE PRICE BUTTONS - When NFT is listed */}
+        <Box
+          position="absolute"
+          bottom={0}
+          left={0}
+          right={0}
+          bg={isDark ? '$backgroundDark900' : '$backgroundLight0'}
+          borderTopWidth={1}
+          borderTopColor={isDark ? '$borderDark800' : '$borderLight200'}
+          px="$4"
+          py="$3"
+          onLayout={(event) => {
+            const { height } = event.nativeEvent.layout;
+            setFooterHeight(height);
+          }}
+        >
+          {isListed ? (
+            /* DELIST AND UPDATE PRICE BUTTONS - When NFT is listed */
             <VStack space="sm">
               {/* Update Price Button */}
               <Pressable
@@ -612,15 +612,15 @@ export const NFTSellScreen = () => {
                 borderRadius="$lg"
                 py="$3"
                 disabled={
-                  parseFloat(updatePriceInput || '0') <= 0 || 
+                  parseFloat(updatePriceInput || '0') <= 0 ||
                   updatePriceMutation.isPending ||
                   parseFloat(updatePriceInput || '0') === currentListingPrice
                 }
                 opacity={
-                  parseFloat(updatePriceInput || '0') <= 0 || 
+                  parseFloat(updatePriceInput || '0') <= 0 ||
                   updatePriceMutation.isPending ||
                   parseFloat(updatePriceInput || '0') === currentListingPrice
-                    ? 0.5 
+                    ? 0.5
                     : 1
                 }
               >
@@ -631,9 +631,9 @@ export const NFTSellScreen = () => {
                     fontSize="$md"
                     fontWeight="$bold"
                     color={
-                      parseFloat(updatePriceInput || '0') > 0 && 
+                      parseFloat(updatePriceInput || '0') > 0 &&
                       parseFloat(updatePriceInput || '0') !== currentListingPrice
-                        ? '#000000' 
+                        ? '#000000'
                         : '#666666'
                     }
                     textAlign="center"
@@ -668,8 +668,31 @@ export const NFTSellScreen = () => {
                 )}
               </Pressable>
             </VStack>
-          </Box>
-        )}
+          ) : (
+            /* LIST FOR SALE BUTTON - When NFT is not listed */
+            <Pressable
+              onPress={handleListForSale}
+              bg={parseFloat(priceInput || '0') > 0 ? '#C2E607' : '#CCCCCC'}
+              borderRadius="$lg"
+              py="$3"
+              disabled={parseFloat(priceInput || '0') <= 0 || createListingMutation.isPending}
+              opacity={parseFloat(priceInput || '0') <= 0 || createListingMutation.isPending ? 0.5 : 1}
+            >
+              {createListingMutation.isPending ? (
+                <ActivityIndicator size="small" color="#000000" />
+              ) : (
+                <Text
+                  fontSize="$md"
+                  fontWeight="$bold"
+                  color={parseFloat(priceInput || '0') > 0 ? '#000000' : '#666666'}
+                  textAlign="center"
+                >
+                  Sell - {parseFloat(priceInput || '0') > 0 ? priceInput : '0'} TIPS
+                </Text>
+              )}
+            </Pressable>
+          )}
+        </Box>
 
         {/* Success Bottom Sheet */}
         {showSuccessSheet && successData && (
