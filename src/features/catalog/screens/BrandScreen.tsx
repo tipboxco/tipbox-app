@@ -24,6 +24,15 @@ interface BrandScreenProps {
   scrollViewPaddingBottom?: number;
   onScroll?: (event: any) => void;
   showHeader?: boolean;
+  // Initial state props (from navigation store)
+  initialCategoryId?: string;
+  initialStep?: 'categories' | 'brands';
+  initialBreadcrumbItems?: BreadcrumbItem[];
+  onStateChange?: (state: {
+    currentStep: 'categories' | 'brands';
+    selectedCategoryId?: string;
+    breadcrumbItems: BreadcrumbItem[];
+  }) => void;
 }
 
 export const BrandScreen: React.FC<BrandScreenProps> = ({
@@ -32,17 +41,47 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   scrollViewPaddingBottom = 52,
   onScroll,
   showHeader = true,
+  initialCategoryId,
+  initialStep,
+  initialBreadcrumbItems,
+  onStateChange,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentStep, setCurrentStep] = useState<'categories' | 'brands'>('categories');
-  const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
+  const [currentStep, setCurrentStep] = useState<'categories' | 'brands'>(initialStep || 'categories');
+  const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
+  
+  // Initial state'i restore et (sadece ilk render'da)
+  useEffect(() => {
+    if (initialStep) {
+      setCurrentStep(initialStep);
+    } else if (initialCategoryId) {
+      // Initial category ID varsa brands step'ine geç
+      setCurrentStep('brands');
+    }
+    if (initialBreadcrumbItems && initialBreadcrumbItems.length > 0) {
+      setBreadcrumbItems(initialBreadcrumbItems);
+    }
+  }, []); // Sadece mount'ta çalış
+  
+  // State değişikliklerini parent'a bildir
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({
+        currentStep,
+        selectedCategoryId: initialCategoryId || selectedCategory?.id,
+        breadcrumbItems,
+      });
+    }
+  }, [currentStep, breadcrumbItems, initialCategoryId, selectedCategory, onStateChange]);
 
   const { data: brandCategories, isLoading: isCategoriesLoading, error: categoriesError } = useBrandCategories();
+  // Initial category ID varsa onu kullan, yoksa selectedCategory'dan al
+  const activeCategoryId = initialCategoryId || (currentStep === 'brands' ? selectedCategory?.id : undefined);
   const { data: brandsByCategory, isLoading: isBrandsLoading, error: brandsError } = useBrandsByCategory(
-    currentStep === 'brands' ? selectedCategory?.id : undefined
+    activeCategoryId
   );
 
   // Debug: API response'u kontrol et

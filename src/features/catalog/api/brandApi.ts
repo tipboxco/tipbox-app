@@ -126,22 +126,28 @@ export const getBrandFeed = async (
 /**
  * Get Brand Product Book endpoint function
  * /brands/{brandId}/groups API'sinden marka ürün gruplarını getirir (pagination ile)
+ * Search parametresi ile sadece eşleşen ürünleri içeren gruplar döner
  *
  * @param brandId - Marka ID'si
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Product adında arama (opsiyonel) - Sadece eşleşen ürünleri içeren gruplar döner
  * @returns BrandProductBookResponse - Marka ürün grupları ve pagination bilgisi
  */
 export const getBrandProductBook = async (
   brandId: string,
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  search?: string
 ): Promise<BrandProductBookResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (search && search.trim().length > 0) {
+    params.append('search', search.trim());
+  }
 
   try {
     const response = await apiService.getClient().get<any>(
@@ -370,13 +376,45 @@ export const getBrandHistory = async (
   brandId: string
 ): Promise<BrandHistory> => {
   try {
+    console.log('[getBrandHistory] 📡 API Request:', {
+      url: `/brands/${brandId}/history`,
+      brandId,
+    });
+    
     const response = await apiService.getClient().get<BrandHistory>(
       `/brands/${brandId}/history`
     );
+    
+    console.log('[getBrandHistory] ✅ API Response:', {
+      url: `/brands/${brandId}/history`,
+      status: response.status,
+      data: {
+        brandId: response.data.brandId,
+        name: response.data.name,
+        totalPoints: response.data.totalPoints,
+        stats: response.data.stats,
+        badgesCount: response.data.badges?.length || 0,
+        pointsHistoryCount: response.data.pointsHistory?.length || 0,
+      },
+    });
+    
+    // Response'u detaylı logla
+    if (response.data) {
+      console.log('[getBrandHistory] 📊 Response Details:', {
+        brandId: response.data.brandId,
+        name: response.data.name,
+        totalPoints: response.data.totalPoints,
+        stats: response.data.stats,
+        badges: response.data.badges?.map(b => ({ id: b.id, title: b.title })) || [],
+        pointsHistory: response.data.pointsHistory?.map(p => ({ id: p.id, title: p.title, points: p.points })) || [],
+      });
+    }
+    
     return response.data;
   } catch (error: any) {
-    console.error('[getBrandHistory] API Error:', {
+    console.error('[getBrandHistory] ❌ API Error:', {
       url: `/brands/${brandId}/history`,
+      brandId,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
@@ -413,3 +451,529 @@ export const getBrandStats = async (
   }
 };
 
+/**
+ * Get Brand Product Group Products endpoint function
+ * /brands/groups/{productGroupId}/products API'sinden product group'a göre ürünleri getirir
+ *
+ * @param productGroupId - Product Group ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
+ * @returns BrandProductGroupProductsResponse - Product listesi ve pagination bilgisi
+ */
+export const getBrandProductGroupProducts = async (
+  productGroupId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<import('../types').BrandProductGroupProductsResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<import('../types').BrandProductGroupProductsResponse>(
+      `/brands/groups/${productGroupId}/products?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductGroupProducts] API Error:', {
+      url: `/brands/groups/${productGroupId}/products?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Detail endpoint function
+ * /brands/{brandId}/products/{productId} endpoint'inden brand product detay bilgilerini getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @returns BrandProductDetail - Brand product detay bilgileri
+ */
+export const getBrandProductDetail = async (
+  brandId: string,
+  productId: string
+): Promise<import('../types').BrandProductDetail> => {
+  try {
+    const response = await apiService.getClient().get<import('../types').BrandProductDetail>(
+      `/brands/${brandId}/products/${productId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductDetail] API Error:', {
+      url: `/brands/${brandId}/products/${productId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Feed endpoint function
+ * /brands/{brandId}/products/{productId}/feed endpoint'inden brand product feed postlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandFeedResponse - Brand product feed postları ve pagination bilgisi
+ */
+export const getBrandProductFeed = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/products/${productId}/feed?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductFeed] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/feed?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Reviews endpoint function
+ * /brands/{brandId}/products/{productId}/reviews endpoint'inden brand product review postlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandFeedResponse - Brand product review postları ve pagination bilgisi
+ */
+export const getBrandProductReviews = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/products/${productId}/reviews?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductReviews] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/reviews?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Benchmarks endpoint function
+ * /brands/{brandId}/products/{productId}/benchmarks endpoint'inden brand product benchmark postlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandFeedResponse - Brand product benchmark postları ve pagination bilgisi
+ */
+export const getBrandProductBenchmarks = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/products/${productId}/benchmarks?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductBenchmarks] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/benchmarks?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Tips endpoint function
+ * /brands/{brandId}/products/{productId}/tips endpoint'inden brand product tips postlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandFeedResponse - Brand product tips postları ve pagination bilgisi
+ */
+export const getBrandProductTips = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/products/${productId}/tips?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductTips] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/tips?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Questions endpoint function
+ * /brands/{brandId}/products/{productId}/questions endpoint'inden brand product question postlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandFeedResponse - Brand product question postları ve pagination bilgisi
+ */
+export const getBrandProductQuestions = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/products/${productId}/questions?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductQuestions] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/questions?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Experiences endpoint function
+ * /brands/{brandId}/products/{productId}/experiences endpoint'inden brand product experience postlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandFeedResponse - Brand product experience postları ve pagination bilgisi
+ */
+export const getBrandProductExperiences = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/products/${productId}/experiences?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductExperiences] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/experiences?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product Comparisons endpoint function
+ * /brands/{brandId}/products/{productId}/comparisons endpoint'inden brand product comparison postlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns BrandFeedResponse - Brand product comparison postları ve pagination bilgisi
+ */
+export const getBrandProductComparisons = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<BrandFeedResponse> => {
+  const params = new URLSearchParams();
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    const response = await apiService.getClient().get<BrandFeedResponse>(
+      `/brands/${brandId}/products/${productId}/comparisons?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductComparisons] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/comparisons?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product News endpoint function
+ * /brands/{brandId}/products/{productId}/news endpoint'inden brand product news'lerini getirir
+ * Backend'den array olarak geliyor, normalize ediyoruz
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param cursor - Pagination cursor (opsiyonel, page number olarak kullanılır)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns ProductNewsResponse - Brand product news'leri ve pagination bilgisi
+ */
+export const getBrandProductNews = async (
+  brandId: string,
+  productId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<import('../types').ProductNewsResponse> => {
+  const params = new URLSearchParams();
+  // Backend page-based pagination kullanıyor, cursor'ı page number'a çevir
+  const page = cursor ? parseInt(cursor, 10) : 1;
+  if (page > 1) {
+    params.append('page', page.toString());
+  }
+  params.append('limit', limit.toString());
+
+  try {
+    console.log('[getBrandProductNews] 📡 API Request:', {
+      url: `/brands/${brandId}/products/${productId}/news?${params.toString()}`,
+      brandId,
+      productId,
+      page,
+      limit,
+      cursor,
+    });
+    
+    // Backend'den array olarak geliyor, normalize ediyoruz
+    const response = await apiService.getClient().get<import('../types').NewsItem[]>(
+      `/brands/${brandId}/products/${productId}/news?${params.toString()}`
+    );
+    
+    console.log('[getBrandProductNews] ✅ API Response:', {
+      status: response.status,
+      dataType: Array.isArray(response.data) ? 'array' : typeof response.data,
+      dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
+      data: response.data,
+    });
+    
+    const newsItems = Array.isArray(response.data) ? response.data : [];
+    
+    console.log('[getBrandProductNews] 📊 News Items:', {
+      count: newsItems.length,
+      items: newsItems.map(item => ({
+        id: item.id,
+        title: item.title,
+        source: item.source,
+        date: item.date,
+      })),
+    });
+    
+    // Response'u normalize et: array'i {items, pagination} formatına çevir
+    const normalizedResponse = {
+      items: newsItems,
+      pagination: {
+        cursor: newsItems.length >= limit ? (page + 1).toString() : undefined,
+        hasMore: newsItems.length >= limit,
+        limit,
+      },
+    };
+    
+    console.log('[getBrandProductNews] 🔄 Normalized Response:', normalizedResponse);
+    
+    return normalizedResponse;
+  } catch (error: any) {
+    console.error('[getBrandProductNews] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/news?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product News Detail endpoint function
+ * /brands/{brandId}/products/{productId}/news/{newsId} endpoint'inden news detay bilgilerini getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param newsId - News ID'si
+ * @returns NewsDetail - News detay bilgileri
+ */
+export const getBrandProductNewsDetail = async (
+  brandId: string,
+  productId: string,
+  newsId: string
+): Promise<import('../types').NewsDetail> => {
+  try {
+    const response = await apiService.getClient().get<import('../types').NewsDetail>(
+      `/brands/${brandId}/products/${productId}/news/${newsId}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductNewsDetail] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/news/${newsId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Brand Product News Comments endpoint function
+ * /brands/{brandId}/products/{productId}/news/{newsId}/comments endpoint'inden news yorumlarını getirir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param newsId - News ID'si
+ * @param limit - Sayfa başına yorum sayısı (default: 50)
+ * @param offset - Offset değeri (default: 0)
+ * @returns NewsCommentsResponse - News comments ve pagination bilgisi
+ */
+export const getBrandProductNewsComments = async (
+  brandId: string,
+  productId: string,
+  newsId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<import('../types').NewsCommentsResponse> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+
+    const response = await apiService.getClient().get<import('../types').NewsCommentsResponse>(
+      `/brands/${brandId}/products/${productId}/news/${newsId}/comments?${params.toString()}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getBrandProductNewsComments] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/news/${newsId}/comments?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Create Brand Product News Comment endpoint function
+ * /brands/{brandId}/products/{productId}/news/{newsId}/comment endpoint'ine POST request gönderir
+ *
+ * @param brandId - Brand ID'si
+ * @param productId - Product ID'si
+ * @param newsId - News ID'si
+ * @param request - Comment create request
+ * @returns NewsCommentCreateResponse - Created comment response
+ */
+export const createBrandProductNewsComment = async (
+  brandId: string,
+  productId: string,
+  newsId: string,
+  request: import('../types').NewsCommentCreateRequest
+): Promise<import('../types').NewsCommentCreateResponse> => {
+  try {
+    const response = await apiService.getClient().post<import('../types').NewsCommentCreateResponse>(
+      `/brands/${brandId}/products/${productId}/news/${newsId}/comment`,
+      request
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[createBrandProductNewsComment] API Error:', {
+      url: `/brands/${brandId}/products/${productId}/news/${newsId}/comment`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};

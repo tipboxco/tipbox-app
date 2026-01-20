@@ -380,31 +380,11 @@ const MessageDetailScreen: React.FC = () => {
         console.log('[MessageDetail] 📥 Sample message:', JSON.stringify(threadMessages[0], null, 2));
         console.log('[MessageDetail] 📥 Params:', { senderName: params.senderName, hasAvatar: !!params.senderAvatar });
         
-        // Okunmamış mesajlar var mı kontrol et (sadece alınan mesajlar için - isSent: false)
-        const hasUnreadMessages = threadMessages.some(
-          (msg) => !msg.isRead && msg.senderId !== user?.id
-        );
-        
-        // Okunmamış mesajlar varsa thread'i okundu olarak işaretle
-        if (hasUnreadMessages && threadId) {
-          console.log('[MessageDetail] 📖 Thread has unread messages, marking thread as read:', threadId);
-          
-          // Socket bağlıysa socket ile, değilse API ile işaretle
-          if (isConnected) {
-            socketMarkThreadRead(threadId);
-          } else {
-            // Socket bağlı değilse API ile bildir
-            console.log('[MessageDetail] 📡 Socket not connected, using API to mark thread as read');
-            markThreadAsReadMutation.mutate(threadId, {
-              onError: (error) => {
-                console.error('[MessageDetail] ❌ Failed to mark thread as read via API:', error);
-              },
-            });
-          }
-          
-          // Inbox listesini invalidate et (yeşil nokta kaldırılsın)
-          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-        }
+        // ✅ Backend iyileştirmesi: GET /inbox/:threadId çağrıldığında backend otomatik olarak
+        // tüm okunmamış mesajları isRead: true yapıyor ve thread_read socket event'i gönderiyor.
+        // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
+        // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
+        console.log('[MessageDetail] ✅ Thread messages loaded. Backend automatically marks messages as read when GET /inbox/:threadId is called.');
         
         // Normal FlatList için mesajları normal sırada tut (en eski başta, en yeni sonda)
         const currentParams = paramsRef.current;
@@ -495,7 +475,6 @@ const MessageDetailScreen: React.FC = () => {
             backend: convertedMessages.length,
             pending: pendingMessages.length,
             kept: pendingMessagesToKeep.length,
-            hasUnreadMessages,
             total: merged.length,
           });
           
@@ -598,21 +577,58 @@ const MessageDetailScreen: React.FC = () => {
           joinThread(currentThreadId);
           setIsSocketReady(true);
           
-          // Mesaj açıldığında thread'i okundu olarak işaretle
-          // thread_joined event'inde de yapılacak ama burada da yapıyoruz (hemen)
-          console.log('[MessageDetail] 📖 Marking thread as read (on open):', currentThreadId);
-          socketMarkThreadRead(currentThreadId);
-          
-          // Inbox listesini invalidate et (yeşil nokta kaldırılsın)
-          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          // ✅ Backend iyileştirmesi: GET /inbox/:threadId çağrıldığında backend otomatik olarak
+          // tüm okunmamış mesajları isRead: true yapıyor ve thread_read socket event'i gönderiyor.
+          // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
+          // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
         } else {
           console.log('[MessageDetail] ⚠️ Socket not connected, will join when connected');
           setIsSocketReady(false);
-          
-          // Socket bağlı değilse bile inbox listesini invalidate et
-          // Backend'den güncel veri çekilsin (thread okundu olarak işaretlenmiş olabilir)
-          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
         }
+        
+        // ✅ Backend otomatik okundu işaretleme yaptığı için inbox listesini optimistic update ile güncelle
+        // Thread messages yüklendiğinde backend otomatik olarak thread'i okundu olarak işaretliyor
+        // Bu yüzden inbox listesinde de optimistic update yapalım (yeşil tik anında kaybolsun)
+        const queryKey = [...inboxKeys.messages(), undefined];
+        
+        console.log('[MessageDetail] 📥 THREAD MESSAGES YÜKLENDİ - Inbox listesi güncelleniyor');
+        console.log(`[MessageDetail]   Thread ID: ${currentThreadId}`);
+        console.log(`[MessageDetail]   Yüklenen mesaj sayısı: ${threadMessages?.length || 0}`);
+        
+        queryClient.setQueryData(queryKey, (oldData: any[] | undefined) => {
+          if (!oldData) {
+            console.log('[MessageDetail]   ⚠️ Inbox cache boş, güncelleme yapılamıyor');
+            return oldData;
+          }
+          
+          const threadBefore = oldData.find((m: any) => m.id === currentThreadId);
+          if (threadBefore) {
+            console.log('[MessageDetail]   Thread önceki durumu:');
+            console.log(`[MessageDetail]     Thread ID: ${threadBefore.id}`);
+            console.log(`[MessageDetail]     Sender: ${threadBefore.senderName || 'Unknown'}`);
+            console.log(`[MessageDetail]     isUnread: ${threadBefore.isUnread}`);
+            console.log(`[MessageDetail]     unreadCount: ${threadBefore.unreadCount || 0}`);
+          }
+          
+          const updatedData = oldData.map((msg: any) => 
+            msg.id === currentThreadId 
+              ? { ...msg, isUnread: false, unreadCount: 0 }
+              : msg
+          );
+          
+          const threadAfter = updatedData.find((m: any) => m.id === currentThreadId);
+          if (threadAfter) {
+            console.log('[MessageDetail]   Thread sonraki durumu:');
+            console.log(`[MessageDetail]     isUnread: ${threadAfter.isUnread} (ÖNCE: ${threadBefore?.isUnread})`);
+            console.log(`[MessageDetail]     unreadCount: ${threadAfter.unreadCount || 0} (ÖNCE: ${threadBefore?.unreadCount || 0})`);
+          }
+          
+          console.log('[MessageDetail] ✅ Inbox listesi güncellendi');
+          return updatedData;
+        });
+        
+        // Cache'i invalidate et (backend'den gelen yeni veri ile güncellenecek)
+        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
 
         // 5. Mesaj geçmişini yükle (REST API)
         // useThreadMessages hook'u otomatik olarak yükleyecek
@@ -660,7 +676,6 @@ const MessageDetailScreen: React.FC = () => {
     return () => {
       // Component unmount olduğunu işaretle (okundu işaretleme durdurulsun)
       isMountedRef.current = false;
-      console.log('[MessageDetail] 🔌 Component unmounting, stopping read status updates');
       
       // AppStore'dan aktif thread ID'sini temizle (notification kontrolü için)
       setActiveThreadId(null);
@@ -701,7 +716,7 @@ const MessageDetailScreen: React.FC = () => {
       console.log('[MessageDetail] ⚠️ No threadId yet, ignoring message');
       return;
     }
-    
+
     if (eventData.threadId !== currentThreadId) {
       console.log('[MessageDetail] ⚠️ Thread ID mismatch, ignoring message:', {
         eventThreadId: eventData.threadId,
@@ -914,7 +929,7 @@ const MessageDetailScreen: React.FC = () => {
 
     const messageText = eventData.message || eventData.text || '';
     const messageId = eventData.messageId;
-
+    
     if (!messageId) {
       console.warn('[MessageDetail] ⚠️ message_sent event missing messageId');
       return;
@@ -957,12 +972,12 @@ const MessageDetailScreen: React.FC = () => {
       const messageExists = prev.some(msg => msg.text === messageText && msg.isSent);
       if (!messageExists && messageText) {
         console.log('[MessageDetail] ⚠️ Optimistic message not found, adding new message');
-        const newMessage: MessageDetailItem = {
+    const newMessage: MessageDetailItem = {
           id: messageId,
           text: messageText,
           timestamp: formatMessageTime(eventData.timestamp || new Date()),
-          isSent: true,
-          isRead: false,
+      isSent: true,
+      isRead: false,
         };
         // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
         return [...prev, newMessage];
@@ -972,7 +987,7 @@ const MessageDetailScreen: React.FC = () => {
     });
 
     // Inbox listesini invalidate et (mesaj listesini güncelle)
-    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+              queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     
     // Thread mesajlarını da invalidate et (yeniden yüklensin)
     // Bu sayede kullanıcı ekrandan çıkıp geri girdiğinde mesajlar görünür
@@ -991,28 +1006,16 @@ const MessageDetailScreen: React.FC = () => {
     console.log('[MessageDetail]    - Current Thread ID:', threadId);
     console.log('[MessageDetail]    - Match:', data.threadId === threadId ? '✅' : '❌');
     
-    // Thread'e katıldıktan sonra tüm mesajları okundu işaretle
+    // ✅ Backend iyileştirmesi: GET /inbox/:threadId çağrıldığında backend otomatik olarak
+    // tüm okunmamış mesajları isRead: true yapıyor ve thread_read socket event'i gönderiyor.
+    // Bu yüzden frontend'de manuel olarak markThreadRead çağırmaya gerek yok.
+    // thread_read event'i geldiğinde inbox listesi otomatik güncellenecek.
     if (data.threadId === threadId) {
-      console.log('[MessageDetail] 📖 Marking thread as read:', threadId);
-      
-      // Socket bağlıysa socket ile, değilse API ile işaretle
-      if (isConnected) {
-        socketMarkThreadRead(threadId);
-      } else {
-        // Socket bağlı değilse API ile bildir
-        console.log('[MessageDetail] 📡 Socket not connected, using API to mark thread as read');
-        markThreadAsReadMutation.mutate(threadId, {
-          onError: (error) => {
-            console.error('[MessageDetail] ❌ Failed to mark thread as read via API:', error);
-          },
-        });
-      }
-      
-      // Inbox listesini invalidate et (yeşil nokta kaldırılsın)
-      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      console.log('[MessageDetail] ✅ Thread joined. Backend automatically marks messages as read when GET /inbox/:threadId is called.');
+      console.log('[MessageDetail] 🔄 Waiting for thread_read event to update inbox list...');
     }
     // CRITICAL FIX: queryClient, socketMarkThreadRead, markThreadAsReadMutation stable olduğu için dependency'den çıkarıldı
-  }, [threadId, isConnected]);
+  }, [threadId]);
 
   const handleThreadLeft = useCallback((data: { threadId: string }) => {
     console.log('[MessageDetail] Thread left:', data.threadId);
@@ -1032,9 +1035,9 @@ const MessageDetailScreen: React.FC = () => {
   const handleUserTyping = useCallback((data: { userId: string; threadId: string; isTyping: boolean }) => {
     // Component unmount olduysa işlem yapma
     if (!isMountedRef.current) {
-      return;
-    }
-    
+          return;
+        }
+        
     console.log('[MessageDetail] 👤 User typing event received:', {
       userId: data.userId,
       threadId: data.threadId,
@@ -1078,18 +1081,80 @@ const MessageDetailScreen: React.FC = () => {
 
   // Message read handler
   // Thread read event handler - thread okundu olarak işaretlendiğinde
-  const handleThreadRead = useCallback((data: { threadId: string; readBy: string; timestamp: string }) => {
-    // Component unmount olduysa işlem yapma
-    if (!isMountedRef.current) {
-      return;
-    }
-    
-    console.log('[MessageDetail] 📖 Thread read event received:', data);
+  // ✅ Backend iyileştirmesi: thread_read event'ine unreadCount ve isUnread eklendi
+  const handleThreadRead = useCallback((data: { 
+    threadId: string; 
+    readBy: string; 
+    timestamp: string;
+    unreadCount?: number;  // YENİ - Backend'den gelen unreadCount
+    isUnread?: boolean;    // YENİ - Backend'den gelen isUnread
+  }) => {
+    console.log('[MessageDetail] 📖 THREAD_READ EVENT ALINDI:', {
+      eventThreadId: data.threadId,
+      currentThreadId: threadId,
+      readBy: data.readBy,
+      timestamp: data.timestamp,
+      unreadCount: data.unreadCount,
+      isUnread: data.isUnread,
+      matches: data.threadId === threadId,
+      isMounted: isMountedRef.current,
+    });
     
     // Thread ID kontrolü
     if (data.threadId !== threadId) {
+      console.log('[MessageDetail] ⚠️ Thread ID mismatch, ignoring event');
       return;
     }
+    
+    console.log('[MessageDetail] ✅ Thread ID matches, processing thread_read event');
+    
+    // ✅ Backend'den gelen unreadCount ve isUnread değerlerini kullan
+    const unreadCount = data.unreadCount !== undefined ? data.unreadCount : 0;
+    const isUnread = data.isUnread !== undefined ? data.isUnread : false;
+    
+    // CRITICAL FIX: Component unmount olsa bile inbox listesini güncelle
+    // Kullanıcı mesaj detayından çıktığında inbox listesinde yeşil tik görünmemeli
+    // Optimistic update: Local state'te thread'i okundu olarak işaretle (hemen UI'da göster)
+    const queryKey = [...inboxKeys.messages(), undefined];
+    console.log('[MessageDetail] 🔑 Query key for thread_read event:', queryKey);
+    
+    queryClient.setQueryData(queryKey, (oldData: any[] | undefined) => {
+      console.log('[MessageDetail] 📊 THREAD_READ UPDATE - Önceki durum:', oldData?.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
+      if (!oldData) {
+        console.warn('[MessageDetail] ⚠️ Old data is null/undefined in thread_read handler');
+        return oldData;
+      }
+      
+      const threadBefore = oldData.find((m: any) => m.id === data.threadId);
+      if (threadBefore) {
+        console.log('[MessageDetail]   Thread önceki durumu:');
+        console.log(`[MessageDetail]     Thread ID: ${threadBefore.id}`);
+        console.log(`[MessageDetail]     Sender: ${threadBefore.senderName || 'Unknown'}`);
+        console.log(`[MessageDetail]     isUnread: ${threadBefore.isUnread}`);
+        console.log(`[MessageDetail]     unreadCount: ${threadBefore.unreadCount || 0}`);
+      }
+      
+      // ✅ Backend'den gelen değerleri kullan
+      const updatedData = oldData.map((msg: any) => 
+        msg.id === data.threadId 
+          ? { ...msg, isUnread, unreadCount }
+          : msg
+      );
+      
+      const threadAfter = updatedData.find((m: any) => m.id === data.threadId);
+      if (threadAfter) {
+        console.log(`[MessageDetail]   Thread sonraki durumu (Backend'den gelen değerler):`);
+        console.log(`[MessageDetail]     isUnread: ${threadAfter.isUnread} (ÖNCE: ${threadBefore?.isUnread}, Backend: ${isUnread})`);
+        console.log(`[MessageDetail]     unreadCount: ${threadAfter.unreadCount || 0} (ÖNCE: ${threadBefore?.unreadCount || 0}, Backend: ${unreadCount})`);
+      }
+      
+      console.log('[MessageDetail] ✅ THREAD_READ UPDATE - Sonraki durum:', updatedData.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
+      return updatedData;
+    });
+    
+    // Query data'yı tekrar kontrol et
+    const currentData = queryClient.getQueryData<any[]>(queryKey);
+    console.log('[MessageDetail] 🔍 Cache kontrolü - thread_read setQueryData sonrası:', currentData?.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
     
     // Mesaj listesini invalidate et (inbox listesini güncelle, badge'i kaldır)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
@@ -1325,7 +1390,6 @@ const MessageDetailScreen: React.FC = () => {
     return () => {
       // Component unmount olduğunda isMountedRef'i false yap (okundu işaretleme durdurulsun)
       isMountedRef.current = false;
-      console.log('[MessageDetail] 🔌 Component unmounting, stopping all read status updates');
     };
   }, []);
 

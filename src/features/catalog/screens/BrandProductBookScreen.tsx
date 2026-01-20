@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import {
@@ -20,6 +20,8 @@ import { Header } from '@/src/components/Header';
 import {
   ChevronRightIcon,
   MagnifyingGlassIcon,
+  DocumentTextIcon,
+  BookOpenIcon,
 } from 'react-native-heroicons/outline';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandProductBook } from '../api/hooks';
@@ -53,7 +55,17 @@ const BrandProductBookScreen: React.FC = () => {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        refetch,
     } = useBrandProductBook(brandId);
+
+    // İlk mount'ta cache'i yenile (test sonuçları için)
+    useEffect(() => {
+        if (brandId) {
+            // Sadece ilk mount'ta refetch yap
+            refetch();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [brandId]); // brandId değiştiğinde de refetch yap
 
     // Flatten all pages into a single array
     const allProductGroups = useMemo(() => {
@@ -70,9 +82,8 @@ const BrandProductBookScreen: React.FC = () => {
             name: product.name,
             image: imageSource,
             stats: {
-                reviews: product.stats.reviews,
-                likes: product.stats.likes,
-                shares: product.stats.share, // API'de "share" (tekil) olarak geliyor
+                posts: product.stats.posts || 0,
+                news: product.stats.news || 0,
             },
         };
     };
@@ -83,6 +94,7 @@ const BrandProductBookScreen: React.FC = () => {
         return (
         <Pressable
             onPress={() => navigation.navigate('BrandProductDetailScreen', { 
+                brandId: route.params.brandId,
                 productId: cardData.id,
                 productName: cardData.name,
                 productImage: cardData.image,
@@ -141,13 +153,12 @@ const BrandProductBookScreen: React.FC = () => {
                 />
 
                 {/* Stats */}
-                <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
-                    <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Box
+                <HStack justifyContent="space-between" alignItems="center">
+                    <HStack alignItems="center" space="xs" flex={1}>
+                        <DocumentTextIcon
                             width={12}
                             height={12}
-                            bg="#D9D9D9"
-                            borderRadius={2}
+                            color={isDark ? '#FFFFFF' : '#000000'}
                         />
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
@@ -155,41 +166,23 @@ const BrandProductBookScreen: React.FC = () => {
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
-                            {cardData.stats.reviews}
+                            {cardData.stats.posts}
                         </Text>
                     </HStack>
 
-                    <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Box
+                    <HStack alignItems="center" space="xs" flex={1}>
+                        <BookOpenIcon
                             width={12}
                             height={12}
-                            bg="#D9D9D9"
-                            borderRadius={2}
+                            color={isDark ? '#FFFFFF' : '#000000'}
                         />
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={8}
+                            fontSize="$2xs"
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
-                            {cardData.stats.likes}
-                        </Text>
-                    </HStack>
-
-                    <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Box
-                            width={12}
-                            height={12}
-                            bg="#D9D9D9"
-                            borderRadius={2}
-                        />
-                        <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize={8}
-                            fontWeight="$medium"
-                            numberOfLines={1}
-                        >
-                            {cardData.stats.shares}
+                            {cardData.stats.news}
                         </Text>
                     </HStack>
                 </HStack>
