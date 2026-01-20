@@ -84,13 +84,23 @@ export const useMessages = (params?: GetMessagesParams) => {
             return backendMsg;
           }
           
-          // ✅ Backend artık doğru veriyi döndürüyor, ama cache'de optimistic update varsa koru
-          // Eğer cache'de okundu olarak işaretlenmişse (optimistic update), backend verisini override et
-          // Backend henüz güncellenmemiş olabilir (race condition), bu yüzden cache'deki durumu koru
+          // ✅ Backend iyileştirmesi: Backend artık thread_read event'inde unreadCount ve isUnread gönderiyor
+          // Backend'den gelen veri ile cache'i merge et
           const isCachedRead = !cachedMsg.isUnread && (cachedMsg.unreadCount || 0) === 0;
+          const isBackendRead = !backendMsg.isUnread && (backendMsg.unreadCount || 0) === 0;
           const isBackendUnread = backendMsg.isUnread || (backendMsg.unreadCount || 0) > 0;
           
-          // Eğer cache'de okundu ama backend'de okunmamış görünüyorsa, cache'i koru
+          // ✅ Öncelik 1: Backend'den unreadCount === 0 geldiyse (thread okundu), backend verisini kullan
+          // thread_read event'i geldiğinde backend doğru veriyi döndürüyor
+          if (isBackendRead) {
+            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... backend'de okundu (unreadCount=0), backend verisini kullan`);
+            console.log(`[useMessages]     Backend: isUnread=${backendMsg.isUnread}, unreadCount=${backendMsg.unreadCount || 0}`);
+            console.log(`[useMessages]     Cache: isUnread=${cachedMsg.isUnread}, unreadCount=${cachedMsg.unreadCount || 0}`);
+            // Backend verisini kullan (thread_read event'inden sonra backend doğru veriyi döndürüyor)
+            return backendMsg;
+          }
+          
+          // ✅ Öncelik 2: Cache'de okundu ama backend'de okunmamış görünüyorsa, cache'i koru
           // Bu durum genellikle optimistic update yapıldıktan hemen sonra backend'den eski veri gelirse oluşur
           if (isCachedRead && isBackendUnread) {
             console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... cache'de okundu, backend verisi override ediliyor`);
@@ -103,14 +113,12 @@ export const useMessages = (params?: GetMessagesParams) => {
             };
           }
           
-          // ✅ Backend doğru veriyi döndürüyorsa (unreadCount === 0), backend verisini kullan
-          // Cache'deki diğer alanları da koru (lastMessage, timestamp gibi güncel olabilir)
+          // ✅ Öncelik 3: Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
           if (isCachedRead && !isBackendUnread) {
-            // Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
             return backendMsg;
           }
           
-          // Cache'de okunmamışsa backend verisini kullan (backend artık doğru veriyi döndürüyor)
+          // ✅ Öncelik 4: Cache'de okunmamışsa backend verisini kullan (backend artık doğru veriyi döndürüyor)
           return backendMsg;
         });
         

@@ -36,7 +36,7 @@ import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkC
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
-import { CardType } from '@/src/types/common';
+import { CardType, ProductInfoType } from '@/src/types/common';
 
 const { width } = Dimensions.get('window');
 
@@ -90,11 +90,11 @@ const BrandDetailScreen: React.FC = () => {
         
         // ContextType PRODUCT ise, contextData.id'nin productId olduğundan emin ol
         // API'den gelen contextData içinde productId alanı varsa onu kullan, yoksa id'yi kullan
-        const contextType = postData.contextType as import('@/src/types/common').ProductInfoType;
+        const contextType = postData.contextType as ProductInfoType;
         let contextDataId = postData.contextData?.id;
         
         // Eğer contextType PRODUCT ise ve contextData içinde productId alanı varsa, onu kullan
-        if (contextType === import('@/src/types/common').ProductInfoType.PRODUCT && postData.contextData) {
+        if (contextType === ProductInfoType.PRODUCT && postData.contextData) {
             // API response'unda productId alanı olabilir (type assertion ile kontrol et)
             const contextDataAny = postData.contextData as any;
             if (contextDataAny.productId) {

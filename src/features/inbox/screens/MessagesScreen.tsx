@@ -224,9 +224,10 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         const currentData = queryClient.getQueryData<InboxMessage[]>(queryKey);
         console.log('[MessagesScreen] 🔍 Cache kontrolü - thread_read setQueryData sonrası:', currentData?.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
         
-        // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)
-        // Refetch yapmıyoruz çünkü optimistic update yeterli ve isRefetching state'ini true yapıp loader'ı takılı bırakıyor
-        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+        // ✅ Backend iyileştirmesi: invalidateQueries kaldırıldı
+        // Backend'den gelen unreadCount ve isUnread değerleri zaten setQueryData ile cache'e yazıldı
+        // invalidateQueries gereksiz refetch yapıp performansı düşürüyor
+        // Sadece kontrollü cache güncellemesi yeterli
     }, [queryClient]);
 
     // Socket event handler - user_typing event (kullanıcı typing yapıyor)
@@ -253,7 +254,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 }
                 
                 // Thread'deki kullanıcıyı bul ve typing state'e ekle
-                const thread = messages?.find((msg) => msg.id === eventData.threadId);
+                // CRITICAL FIX: messages array kontrolü
+                const messagesArray = Array.isArray(messages) ? messages : [];
+                const thread = messagesArray.find((msg) => msg.id === eventData.threadId);
                 const typingUserName = thread?.senderName;
                 
                 // 3 saniye sonra otomatik olarak typing'i durdur (güvenlik için)
@@ -324,7 +327,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     );
     
     const handleMessagePress = (messageId: string) => {
-        const message = (messages || []).find(m => m.id === messageId);
+        // CRITICAL FIX: messages array kontrolü
+        const messagesArray = Array.isArray(messages) ? messages : [];
+        const message = messagesArray.find(m => m.id === messageId);
         if (!message) return;
 
         const threadId = message.id; // message.id = thread ID (DM_THREAD.md'ye göre)
@@ -486,11 +491,12 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     };
 
     const getFilteredMessages = () => {
-        let filtered: InboxMessage[] = messages || [];
+        // CRITICAL FIX: messages undefined veya array değilse boş array kullan
+        let filtered: InboxMessage[] = Array.isArray(messages) ? messages : [];
         
         // 🔍 DEBUG: getFilteredMessages çağrıldığında mesaj listesini logla
         console.log('[MessagesScreen] 📋 getFilteredMessages çağrıldı - messages state:');
-        if (messages && messages.length > 0) {
+        if (Array.isArray(messages) && messages.length > 0) {
             messages.forEach((msg, index) => {
                 console.log(`[MessagesScreen]   [${index}] Thread ID: ${msg.id}`);
                 console.log(`[MessagesScreen]       Sender: ${msg.senderName || 'Unknown'}`);
@@ -498,7 +504,13 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 console.log(`[MessagesScreen]       unreadCount: ${msg.unreadCount || 0}`);
             });
         } else {
-            console.log('[MessagesScreen]   ⚠️ Mesaj listesi boş');
+            console.log('[MessagesScreen]   ⚠️ Mesaj listesi boş veya geçersiz');
+        }
+
+        // CRITICAL FIX: filtered array kontrolü
+        if (!Array.isArray(filtered)) {
+            console.warn('[MessagesScreen] ⚠️ filtered is not an array, returning empty array');
+            return [];
         }
 
         // Aynı recipientUserId'ye sahip thread'leri birleştir
@@ -558,7 +570,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             return timestampB - timestampA; // En yeni başta
         });
 
-        return filtered;
+        // CRITICAL FIX: Döndürmeden önce array kontrolü
+        return Array.isArray(filtered) ? filtered : [];
     };
 
     // Drawer açma gesture'ı - sadece sol kenardan başlayan yatay gesture'lar için

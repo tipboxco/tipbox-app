@@ -815,7 +815,8 @@ const NotificationsScreenComponent: React.FC = () => {
                 createdAt: notif.createdAt,
                 read: notif.read,
                 data: notif.data,
-                imageUrl: notif.imageUrl || notif.data?.imageUrl || null,
+                // CRITICAL FIX: imageUrl sadece data içinden alınmalı (root seviyede olmamalı)
+                imageUrl: notif.data?.imageUrl || null,
             }));
             
             // Birleştir

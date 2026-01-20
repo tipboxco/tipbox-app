@@ -91,7 +91,8 @@ export const TabNavigator = () => {
   // Sadece authenticated ve auth ready ise çalıştır
   const { data: messages } = useMessages();
   const hasUnreadMessages = useMemo(() => {
-    if (!messages || messages.length === 0) return false;
+    // CRITICAL FIX: messages undefined veya array değilse false döndür
+    if (!messages || !Array.isArray(messages) || messages.length === 0) return false;
     return messages.some((message) => message.isUnread || message.unreadCount > 0);
   }, [messages]);
   

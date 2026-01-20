@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
+import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Search } from 'lucide-react-native';
 import { BreadcrumbItem } from '@/src/types/breadcrumb';
@@ -12,7 +12,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { CatalogStackParamList } from '../navigation';
 import { RootStackParamList } from '@/src/navigation/navigation.types';
-import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts, useCatalogPrefetch } from '../api/hooks';
+import { useCatalogCategories, useCatalogSubCategories, useCatalogProductGroups, useCatalogProducts, useCatalogPrefetch, useGlobalProductSearch } from '../api/hooks';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct } from '../types';
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
@@ -174,10 +174,20 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // API'den seçili ürün grubuna ait products'ı getir (search ile)
+  // Global product search - tüm product group'lar arasında arama
+  const hasGlobalSearch = debouncedSearchQuery && debouncedSearchQuery.length > 0;
+  const { 
+    data: globalSearchData, 
+    isLoading: isLoadingGlobalSearch,
+    fetchNextPage: fetchNextGlobalSearchPage,
+    hasNextPage: hasNextGlobalSearchPage,
+    isFetchingNextPage: isFetchingNextGlobalSearchPage
+  } = useGlobalProductSearch(hasGlobalSearch ? debouncedSearchQuery : undefined, 20);
+
+  // API'den seçili ürün grubuna ait products'ı getir (search ile) - sadece global search yoksa
   const { data: catalogProducts, isLoading: isLoadingProducts } = useCatalogProducts(
-    selectedProductGroupId,
-    debouncedSearchQuery || undefined
+    hasGlobalSearch ? undefined : selectedProductGroupId, // Global search varsa productGroupId gönderme
+    hasGlobalSearch ? undefined : (debouncedSearchQuery || undefined) // Global search varsa search query gönderme
   );
   
   // API'den gelen verileri formatla
@@ -271,6 +281,108 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
       description: '', // API'den description gelmiyor
     }));
   }, [catalogProducts]);
+
+  // Global search sonuçlarını formatla - useMemo ile cache'le
+  // Global search InfiniteData döndürüyor, pages.flatMap kullanmalıyız
+  const globalSearchResults = useMemo(() => {
+    if (!globalSearchData?.pages) return [];
+    
+    // InfiniteData yapısından tüm product group'ları çıkar
+    const allGroups = globalSearchData.pages.flatMap((page) => page.items || []);
+    
+    // DEBUG: Backend'den gelen veriyi log'la
+    if (__DEV__ && allGroups.length > 0) {
+      console.log('[ProductCatalogScreen] 🔍 Global Search Results:', {
+        searchQuery: debouncedSearchQuery,
+        groupsCount: allGroups.length,
+        groups: allGroups.map(group => ({
+          productGroupId: group.productGroupId,
+          productGroupName: group.productGroupName,
+          productsCount: group.products.length,
+          products: group.products.map(p => ({
+            productId: p.productId,
+            name: p.name,
+            image: p.image,
+            productGroupId: p.productGroupId,
+          })),
+        })),
+      });
+    }
+    
+    // Backend'den gelen veriyi temizle ve doğrula
+    const cleanedGroups = allGroups
+      .map(group => {
+        // Her product group için unique product'ları filtrele
+        // Aynı productId'ye sahip ürünleri tekilleştir
+        const uniqueProducts = group.products.reduce((acc, product) => {
+          // Product ID'ye göre unique kontrolü
+          if (!acc.find(p => p.productId === product.productId)) {
+            acc.push(product);
+          } else {
+            // Duplicate product bulundu - log'la
+            if (__DEV__) {
+              console.warn('[ProductCatalogScreen] ⚠️ Duplicate product found:', {
+                productId: product.productId,
+                productName: product.name,
+                productGroupId: group.productGroupId,
+                productGroupName: group.productGroupName,
+              });
+            }
+          }
+          return acc;
+        }, [] as CatalogProduct[]);
+        
+        // Eğer unique product yoksa, bu group'u filtrele
+        if (uniqueProducts.length === 0) {
+          if (__DEV__) {
+            console.warn('[ProductCatalogScreen] ⚠️ Empty product group filtered out:', {
+              productGroupId: group.productGroupId,
+              productGroupName: group.productGroupName,
+            });
+          }
+          return null;
+        }
+        
+        return {
+          ...group,
+          products: uniqueProducts,
+        };
+      })
+      .filter((group): group is NonNullable<typeof group> => group !== null);
+    
+    // Tüm product'ları productId'ye göre unique kontrolü yap
+    // Aynı product farklı gruplarda varsa, sadece ilk görünen grubunda tut
+    const seenProductIds = new Set<string>();
+    const finalGroups = cleanedGroups.map(group => {
+      const filteredProducts = group.products.filter(product => {
+        if (seenProductIds.has(product.productId)) {
+          // Bu product başka bir grupta zaten görüldü
+          if (__DEV__) {
+            console.warn('[ProductCatalogScreen] ⚠️ Product appears in multiple groups:', {
+              productId: product.productId,
+              productName: product.name,
+              currentGroup: group.productGroupName,
+            });
+          }
+          return false;
+        }
+        seenProductIds.add(product.productId);
+        return true;
+      });
+      
+      // Eğer tüm product'lar filtrelendiyse, bu group'u kaldır
+      if (filteredProducts.length === 0) {
+        return null;
+      }
+      
+      return {
+        ...group,
+        products: filteredProducts,
+      };
+    }).filter((group): group is NonNullable<typeof group> => group !== null);
+    
+    return finalGroups;
+  }, [globalSearchData, debouncedSearchQuery]);
   // Local state for product object (for UI display only)
   const [selectedProduct, setSelectedProductLocal] = useState<any | null>(null);
 
@@ -1175,6 +1287,11 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
   }, [openBottomSheet, closeBottomSheet, bottomSheetKey, currentView, selectedProduct, selectedProductGroupId, selectedSubCategoryId, bottomOffset, handlePostTypeSelect]);
 
   const getCurrentData = () => {
+    // Global search aktifse, global search sonuçlarını döndür
+    if (hasGlobalSearch) {
+      return null; // Global search için özel render mantığı kullanılacak
+    }
+    
     const data = (() => {
       switch (currentView) {
         case 'categories':
@@ -1259,106 +1376,266 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       <ScrollView 
         flex={1} 
         px="$4"
+        onScroll={(event) => {
+          // Global search için infinite scroll
+          if (hasGlobalSearch && hasNextGlobalSearchPage && !isFetchingNextGlobalSearchPage) {
+            const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+            const paddingToBottom = 20;
+            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+              fetchNextGlobalSearchPage();
+            }
+          }
+        }}
+        scrollEventThrottle={400}
       >
         <VStack space="md" pt="$4" pb={scrollViewPaddingBottom}>
-          {/* Loading skeleton */}
-          {(currentView === 'categories' && isLoadingCategories) ||
-          (currentView === 'subcategories' && isLoadingSubCategories) ||
-          (currentView === 'productgroups' && isLoadingProductGroups) ||
-          (currentView === 'products' && isLoadingProducts) ? (
-            currentView === 'products' ? (
+          {/* Global Search Results */}
+          {hasGlobalSearch ? (
+            isLoadingGlobalSearch ? (
               <ProductSkeleton count={9} />
+            ) : globalSearchResults.length === 0 ? (
+              <Box py="$8" alignItems="center">
+                <Text color={isDark ? '#999' : '#666'} fontSize="$sm">
+                  Arama sonucu bulunamadı
+                </Text>
+              </Box>
             ) : (
-              <CategorySkeleton count={9} />
+              <>
+                {globalSearchResults.map((group) => (
+                  <VStack key={group.productGroupId} space="sm" mb="$6">
+                    {/* Product Group Header */}
+                    <HStack alignItems="center" space="sm" mb="$2">
+                      {group.productGroupImage && (
+                        <Image
+                          source={{ uri: group.productGroupImage }}
+                          alt={group.productGroupName}
+                          width={32}
+                          height={32}
+                          borderRadius={8}
+                        />
+                      )}
+                      <VStack flex={1}>
+                        <Text 
+                          fontSize="$sm" 
+                          fontWeight="$semibold" 
+                          color={isDark ? '#FFF' : '#000'}
+                        >
+                          {group.productGroupName}
+                        </Text>
+                        <Text 
+                          fontSize="$xs" 
+                          color={isDark ? '#999' : '#666'}
+                        >
+                          {group.categoryName} • {group.subCategoryName}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    
+                    {/* Products Grid */}
+                    {Array.from({ length: Math.ceil(group.products.length / 3) }).map((_, rowIndex) => {
+                      const itemsPerRow = 3;
+                      const startIndex = rowIndex * itemsPerRow;
+                      const rowItems = group.products.slice(startIndex, startIndex + itemsPerRow);
+                      const priority = rowIndex < 3 ? 'high' : 'low';
+                      
+                      return (
+                        <HStack key={`group-${group.productGroupId}-row-${rowIndex}`} space="md">
+                          {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
+                            const product = rowItems[colIndex];
+                            
+                            if (!product) {
+                              return <Box key={colIndex} flex={1} />;
+                            }
+                            
+                            // Product image'ı doğrula
+                            const productImage = product.image && product.image.trim() !== '' 
+                              ? product.image 
+                              : undefined;
+                            
+                            // DEBUG: Product image kontrolü
+                            if (__DEV__ && !productImage) {
+                              console.warn('[ProductCatalogScreen] ⚠️ Product missing image:', {
+                                productId: product.productId,
+                                productName: product.name,
+                                productGroupId: group.productGroupId,
+                                productGroupName: group.productGroupName,
+                              });
+                            }
+                            
+                            return (
+                              <CategoryCard
+                                key={`${group.productGroupId}-${product.productId}`}
+                                category={{
+                                  id: product.productId,
+                                  name: product.name,
+                                  icon: 'shopping-bag',
+                                  image: productImage,
+                                  subCategories: []
+                                } as any}
+                                onPress={() => {
+                                  // Global search'ten product'a tıklandığında direkt product'ı seç
+                                  // Breadcrumb'ı oluştur
+                                  const categoryBreadcrumb: BreadcrumbItem = {
+                                    id: group.categoryId,
+                                    name: group.categoryName,
+                                    type: 'category',
+                                  };
+                                  const subCategoryBreadcrumb: BreadcrumbItem = {
+                                    id: group.subCategoryId,
+                                    name: group.subCategoryName,
+                                    type: 'subCategory',
+                                  };
+                                  const productGroupBreadcrumb: BreadcrumbItem = {
+                                    id: group.productGroupId,
+                                    name: group.productGroupName,
+                                    type: 'productGroup',
+                                  };
+                                  
+                                  // Breadcrumb'ı set et
+                                  setBreadcrumbItems([
+                                    categoryBreadcrumb,
+                                    subCategoryBreadcrumb,
+                                    productGroupBreadcrumb,
+                                  ]);
+                                  
+                                  // Store'u güncelle
+                                  setSelectedCategoryId(group.categoryId);
+                                  setSelectedSubCategoryId(group.subCategoryId);
+                                  setSelectedProductGroupId(group.productGroupId);
+                                  setCurrentView('products');
+                                  
+                                  // Product'ı seç ve navigate et
+                                  const productItem: CatalogProduct & { id: string; image: any; description?: string } = {
+                                    productId: product.productId,
+                                    id: product.productId,
+                                    name: product.name,
+                                    image: product.image || null,
+                                    productGroupId: product.productGroupId,
+                                    subCategoryId: product.subCategoryId,
+                                  };
+                                  
+                                  handleProductPress(productItem);
+                                }}
+                                priority={priority}
+                              />
+                            );
+                          })}
+                        </HStack>
+                      );
+                    })}
+                  </VStack>
+                ))}
+                
+                {/* Load More Indicator */}
+                {isFetchingNextGlobalSearchPage && (
+                  <Box py="$4" alignItems="center">
+                    <ProductSkeleton count={3} />
+                  </Box>
+                )}
+              </>
             )
           ) : (
             <>
-          {/* currentData'yı gruplara böl - categories için 2'li, diğerleri için 3'lü */}
-          {Array.from({ length: Math.ceil(currentData.length / (currentView === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
-            const itemsPerRow = currentView === 'categories' ? 2 : 3;
-            const startIndex = rowIndex * itemsPerRow;
-            const rowItems = currentData.slice(startIndex, startIndex + itemsPerRow);
-            // İlk 3 satır için high priority - ilk ekranda görünen tüm görseller
-            // Diğerleri için low priority - scroll edildiğinde yüklenecek
-            const priority = rowIndex < 3 ? 'high' : 'low';
-            
-            return (
-              <HStack key={`row-${rowIndex}`} space="md">
-                {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
-                  const currentItem = rowItems[colIndex];
-                  
-                  if (!currentItem) {
-                    // Son satırda eksik item varsa invisible spacer kullan
-                    return <Box key={colIndex} flex={1} />;
-                  }
-                  
-                  // Render different components based on current view
-                  if (currentView === 'categories') {
+              {/* Loading skeleton */}
+              {(currentView === 'categories' && isLoadingCategories) ||
+              (currentView === 'subcategories' && isLoadingSubCategories) ||
+              (currentView === 'productgroups' && isLoadingProductGroups) ||
+              (currentView === 'products' && isLoadingProducts) ? (
+                currentView === 'products' ? (
+                  <ProductSkeleton count={9} />
+                ) : (
+                  <CategorySkeleton count={9} />
+                )
+              ) : currentData && currentData.length > 0 ? (
+                <>
+                  {/* currentData'yı gruplara böl - categories için 2'li, diğerleri için 3'lü */}
+                  {Array.from({ length: Math.ceil(currentData.length / (currentView === 'categories' ? 2 : 3)) }).map((_, rowIndex) => {
+                    const itemsPerRow = currentView === 'categories' ? 2 : 3;
+                    const startIndex = rowIndex * itemsPerRow;
+                    const rowItems = currentData.slice(startIndex, startIndex + itemsPerRow);
+                    // İlk 3 satır için high priority - ilk ekranda görünen tüm görseller
+                    // Diğerleri için low priority - scroll edildiğinde yüklenecek
+                    const priority = rowIndex < 3 ? 'high' : 'low';
+                    
                     return (
-                      <CategoryCard
-                        key={currentItem.id}
-                        category={currentItem as any}
-                        onPress={handleCategoryPress}
-                        priority={priority}
-                        isLargeCard={true}
-                      />
+                      <HStack key={`row-${rowIndex}`} space="md">
+                        {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
+                          const currentItem = rowItems[colIndex];
+                          
+                          if (!currentItem) {
+                            // Son satırda eksik item varsa invisible spacer kullan
+                            return <Box key={colIndex} flex={1} />;
+                          }
+                          
+                          // Render different components based on current view
+                          if (currentView === 'categories') {
+                            return (
+                              <CategoryCard
+                                key={currentItem.id}
+                                category={currentItem as any}
+                                onPress={handleCategoryPress}
+                                priority={priority}
+                                isLargeCard={true}
+                              />
+                            );
+                          } else if (currentView === 'subcategories') {
+                            const subCategoryItem = currentItem as unknown as CatalogSubCategory & { id: string; image: any };
+                            return (
+                              <CategoryCard
+                                key={currentItem.id}
+                                category={{
+                                  id: subCategoryItem.id,
+                                  name: subCategoryItem.name,
+                                  icon: 'folder',
+                                  image: subCategoryItem.image,
+                                  subCategories: []
+                                } as any}
+                                onPress={() => handleSubCategoryPress(subCategoryItem)}
+                                priority={priority}
+                              />
+                            );
+                          } else if (currentView === 'productgroups') {
+                            const productGroupItem = currentItem as unknown as CatalogProductGroup & { id: string; image: any };
+                            return (
+                              <CategoryCard
+                                key={currentItem.id}
+                                category={{
+                                  id: productGroupItem.id,
+                                  name: productGroupItem.name,
+                                  icon: 'package',
+                                  image: productGroupItem.image,
+                                  subCategories: []
+                                } as any}
+                                onPress={() => handleProductGroupPress(productGroupItem)}
+                                priority={priority}
+                              />
+                            );
+                          } else if (currentView === 'products') {
+                            const productItem = currentItem as unknown as CatalogProduct & { id: string; image: any };
+                            return (
+                              <CategoryCard
+                                key={currentItem.id}
+                                category={{
+                                  id: productItem.id,
+                                  name: productItem.name,
+                                  icon: 'shopping-bag',
+                                  image: productItem.image,
+                                  subCategories: []
+                                } as any}
+                                onPress={() => handleProductPress(productItem)}
+                                priority={priority}
+                              />
+                            );
+                          }
+                          
+                          return null;
+                        })}
+                      </HStack>
                     );
-                  } else if (currentView === 'subcategories') {
-                    const subCategoryItem = currentItem as unknown as CatalogSubCategory & { id: string; image: any };
-                    return (
-                      <CategoryCard
-                        key={currentItem.id}
-                        category={{
-                          id: subCategoryItem.id,
-                          name: subCategoryItem.name,
-                          icon: 'folder',
-                          image: subCategoryItem.image,
-                          subCategories: []
-                        } as any}
-                        onPress={() => handleSubCategoryPress(subCategoryItem)}
-                        priority={priority}
-                      />
-                    );
-                  } else if (currentView === 'productgroups') {
-                    const productGroupItem = currentItem as unknown as CatalogProductGroup & { id: string; image: any };
-                    return (
-                      <CategoryCard
-                        key={currentItem.id}
-                        category={{
-                          id: productGroupItem.id,
-                          name: productGroupItem.name,
-                          icon: 'package',
-                          image: productGroupItem.image,
-                          subCategories: []
-                        } as any}
-                        onPress={() => handleProductGroupPress(productGroupItem)}
-                        priority={priority}
-                      />
-                    );
-                  } else if (currentView === 'products') {
-                    const productItem = currentItem as unknown as CatalogProduct & { id: string; image: any };
-                    return (
-                      <CategoryCard
-                        key={currentItem.id}
-                        category={{
-                          id: productItem.id,
-                          name: productItem.name,
-                          icon: 'shopping-bag',
-                          image: productItem.image,
-                          subCategories: []
-                        } as any}
-                        onPress={() => handleProductPress(productItem)}
-                        priority={priority}
-                      />
-                    );
-                  }
-                  
-                  return null;
-                })}
-              </HStack>
-            );
-          })}
-          </>
+                  })}
+                </>
+              ) : null}
+            </>
           )}
         </VStack>
       </ScrollView>

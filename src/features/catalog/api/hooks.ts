@@ -1,8 +1,8 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, type CatalogPaginationResponse } from './catalogApi';
-import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts } from './brandApi';
-import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse } from '../types';
+import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
+import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands } from './brandApi';
+import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
 
 /**
  * Query Keys - Catalog feature için cache key pattern'leri
@@ -44,6 +44,12 @@ export const catalogKeys = {
   // Brand Product Group Products
   brandProductGroupProducts: (productGroupId: string, cursor?: string, limit?: number) =>
     [...catalogKeys.all, 'brandProductGroupProducts', productGroupId, cursor, limit] as const,
+  // Global Product Search
+  globalProductSearch: (search: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'globalProductSearch', search, cursor, limit] as const,
+  // Global Brand Search
+  globalBrandSearch: (search: string, cursor?: string, limit?: number) =>
+    [...catalogKeys.all, 'globalBrandSearch', search, cursor, limit] as const,
 };
 
 /**
@@ -258,6 +264,102 @@ export const useCatalogProducts = (
     refetchOnWindowFocus: hasSearchQuery, // Search varsa focus'ta refetch
     retry: hasSearchQuery ? 0 : 3, // Search varsa retry yok, yoksa 3 kez
     retryDelay: hasSearchQuery ? undefined : (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+};
+
+/**
+ * Global Product Search infinite query hook
+ * Tüm product grupları arasında arama yapar ve sonuçları product group bazında gruplar
+ * 
+ * BACKEND ENDPOINT TALEBİ:
+ * Bu hook, /catalog/products/search endpoint'ini kullanır.
+ * Backend'de bu endpoint henüz mevcut olmayabilir.
+ * 
+ * @param search - Product adı, marka veya açıklamasında arama (zorunlu)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ * 
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useGlobalProductSearch('iphone', 20);
+ */
+export const useGlobalProductSearch = (
+  search: string | undefined,
+  limit: number = 20
+) => {
+  const hasSearchQuery = !!search && search.trim().length > 0;
+  
+  return useInfiniteQuery<GlobalProductSearchResponse, Error>({
+    queryKey: hasSearchQuery 
+      ? catalogKeys.globalProductSearch(search, undefined, limit)
+      : ['catalog', 'globalProductSearch', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!search || search.trim().length === 0) {
+        throw new Error('Search query is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return searchGlobalProducts(search, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: hasSearchQuery,
+    staleTime: 0, // Search sonuçları her zaman fresh olmalı
+    gcTime: 0, // Search sonuçları cache'lenmemeli
+    refetchOnMount: 'always', // Her zaman refetch
+    refetchOnWindowFocus: true, // Focus'ta refetch
+    retry: 0, // Search için retry yok
+  });
+};
+
+/**
+ * Global Brand Search infinite query hook
+ * Tüm brand kategorileri arasında arama yapar ve sonuçları category bazında gruplar
+ * 
+ * BACKEND ENDPOINT TALEBİ:
+ * Bu hook, /brands/search endpoint'ini kullanır.
+ * Backend'de bu endpoint henüz mevcut olmayabilir.
+ * 
+ * @param search - Brand adında arama (zorunlu)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns React Query infinite query hook result
+ * 
+ * @example
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useGlobalBrandSearch('apple', 20);
+ */
+export const useGlobalBrandSearch = (
+  search: string | undefined,
+  limit: number = 20
+) => {
+  const hasSearchQuery = !!search && search.trim().length > 0;
+  
+  return useInfiniteQuery<GlobalBrandSearchResponse, Error>({
+    queryKey: hasSearchQuery 
+      ? catalogKeys.globalBrandSearch(search, undefined, limit)
+      : ['catalog', 'globalBrandSearch', 'disabled'],
+    queryFn: ({ pageParam }) => {
+      if (!search || search.trim().length === 0) {
+        throw new Error('Search query is required');
+      }
+      const cursor = pageParam as string | undefined;
+      return searchGlobalBrands(search, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
+    },
+    enabled: hasSearchQuery,
+    staleTime: 0, // Search sonuçları her zaman fresh olmalı
+    gcTime: 0, // Search sonuçları cache'lenmemeli
+    refetchOnMount: 'always', // Her zaman refetch
+    refetchOnWindowFocus: true, // Focus'ta refetch
+    retry: 0, // Search için retry yok
   });
 };
 

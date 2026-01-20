@@ -377,7 +377,7 @@ const MessageDetailScreen: React.FC = () => {
 
   // Thread mesajlarını local state'e dönüştür
   useEffect(() => {
-    if (threadMessages) {
+    if (threadMessages && Array.isArray(threadMessages)) {
       if (threadMessages.length > 0) {
         console.log('[MessageDetail] 📥 Thread messages loaded:', threadMessages.length);
         console.log('[MessageDetail] 📥 Sample message:', JSON.stringify(threadMessages[0], null, 2));
@@ -446,6 +446,10 @@ const MessageDetailScreen: React.FC = () => {
           // Backend'den gelen mesajlarla pending mesajları birleştir
           // Eğer pending mesaj backend'de varsa, backend versiyonunu kullan
           const pendingMessagesToKeep = pendingMessages.filter(pendingMsg => {
+            // CRITICAL FIX: convertedMessages array kontrolü
+            if (!convertedMessages || !Array.isArray(convertedMessages)) {
+              return true; // convertedMessages geçerli değilse, pending mesajı koru
+            }
             // Backend'de bu mesaj var mı kontrol et (içerik ve timestamp'e göre)
             // Daha geniş tolerans: 30 saniye (mesaj gönderildikten sonra backend'e kaydedilmesi zaman alabilir)
             const existsInBackend = convertedMessages.some(backendMsg => {
@@ -940,6 +944,10 @@ const MessageDetailScreen: React.FC = () => {
 
     // Optimistic update'teki mesajı gerçek mesaj ID'si ile güncelle
     setMessages((prev) => {
+      // CRITICAL FIX: prev array kontrolü
+      if (!prev || !Array.isArray(prev)) {
+        return prev || [];
+      }
       // Eğer mesaj zaten gerçek ID ile varsa (new_message event'i önce gelmiş), hiçbir şey yapma
       const alreadyExists = prev.some(msg => msg.id === messageId);
       if (alreadyExists) {
@@ -972,7 +980,8 @@ const MessageDetailScreen: React.FC = () => {
 
       // Optimistic mesaj bulunamadı (new_message event'i önce gelmiş olabilir veya başka bir sorun)
       // Eğer mesaj zaten yoksa, ekle (güvenlik için)
-      const messageExists = prev.some(msg => msg.text === messageText && msg.isSent);
+      // CRITICAL FIX: prev array kontrolü (yukarıda zaten yapıldı ama yine de güvenli olmak için)
+      const messageExists = Array.isArray(prev) && prev.some(msg => msg.text === messageText && msg.isSent);
       if (!messageExists && messageText) {
         console.log('[MessageDetail] ⚠️ Optimistic message not found, adding new message');
     const newMessage: MessageDetailItem = {
@@ -1159,8 +1168,10 @@ const MessageDetailScreen: React.FC = () => {
     const currentData = queryClient.getQueryData<any[]>(queryKey);
     console.log('[MessageDetail] 🔍 Cache kontrolü - thread_read setQueryData sonrası:', currentData?.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
     
-    // Mesaj listesini invalidate et (inbox listesini güncelle, badge'i kaldır)
-    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    // ✅ Backend iyileştirmesi: invalidateQueries kaldırıldı
+    // Backend'den gelen unreadCount ve isUnread değerleri zaten setQueryData ile cache'e yazıldı
+    // invalidateQueries gereksiz refetch yapıp performansı düşürüyor
+    // Sadece kontrollü cache güncellemesi yeterli
     
     // Local state'teki mesajları okundu olarak işaretle (sadece component mount ise)
     if (isMountedRef.current) {

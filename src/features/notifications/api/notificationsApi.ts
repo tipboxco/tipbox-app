@@ -109,11 +109,29 @@ export const getNotifications = async (
       // Backend'den gelen `data` objesi (yeni format) veya `metadata` (eski format - backward compatibility)
       const notificationData = item.data || item.metadata || {};
       
+      // CRITICAL FIX: Root seviyedeki postId ve imageUrl'i data'ya taşı (eğer data'da yoksa)
+      // Backend'den root seviyede gelmişse data'ya kopyala, sonra root seviyeden kaldır
+      if (item.postId && !notificationData.postId) {
+        notificationData.postId = item.postId;
+      }
+      if (item.imageUrl && !notificationData.imageUrl) {
+        notificationData.imageUrl = item.imageUrl;
+      }
+      
       // read/isRead field'ını normalize et
       const read = item.read ?? item.isRead ?? false;
       
-      // Dokümana göre: imageUrl data objesi içinde (post, event, badge için)
-      const imageUrl = notificationData?.imageUrl || item.imageUrl || null;
+      // CRITICAL FIX: primaryUser veya otherUsers varsa otomatik olarak isGrouped: true yap
+      // Backend'den isGrouped field'ı gelmeyebilir ama primaryUser/otherUsers varsa gruplandırılmış bildirimdir
+      const hasPrimaryUser = item.primaryUser && item.primaryUser.id;
+      const hasOtherUsers = Array.isArray(item.otherUsers) && item.otherUsers.length > 0;
+      const isGrouped = item.isGrouped === true || hasPrimaryUser || hasOtherUsers;
+      
+      // Count hesapla: backend'den geliyorsa kullan, yoksa primaryUser + otherUsers sayısından hesapla
+      let count = item.count || 0;
+      if (isGrouped && !item.count && hasPrimaryUser) {
+        count = (item.otherUsers?.length || 0) + 1; // primaryUser + otherUsers
+      }
       
       return {
         id: item.id,
@@ -123,7 +141,8 @@ export const getNotifications = async (
         title: item.title || '', // Dokümana göre: title field'ı yok, boş bırak (backward compatibility)
         message: '', // Dokümana göre: message field'ı yok, frontend'de type ve data'ya göre oluşturulacak (backward compatibility)
         avatar: item.avatar || item.avatarUrl || null, // Dokümana göre: avatar root seviyede
-        imageUrl, // imageUrl data objesi içinde veya root seviyede olabilir
+        // CRITICAL FIX: imageUrl root seviyede kaldırıldı, sadece data içinde olacak
+        // imageUrl property'si kaldırıldı - sadece data.imageUrl kullanılacak
         read,
         readAt: item.readAt,
         createdAt: item.createdAt,
@@ -131,11 +150,11 @@ export const getNotifications = async (
         data: notificationData, // Backend'den gelen data objesini direkt kullan (postId, imageUrl, description, vb. içerir)
         metadata: notificationData, // Backward compatibility için metadata'ya da kopyala
         navigation: notificationData?.navigation,
-        // Backend'den gelen gruplandırma alanları (Instagram benzeri)
-        isGrouped: item.isGrouped === true, // Explicit true check
-        count: item.count || 0,
-        primaryUser: item.primaryUser || undefined,
-        otherUsers: Array.isArray(item.otherUsers) ? item.otherUsers : [],
+        // CRITICAL FIX: primaryUser veya otherUsers varsa otomatik olarak isGrouped: true
+        isGrouped: isGrouped,
+        count: count,
+        primaryUser: item.primaryUser || undefined, // Backend'den geliyorsa kullan
+        otherUsers: Array.isArray(item.otherUsers) ? item.otherUsers : [], // Backend'den geliyorsa kullan
       };
     });
     

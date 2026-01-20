@@ -21,6 +21,10 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { LikedUsersBottomSheet } from './LikedUsersBottomSheet';
+import { Platform } from 'react-native';
+import { useSafeAreaValues } from '@/src/utils';
 
 export interface NotificationCardProps {
     notification: Notification;
@@ -33,6 +37,10 @@ export interface NotificationCardProps {
  * Bildirim tipine ve data objesine göre mesaj oluşturur
  * Dokümana göre: message field'ı yok, tüm bilgiler data objesi içinde
  * Username notification.username alanından alınır
+ */
+/**
+ * Instagram benzeri bildirim mesajı oluşturucu
+ * Gruplandırılmış ve tekil bildirimler için optimize edilmiş
  */
 const getNotificationMessage = (
     type: NotificationType, 
@@ -64,9 +72,12 @@ const getNotificationMessage = (
                 return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha seni takip etmeye başladı`;
             case 'NEW_TRUSTED_BY':
                 return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha seni takip ediyor`;
+            default:
+                return `${displayUsername} ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha etkileşimde bulundu`;
         }
     }
     
+    // Tekil bildirimler için standart mesajlar
     switch (type) {
         // POST INTERACTIONS
         case 'POST_LIKED':
@@ -525,6 +536,56 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const isDark = colorMode === 'dark';
     const markAsReadMutation = useMarkNotificationAsRead();
     const deleteMutation = useDeleteNotification();
+    
+    // Global bottom sheet hook
+    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+    const safeAreaValues = useSafeAreaValues();
+    const bottomInset = typeof safeAreaValues.bottom === 'number' ? safeAreaValues.bottom : 0;
+    
+    // Backend'den gelen gruplandırma bilgileri (Instagram benzeri)
+    // CRITICAL FIX: primaryUser veya otherUsers varsa otomatik olarak isGrouped: true yap
+    // Backend'den isGrouped field'ı gelmeyebilir ama primaryUser/otherUsers varsa gruplandırılmış bildirimdir
+    const hasPrimaryUser = notification.primaryUser && notification.primaryUser.id;
+    const hasOtherUsers = Array.isArray(notification.otherUsers) && notification.otherUsers.length > 0;
+    // CRITICAL FIX: isGrouped boolean olarak hesapla
+    const isGrouped = !!(notification.isGrouped === true || hasPrimaryUser || hasOtherUsers);
+    // Count hesapla: backend'den geliyorsa kullan, yoksa primaryUser + otherUsers sayısından hesapla
+    const otherUsersArray = Array.isArray(notification.otherUsers) ? notification.otherUsers : [];
+    const groupedCount = notification.count || (hasPrimaryUser && hasOtherUsers ? otherUsersArray.length + 1 : 0);
+    const primaryUser = notification.primaryUser;
+    const otherUsers = Array.isArray(notification.otherUsers) ? notification.otherUsers : [];
+    
+    // CRITICAL FIX: Liked users bottom sheet açma handler'ı
+    // Worklet hatası önlemek için useCallback ile wrap et ve değerleri güvenli hale getir
+    const handleLikedUsersPress = React.useCallback(() => {
+        // Güvenli değerleri hazırla
+        const safePrimaryUser = primaryUser || undefined;
+        const safeOtherUsers = Array.isArray(otherUsers) ? otherUsers : [];
+        
+        // CRITICAL FIX: Worklet hatası önlemek için değerleri kontrol et
+        if (!safePrimaryUser && safeOtherUsers.length === 0) {
+            console.warn('[NotificationCard] Cannot open bottom sheet: no users available');
+            return;
+        }
+        
+        // Bottom sheet'i aç
+        openBottomSheet(
+            <LikedUsersBottomSheet
+                primaryUser={safePrimaryUser}
+                otherUsers={safeOtherUsers}
+                onClose={closeBottomSheet}
+            />,
+            {
+                enablePanDownToClose: true,
+                enableOverDrag: false,
+                enableHandlePanningGesture: true,
+                enableContentPanningGesture: true,
+                enableDynamicSizing: true,
+                animateOnMount: true,
+                paddingBottom: Platform.OS === 'ios' ? bottomInset + 8 : 8,
+            }
+        );
+    }, [primaryUser, otherUsers, openBottomSheet, closeBottomSheet, bottomInset]);
 
     const handlePress = () => {
         // Mark as read
@@ -751,15 +812,26 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     };
 
     const handleAvatarPress = () => {
-        // Gruplandırılmış bildirimlerde primaryUser kullan, yoksa normal userId
-        const targetUserId = isGrouped && primaryUser?.id
-            ? primaryUser.id
-            : notification.userId;
+        // CRITICAL FIX: Gruplandırılmış bildirimlerde primaryUser.id kullan, yoksa normal userId
+        // Backend'den gruplandırılmış bildirimlerde userId root seviyede yok, primaryUser.id var
+        let targetUserId: string | undefined;
+        
+        if (isGrouped && primaryUser?.id) {
+            targetUserId = primaryUser.id;
+        } else if (notification.userId) {
+            targetUserId = notification.userId;
+        }
         
         // CRITICAL FIX: userId validasyonunu güçlendir
         // userId undefined, null, boş string veya geçersiz olmamalı
         if (!targetUserId) {
-            console.warn('[NotificationCard] Avatar press: userId is missing', notification);
+            console.warn('[NotificationCard] Avatar press: userId is missing', {
+                isGrouped,
+                primaryUserId: primaryUser?.id,
+                notificationUserId: notification.userId,
+                notificationId: notification.id,
+                notificationType: notification.type,
+            });
             return;
         }
         
@@ -856,12 +928,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         }
     };
 
-    // Backend'den gelen gruplandırma bilgileri (Instagram benzeri)
-    const isGrouped = notification.isGrouped === true; // Explicit true check
-    const groupedCount = notification.count || 0;
-    const primaryUser = notification.primaryUser;
-    const otherUsers = Array.isArray(notification.otherUsers) ? notification.otherUsers : [];
-    
     // DEBUG: Gruplandırma bilgilerini logla
     React.useEffect(() => {
         if (__DEV__) {
@@ -888,12 +954,25 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     }, [isGrouped, groupedCount, primaryUser, otherUsers.length, notification.id, notification.type, notification.username, notification.avatar]);
     
     // Avatar ve kullanıcı bilgileri
-    // Gruplandırılmış bildirimlerde primaryUser kullan, yoksa normal avatar
+    // CRITICAL FIX: Gruplandırılmış bildirimlerde primaryUser.avatar öncelikli
+    // Backend'den gruplandırılmış bildirimlerde avatar root seviyede yok, primaryUser.avatar var
     let primaryAvatar = DEFAULT_USER_AVATAR;
     if (isGrouped && primaryUser?.avatar) {
-        primaryAvatar = toImageSource(primaryUser.avatar) || DEFAULT_USER_AVATAR;
+        const avatarSource = toImageSource(primaryUser.avatar);
+        primaryAvatar = avatarSource || DEFAULT_USER_AVATAR;
     } else if (notification.avatar) {
-        primaryAvatar = toImageSource(notification.avatar) || DEFAULT_USER_AVATAR;
+        const avatarSource = toImageSource(notification.avatar);
+        primaryAvatar = avatarSource || DEFAULT_USER_AVATAR;
+    }
+    
+    // DEBUG: Avatar kontrolü
+    if (__DEV__ && primaryAvatar === DEFAULT_USER_AVATAR) {
+        console.warn('[NotificationCard] ⚠️ Default avatar kullanıldı:', {
+            isGrouped,
+            primaryUserAvatar: primaryUser?.avatar,
+            notificationAvatar: notification.avatar,
+            notificationId: notification.id,
+        });
     }
     
     // Minimal yapı: userName field'ları kaldırıldı (mesajda zaten var)
@@ -904,13 +983,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     // Dokümana göre: TIPS_RECEIVED ve TIPS_SENT için data.amount kullanılır
     const tipsAmount = data.amount;
     const commentContent = data.description || data.message; // POST_COMMENTED için description, DM_REQUEST için message
-    const postId = data.postId;
+    const postId = data.postId; // CRITICAL FIX: postId sadece data içinden alınmalı
     const eventId = data.eventId;
     // Minimal yapı: userId root seviyede zaten var, data içinde duplicate yok
     const userId = notification.userId;
     
-    // Post preview image (sağ tarafta gösterilecek)
-    const postImageUrl = data.imageUrl || notification.imageUrl;
+    // CRITICAL FIX: Post preview image sadece data içinden alınmalı (root seviyede imageUrl olmamalı)
+    const postImageUrl = data.imageUrl; // Root seviyedeki notification.imageUrl kaldırıldı
     const postImage = postImageUrl ? toImageSource(postImageUrl) : null;
 
     // Category-based content rendering - Instagram benzeri tasarım
@@ -933,100 +1012,34 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         >
             <HStack space="md" alignItems="flex-start" flex={1}>
 
-                    {/* Avatar Stack - Instagram benzeri tasarım */}
+                    {/* Avatar - Sadece primary avatar */}
                     <Pressable onPress={handleAvatarPress}>
                         <Box
-                            width={isGrouped && otherUsers.length > 0 ? 64 : 48}
-                            height={isGrouped && otherUsers.length > 0 ? 64 : 48}
-                            position="relative"
+                            width={48}
+                            height={48}
                             justifyContent="center"
                             alignItems="center"
                         >
-                            {/* Primary Avatar - Büyük, arka planda */}
+                            {/* Primary Avatar */}
                             <Box
-                                width={44}
-                                height={44}
-                                borderRadius={22}
+                                width={48}
+                                height={48}
+                                borderRadius={24}
                                 borderWidth={2}
                                 borderColor={isDark ? '#333' : '#E9E9E9'}
                                 justifyContent="center"
                                 alignItems="center"
                                 bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                                zIndex={1}
+                                overflow="hidden"
                             >
                                 <Image
                                     source={primaryAvatar}
                                     alt="User avatar"
-                                    width={40}
-                                    height={40}
-                                    borderRadius={20}
+                                    width={44}
+                                    height={44}
+                                    borderRadius={22}
                                 />
                             </Box>
-                            
-                            {/* Other Users Avatars - Küçük, stack olarak (maksimum 2 tane göster) */}
-                            {/* Instagram benzeri: Avatar'lar birbirinin üzerine bindirilmiş, sağ alt köşede */}
-                            {isGrouped && otherUsers && otherUsers.length > 0 && (
-                                <>
-                                    {otherUsers.slice(0, 2).map((user, index) => {
-                                        const userAvatarSource = user.avatar
-                                            ? toImageSource(user.avatar)
-                                            : DEFAULT_USER_AVATAR;
-                                        // Avatar'ları sağ alt köşeye bindir (offset: 16px, 32px)
-                                        const offset = (index + 1) * 16;
-                                        
-                                        return (
-                                            <Box
-                                                key={user.id || `other-user-${index}`}
-                                                position="absolute"
-                                                bottom={-offset}
-                                                right={-offset}
-                                                width={28}
-                                                height={28}
-                                                borderRadius={14}
-                                                borderWidth={2}
-                                                borderColor={isDark ? '#1A1A1A' : '#FFFFFF'}
-                                                justifyContent="center"
-                                                alignItems="center"
-                                                bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                                                zIndex={10 - index} // Üstteki avatar daha yüksek z-index
-                                            >
-                                                <Image
-                                                    source={userAvatarSource}
-                                                    alt="Other user avatar"
-                                                    width={24}
-                                                    height={24}
-                                                    borderRadius={12}
-                                                />
-                                            </Box>
-                                        );
-                                    })}
-                                    {/* Eğer 2'den fazla kullanıcı varsa "+X" badge göster */}
-                                    {otherUsers.length > 2 && (
-                                        <Box
-                                            position="absolute"
-                                            bottom={-48}
-                                            right={-48}
-                                            width={28}
-                                            height={28}
-                                            borderRadius={14}
-                                            bg="#3B82F6"
-                                            borderWidth={2}
-                                            borderColor={isDark ? '#1A1A1A' : '#FFFFFF'}
-                                            justifyContent="center"
-                                            alignItems="center"
-                                            zIndex={5}
-                                        >
-                                            <Text
-                                                color="#FFFFFF"
-                                                fontSize={10}
-                                                fontWeight="$bold"
-                                            >
-                                                +{otherUsers.length - 2}
-                                            </Text>
-                                        </Box>
-                                    )}
-                                </>
-                            )}
                         </Box>
                     </Pressable>
 
@@ -1040,30 +1053,87 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             numberOfLines={2}
                         >
                             {(() => {
-                                // Gruplandırılmış bildirimlerde primaryUser kullan, yoksa normal username
+                                // CRITICAL FIX: Username fallback sırası
+                                // 1. Gruplandırılmış bildirimlerde primaryUser.username
+                                // 2. Normal bildirimlerde notification.username
+                                // 3. Data objesinden fallback (likerName, userName, commenterName, senderName)
                                 let username = 'User';
+                                
                                 if (isGrouped && primaryUser?.username) {
+                                    // Gruplandırılmış bildirimlerde primaryUser.username öncelikli
                                     username = primaryUser.username;
                                 } else if (notification.username) {
+                                    // Normal bildirimlerde notification.username
                                     username = notification.username;
+                                } else {
+                                    // Fallback: data objesinden username al
+                                    const notificationData = notification.data || notification.metadata || {};
+                                    if (notification.type === 'POST_LIKED' && notificationData.likerName) {
+                                        username = notificationData.likerName;
+                                    } else if (notification.type === 'COMMENT_LIKED' && notificationData.commenterName) {
+                                        username = notificationData.commenterName;
+                                    } else if (notification.type === 'POST_COMMENTED' && notificationData.commenterName) {
+                                        username = notificationData.commenterName;
+                                    } else if (notificationData.userName) {
+                                        username = notificationData.userName;
+                                    } else if (notificationData.senderName) {
+                                        username = notificationData.senderName;
+                                    }
                                 }
+                                
+                              
                                 
                                 // Dokümana göre: message field'ı yok, type, username ve data'ya göre mesaj oluştur
                                 const message = getNotificationMessage(
                                     notification.type, 
                                     username, 
                                     data, 
-                                    isGrouped, 
+                                    isGrouped, // Explicit boolean conversion
                                     groupedCount
                                 );
                                 
-                                // Username'i bold yap (aynı font size, sadece bold)
+                                // Gruplandırılmış bildirimlerde "ve X kişi daha" kısmını tıklanabilir yap (Instagram benzeri)
+                                if (isGrouped && groupedCount > 1 && otherUsers.length > 0) {
+                                    // Mesaj formatı: "username ve X kişi daha gönderini beğendi"
+                                    const otherCount = groupedCount - 1;
+                                    const otherText = `ve ${otherCount} ${otherCount === 1 ? 'kişi' : 'kişi'} daha`;
+                                    
+                                    if (message.includes(otherText)) {
+                                        const parts = message.split(otherText);
+                                        const beforeOther = parts[0]; // "username " (username + space)
+                                        const afterOther = parts[1] || ''; // " gönderini beğendi"
+                                        
+                                        // Username'i bold yap, "ve X kişi daha" kısmını tıklanabilir yap
+                                        const usernamePart = beforeOther.trim();
+                                        
+                                        // Tüm mesajı tek bir Text içinde render et (nested Text kullanarak inline hizalama)
+                                        // CRITICAL FIX: onPress handler'ını useCallback ile wrap edilmiş handleLikedUsersPress kullan
+                                        return (
+                                            <Text fontSize="$sm">
+                                                <Text fontSize="$sm" fontWeight="$semibold">{usernamePart}</Text>
+                                                {' '}
+                                                <Text 
+                                                    fontWeight="$semibold"
+                                                    fontSize="$sm"
+                                                    color={isDark ? '#3B82F6' : '#000000'}
+                                                    onPress={handleLikedUsersPress}
+                                                    suppressHighlighting={true} // iOS'ta highlight'ı kaldır
+                                                >
+                                                    {otherText}
+                                                </Text>
+                                                {afterOther}
+                                            </Text>
+                                        );
+                                    }
+                                }
+                                
+                                // Username'i bold yap (aynı font size, sadece bold) - tekil bildirimler için
                                 if (username && message.includes(username)) {
                                     const parts = message.split(username);
                                     return (
                                         <>
                                             {parts[0]}
-                                            <Text fontWeight="$bold" fontSize="$sm">{username}</Text>
+                                            <Text fontWeight="semibold" fontSize="$sm">{username}</Text>
                                             {parts[1]}
                                         </>
                                     );

@@ -438,7 +438,10 @@ export const useMessageHandlers = ({
       );
     });
     
-    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    // ✅ Backend iyileştirmesi: invalidateQueries kaldırıldı
+    // Backend'den gelen unreadCount ve isUnread değerleri zaten setQueryData ile cache'e yazıldı
+    // invalidateQueries gereksiz refetch yapıp performansı düşürüyor
+    // Sadece kontrollü cache güncellemesi yeterli
     
     if (isMountedRef.current) {
       setMessages((prev) =>

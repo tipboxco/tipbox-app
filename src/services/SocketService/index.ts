@@ -302,8 +302,15 @@ class SocketService {
 
   /**
    * Thread read event listener ekler
+   * ✅ Backend iyileştirmesi: thread_read event'ine unreadCount ve isUnread eklendi
    */
-  public onThreadRead(callback: (data: { threadId: string; readBy: string; timestamp: string }) => void): void {
+  public onThreadRead(callback: (data: { 
+    threadId: string; 
+    readBy: string; 
+    timestamp: string;
+    unreadCount?: number;  // YENİ - Backend'den gelen unreadCount
+    isUnread?: boolean;     // YENİ - Backend'den gelen isUnread
+  }) => void): void {
     this.on('thread_read', callback);
   }
 

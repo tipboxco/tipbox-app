@@ -38,8 +38,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     const [description, setDescription] = useState('');
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
     
-    // Refs for scroll and input focus handling
-    const scrollViewRef = useRef<any>(null);
+    // Refs for input focus handling
     const descriptionInputRef = useRef<any>(null);
     const amountInputRef = useRef<any>(null);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);

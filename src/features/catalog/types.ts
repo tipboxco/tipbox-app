@@ -28,6 +28,30 @@ export interface BrandListItem {
 }
 
 /**
+ * Global Brand Search - Category Item
+ * /brands/search endpoint'inden dönen category bazında gruplanmış brand bilgisi
+ */
+export interface GlobalBrandSearchCategoryItem {
+  categoryId: string;
+  categoryName: string;
+  categoryImage: string | null;
+  brands: BrandListItem[];
+}
+
+/**
+ * Global Brand Search Response
+ * /brands/search endpoint'inden dönen response
+ */
+export interface GlobalBrandSearchResponse {
+  items: GlobalBrandSearchCategoryItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
  * Catalog SubCategory - API'den gelen alt kategori bilgisi
  */
 export interface CatalogSubCategory {
@@ -56,6 +80,34 @@ export interface CatalogProduct {
   image: string | null; // Dokümana göre null olabilir
   productGroupId: string;
   subCategoryId: string;
+}
+
+/**
+ * Global Product Search - Product Group Item
+ * /catalog/products/search endpoint'inden dönen product group bazında gruplanmış ürün bilgisi
+ */
+export interface GlobalProductSearchGroupItem {
+  productGroupId: string;
+  productGroupName: string;
+  productGroupImage: string | null;
+  subCategoryId: string;
+  subCategoryName: string;
+  categoryId: string;
+  categoryName: string;
+  products: CatalogProduct[];
+}
+
+/**
+ * Global Product Search Response
+ * /catalog/products/search endpoint'inden dönen response
+ */
+export interface GlobalProductSearchResponse {
+  items: GlobalProductSearchGroupItem[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
 }
 
 /**

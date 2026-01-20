@@ -8,7 +8,8 @@ export interface Notification {
   type: NotificationType;
   username?: string; // Backend'den gelen username alanı
   avatar?: string | null; // CRITICAL FIX: avatarUrl → avatar (backend format)
-  imageUrl?: string | null;
+  // CRITICAL FIX: imageUrl root seviyede olmamalı, sadece data içinde olmalı
+  // imageUrl?: string | null; // KALDIRILDI - sadece data.imageUrl kullanılacak
   read: boolean;
   readAt?: string;
   createdAt: string;
@@ -20,19 +21,20 @@ export interface Notification {
   // Mesajlar getNotificationMessage fonksiyonu ile dinamik oluşturuluyor
   title?: string; // Backward compatibility - kullanılmıyor
   message?: string; // Backward compatibility - kullanılmıyor
-  // Backend'den gelen gruplandırma alanları (Instagram benzeri)
+  // CRITICAL FIX: primaryUser ve otherUsers sadece backend'den geliyorsa kullanılacak
+  // Backend'den gelmiyorsa undefined (frontend'de gruplama yapılacaksa frontend'de oluşturulacak)
   isGrouped?: boolean; // Backend'de gruplandırılmış mı?
   count?: number; // Gruplandırılmış bildirimlerde toplam kullanıcı sayısı
   primaryUser?: {
     id?: string;
     username?: string;
     avatar?: string | null;
-  }; // Gruplandırılmış bildirimlerde ana kullanıcı
+  }; // Gruplandırılmış bildirimlerde ana kullanıcı (backend'den geliyorsa)
   otherUsers?: Array<{
     id?: string;
     username?: string;
     avatar?: string | null;
-  }>; // Gruplandırılmış bildirimlerde diğer kullanıcılar
+  }>; // Gruplandırılmış bildirimlerde diğer kullanıcılar (backend'den geliyorsa)
 }
 
 export interface NotificationData {

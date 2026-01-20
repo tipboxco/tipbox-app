@@ -13,7 +13,8 @@ import type {
   NewsCommentsResponse,
   NewsShareRequest,
   NewsShareResponse,
-  NewsApiResponse
+  NewsApiResponse,
+  GlobalProductSearchResponse
 } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
@@ -829,6 +830,104 @@ export const getProductGroupPosts = async (
   } catch (error: any) {
     console.error('[getProductGroupPosts] API Error:', {
       url: `/catalog/product-groups/${productGroupId}/posts?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Global Product Search endpoint function
+ * Tüm product grupları arasında arama yapar ve sonuçları product group bazında gruplar
+ * 
+ * BACKEND ENDPOINT YAPISI İSTENİYOR:
+ * GET /catalog/products/search
+ * 
+ * Query Parameters:
+ * - search: string (required) - Product adı, marka veya açıklamasında arama
+ * - cursor: string (optional) - Pagination cursor (ilk istek için undefined)
+ * - limit: number (optional, default: 20, max: 50) - Sayfa başına item sayısı
+ * 
+ * Response Format (Backend'den beklenen):
+ * {
+ *   items: GlobalProductSearchGroupItem[],
+ *   pagination: {
+ *     cursor?: string,
+ *     hasMore: boolean,
+ *     limit: number
+ *   }
+ * }
+ * 
+ * Önemli Notlar:
+ * - Eşleşen veri olmayan product group'lar response'da yer almamalıdır
+ * - Sonuçlar product group bazında gruplanmalıdır
+ * - Her product group için kategori bilgileri (subCategory, category) dahil edilmelidir
+ * 
+ * @param search - Product adı, marka veya açıklamasında arama (zorunlu)
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 20)
+ * @returns GlobalProductSearchResponse - Product group bazında gruplanmış ürün listesi ve pagination bilgisi
+ */
+export const searchGlobalProducts = async (
+  search: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<GlobalProductSearchResponse> => {
+  if (!search || search.trim().length === 0) {
+    throw new Error('Search query is required');
+  }
+
+  const params = new URLSearchParams();
+  params.append('search', search.trim());
+  
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  
+  params.append('limit', limit.toString());
+  
+  try {
+    const response = await apiService.getClient().get<GlobalProductSearchResponse>(
+      `/catalog/products/search?${params.toString()}`
+    );
+    
+    // Ensure items is always an array (defensive programming)
+    const safeResponse: GlobalProductSearchResponse = {
+      items: Array.isArray(response.data?.items) ? response.data.items : [],
+      pagination: response.data?.pagination || {
+        hasMore: false,
+        limit: limit,
+      },
+    };
+    
+    return safeResponse;
+  } catch (error: any) {
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      // Sadece debug modunda log bas (production'da sessiz)
+      if (__DEV__) {
+        console.warn('[searchGlobalProducts] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
+          url: `/catalog/products/search`,
+          search,
+          message: 'This endpoint is not available on the backend server. Please contact backend team.',
+        });
+      }
+      
+      // Boş response döndür (kullanıcıya hata göstermek yerine boş sonuç göster)
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit: limit,
+        },
+      };
+    }
+    
+    console.error('[searchGlobalProducts] API Error:', {
+      url: `/catalog/products/search?${params.toString()}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

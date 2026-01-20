@@ -17,13 +17,15 @@ import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/sr
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
-import { Share } from 'react-native';
+import { Share, Keyboard, Platform } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
 import { ProfileStackParamList } from '../navigation';
 import { toImageSource, useSafeAreaValues, useBottomOffset } from '@/src/utils';
+import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import SendTipsBottomSheet from '@/src/features/inbox/components/SendTipsBottomSheet';
 import { CardType } from '@/src/types/common';
 import type { PostCardData } from '@/src/types/PostCard';
 import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsCard';
@@ -569,6 +571,12 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Bottom padding for FlatList content
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
   
+  // Global bottom sheet hook
+  const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
+  
+  // Safe area insets for bottom sheet
+  const insets = useSafeAreaValues();
+  
   // Route params'tan userId al, yoksa store'daki user.id'yi kullan
   // CRITICAL FIX: userId validasyonu - boş string veya geçersiz değer kontrolü
   const routeUserId = route.params?.userId;
@@ -585,7 +593,11 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const queryClient = useQueryClient();
   
   // Profile API hook
-  const { data: userProfile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useUserProfile(targetUserId);
+  const profileQueryResult = useUserProfile(targetUserId);
+  const userProfile = profileQueryResult.data as UserProfile | undefined;
+  const isProfileLoading = profileQueryResult.isLoading;
+  const profileError = profileQueryResult.error;
+  const refetchProfile = profileQueryResult.refetch;
   
   // CRITICAL FIX: Trust ve Truster sayılarını liste uzunluklarından al
   // DrawerContent ve Trust_TrusterListScreen ile aynı veriyi kullan (liste uzunluğu = gerçek sayı)
@@ -771,21 +783,101 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     }
   }, []);
   
+  // Handle Send TIPS - Bottom sheet aç
+  const handleSendTips = useCallback((amount: number, message?: string) => {
+    if (!user?.id || !targetUserId) {
+      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      return;
+    }
+
+    // Amount validation (minimum 0.01)
+    if (amount <= 0 || amount < 0.01) {
+      Alert.alert('Hata', 'TIPS miktarı en az 0.01 olmalıdır');
+      return;
+    }
+
+    // Message validation (boş string olamaz)
+    const finalMessage = message?.trim() || '';
+    if (finalMessage.length === 0) {
+      Alert.alert('Hata', 'Mesaj boş olamaz');
+      return;
+    }
+
+    const requestData = {
+      senderUserId: user.id,
+      recipientUserId: targetUserId,
+      message: finalMessage,
+      amount: amount,
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log('[ProfileScreen] 📤 Sending TIPS Request:', {
+      ...requestData,
+      messagePreview: finalMessage.substring(0, 50) + '...',
+      amountType: typeof amount,
+      amountValue: amount,
+    });
+
+    // Send gift mutation
+    sendGiftMutation.mutate(
+      {
+        senderUserId: user.id,
+        recipientUserId: targetUserId,
+        amount: amount,
+        message: finalMessage,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        onSuccess: (response) => {
+          console.log('[ProfileScreen] ✅ TIPS sent successfully:', response);
+          showCustomToast(toast, {
+            title: 'TIPS gönderildi',
+            description: `${amount} TIPS başarıyla gönderildi`,
+            action: 'success',
+          });
+        },
+        onError: (error: any) => {
+          console.error('[ProfileScreen] ❌ TIPS send failed:', error);
+          const errorMessage = error.response?.data?.message || error.message || 'TIPS gönderilirken bir hata oluştu';
+          Alert.alert('Hata', errorMessage);
+        },
+      }
+    );
+  }, [user?.id, targetUserId, sendGiftMutation, toast]);
+
   // Action button handlers
   const handleSendTIPS = useCallback(() => {
     if (!user?.id || !targetUserId || !userProfile) return;
-    // MessageDetail screen'ine navigate et (TIPS gönderme için)
-    // openSendTips: true ile tips modalını otomatik aç
-    navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
-      messageId: targetUserId,
-      threadId: targetUserId,
-      recipientUserId: targetUserId,
-      senderName: userProfile.name || 'Unknown',
-      senderTitle: userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : '',
-      senderAvatar: userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png'),
-      openSendTips: true, // Tips modalını otomatik aç
+    
+    // Klavye açıksa kapat
+    Keyboard.dismiss();
+    
+    // SendTipsBottomSheet'i modal olarak aç
+    // requestAnimationFrame kullanarak bir sonraki frame'de aç - klavye kapanma işlemi tamamlansın
+    requestAnimationFrame(() => {
+      openBottomSheet(
+        <SendTipsBottomSheet
+          senderName={userProfile.name || 'Unknown'}
+          senderTitle={userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : ''}
+          senderAvatar={userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png')}
+          onClose={closeBottomSheet}
+          onSend={handleSendTips}
+        />,
+        {
+          enablePanDownToClose: true,
+          enableOverDrag: false,
+          enableHandlePanningGesture: true,
+          enableContentPanningGesture: true,
+          enableDynamicSizing: true,
+          animateOnMount: true,
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
+          keyboardBehavior: 'interactive',
+          keyboardBlurBehavior: 'restore',
+          android_keyboardInputMode: 'adjustResize',
+        }
+      );
     });
-  }, [user?.id, targetUserId, userProfile]);
+  }, [user?.id, targetUserId, userProfile, openBottomSheet, closeBottomSheet, handleSendTips, insets.bottom]);
 
   const handle1on1Request = useCallback(() => {
     if (!user?.id || !targetUserId) return;
@@ -1153,7 +1245,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   ]}
                   onMenuStateChange={setIsContextMenuOpen}
                   onCloseRef={(closeFn) => {
-                    contextMenuCloseRef.current = closeFn;
+                    // FIX: undefined kontrolü - ref'e undefined atanmasını önle
+                    if (closeFn !== undefined && closeFn !== null) {
+                      contextMenuCloseRef.current = closeFn;
+                    }
                   }}
                 >
                   <EllipsisVerticalIcon size={24} color="#fff" />

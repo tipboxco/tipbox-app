@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,7 +8,7 @@ import { Search } from 'lucide-react-native';
 import { BrandCard } from '../components/BrandCard';
 import CategoryCard from '../components/CategoryCard';
 import { Header } from '@/src/components/Header';
-import { useBrandCategories, useBrandsByCategory } from '../api/hooks';
+import { useBrandCategories, useBrandsByCategory, useGlobalBrandSearch } from '../api/hooks';
 import type { BrandCategory, BrandListItem } from '../types';
 import type { CategoryCardCategory } from '../components/CategoryCard';
 import type { BrandCardBrand } from '../components/BrandCard';
@@ -117,9 +117,30 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     }
   }, [currentStep, breadcrumbItems, initialCategoryId, selectedCategory]);
 
+  // Debounce search query for API calls
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Global brand search - tüm brand kategorileri arasında arama
+  const hasGlobalSearch = debouncedSearchQuery && debouncedSearchQuery.length > 0;
+  const { 
+    data: globalBrandSearchData, 
+    isLoading: isLoadingGlobalBrandSearch,
+    fetchNextPage: fetchNextGlobalBrandSearchPage,
+    hasNextPage: hasNextGlobalBrandSearchPage,
+    isFetchingNextPage: isFetchingNextGlobalBrandSearchPage
+  } = useGlobalBrandSearch(hasGlobalSearch ? debouncedSearchQuery : undefined, 20);
+
   const { data: brandCategories, isLoading: isCategoriesLoading, error: categoriesError } = useBrandCategories();
   // Initial category ID varsa onu kullan, yoksa selectedCategory'dan al
-  const activeCategoryId = initialCategoryId || (currentStep === 'brands' ? selectedCategory?.id : undefined);
+  // Global search aktifse category ID gönderme
+  const activeCategoryId = hasGlobalSearch ? undefined : (initialCategoryId || (currentStep === 'brands' ? selectedCategory?.id : undefined));
   const { data: brandsByCategory, isLoading: isBrandsLoading, error: brandsError } = useBrandsByCategory(
     activeCategoryId
   );
@@ -212,7 +233,113 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     };
   };
 
+  // Global search sonuçlarını formatla - useMemo ile cache'le
+  const globalBrandSearchResults = useMemo(() => {
+    if (!globalBrandSearchData?.pages) return [];
+    
+    // InfiniteData yapısından tüm category'leri çıkar
+    const allCategories = globalBrandSearchData.pages.flatMap((page) => page.items || []);
+    
+    // DEBUG: Backend'den gelen veriyi log'la
+    if (__DEV__ && allCategories.length > 0) {
+      console.log('[BrandScreen] 🔍 Global Brand Search Results:', {
+        searchQuery: debouncedSearchQuery,
+        categoriesCount: allCategories.length,
+        categories: allCategories.map(cat => ({
+          categoryId: cat.categoryId,
+          categoryName: cat.categoryName,
+          brandsCount: cat.brands.length,
+          brands: cat.brands.map(b => ({
+            brandId: b.brandId || b.id,
+            name: b.name,
+            image: b.image,
+          })),
+        })),
+      });
+    }
+    
+    // Backend'den gelen veriyi temizle ve doğrula
+    const cleanedCategories = allCategories
+      .map(category => {
+        // Her category için unique brand'leri filtrele
+        // Aynı brandId'ye sahip brand'leri tekilleştir
+        const uniqueBrands = category.brands.reduce((acc, brand) => {
+          const brandId = brand.brandId || brand.id || `${brand.categoryId}-${brand.name}`;
+          if (!acc.find(b => (b.brandId || b.id || `${b.categoryId}-${b.name}`) === brandId)) {
+            acc.push(brand);
+          } else {
+            // Duplicate brand bulundu - log'la
+            if (__DEV__) {
+              console.warn('[BrandScreen] ⚠️ Duplicate brand found:', {
+                brandId,
+                brandName: brand.name,
+                categoryId: category.categoryId,
+                categoryName: category.categoryName,
+              });
+            }
+          }
+          return acc;
+        }, [] as BrandListItem[]);
+        
+        // Eğer unique brand yoksa, bu category'yi filtrele
+        if (uniqueBrands.length === 0) {
+          if (__DEV__) {
+            console.warn('[BrandScreen] ⚠️ Empty category filtered out:', {
+              categoryId: category.categoryId,
+              categoryName: category.categoryName,
+            });
+          }
+          return null;
+        }
+        
+        return {
+          ...category,
+          brands: uniqueBrands,
+        };
+      })
+      .filter((category): category is NonNullable<typeof category> => category !== null);
+    
+    // Tüm brand'leri brandId'ye göre unique kontrolü yap
+    // Aynı brand farklı category'lerde varsa, sadece ilk görünen category'de tut
+    const seenBrandIds = new Set<string>();
+    const finalCategories = cleanedCategories.map(category => {
+      const filteredBrands = category.brands.filter(brand => {
+        const brandId = brand.brandId || brand.id || `${brand.categoryId}-${brand.name}`;
+        if (seenBrandIds.has(brandId)) {
+          // Bu brand başka bir category'de zaten görüldü
+          if (__DEV__) {
+            console.warn('[BrandScreen] ⚠️ Brand appears in multiple categories:', {
+              brandId,
+              brandName: brand.name,
+              currentCategory: category.categoryName,
+            });
+          }
+          return false;
+        }
+        seenBrandIds.add(brandId);
+        return true;
+      });
+      
+      // Eğer tüm brand'ler filtrelendiyse, bu category'yi kaldır
+      if (filteredBrands.length === 0) {
+        return null;
+      }
+      
+      return {
+        ...category,
+        brands: filteredBrands,
+      };
+    }).filter((category): category is NonNullable<typeof category> => category !== null);
+    
+    return finalCategories;
+  }, [globalBrandSearchData, debouncedSearchQuery]);
+
   const getCurrentData = () => {
+    // Global search aktifse, global search sonuçlarını döndür
+    if (hasGlobalSearch) {
+      return null; // Global search için özel render mantığı kullanılacak
+    }
+    
     if (currentStep === 'categories') {
       const categories = (brandCategories || []).map(mapBrandCategoryToCardCategory);
       return categories.filter(category =>
@@ -316,58 +443,168 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         </Box>
       )}
 
-      {/* Empty State */}
-      {currentStep === 'brands' && !isBrandsLoading && !brandsError && currentData.length === 0 && (
-        <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
-          <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm" textAlign="center">
-            No brands found in this category yet
-          </Text>
-        </Box>
-      )}
+      {/* Global Brand Search Results */}
+      {hasGlobalSearch ? (
+        isLoadingGlobalBrandSearch ? (
+          <Box flex={1} justifyContent="center" alignItems="center" py="$8">
+            <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm">Loading...</Text>
+          </Box>
+        ) : globalBrandSearchResults.length === 0 ? (
+          <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
+            <Text color={isDark ? '#999' : '#666'} fontSize="$sm" textAlign="center">
+              Arama sonucu bulunamadı
+            </Text>
+          </Box>
+        ) : (
+          <ScrollView 
+            flex={1} 
+            px="$4" 
+            pb={scrollViewPaddingBottom}
+            onScroll={(event) => {
+              // Global search için infinite scroll
+              if (hasNextGlobalBrandSearchPage && !isFetchingNextGlobalBrandSearchPage) {
+                const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+                const paddingToBottom = 20;
+                if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+                  fetchNextGlobalBrandSearchPage();
+                }
+              }
+              onScroll?.(event);
+            }}
+            scrollEventThrottle={400}
+            showsVerticalScrollIndicator={false}
+          >
+            <VStack space="md" pt="$4">
+              {globalBrandSearchResults.map((category) => (
+                <VStack key={category.categoryId} space="sm" mb="$6">
+                  {/* Category Header */}
+                  <HStack alignItems="center" space="sm" mb="$2">
+                    {category.categoryImage && (
+                      <Image
+                        source={{ uri: category.categoryImage }}
+                        alt={category.categoryName}
+                        width={32}
+                        height={32}
+                        borderRadius={8}
+                      />
+                    )}
+                    <VStack flex={1}>
+                      <Text 
+                        fontSize="$sm" 
+                        fontWeight="$semibold" 
+                        color={isDark ? '#FFF' : '#000'}
+                      >
+                        {category.categoryName}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  
+                  {/* Brands Grid */}
+                  {Array.from({ length: Math.ceil(category.brands.length / 3) }).map((_, rowIndex) => {
+                    const itemsPerRow = 3;
+                    const startIndex = rowIndex * itemsPerRow;
+                    const rowItems = category.brands.slice(startIndex, startIndex + itemsPerRow);
+                    
+                    return (
+                      <HStack key={`category-${category.categoryId}-row-${rowIndex}`} space="md" justifyContent="space-between">
+                        {Array.from({ length: itemsPerRow }).map((_, colIndex) => {
+                          const brand = rowItems[colIndex];
+                          
+                          if (!brand) {
+                            return <Box key={colIndex} flex={1} />;
+                          }
+                          
+                          const brandCard = mapBrandListItemToBrandCardBrand(brand);
+                          
+                          return (
+                            <BrandCard
+                              key={`${category.categoryId}-${brandCard.id}-${rowIndex}-${colIndex}`}
+                              brand={brandCard}
+                              onPress={() => {
+                                // Brand'a tıklandığında breadcrumb'ı oluştur
+                                const categoryBreadcrumb: BreadcrumbItem = {
+                                  id: category.categoryId,
+                                  name: category.categoryName,
+                                  type: 'category',
+                                };
+                                
+                                setBreadcrumbItems([categoryBreadcrumb]);
+                                handleBrandPress(brandCard);
+                              }}
+                            />
+                          );
+                        })}
+                      </HStack>
+                    );
+                  })}
+                </VStack>
+              ))}
+              
+              {/* Load More Indicator */}
+              {isFetchingNextGlobalBrandSearchPage && (
+                <Box py="$4" alignItems="center">
+                  <Text color={isDark ? '#999' : '#666'} fontSize="$sm">Loading more...</Text>
+                </Box>
+              )}
+            </VStack>
+          </ScrollView>
+        )
+      ) : (
+        <>
+          {/* Empty State */}
+          {currentStep === 'brands' && !isBrandsLoading && !brandsError && currentData && currentData.length === 0 && (
+            <Box flex={1} justifyContent="center" alignItems="center" px="$4" py="$8">
+              <Text color={isDark ? '#FFFFFF' : '#9D9D9D'} fontSize="$sm" textAlign="center">
+                No brands found in this category yet
+              </Text>
+            </Box>
+          )}
 
-      {/* Dynamic Grid */}
-      {currentData.length > 0 && (
-        <ScrollView 
-          flex={1} 
-          px="$4" 
-          pb={scrollViewPaddingBottom}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-        >
-          <VStack space="md" pt="$4">
-            {currentData.map((item, index) => (
-              <HStack key={`row-${index}`} space="md" justifyContent="space-between">
-                {[0, 1, 2].map((colIndex) => {
-                  const itemIndex = index * 3 + colIndex;
-                  const currentItem = currentData[itemIndex];
-                  
-                  if (!currentItem) {
-                    return <Box key={`empty-${index}-${colIndex}`} flex={1} />;
-                  }
-                  
-                  if (currentStep === 'categories') {
-                    return (
-                      <CategoryCard
-                        key={`category-${currentItem.id}-${index}-${colIndex}`}
-                        category={currentItem as CategoryCardCategory}
-                        onPress={() => handleCategoryPress(currentItem as CategoryCardCategory)}
-                      />
-                    );
-                  } else {
-                    return (
-                      <BrandCard
-                        key={`brand-${currentItem.id}-${index}-${colIndex}`}
-                        brand={currentItem as BrandCardBrand}
-                        onPress={() => handleBrandPress(currentItem as BrandCardBrand)}
-                      />
-                    );
-                  }
-                })}
-              </HStack>
-            ))}
-          </VStack>
-        </ScrollView>
+          {/* Dynamic Grid */}
+          {currentData && currentData.length > 0 && (
+            <ScrollView 
+              flex={1} 
+              px="$4" 
+              pb={scrollViewPaddingBottom}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              showsVerticalScrollIndicator={false}
+            >
+              <VStack space="md" pt="$4">
+                {currentData.map((item, index) => (
+                  <HStack key={`row-${index}`} space="md" justifyContent="space-between">
+                    {[0, 1, 2].map((colIndex) => {
+                      const itemIndex = index * 3 + colIndex;
+                      const currentItem = currentData[itemIndex];
+                      
+                      if (!currentItem) {
+                        return <Box key={`empty-${index}-${colIndex}`} flex={1} />;
+                      }
+                      
+                      if (currentStep === 'categories') {
+                        return (
+                          <CategoryCard
+                            key={`category-${currentItem.id}-${index}-${colIndex}`}
+                            category={currentItem as CategoryCardCategory}
+                            onPress={() => handleCategoryPress(currentItem as CategoryCardCategory)}
+                          />
+                        );
+                      } else {
+                        return (
+                          <BrandCard
+                            key={`brand-${currentItem.id}-${index}-${colIndex}`}
+                            brand={currentItem as BrandCardBrand}
+                            onPress={() => handleBrandPress(currentItem as BrandCardBrand)}
+                          />
+                        );
+                      }
+                    })}
+                  </HStack>
+                ))}
+              </VStack>
+            </ScrollView>
+          )}
+        </>
       )}
     </Box>
   );
