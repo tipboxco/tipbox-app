@@ -67,6 +67,12 @@ export interface NotificationData {
   shareType?: string; // POST_SHARED için share tipi
   amount?: number;
   rewardAmount?: number;
+  // Support Request fields
+  senderUserId?: string;
+  recipientUserId?: string;
+  requestType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT'; // Request type
+  requestStatus?: 'pending' | 'accepted' | 'declined' | 'completed';
+  timestamp?: string; // ISO 8601 formatında
   [key: string]: any;
 }
 

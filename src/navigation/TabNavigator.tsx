@@ -1,9 +1,18 @@
-import React, { useMemo, useCallback } from 'react';
-import { Platform, View } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React, { useMemo, useCallback, useState } from 'react';
+import { Platform, View, StyleSheet } from 'react-native';
+import { createBottomTabNavigator, BottomTabBarProps, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigationUIStore } from '@/src/store/navigationUIStore';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolate,
+  runOnJS,
+} from 'react-native-reanimated';
 import { NotificationBadge } from '@/src/components/NotificationBadge';
 import { MessageBadge } from '@/src/components/MessageBadge';
 import { useUnreadCount, useMarkAllNotificationsAsRead } from '@/src/features/notifications/api/hooks';
@@ -15,6 +24,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/src/providers/AuthProvider';
 import { getHeavyTabFreezeRule } from './rules/freezeRules';
 import { ScrollRegistry } from '@/src/services/ScrollRegistry';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 // Heroicons imports
 import {
   HomeIcon as HomeIconSolid,
@@ -47,6 +57,222 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // Directly use FeedNavigator, ExploreNavigator, etc. - they already return StackNavigators
 // This eliminates one nesting level: Tab > FeatureStack > FeedNavigator → Tab > FeedNavigator
 // Reduces mounting time and React diffing complexity
+
+// Custom Tab Bar Component with Liquid Glass Effect
+const CustomTabBar = (props: BottomTabBarProps) => {
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
+  const insets = useSafeAreaInsets();
+  const isTabBarVisible = useNavigationUIStore((state) => state.isTabBarVisible);
+  
+  // Liquid Glass availability check
+  const isGlassAvailable = useMemo(() => {
+    return Platform.OS === 'ios' && isLiquidGlassAvailable();
+  }, []);
+  
+  // Gesture animasyon değerleri
+  const panX = useSharedValue(0);
+  const isPressing = useSharedValue(false);
+  const [tabBarWidth, setTabBarWidth] = useState(0);
+  
+  // Tab bar gizliyse render etme
+  if (!isTabBarVisible) {
+    return null;
+  }
+  
+  const androidBottomPadding = insets.bottom;
+  const tabBarHeight = Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding;
+  const tabCount = props.state.routes.length;
+  const tabWidth = tabBarWidth > 0 ? tabBarWidth / tabCount : 0;
+  
+  // Tab değiştirme fonksiyonu
+  const navigateToTab = useCallback((index: number) => {
+    const route = props.state.routes[index];
+    if (route && index !== props.state.index) {
+      props.navigation.navigate(route.name, route.params);
+    }
+  }, [props.navigation, props.state.routes, props.state.index]);
+  
+  // Pan gesture handler - tab'lar arasında sürükleme
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .onStart(() => {
+          'worklet';
+          isPressing.value = true;
+        })
+        .onUpdate((event) => {
+          'worklet';
+          // Yatay hareketi takip et
+          panX.value = event.translationX;
+        })
+        .onEnd((event) => {
+          'worklet';
+          isPressing.value = false;
+          
+          // Hangi tab'a sürüklendiğini hesapla
+          const currentIndex = props.state.index;
+          const translationX = event.translationX;
+          
+          // Threshold: Tab genişliğinin %30'u
+          const threshold = tabWidth * 0.3;
+          
+          let targetIndex = currentIndex;
+          
+          if (Math.abs(translationX) > threshold) {
+            if (translationX > 0 && currentIndex > 0) {
+              // Sağa sürükleme - önceki tab
+              targetIndex = currentIndex - 1;
+            } else if (translationX < 0 && currentIndex < tabCount - 1) {
+              // Sola sürükleme - sonraki tab
+              targetIndex = currentIndex + 1;
+            }
+          }
+          
+          // Tab değiştir
+          if (targetIndex !== currentIndex) {
+            runOnJS(navigateToTab)(targetIndex);
+          }
+          
+          // Animasyonu sıfırla
+          panX.value = withSpring(0, {
+            damping: 20,
+            stiffness: 90,
+          });
+        })
+        .onFinalize(() => {
+          'worklet';
+          isPressing.value = false;
+          panX.value = withSpring(0, {
+            damping: 20,
+            stiffness: 90,
+          });
+        }),
+    [tabWidth, tabCount, props.state.index, navigateToTab]
+  );
+  
+  // Animasyonlu overlay - sürüklerken glass efekti daha belirgin olur
+  const animatedOverlay = useAnimatedStyle(() => {
+    const intensity = isPressing.value 
+      ? Math.min(1, Math.abs(panX.value) / (tabWidth * 0.5))
+      : 0;
+    
+    // Sürüklerken overlay opacity artar (glass efekti daha belirgin)
+    const overlayOpacity = withTiming(intensity * 0.2, { duration: 100 });
+    
+    return {
+      opacity: overlayOpacity,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    };
+  });
+  
+  // Liquid Glass için base tint color
+  const baseTintColor = isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)';
+  
+  // Tab bar container style - yuvarlatılmış üst köşeler (su damlası efekti)
+  const containerStyle = {
+    position: 'absolute' as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: tabBarHeight,
+    zIndex: 1000,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden' as const,
+    // Shadow efekti - daha belirgin görünüm için
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  };
+  
+  // Liquid Glass kullanılabilirse GlassView ile sarmala
+  if (isGlassAvailable) {
+    return (
+      <GestureDetector gesture={panGesture}>
+        <GlassView
+          style={containerStyle}
+          glassEffectStyle="clear" // "clear" daha şeffaf ve su damlası gibi görünür
+          isInteractive={true} // Interactive yapıldı - dokunma efekti için
+          tintColor={baseTintColor}
+        >
+          <View style={{ flex: 1, position: 'relative' }}>
+            <BottomTabBar 
+              {...props} 
+              style={[
+                props.style,
+                {
+                  backgroundColor: 'transparent',
+                  borderTopWidth: 0,
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  paddingTop: 8,
+                },
+              ]}
+              onLayout={(event) => {
+                const { width } = event.nativeEvent.layout;
+                if (width > 0) {
+                  setTabBarWidth(width);
+                }
+              }}
+            />
+            {/* Animasyonlu overlay - sürüklerken glass efekti daha belirgin */}
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: 24,
+                  pointerEvents: 'none',
+                },
+                animatedOverlay,
+              ]}
+            />
+          </View>
+        </GlassView>
+      </GestureDetector>
+    );
+  }
+  
+  // Fallback: Normal tab bar (Android veya iOS'ta liquid glass mevcut değilse)
+  // Fallback'te de yuvarlatılmış köşeler ekle
+  return (
+    <GestureDetector gesture={panGesture}>
+      <View style={containerStyle}>
+        <BottomTabBar 
+          {...props} 
+          style={[
+            props.style,
+            {
+              backgroundColor: isDark ? '#000000' : '#FAFAFA',
+              borderTopWidth: 0,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingTop: 8,
+            },
+          ]}
+          onLayout={(event) => {
+            const { width } = event.nativeEvent.layout;
+            if (width > 0) {
+              setTabBarWidth(width);
+            }
+          }}
+        />
+      </View>
+    </GestureDetector>
+  );
+};
 
 export const TabNavigator = () => {
   const { colorMode } = useColorMode();
@@ -106,8 +332,14 @@ export const TabNavigator = () => {
     }
   }, []);
 
+  // Liquid Glass availability check - TabNavigator içinde de kullanılıyor
+  const isGlassAvailable = useMemo(() => {
+    return Platform.OS === 'ios' && isLiquidGlassAvailable();
+  }, []);
+  
   // tabBarStyle'ı useMemo ile optimize et - sürekli re-render'ı önle
   // Tab bar visibility'ye göre display kontrolü yap
+  // Liquid Glass kullanılıyorsa backgroundColor transparent olmalı
   const tabBarStyle = useMemo(() => {
     const androidBottomPadding = insets.bottom;
     
@@ -116,19 +348,27 @@ export const TabNavigator = () => {
       return { display: 'none' as const };
     }
     
+    // Liquid Glass kullanılıyorsa backgroundColor transparent yap
+    const backgroundColor = isGlassAvailable 
+      ? 'transparent' 
+      : (isDark ? '#000000' : '#FAFAFA');
+    
     return {
-      backgroundColor: isDark ? '#000000' : '#FAFAFA',
-      borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : '#E9E9E9',
+      backgroundColor,
+      borderTopWidth: 0, // Border'ı kaldırdık, yuvarlatılmış köşeler var
+      borderTopLeftRadius: 24, // Yuvarlatılmış üst köşeler (su damlası efekti)
+      borderTopRightRadius: 24,
       height: Platform.OS === 'ios' ? 45 + insets.bottom : 45 + androidBottomPadding,
-      paddingTop: 4,
+      paddingTop: 8, // Üst padding artırıldı
       paddingBottom: Platform.OS === 'ios' ? insets.bottom : androidBottomPadding,
       position: 'absolute' as const,
       bottom: 0,
       left: 0,
       right: 0,
       zIndex: 1000,
+      overflow: 'hidden' as const, // Yuvarlatılmış köşeler için
     };
-  }, [insets.bottom, isTabBarVisible, isDark]);
+  }, [insets.bottom, isTabBarVisible, isDark, isGlassAvailable]);
 
   // PERFORMANCE FIX: Tab bar icon render fonksiyonunu useCallback ile memoize et
   // Her tab değişiminde tüm tab'lar için çalışmasını önler
@@ -257,6 +497,7 @@ export const TabNavigator = () => {
       {/* Tab Navigator - Tam ekranı kaplar, Drawer buraya kadar uzanabilir */}
       <View style={{ flex: 1 }}>
         <Tab.Navigator
+          tabBar={(props) => <CustomTabBar {...props} />}
           screenOptions={({ route }) => ({
             // ARCHITECTURE FIX: Tab state persistence
             // Prevent tabs from unmounting on blur to preserve scroll position and state
@@ -311,17 +552,20 @@ export const TabNavigator = () => {
       </View>
 
       {/* Alt Güvenli Alan - Home Indicator arkasını boyar (Tab Bar altı) */}
-      <View 
-        style={{ 
-          height: insets.bottom, 
-          backgroundColor: bottomBarColor,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }} 
-      />
+      {/* Liquid Glass kullanıldığında bu alan transparent olmalı */}
+      {!isGlassAvailable && (
+        <View 
+          style={{ 
+            height: insets.bottom, 
+            backgroundColor: bottomBarColor,
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1,
+          }} 
+        />
+      )}
     </View>
   );
 };

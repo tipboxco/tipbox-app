@@ -46,7 +46,9 @@ export const WalletScreen: React.FC = () => {
       const { colorMode } = useColorMode();
       const isDark = colorMode === 'dark';
       const [activeTab, setActiveTab] = useState<'tips' | 'nft'>('tips');
-      const bottomInset = useSafeAreaValues('bottom');
+      const safeAreaValues = useSafeAreaValues();
+      const topInset = typeof safeAreaValues.top === 'number' ? safeAreaValues.top : 0;
+      const bottomInset = typeof safeAreaValues.bottom === 'number' ? safeAreaValues.bottom : 0;
       const pagerRef = useRef<PagerView>(null);
       const tabContainerRef = useRef<any>(null);
       const [tabContainerWidth, setTabContainerWidth] = useState(0);
@@ -699,8 +701,8 @@ export const WalletScreen: React.FC = () => {
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={{ 
               paddingHorizontal: 16,
-              paddingVertical: 16,
-              paddingBottom: 16
+              paddingTop: 16,
+              paddingBottom: 16 + bottomInset
             }}
             refreshControl={
               <RefreshControl
@@ -977,8 +979,8 @@ export const WalletScreen: React.FC = () => {
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={{ 
               paddingHorizontal: 16,
-              paddingVertical: 16,
-              paddingBottom: 16
+              paddingTop: 16,
+              paddingBottom: 16 + bottomInset
             }}
             refreshControl={
               <RefreshControl

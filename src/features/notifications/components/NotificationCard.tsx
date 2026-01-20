@@ -103,7 +103,10 @@ const getNotificationMessage = (
         
         // MESSAGING NOTIFICATIONS
         case 'DM_REQUEST_RECEIVED':
-            return `${displayUsername} sent a message request`;
+            // Username varsa göster, yoksa generic mesaj
+            return displayUsername && displayUsername !== 'User' 
+                ? `${displayUsername} sent a message request`
+                : 'User sent a message request';
         case 'DM_REQUEST_ACCEPTED':
             return `${displayUsername} accepted your message request`;
         case 'DM_REQUEST_DECLINED':
@@ -484,19 +487,167 @@ const CommentCard: React.FC<{
 };
 
 /**
+ * Request Card Component
+ * Support request bildirimleri için özel card tasarımı
+ * username, message, type ve amount gösterir
+ */
+const RequestCard: React.FC<{
+    notification: Notification;
+    isDark: boolean;
+}> = ({ notification, isDark }) => {
+    const data = notification.data || notification.metadata || {};
+    const requestMessage = data.message;
+    const requestType = data.requestType || data.type; // GENERAL | TECHNICAL | PRODUCT
+    const requestAmount = data.amount; // String formatında
+    const requestStatus = data.requestStatus || data.status; // pending | accepted | declined | completed
+    const senderUsername = notification.username || data.senderName || data.userName || 'User';
+
+    if (!requestMessage && !requestType && !requestAmount) return null;
+
+    // Request type'ı Türkçe'ye çevir
+    const getRequestTypeLabel = (type?: string): string => {
+        switch (type) {
+            case 'GENERAL':
+                return 'Genel';
+            case 'TECHNICAL':
+                return 'Teknik';
+            case 'PRODUCT':
+                return 'Ürün';
+            default:
+                return type || 'Bilinmeyen';
+        }
+    };
+
+    return (
+        <Box
+            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+            borderRadius={12}
+            px="$3"
+            py="$3"
+            mt={6}
+            alignSelf="stretch"
+        >
+            <VStack space="sm">
+                {/* Username */}
+                {senderUsername && (
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$bold"
+                    >
+                        {senderUsername}
+                    </Text>
+                )}
+
+                {/* Message */}
+                {requestMessage && (
+                    <Text
+                        color={isDark ? '#666666' : '#666666'}
+                        fontSize="$sm"
+                        fontWeight="$normal"
+                        numberOfLines={3}
+                        lineHeight={20}
+                    >
+                        {requestMessage}
+                    </Text>
+                )}
+
+                {/* Type and Amount */}
+                <HStack space="sm" alignItems="center" flexWrap="wrap">
+                    {/* Request Type */}
+                    {requestType && (
+                        <Box
+                            bg={isDark ? '#3A3A3A' : '#E0E0E0'}
+                            borderRadius={8}
+                            px="$2"
+                            py="$1"
+                        >
+                            <Text
+                                color={isDark ? '#FFFFFF' : '#000000'}
+                                fontSize="$xs"
+                                fontWeight="$semibold"
+                            >
+                                {getRequestTypeLabel(requestType)}
+                            </Text>
+                        </Box>
+                    )}
+
+                    {/* Amount */}
+                    {requestAmount && (
+                        <Box
+                            bg="#3B82F6"
+                            borderRadius={8}
+                            px="$2"
+                            py="$1"
+                        >
+                            <Text
+                                color="#FFFFFF"
+                                fontSize="$xs"
+                                fontWeight="$bold"
+                            >
+                                {typeof requestAmount === 'string' ? requestAmount : requestAmount.toFixed(2)} TIPS
+                            </Text>
+                        </Box>
+                    )}
+                </HStack>
+            </VStack>
+        </Box>
+    );
+};
+
+/**
  * Event Card Component
  * Event bildirimleri için özel card tasarımı
+ * eventName, eventId ve description gösterir
+ * Görsel item'in sağında gösterilir (EventCard içinde değil)
  */
 const EventCard: React.FC<{
     notification: Notification;
     isDark: boolean;
 }> = ({ notification, isDark }) => {
     const data = notification.data || notification.metadata || {};
-    // Minimal yapı: eventName, title ve message field'ları kaldırıldı
-    // Event bildirimleri için sadece eventId var, mesaj getNotificationMessage ile oluşturuluyor
-    // Event card gösterilmez, sadece mesaj gösterilir
+    const eventName = data.eventName;
+    const eventId = data.eventId;
+    const eventDescription = data.description || data.message;
 
-    return null;
+    if (!eventName && !eventId && !eventDescription) return null;
+
+    return (
+        <Box
+            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+            borderRadius={12}
+            px="$3"
+            py="$3"
+            mt={6}
+            alignSelf="stretch"
+        >
+            <VStack space="sm">
+                {/* Event Name */}
+                {eventName && (
+                    <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$bold"
+                    >
+                        {eventName}
+                    </Text>
+                )}
+
+                {/* Event Description */}
+                {eventDescription && (
+                    <Text
+                        color={isDark ? '#666666' : '#666666'}
+                        fontSize="$sm"
+                        fontWeight="$normal"
+                        numberOfLines={3}
+                        lineHeight={20}
+                    >
+                        {eventDescription}
+                    </Text>
+                )}
+            </VStack>
+        </Box>
+    );
 };
 
 /**
@@ -1022,6 +1173,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     // CRITICAL FIX: Post preview image sadece data içinden alınmalı (root seviyede imageUrl olmamalı)
     const postImageUrl = data.imageUrl; // Root seviyedeki notification.imageUrl kaldırıldı
     const postImage = postImageUrl ? toImageSource(postImageUrl) : null;
+    
+    // Event image - Event bildirimleri için
+    const eventImageUrl = (notification.type === 'EVENT_STARTED' || notification.type === 'EVENT_ENDING_SOON' || notification.type === 'EVENT_REWARD_AVAILABLE') ? data.imageUrl : null;
+    const eventImage = eventImageUrl ? toImageSource(eventImageUrl) : null;
 
     // Category-based content rendering - Instagram benzeri tasarım
     const showTipsButton = category === 'tips' && tipsAmount; // Tips bildirimlerinde buton gösterilecek
@@ -1029,6 +1184,20 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const showCommentText = ((category === 'post' && notification.type === 'POST_COMMENTED') || category === 'message') && commentContent; // POST_COMMENTED ve DM_REQUEST için
     const showChatButton = notification.type === 'DM_REQUEST_ACCEPTED'; // Mesaj isteği kabul edildi bildirimi için
     const showPostCard = (category === 'post' || category === 'comment') && postId && data.postContent; // Post bildirimlerinde post içeriği varsa PostCard gösterilecek (görsel YOK)
+    // Request card gösterimi - Support request ve DM request bildirimleri için
+    const showRequestCard = (
+        notification.type === 'SUPPORT_REQUEST_ACCEPTED' || 
+        notification.type === 'EXPERT_REQUEST_AVAILABLE' || 
+        notification.type === 'EXPERT_REQUEST_ANSWERED' ||
+        notification.type === 'DM_REQUEST_RECEIVED'
+    ) && (data.message || data.requestType || data.type || data.amount);
+    
+    // Event card gösterimi - Event bildirimleri için
+    const showEventCard = (
+        notification.type === 'EVENT_STARTED' || 
+        notification.type === 'EVENT_ENDING_SOON' || 
+        notification.type === 'EVENT_REWARD_AVAILABLE'
+    ) && (data.eventName || data.eventId || data.description || data.message);
 
     return (
         <Pressable 
@@ -1181,6 +1350,26 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             </Box>
                         )}
 
+                        {/* Request Card - Support request ve DM request içeriği */}
+                        {showRequestCard && (
+                            <Box flex={1} alignSelf="stretch">
+                                <RequestCard 
+                                    notification={notification} 
+                                    isDark={isDark}
+                                />
+                            </Box>
+                        )}
+
+                        {/* Event Card - Event içeriği */}
+                        {showEventCard && (
+                            <Box flex={1} alignSelf="stretch">
+                                <EventCard 
+                                    notification={notification} 
+                                    isDark={isDark}
+                                />
+                            </Box>
+                        )}
+
                         {/* Post Card - Post içeriği (görsel dahil) */}
                         {showPostCard && (
                             <Box flex={1} alignSelf="stretch">
@@ -1213,6 +1402,29 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             </HStack>
                         )}
                     </VStack>
+
+                    {/* Event Preview Image - Sağ tarafta (Event bildirimleri için) */}
+                    {eventImage && (notification.type === 'EVENT_STARTED' || notification.type === 'EVENT_ENDING_SOON' || notification.type === 'EVENT_REWARD_AVAILABLE') && (
+                        <Pressable onPress={handlePress}>
+                            <Box
+                                width={50}
+                                height={50}
+                                borderRadius={8}
+                                overflow="hidden"
+                                borderWidth={1}
+                                borderColor={isDark ? '#333' : '#E9E9E9'}
+                                flexShrink={0}
+                            >
+                                <Image
+                                    source={eventImage}
+                                    alt="Event preview"
+                                    width={50}
+                                    height={50}
+                                    style={{ resizeMode: 'cover' }}
+                                />
+                            </Box>
+                        </Pressable>
+                    )}
             </HStack>
 
                 {/* Timestamp and Unread Badge - Position Absolute (MessageCard ile aynı) */}
