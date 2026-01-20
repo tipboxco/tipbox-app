@@ -237,11 +237,13 @@ const translatePostType = (postType: string | undefined): string => {
  * Post Card Component
  * Post ile ilgili bildirimler için özel card tasarımı
  * Görseldeki tasarım: Büyük card, "İpucu" tag'i sol üstte, başlık ve içerik, kategori sağ üstte
+ * Image sağ tarafta yer alır
  */
 const PostCard: React.FC<{
     notification: Notification;
     isDark: boolean;
-}> = ({ notification, isDark }) => {
+    postImage?: any; // Image source
+}> = ({ notification, isDark, postImage }) => {
     const data = notification.data || notification.metadata || {};
     const postContent = data.postContent;
     const description = data.description; // POST_COMMENTED için yorum metni
@@ -258,72 +260,101 @@ const PostCard: React.FC<{
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
             borderRadius={12}
-            p="$3"
+            px="$3"
+            py="$3"
             mt={6}
             position="relative"
             minHeight={100}
+            alignSelf="stretch"
         >
-            {/* Post tipi badge (İpucu) - Sol üstte */}
-            {postType && (
-                <HStack
-                    bg="#3B82F6"
-                    borderRadius={20}
-                    px="$2.5"
-                    py="$1"
-                    alignItems="center"
-                    space="xs"
-                    alignSelf="flex-start"
-                    mb="$2"
-                >
-                    <LightBulbIcon width={12} height={12} color="#FFFFFF" />
-                    <Text
-                        color="#FFFFFF"
-                        fontSize="$xs"
-                        fontWeight="$semibold"
+            <VStack space="sm" width="100%">
+                {/* Post tipi badge (İpucu) - Tek satır, full width */}
+                {postType && (
+                    <HStack
+                        bg="#3B82F6"
+                        borderRadius={20}
+                        px="$2.5"
+                        py="$1"
+                        alignItems="center"
+                        space="xs"
+                        alignSelf="flex-start"
                     >
-                        {postType}
-                    </Text>
-                </HStack>
-            )}
+                        <LightBulbIcon width={12} height={12} color="#FFFFFF" />
+                        <Text
+                            color="#FFFFFF"
+                            fontSize="$xs"
+                            fontWeight="$semibold"
+                        >
+                            {postType}
+                        </Text>
+                    </HStack>
+                )}
 
-            {/* Kategori bilgisi - Sağ üstte */}
-            {categoryName && (
-                <HStack
-                    position="absolute"
-                    top="$3"
-                    right="$3"
-                    alignItems="center"
-                    space="xs"
-                >
-                    <Text
-                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                        fontSize="$xs"
-                        fontWeight="$normal"
-                    >
-                        {categoryName}
-                    </Text>
-                    <Box
-                        width={14}
-                        height={14}
-                        bg={isDark ? '#3A3A3A' : '#E0E0E0'}
-                        borderRadius={4}
-                    />
-                </HStack>
-            )}
+                {/* Content ve Image - Aynı satırda */}
+                <HStack space="md" alignItems="flex-start" flex={1} width="100%">
+                    {/* Sol taraf: İçerik */}
+                    <VStack flex={1} flexShrink={1} mr={postImage ? "$2" : 0}>
+                        {/* Kategori bilgisi - Sağ üstte (image varsa kategoriyi kaldır, yoksa göster) */}
+                        {categoryName && !postImage && (
+                            <HStack
+                                position="absolute"
+                                top={0}
+                                right={0}
+                                alignItems="center"
+                                space="xs"
+                            >
+                                <Text
+                                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                    fontSize="$xs"
+                                    fontWeight="$normal"
+                                >
+                                    {categoryName}
+                                </Text>
+                                <Box
+                                    width={14}
+                                    height={14}
+                                    bg={isDark ? '#3A3A3A' : '#E0E0E0'}
+                                    borderRadius={4}
+                                />
+                            </HStack>
+                        )}
 
-            {/* Post içeriği - Truncated */}
-            {postContent && (
-                <Text
-                    color={isDark ? '#666666' : '#666666'}
-                    fontSize="$sm"
-                    fontWeight="$normal"
-                    numberOfLines={3}
-                    lineHeight={20}
-                    mt="$1"
-                >
-                    {postContent}
-                </Text>
-            )}
+                        {/* Post içeriği - Truncated */}
+                        {postContent && (
+                            <Text
+                                color={isDark ? '#666666' : '#666666'}
+                                fontSize="$sm"
+                                fontWeight="$normal"
+                                numberOfLines={2}
+                                lineHeight={20}
+                            >
+                               vbsdlkhdhlnkhdlsvbkhldfnkhvnsdksldfkngvsdklvgksdghksjdvfghlskghnglsknldk
+                            </Text>
+                        )}
+                    </VStack>
+
+                    {/* Sağ taraf: Image */}
+                    {postImage && (
+                        <Box
+                            width={50}
+                            height={50}
+                            borderRadius={8}
+                            overflow="hidden"
+                            borderWidth={1}
+                            borderColor={isDark ? '#333' : '#E9E9E9'}
+                            flexShrink={0}
+                        >
+                            <Image
+                                source={postImage}
+                                alt="Post preview"
+                                width={50}
+                                height={50}
+                                style={{ resizeMode: 'cover' }}
+                            />
+                        </Box>
+                    )}
+                </HStack>
+            </VStack>
         </Box>
     );
 };
@@ -439,7 +470,7 @@ const CommentCard: React.FC<{
     if (!commentContent) return null;
 
     return (
-        <Box mt={4} mr="$2">
+        <Box mt={4} flex={1} alignSelf="stretch">
             <Text
                 color={isDark ? '#B9B9B9' : '#666666'}
                 fontSize="$xs"
@@ -1044,7 +1075,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     </Pressable>
 
                     {/* Content - Ortada */}
-                    <VStack flex={1} space="xs" justifyContent="flex-start">
+                    <VStack flex={1} space="xs" justifyContent="flex-start" alignSelf="stretch">
                         <Text
                             color={isDark ? '#FFFFFF' : '#000000'}
                             fontSize="$sm"
@@ -1145,15 +1176,19 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         {/* Content altında listelenecek yapılar */}
                         {/* Yorum metni (POST_COMMENTED için) - PostCard'dan önce */}
                         {showCommentText && notification.type === 'POST_COMMENTED' && (
-                            <Box mt={4}>
+                            <Box mt={4} flex={1} alignSelf="stretch">
                                 <CommentCard notification={notification} isDark={isDark} />
                             </Box>
                         )}
 
-                        {/* Post Card - Post içeriği (görsel YOK) */}
+                        {/* Post Card - Post içeriği (görsel dahil) */}
                         {showPostCard && (
-                            <Box>
-                                <PostCard notification={notification} isDark={isDark} />
+                            <Box flex={1} alignSelf="stretch">
+                                <PostCard 
+                                    notification={notification} 
+                                    isDark={isDark} 
+                                    postImage={postImage || undefined}
+                                />
                             </Box>
                         )}
 
@@ -1178,28 +1213,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             </HStack>
                         )}
                     </VStack>
-
-                    {/* Post Preview Image - Sağ tarafta (Instagram benzeri) */}
-                    {postImage && (category === 'post' || category === 'comment') && (
-                        <Pressable onPress={handlePress}>
-                            <Box
-                                width={60}
-                                height={60}
-                                borderRadius={8}
-                                overflow="hidden"
-                                borderWidth={1}
-                                borderColor={isDark ? '#333' : '#E9E9E9'}
-                            >
-                                <Image
-                                    source={postImage}
-                                    alt="Post preview"
-                                    width={60}
-                                    height={60}
-                                    style={{ resizeMode: 'cover' }}
-                                />
-                            </Box>
-                        </Pressable>
-                    )}
             </HStack>
 
                 {/* Timestamp and Unread Badge - Position Absolute (MessageCard ile aynı) */}
