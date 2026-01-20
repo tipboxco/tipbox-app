@@ -246,6 +246,8 @@ export function GoogleLoginButton({
     <Button
       variant="outline"
       h={44}
+      w={"100%"}
+            
       rounded="$lg"
       borderColor="$gray400"
       borderWidth={1}

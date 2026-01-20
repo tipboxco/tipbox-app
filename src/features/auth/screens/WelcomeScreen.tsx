@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image, useToast } from '@gluestack-ui/themed';
-import { showCustomToast } from '@/src/components/CustomToast';
-import { LogIn, Mail, Facebook } from 'lucide-react-native';
+import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image } from '@gluestack-ui/themed';
+import { LogIn, Facebook } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
-import { googleService } from '@/src/services/GoogleService';
-import { useGoogleLogin } from '../api/hooks';
+import { GoogleLoginButton } from '../components/google-login-button';
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 
@@ -18,50 +16,9 @@ export const WelcomeScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const toast = useToast();
-  const googleLoginMutation = useGoogleLogin();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
   // Edge-to-Edge Design: Top ve bottom insets için beyaz background
   const backgroundColor = '#FFFFFF';
-
-  const handleGoogleLogin = async () => {
-    try {
-      setIsGoogleLoading(true);
-
-      // Google OAuth ile giriş yap
-      const googleResult = await googleService.login();
-
-      // Backend'e ID token gönder
-      await googleLoginMutation.mutateAsync(googleResult.idToken);
-
-      // Başarılı toast göster
-      showCustomToast(toast, {
-        title: 'Google Login Successful',
-        description: `Welcome, ${googleResult.user.name || googleResult.user.email}!`,
-        action: 'success',
-      });
-
-      // RootNavigator otomatik olarak isAuthenticated=true olduğunda
-      // Auth'dan MainDrawer'a geçiş yapacak, manuel navigation gerekmez
-    } catch (error: any) {
-      console.error('[WelcomeScreen] ❌ Google login error:', error);
-
-      // Hata toast göster
-      const errorMessage =
-        error?.message ||
-        error?.response?.data?.message ||
-        'Google ile giriş yapılırken bir hata oluştu';
-
-      showCustomToast(toast, {
-        title: 'Google Login Error',
-        description: errorMessage,
-        action: 'error',
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
@@ -114,24 +71,7 @@ export const WelcomeScreen = () => {
             <Box flex={1} h={1} bg="$textLight900" />
           </HStack>
 
-          <Button
-            variant="outline"
-            h={44}
-            rounded="$lg"
-            w={315}
-            borderColor="$gray400"
-            borderWidth={1}
-            onPress={handleGoogleLogin}
-            isDisabled={isGoogleLoading || googleLoginMutation.isPending}
-            opacity={isGoogleLoading || googleLoginMutation.isPending ? 0.5 : 1}
-          >
-            <HStack space="md" alignItems="center">
-              <Icon as={Mail} size="md" color={isDark ? '$textDark300' : '$textLight600'} />
-              <ButtonText color={isDark ? '$textDark300' : '$textLight600'} fontWeight="$bold">
-                {isGoogleLoading || googleLoginMutation.isPending ? 'Signing in...' : 'Continue with Google'}
-              </ButtonText>
-            </HStack>
-          </Button>
+          <GoogleLoginButton buttonText="Continue with Google" />
 
           <Button
             variant="outline"
