@@ -1,18 +1,18 @@
 /**
- * Inbox Message - /messages endpoint'inden gelen mesaj listesi elemani
- * Backend'den gelen response formatı (BACKEND_GEREKSINIMLERI_DM_THREAD.md'ye göre güncellendi)
+ * Inbox Message - /inbox endpoint'inden gelen mesaj listesi elemani
+ * Backend'den gelen response formatı (yeni API yapısına göre güncellendi)
  */
 export interface InboxMessage {
   id: string; // Thread ID
   recipientUserId: string; // ✅ Backend'den gelen: Karşı tarafın (diğer kullanıcının) ID'si
   senderName: string;
-  senderTitle?: string;
+  senderTitle: string | null; // ✅ Yeni yapıda null olabilir
   senderAvatar: string | null;
-  lastMessage: string;
+  lastMessage: string | null; // ✅ Yeni yapıda null olabilir
   timestamp: string; // ISO string
   isUnread: boolean;
   unreadCount: number;
-  threadType?: 'DM' | 'SUPPORT'; // ✅ Opsiyonel: Thread tipi bilgisi (iyileştirme)
+  threadType?: 'DM' | 'SUPPORT'; // ✅ Opsiyonel: Thread tipi bilgisi
 }
 
 

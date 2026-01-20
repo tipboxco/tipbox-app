@@ -7,7 +7,13 @@ import type {
   ProductDetail,
   ProductPostsResponse,
   ProductNewsResponse,
-  NewsDetail
+  NewsDetail,
+  NewsCommentCreateRequest,
+  NewsCommentCreateResponse,
+  NewsCommentsResponse,
+  NewsShareRequest,
+  NewsShareResponse,
+  NewsApiResponse
 } from '../types';
 import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
 
@@ -316,22 +322,69 @@ export const getProductDetail = async (
  * Get Product Posts endpoint function
  * /products/{productId}/posts endpoint'inden product postlarını getirir (pagination ile)
  *
+ * Filter Parametreleri:
+ * - all: Tüm gönderiler (default)
+ * - reviews: Sadece Experience (Review) gönderileri
+ * - benchmarks: Sadece Benchmark gönderileri
+ * - tips_and_tricks: Sadece Tips & Tricks gönderileri
+ * 
+ * Sort Parametreleri:
+ * - newest: En yeni önce (default)
+ * - oldest: En eski önce
+ * - most_popular: Beğeni + yorum + kaydetme sayısına göre
+ * 
+ * Geriye Dönük Uyumluluk:
+ * type parametresi otomatik olarak filter'a dönüştürülüyor:
+ * - type=tips → filter=tips_and_tricks
+ * - type=experience → filter=reviews
+ * - type=benchmark → filter=benchmarks
+ * - type=comments → filter=all (product için geçerli değil)
+ *
  * @param productId - Product ID'si
- * @param type - Post type (experience, comments, benchmark) - opsiyonel
+ * @param filter - Post filter (all | reviews | benchmarks | tips_and_tricks) - opsiyonel, default: all
+ * @param sort - Sort order (newest | oldest | most_popular) - opsiyonel, default: newest
+ * @param type - Post type (experience, comments, benchmark, tips) - opsiyonel, geriye dönük uyumluluk için (filter'a dönüştürülür)
  * @param cursor - Pagination cursor (opsiyonel)
- * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param limit - Sayfa başına item sayısı (default: 20, max: 50)
  * @returns ProductPostsResponse - Product postları ve pagination bilgisi
  */
 export const getProductPosts = async (
   productId: string,
-  type?: 'experience' | 'comments' | 'benchmark',
+  filter?: 'all' | 'reviews' | 'benchmarks' | 'tips_and_tricks',
+  sort?: 'newest' | 'oldest' | 'most_popular',
+  type?: 'experience' | 'comments' | 'benchmark' | 'tips',
   cursor?: string,
   limit: number = 20
 ): Promise<ProductPostsResponse> => {
   const params = new URLSearchParams();
+  
+  // Geriye dönük uyumluluk: type parametresini filter'a dönüştür
+  let finalFilter = filter;
+  if (type && !filter) {
+    const typeToFilterMap: Record<string, 'all' | 'reviews' | 'benchmarks' | 'tips_and_tricks'> = {
+      'tips': 'tips_and_tricks',
+      'experience': 'reviews',
+      'benchmark': 'benchmarks',
+      'comments': 'all', // Product için comments geçerli değil, all kullan
+    };
+    finalFilter = typeToFilterMap[type] || 'all';
+  }
+  
+  // Filter parametresi ekle (all ise ekleme)
+  if (finalFilter && finalFilter !== 'all') {
+    params.append('filter', finalFilter);
+  }
+  
+  // Sort parametresi ekle (newest ise ekleme)
+  if (sort && sort !== 'newest') {
+    params.append('sort', sort);
+  }
+  
+  // Geriye dönük uyumluluk: type parametresini de ekle (backend her ikisini de destekliyor)
   if (type) {
     params.append('type', type);
   }
+  
   if (cursor) {
     params.append('cursor', cursor);
   }
@@ -430,6 +483,145 @@ export const getNewsDetail = async (
   } catch (error: any) {
     console.error('[getNewsDetail] API Error:', {
       url: `/news/${newsId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Like News endpoint function
+ * /news/{newsId}/like endpoint'ine POST request gönderir
+ *
+ * @param newsId - News ID'si
+ * @returns NewsApiResponse - Success response
+ */
+export const likeNews = async (
+  newsId: string
+): Promise<NewsApiResponse> => {
+  try {
+    const response = await apiService.getClient().post<NewsApiResponse>(
+      `/news/${newsId}/like`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[likeNews] API Error:', {
+      url: `/news/${newsId}/like`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Unlike News endpoint function
+ * /news/{newsId}/like endpoint'ine DELETE request gönderir
+ *
+ * @param newsId - News ID'si
+ * @returns NewsApiResponse - Success response
+ */
+export const unlikeNews = async (
+  newsId: string
+): Promise<NewsApiResponse> => {
+  try {
+    const response = await apiService.getClient().delete<NewsApiResponse>(
+      `/news/${newsId}/like`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[unlikeNews] API Error:', {
+      url: `/news/${newsId}/like`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+
+/**
+ * Share News endpoint function
+ * /news/{newsId}/share endpoint'ine POST request gönderir
+ *
+ * @param newsId - News ID'si
+ * @param request - Share request
+ * @returns NewsShareResponse - Success response
+ */
+export const shareNews = async (
+  newsId: string,
+  request: NewsShareRequest
+): Promise<NewsShareResponse> => {
+  try {
+    const response = await apiService.getClient().post<NewsShareResponse>(
+      `/news/${newsId}/share`,
+      request
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[shareNews] API Error:', {
+      url: `/news/${newsId}/share`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Favorite News endpoint function
+ * /news/{newsId}/favorite endpoint'ine POST request gönderir
+ *
+ * @param newsId - News ID'si
+ * @returns NewsApiResponse - Success response
+ */
+export const favoriteNews = async (
+  newsId: string
+): Promise<NewsApiResponse> => {
+  try {
+    const response = await apiService.getClient().post<import('../types').NewsApiResponse>(
+      `/news/${newsId}/favorite`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[favoriteNews] API Error:', {
+      url: `/news/${newsId}/favorite`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Unfavorite News endpoint function
+ * /news/{newsId}/favorite endpoint'ine DELETE request gönderir
+ *
+ * @param newsId - News ID'si
+ * @returns NewsApiResponse - Success response
+ */
+export const unfavoriteNews = async (
+  newsId: string
+): Promise<NewsApiResponse> => {
+  try {
+    const response = await apiService.getClient().delete<NewsApiResponse>(
+      `/news/${newsId}/favorite`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[unfavoriteNews] API Error:', {
+      url: `/news/${newsId}/favorite`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,

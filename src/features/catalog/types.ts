@@ -147,11 +147,10 @@ export interface BrandFeedPost {
 
 /**
  * Brand Feed Response - /brands/{brandId}/feed endpoint'inden dönen response
+ * Backend'den items array'i olarak geliyor
  */
 export interface BrandFeedResponse {
-  brandId: string;
-  name: string;
-  posts: BrandFeedPost[];
+  items: BrandFeedPost[];
   pagination?: {
     cursor?: string;
     hasMore: boolean;
@@ -163,9 +162,8 @@ export interface BrandFeedResponse {
  * Brand Product Stats - /brands/{brandId}/products response'undaki product stats bilgisi
  */
 export interface BrandProductStats {
-  reviews: number;
-  likes: number;
-  share: number; // API'de "share" (tekil) olarak geliyor
+  posts: number; // Ürün için post sayısı
+  news: number; // Ürün için haber sayısı
 }
 
 /**
@@ -198,6 +196,26 @@ export interface BrandProductBookResponse {
     hasMore: boolean;
     limit: number;
   };
+}
+
+/**
+ * Brand Product Detail - /brands/{brandId}/products/{productId} endpoint'inden dönen product detay bilgisi
+ */
+export interface BrandProductDetail {
+  productId: string;
+  name: string;
+  subName?: string;
+  description?: string;
+  image: string | null;
+  brand?: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
+  specs?: string[];
+  price?: number;
+  currency?: string;
+  stats?: BrandProductStats;
 }
 
 /**
@@ -315,6 +333,12 @@ export interface NewsItem {
   source: string;
   date: string;
   image: string | null;
+  stats?: {
+    likes: number;
+    comments: number;
+    share: number;
+    bookmarks: number;
+  };
 }
 
 /**
@@ -330,17 +354,108 @@ export interface ProductNewsResponse {
 }
 
 /**
- * News Detail - /news/{newsId} endpoint'inden gelen news detay bilgisi
+ * News Detail - /news/{newsId} veya /brands/{brandId}/products/{productId}/news/{newsId} endpoint'inden gelen news detay bilgisi
  */
 export interface NewsDetail {
   id: string;
   title: string;
-  content: string;
+  content: string; // Haberin tam içeriği
   source: string;
-  date: string;
-  image: string | null;
-  author?: string;
+  date: string; // ISO 8601 formatında
+  banner: string | null; // Banner image URL
+  image?: string | null; // Backward compatibility için (banner yerine kullanılabilir)
+  author?: string | null;
   tags?: string[];
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  favoritesCount: number;
+  viewsCount: number;
+  isLiked: boolean; // Kullanıcının beğenip beğenmediği
+  isFavorited: boolean; // Kullanıcının favorilere ekleyip eklemediği
+  isShared: boolean; // Kullanıcının paylaşıp paylaşmadığı
+}
+
+/**
+ * News Comment - /news/{newsId}/comments endpoint'inden gelen yorum bilgisi
+ */
+export interface NewsComment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  comment: string;
+  likesCount: number;
+  createdAt: string;
+  replies?: NewsComment[];
+  parentId?: string;
+}
+
+/**
+ * News Comments Response - /news/{newsId}/comments endpoint'inden dönen response
+ */
+export interface NewsCommentsResponse {
+  success: boolean;
+  data: NewsComment[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+/**
+ * News Comment Create Request - /news/{newsId}/comment endpoint'ine gönderilen request
+ */
+export interface NewsCommentCreateRequest {
+  comment: string;
+  parentId?: string;
+}
+
+/**
+ * News Comment Create Response - /news/{newsId}/comment endpoint'inden dönen response
+ */
+export interface NewsCommentCreateResponse {
+  success: boolean;
+  data: NewsComment;
+}
+
+/**
+ * News Share Request - /news/{newsId}/share endpoint'ine gönderilen request
+ */
+export interface NewsShareRequest {
+  shareType: 'INTERNAL_REPOST' | 'EXTERNAL_SHARE';
+  platform?: string;
+}
+
+/**
+ * News Share Response - /news/{newsId}/share endpoint'inden dönen response
+ */
+export interface NewsShareResponse {
+  success: boolean;
+  message: string;
+}
+
+/**
+ * News API Response - Genel API response formatı
+ */
+export interface NewsApiResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+/**
+ * Brand Product Group Products Response - /brands/groups/{productGroupId}/products endpoint'inden dönen response
+ */
+export interface BrandProductGroupProductsResponse {
+  items: BrandProduct[];
+  pagination: {
+    cursor?: string;
+    hasMore: boolean;
+    limit: number;
+  };
 }
 
 /**

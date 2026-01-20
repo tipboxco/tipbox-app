@@ -74,7 +74,6 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
   // menuItems varsa onu kullan, yoksa default items'ı oluştur
   const items = React.useMemo(() => {
     if (menuItems && menuItems.length > 0) {
-      console.log('[ContextMenuReanimated] Using custom menuItems:', menuItems.length, 'items');
       return menuItems;
     }
     
@@ -92,7 +91,6 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
       }] : []),
     ];
     
-    console.log('[ContextMenuReanimated] Using default items:', defaultItems.length, 'items');
     return defaultItems;
   }, [menuItems, onViewProfile, onReport, isDark]);
   
@@ -209,9 +207,7 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
 
   // Handle menu item press
   const handleMenuItemPress = useCallback((onPress: () => void) => {
-    console.log('[ContextMenuReanimated] Menu item pressed, onPress:', typeof onPress);
     if (!onPress || typeof onPress !== 'function') {
-      console.error('[ContextMenuReanimated] ❌ onPress is not a function:', onPress);
       return;
     }
     
@@ -219,7 +215,7 @@ export const ContextMenuReanimated: React.FC<ContextMenuReanimatedProps> = ({
     try {
       onPress();
     } catch (error) {
-      console.error('[ContextMenuReanimated] ❌ Error executing onPress:', error);
+      // Silent error handling
     }
     
     // Menu'yu kapat (kısa delay ile animasyon için)

@@ -37,3 +37,4 @@ alwaysApply: true
       - TokenService (located in `/src/services/TokenService`) handles all token storage operations.
       - If the refresh flow fails, both tokens are purged from SecureStore and the user is logged out.
 10. All SDK usage and device capabilities must be abstracted under `src/services`; services should expose only a clear public interface and must not be accessed directly from screens or feature modules.
+11. **Never create markdown (.md) files unless explicitly requested by the user.** Do not proactively create documentation files, README files, or any markdown files without explicit user instruction.

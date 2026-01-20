@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, HStack, VStack, Text, Image, Pressable } from '@gluestack-ui/themed';
 import { ChevronRightIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -28,7 +28,7 @@ interface ProductInfoCardProps {
   showChevron?: boolean;
 }
 
-export const ProductInfoCard = ({
+const ProductInfoCardComponent = ({
   image,
   title,
   subName,
@@ -45,8 +45,9 @@ export const ProductInfoCard = ({
   // Determine image size based on size prop
   const imageSize = size === 'big' ? 58 : 42;
 
-  const imageSource =
-    toImageSource(image) || require('@/assets/product/product_01.png');
+  // Map image source
+  const rawImageSource = toImageSource(image);
+  const imageSource = rawImageSource || require('@/assets/product/product_01.png');
 
   // Determine what to show based on type prop
   const shouldShowAverageRating = type === ProductInfoType.PRODUCT || (type === undefined && showAverageRating);
@@ -171,4 +172,7 @@ export const ProductInfoCard = ({
 
   return <Box>{content}</Box>;
 };
+
+export const ProductInfoCard = memo(ProductInfoCardComponent);
+ProductInfoCard.displayName = 'ProductInfoCard';
 

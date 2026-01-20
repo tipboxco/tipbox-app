@@ -206,8 +206,6 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
   }, [data, openBottomSheet]);
 
   const handleDelete = React.useCallback(() => {
-    console.log('[ExperiencePostCard] 🗑️ Delete button clicked for post:', data.id);
-    
     Alert.alert(
       'Post\'u Sil',
       'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
@@ -215,37 +213,15 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         {
           text: 'İptal',
           style: 'cancel',
-          onPress: () => {
-            console.log('[ExperiencePostCard] ❌ Delete cancelled by user');
-          },
         },
         {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
-            console.log('[ExperiencePostCard] ✅ Delete confirmed, sending DELETE request to /posts/' + data.id);
-            
             try {
-              const response = await deletePostMutation.mutateAsync(data.id);
-              
-              console.log('[ExperiencePostCard] ✅ Post deleted successfully:', {
-                postId: data.id,
-                response,
-                timestamp: new Date().toISOString(),
-              });
-              
+              await deletePostMutation.mutateAsync(data.id);
               Alert.alert('Başarılı', 'Post başarıyla silindi.');
             } catch (error: any) {
-              console.error('[ExperiencePostCard] ❌ Delete post error:', {
-                postId: data.id,
-                url: `/posts/${data.id}`,
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data,
-                message: error.message,
-                timestamp: new Date().toISOString(),
-              });
-              
               Alert.alert(
                 'Hata',
                 error.response?.data?.message || 'Post silinirken bir hata oluştu.'

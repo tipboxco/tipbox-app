@@ -110,18 +110,20 @@ const SupportRequestsScreen: React.FC = () => {
     
     // Tüm durumlar için SupportMessageDetail ekranını kullan
     // Request'i oluşturan kullanıcının bilgileri (user olarak)
-    const userName = request.userName;
-    const userTitle = request.userTitle;
+    // Yeni yapı: request.sender, Eski yapı: request.userName/userTitle/userAvatar (backward compatibility)
+    const userName = request.sender?.senderName || request.userName || 'Unknown';
+    const userTitle = request.sender?.senderTitle || request.userTitle || '';
     
     // Avatar URL logları
+    const rawUserAvatar = request.sender?.senderAvatar || request.userAvatar;
     console.log('[SupportRequestsScreen] handleRequestPress - User Avatar URLs:', {
       requestId,
-      rawUserAvatar: request.userAvatar,
-      userAvatarType: typeof request.userAvatar,
-      userAvatarAfterToImageSource: request.userAvatar ? toImageSource(request.userAvatar) : null,
+      rawUserAvatar,
+      userAvatarType: typeof rawUserAvatar,
+      userAvatarAfterToImageSource: rawUserAvatar ? toImageSource(rawUserAvatar) : null,
     });
     
-    const userAvatar = request.userAvatar ? (toImageSource(request.userAvatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
+    const userAvatar = rawUserAvatar ? (toImageSource(rawUserAvatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
     
     // Mevcut kullanıcının bilgileri (expert olarak - request'i kabul eden/edebilecek kişi)
     const expertName = user?.fullName || 'Expert';
@@ -180,18 +182,20 @@ const SupportRequestsScreen: React.FC = () => {
         const expertAvatar = user?.avatar ? (toImageSource(user.avatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
         
         // Request'i oluşturan kullanıcının bilgileri (user olarak)
-        const userName = request.userName;
-        const userTitle = request.userTitle;
+        // Yeni yapı: request.sender, Eski yapı: request.userName/userTitle/userAvatar (backward compatibility)
+        const userName = request.sender?.senderName || request.userName || 'Unknown';
+        const userTitle = request.sender?.senderTitle || request.userTitle || '';
         
         // User Avatar URL logları
+        const rawUserAvatar = request.sender?.senderAvatar || request.userAvatar;
         console.log('[SupportRequestsScreen] handleAccept - User Avatar URLs:', {
           requestId,
-          rawUserAvatar: request.userAvatar,
-          userAvatarType: typeof request.userAvatar,
-          userAvatarAfterToImageSource: request.userAvatar ? toImageSource(request.userAvatar) : null,
+          rawUserAvatar,
+          userAvatarType: typeof rawUserAvatar,
+          userAvatarAfterToImageSource: rawUserAvatar ? toImageSource(rawUserAvatar) : null,
         });
         
-        const userAvatar = request.userAvatar ? (toImageSource(request.userAvatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
+        const userAvatar = rawUserAvatar ? (toImageSource(rawUserAvatar) || DEFAULT_USER_AVATAR) : DEFAULT_USER_AVATAR;
         
         // Yeni oluşturulan thread ile SupportMessageDetail ekranına yönlendir
         navigation.navigate('SupportMessageDetail', {

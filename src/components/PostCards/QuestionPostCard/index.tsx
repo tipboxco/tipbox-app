@@ -186,7 +186,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
 
   // Post owner actions
   const handleUpdate = useCallback(() => {
-    console.log('[QuestionPostCard] ✏️ Update button clicked');
     // Context bilgilerini data'dan al
     const contextType = (data as any).contextType;
     const contextId = (data as any).contextId || data.category?.product?.id;
@@ -206,11 +205,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
   }, [data, openBottomSheet]);
 
   const handleDelete = useCallback(() => {
-    console.log('[QuestionPostCard] 🗑️ Delete button clicked for post:', data.id);
-    console.log('[QuestionPostCard] isPostOwner:', isPostOwner);
-    console.log('[QuestionPostCard] user?.id:', user?.id);
-    console.log('[QuestionPostCard] targetUserId:', targetUserId);
-    
     Alert.alert(
       'Post\'u Sil',
       'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
@@ -218,37 +212,15 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         {
           text: 'İptal',
           style: 'cancel',
-          onPress: () => {
-            console.log('[QuestionPostCard] ❌ Delete cancelled by user');
-          },
         },
         {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
-            console.log('[QuestionPostCard] ✅ Delete confirmed, sending DELETE request to /posts/' + data.id);
-            
             try {
-              const response = await deletePostMutation.mutateAsync(data.id);
-              
-              console.log('[QuestionPostCard] ✅ Post deleted successfully:', {
-                postId: data.id,
-                response,
-                timestamp: new Date().toISOString(),
-              });
-              
+              await deletePostMutation.mutateAsync(data.id);
               Alert.alert('Başarılı', 'Post başarıyla silindi.');
             } catch (error: any) {
-              console.error('[QuestionPostCard] ❌ Delete post error:', {
-                postId: data.id,
-                url: `/posts/${data.id}`,
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data,
-                message: error.message,
-                timestamp: new Date().toISOString(),
-              });
-              
               Alert.alert(
                 'Hata',
                 error.response?.data?.message || 'Post silinirken bir hata oluştu.'
@@ -258,7 +230,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         },
       ]
     );
-  }, [data.id, deletePostMutation, isPostOwner, user?.id, targetUserId]);
+  }, [data.id, deletePostMutation]);
 
   return (
     <VStack
@@ -318,11 +290,8 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                     color: '#FF3040',
                   },
                 ];
-                console.log('[QuestionPostCard] ✅ Menu items for post owner:', items.length, 'items');
-                console.log('[QuestionPostCard] handleDelete type:', typeof handleDelete);
                 return items;
               }
-              console.log('[QuestionPostCard] ❌ Not post owner, using default menu items');
               return undefined;
             })()}
             onMenuStateChange={setIsContextMenuOpen}

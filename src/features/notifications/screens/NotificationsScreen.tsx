@@ -38,6 +38,7 @@ import {
 } from '../api/hooks';
 import type { Notification } from '../api/types';
 import { NotificationCard } from '../components/NotificationCard';
+import { groupNotificationsByActivity, type GroupedNotification } from '@/src/utils/notificationGrouping';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationAssetCache } from '@/src/services/NotificationAssetCache';
 import { navigationService } from '@/src/services/NavigationService';
@@ -371,7 +372,8 @@ const NotificationsScreenComponent: React.FC = () => {
     }, []);
 
     // Helper function: Bildirimleri tarihe göre grupla (Instagram benzeri)
-    const groupNotificationsByDate = useCallback((notifications: Notification[]): Array<{ type: 'header' | 'notification'; data: any }> => {
+    // Hem Notification hem de GroupedNotification kabul eder
+    const groupNotificationsByDate = useCallback((notifications: Array<Notification | GroupedNotification>): Array<{ type: 'header' | 'notification'; data: any }> => {
         if (!notifications || notifications.length === 0) {
             return [];
         }
@@ -389,7 +391,9 @@ const NotificationsScreenComponent: React.FC = () => {
         let currentGroup: string | null = null;
 
         notifications.forEach((notification) => {
-            const notificationDate = new Date(notification.createdAt);
+            // Hem Notification hem de GroupedNotification için createdAt alanını al
+            const createdAt = 'createdAt' in notification ? notification.createdAt : (notification as any).createdAt;
+            const notificationDate = new Date(createdAt);
             const notificationDateOnly = new Date(notificationDate.getFullYear(), notificationDate.getMonth(), notificationDate.getDate());
 
             let groupLabel: string;
@@ -782,8 +786,11 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        // Bildirimleri tarihe göre grupla (Instagram benzeri)
-        const groupedData = groupNotificationsByDate(filtered);
+        // Önce bildirimleri aktiviteye göre grupla (aynı posta ait beğeniler tek card'da)
+        const activityGrouped = groupNotificationsByActivity(filtered);
+        
+        // Sonra tarihe göre grupla (Instagram benzeri)
+        const groupedData = groupNotificationsByDate(activityGrouped);
         
         // DEBUG: hasNextPage değerini kontrol et
         // CRITICAL FIX: hasNextPage undefined olabilir, bu durumda false olarak değerlendir

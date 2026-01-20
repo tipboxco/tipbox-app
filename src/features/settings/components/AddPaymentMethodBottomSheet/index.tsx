@@ -12,6 +12,7 @@ import {
     ScrollView,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { Feather } from '@expo/vector-icons';
 import {
   DevicePhoneMobileIcon,
   CreditCardIcon,

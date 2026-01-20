@@ -4,24 +4,34 @@ import { CatalogScreen } from './screens/CatalogScreen';
 import BrandDetailScreen from './screens/BrandDetailScreen';
 import BrandProductBookScreen from './screens/BrandProductBookScreen';
 import BrandProductDetailScreen from './screens/BrandProductDetailScreen';
-import NewsDetailScreen from './screens/NewsDetailScreen';
 import SurveyScreen from './screens/SurveyScreen';
 import BrandEventsDetailScreen from './screens/BrandEventsDetailScreen';
+import BrandEventDetail from './screens/BrandEventDetail';
 import BrandHistoryScreen from './screens/BrandHistoryScreen';
 import BrandSurveyListScreen from './screens/BrandSurveyListScreen';
 import BrandPostListScreen from './screens/BrandPostListScreen';
 import BrandEventsScreen from './screens/BrandEventsScreen';
 
 export type CatalogStackParamList = {
-  CatalogScreen: { view?: 'products' | 'brands'; selectMode?: 'event'; returnScreen?: string } | undefined;
+  CatalogScreen: { 
+    view?: 'products' | 'brands'; 
+    selectMode?: 'event'; 
+    returnScreen?: string;
+    // Brand catalog için initial category ID (index)
+    brandCategoryId?: string;
+    // Product catalog için initial category/subcategory/productGroup ID (index)
+    productCategoryId?: string;
+    productSubCategoryId?: string;
+    productGroupId?: string;
+  } | undefined;
   ProductDetail: { productId: string };
   CategoryProducts: { categoryId: string };
   BrandDetailScreen: { brandId: string };
   BrandProductBookScreen: { brandId: string };
-  BrandProductDetailScreen: { productId: string; productName?: string; productImage?: any };
-  NewsDetailScreen: { newsId: string };
+  BrandProductDetailScreen: { brandId: string; productId: string; productName?: string; productImage?: any };
   SurveyScreen: { brandId: string };
   BrandEventsDetailScreen: { eventId: string };
+  BrandEventDetail: { eventId: string };
   BrandHistoryScreen: { brandId: string };
   BrandSurveyListScreen: { brandId: string };
   BrandPostListScreen: { brandId: string };
@@ -55,16 +65,16 @@ export const CatalogNavigator = () => {
           component={BrandProductDetailScreen}
         />
         <CatalogStack.Screen
-          name="NewsDetailScreen"
-          component={NewsDetailScreen}
-        />
-        <CatalogStack.Screen
           name="SurveyScreen"
           component={SurveyScreen}
         />
         <CatalogStack.Screen
           name="BrandEventsDetailScreen"
           component={BrandEventsDetailScreen}
+        />
+        <CatalogStack.Screen
+          name="BrandEventDetail"
+          component={BrandEventDetail}
         />
         <CatalogStack.Screen
           name="BrandHistoryScreen"
