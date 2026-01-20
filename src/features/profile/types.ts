@@ -133,6 +133,8 @@ export interface UserProfile {
   stats: ProfileStats;
   badges: Badge[];
   isTrusted: boolean | null;
+  isMuted?: boolean; // Kullanıcı sessize alınmış mı?
+  isBlocked?: boolean; // Kullanıcı engellenmiş mi?
 }
 
 /**

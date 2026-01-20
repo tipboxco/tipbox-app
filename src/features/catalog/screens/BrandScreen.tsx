@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Text, ScrollView, Pressable, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
@@ -66,16 +66,52 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     }
   }, []); // Sadece mount'ta çalış
   
-  // State değişikliklerini parent'a bildir
+  // PERFORMANCE FIX: Store onStateChange in ref to prevent infinite loops
+  // onStateChange prop may have a new reference on every render from parent
+  // Using ref ensures we always call the latest version without causing re-renders
+  const onStateChangeRef = useRef(onStateChange);
   useEffect(() => {
-    if (onStateChange) {
-      onStateChange({
-        currentStep,
-        selectedCategoryId: initialCategoryId || selectedCategory?.id,
-        breadcrumbItems,
-      });
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
+
+  // PERFORMANCE FIX: Track previous values to prevent unnecessary callbacks
+  // Only call onStateChange when values actually change
+  const prevStateRef = useRef<{
+    currentStep: 'categories' | 'brands';
+    selectedCategoryId?: string;
+    breadcrumbItems: BreadcrumbItem[];
+  } | null>(null);
+
+  // State değişikliklerini parent'a bildir - sadece gerçekten değiştiğinde
+  useEffect(() => {
+    const currentState = {
+      currentStep,
+      selectedCategoryId: initialCategoryId || selectedCategory?.id,
+      breadcrumbItems,
+    };
+
+    // İlk render'da veya değerler gerçekten değiştiyse callback çağır
+    if (!prevStateRef.current) {
+      prevStateRef.current = currentState;
+      onStateChangeRef.current?.(currentState);
+      return;
     }
-  }, [currentStep, breadcrumbItems, initialCategoryId, selectedCategory, onStateChange]);
+
+    const prev = prevStateRef.current;
+    const hasChanged = 
+      prev.currentStep !== currentState.currentStep ||
+      prev.selectedCategoryId !== currentState.selectedCategoryId ||
+      prev.breadcrumbItems.length !== currentState.breadcrumbItems.length ||
+      prev.breadcrumbItems.some((item, idx) => 
+        item?.id !== currentState.breadcrumbItems[idx]?.id ||
+        item?.type !== currentState.breadcrumbItems[idx]?.type
+      );
+
+    if (hasChanged) {
+      prevStateRef.current = currentState;
+      onStateChangeRef.current?.(currentState);
+    }
+  }, [currentStep, breadcrumbItems, initialCategoryId, selectedCategory]);
 
   const { data: brandCategories, isLoading: isCategoriesLoading, error: categoriesError } = useBrandCategories();
   // Initial category ID varsa onu kullan, yoksa selectedCategory'dan al
@@ -153,10 +189,14 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
     // brandId veya id alanını kullan, yoksa categoryId-name kombinasyonu kullan
     const brandId = brand.brandId || brand.id || `${brand.categoryId}-${brand.name}`;
     
-    console.log('[BrandScreen] Mapping brand:', {
-      original: brand,
-      mappedId: brandId,
-    });
+    // PERFORMANCE FIX: Remove console.log to prevent performance issues
+    // Only log in development if needed for debugging
+    if (__DEV__ && false) { // Disabled by default, enable only when debugging
+      console.log('[BrandScreen] Mapping brand:', {
+        original: brand,
+        mappedId: brandId,
+      });
+    }
     
     return {
       id: brandId,

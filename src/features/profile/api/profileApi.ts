@@ -69,6 +69,8 @@ interface GetUserProfileApiResponse {
       image?: string;
     }>;
     isTrusted?: boolean | null;
+    isMuted?: boolean;
+    isBlocked?: boolean;
   };
 }
 
@@ -114,6 +116,8 @@ export const getUserProfile = async (
     },
     badges: apiData.badges || [], // Default: boş array
     isTrusted: apiData.isTrusted ?? null, // Default: null
+    isMuted: apiData.isMuted ?? false, // Default: false
+    isBlocked: apiData.isBlocked ?? false, // Default: false
   };
 };
 
@@ -1841,6 +1845,76 @@ export const reportUser = async (
       statusText: error.response?.statusText,
       requestData: data,
       responseData: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Mute User endpoint function
+ * Kullanıcıyı sessize alır
+ * 
+ * API Endpoint: POST /users/{id}/mute (Request Body ile)
+ * 
+ * @param userId - Sessize alan kullanıcı ID'si (JWT token'daki userId ile eşleşmeli)
+ * @param targetUserId - Sessize alınacak kullanıcı ID'si
+ * @returns void - Başarılı durumda 201 Created döner
+ */
+export const muteUser = async (
+  userId: string,
+  targetUserId: string
+): Promise<void> => {
+  try {
+    await apiService.getClient().post(`/users/${userId}/mute`, {
+      targetUserId,
+    });
+  } catch (error: any) {
+    console.error('[muteUser] API Error:', {
+      url: `/users/${userId}/mute`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Unmute User endpoint function
+ * Kullanıcının sessizliğini kaldırır
+ * 
+ * API Endpoint: POST /users/{id}/unmute (Request Body ile)
+ * 
+ * @param userId - Sessizliği kaldıran kullanıcı ID'si (JWT token'daki userId ile eşleşmeli)
+ * @param targetUserId - Sessizliği kaldırılacak kullanıcı ID'si
+ * @returns boolean - Başarılı ise true, kayıt yoksa false döner
+ */
+export const unmuteUser = async (
+  userId: string,
+  targetUserId: string
+): Promise<boolean> => {
+  try {
+    await apiService.getClient().post(`/users/${userId}/unmute`, {
+      targetUserId,
+    });
+    return true;
+  } catch (error: any) {
+    // 404 hatası: Kullanıcı zaten sessize alınmamış olabilir
+    if (error?.response?.status === 404) {
+      console.warn('[unmuteUser] User is not muted (404):', {
+        url: `/users/${userId}/unmute`,
+        message: 'User may not be muted',
+      });
+      // 404'ü sessizce yut (idempotent işlem) ve false döndür
+      return false;
+    }
+    console.error('[unmuteUser] API Error:', {
+      url: `/users/${userId}/unmute`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
       message: error.message,
     });
     throw error;

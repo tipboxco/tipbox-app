@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
-import { useAppStore } from '@/src/store/appStore';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import categories from '@/src/mock/auth/categorys';
@@ -64,7 +63,6 @@ export const SelectCategoriesScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
-  const { completeRegistration } = useAppStore();
   const updateInterestsMutation = useUpdateUserInterests();
   const insets = useSafeAreaInsets();
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
@@ -87,19 +85,8 @@ export const SelectCategoriesScreen = () => {
         // API'ye seçilen kategorileri gönder
         await updateInterestsMutation.mutateAsync(selectedSubCategories);
         
-        // Başarılı olursa kullanıcıyı giriş yapmış olarak işaretle
-        completeRegistration();
-        
-        // Kullanıcıyı giriş yapmış olarak işaretle
-        // completeRegistration() çağrıldığında RootNavigator otomatik olarak
-        // isAuthenticated kontrolü yapacak ve MainDrawer'ı render edecek
-        // Auth stack'ten çıkmak için navigation'ı sıfırlamaya gerek yok,
-        // çünkü RootNavigator zaten conditional rendering yapıyor
-        completeRegistration();
-        
-        // Not: RootNavigator otomatik olarak MainDrawer'a geçecek
-        // Navigation reset gerekmez çünkü RootNavigator seviyesinde
-        // isAuthenticated değişikliği otomatik olarak yeni stack'i render eder
+        // Başarılı olursa Onboarding ekranına yönlendir
+        navigation.navigate('Onboarding');
       } catch (error: any) {
         // Hata durumunda kullanıcıya bilgi ver
         const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving categories.';

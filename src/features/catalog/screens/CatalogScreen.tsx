@@ -19,7 +19,7 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
-import { useCatalogNavigationStore } from '../store/catalogNavigationStore';
+import { useCatalogNavigationStore, catalogNavigationStore } from '../store/catalogNavigationStore';
 import { useBottomOffset } from '@/src/utils';
 
 type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
@@ -133,16 +133,20 @@ const CatalogScreenComponent = () => {
   
   // Update mode when route params change or restore from store
   useEffect(() => {
-    const newMode = routeView === 'brands' ? 'brand-catalog' : routeView === 'products' ? 'product' : (lastCatalogType === 'brand' ? 'brand-catalog' : 'product');
+    // newMode can only be 'product' or 'brand-catalog' (never 'brand-selection')
+    // 'brand-selection' is only set by user action (FAB button), not by route params
+    const newMode: 'product' | 'brand-catalog' = routeView === 'brands' ? 'brand-catalog' : routeView === 'products' ? 'product' : (lastCatalogType === 'brand' ? 'brand-catalog' : 'product');
     
     // CONTROL FIX: Always update mode when route params change
     // This ensures correct mode is set when navigating from ExploreScreen
     // PERFORMANCE FIX: Only dispatch if mode actually changed to prevent re-render loops
+    // Note: If currentMode is 'brand-selection', we still update to newMode (from route/store)
     if (newMode !== currentMode) {
       dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
       
       // Store'a kaydet
-      const catalogType = newMode === 'brand-catalog' || newMode === 'brand-selection' ? 'brand' : 'product';
+      // newMode is always 'product' or 'brand-catalog', never 'brand-selection'
+      const catalogType: 'product' | 'brand' = newMode === 'brand-catalog' ? 'brand' : 'product';
       setLastCatalogType(catalogType);
     }
   }, [routeView, lastCatalogType, currentMode, setLastCatalogType]);
@@ -583,14 +587,31 @@ const CatalogScreenComponent = () => {
       dispatch({ type: 'SET_BREADCRUMB_ITEMS', payload: data.breadcrumbItems });
     }
     
-    // Catalog Navigation Store'a kaydet (persist için)
-    setProductCatalogState({
-      currentView: data.currentView,
-      selectedSubCategoryId: data.selectedSubCategoryId,
-      selectedProductGroupId: data.selectedProductGroupId,
-      selectedProductId: data.selectedProduct?.id,
-      breadcrumbItems: data.breadcrumbItems,
-    });
+    // PERFORMANCE FIX: Only update navigation store if values actually changed
+    // This prevents infinite loop where setProductCatalogState updates props,
+    // which causes ProductCatalogScreen to re-render and call onStateChange again
+    const currentNavState = catalogNavigationStore.getState().productCatalogState;
+    const navStateChanged = 
+      currentNavState.currentView !== data.currentView ||
+      currentNavState.selectedSubCategoryId !== data.selectedSubCategoryId ||
+      currentNavState.selectedProductGroupId !== data.selectedProductGroupId ||
+      currentNavState.selectedProductId !== data.selectedProduct?.id ||
+      currentNavState.breadcrumbItems.length !== data.breadcrumbItems.length ||
+      currentNavState.breadcrumbItems.some((item, idx) => 
+        item?.id !== data.breadcrumbItems[idx]?.id ||
+        item?.type !== data.breadcrumbItems[idx]?.type
+      );
+    
+    if (navStateChanged) {
+      // Catalog Navigation Store'a kaydet (persist için)
+      setProductCatalogState({
+        currentView: data.currentView,
+        selectedSubCategoryId: data.selectedSubCategoryId,
+        selectedProductGroupId: data.selectedProductGroupId,
+        selectedProductId: data.selectedProduct?.id,
+        breadcrumbItems: data.breadcrumbItems,
+      });
+    }
   }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup, selectedProductLocal, breadcrumbItems, setProductCatalogState]);
 
   const renderContent = () => {
@@ -608,7 +629,22 @@ const CatalogScreenComponent = () => {
             initialStep={brandCatalogState.currentStep}
             initialBreadcrumbItems={brandCatalogState.breadcrumbItems}
             onStateChange={(state) => {
-              setBrandCatalogState(state);
+              // PERFORMANCE FIX: Only update navigation store if values actually changed
+              // This prevents infinite loop where setBrandCatalogState updates props,
+              // which causes BrandScreen to re-render and call onStateChange again
+              const currentNavState = catalogNavigationStore.getState().brandCatalogState;
+              const navStateChanged = 
+                currentNavState.currentStep !== state.currentStep ||
+                currentNavState.selectedCategoryId !== state.selectedCategoryId ||
+                currentNavState.breadcrumbItems.length !== state.breadcrumbItems.length ||
+                currentNavState.breadcrumbItems.some((item, idx) => 
+                  item?.id !== state.breadcrumbItems[idx]?.id ||
+                  item?.type !== state.breadcrumbItems[idx]?.type
+                );
+              
+              if (navStateChanged) {
+                setBrandCatalogState(state);
+              }
             }}
           />
         );
@@ -623,7 +659,22 @@ const CatalogScreenComponent = () => {
             initialStep={brandCatalogState.currentStep}
             initialBreadcrumbItems={brandCatalogState.breadcrumbItems}
             onStateChange={(state) => {
-              setBrandCatalogState(state);
+              // PERFORMANCE FIX: Only update navigation store if values actually changed
+              // This prevents infinite loop where setBrandCatalogState updates props,
+              // which causes BrandScreen to re-render and call onStateChange again
+              const currentNavState = catalogNavigationStore.getState().brandCatalogState;
+              const navStateChanged = 
+                currentNavState.currentStep !== state.currentStep ||
+                currentNavState.selectedCategoryId !== state.selectedCategoryId ||
+                currentNavState.breadcrumbItems.length !== state.breadcrumbItems.length ||
+                currentNavState.breadcrumbItems.some((item, idx) => 
+                  item?.id !== state.breadcrumbItems[idx]?.id ||
+                  item?.type !== state.breadcrumbItems[idx]?.type
+                );
+              
+              if (navStateChanged) {
+                setBrandCatalogState(state);
+              }
             }}
           />
         );

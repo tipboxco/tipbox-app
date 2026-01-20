@@ -383,6 +383,124 @@ class NavigationService {
   }
 
   /**
+   * Get stack depth
+   * 
+   * Root stack'in derinliğini döndürür (kaç ekran stack'te var).
+   * Shared screen navigation için kullanılır.
+   * 
+   * @returns Stack depth (number of screens in stack)
+   */
+  getStackDepth(): number {
+    if (!this.isReady()) {
+      return 0;
+    }
+
+    try {
+      const state = this.navigationRef!.current!.getState();
+      if (!state || !state.routes) {
+        return 0;
+      }
+      return state.routes.length;
+    } catch (error) {
+      this.logger.error('Get stack depth error:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Replace current screen
+   * 
+   * Mevcut ekranı yeni bir ekranla değiştirir (stack buildup önlemek için).
+   * Shared screen navigation için kullanılır.
+   * 
+   * @param routeName - Root route name
+   * @param params - Route params
+   */
+  replace<RouteName extends keyof RootStackParamList>(
+    routeName: RouteName,
+    params?: RootStackParamList[RouteName]
+  ): void {
+    if (!this.isReady()) {
+      return;
+    }
+
+    try {
+      const state = this.navigationRef!.current!.getState();
+      if (!state || !state.routes || state.routes.length === 0) {
+        // Stack boşsa normal navigate yap
+        this.navigate(routeName, params);
+        return;
+      }
+
+      // Son ekranı yeni ekranla değiştir
+      const newRoutes = [...state.routes];
+      newRoutes[newRoutes.length - 1] = {
+        ...newRoutes[newRoutes.length - 1],
+        name: routeName as never,
+        params: params as never,
+      };
+
+      this.navigationRef!.current!.reset({
+        index: newRoutes.length - 1,
+        routes: newRoutes as never[],
+      });
+      this.logger.log('Replaced navigation to:', routeName);
+    } catch (error) {
+      this.logger.error('Replace navigation error:', error);
+      // Fallback: Normal navigate yap
+      this.navigate(routeName, params);
+    }
+  }
+
+  /**
+   * Find route in stack
+   * 
+   * Stack'te belirtilen route'un index'ini bulur.
+   * Shared screen navigation için kullanılır.
+   * 
+   * @param routeName - Route name to find
+   * @returns Index of route in stack, or -1 if not found
+   */
+  findRouteInStack(routeName: string): number {
+    if (!this.isReady()) {
+      return -1;
+    }
+
+    try {
+      const state = this.navigationRef!.current!.getState();
+      if (!state || !state.routes) {
+        return -1;
+      }
+
+      // Recursively search in nested states
+      const findRouteRecursive = (routes: any[], targetName: string): number => {
+        for (let i = routes.length - 1; i >= 0; i--) {
+          const route = routes[i];
+          
+          // Direct match
+          if (route.name === targetName) {
+            return i;
+          }
+
+          // Check nested state
+          if (route.state && route.state.routes) {
+            const nestedIndex = findRouteRecursive(route.state.routes, targetName);
+            if (nestedIndex !== -1) {
+              return i; // Return parent index if found in nested state
+            }
+          }
+        }
+        return -1;
+      };
+
+      return findRouteRecursive(state.routes, routeName);
+    } catch (error) {
+      this.logger.error('Find route in stack error:', error);
+      return -1;
+    }
+  }
+
+  /**
    * ARCHITECTURE FIX: Consume Pending Navigation Queue
    * Navigation ready olduğunda queue'daki tüm navigation'ları FIFO sırasıyla consume eder
    * 

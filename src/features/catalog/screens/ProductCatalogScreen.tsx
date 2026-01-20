@@ -255,14 +255,18 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   }, [catalogProductGroups]);
 
   // API'den gelen products'ı formatla - useMemo ile cache'le
+  // useCatalogProducts InfiniteData döndürüyor, pages.flatMap kullanmalıyız
   const currentProducts = useMemo(() => {
-    if (!catalogProducts) return [];
+    if (!catalogProducts?.pages) return [];
     
-    return catalogProducts.map(product => ({
+    // InfiniteData yapısından tüm products'ı çıkar
+    const allProducts = catalogProducts.pages.flatMap((page) => page.items || []);
+    
+    return allProducts.map((product: CatalogProduct) => ({
       id: product.productId,
       name: product.name,
       image: product.image || undefined, // Boş string ise undefined yap
-      productGroupId: product.productId,
+      productGroupId: product.productGroupId,
       subCategoryId: product.subCategoryId,
       description: '', // API'den description gelmiyor
     }));
@@ -654,7 +658,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
       // Product selected (with ProductGroup) - title=ProductGroup, subName=Product
       stage = 'Product';
       name = productItem.name;
-      const product = currentProducts.find(p => p.id === productItem.id);
+      const product = currentProducts.find((p: { id: string; name: string; image?: string; description?: string }) => p.id === productItem.id);
       // TODO: Implement when product groups API is available
       if (product) {
         productInfo = {
@@ -1186,7 +1190,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             productGroup.name.toLowerCase().includes(searchQuery.toLowerCase())
           );
         case 'products':
-          return currentProducts.filter(product =>
+          return currentProducts.filter((product: { id: string; name: string; image?: string; description?: string }) =>
             product.name.toLowerCase().includes(searchQuery.toLowerCase())
           );
         default:

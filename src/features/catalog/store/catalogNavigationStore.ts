@@ -123,3 +123,6 @@ export const useCatalogNavigationStore = create<CatalogNavigationState>()(
     { name: 'CatalogNavigationStore' }
   )
 );
+
+// Export store instance for getState() access outside of components
+export const catalogNavigationStore = useCatalogNavigationStore;

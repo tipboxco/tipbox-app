@@ -19,6 +19,7 @@ import { TrophyIcon } from 'react-native-heroicons/outline';
 import { notificationService } from '@/src/services/NotificationService';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 
 export interface NotificationCardProps {
@@ -565,13 +566,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             // 4. Mesajlaşma Bildirimleri → MessageDetail veya SupportMessageDetail
             if (type === 'DM_REQUEST_RECEIVED') {
                 if (data.threadId) {
-                    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+                    navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
                         messageId: data.threadId,
                         threadId: data.threadId,
                         recipientUserId: notification.userId,
-                    }, {
-                        priority: 'high',
-                        force: false,
                     });
                     return;
                 }
@@ -590,7 +588,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 if (data.threadId) {
                     // SupportMessageDetail için gerekli parametreleri hazırla
                     // Backend'den threadId geliyor, requestId de gelmeli (eksik field)
-                    navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
+                    navigateToSharedScreenWithPruning(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
                         requestId: data.requestId || data.threadId, // requestId backend'den gelmeli
                         threadId: data.threadId,
                         expertName: notification.userId ? 'Expert' : 'User', // Backend'den gelmeli
@@ -598,9 +596,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         expertAvatar: notification.avatar || null,
                         recipientUserId: notification.userId,
                         status: 'active',
-                    }, {
-                        priority: 'high',
-                        force: false,
                     });
                     return;
                 }
@@ -649,7 +644,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             // CRITICAL: Backend'den expertName, expertTitle, expertAvatar gelmeli (eksik field'lar)
             if (type === 'EXPERT_REQUEST_AVAILABLE' || type === 'EXPERT_REQUEST_ANSWERED') {
                 if (data.requestId) {
-                    navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
+                    navigateToSharedScreenWithPruning(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
                         requestId: data.requestId,
                         threadId: data.threadId || null, // EXPERT_REQUEST_ANSWERED için threadId gelmeli
                         expertName: data.expertName || notification.userId ? 'Expert' : 'User', // Backend'den gelmeli
@@ -657,9 +652,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         expertAvatar: data.expertAvatar || notification.avatar || null, // Backend'den gelmeli
                         recipientUserId: notification.userId,
                         status: type === 'EXPERT_REQUEST_ANSWERED' ? 'active' : 'pending',
-                    }, {
-                        priority: 'high',
-                        force: false,
                     });
                     return;
                 }
@@ -790,13 +782,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         const data = notification.data || notification.metadata || {};
         if (data.threadId) {
             try {
-                navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+                navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
                     messageId: data.threadId,
                     threadId: data.threadId,
                     recipientUserId: notification.userId,
-                }, {
-                    priority: 'high',
-                    force: false,
                 });
             } catch (error) {
                 console.error('[NotificationCard] Chat navigation error:', error);

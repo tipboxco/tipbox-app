@@ -21,6 +21,8 @@ import {
   getSuggestedUsers,
   updateInventoryItem,
   deleteInventoryItem,
+  muteUser,
+  unmuteUser,
   type UserFeedApiResponse,
   type UpdateProfileRequest,
   type UpdateProfileResponse,
@@ -731,26 +733,75 @@ export const useAddToTrustList = () => {
 
   return useMutation<void, Error, string>({
     mutationFn: (targetUserId: string) => addToTrustList(targetUserId),
+    // Optimistic Update: Sadece isTrusted durumunu güncelle (buton metni için)
+    onMutate: async (targetUserId) => {
+      // İlgili query'leri iptal et (optimistic update çakışmasını önle)
+      if (user?.id) {
+        await queryClient.cancelQueries({ queryKey: profileKeys.profile(user.id) });
+        await queryClient.cancelQueries({ queryKey: profileKeys.profile(targetUserId) });
+        await queryClient.cancelQueries({ queryKey: profileKeys.trusts() });
+      }
+
+      // Eski cache'leri kaydet (rollback için)
+      const previousUserProfile = user?.id 
+        ? queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id))
+        : undefined;
+      const previousTargetProfile = queryClient.getQueryData<UserProfile>(profileKeys.profile(targetUserId));
+
+      // Optimistic Update: Sadece isTrusted durumunu güncelle (buton metni için)
+      // Trust/truster sayılarını güncelleme - backend henüz güncellememiş olabilir
+      if (user?.id) {
+        queryClient.setQueryData<UserProfile>(profileKeys.profile(user.id), (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            stats: {
+              ...old.stats,
+              trust: (old.stats?.trust ?? 0) + 1,
+            },
+          };
+        });
+      }
+
+      // Target user'ın profilinde sadece isTrusted'ı güncelle
+      queryClient.setQueryData<UserProfile>(profileKeys.profile(targetUserId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          isTrusted: true, // Buton metni için: "Un Trust" yazacak
+          // Truster sayısını güncelleme - backend henüz güncellememiş olabilir
+        };
+      });
+
+      // Rollback için context döndür
+      return { previousUserProfile, previousTargetProfile };
+    },
+    onError: (error, targetUserId, context) => {
+      console.error('[useAddToTrustList] Mutation error:', error);
+      
+      // Rollback: Eski cache'leri geri yükle
+      if (context?.previousUserProfile && user?.id) {
+        queryClient.setQueryData(profileKeys.profile(user.id), context.previousUserProfile);
+      }
+      if (context?.previousTargetProfile) {
+        queryClient.setQueryData(profileKeys.profile(targetUserId), context.previousTargetProfile);
+      }
+    },
     onSuccess: (_, targetUserId) => {
-      // Trust listesini invalidate et - güncel listeyi göster
+      // Backend başarılı yanıt verdi, cache'leri invalidate et (güncel veriyi çek)
       if (user?.id) {
         queryClient.invalidateQueries({
           queryKey: profileKeys.trusts(),
         });
-        // Kendi profil bilgilerini invalidate et - trust sayısı güncellenecek
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(user.id),
         });
       }
-      // Target user'ın profil bilgilerini de invalidate et - truster sayısı güncellenecek
       if (targetUserId) {
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(targetUserId),
         });
       }
-    },
-    onError: (error) => {
-      console.error('[useAddToTrustList] Mutation error:', error);
     },
   });
 };
@@ -771,26 +822,75 @@ export const useRemoveFromTrustList = () => {
 
   return useMutation<void, Error, string>({
     mutationFn: (targetUserId: string) => removeFromTrustList(targetUserId),
+    // Optimistic Update: Sadece isTrusted durumunu güncelle (buton metni için)
+    onMutate: async (targetUserId) => {
+      // İlgili query'leri iptal et (optimistic update çakışmasını önle)
+      if (user?.id) {
+        await queryClient.cancelQueries({ queryKey: profileKeys.profile(user.id) });
+        await queryClient.cancelQueries({ queryKey: profileKeys.profile(targetUserId) });
+        await queryClient.cancelQueries({ queryKey: profileKeys.trusts() });
+      }
+
+      // Eski cache'leri kaydet (rollback için)
+      const previousUserProfile = user?.id 
+        ? queryClient.getQueryData<UserProfile>(profileKeys.profile(user.id))
+        : undefined;
+      const previousTargetProfile = queryClient.getQueryData<UserProfile>(profileKeys.profile(targetUserId));
+
+      // Optimistic Update: Sadece isTrusted durumunu güncelle (buton metni için)
+      // Trust/truster sayılarını güncelleme - backend henüz güncellememiş olabilir
+      if (user?.id) {
+        queryClient.setQueryData<UserProfile>(profileKeys.profile(user.id), (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            stats: {
+              ...old.stats,
+              trust: Math.max(0, (old.stats?.trust ?? 0) - 1),
+            },
+          };
+        });
+      }
+
+      // Target user'ın profilinde sadece isTrusted'ı güncelle
+      queryClient.setQueryData<UserProfile>(profileKeys.profile(targetUserId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          isTrusted: false, // Buton metni için: "Trust" yazacak
+          // Truster sayısını güncelleme - backend henüz güncellememiş olabilir
+        };
+      });
+
+      // Rollback için context döndür
+      return { previousUserProfile, previousTargetProfile };
+    },
+    onError: (error, targetUserId, context) => {
+      console.error('[useRemoveFromTrustList] Mutation error:', error);
+      
+      // Rollback: Eski cache'leri geri yükle
+      if (context?.previousUserProfile && user?.id) {
+        queryClient.setQueryData(profileKeys.profile(user.id), context.previousUserProfile);
+      }
+      if (context?.previousTargetProfile) {
+        queryClient.setQueryData(profileKeys.profile(targetUserId), context.previousTargetProfile);
+      }
+    },
     onSuccess: (_, targetUserId) => {
-      // Trust listesini invalidate et - güncel listeyi göster
+      // Backend başarılı yanıt verdi, cache'leri invalidate et (güncel veriyi çek)
       if (user?.id) {
         queryClient.invalidateQueries({
           queryKey: profileKeys.trusts(),
         });
-        // Kendi profil bilgilerini invalidate et - trust sayısı güncellenecek
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(user.id),
         });
       }
-      // Target user'ın profil bilgilerini de invalidate et - truster sayısı güncellenecek
       if (targetUserId) {
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(targetUserId),
         });
       }
-    },
-    onError: (error) => {
-      console.error('[useRemoveFromTrustList] Mutation error:', error);
     },
   });
 };
@@ -858,6 +958,161 @@ export const useReportUser = () => {
     },
     onError: (error) => {
       console.error('[useReportUser] ❌ Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Mute User mutation hook
+ * Kullanıcıyı sessize alır
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: muteUser, isPending } = useMuteUser();
+ * muteUser({
+ *   userId: 'current-user-id',
+ *   targetUserId: 'target-user-id'
+ * });
+ */
+export const useMuteUser = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<
+    void,
+    Error,
+    { userId: string; targetUserId: string }
+  >({
+    mutationFn: ({ userId, targetUserId }) => muteUser(userId, targetUserId),
+    onMutate: async ({ targetUserId }) => {
+      // Optimistic update: Cache'i hemen güncelle
+      const queryKey = profileKeys.profile(targetUserId);
+      await queryClient.cancelQueries({ queryKey });
+      
+      const previousProfile = queryClient.getQueryData<UserProfile>(queryKey);
+      
+      if (__DEV__) {
+        console.log('[useMuteUser] onMutate - Previous profile:', {
+          targetUserId,
+          previousIsMuted: previousProfile?.isMuted,
+        });
+      }
+      
+      if (previousProfile) {
+        // Optimistic update: isMuted'ı true yap
+        queryClient.setQueryData<UserProfile>(queryKey, {
+          ...previousProfile,
+          isMuted: true,
+        });
+        
+        if (__DEV__) {
+          console.log('[useMuteUser] ✅ Optimistic update: isMuted set to true');
+        }
+      }
+      
+      return { previousProfile };
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate yapmıyoruz çünkü optimistic update zaten doğru değeri set etti
+      // Invalidate yaparsak query refetch edilir ve backend'den gelen veri optimistic update'i ezer
+      // Sadece cache'i güncellemek yeterli (optimistic update zaten yaptı)
+      console.log('[useMuteUser] ✅ User muted successfully');
+    },
+    onError: (error, variables, context) => {
+      // Hata durumunda önceki değeri geri yükle
+      if (context?.previousProfile) {
+        queryClient.setQueryData(
+          profileKeys.profile(variables.targetUserId),
+          context.previousProfile
+        );
+      }
+      console.error('[useMuteUser] ❌ Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Unmute User mutation hook
+ * Kullanıcının sessizliğini kaldırır
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: unmuteUser, isPending } = useUnmuteUser();
+ * unmuteUser({
+ *   userId: 'current-user-id',
+ *   targetUserId: 'target-user-id'
+ * });
+ */
+export const useUnmuteUser = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<
+    boolean,
+    Error,
+    { userId: string; targetUserId: string }
+  >({
+    mutationFn: ({ userId, targetUserId }) => unmuteUser(userId, targetUserId),
+    onMutate: async ({ targetUserId }) => {
+      // Optimistic update: Cache'i hemen güncelle
+      const queryKey = profileKeys.profile(targetUserId);
+      await queryClient.cancelQueries({ queryKey });
+      
+      const previousProfile = queryClient.getQueryData<UserProfile>(queryKey);
+      
+      if (__DEV__) {
+        console.log('[useUnmuteUser] onMutate - Previous profile:', {
+          targetUserId,
+          previousIsMuted: previousProfile?.isMuted,
+        });
+      }
+      
+      if (previousProfile) {
+        // Optimistic update: isMuted'ı false yap
+        queryClient.setQueryData<UserProfile>(queryKey, {
+          ...previousProfile,
+          isMuted: false,
+        });
+        
+        if (__DEV__) {
+          console.log('[useUnmuteUser] ✅ Optimistic update: isMuted set to false');
+        }
+      }
+      
+      return { previousProfile };
+    },
+    onSuccess: (result, variables) => {
+      // Invalidate yapmıyoruz çünkü optimistic update zaten doğru değeri set etti
+      // Invalidate yaparsak query refetch edilir ve backend'den gelen veri optimistic update'i ezer
+      if (result) {
+        // Başarılı unmute - optimistic update zaten isMuted: false yaptı
+        console.log('[useUnmuteUser] ✅ User unmuted successfully');
+      } else {
+        // 404 durumunda optimistic update'i geri al (kullanıcı zaten mute değildi)
+        const queryKey = profileKeys.profile(variables.targetUserId);
+        const previousProfile = queryClient.getQueryData<UserProfile>(queryKey);
+        if (previousProfile) {
+          queryClient.setQueryData<UserProfile>(queryKey, {
+            ...previousProfile,
+            isMuted: true, // Geri al (çünkü zaten mute değildi)
+          });
+          
+          if (__DEV__) {
+            console.log('[useUnmuteUser] ⚠️ Reverted optimistic update (user was not muted)');
+          }
+        }
+        console.log('[useUnmuteUser] ⚠️ User was not muted (404)');
+      }
+    },
+    onError: (error, variables, context) => {
+      // Hata durumunda önceki değeri geri yükle
+      if (context?.previousProfile) {
+        queryClient.setQueryData(
+          profileKeys.profile(variables.targetUserId),
+          context.previousProfile
+        );
+      }
+      console.error('[useUnmuteUser] ❌ Mutation error:', error);
     },
   });
 };

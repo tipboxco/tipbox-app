@@ -1,8 +1,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen, ForgotPasswordScreen, ResetPasswordScreen, SelectAvatarScreen } from './screens';
+import { OnboardingScreen, WelcomeScreen, LoginScreen, RegisterScreen, AuthVerifyCodeScreen, SetupProfileScreen, SelectCategoriesScreen, ForgotPasswordScreen, ResetPasswordScreen, SelectAvatarScreen } from './screens';
 
 export type AuthStackParamList = {
+  Onboarding: undefined;
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
@@ -40,6 +41,14 @@ export const AuthNavigator = () => {
       }}
       initialRouteName='Welcome'
     >
+      <AuthStack.Screen
+        name='Onboarding'
+        component={OnboardingScreen}
+        options={{
+          title: 'Tanıtım',
+          gestureEnabled: false,
+        }}
+      />
       <AuthStack.Screen
         name='Welcome'
         component={WelcomeScreen}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -23,6 +23,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
@@ -1232,7 +1233,7 @@ const MessageDetailScreen: React.FC = () => {
       userTitle,
     });
     
-    navigationService.navigate(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
+    navigateToSharedScreenWithPruning(ROOT_ROUTES.SUPPORT_MESSAGE_DETAIL, {
       threadId: supportThreadId,
       requestId: requestId,
       expertName: expertName,
@@ -2464,75 +2465,109 @@ const MessageDetailScreen: React.FC = () => {
     );
   };
 
+  // CRITICAL FIX: SafeAreaView kullanmıyoruz, flicker önlemek için manuel insets kullanıyoruz
+  // Üstte top inset kadar, altta bottom inset kadar view kullan
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-          enabled={true}
-        >
-          {/* Header */}
-          <MessageDetailHeader
-            senderName={params.senderName}
-            senderTitle={params.senderTitle}
-            senderAvatar={params.senderAvatar}
-            onBackPress={() => navigation.goBack()}
-            onMenuPress={() => console.log('Menü tıklandı')}
-          />
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      {/* Top inset view - Status bar için */}
+      <Box 
+        height={insets.top} 
+        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      />
+      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        enabled={true}
+      >
+        {/* Header */}
+        <MessageDetailHeader
+          senderName={params.senderName}
+          senderTitle={params.senderTitle}
+          senderAvatar={params.senderAvatar}
+          onBackPress={() => navigation.goBack()}
+          onMenuPress={() => console.log('Menü tıklandı')}
+        />
 
           {/* Mesaj Geçmişi - WhatsApp Stili Normal FlatList */}
           <Box flex={1}>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessageItem}
-              keyExtractor={(item) => item.id}
-              inverted={false} // Normal FlatList: En eski mesajlar üstte, en yeni mesajlar altta
-              contentContainerStyle={{ 
-                paddingTop: 16,
-                paddingBottom: isKeyboardVisible 
-                  ? keyboardHeight + 60  // Klavye + Input (~60px: height + minimal padding)
-                  : 16,
-              }}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="interactive"
-              style={{ flex: 1 }}
-              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-              onContentSizeChange={(width, height) => {
-                // Content size'ı kaydet
-                contentSizeRef.current = { width, height };
-                
-                // İçerik değiştiğinde (yeni mesaj eklendiğinde) en alta scroll
-                // Sadece klavye açıksa scroll yap (gönder butonu zaten scroll yapıyor)
-                if (messages.length > 0 && isKeyboardVisible) {
-                  const delay = Platform.OS === 'ios' ? 200 : 150;
-                  setTimeout(() => {
-                    safeScrollToEnd(true);
-                  }, delay);
+            {isLoadingMessages && messages.length === 0 ? (
+              // Loading state - Mesajlar yüklenene kadar göster
+              <Box flex={1} justifyContent="center" alignItems="center">
+                <VStack space="md" alignItems="center">
+                  <ActivityIndicator 
+                    size="large" 
+                    color={isDark ? '#6366F1' : '#6366F1'} 
+                  />
+                  <Text 
+                    color={isDark ? '#8C8C8C' : '#8C8C8C'} 
+                    fontSize="$sm"
+                  >
+                    Mesajlar yükleniyor...
+                  </Text>
+                </VStack>
+              </Box>
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                data={messages}
+                renderItem={renderMessageItem}
+                keyExtractor={(item) => item.id}
+                inverted={false} // Normal FlatList: En eski mesajlar üstte, en yeni mesajlar altta
+                contentContainerStyle={{ 
+                  paddingTop: 16,
+                  paddingBottom: isKeyboardVisible 
+                    ? keyboardHeight + 60  // Klavye + Input (~60px: height + minimal padding)
+                    : 16,
+                }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                style={{ flex: 1 }}
+                viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+                ListEmptyComponent={
+                  !isLoadingMessages ? (
+                    <Box py={40} alignItems="center" justifyContent="center">
+                      <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$sm">
+                        Henüz mesaj yok
+                      </Text>
+                    </Box>
+                  ) : null
                 }
-              }}
-              onLayout={(event) => {
-                // Layout size'ı kaydet
-                const { width, height } = event.nativeEvent.layout;
-                layoutSizeRef.current = { width, height };
-                
-                // İlk render'da en alta scroll yap
-                if (messages.length > 0) {
+                onContentSizeChange={(width, height) => {
+                  // Content size'ı kaydet
+                  contentSizeRef.current = { width, height };
+                  
+                  // İçerik değiştiğinde (yeni mesaj eklendiğinde) en alta scroll
+                  // Sadece klavye açıksa scroll yap (gönder butonu zaten scroll yapıyor)
+                  if (messages.length > 0 && isKeyboardVisible) {
+                    const delay = Platform.OS === 'ios' ? 200 : 150;
+                    setTimeout(() => {
+                      safeScrollToEnd(true);
+                    }, delay);
+                  }
+                }}
+                onLayout={(event) => {
+                  // Layout size'ı kaydet
+                  const { width, height } = event.nativeEvent.layout;
+                  layoutSizeRef.current = { width, height };
+                  
+                  // İlk render'da en alta scroll yap
+                  if (messages.length > 0) {
+                    setTimeout(() => {
+                      safeScrollToEnd(false);
+                    }, 100);
+                  }
+                }}
+                onScrollToIndexFailed={(info) => {
+                  // Index bulunamazsa scrollToEnd kullan
                   setTimeout(() => {
-                    safeScrollToEnd(false);
+                    flatListRef.current?.scrollToEnd({ animated: true });
                   }, 100);
-                }
-              }}
-              onScrollToIndexFailed={(info) => {
-                // Index bulunamazsa scrollToEnd kullan
-                setTimeout(() => {
-                  flatListRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-              }}
-            />
+                }}
+              />
+            )}
           </Box>
 
           {/* Typing Indicator */}
@@ -2580,9 +2615,12 @@ const MessageDetailScreen: React.FC = () => {
           )}
 
           {/* Action Buttons - Klavye ve input üstünde görünmeli */}
+          {/* CRITICAL FIX: Bottom inset artık ayrı view olarak eklendi, burada sadece input height + bottom inset ekle */}
           <Box
             position="absolute"
-            bottom={Platform.OS === 'ios' ? (isKeyboardVisible ? keyboardHeight + 60 : 60) : (isKeyboardVisible ? keyboardHeight + 60 : 60)}
+            bottom={isKeyboardVisible 
+              ? keyboardHeight + 60
+              : 60 + insets.bottom}
             right={16}
             zIndex={1003}
             elevation={1003}
@@ -2598,7 +2636,9 @@ const MessageDetailScreen: React.FC = () => {
 
           {/* Mesaj Input - Klavye üstünde görünmeli */}
           <Box 
-            pb={isKeyboardVisible ? (Platform.OS === 'ios' ? 4 : 0) : 0}
+            pb={isKeyboardVisible 
+              ? (Platform.OS === 'ios' ? 4 : 0) 
+              : 0}
             zIndex={1004}
             elevation={1004}
             position="relative"
@@ -2615,8 +2655,15 @@ const MessageDetailScreen: React.FC = () => {
           </Box>
 
         </KeyboardAvoidingView>
+        
+        {/* Bottom inset view - Home indicator için (klavye kapalıyken) */}
+        {!isKeyboardVisible && (
+          <Box 
+            height={insets.bottom} 
+            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+          />
+        )}
       </Box>
-    </SafeAreaView>
   );
 };
 

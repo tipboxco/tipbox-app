@@ -12,13 +12,16 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, profileKeys } from '../api/hooks';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { Share } from 'react-native';
 import { useAppStore } from '@/src/store/appStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { ProfileStackParamList } from '../navigation';
 import { toImageSource, useSafeAreaValues, useBottomOffset } from '@/src/utils';
 import { CardType } from '@/src/types/common';
@@ -27,7 +30,7 @@ import type { ReviewCardData, ReviewCardContentItem } from '@/src/types/ReviewsC
 import type { BenchmarkCardData, BenchmarkProduct } from '@/src/types/BenchmarkCard';
 import type { TipsCardData, TipsCategory, TipsProduct } from '@/src/types/TipsAndTricksCard';
 import type { QuestionCardData, QuestionCardCategory, QuestionCardProduct } from '@/src/types/QuestionCard';
-import type { ProfilePost, ProfileReview } from '../types';
+import type { ProfilePost, ProfileReview, UserProfile } from '../types';
 import type { BenchmarkApiItem } from '@/src/types/BenchmarkCard';
 import type { TipsApiItem } from '@/src/types/TipsAndTricksCard';
 import type { QuestionApiItem } from '@/src/types/QuestionCard';
@@ -48,6 +51,7 @@ import {
   PhoneIcon,
   ChatBubbleLeftIcon,
   BellIcon,
+  BellSlashIcon,
   UserMinusIcon,
   UserPlusIcon,
 } from 'react-native-heroicons/outline';
@@ -712,6 +716,13 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Report mutation
   const { mutate: reportUser, isPending: isReporting } = useReportUser();
   
+  // Mute/Unmute mutations
+  const { mutate: muteUser, isPending: isMuting } = useMuteUser();
+  const { mutate: unmuteUser, isPending: isUnmuting } = useUnmuteUser();
+  
+  // Toast hook
+  const toast = useToast();
+  
   // Kullanıcının kendi profiline bakıp bakmadığını kontrol et
   const isOwnProfile = user?.id === targetUserId;
   
@@ -737,7 +748,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const handleSendTIPS = useCallback(() => {
     if (!user?.id || !targetUserId) return;
     // MessageDetail screen'ine navigate et (TIPS gönderme için)
-    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+    navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
       messageId: targetUserId,
       threadId: targetUserId,
       recipientUserId: targetUserId,
@@ -747,7 +758,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const handle1on1Request = useCallback(() => {
     if (!user?.id || !targetUserId) return;
     // MessageDetail screen'ine navigate et (1-on-1 request için)
-    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+    navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
       messageId: targetUserId,
       threadId: targetUserId,
       recipientUserId: targetUserId,
@@ -757,7 +768,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const handleDM = useCallback(() => {
     if (!user?.id || !targetUserId || !userProfile) return;
     // MessageDetail screen'ine navigate et
-    navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+    navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
       messageId: targetUserId,
       threadId: targetUserId,
       recipientUserId: targetUserId,
@@ -831,6 +842,112 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       ]
     );
   }, [targetUserId, navigation]);
+
+  const handleMute = useCallback(() => {
+    if (!user?.id || !targetUserId) {
+      if (__DEV__) {
+        console.warn('[ProfileScreen] handleMute: Missing required data', {
+          hasUserId: !!user?.id,
+          hasTargetUserId: !!targetUserId,
+        });
+      }
+      return;
+    }
+    
+    // Mutation zaten devam ediyorsa işlem yapma
+    if (isMuting || isUnmuting) {
+      if (__DEV__) {
+        console.log('[ProfileScreen] handleMute: Mutation already in progress, skipping');
+      }
+      return;
+    }
+    
+    // Cache'den güncel profile'ı al (optimistic update sonrası güncel değeri görmek için)
+    const queryKey = profileKeys.profile(targetUserId);
+    const cachedProfile = queryClient.getQueryData<UserProfile>(queryKey);
+    const currentProfile = cachedProfile || userProfile;
+    
+    if (!currentProfile) {
+      if (__DEV__) {
+        console.warn('[ProfileScreen] handleMute: No profile data available');
+      }
+      return;
+    }
+    
+    // isMuted değerini güvenilir şekilde kontrol et (undefined/null ise false kabul et)
+    const isMuted = currentProfile.isMuted === true;
+    
+    if (__DEV__) {
+      console.log('[ProfileScreen] handleMute called:', {
+        userId: user.id,
+        targetUserId,
+        isMuted,
+        isMutedRaw: currentProfile.isMuted,
+        userName: currentProfile.name,
+        fromCache: !!cachedProfile,
+      });
+    }
+    
+    if (isMuted) {
+      if (__DEV__) {
+        console.log('[ProfileScreen] Unmuting user...');
+      }
+      unmuteUser(
+        { userId: user.id, targetUserId },
+        {
+          onSuccess: () => {
+            if (__DEV__) {
+              console.log('[ProfileScreen] ✅ User unmuted successfully');
+            }
+            showCustomToast(toast, {
+              title: 'Sessizlik kaldırıldı',
+              description: `${currentProfile.name} artık bildirim gönderebilir`,
+              action: 'success',
+            });
+          },
+          onError: (error) => {
+            if (__DEV__) {
+              console.error('[ProfileScreen] ❌ Unmute error:', error);
+            }
+            showCustomToast(toast, {
+              title: 'Hata',
+              description: 'Sessizlik kaldırılırken bir hata oluştu',
+              action: 'error',
+            });
+          },
+        }
+      );
+    } else {
+      if (__DEV__) {
+        console.log('[ProfileScreen] Muting user...');
+      }
+      muteUser(
+        { userId: user.id, targetUserId },
+        {
+          onSuccess: () => {
+            if (__DEV__) {
+              console.log('[ProfileScreen] ✅ User muted successfully');
+            }
+            showCustomToast(toast, {
+              title: 'Kullanıcı sessize alındı',
+              description: `${currentProfile.name} artık bildirim göndermeyecek`,
+              action: 'info',
+            });
+          },
+          onError: (error) => {
+            if (__DEV__) {
+              console.error('[ProfileScreen] ❌ Mute error:', error);
+            }
+            showCustomToast(toast, {
+              title: 'Hata',
+              description: 'Kullanıcı sessize alınırken bir hata oluştu',
+              action: 'error',
+            });
+          },
+        }
+      );
+    }
+  }, [targetUserId, user?.id, userProfile, muteUser, unmuteUser, toast, isMuting, isUnmuting, queryClient]);
 
   // Map Badge to SeeAllReward format for BadgeBottomSheet
   const mapBadgeToSeeAllReward = useCallback((badge: Badge): SeeAllReward => {
@@ -950,6 +1067,28 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                       label: 'Paylaş',
                       icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
                       onPress: handleShare,
+                    },
+                    {
+                      label: (isMuting || isUnmuting) 
+                        ? (userProfile?.isMuted ? 'Sessizlik kaldırılıyor...' : 'Sessize alınıyor...')
+                        : (userProfile?.isMuted ? 'Sessizliği Kaldır' : 'Sessize Al'),
+                      icon: userProfile?.isMuted ? (
+                        <Box position="relative" justifyContent="center" alignItems="center">
+                          <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                          <Box
+                            position="absolute"
+                            width={24}
+                            height={1}
+                            bg={isDark ? '#FFFFFF' : '#000000'}
+                            style={{
+                              transform: [{ rotate: '-45deg' }],
+                            }}
+                          />
+                        </Box>
+                      ) : (
+                        <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      ),
+                      onPress: handleMute,
                     },
                     {
                       label: 'Şikayet Et',
@@ -1091,11 +1230,26 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     borderColor="#E9E9E9"
                     justifyContent="center"
                     alignItems="center"
-                    onPress={() => {
-                      // Notification action
-                    }}
+                    onPress={handleMute}
+                    disabled={isMuting || isUnmuting}
+                    opacity={(isMuting || isUnmuting) ? 0.6 : 1}
                   >
-                    <BellIcon size={16} color="#000" />
+                    {userProfile?.isMuted ? (
+                      <Box position="relative" justifyContent="center" alignItems="center">
+                        <BellIcon size={16} color="#000" />
+                        <Box
+                          position="absolute"
+                          width={20}
+                          height={1}
+                          bg="#000"
+                          style={{
+                            transform: [{ rotate: '-45deg' }],
+                          }}
+                        />
+                      </Box>
+                    ) : (
+                      <BellIcon size={16} color="#000" />
+                    )}
                   </Pressable>
                   
                   <Pressable

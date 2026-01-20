@@ -22,6 +22,7 @@ import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
+import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { useAppStore } from '@/src/store/appStore';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { MessageSkeleton } from '@/src/components/Skeletons';
@@ -470,7 +471,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         }
         
         // MessageDetail ekranına git (backend'den gelen recipientUserId ile)
-        navigationService.navigate(ROOT_ROUTES.MESSAGE_DETAIL, {
+        navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
             messageId: threadId,
             threadId: threadId,
             recipientUserId: recipientUserId, // ✅ Backend'den direkt gelen recipientUserId
