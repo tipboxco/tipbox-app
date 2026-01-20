@@ -12,7 +12,7 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, profileKeys } from '../api/hooks';
+import { useUserProfile, useUserPosts, useUserReviews, useUserBenchmarks, useUserTipsAndTricks, useUserReplies, useAddToTrustList, useRemoveFromTrustList, useReportUser, useMuteUser, useUnmuteUser, useTrustList, useTrusterList, profileKeys } from '../api/hooks';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage } from '@/src/features/inbox/api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -570,14 +570,41 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
   
   // Route params'tan userId al, yoksa store'daki user.id'yi kullan
+  // CRITICAL FIX: userId validasyonu - boş string veya geçersiz değer kontrolü
   const routeUserId = route.params?.userId;
-  const targetUserId = routeUserId || user?.id;
+  const rawTargetUserId = routeUserId || user?.id;
+  
+  // userId geçerli mi kontrol et (undefined, null, boş string kontrolü)
+  const targetUserId = rawTargetUserId && 
+    typeof rawTargetUserId === 'string' && 
+    rawTargetUserId.trim().length > 0 
+    ? rawTargetUserId.trim() 
+    : undefined;
   
   // Query client for manual refetch
   const queryClient = useQueryClient();
   
   // Profile API hook
   const { data: userProfile, isLoading: isProfileLoading, error: profileError, refetch: refetchProfile } = useUserProfile(targetUserId);
+  
+  // CRITICAL FIX: Trust ve Truster sayılarını liste uzunluklarından al
+  // DrawerContent ve Trust_TrusterListScreen ile aynı veriyi kullan (liste uzunluğu = gerçek sayı)
+  const { data: trustListData, isLoading: isTrustListLoading, error: trustListError } = useTrustList(targetUserId || '', undefined);
+  const { data: trusterListData, isLoading: isTrusterListLoading, error: trusterListError } = useTrusterList(targetUserId || '', undefined, undefined);
+  
+  // DEBUG: Truster list verilerini logla
+  useEffect(() => {
+    if (__DEV__ && targetUserId) {
+      console.log('[ProfileScreen] Truster List Debug:', {
+        targetUserId,
+        trusterListData,
+        trusterListLength: trusterListData?.length ?? 0,
+        isTrusterListLoading,
+        trusterListError: trusterListError?.message,
+        userProfileStats: userProfile?.stats,
+      });
+    }
+  }, [targetUserId, trusterListData, isTrusterListLoading, trusterListError, userProfile?.stats]);
   
   // Pull to refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -746,14 +773,19 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   
   // Action button handlers
   const handleSendTIPS = useCallback(() => {
-    if (!user?.id || !targetUserId) return;
+    if (!user?.id || !targetUserId || !userProfile) return;
     // MessageDetail screen'ine navigate et (TIPS gönderme için)
+    // openSendTips: true ile tips modalını otomatik aç
     navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
       messageId: targetUserId,
       threadId: targetUserId,
       recipientUserId: targetUserId,
+      senderName: userProfile.name || 'Unknown',
+      senderTitle: userProfile.titles && userProfile.titles.length > 0 ? userProfile.titles[0] : '',
+      senderAvatar: userProfile.avatar ? (toImageSource(userProfile.avatar) || require('@/assets/avatar/default-useravatar.png')) : require('@/assets/avatar/default-useravatar.png'),
+      openSendTips: true, // Tips modalını otomatik aç
     });
-  }, [user?.id, targetUserId]);
+  }, [user?.id, targetUserId, userProfile]);
 
   const handle1on1Request = useCallback(() => {
     if (!user?.id || !targetUserId) return;
@@ -985,6 +1017,23 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
     // TypeScript için: userProfile bu noktada kesinlikle tanımlı
     const profile = userProfile;
     
+    // CRITICAL FIX: Avatar source'u DrawerContent ile aynı mantıkla hesapla
+    // Önce userProfile'dan avatar al (API'den gelen güncel veri)
+    // Yoksa store'dan avatar al (persist edilmiş veri)
+    let avatarSource: any = null;
+    if (userProfile?.avatar) {
+      const profileAvatar = toImageSource(userProfile.avatar);
+      if (profileAvatar) {
+        avatarSource = profileAvatar;
+      }
+    } else if (user?.avatar) {
+      // Yoksa store'dan avatar al (persist edilmiş veri)
+      const storeAvatar = toImageSource(user.avatar);
+      if (storeAvatar) {
+        avatarSource = storeAvatar;
+      }
+    }
+    
     return (
       <Box bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
         {/* Banner */}
@@ -1139,9 +1188,10 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 resizeMode="cover"
               />
               {/* Kullanıcı avatar'ı - varsa üstte göster */}
-              {profile.avatar && toImageSource(profile.avatar) && (
+              {/* CRITICAL FIX: DrawerContent ile aynı mantık - önce userProfile, sonra user store */}
+              {avatarSource && (
                 <Image
-                  source={toImageSource(profile.avatar)}
+                  source={avatarSource}
                   alt={profile.name}
                   position="absolute"
                   w="100%"
@@ -1350,7 +1400,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {profile.stats?.trust ?? 0}
+                  {trustListData?.length ?? 0}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}
@@ -1382,7 +1432,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                   fontSize="$xs"
                   fontWeight="$bold"
                 >
-                  {(profile.stats?.truster ?? 0) > 999 ? `${Math.floor((profile.stats?.truster ?? 0) / 1000)}K` : (profile.stats?.truster ?? 0)}
+                  {(trusterListData?.length ?? 0) > 999 ? `${Math.floor((trusterListData?.length ?? 0) / 1000)}K` : (trusterListData?.length ?? 0)}
                 </Text>
                 <Text
                   color={isDark ? '$textDark400' : '$textLight600'}

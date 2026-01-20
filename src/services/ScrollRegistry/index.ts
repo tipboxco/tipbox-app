@@ -17,7 +17,9 @@ import type { FlatList, ScrollView } from 'react-native';
  * ScrollRegistry.scrollToTop('feed');
  * ```
  */
-type ScrollableRef = React.RefObject<FlatList<any> | ScrollView>;
+import type Animated from 'react-native-reanimated';
+
+type ScrollableRef = React.RefObject<FlatList<any> | ScrollView | Animated.FlatList<any>>;
 
 class ScrollRegistryClass {
   private registry: Map<string, ScrollableRef> = new Map();

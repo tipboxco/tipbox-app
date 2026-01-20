@@ -1,8 +1,12 @@
 import React, { createContext, useContext, useRef } from 'react';
 import type { FlatList } from 'react-native';
+import type Animated from 'react-native-reanimated';
+
+// Animated.FlatList aslında FlatList'i extend ediyor, bu yüzden her ikisini de destekleyen bir tip kullanıyoruz
+type FeedListRef = Animated.FlatList<any> | FlatList<any>;
 
 interface FeedListContextType {
-  feedListRef: React.RefObject<FlatList<any>>;
+  feedListRef: React.RefObject<FeedListRef>;
 }
 
 const FeedListContext = createContext<FeedListContextType | undefined>(undefined);
@@ -14,10 +18,10 @@ const FeedListContext = createContext<FeedListContextType | undefined>(undefined
  * Bu sayede CardImageCarousel'lar feed scroll'unu yönetebilir (gesture arbitration).
  */
 export const FeedListProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const feedListRef = useRef<FlatList<any>>(null);
+  const feedListRef = useRef<FeedListRef>(null);
 
   return (
-    <FeedListContext.Provider value={{ feedListRef: feedListRef as React.RefObject<FlatList<any>> }}>
+    <FeedListContext.Provider value={{ feedListRef }}>
       {children}
     </FeedListContext.Provider>
   );

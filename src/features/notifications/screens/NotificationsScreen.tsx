@@ -786,8 +786,44 @@ const NotificationsScreenComponent: React.FC = () => {
             );
         }
         
-        // Önce bildirimleri aktiviteye göre grupla (aynı posta ait beğeniler tek card'da)
-        const activityGrouped = groupNotificationsByActivity(filtered);
+        // CRITICAL FIX: Backend'den gelen gruplandırılmış verileri önceliklendir
+        // Eğer backend'den isGrouped: true ile bildirim geliyorsa, client-side gruplamayı atla
+        const hasBackendGrouping = filtered.some(n => n.isGrouped === true);
+        
+        let activityGrouped: Array<Notification | GroupedNotification>;
+        if (hasBackendGrouping) {
+            // Backend'den gruplandırılmış veriler geliyor, client-side gruplamayı sadece gruplandırılmamış bildirimler için yap
+            const ungroupedNotifications = filtered.filter(n => !n.isGrouped);
+            const groupedNotifications = filtered.filter(n => n.isGrouped === true);
+            
+            // Gruplandırılmamış bildirimleri client-side'da grupla
+            const clientGrouped = groupNotificationsByActivity(ungroupedNotifications);
+            
+            // Backend'den gelen gruplandırılmış bildirimleri GroupedNotification formatına çevir
+            const backendGrouped: GroupedNotification[] = groupedNotifications.map(notif => ({
+                id: notif.id,
+                type: notif.type,
+                postId: notif.data?.postId,
+                commentId: notif.data?.commentId,
+                primaryUser: notif.primaryUser || {
+                    id: notif.userId,
+                    username: notif.username,
+                    avatar: notif.avatar,
+                },
+                otherUsers: notif.otherUsers || [],
+                count: notif.count || 1,
+                createdAt: notif.createdAt,
+                read: notif.read,
+                data: notif.data,
+                imageUrl: notif.imageUrl || notif.data?.imageUrl || null,
+            }));
+            
+            // Birleştir
+            activityGrouped = [...backendGrouped, ...clientGrouped];
+        } else {
+            // Backend'den gruplandırılmış veri yok, client-side gruplama yap
+            activityGrouped = groupNotificationsByActivity(filtered);
+        }
         
         // Sonra tarihe göre grupla (Instagram benzeri)
         const groupedData = groupNotificationsByDate(activityGrouped);

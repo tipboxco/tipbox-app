@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect, useReducer, useMemo } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Box, Pressable, Image, HStack, VStack } from '@gluestack-ui/themed';
+import { Box, Pressable, Image, HStack, VStack, Input, InputField } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
+import { Search } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
@@ -153,6 +154,7 @@ const CatalogScreenComponent = () => {
   
   // UI-specific state (keep as useState for simplicity)
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Global bottom sheet hook
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -625,6 +627,7 @@ const CatalogScreenComponent = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             showHeader={false}
+            searchQuery={searchQuery}
             initialCategoryId={routeBrandCategoryId || brandCatalogState.selectedCategoryId}
             initialStep={brandCatalogState.currentStep}
             initialBreadcrumbItems={brandCatalogState.breadcrumbItems}
@@ -655,6 +658,7 @@ const CatalogScreenComponent = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             showHeader={false}
+            searchQuery={searchQuery}
             initialCategoryId={routeBrandCategoryId || brandCatalogState.selectedCategoryId}
             initialStep={brandCatalogState.currentStep}
             initialBreadcrumbItems={brandCatalogState.breadcrumbItems}
@@ -705,6 +709,38 @@ const CatalogScreenComponent = () => {
           title={getTitle()}
           leftAction="menu"
         />
+
+        {/* Search Bar - Only for brand-catalog mode */}
+        {currentMode === 'brand-catalog' && (
+          <VStack
+            space="md"
+            pb="$4"
+            px="$4"
+            bg={backgroundColor}
+          >
+            <HStack
+              alignItems="center"
+              bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+              borderWidth={1}
+              borderColor="#E9E9E9"
+              borderRadius={20}
+              px={14}
+              space="sm"
+            >
+              <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
+              <Input flex={1} borderWidth={0} bg="transparent">
+                <InputField
+                  placeholder="Search brand or category"
+                  placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                  color={isDark ? '#000' : '#000'}
+                  fontSize="$xs"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </Input>
+            </HStack>
+          </VStack>
+        )}
 
         <VStack flex={1}>
           {/* Content Area */}

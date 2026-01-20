@@ -131,6 +131,11 @@ export const getNotifications = async (
         data: notificationData, // Backend'den gelen data objesini direkt kullan (postId, imageUrl, description, vb. içerir)
         metadata: notificationData, // Backward compatibility için metadata'ya da kopyala
         navigation: notificationData?.navigation,
+        // Backend'den gelen gruplandırma alanları (Instagram benzeri)
+        isGrouped: item.isGrouped === true, // Explicit true check
+        count: item.count || 0,
+        primaryUser: item.primaryUser || undefined,
+        otherUsers: Array.isArray(item.otherUsers) ? item.otherUsers : [],
       };
     });
     

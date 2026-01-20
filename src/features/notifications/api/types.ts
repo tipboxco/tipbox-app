@@ -20,6 +20,19 @@ export interface Notification {
   // Mesajlar getNotificationMessage fonksiyonu ile dinamik oluşturuluyor
   title?: string; // Backward compatibility - kullanılmıyor
   message?: string; // Backward compatibility - kullanılmıyor
+  // Backend'den gelen gruplandırma alanları (Instagram benzeri)
+  isGrouped?: boolean; // Backend'de gruplandırılmış mı?
+  count?: number; // Gruplandırılmış bildirimlerde toplam kullanıcı sayısı
+  primaryUser?: {
+    id?: string;
+    username?: string;
+    avatar?: string | null;
+  }; // Gruplandırılmış bildirimlerde ana kullanıcı
+  otherUsers?: Array<{
+    id?: string;
+    username?: string;
+    avatar?: string | null;
+  }>; // Gruplandırılmış bildirimlerde diğer kullanıcılar
 }
 
 export interface NotificationData {

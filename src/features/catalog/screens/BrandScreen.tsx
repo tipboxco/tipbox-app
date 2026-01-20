@@ -24,6 +24,7 @@ interface BrandScreenProps {
   scrollViewPaddingBottom?: number;
   onScroll?: (event: any) => void;
   showHeader?: boolean;
+  searchQuery?: string;
   // Initial state props (from navigation store)
   initialCategoryId?: string;
   initialStep?: 'categories' | 'brands';
@@ -41,6 +42,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   scrollViewPaddingBottom = 52,
   onScroll,
   showHeader = true,
+  searchQuery: externalSearchQuery,
   initialCategoryId,
   initialStep,
   initialBreadcrumbItems,
@@ -49,7 +51,9 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandScreenNavigationProp>();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  // Use external search query if provided, otherwise use internal state
+  const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery;
   const [currentStep, setCurrentStep] = useState<'categories' | 'brands'>(initialStep || 'categories');
   const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
   
@@ -257,35 +261,44 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
         />
       )}
 
+      {/* Search Bar - Only show if searchQuery prop is not provided (standalone usage) */}
+      {externalSearchQuery === undefined && (
+        <VStack
+          space="md"
+          pb="$4"
+          px="$4"
+          bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+        >
+          <HStack
+            alignItems="center"
+            bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+            borderWidth={1}
+            borderColor="#E9E9E9"
+            borderRadius={20}
+            px={14}
+            space="sm"
+          >
+            <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
+            <Input flex={1} borderWidth={0} bg="transparent">
+              <InputField
+                placeholder="Search brand or category"
+                placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+                color={isDark ? '#000' : '#000'}
+                fontSize="$xs"
+                value={internalSearchQuery}
+                onChangeText={setInternalSearchQuery}
+              />
+            </Input>
+          </HStack>
+        </VStack>
+      )}
+
       {/* Breadcrumb */}
       <Breadcrumb
         items={breadcrumbItems}
         onItemPress={handleBreadcrumbPress}
-        rootLabel="All Brand Categories"
+        rootLabel="Brand Category"
       />
-
-      {/* Header Info (subtitle under header) */}
-      <Box px="$4" py="$3">
-        <VStack space="xs">
-          <Text
-            color={isDark ? '#FFFFFF' : '#000000'}
-            fontSize={14}
-            fontWeight="$bold"
-          >
-            {currentStep === 'categories' ? 'Select Category' : 'Select Brand'}
-          </Text>
-          <Text
-            color={isDark ? '#FFFFFF' : '#B9B9B9'}
-            fontSize={9}
-            fontWeight="$medium"
-          >
-            {currentStep === 'categories' 
-              ? 'Choose a category to see available brands.'
-              : `You will select a brand from the ${selectedCategory?.name || 'selected'} category.`
-            }
-          </Text>
-        </VStack>
-      </Box>
 
       {/* Loading State */}
       {currentStep === 'brands' && isBrandsLoading && (
@@ -322,7 +335,7 @@ export const BrandScreen: React.FC<BrandScreenProps> = ({
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
-          <VStack space="md">
+          <VStack space="md" pt="$4">
             {currentData.map((item, index) => (
               <HStack key={`row-${index}`} space="md" justifyContent="space-between">
                 {[0, 1, 2].map((colIndex) => {

@@ -29,7 +29,8 @@ import {
   ArrowRightStartOnRectangleIcon,
 } from 'react-native-heroicons/outline';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useUserProfile } from '@/src/features/profile/api/hooks';
+import { useUserProfile, useTrustList, useTrusterList } from '@/src/features/profile/api/hooks';
+import type { UserProfile } from '@/src/features/profile/types';
 import { toImageSource, useBottomOffset  } from '@/src/utils';
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 
@@ -94,13 +95,20 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // CRITICAL FIX: useUserProfile hook'unu kullan - ProfileScreen ile aynı cache logic
   // Bu sayede ProfileScreen'de olan veriler DrawerContent'te de olur
   const { data: userProfile, isLoading: isProfileLoading } = useUserProfile(user?.id);
+  // Type assertion: React Query'nin generic tip çıkarımı sorunu için
+  const typedUserProfile = userProfile as UserProfile | undefined;
+  
+  // CRITICAL FIX: Trust ve Truster sayılarını liste uzunluklarından al
+  // Trust_TrusterListScreen ile aynı veriyi kullan (liste uzunluğu = gerçek sayı)
+  const { data: trustListData } = useTrustList(user?.id || '', undefined);
+  const { data: trusterListData } = useTrusterList(user?.id || '', undefined, undefined);
   
   // PERFORMANCE FIX: Computed değerleri useMemo ile memoize et
   // Avatar source - profile'dan gelen avatar URL'i veya fallback
   const initialAvatarSource = useMemo(() => {
     // İlk olarak userProfile'dan avatar al (API'den gelen güncel veri)
-    if (userProfile?.avatar) {
-      const profileAvatar = toImageSource(userProfile.avatar);
+    if (typedUserProfile?.avatar) {
+      const profileAvatar = toImageSource(typedUserProfile.avatar);
       if (profileAvatar) return profileAvatar;
     }
     // Yoksa store'dan avatar al (persist edilmiş veri)
@@ -108,9 +116,10 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       const storeAvatar = toImageSource(user.avatar);
       if (storeAvatar) return storeAvatar;
     }
+    
     // Hiçbiri yoksa default avatar
     return DEFAULT_USER_AVATAR;
-  }, [userProfile?.avatar, user?.avatar]);
+  }, [typedUserProfile?.avatar, user?.avatar]);
   
   // Avatar source state - görsel yüklenemezse default avatar'a geçiş için
   const [avatarSource, setAvatarSource] = useState(initialAvatarSource);
@@ -120,8 +129,8 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // Avatar değiştiğinde state'i güncelle ve load durumunu resetle
   // CRITICAL: useMemo ile avatar URI'sini hesapla - sonsuz döngü önleme
   const computedAvatarUri = useMemo(() => {
-    if (userProfile?.avatar) {
-      const profileAvatar = toImageSource(userProfile.avatar);
+    if (typedUserProfile?.avatar) {
+      const profileAvatar = toImageSource(typedUserProfile.avatar);
       if (profileAvatar) {
         return typeof profileAvatar === 'string' ? profileAvatar : (profileAvatar as any)?.uri || null;
       }
@@ -132,15 +141,15 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       }
     }
     return null;
-  }, [userProfile?.avatar, user?.avatar]);
+  }, [typedUserProfile?.avatar, user?.avatar]);
   
   useEffect(() => {
     // Yeni avatar source'u hesapla
     let newSource = DEFAULT_USER_AVATAR;
     let newSourceUri: string | null = null;
     
-    if (userProfile?.avatar) {
-      const profileAvatar = toImageSource(userProfile.avatar);
+    if (typedUserProfile?.avatar) {
+      const profileAvatar = toImageSource(typedUserProfile.avatar);
       if (profileAvatar) {
         newSource = profileAvatar;
         newSourceUri = typeof profileAvatar === 'string' ? profileAvatar : (profileAvatar as any)?.uri || null;
@@ -227,20 +236,30 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   // Kullanıcı adı - profile'dan gelen name veya fallback
   const displayName = useMemo(() => {
     if (isProfileLoading) return user?.fullName || user?.email || 'Yükleniyor...';
-    return userProfile?.name || user?.fullName || user?.email || 'Kullanıcı';
-  }, [userProfile?.name, user?.fullName, user?.email, isProfileLoading]);
+    return typedUserProfile?.name || user?.fullName || user?.email || 'Kullanıcı';
+  }, [typedUserProfile?.name, user?.fullName, user?.email, isProfileLoading]);
   
   // Tagler (titles) - profile'dan gelen titles
   const tags = useMemo(() => {
     if (isProfileLoading) return [];
-    return userProfile?.titles || [];
-  }, [userProfile?.titles, isProfileLoading]);
+    return typedUserProfile?.titles || [];
+  }, [typedUserProfile?.titles, isProfileLoading]);
   
-  // Stats - profile'dan gelen stats
+  // Stats - profile'dan gelen posts, trust ve truster sayılarını liste uzunluklarından al
+  // CRITICAL FIX: Trust ve Truster sayıları Trust_TrusterListScreen ile aynı olmalı
+  // ProfileScreen'deki sayılar da aynı olmalı (liste uzunluğu = gerçek sayı)
   const stats = useMemo(() => {
     if (isProfileLoading) return { posts: 0, trust: 0, truster: 0 };
-    return userProfile?.stats || { posts: 0, trust: 0, truster: 0 };
-  }, [userProfile?.stats, isProfileLoading]);
+    
+    // Posts sayısı profile'dan gelir
+    const posts = typedUserProfile?.stats?.posts ?? 0;
+    
+    // Trust ve Truster sayıları liste uzunluklarından alınır (Trust_TrusterListScreen ile aynı)
+    const trust = trustListData?.length ?? 0;
+    const truster = trusterListData?.length ?? 0;
+    
+    return { posts, trust, truster };
+  }, [typedUserProfile?.stats?.posts, trustListData?.length, trusterListData?.length, isProfileLoading]);
 
   // PERFORMANCE FIX: Navigation handler'larını useCallback ile memoize et
   // CRITICAL FIX: NavigationService kullan - root navigator ref'ine direkt erişir

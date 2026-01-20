@@ -64,6 +64,7 @@ interface MessageDetailScreenParams {
   senderName: string;
   senderTitle: string;
   senderAvatar: any;
+  openSendTips?: boolean; // Send tips bottom sheet'i açılsın mı? (root.types.ts ile uyumlu)
 }
 
 // Mock mesaj geçmişi verisi
@@ -178,6 +179,7 @@ const MessageDetailScreen: React.FC = () => {
     senderName: 'Unknown',
     senderTitle: '',
     senderAvatar: undefined,
+    openSendTips: false,
   };
 
   // CRITICAL FIX: params değerlerini useRef ile sakla (dependency array'deki infinite loop'u önlemek için)
@@ -1393,6 +1395,19 @@ const MessageDetailScreen: React.FC = () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  // Open tips modal if requested from route params
+  useEffect(() => {
+    if (params.openSendTips && params.senderName) {
+      // Kısa bir delay ile modalı aç (ekran render olana kadar bekle)
+      const timer = setTimeout(() => {
+        handleSendTipsPress();
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.openSendTips, params.senderName]);
 
   // Socket event listeners effect
   // Event listener'ları socket bağlantısı hazır olduğunda hemen ekle (isSocketReady kontrolü kaldırıldı)

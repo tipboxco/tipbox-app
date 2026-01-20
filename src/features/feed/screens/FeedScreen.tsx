@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Platform, ActivityIndicator, FlatList, Pressable } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, interpolate, useAnimatedReaction, type SharedValue } from 'react-native-reanimated';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
@@ -76,7 +77,8 @@ const FeedScreenInner = React.memo(() => {
   // ARCHITECTURE FIX: Instagram/Twitter-style scroll-to-top pattern
   // 1. useScrollToTop hook'u (React Navigation built-in) - aktif tab için
   // 2. ScrollRegistry (global fallback) - hangi tab aktif olursa olsun çalışır
-  useScrollToTop(feedListRef);
+  // FIX: Animated.FlatList ref'ini FlatList ref'ine cast et (useScrollToTop FlatList bekliyor)
+  useScrollToTop(feedListRef as React.RefObject<FlatList<any>>);
 
   // CRITICAL FIX: Register scrollable in global registry
   // This ensures scroll-to-top works even when FeedScreen is not the active tab
@@ -130,6 +132,12 @@ const FeedScreenInner = React.memo(() => {
   // FIX: Filter panel açık/kapalı durumu ve kapatma fonksiyonu - overlay için
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const closeFilterPanelRef = useRef<(() => void) | null>(null);
+  // Panel height için sharedValues - smooth animasyon için
+  const filterPanelProgress = useSharedValue(0);
+  const filterPanelHeight = useSharedValue(0);
+  // FilterBar'dan gelen sharedValues'ları tut
+  const filterBarProgressRef = useRef<SharedValue<number> | null>(null);
+  const filterBarPanelHeightRef = useRef<SharedValue<number> | null>(null);
   
   // Filtre Parametreleri:
   // - interests: Interest type'ları array'i (CATEGORY_MATCH, MUTUAL_TRUST, ENGAGEMENT_HIGH, NEW_USER, BOOSTED, TRUSTER)
@@ -150,7 +158,7 @@ const FeedScreenInner = React.memo(() => {
     return !!(
       (filters.interests && Array.isArray(filters.interests) && filters.interests.length > 0) ||
       (filters.tags && Array.isArray(filters.tags) && filters.tags.length > 0) ||
-      (filters.category && Array.isArray(filters.category) && filters.category.length > 0) ||
+      (filters.category && typeof filters.category === 'string' && filters.category.trim().length > 0) ||
       filters.sort
     );
   }, [filters]);
@@ -159,7 +167,7 @@ const FeedScreenInner = React.memo(() => {
   // Normal feed: /feed endpoint'i (filtre yok)
   // Filtered feed: /feed/filtered endpoint'i (filtre var)
   const normalFeedQuery = useFeed(10);
-  const filteredFeedQuery = useFeedFiltered(10, filters, hasActiveFilters); // Only enabled when filters are active
+  const filteredFeedQuery = useFeedFiltered(10, filters, undefined, undefined, hasActiveFilters); // Only enabled when filters are active
 
   // Filtre varsa filtered feed'i, yoksa normal feed'i kullan
   // Bu sayede filtre değiştiğinde otomatik olarak doğru endpoint çağrılır
@@ -898,9 +906,45 @@ const FeedScreenInner = React.memo(() => {
     return `feed-item-${index}`;
   }, []);
 
-  // PERFORMANCE FIX: Memoize contentContainerStyle to prevent unnecessary re-renders
-  const contentContainerStyle = useMemo(
-    () => ({ paddingHorizontal: 16, paddingTop: 8, paddingBottom: bottomPadding }),
+  // PERFORMANCE FIX: Animated contentContainerStyle - smooth animasyon için Reanimated kullan
+  // Panel açıldığında panel height kadar padding top ekle (smooth animasyon)
+  // FilterBar'dan gelen sharedValues'ları senkronize et
+  useAnimatedReaction(
+    () => {
+      // FilterBar'dan gelen progress ve panelHeight değerlerini al
+      const progress = filterBarProgressRef.current?.value ?? 0;
+      const panelHeight = filterBarPanelHeightRef.current?.value ?? 0;
+      return { progress, panelHeight };
+    },
+    ({ progress, panelHeight }) => {
+      'worklet';
+      // FeedScreen'deki sharedValues'ları güncelle
+      filterPanelProgress.value = progress;
+      filterPanelHeight.value = panelHeight;
+    }
+  );
+  
+  const animatedContentContainerStyle = useAnimatedStyle(() => {
+    'worklet';
+    // Progress 0-1 arasında, panel height ile çarpıp interpolate et
+    // Sadece paddingTop'u animate et, diğer değerler static style'dan gelecek
+    const animatedPaddingTop = interpolate(
+      filterPanelProgress.value,
+      [0, 1],
+      [8, 8 + filterPanelHeight.value]
+    );
+    
+    return {
+      paddingTop: animatedPaddingTop,
+    };
+  });
+  
+  // Static style - paddingHorizontal ve paddingBottom için
+  const staticContentContainerStyle = useMemo(
+    () => ({ 
+      paddingHorizontal: 16, 
+      paddingBottom: bottomPadding 
+    }),
     [bottomPadding]
   );
 
@@ -936,6 +980,11 @@ const FeedScreenInner = React.memo(() => {
               onPanelStateChange={setIsFilterPanelOpen}
               onClosePanelRef={(closeFn) => {
                 closeFilterPanelRef.current = closeFn;
+              }}
+              onSharedValuesReady={({ progress, panelHeight }) => {
+                // SharedValues'ları ref'lerde tut
+                filterBarProgressRef.current = progress;
+                filterBarPanelHeightRef.current = panelHeight;
               }}
             />
           </Box>
@@ -986,7 +1035,7 @@ const FeedScreenInner = React.memo(() => {
               </Text>
             </Box>
           ) : (
-            <FlatList<FeedApiItem>
+            <Animated.FlatList<FeedApiItem>
               ref={feedListRef}
               data={feedItems}
               renderItem={renderFeedItem}
@@ -994,7 +1043,7 @@ const FeedScreenInner = React.memo(() => {
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.1}
               ListFooterComponent={renderFooter}
-              contentContainerStyle={contentContainerStyle}
+              contentContainerStyle={[staticContentContainerStyle, animatedContentContainerStyle]}
               showsVerticalScrollIndicator={false}
               // CRITICAL FIX: removeClippedSubviews={false} - scrollToOffset çalışması için gerekli
               // removeClippedSubviews={true} olduğunda native view detached olabilir ve scroll çalışmaz
@@ -1040,25 +1089,33 @@ const FeedScreenInner = React.memo(() => {
         {/* FIX: Filter panel açıkken overlay - tüm ekranı kaplar, paneli kapatır */}
         {/* Overlay z-index: 998 (panel: 1000) - overlay panel'in altında, sadece panel dışındaki alanları kapsar */}
         {isFilterPanelOpen && (
-          <Pressable
+          <Box
             position="absolute"
             top={0}
             left={0}
             right={0}
             bottom={0}
             zIndex={998}
-            onPress={() => {
-              // Panel kapatma işlemi - FilterBar'daki closePanel fonksiyonunu çağır
-              if (closeFilterPanelRef.current) {
-                closeFilterPanelRef.current();
-              }
-            }}
             style={{
               backgroundColor: 'transparent',
             }}
-            // FIX: Overlay panel'in altında (z-index: 998) ama tüm ekranı kaplar
-            // Panel'in z-index'i 1000 olduğu için panel içeriği tıklanabilir kalır
-          />
+          >
+            <Pressable
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+              onPress={() => {
+                // Panel kapatma işlemi - FilterBar'daki closePanel fonksiyonunu çağır
+                if (closeFilterPanelRef.current) {
+                  closeFilterPanelRef.current();
+                }
+              }}
+            />
+          </Box>
         )}
 
       </Box>

@@ -88,6 +88,20 @@ const BrandDetailScreen: React.FC = () => {
         const postData = post.data as import('@/src/features/profile/types').ProfilePost;
         const avatarSource = toImageSource(postData.user.avatar);
         
+        // ContextType PRODUCT ise, contextData.id'nin productId olduğundan emin ol
+        // API'den gelen contextData içinde productId alanı varsa onu kullan, yoksa id'yi kullan
+        const contextType = postData.contextType as import('@/src/types/common').ProductInfoType;
+        let contextDataId = postData.contextData?.id;
+        
+        // Eğer contextType PRODUCT ise ve contextData içinde productId alanı varsa, onu kullan
+        if (contextType === import('@/src/types/common').ProductInfoType.PRODUCT && postData.contextData) {
+            // API response'unda productId alanı olabilir (type assertion ile kontrol et)
+            const contextDataAny = postData.contextData as any;
+            if (contextDataAny.productId) {
+                contextDataId = contextDataAny.productId;
+            }
+        }
+        
         return {
             id: postData.id,
             user: {
@@ -107,9 +121,9 @@ const BrandDetailScreen: React.FC = () => {
                 bookmarks: postData.stats.bookmarks,
             },
             createdAt: postData.createdAt,
-            contextType: postData.contextType as import('@/src/types/common').ProductInfoType,
+            contextType,
             contextData: postData.contextData ? {
-                id: postData.contextData.id,
+                id: contextDataId || postData.contextData.id,
                 name: postData.contextData.name,
                 subName: postData.contextData.subName,
                 image: postData.contextData.image,
@@ -151,6 +165,16 @@ const BrandDetailScreen: React.FC = () => {
             })
             : [];
 
+        // ContextType PRODUCT ise, contextData.id'nin productId olduğundan emin ol
+        // API'den gelen contextData içinde productId alanı varsa onu kullan, yoksa id'yi kullan
+        let contextDataId = postData.contextData?.id || '';
+        if (postData.contextData) {
+            const contextDataAny = postData.contextData as any;
+            if (contextDataAny.productId) {
+                contextDataId = contextDataAny.productId;
+            }
+        }
+        
         return {
             id: postData.id,
             user: {
@@ -161,7 +185,7 @@ const BrandDetailScreen: React.FC = () => {
                 action: 'wrote a review',
             },
             contextData: {
-                id: postData.contextData?.id || '',
+                id: contextDataId,
                 name: postData.contextData?.name || '',
                 subName: postData.contextData?.subName || '',
                 image: productImage,

@@ -40,43 +40,50 @@ export interface FeedApiResponse {
  * @see docs/FEED_FILTERS_STATUS.md - Detaylı filtre dokümantasyonu
  * 
  * Backend Filtreleme Mantığı:
- * - Interests ve Category: Backend'de birleştirilir (OR mantığı)
- *   - mainCategoryId ve subCategoryId alanlarında arama yapılır
- * - Tags: contentPostTags ve tags tablolarında arama yapılır
- * - Sort:
- *   - recent: Boost → Tarih (isBoosted desc, createdAt desc)
- *   - top: Beğeni → Görüntülenme → Tarih (likesCount desc, viewsCount desc, createdAt desc)
+ * - Interests: Feed source filtreleri (TRUSTER, CATEGORY_MATCH, TRENDING, NEW_USER, BOOSTED, INVENTORY_MATCH, PRODUCT_GROUP_MATCH)
+ *   - Case-insensitive: new_user, boosted, truster gibi de çalışır
+ *   - Query: ?interests=TRUSTER&interests=BOOSTED veya ?interests[]=TRUSTER&interests[]=BOOSTED
+ * - Tags: İçerik etiketleri (Review, Benchmark, Tips, Question, Experience, Update)
+ *   - Case-insensitive: review, REVIEW gibi de çalışır
+ *   - Query: ?tags=Review&tags=Experience
+ * - Category: Tek bir kategori ID (UUID, ULID, prefix'li ID veya kategori adı)
+ *   - Sadece main category'de filtreler
+ *   - Query: ?category=550e8400-e29b-41d4-a716-446655440000 veya ?category=Beauty
+ * - Sort: Sıralama (recent: default, top)
+ *   - recent: En yeni postlar
+ *   - top: Relevance score'a göre popüler olanlar
+ *   - Query: ?sort=top
  */
 export interface FeedFilterParams {
   /** 
-   * İlgi Alanı - Kategori ID'leri array'i
-   * Backend'de category ile birleştirilir (OR mantığı)
-   * mainCategoryId ve subCategoryId alanlarında filtreleme yapılır
-   * Query: interests[]=category-id-1&interests[]=category-id-2
+   * Feed Source Filtreleri - Array (dropdown, default yok)
+   * Desteklenen değerler: TRUSTER, CATEGORY_MATCH, TRENDING, NEW_USER, BOOSTED, INVENTORY_MATCH, PRODUCT_GROUP_MATCH
+   * Case-insensitive: new_user, boosted, truster gibi de çalışır
+   * Query: ?interests=TRUSTER&interests=BOOSTED veya ?interests[]=TRUSTER&interests[]=BOOSTED
    */
   interests?: string[];
   
   /** 
-   * Etiket - Post türleri array'i
-   * Desteklenen değerler: Review, Benchmark, Tips, Question, Experience, Update
-   * contentPostTags ve tags tablolarında arama yapılır
-   * Query: tags[]=Review&tags[]=Benchmark
+   * Etiket - Post türleri array'i (dropdown)
+   * Desteklenen değerler: Free, Benchmark, Experience, Update, Question, Tips and Tricks
+   * Backend mapping: Free→FREE, Benchmark→COMPARE, Experience→EXPERIENCE, Update→UPDATE, Question→QUESTION, Tips and Tricks→TIPS
+   * Query: ?tags=Free&tags=Experience
    */
   tags?: string[];
   
   /** 
-   * Kategori - Kategori ID'leri array'i
-   * Backend'de interests ile birleştirilir (OR mantığı)
-   * mainCategoryId ve subCategoryId alanlarında filtreleme yapılır
-   * Query: category[]=category-id-1&category[]=category-id-2
+   * Kategori - Tek bir kategori ID (dropdown, default yok)
+   * Format: UUID, ULID, prefix'li ID (pcat_, mcat_, scat_) veya kategori adı
+   * Sadece main category'de filtreler
+   * Query: ?category=550e8400-e29b-41d4-a716-446655440000 veya ?category=Beauty
    */
-  category?: string[];
+  category?: string;
   
   /** 
-   * Sıralama
-   * - recent: Boost edilmiş postlar önce, sonra oluşturulma tarihine göre (yeni → eski)
-   * - top: Beğeni sayısına göre (yüksek → düşük), sonra görüntülenme, son olarak tarih
-   * Query: sort=recent veya sort=top
+   * Sıralama (dropdown, default yok)
+   * - recent: En yeni postlar
+   * - top: Relevance score'a göre popüler olanlar
+   * Query: ?sort=recent veya ?sort=top
    */
   sort?: 'recent' | 'top';
 }
@@ -166,41 +173,80 @@ export const getFilteredFeed = async (
   }
   params.append('limit', limit.toString());
   
-  // İlgi Alanı (Interests) - Backend virgülle ayrılmış string bekliyor
-  // Backend format: interests=TRUSTER,CATEGORY_MATCH,TRENDING
-  // Backend'de category ile birleştirilir (OR mantığı)
+  // Feed Source Filtreleri (Interests) - Array formatında query string
+  // Backend format: ?interests=TRUSTER&interests=BOOSTED veya ?interests[]=TRUSTER&interests[]=BOOSTED
+  // Case-insensitive: new_user, boosted, truster gibi de çalışır
+  // Desteklenen: TRUSTER, CATEGORY_MATCH, TRENDING, NEW_USER, BOOSTED, INVENTORY_MATCH, PRODUCT_GROUP_MATCH
   if (filters?.interests && Array.isArray(filters.interests) && filters.interests.length > 0) {
     // ENGAGEMENT_HIGH -> TRENDING mapping (backend TRENDING bekliyor)
     const mappedInterests = filters.interests.map((interest) => {
-      if (interest === 'ENGAGEMENT_HIGH') {
+      // Case-insensitive mapping: new_user -> NEW_USER, boosted -> BOOSTED, etc.
+      const upperInterest = interest.toUpperCase();
+      if (upperInterest === 'ENGAGEMENT_HIGH') {
         return 'TRENDING';
       }
-      return interest;
+      // Diğer case-insensitive mapping'ler
+      if (upperInterest === 'NEW_USER' || upperInterest === 'NEWUSER') {
+        return 'NEW_USER';
+      }
+      if (upperInterest === 'CATEGORY_MATCH' || upperInterest === 'CATEGORYMATCH') {
+        return 'CATEGORY_MATCH';
+      }
+      if (upperInterest === 'INVENTORY_MATCH' || upperInterest === 'INVENTORYMATCH') {
+        return 'INVENTORY_MATCH';
+      }
+      if (upperInterest === 'PRODUCT_GROUP_MATCH' || upperInterest === 'PRODUCTGROUPMATCH') {
+        return 'PRODUCT_GROUP_MATCH';
+      }
+      // TRUSTER, BOOSTED, TRENDING zaten doğru formatta
+      return upperInterest;
     });
-    // Virgülle ayrılmış string olarak gönder
-    params.append('interests', mappedInterests.join(','));
+    // Array formatında query string: ?interests=TRUSTER&interests=BOOSTED
+    mappedInterests.forEach((interest) => {
+      params.append('interests', interest);
+    });
   }
   
-  // Etiket (Tags) - Backend virgülle ayrılmış string bekliyor
-  // Backend format: tags=Review,Benchmark,Tips
-  // Desteklenen: Review, Benchmark, Tips, Question, Experience, Update
+  // Etiket (Tags) - Array formatında query string
+  // Backend format: ?tags=Free&tags=Experience
+  // Mapping: Free→FREE, Benchmark→COMPARE, Experience→EXPERIENCE, Update→UPDATE, Question→QUESTION, Tips and Tricks→TIPS
+  // Desteklenen: Free, Benchmark, Experience, Update, Question, Tips and Tricks
   if (filters?.tags && Array.isArray(filters.tags) && filters.tags.length > 0) {
-    // Virgülle ayrılmış string olarak gönder
-    params.append('tags', filters.tags.join(','));
+    // Tags mapping: UI değerlerini backend değerlerine map et
+    const tagMapping: Record<string, string> = {
+      'Free': 'Free', // Backend'de Free olarak gönderilir, backend FREE'ye map eder
+      'Benchmark': 'Benchmark', // Backend'de Benchmark olarak gönderilir, backend COMPARE'ye map eder
+      'Experience': 'Experience', // Backend'de Experience olarak gönderilir, backend EXPERIENCE'ye map eder
+      'Update': 'Update', // Backend'de Update olarak gönderilir, backend UPDATE'ye map eder
+      'Question': 'Question', // Backend'de Question olarak gönderilir, backend QUESTION'a map eder
+      'Tips and Tricks': 'Tips and Tricks', // Backend'de Tips and Tricks olarak gönderilir, backend TIPS'e map eder
+      // Case-insensitive fallback
+      'free': 'Free',
+      'benchmark': 'Benchmark',
+      'experience': 'Experience',
+      'update': 'Update',
+      'question': 'Question',
+      'tips and tricks': 'Tips and Tricks',
+      'tips': 'Tips and Tricks',
+      'tipsandtricks': 'Tips and Tricks',
+    };
+    
+    const mappedTags = filters.tags.map((tag) => {
+      // Mapping varsa kullan, yoksa orijinal değeri kullan
+      return tagMapping[tag] || tag;
+    });
+    
+    // Array formatında query string: ?tags=Free&tags=Experience
+    mappedTags.forEach((tag) => {
+      params.append('tags', tag);
+    });
   }
   
-  // Kategori (Category) - Backend tek bir kategori ID bekliyor
-  // Backend'de interests ile birleştirilir (OR mantığı)
-  // Query: category=category-id (tek değer)
-  // NOT: Backend'de Prisma sorgusu array'i desteklemiyor, bu yüzden sadece ilk kategori gönderiliyor
-  // TODO: Backend'de Prisma sorgusu düzeltilmeli: mainCategoryId: { in: categoryArray }
-  if (filters?.category && Array.isArray(filters.category) && filters.category.length > 0) {
-    // Backend tek bir değer bekliyor, ilk kategoriyi gönder
-    // Backend düzeltildiğinde array olarak gönderilebilir
-    const firstCategory = filters.category[0];
-    if (firstCategory) {
-      params.append('category', firstCategory);
-    }
+  // Kategori (Category) - Tek bir string (UUID, ULID, prefix'li ID veya kategori adı)
+  // Sadece main category'de filtreler
+  // Query: ?category=550e8400-e29b-41d4-a716-446655440000 veya ?category=Beauty
+  if (filters?.category && typeof filters.category === 'string' && filters.category.trim().length > 0) {
+    params.append('category', filters.category.trim());
   }
   
   // Sıralama (Sort) - 'recent' veya 'top'

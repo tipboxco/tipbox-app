@@ -312,15 +312,20 @@ export const useTrusterList = (
  * const { data, isLoading, error } = useUserProfile('user-123');
  */
 export const useUserProfile = (userId: string | undefined) => {
+  // CRITICAL FIX: userId validasyonu - boş string veya geçersiz değer kontrolü
+  const isValidUserId = userId && 
+    typeof userId === 'string' && 
+    userId.trim().length > 0;
+  
   return useQuery<UserProfile, Error>({
-    queryKey: userId ? profileKeys.profile(userId) : ['profile', 'profile', 'disabled'],
+    queryKey: isValidUserId ? profileKeys.profile(userId.trim()) : ['profile', 'profile', 'disabled'],
     queryFn: () => {
-      if (!userId) {
-        throw new Error('User ID is required');
+      if (!isValidUserId) {
+        throw new Error('User ID is required and must be a non-empty string');
       }
-      return getUserProfile(userId);
+      return getUserProfile(userId.trim());
     },
-    enabled: !!userId,
+    enabled: isValidUserId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
@@ -790,6 +795,7 @@ export const useAddToTrustList = () => {
     onSuccess: (_, targetUserId) => {
       // Backend başarılı yanıt verdi, cache'leri invalidate et (güncel veriyi çek)
       if (user?.id) {
+        // User A'nın trust listesini invalidate et
         queryClient.invalidateQueries({
           queryKey: profileKeys.trusts(),
         });
@@ -798,8 +804,13 @@ export const useAddToTrustList = () => {
         });
       }
       if (targetUserId) {
+        // User C'nin profilini ve truster listesini invalidate et
+        // CRITICAL FIX: Trust işlemi yapıldığında target user'ın truster listesi de güncellenmeli
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(targetUserId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.trusters(),
         });
       }
     },
@@ -879,6 +890,7 @@ export const useRemoveFromTrustList = () => {
     onSuccess: (_, targetUserId) => {
       // Backend başarılı yanıt verdi, cache'leri invalidate et (güncel veriyi çek)
       if (user?.id) {
+        // User A'nın trust listesini invalidate et
         queryClient.invalidateQueries({
           queryKey: profileKeys.trusts(),
         });
@@ -887,8 +899,13 @@ export const useRemoveFromTrustList = () => {
         });
       }
       if (targetUserId) {
+        // User C'nin profilini ve truster listesini invalidate et
+        // CRITICAL FIX: Untrust işlemi yapıldığında target user'ın truster listesi de güncellenmeli
         queryClient.invalidateQueries({
           queryKey: profileKeys.profile(targetUserId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.trusters(),
         });
       }
     },

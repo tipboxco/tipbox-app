@@ -38,24 +38,26 @@ import { useCatalogCategories, useCatalogSubCategories } from '@/src/features/ca
 import type { CatalogCategory, CatalogSubCategory } from '@/src/features/catalog/types';
 import type { FeedFilterParams } from '../../api/feedApi';
 
-// Filter options (same as before)
+// Filter options - Tags dropdown
+// Backend mapping: Free→FREE, Benchmark→COMPARE, Experience→EXPERIENCE, Update→UPDATE, Question→QUESTION, Tips and Tricks→TIPS
+// Backend'e UI değerleri gönderilir, backend kendi mapping'ini yapar
 export const TAG_OPTIONS = [
-  { value: 'Review', label: 'Review' },
+  { value: 'Free', label: 'Free' },
   { value: 'Benchmark', label: 'Benchmark' },
-  { value: 'Tips', label: 'Tips' },
-  { value: 'Question', label: 'Question' },
   { value: 'Experience', label: 'Experience' },
   { value: 'Update', label: 'Update' },
+  { value: 'Question', label: 'Question' },
+  { value: 'Tips and Tricks', label: 'Tips and Tricks' },
 ] as const;
 
 export const INTEREST_OPTIONS = [
-  { value: 'CATEGORY_MATCH', label: 'Category Match' },
   { value: 'TRUSTER', label: 'Truster' },
-  { value: 'ENGAGEMENT_HIGH', label: 'Trending' }, // Backend'de TRENDING olarak gönderilecek
+  { value: 'CATEGORY_MATCH', label: 'Category Match' },
+  { value: 'TRENDING', label: 'Trending' },
   { value: 'NEW_USER', label: 'New User' },
   { value: 'BOOSTED', label: 'Boosted' },
-  // NOTE: MUTUAL_TRUST backend'de desteklenmiyor, kaldırıldı
-  // NOTE: INVENTORY_MATCH ve PRODUCT_GROUP_MATCH backend'de destekleniyor ama UI'da gösterilmiyor
+  { value: 'INVENTORY_MATCH', label: 'Inventory Match' },
+  { value: 'PRODUCT_GROUP_MATCH', label: 'Product Group Match' },
 ] as const;
 
 export const SORT_OPTIONS = [
@@ -82,6 +84,8 @@ interface FilterBarProps {
   onPanelStateChange?: (isOpen: boolean) => void;
   // FIX: Panel kapatma fonksiyonunu expose et (overlay için)
   onClosePanelRef?: (closeFn: () => void) => void;
+  // FIX: Panel height değişikliklerini parent'a bildir (FlatList padding için)
+  onPanelHeightChange?: (height: number) => void;
 }
 
 /**
@@ -95,6 +99,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   onSharedValuesReady,
   onPanelStateChange,
   onClosePanelRef,
+  onPanelHeightChange,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -103,10 +108,6 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   const [openFilterId, setOpenFilterId] = useState<string | null>(null);
   const [lastOpenFilterId, setLastOpenFilterId] = useState<string | null>(null);
   const filterBarHeight = useSharedValue(0);
-  
-  // FIX: Category için eş zamanlı scroll için ref'ler
-  const categoryFirstRowScrollRef = useRef<ScrollView>(null);
-  const categorySecondRowScrollRef = useRef<ScrollView>(null);
 
   // 🎯 CORE: Single progress sharedValue (0 = closed, 1 = open)
   const progress = useSharedValue(0);
@@ -118,25 +119,35 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
   
   // Calculate panel height based on number of rows
   const calculatePanelHeight = useCallback((optionsCount: number, filterId: string) => {
-    // FIX: Category ve Tags için aynı yükseklik (2 satır)
-    // Tags: 6 seçenek = 2 satır x 3 sütun
-    // Category: 2 satır yatay scrollable
-    if (filterId === 'category' || filterId === 'tag') {
+    // Category ve Sort için tek satır yatay scrollable liste
+    if (filterId === 'category' || filterId === 'sort') {
       const rowHeight = 28; // minHeight of each option
-      const rowSpacing = 4; // space="xs" between rows (VStack space="xs")
       const topPadding = 8; // py="$2" = 8px (VStack py="$2")
-      const bottomPadding = 0; // Category için alt padding yok (paddingBottom: 0)
       const buttonTopPadding = 4; // pt="$1" = 4px
       const buttonBottomPadding = 8; // pb="$2" = 8px
       const buttonHeight = 32; // button minHeight
-      const rows = 2; // Category ve Tags için sabit 2 satır
       
-      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + bottomPadding + buttonTopPadding + buttonHeight + buttonBottomPadding
-      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + bottomPadding + buttonTopPadding + buttonHeight + buttonBottomPadding;
+      // Total height = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding
+      const totalHeight = topPadding + rowHeight + buttonTopPadding + buttonHeight + buttonBottomPadding;
       return totalHeight;
     }
     
-    // Diğer filtreler için dinamik yükseklik
+    // Tags için 2 satır grid (3 sütun)
+    if (filterId === 'tag') {
+      const rowHeight = 28; // minHeight of each option
+      const rowSpacing = 4; // space="xs" between rows (VStack space="xs")
+      const topPadding = 8; // py="$2" = 8px (VStack py="$2")
+      const buttonTopPadding = 4; // pt="$1" = 4px
+      const buttonBottomPadding = 8; // pb="$2" = 8px
+      const buttonHeight = 32; // button minHeight
+      const rows = 2; // Tags için sabit 2 satır (6 seçenek = 2 satır x 3 sütun)
+      
+      // Total height = topPadding + (2 rows * rowHeight) + (1 spacing) + buttonTopPadding + buttonHeight + buttonBottomPadding
+      const totalHeight = topPadding + (rows * rowHeight) + ((rows - 1) * rowSpacing) + buttonTopPadding + buttonHeight + buttonBottomPadding;
+      return totalHeight;
+    }
+    
+    // Interest için dinamik yükseklik (grid, 3 sütun)
     const rows = Math.ceil(optionsCount / 3);
     const rowHeight = 28; // minHeight of each option
     const rowSpacing = 4; // space="xs" between rows
@@ -268,14 +279,13 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
 
   const handleCategoryToggle = useCallback(
     (categoryId: string) => {
-      const currentCategories = filters.category || [];
-      const newCategories = currentCategories.includes(categoryId)
-        ? currentCategories.filter((id) => id !== categoryId)
-        : [...currentCategories, categoryId];
+      // Category tek bir string olarak saklanır (array değil)
+      // Eğer aynı kategori seçilirse, filtreyi temizle
+      const newCategory = filters.category === categoryId ? undefined : categoryId;
 
       onFiltersChange({
         ...filters,
-        category: newCategories.length > 0 ? newCategories : undefined,
+        category: newCategory,
       });
     },
     [filters, onFiltersChange]
@@ -388,7 +398,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         onFiltersChange({ ...filters, tags: undefined });
         break;
       case 'category':
-        onFiltersChange({ ...filters, category: undefined });
+        onFiltersChange({ ...filters, category: undefined }); // Category tek bir string, undefined yap
         break;
       case 'sort':
         onFiltersChange({ ...filters, sort: undefined });
@@ -405,6 +415,24 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
+
+  // FIX: Panel height değişikliklerini parent'a bildir (FlatList padding için)
+  // Progress > 0 olduğunda (panel açık) panel height'ı gönder, 0 olduğunda (panel kapalı) 0 gönder
+  useAnimatedReaction(
+    () => {
+      // Panel açık mı kontrol et (progress > 0)
+      const isOpen = progress.value > 0;
+      const height = isOpen ? panelHeight.value : 0;
+      return height;
+    },
+    (height) => {
+      // Panel height değiştiğinde parent'a bildir
+      if (onPanelHeightChange) {
+        runOnJS(onPanelHeightChange)(height);
+      }
+    },
+    [onPanelHeightChange]
+  );
 
   // Panel animated style - absolute positioned, z-index on top
   const panelStyle = useAnimatedStyle(() => {
@@ -469,7 +497,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
       case 'tag':
         return filters.tags?.length || 0;
       case 'category':
-        return filters.category?.length || 0;
+        return filters.category ? 1 : 0; // Category tek bir string, 0 veya 1
       case 'sort':
         return filters.sort ? 1 : 0;
       default:
@@ -489,7 +517,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         case 'tag':
           return filters.tags?.includes(value) || false;
         case 'category':
-          return filters.category?.includes(value) || false;
+          return filters.category === value; // Category tek bir string, direkt karşılaştır
         case 'sort':
           return filters.sort === value;
         default:
@@ -515,7 +543,7 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
       case 'category':
         options = allCategories.map((cat) => ({ value: cat.id, label: cat.name }));
         onSelect = handleCategoryToggle;
-        isMultipleSelection = true;
+        isMultipleSelection = false; // Sort gibi tek seçimli
         break;
       case 'sort':
         options = [...SORT_OPTIONS];
@@ -526,23 +554,8 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
         return null;
     }
 
-    // FIX: Category için özel render - 2 satır, eş zamanlı yatay scrollable
-    if (filterIdToRender === 'category') {
-      // İlk 2 satıra böl (her satırda yatay scrollable, eş zamanlı scroll)
-      const firstRowOptions = options.slice(0, Math.ceil(options.length / 2));
-      const secondRowOptions = options.slice(Math.ceil(options.length / 2));
-
-      // FIX: Eş zamanlı scroll handler
-      const handleFirstRowScroll = (event: any) => {
-        const offsetX = event.nativeEvent.contentOffset.x;
-        categorySecondRowScrollRef.current?.scrollTo({ x: offsetX, animated: false });
-      };
-
-      const handleSecondRowScroll = (event: any) => {
-        const offsetX = event.nativeEvent.contentOffset.x;
-        categoryFirstRowScrollRef.current?.scrollTo({ x: offsetX, animated: false });
-      };
-
+    // Category ve Sort için tek satır yatay scrollable liste
+    if (filterIdToRender === 'category' || filterIdToRender === 'sort') {
       return (
         <VStack bg={isDark ? '#1A1A1A' : '#FFFFFF'} width="100%">
           {options.length === 0 ? (
@@ -558,75 +571,15 @@ export const FilterBarReanimated: React.FC<FilterBarProps> = ({
               </RNText>
             </VStack>
           ) : (
-            <VStack px={12} py="$2" space="xs" width="100%" style={{ paddingBottom: 0 }}>
-              {/* İlk satır - yatay scrollable, eş zamanlı scroll */}
+            <VStack px={12} py="$2" width="100%" style={{ paddingBottom: 0 }}>
+              {/* Tek satır yatay scrollable liste */}
               <ScrollView 
-                ref={categoryFirstRowScrollRef}
                 horizontal 
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingRight: 12 }}
-                onScroll={handleFirstRowScroll}
-                scrollEventThrottle={16}
               >
                 <HStack space="xs" alignItems="center">
-                  {firstRowOptions.map((option) => {
-                    const selected = isSelected(option.value);
-                    return (
-                      <Pressable key={option.value} onPress={() => onSelect(option.value)}>
-                        <Box
-                          bg={selected ? (isDark ? '#2A2A2A' : '#F5F5F5') : 'transparent'}
-                          borderWidth={selected ? 1 : 0}
-                          borderColor={selected ? '#829905' : 'transparent'}
-                          borderRadius={6}
-                          px="$2"
-                          py="$1"
-                          minHeight={28}
-                        >
-                          <HStack alignItems="center" space="xs">
-                            <Box
-                              width={16}
-                              height={16}
-                              borderWidth={1.5}
-                              borderColor={selected ? '#829905' : isDark ? '#444444' : '#CCCCCC'}
-                              borderRadius={4}
-                              bg={selected ? '#829905' : 'transparent'}
-                              justifyContent="center"
-                              alignItems="center"
-                              flexShrink={0}
-                            >
-                              {selected && <CheckIconSolid width={10} height={10} color="#FFFFFF" />}
-                            </Box>
-                            <RNText
-                              style={{
-                                color: isDark ? '#FFFFFF' : '#000000',
-                                fontSize: 11,
-                                fontWeight: selected ? '600' : '500',
-                                lineHeight: 14,
-                              }}
-                              numberOfLines={1}
-                            >
-                              {option.label}
-                            </RNText>
-                          </HStack>
-                        </Box>
-                      </Pressable>
-                    );
-                  })}
-                </HStack>
-              </ScrollView>
-
-              {/* İkinci satır - yatay scrollable, eş zamanlı scroll */}
-              <ScrollView 
-                ref={categorySecondRowScrollRef}
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingRight: 12 }}
-                onScroll={handleSecondRowScroll}
-                scrollEventThrottle={16}
-                style={{ marginBottom: 0 }}
-              >
-                <HStack space="xs" alignItems="center">
-                  {secondRowOptions.map((option) => {
+                  {options.map((option) => {
                     const selected = isSelected(option.value);
                     return (
                       <Pressable key={option.value} onPress={() => onSelect(option.value)}>

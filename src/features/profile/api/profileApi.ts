@@ -84,8 +84,15 @@ interface GetUserProfileApiResponse {
 export const getUserProfile = async (
   userId: string
 ): Promise<UserProfile> => {
+  // CRITICAL FIX: userId validasyonu - boş string veya geçersiz değer kontrolü
+  if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+    console.error('[getUserProfile] Invalid userId:', userId);
+    throw new Error('User ID is required and must be a non-empty string');
+  }
+  
+  const userIdTrimmed = userId.trim();
   const response = await apiService.getClient().get<any>(
-    `/users/${userId}/profile`
+    `/users/${userIdTrimmed}/profile`
   );
   
   // Backend response formatı: { success: true, data: {...} } veya direkt object
@@ -1726,8 +1733,22 @@ export const getTrusterList = async (
     `/users/${userId}/trusters`,
     { params: Object.keys(params).length > 0 ? params : undefined }
   );
+  
   // Backend response formatı: { success: true, data: [...] } veya direkt array
-  return (response.data as any)?.data ?? response.data;
+  const trusterList = (response.data as any)?.data ?? response.data;
+  
+  // DEBUG: Truster list response'unu logla
+  if (__DEV__) {
+    console.log(`[getTrusterList] userId: ${userId}`, {
+      url: `/users/${userId}/trusters`,
+      params,
+      responseData: response.data,
+      parsedList: trusterList,
+      listLength: Array.isArray(trusterList) ? trusterList.length : 0,
+    });
+  }
+  
+  return trusterList;
 };
 
 /**
