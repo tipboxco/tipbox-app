@@ -7,23 +7,6 @@ import {
     Image,
     Pressable,
 } from '@gluestack-ui/themed';
-import {
-    HeartIcon,
-    GiftIcon,
-    ChatBubbleLeftIcon,
-    UserPlusIcon,
-    TrophyIcon,
-    CalendarIcon,
-    BellIcon,
-    ArrowTopRightOnSquareIcon,
-    BookmarkIcon,
-    ChatBubbleLeftRightIcon,
-    EnvelopeIcon,
-    CheckCircleIcon,
-    AcademicCapIcon,
-    PaperAirplaneIcon,
-    ClockIcon,
-} from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
 import {
@@ -32,6 +15,7 @@ import {
 } from '../api/hooks';
 import type { Notification, NotificationType } from '../api/types';
 import { LightBulbIcon } from 'react-native-heroicons/solid';
+import { TrophyIcon } from 'react-native-heroicons/outline';
 import { notificationService } from '@/src/services/NotificationService';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -43,73 +27,6 @@ export interface NotificationCardProps {
     onMarkAsRead?: () => void;
     onDelete?: () => void;
 }
-
-/**
- * Bildirim tipine göre icon component'ini döndürür
- */
-const getIconComponent = (type: NotificationType): React.ComponentType<{ width?: number; height?: number; color?: string }> => {
-    switch (type) {
-        // Post ile ilgili
-        case 'POST_LIKED':
-            return HeartIcon;
-        case 'POST_COMMENTED':
-            return ChatBubbleLeftIcon;
-        case 'POST_SHARED':
-            return ArrowTopRightOnSquareIcon;
-        case 'POST_FAVORITED':
-            return BookmarkIcon;
-
-        // Yorum ile ilgili
-        case 'COMMENT_LIKED':
-            return HeartIcon;
-        case 'COMMENT_REPLIED':
-            return ChatBubbleLeftRightIcon;
-
-        // Trust/Follow ile ilgili
-        case 'NEW_TRUSTER':
-        case 'NEW_TRUSTED_BY':
-            return UserPlusIcon;
-
-        // Mesajlaşma ile ilgili
-        case 'NEW_MESSAGE':
-            return ChatBubbleLeftIcon;
-        case 'DM_REQUEST_RECEIVED':
-            return EnvelopeIcon;
-        case 'DM_REQUEST_ACCEPTED':
-            return CheckCircleIcon;
-
-        // Gamification ile ilgili
-        case 'NEW_BADGE':
-        case 'ACHIEVEMENT_UNLOCKED':
-            return TrophyIcon;
-        case 'REWARD_EARNED':
-            return GiftIcon;
-
-        // Expert ile ilgili
-        case 'EXPERT_REQUEST_AVAILABLE':
-        case 'EXPERT_REQUEST_ANSWERED':
-            return AcademicCapIcon;
-
-        // Sistem/Tips ile ilgili
-        case 'SYSTEM_ANNOUNCEMENT':
-            return BellIcon;
-        case 'TIPS_RECEIVED':
-            return GiftIcon;
-        case 'TIPS_SENT':
-            return PaperAirplaneIcon;
-
-        // Event ile ilgili
-        case 'EVENT_STARTED':
-            return CalendarIcon;
-        case 'EVENT_ENDING_SOON':
-            return ClockIcon;
-        case 'EVENT_REWARD_AVAILABLE':
-            return GiftIcon;
-
-        default:
-            return BellIcon;
-    }
-};
 
 /**
  * Bildirim tipine ve data objesine göre mesaj oluşturur
@@ -300,24 +217,24 @@ const PostCard: React.FC<{
         <Box
             bg={isDark ? '#2A2A2A' : '#F5F5F5'}
             borderRadius={12}
-            p="$4"
-            mt={8}
+            p="$3"
+            mt={6}
             position="relative"
-            minHeight={160}
+            minHeight={100}
         >
             {/* Post tipi badge (İpucu) - Sol üstte */}
             {postType && (
                 <HStack
                     bg="#3B82F6"
                     borderRadius={20}
-                    px="$3"
-                    py="$1.5"
+                    px="$2.5"
+                    py="$1"
                     alignItems="center"
                     space="xs"
                     alignSelf="flex-start"
-                    mb="$3"
+                    mb="$2"
                 >
-                    <LightBulbIcon width={14} height={14} color="#FFFFFF" />
+                    <LightBulbIcon width={12} height={12} color="#FFFFFF" />
                     <Text
                         color="#FFFFFF"
                         fontSize="$xs"
@@ -332,8 +249,8 @@ const PostCard: React.FC<{
             {categoryName && (
                 <HStack
                     position="absolute"
-                    top="$4"
-                    right="$4"
+                    top="$3"
+                    right="$3"
                     alignItems="center"
                     space="xs"
                 >
@@ -345,8 +262,8 @@ const PostCard: React.FC<{
                         {categoryName}
                     </Text>
                     <Box
-                        width={16}
-                        height={16}
+                        width={14}
+                        height={14}
                         bg={isDark ? '#3A3A3A' : '#E0E0E0'}
                         borderRadius={4}
                     />
@@ -359,9 +276,9 @@ const PostCard: React.FC<{
                     color={isDark ? '#666666' : '#666666'}
                     fontSize="$sm"
                     fontWeight="$normal"
-                    numberOfLines={4}
-                    lineHeight={22}
-                    mt="$2"
+                    numberOfLines={3}
+                    lineHeight={20}
+                    mt="$1"
                 >
                     {postContent}
                 </Text>
@@ -893,7 +810,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         : DEFAULT_USER_AVATAR;
     
     // Minimal yapı: userName field'ları kaldırıldı (mesajda zaten var)
-    const IconComponent = getIconComponent(notification.type);
     const category = getNotificationCategory(notification.type);
     
     // Data extraction - dokümana göre güncellendi
@@ -926,41 +842,26 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         >
             <HStack space="md" alignItems="flex-start" flex={1}>
 
-                    {/* Avatar - Mor/pembe border ile */}
-                    {/* Dokümana göre: Gamification/Event/Expert bildirimlerinde avatar = null */}
-                    {notification.avatar ? (
-                        <Pressable onPress={handleAvatarPress}>
-                            <Box
-                                width={48}
-                                height={48}
-                                borderRadius={24}
-                                borderWidth={2.5}
-                                borderColor="#C084FC"
-                                justifyContent="center"
-                                alignItems="center"
-                            >
-                                <Image
-                                    source={userAvatar}
-                                    alt="User avatar"
-                                    width={44}
-                                    height={44}
-                                    borderRadius={22}
-                                />
-                            </Box>
-                        </Pressable>
-                    ) : (
-                        // Gamification/Event/Expert bildirimlerinde avatar yok, placeholder göster
+                    {/* Avatar - Her zaman kullanıcı avatarı göster */}
+                    <Pressable onPress={handleAvatarPress}>
                         <Box
                             width={48}
                             height={48}
                             borderRadius={24}
-                            bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                            borderWidth={2.5}
+                            borderColor="#C084FC"
                             justifyContent="center"
                             alignItems="center"
                         >
-                            <IconComponent width={24} height={24} color={isDark ? '#B9B9B9' : '#666666'} />
+                            <Image
+                                source={userAvatar}
+                                alt="User avatar"
+                                width={44}
+                                height={44}
+                                borderRadius={22}
+                            />
                         </Box>
-                    )}
+                    </Pressable>
 
                     {/* Content - Ortada */}
                     <VStack flex={1} space="xs" justifyContent="flex-start">

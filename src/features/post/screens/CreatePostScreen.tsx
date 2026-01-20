@@ -319,8 +319,8 @@ export const CreatePostScreen = () => {
       
       // Başarılı toast göster
       showCustomToast(toast, {
-        title: 'Post Oluşturuldu',
-        description: 'Postunuz başarıyla oluşturuldu!',
+        title: 'Post Created',
+        description: 'Your post has been created successfully!',
         action: 'success',
       });
       
@@ -454,7 +454,7 @@ export const CreatePostScreen = () => {
       // Hata toast göster
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
-                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                          'An error occurred while creating the post. Please try again.';
       
       showCustomToast(toast, {
         title: 'Error',

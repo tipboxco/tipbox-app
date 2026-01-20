@@ -677,6 +677,24 @@ export const getUserPosts = async (
     // Backend response formatı: { success: true, data: [...] } veya direkt array
     const responseData = (response.data as any)?.data ?? response.data;
     
+    // TEST: Backend düzeltmesi - Type filtresi kaldırıldı, tüm post tipleri getiriliyor
+    // Backend'de düzeltildi: Sadece type: 'FREE' değil, tüm post tipleri getiriliyor
+    if (__DEV__) {
+      const items = Array.isArray(responseData) ? responseData : (responseData?.items || []);
+      const postTypes = items.map((item: any) => item.type || item.data?.type).filter(Boolean);
+      const uniqueTypes = [...new Set(postTypes)];
+      console.log('[getUserPosts] ✅ Backend düzeltmesi test:', {
+        userId,
+        itemsCount: items.length,
+        postTypes: uniqueTypes,
+        hasAllTypes: uniqueTypes.length > 1 || (uniqueTypes.length === 1 && uniqueTypes[0] !== 'FREE'),
+        sampleItems: items.slice(0, 3).map((item: any) => ({
+          id: item.id || item.data?.id,
+          type: item.type || item.data?.type,
+        })),
+      });
+    }
+    
     // Eğer direkt array döndürüyorsa, pagination objesi oluştur
     if (Array.isArray(responseData)) {
       const items = responseData;
@@ -809,6 +827,47 @@ export const getUserReviews = async (
       },
     };
   } catch (error: any) {
+    // Network Error kontrolü - Backend endpoint mevcut değil veya servis çalışmıyor olabilir
+    if (error.message === 'Network Error' || !error.response) {
+      // Backend endpoint mevcut değilse, boş response döndür (kullanıcıya hata göstermek yerine)
+      if (__DEV__) {
+        console.warn('[getUserReviews] ⚠️ Network Error - Backend endpoint may not be implemented:', {
+          url: `/users/${userId}/reviews`,
+          message: 'This endpoint may not be available on the backend server. Returning empty response.',
+        });
+      }
+      
+      // Boş response döndür (kullanıcıya hata göstermek yerine boş liste göster)
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[getUserReviews] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
+          url: `/users/${userId}/reviews`,
+          userId,
+          message: 'This endpoint is not available on the backend server. Please contact backend team.',
+        });
+      }
+      
+      // Boş response döndür (kullanıcıya hata göstermek yerine boş liste göster)
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
+    // Diğer hatalar için error log
     console.error('[getUserReviews] API Error:', {
       url: `/users/${userId}/reviews?${params.toString()}`,
       status: error.response?.status,
@@ -892,6 +951,40 @@ export const getUserBenchmarks = async (
       },
     };
   } catch (error: any) {
+    // Network Error kontrolü - Backend endpoint mevcut değil veya servis çalışmıyor olabilir
+    if (error.message === 'Network Error' || !error.response) {
+      if (__DEV__) {
+        console.warn('[getUserBenchmarks] ⚠️ Network Error - Backend endpoint may not be implemented:', {
+          url: `/users/${userId}/benchmarks`,
+          message: 'This endpoint may not be available on the backend server. Returning empty response.',
+        });
+      }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[getUserBenchmarks] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
+          url: `/users/${userId}/benchmarks`,
+          userId,
+        });
+      }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
     console.error('[getUserBenchmarks] API Error:', {
       url: `/users/${userId}/benchmarks?${params.toString()}`,
       status: error.response?.status,
@@ -975,6 +1068,40 @@ export const getUserTipsAndTricks = async (
       },
     };
   } catch (error: any) {
+    // Network Error kontrolü - Backend endpoint mevcut değil veya servis çalışmıyor olabilir
+    if (error.message === 'Network Error' || !error.response) {
+      if (__DEV__) {
+        console.warn('[getUserTipsAndTricks] ⚠️ Network Error - Backend endpoint may not be implemented:', {
+          url: `/users/${userId}/tips`,
+          message: 'This endpoint may not be available on the backend server. Returning empty response.',
+        });
+      }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[getUserTipsAndTricks] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
+          url: `/users/${userId}/tips`,
+          userId,
+        });
+      }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
     console.error('[getUserTipsAndTricks] API Error:', {
       url: `/users/${userId}/tips?${params.toString()}`,
       status: error.response?.status,
@@ -1143,6 +1270,47 @@ export const getUserReplies = async (
       },
     };
   } catch (error: any) {
+    // Network Error kontrolü - Backend endpoint mevcut değil veya servis çalışmıyor olabilir
+    if (error.message === 'Network Error' || !error.response) {
+      if (__DEV__) {
+        console.warn('[getUserReplies] ⚠️ Network Error - Backend endpoint may not be implemented:', {
+          url: `/users/${userId}/questions`,
+          message: 'This endpoint may not be available on the backend server. Returning empty response.',
+        });
+      }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
+    // 404 hatası: Endpoint backend'de mevcut değil
+    if (error.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[getUserReplies] ⚠️ Endpoint not found (404). Backend endpoint may not be implemented yet:', {
+          url: `/users/${userId}/questions`,
+          userId,
+        });
+      }
+      return {
+        items: [],
+        pagination: {
+          hasMore: false,
+          limit,
+        },
+      };
+    }
+    
+    console.error('[getUserReplies] API Error:', {
+      url: `/users/${userId}/questions?${params.toString()}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
     throw error;
   }
 };

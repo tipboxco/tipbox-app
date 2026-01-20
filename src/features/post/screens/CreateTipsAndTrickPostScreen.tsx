@@ -248,8 +248,8 @@ export const CreateTipsAndTrickPostScreen = () => {
       
       if (remainingSlots <= 0) {
         showCustomToast(toast, {
-          title: 'Limit Aşıldı',
-          description: 'Maksimum 10 görsel seçebilirsiniz.',
+          title: 'Limit Exceeded',
+          description: 'You can select a maximum of 10 images.',
           action: 'error',
         });
         return;
@@ -267,23 +267,23 @@ export const CreateTipsAndTrickPostScreen = () => {
           setValue('selectedImages', updatedImages, { shouldValidate: true });
         } else {
           showCustomToast(toast, {
-            title: 'Hata',
-            description: 'Seçilen görsellerin URI\'leri bulunamadı.',
+            title: 'Error',
+            description: "Selected image URIs could not be found.",
             action: 'error',
           });
         }
       } else if (result.error) {
         showCustomToast(toast, {
-          title: 'Hata',
+          title: 'Error',
           description: result.error,
           action: 'error',
         });
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
-      const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
+      const errorMessage = error?.message || 'An error occurred while selecting images';
       showCustomToast(toast, {
-        title: 'Hata',
+        title: 'Error',
         description: errorMessage,
         action: 'error',
       });
@@ -348,8 +348,8 @@ export const CreateTipsAndTrickPostScreen = () => {
       
       // Başarılı toast göster
       showCustomToast(toast, {
-        title: 'Post Oluşturuldu',
-        description: 'Tips & Tricks gönderiniz başarıyla oluşturuldu!',
+        title: 'Post Created',
+        description: 'Your Tips & Tricks post has been created successfully!',
         action: 'success',
       });
       
@@ -485,10 +485,10 @@ export const CreateTipsAndTrickPostScreen = () => {
       // Hata toast göster
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
-                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                          'An error occurred while creating the post. Please try again.';
       
       showCustomToast(toast, {
-        title: 'Hata',
+        title: 'Error',
         description: errorMessage,
         action: 'error',
       });

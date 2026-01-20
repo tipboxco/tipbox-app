@@ -197,22 +197,92 @@ export const getCatalogProductGroups = async (
 
 /**
  * Get Catalog Products endpoint function
- * Belirli bir ürün grubuna ait ürünleri getirir
+ * Belirli bir ürün grubuna ait ürünleri getirir (pagination ile)
+ * 
+ * BACKEND ENDPOINT YAPISI İSTENİYOR:
+ * GET /catalog/product-groups/{productGroupId}/products
+ * 
+ * Query Parameters:
+ * - search: string (optional) - Product adı, marka veya açıklamasında arama
+ * - cursor: string (optional) - Pagination cursor (ilk istek için undefined)
+ * - limit: number (optional, default: 16) - Sayfa başına item sayısı (16 şarlı pagination)
+ * 
+ * Response Format (Backend'den beklenen):
+ * {
+ *   items: CatalogProduct[],
+ *   pagination: {
+ *     cursor?: string,
+ *     hasMore: boolean,
+ *     limit: number
+ *   }
+ * }
  * 
  * @param productGroupId - Ürün grubu ID'si
  * @param search - Product adı, marka veya açıklamasında arama (opsiyonel)
- * @returns CatalogProduct[] - Ürün listesi
+ * @param cursor - Pagination cursor (opsiyonel)
+ * @param limit - Sayfa başına item sayısı (default: 16)
+ * @returns CatalogPaginationResponse<CatalogProduct> - Ürün listesi ve pagination bilgisi
  */
 export const getCatalogProducts = async (
   productGroupId: string,
-  search?: string
-): Promise<CatalogProduct[]> => {
-  const params = search ? { search } : undefined;
-  const response = await apiService.getClient().get<CatalogProduct[]>(
-    `/catalog/product-groups/${productGroupId}/products`,
-    { params }
-  );
-  return response.data;
+  search?: string,
+  cursor?: string,
+  limit: number = 16
+): Promise<CatalogPaginationResponse<CatalogProduct>> => {
+  const params = new URLSearchParams();
+  
+  if (search && search.trim().length > 0) {
+    params.append('search', search.trim());
+  }
+  
+  if (cursor) {
+    params.append('cursor', cursor);
+  }
+  
+  params.append('limit', limit.toString());
+  
+  try {
+    const response = await apiService.getClient().get<CatalogPaginationResponse<CatalogProduct> | CatalogProduct[]>(
+      `/catalog/product-groups/${productGroupId}/products?${params.toString()}`
+    );
+    
+    // Backend pagination destekliyorsa direkt döndür
+    if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
+      return response.data as CatalogPaginationResponse<CatalogProduct>;
+    }
+    
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    // Geçici olarak array'i pagination formatına çevir
+    if (Array.isArray(response.data)) {
+      const items = response.data;
+      return {
+        items,
+        pagination: {
+          hasMore: items.length >= limit,
+          limit: limit,
+          cursor: items.length > 0 ? items[items.length - 1]?.productId : undefined,
+        },
+      };
+    }
+    
+    // Backend pagination desteklemiyorsa, array döndürebilir - fallback
+    return {
+      items: [],
+      pagination: {
+        hasMore: false,
+        limit: limit,
+      },
+    };
+  } catch (error: any) {
+    console.error('[getCatalogProducts] API Error:', {
+      url: `/catalog/product-groups/${productGroupId}/products`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
 };
 
 /**
@@ -271,6 +341,27 @@ export const getProductPosts = async (
     const response = await apiService.getClient().get<ProductPostsResponse>(
       `/products/${productId}/posts?${params.toString()}`
     );
+    
+    // TEST: Backend düzeltmesi - Product detail endpoint doğru çalışıyor
+    // Backend'de productId ile filtreleme yapılıyor
+    if (__DEV__ && response.data?.items) {
+      console.log('[getProductPosts] ✅ Backend düzeltmesi test:', {
+        productId,
+        filter,
+        sort,
+        itemsCount: response.data.items.length,
+        items: response.data.items.slice(0, 3).map((item: any) => ({
+          type: item.type,
+          dataId: item.data?.id,
+          // Product context kontrolü
+          productContext: item.data?.product ? {
+            productId: item.data.product.id,
+            productName: item.data.product.name,
+          } : null,
+        })),
+      });
+    }
+    
     return response.data;
   } catch (error: any) {
     console.error('[getProductPosts] API Error:', {
@@ -401,6 +492,24 @@ export const getSubCategoryPosts = async (
       `/catalog/sub-categories/${subCategoryId}/posts?${params.toString()}`
     );
     
+    // TEST: Backend düzeltmesi - Hiyerarşik feed mantığı doğru çalışıyor
+    // Backend'de: Sub category'ye ait gönderiler + Alt product group'ların gönderileri + Alt product'ların gönderileri
+    if (__DEV__ && response.data?.items) {
+      console.log('[getSubCategoryPosts] ✅ Backend düzeltmesi test (hiyerarşik feed):', {
+        subCategoryId,
+        filter,
+        sort,
+        itemsCount: response.data.items.length,
+        items: response.data.items.slice(0, 3).map((item: any) => ({
+          type: item.type,
+          dataId: item.data?.id,
+          // Context kontrolü - hiyerarşik yapı
+          contextType: item.data?.contextType,
+          contextId: item.data?.contextId,
+        })),
+      });
+    }
+    
     // Ensure items is always an array (defensive programming)
     const safeResponse: FeedApiResponse = {
       items: Array.isArray(response.data?.items) ? response.data.items : [],
@@ -496,6 +605,24 @@ export const getProductGroupPosts = async (
     const response = await apiService.getClient().get<FeedApiResponse>(
       `/catalog/product-groups/${productGroupId}/posts?${params.toString()}`
     );
+    
+    // TEST: Backend düzeltmesi - Hiyerarşik feed mantığı doğru çalışıyor
+    // Backend'de: Product group'a ait gönderiler + Alt product'ların gönderileri (sadece Free, Tips, Question)
+    if (__DEV__ && response.data?.items) {
+      console.log('[getProductGroupPosts] ✅ Backend düzeltmesi test (hiyerarşik feed):', {
+        productGroupId,
+        filter,
+        sort,
+        itemsCount: response.data.items.length,
+        items: response.data.items.slice(0, 3).map((item: any) => ({
+          type: item.type,
+          dataId: item.data?.id,
+          // Context kontrolü - hiyerarşik yapı
+          contextType: item.data?.contextType,
+          contextId: item.data?.contextId,
+        })),
+      });
+    }
     
     // Ensure items is always an array (defensive programming)
     const safeResponse: FeedApiResponse = {

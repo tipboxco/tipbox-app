@@ -170,8 +170,8 @@ export const CreateExperiencePostScreen = () => {
                 // Experience text kontrolü
                 if (!experienceText || experienceText.trim().length < 10) {
                     showCustomToast(toast, {
-                        title: 'Hata',
-                        description: 'Deneyim metni en az 10 karakter olmalıdır.',
+                        title: 'Error',
+                        description: 'Experience text must be at least 10 characters.',
                         action: 'error',
                     });
                     return;
@@ -224,12 +224,12 @@ export const CreateExperiencePostScreen = () => {
                     
                     let errorMessage: string;
                     if (isTimeout) {
-                        errorMessage = 'AI işlemi zaman aşımına uğradı. Lütfen tekrar deneyin veya manuel olarak devam edebilirsiniz.';
+                        errorMessage = 'AI processing timed out. Please try again or continue manually.';
                     } else {
                         errorMessage = error?.response?.data?.message || 
                                        error?.response?.data?.error?.message ||
                                        error?.message || 
-                                       'Deneyim metni işlenirken bir hata oluştu. Lütfen tekrar deneyin.';
+                                       'An error occurred while processing the experience text. Please try again.';
                     }
                     
                     showCustomToast(toast, {
@@ -262,8 +262,8 @@ export const CreateExperiencePostScreen = () => {
         // ContextType ve contextId kontrolü
         if (!contextType || !contextId) {
             showCustomToast(toast, {
-                title: 'Hata',
-                description: 'Context bilgisi bulunamadı. Lütfen tekrar deneyin.',
+                title: 'Error',
+                description: 'Context information not found. Please try again.',
                 action: 'error',
             });
             return;
@@ -306,8 +306,8 @@ export const CreateExperiencePostScreen = () => {
         // Experience array kontrolü
         if (experience.length === 0) {
             showCustomToast(toast, {
-                title: 'Hata',
-                description: 'En az bir deneyim kategorisi doldurulmalıdır.',
+                title: 'Error',
+                description: 'At least one experience category must be filled.',
                 action: 'error',
             });
             return;
@@ -342,8 +342,8 @@ export const CreateExperiencePostScreen = () => {
         
         if (!selectedLocationId || selectedLocationId.trim() === '') {
             showCustomToast(toast, {
-                title: 'Hata',
-                description: 'Location seçimi zorunludur.',
+                title: 'Error',
+                description: 'Location selection is required.',
                 action: 'error',
             });
             return;
@@ -351,8 +351,8 @@ export const CreateExperiencePostScreen = () => {
         
         if (!selectedPurposeId || selectedPurposeId.trim() === '') {
             showCustomToast(toast, {
-                title: 'Hata',
-                description: 'Purpose seçimi zorunludur.',
+                title: 'Error',
+                description: 'Purpose selection is required.',
                 action: 'error',
             });
             return;
@@ -523,10 +523,10 @@ export const CreateExperiencePostScreen = () => {
             // Hata toast göster
             const errorMessage = error?.response?.data?.message || 
                                 error?.message || 
-                                'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                                'An error occurred while creating the post. Please try again.';
             
             showCustomToast(toast, {
-                title: 'Hata',
+                title: 'Error',
                 description: errorMessage,
                 action: 'error',
             });
@@ -540,8 +540,8 @@ export const CreateExperiencePostScreen = () => {
             
             if (remainingSlots <= 0) {
                 showCustomToast(toast, {
-                    title: 'Limit Aşıldı',
-                    description: 'Maksimum 10 görsel seçebilirsiniz.',
+                    title: 'Limit Exceeded',
+                    description: 'You can select a maximum of 10 images.',
                     action: 'error',
                 });
                 return;
@@ -559,23 +559,23 @@ export const CreateExperiencePostScreen = () => {
                     setValue('selectedImages', updatedImages, { shouldValidate: true });
                 } else {
                     showCustomToast(toast, {
-                        title: 'Hata',
-                        description: "Seçilen görsellerin URI'leri bulunamadı.",
+                        title: 'Error',
+                        description: "Selected image URIs could not be found.",
                         action: 'error',
                     });
                 }
             } else if (result.error) {
                 showCustomToast(toast, {
-                    title: 'Hata',
+                    title: 'Error',
                     description: result.error,
                     action: 'error',
                 });
             }
         } catch (error: any) {
             console.error('Image picker error:', error);
-            const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
+            const errorMessage = error?.message || 'An error occurred while selecting images';
             showCustomToast(toast, {
-                title: 'Hata',
+                title: 'Error',
                 description: errorMessage,
                 action: 'error',
             });
@@ -742,7 +742,7 @@ export const CreateExperiencePostScreen = () => {
                             leftAction="back"
                             onLeftActionPress={handleBackPress}
                             rightButton={{
-                                text: isStep2Loading ? 'İşleniyor...' : 'Next',
+                                text: isStep2Loading ? 'Processing...' : 'Next',
                                 backgroundColor: isStep2NextDisabled ? '#EDEDED' : '#D0F205',
                                 borderWidth: 1,
                                 borderColor: isStep2NextDisabled ? '#B1B1B1' : '#B8CC04',
@@ -790,7 +790,7 @@ export const CreateExperiencePostScreen = () => {
                                             fontSize={14}
                                             fontWeight="$medium"
                                         >
-                                            Deneyim içeriği detaylandırılıyor...
+                                            Processing experience content...
                                         </Text>
                                     </VStack>
                                 </Box>

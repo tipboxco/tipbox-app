@@ -53,6 +53,7 @@ export type RootStackParamList = {
     senderName?: string;
     senderTitle?: string;
     senderAvatar?: any;
+    openSendTips?: boolean; // Send tips bottom sheet'i açılsın mı?
   };
   
   // SupportMessageDetail - Expert request için

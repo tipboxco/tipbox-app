@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, ScrollView, VStack, HStack, Text, Pressable, Image, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
-import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { FormProvider, Controller, useFormContext, SubmitHandler } from 'react-hook-form';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
-import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
-import { Product } from '@/src/mock/catalog/productCatalog/types';
-import { InventoryItem } from '@/src/mock/inventory/types';
+import { useCallback } from 'react';
+import { navigationService } from '@/src/services/NavigationService';
+import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useBenchmarkPostForm } from '../hooks/useBenchmarkPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
 import { ProductComparisonCard } from '../components/ProductComparisonCard';
@@ -36,8 +35,6 @@ const ProductComparisonField: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
-  const [showProductSelector, setShowProductSelector] = useState(false);
-  const [productSource, setProductSource] = useState<'Catalog' | 'Inventory' | null>(null);
 
   const selectedProduct1 = watch('selectedProduct1');
   const selectedProduct2 = watch('selectedProduct2');
@@ -54,13 +51,19 @@ const ProductComparisonField: React.FC = () => {
             textAlign="center"
             mb="$2"
           >
-            Ürün Seç
+            Select Product
           </Text>
           <Pressable
             onPress={() => {
-              setProductSource('Inventory');
-              setShowProductSelector(true);
               closeBottomSheet();
+              // Navigate to AddProductFromInventory screen (full screen)
+              navigationService.navigate(ROOT_ROUTES.POST, {
+                screen: 'AddProductFromInventory',
+                params: {
+                  returnScreen: 'CreateBenchmarkPostScreen',
+                  selectedProductField: 'selectedProduct2',
+                },
+              } as any);
             }}
             bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
             borderWidth={1}
@@ -90,13 +93,13 @@ const ProductComparisonField: React.FC = () => {
                   fontWeight="$semibold"
                   color={isDark ? '$textDark50' : '#000000'}
                 >
-                  Envanterimden Seç
+                  Select from Inventory
                 </Text>
                 <Text
                   fontSize={11}
                   color={isDark ? '$textDark400' : '#787878'}
                 >
-                  Envanterinizden seçin
+                  Choose from your inventory
                 </Text>
               </VStack>
               <Feather
@@ -108,9 +111,15 @@ const ProductComparisonField: React.FC = () => {
           </Pressable>
           <Pressable
             onPress={() => {
-              setProductSource('Catalog');
-              setShowProductSelector(true);
               closeBottomSheet();
+              // Navigate to AddProductFromCatalog screen (full screen)
+              navigationService.navigate(ROOT_ROUTES.POST, {
+                screen: 'AddProductFromCatalog',
+                params: {
+                  returnScreen: 'CreateBenchmarkPostScreen',
+                  selectedProductField: 'selectedProduct2',
+                },
+              } as any);
             }}
             bg={isDark ? '$backgroundDark800' : '#FFFFFF'}
             borderWidth={1}
@@ -140,13 +149,13 @@ const ProductComparisonField: React.FC = () => {
                   fontWeight="$semibold"
                   color={isDark ? '$textDark50' : '#000000'}
                 >
-                  Katalogdan Seç
+                  Select from Catalog
                 </Text>
                 <Text
                   fontSize={11}
                   color={isDark ? '$textDark400' : '#787878'}
                 >
-                  Ürün kataloğuna göz atın
+                  Browse product catalog
                 </Text>
               </VStack>
               <Feather
@@ -171,62 +180,6 @@ const ProductComparisonField: React.FC = () => {
       }
     );
   };
-
-  const handleCatalogProductSelect = (product: Product) => {
-    const nameParts = product.name.split(' ');
-    const brand = nameParts.length > 1 ? nameParts[0] : undefined;
-    const productName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : product.name;
-    
-    const selectedProduct = {
-      id: product.id,
-      name: productName,
-      brand: brand,
-      subName: product.description,
-      image: product.image,
-      isOwned: false,
-    };
-    setValue('selectedProduct2', selectedProduct, { shouldValidate: true });
-    setShowProductSelector(false);
-    setProductSource(null);
-  };
-
-  const handleInventoryProductSelect = (product: InventoryItem) => {
-    const selectedProduct = {
-      id: product.id,
-      name: product.model,
-      brand: product.brand,
-      subName: product.specs,
-      image: product.image,
-      isOwned: true,
-    };
-    setValue('selectedProduct2', selectedProduct, { shouldValidate: true });
-    setShowProductSelector(false);
-    setProductSource(null);
-  };
-
-  const handleCloseProductSelector = () => {
-    setShowProductSelector(false);
-    setProductSource(null);
-  };
-
-  // Show product selector if productSource is set
-  if (showProductSelector && productSource) {
-    if (productSource === 'Catalog') {
-      return (
-        <AddProductFromCatalog
-          onProductSelect={handleCatalogProductSelect}
-          onClose={handleCloseProductSelector}
-        />
-      );
-    } else if (productSource === 'Inventory') {
-      return (
-        <AddProductFromInventory
-          onProductSelect={handleInventoryProductSelect}
-          onClose={handleCloseProductSelector}
-        />
-      );
-    }
-  }
 
   return (
     <VStack px={16} space="xs">
@@ -333,6 +286,46 @@ export const CreateBenchmarkPostScreen = () => {
     }
   }, [product, setValue]);
 
+  // Track if we've processed the selected product to prevent re-applying
+  const processedSelectedProductRef = useRef<string | null>(null);
+
+  // Handle selected product from navigation (when returning from AddProductFromInventory or AddProductFromCatalog)
+  useFocusEffect(
+    useCallback(() => {
+      const routeParams = route.params || {};
+      const selectedProduct = routeParams.selectedProduct;
+      const selectedProductField = routeParams.selectedProductField;
+
+      if (selectedProduct && selectedProductField) {
+        // Create a unique key for this selection to prevent re-processing
+        const selectionKey = `${selectedProductField}-${selectedProduct.id}`;
+        
+        // Skip if we've already processed this selection
+        if (processedSelectedProductRef.current === selectionKey) {
+          return;
+        }
+
+        const formattedProduct = {
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          brand: selectedProduct.brand,
+          subName: selectedProduct.description || selectedProduct.subName || '',
+          image: selectedProduct.image,
+          isOwned: selectedProductField === 'selectedProduct2' && selectedProduct.brand ? true : false,
+        };
+
+        if (selectedProductField === 'selectedProduct1') {
+          setValue('selectedProduct1', formattedProduct, { shouldValidate: true });
+        } else if (selectedProductField === 'selectedProduct2') {
+          setValue('selectedProduct2', formattedProduct, { shouldValidate: true });
+        }
+
+        // Mark as processed
+        processedSelectedProductRef.current = selectionKey;
+      }
+    }, [route.params, setValue])
+  );
+
   const handleBackPress = () => {
     // Go back to previous screen
     if (navigation.canGoBack()) {
@@ -381,8 +374,8 @@ export const CreateBenchmarkPostScreen = () => {
     
     if (products.length < 2) {
       showCustomToast(toast, {
-        title: 'Hata',
-        description: 'En az 2 ürün seçilmelidir.',
+        title: 'Error',
+        description: 'At least 2 products must be selected.',
         action: 'error',
       });
       return;
@@ -400,18 +393,10 @@ export const CreateBenchmarkPostScreen = () => {
       console.log('[CreateBenchmarkPostScreen] ✅ API Response:', response);
       
       // Başarılı toast göster
-      toast.show({
-        placement: 'top',
-        render: ({ id }: { id: string }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Post Oluşturuldu</ToastTitle>
-                <ToastDescription>Karşılaştırma gönderiniz başarıyla oluşturuldu!</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Post Created',
+        description: 'Your comparison post has been created successfully!',
+        action: 'success',
       });
       
       // Clear flow context on successful submit
@@ -485,10 +470,10 @@ export const CreateBenchmarkPostScreen = () => {
       // Hata toast göster
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
-                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                          'An error occurred while creating the post. Please try again.';
       
       showCustomToast(toast, {
-        title: 'Hata',
+        title: 'Error',
         description: errorMessage,
         action: 'error',
       });

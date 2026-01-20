@@ -24,7 +24,7 @@ import { invalidateCatalogPosts } from '../api/hooks';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import type { RootStackParamList } from '@/src/navigation/navigation.types';
-import { CustomToast } from '@/src/components/CustomToast';
+import { showCustomToast } from '@/src/components/CustomToast';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { QuestionPostFormData } from '../schemas/questionPostSchema';
 import type { BoostOption } from '../api/postApi';
@@ -138,20 +138,10 @@ export const CreateQuestionPostScreen = () => {
       const remainingSlots = 10 - currentImages.length;
       
       if (remainingSlots <= 0) {
-        toast.show({
-          placement: 'top',
-          duration: 3000,
-          render: ({ id }: { id: string }) => {
-            return (
-              <CustomToast
-                id={id}
-                title="Limit aşıldı"
-                description="Maksimum 10 görsel seçebilirsiniz"
-                action="error"
-                duration={3000}
-              />
-            );
-          },
+        showCustomToast(toast, {
+          title: 'Limit Exceeded',
+          description: 'You can select a maximum of 10 images.',
+          action: 'error',
         });
         return;
       }
@@ -167,56 +157,26 @@ export const CreateQuestionPostScreen = () => {
           const updatedImages = [...currentImages, ...newImageUris];
           setValue('selectedImages', updatedImages, { shouldValidate: true });
         } else {
-          toast.show({
-            placement: 'top',
-            duration: 3000,
-            render: ({ id }: { id: string }) => {
-              return (
-                <CustomToast
-                  id={id}
-                  title="Hata"
-                  description="Seçilen görsellerin URI'leri bulunamadı"
-                  action="error"
-                  duration={3000}
-                />
-              );
-            },
+          showCustomToast(toast, {
+            title: 'Error',
+            description: "Selected image URIs could not be found.",
+            action: 'error',
           });
         }
       } else if (result.error) {
-        toast.show({
-          placement: 'top',
-          duration: 3000,
-          render: ({ id }: { id: string }) => {
-            return (
-              <CustomToast
-                id={id}
-                title="Hata"
-                description={result.error}
-                action="error"
-                duration={3000}
-              />
-            );
-          },
+        showCustomToast(toast, {
+          title: 'Error',
+          description: result.error,
+          action: 'error',
         });
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
-      const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
-      toast.show({
-        placement: 'top',
-        duration: 3000,
-        render: ({ id }: { id: string }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Hata"
-              description={errorMessage}
-              action="error"
-              duration={3000}
-            />
-          );
-        },
+      const errorMessage = error?.message || 'An error occurred while selecting images';
+      showCustomToast(toast, {
+        title: 'Error',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };
@@ -259,20 +219,10 @@ export const CreateQuestionPostScreen = () => {
     // ContextType ve contextId kontrolü
     if (!contextType || !contextId) {
       console.error('[CreateQuestionPostScreen] ❌ Missing context:', { contextType, contextId });
-      toast.show({
-        placement: 'top',
-        duration: 3000,
-        render: ({ id }: { id: string }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Hata"
-              description="Context bilgisi bulunamadı. Lütfen tekrar deneyin."
-              action="error"
-              duration={3000}
-            />
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Error',
+        description: 'Context information not found. Please try again.',
+        action: 'error',
       });
       return;
     }
@@ -285,20 +235,10 @@ export const CreateQuestionPostScreen = () => {
     
     // Boost option ID kontrolü (backend zorunlu kılıyor)
     if (!selectedBoostOptionId) {
-      toast.show({
-        placement: 'top',
-        duration: 3000,
-        render: ({ id }: { id: string }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Eksik bilgi"
-              description="Boost seçimi zorunludur"
-              action="error"
-              duration={3000}
-            />
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Missing Information',
+        description: 'Boost selection is required.',
+        action: 'error',
       });
       return;
     }
@@ -323,20 +263,10 @@ export const CreateQuestionPostScreen = () => {
       console.log('[CreateQuestionPostScreen] ✅ API Response:', response);
       
       // Başarılı toast göster
-      toast.show({
-        placement: 'top',
-        duration: 3000,
-        render: ({ id }: { id: string }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Soru gönderisi oluşturuldu"
-              description="Gönderiniz başarıyla paylaşıldı!"
-              action="success"
-              duration={3000}
-            />
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Question Post Created',
+        description: 'Your question post has been shared successfully!',
+        action: 'success',
       });
       
       // Invalidate catalog posts to refresh the feed
@@ -471,22 +401,12 @@ export const CreateQuestionPostScreen = () => {
       // Hata toast göster
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
-                          'Gönderi oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                          'An error occurred while creating the post. Please try again.';
       
-      toast.show({
-        placement: 'top',
-        duration: 4000,
-        render: ({ id }: { id: string }) => {
-          return (
-            <CustomToast
-              id={id}
-              title="Hata"
-              description={errorMessage}
-              action="error"
-              duration={4000}
-            />
-          );
-        },
+      showCustomToast(toast, {
+        title: 'Error',
+        description: errorMessage,
+        action: 'error',
       });
     }
   };
@@ -573,19 +493,19 @@ export const CreateQuestionPostScreen = () => {
                 {isLoadingBoostOptions ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize="$sm">
-                      Boost seçenekleri yükleniyor...
+                      Loading boost options...
                     </Text>
                   </Box>
                 ) : boostOptionsError ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '$red500' : '#EF4444'} fontSize="$sm">
-                      Boost seçenekleri yüklenirken hata oluştu
+                      Error loading boost options
                     </Text>
                   </Box>
                 ) : boostOptions.length === 0 ? (
                   <Box py="$4" alignItems="center">
                     <Text color={isDark ? '$textDark400' : '#A3A3A3'} fontSize="$sm">
-                      Boost seçeneği bulunamadı
+                      No boost options found
                     </Text>
                   </Box>
                 ) : (

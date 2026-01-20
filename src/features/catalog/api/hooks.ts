@@ -15,7 +15,7 @@ export const catalogKeys = {
   brandCatalog: (brandId: string) => [...catalogKeys.all, 'brandCatalog', brandId] as const,
   brandFeed: (brandId: string, cursor?: string, limit?: number) => 
     [...catalogKeys.all, 'brandFeed', brandId, cursor, limit] as const,
-  brandProductBook: (brandId: string) => [...catalogKeys.all, 'brandProductBook', brandId] as const,
+  brandProductBook: (brandId: string, search?: string) => [...catalogKeys.all, 'brandProductBook', brandId, search] as const,
   brandSurveys: (brandId: string, limit?: number) => 
     [...catalogKeys.all, 'brandSurveys', brandId, limit] as const,
   brandTrends: (brandId: string, limit?: number) => 
@@ -211,26 +211,41 @@ export const useCatalogProductGroups = (subCategoryId: string | undefined, limit
 };
 
 /**
- * Get Catalog Products query hook
- * Belirli bir ürün grubuna ait ürünleri getirir ve cache'ler
+ * Get Catalog Products infinite query hook
+ * Belirli bir ürün grubuna ait ürünleri infinite scroll ile getirir (16 şarlı pagination)
  * 
  * @param productGroupId - Ürün grubu ID'si
  * @param search - Product adı, marka veya açıklamasında arama (opsiyonel)
- * @returns React Query hook result
+ * @param limit - Sayfa başına item sayısı (default: 16)
+ * @returns React Query infinite query hook result
  * 
  * @example
- * const { data, isLoading, error } = useCatalogProducts('productgroup-123', 'iphone');
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCatalogProducts('productgroup-123', 'iphone', 16);
  */
-export const useCatalogProducts = (productGroupId: string | undefined, search?: string) => {
+export const useCatalogProducts = (
+  productGroupId: string | undefined,
+  search?: string,
+  limit: number = 16
+) => {
   const hasSearchQuery = !!search && search.trim().length > 0;
   
-  return useQuery<CatalogProduct[], Error>({
-    queryKey: productGroupId ? [...catalogKeys.products(productGroupId), search] : ['catalog', 'products', 'disabled'],
-    queryFn: () => {
+  return useInfiniteQuery<CatalogPaginationResponse<CatalogProduct>, Error>({
+    queryKey: productGroupId 
+      ? [...catalogKeys.products(productGroupId), search, limit] 
+      : ['catalog', 'products', 'disabled'],
+    queryFn: ({ pageParam }) => {
       if (!productGroupId) {
         throw new Error('ProductGroup ID is required');
       }
-      return getCatalogProducts(productGroupId, search);
+      const cursor = pageParam as string | undefined;
+      return getCatalogProducts(productGroupId, search, cursor, limit);
+    },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination?.hasMore) {
+        return undefined;
+      }
+      return lastPage.pagination?.cursor;
     },
     enabled: !!productGroupId,
     staleTime: hasSearchQuery ? 0 : 60 * 60 * 1000, // Search varsa 0, yoksa 1 saat
@@ -388,23 +403,29 @@ export const useBrandTrends = (brandId: string | undefined, limit: number = 5) =
 /**
  * Get Brand Product Book infinite query hook
  * /brands/{brandId}/groups endpoint'inden marka ürün gruplarını infinite scroll ile getirir
+ * Search parametresi ile sadece eşleşen ürünleri içeren gruplar getirir
  *
  * @param brandId - Marka ID'si
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Product adında arama (opsiyonel) - Sadece eşleşen ürünleri içeren gruplar getirir
  * @returns React Query infinite query hook result
  *
  * @example
  * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandProductBook('brand-123');
+ * // Arama ile:
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useBrandProductBook('brand-123', 20, 'iphone');
  */
-export const useBrandProductBook = (brandId: string | undefined, limit: number = 20) => {
+export const useBrandProductBook = (brandId: string | undefined, limit: number = 20, search?: string) => {
+  const hasSearchQuery = !!search && search.trim().length > 0;
+  
   return useInfiniteQuery<BrandProductBookResponse, Error>({
-    queryKey: brandId ? catalogKeys.brandProductBook(brandId) : ['catalog', 'brandProductBook', 'disabled'],
+    queryKey: brandId ? [...catalogKeys.brandProductBook(brandId), search] : ['catalog', 'brandProductBook', 'disabled'],
     queryFn: ({ pageParam }) => {
       if (!brandId) {
         throw new Error('Brand ID is required');
       }
       const cursor = pageParam as string | undefined;
-      return getBrandProductBook(brandId, cursor, limit);
+      return getBrandProductBook(brandId, cursor, limit, search);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

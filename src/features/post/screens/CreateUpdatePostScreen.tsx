@@ -67,29 +67,6 @@ export const CreateUpdatePostScreen = () => {
   const contextType = useCreatePostFlowStore((state) => state.contextType);
   const contextId = useCreatePostFlowStore((state) => state.contextId);
   const clearFlow = useCreatePostFlowStore((state) => state.clearFlow);
-  
-  // Mock experience content - in real app, this would come from props or be fetched
-  const experienceContent = [
-    {
-      tag: {
-        icon: 'tag',
-        title: 'Price and Shopping Experience'
-      },
-      text: 'I bought the Dyson V15s Detect Submarine™ from an official Dyson store for around $949. The price felt premium compared to other cordless vacuums, but Dyson often positions itself in the premium segment. The build quality is excellent, and the design feels modern and functional. Delivery was fast and packaging was well-protected.',
-      rating: [1, 1, 1, 0, 0]
-    },
-    {
-      tag: {
-        icon: 'package',
-        title: 'Product and Usage Experience'
-      },
-      text: 'After using it for 2 weeks, the suction power is impressive - easily handles both wet and dry messes. The battery lasts about 40 minutes on regular mode. The only downside is the weight - it\'s heavier than expected for a cordless model. The filtration system works great, and the HEPA filter is easy to replace.',
-      rating: [1, 1, 1, 1, 0]
-    }
-  ];
-
-  // Mock tags - in real app, this would come from props or be fetched
-  const tags = ['2 Weeks', 'Could Be Better', 'Daily Use'];
 
   const handleBackPress = () => {
     // Go back to previous screen
@@ -134,11 +111,11 @@ export const CreateUpdatePostScreen = () => {
           const updatedImages = [...currentImages, ...newImageUris];
           setValue('selectedImages', updatedImages, { shouldValidate: true });
         } else {
-          showCustomToast(toast, {
-            title: 'Hata',
-            description: "Seçilen görsellerin URI'leri bulunamadı.",
-            action: 'error',
-          });
+        showCustomToast(toast, {
+          title: 'Error',
+          description: "Selected image URIs could not be found.",
+          action: 'error',
+        });
         }
       } else if (result.error) {
         showCustomToast(toast, {
@@ -149,9 +126,9 @@ export const CreateUpdatePostScreen = () => {
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
-      const errorMessage = error?.message || 'Görsel seçilirken bir hata oluştu';
+      const errorMessage = error?.message || 'An error occurred while selecting images';
       showCustomToast(toast, {
-        title: 'Hata',
+        title: 'Error',
         description: errorMessage,
         action: 'error',
       });
@@ -183,8 +160,8 @@ export const CreateUpdatePostScreen = () => {
         
         // Başarılı toast göster
         showCustomToast(toast, {
-          title: 'Post Güncellendi',
-          description: 'Postunuz başarıyla güncellendi!',
+          title: 'Post Updated',
+          description: 'Your post has been updated successfully!',
           action: 'success',
         });
         
@@ -195,8 +172,8 @@ export const CreateUpdatePostScreen = () => {
         // ContextType ve contextId kontrolü
         if (!contextType || !contextId) {
           showCustomToast(toast, {
-            title: 'Hata',
-            description: 'Context bilgisi bulunamadı. Lütfen tekrar deneyin.',
+            title: 'Error',
+            description: 'Context information not found. Please try again.',
             action: 'error',
           });
           return;
@@ -216,8 +193,8 @@ export const CreateUpdatePostScreen = () => {
         
         // Başarılı toast göster
         showCustomToast(toast, {
-          title: 'Post Oluşturuldu',
-          description: 'Update gönderiniz başarıyla oluşturuldu!',
+          title: 'Post Created',
+          description: 'Your update post has been created successfully!',
           action: 'success',
         });
         
@@ -290,10 +267,10 @@ export const CreateUpdatePostScreen = () => {
       // Hata toast göster
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
-                          'Post oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.';
+                          'An error occurred while creating the post. Please try again.';
       
       showCustomToast(toast, {
-        title: 'Hata',
+        title: 'Error',
         description: errorMessage,
         action: 'error',
       });
@@ -347,74 +324,6 @@ export const CreateUpdatePostScreen = () => {
                 </Box>
               )}
 
-              {/* Experience Content Section */}
-              {product && (
-                <VStack px={16} space="md">
-                  {experienceContent.map((item, index) => (
-                    <VStack key={index} py={8}>
-                      <HStack space="sm" alignItems="center">
-                        <Feather 
-                          name={item.tag.icon === 'tag' ? 'tag' : 'package'} 
-                          size={18} 
-                          color={isDark ? '#fff' : '#000'} 
-                          fill={isDark ? '#fff' : '#000'} 
-                        />
-                        <Text
-                          color={isDark ? '$textDark50' : '#000'}
-                          fontSize={'$xs'}
-                          fontWeight="$bold"
-                        >
-                          {item.tag.title}
-                        </Text>
-                      </HStack>
-                      <Text
-                        color={isDark ? '$textDark50' : '#000'}
-                        fontSize="$sm"
-                        ml={26}
-                        lineHeight={22}
-                      >
-                        {item.text}
-                      </Text>
-                      <HStack ml={26} mt={8}>
-                        {item.rating.map((star, idx) => (
-                          <Feather
-                            key={idx}
-                            name="star"
-                            size={12}
-                            color={star ? (isDark ? '#fff' : '#829905') : (isDark ? '#7E7E7E' : '#E8E8E8')}
-                            fill={star ? (isDark ? '#fff' : '#829905') : 'transparent'}
-                          />
-                        ))}
-                      </HStack>
-                    </VStack>
-                  ))}
-                  
-                  {/* Tags */}
-                  <HStack px={0} py={8} flexWrap="wrap">
-                    {tags.map((tag, index) => (
-                      <HStack
-                        key={index}
-                        bg={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}
-                        borderWidth={1}
-                        borderColor={'#E9E9E9'}
-                        rounded={'$full'}
-                        px={16}
-                        py={6}
-                        mr={4}
-                        mb={4}
-                      >
-                        <Text
-                          color={isDark ? '$textDark50' : '#000'}
-                          fontSize={8}
-                          fontWeight="$semibold"
-                        >
-                          {tag}
-                        </Text>
-                      </HStack>
-                    ))}
-                  </HStack>
-                </VStack>
-              )}
 
               {/* Description Section */}
               <VStack px={16} space="xs">

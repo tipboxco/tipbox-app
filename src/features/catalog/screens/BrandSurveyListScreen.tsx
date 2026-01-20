@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, VStack, ActivityIndicator, Text } from '@gluestack-ui/themed';
+import { ScrollView, VStack, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
