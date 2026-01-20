@@ -20,8 +20,9 @@ import { Header } from '@/src/components/Header';
 import {
   ChevronRightIcon,
   MagnifyingGlassIcon,
+  DocumentTextIcon,
+  BookOpenIcon,
 } from 'react-native-heroicons/outline';
-import { Feather } from '@expo/vector-icons';
 import { useSafeAreaValues, toImageSource } from '@/src/utils';
 import { useBrandProductBook } from '../api/hooks';
 import type { BrandProductGroup, BrandProduct } from '../types';
@@ -81,9 +82,8 @@ const BrandProductBookScreen: React.FC = () => {
             name: product.name,
             image: imageSource,
             stats: {
-                reviews: product.stats.reviews,
-                likes: product.stats.likes,
-                shares: product.stats.share, // API'de "share" (tekil) olarak geliyor
+                posts: product.stats.posts || 0,
+                news: product.stats.news || 0,
             },
         };
     };
@@ -153,11 +153,11 @@ const BrandProductBookScreen: React.FC = () => {
                 />
 
                 {/* Stats */}
-                <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
-                    <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Feather
-                            name="message-circle"
-                            size={12}
+                <HStack justifyContent="space-between" alignItems="center">
+                    <HStack alignItems="center" space="xs" flex={1}>
+                        <DocumentTextIcon
+                            width={12}
+                            height={12}
                             color={isDark ? '#FFFFFF' : '#000000'}
                         />
                         <Text
@@ -166,14 +166,14 @@ const BrandProductBookScreen: React.FC = () => {
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
-                            {cardData.stats.reviews}
+                            {cardData.stats.posts}
                         </Text>
                     </HStack>
 
-                    <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Feather
-                            name="heart"
-                            size={12}
+                    <HStack alignItems="center" space="xs" flex={1}>
+                        <BookOpenIcon
+                            width={12}
+                            height={12}
                             color={isDark ? '#FFFFFF' : '#000000'}
                         />
                         <Text
@@ -182,23 +182,7 @@ const BrandProductBookScreen: React.FC = () => {
                             fontWeight="$medium"
                             numberOfLines={1}
                         >
-                            {cardData.stats.likes}
-                        </Text>
-                    </HStack>
-
-                    <HStack alignItems="center" space="xs" flex={1} minWidth="30%">
-                        <Feather
-                            name="share-2"
-                            size={12}
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                        />
-                        <Text
-                            color={isDark ? '#FFFFFF' : '#000000'}
-                            fontSize="$2xs"
-                            fontWeight="$medium"
-                            numberOfLines={1}
-                        >
-                            {cardData.stats.shares}
+                            {cardData.stats.news}
                         </Text>
                     </HStack>
                 </HStack>

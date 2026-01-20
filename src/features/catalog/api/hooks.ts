@@ -1182,11 +1182,13 @@ export const useBrandProductDetail = (brandId: string | undefined, productId: st
 /**
  * useBrandProductFeed - Brand product feed postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/feed endpoint'ini kullanır
+ * Lazy loading: enabled parametresi ile kontrol edilir
  */
 export const useBrandProductFeed = (
   brandId: string | undefined,
   productId: string | undefined,
-  limit: number = 20
+  limit: number = 20,
+  enabled: boolean = true
 ) => {
   return useInfiniteQuery<BrandFeedResponse, Error>({
     queryKey: brandId && productId 
@@ -1207,21 +1209,24 @@ export const useBrandProductFeed = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId,
+    enabled: !!brandId && !!productId && enabled,
     staleTime: 2 * 60 * 1000, // 2 dakika
     gcTime: 5 * 60 * 1000, // 5 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
 /**
  * useBrandProductReviews - Brand product review postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/reviews endpoint'ini kullanır
- * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
+ * Lazy loading: enabled parametresi ile kontrol edilir
  */
 export const useBrandProductReviews = (
   brandId: string | undefined,
   productId: string | undefined,
-  limit: number = 20
+  limit: number = 20,
+  enabled: boolean = false
 ) => {
   return useInfiniteQuery<BrandFeedResponse, Error>({
     queryKey: brandId && productId 
@@ -1242,7 +1247,7 @@ export const useBrandProductReviews = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    enabled: !!brandId && !!productId && enabled,
     staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
@@ -1253,12 +1258,13 @@ export const useBrandProductReviews = (
 /**
  * useBrandProductBenchmarks - Brand product benchmark postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/benchmarks endpoint'ini kullanır
- * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
+ * Lazy loading: enabled parametresi ile kontrol edilir
  */
 export const useBrandProductBenchmarks = (
   brandId: string | undefined,
   productId: string | undefined,
-  limit: number = 20
+  limit: number = 20,
+  enabled: boolean = false
 ) => {
   return useInfiniteQuery<BrandFeedResponse, Error>({
     queryKey: brandId && productId 
@@ -1279,7 +1285,7 @@ export const useBrandProductBenchmarks = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    enabled: !!brandId && !!productId && enabled,
     staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
@@ -1290,12 +1296,13 @@ export const useBrandProductBenchmarks = (
 /**
  * useBrandProductTips - Brand product tips postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/tips endpoint'ini kullanır
- * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
+ * Lazy loading: enabled parametresi ile kontrol edilir
  */
 export const useBrandProductTips = (
   brandId: string | undefined,
   productId: string | undefined,
-  limit: number = 20
+  limit: number = 20,
+  enabled: boolean = false
 ) => {
   return useInfiniteQuery<BrandFeedResponse, Error>({
     queryKey: brandId && productId 
@@ -1316,7 +1323,7 @@ export const useBrandProductTips = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    enabled: !!brandId && !!productId && enabled,
     staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
@@ -1327,12 +1334,13 @@ export const useBrandProductTips = (
 /**
  * useBrandProductQuestions - Brand product question postlarını getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/questions endpoint'ini kullanır
- * Arka planda yüklenecek (enabled: true, refetchOnMount: false)
+ * Lazy loading: enabled parametresi ile kontrol edilir
  */
 export const useBrandProductQuestions = (
   brandId: string | undefined,
   productId: string | undefined,
-  limit: number = 20
+  limit: number = 20,
+  enabled: boolean = false
 ) => {
   return useInfiniteQuery<BrandFeedResponse, Error>({
     queryKey: brandId && productId 
@@ -1353,7 +1361,7 @@ export const useBrandProductQuestions = (
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    enabled: !!brandId && !!productId && enabled,
     staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan
@@ -1436,11 +1444,13 @@ export const useBrandProductComparisons = (
 /**
  * useBrandProductNews - Brand product news'lerini getirir (infinite scroll)
  * /brands/{brandId}/products/{productId}/news endpoint'ini kullanır
+ * Lazy loading: enabled parametresi ile kontrol edilir
  */
 export const useBrandProductNews = (
   brandId: string | undefined,
   productId: string | undefined,
-  limit: number = 20
+  limit: number = 20,
+  enabled: boolean = false
 ) => {
   return useInfiniteQuery<ProductNewsResponse, Error>({
     queryKey: brandId && productId 
@@ -1450,31 +1460,18 @@ export const useBrandProductNews = (
       if (!brandId || !productId) {
         throw new Error('Brand ID and Product ID are required');
       }
-      // pageParam undefined ise ilk sayfa (page=1), yoksa page number olarak kullan
       const cursor = pageParam as string | undefined;
-      console.log('[useBrandProductNews] Query Function:', {
-        brandId,
-        productId,
-        pageParam,
-        cursor,
-        limit,
-      });
       const { getBrandProductNews } = await import('./brandApi');
       return getBrandProductNews(brandId, productId, cursor, limit);
     },
-    initialPageParam: undefined, // undefined = ilk sayfa (page=1)
+    initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
-      console.log('[useBrandProductNews] getNextPageParam:', {
-        hasMore: lastPage.pagination?.hasMore,
-        cursor: lastPage.pagination?.cursor,
-        itemsCount: lastPage.items?.length || 0,
-      });
       if (!lastPage.pagination?.hasMore) {
         return undefined;
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: !!brandId && !!productId, // Arka planda yüklenecek
+    enabled: !!brandId && !!productId && enabled,
     staleTime: 5 * 60 * 1000, // 5 dakika - pull to refresh'e kadar cache'te tut
     gcTime: 10 * 60 * 1000, // 10 dakika
     refetchOnMount: false, // Mount'ta tekrar fetch etme, cache'ten kullan

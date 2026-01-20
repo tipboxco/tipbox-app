@@ -300,8 +300,6 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
     }, [data, openBottomSheet]);
 
     const handleDelete = React.useCallback(() => {
-        console.log('[BenchmarkPostCard] 🗑️ Delete button clicked for post:', data.id);
-        
         Alert.alert(
             'Post\'u Sil',
             'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
@@ -309,37 +307,15 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                 {
                     text: 'İptal',
                     style: 'cancel',
-                    onPress: () => {
-                        console.log('[BenchmarkPostCard] ❌ Delete cancelled by user');
-                    },
                 },
                 {
                     text: 'Sil',
                     style: 'destructive',
                     onPress: async () => {
-                        console.log('[BenchmarkPostCard] ✅ Delete confirmed, sending DELETE request to /posts/' + data.id);
-                        
                         try {
-                            const response = await deletePostMutation.mutateAsync(data.id);
-                            
-                            console.log('[BenchmarkPostCard] ✅ Post deleted successfully:', {
-                                postId: data.id,
-                                response,
-                                timestamp: new Date().toISOString(),
-                            });
-                            
+                            await deletePostMutation.mutateAsync(data.id);
                             Alert.alert('Başarılı', 'Post başarıyla silindi.');
                         } catch (error: any) {
-                            console.error('[BenchmarkPostCard] ❌ Delete post error:', {
-                                postId: data.id,
-                                url: `/posts/${data.id}`,
-                                status: error.response?.status,
-                                statusText: error.response?.statusText,
-                                data: error.response?.data,
-                                message: error.message,
-                                timestamp: new Date().toISOString(),
-                            });
-                            
                             Alert.alert(
                                 'Hata',
                                 error.response?.data?.message || 'Post silinirken bir hata oluştu.'

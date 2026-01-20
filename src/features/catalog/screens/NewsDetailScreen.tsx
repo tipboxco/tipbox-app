@@ -28,7 +28,7 @@ import type { NewsComment } from '../types';
 type NewsDetailScreenNavigationProp = NativeStackNavigationProp<NewsStackParamList, 'NewsDetailScreen'>;
 type NewsDetailScreenRouteProp = RouteProp<NewsStackParamList, 'NewsDetailScreen'>;
 
-const NewsDetailScreen: React.FC = () => {
+const NewsDetailScreenComponent: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const insets = useSafeAreaInsets();
@@ -80,6 +80,7 @@ const NewsDetailScreen: React.FC = () => {
   const shareNewsMutation = useShareNews();
   
   // Comments query - sadece brand product news comments kullanılıyor
+  // enabled: false yaparak sadece bottom sheet açıldığında fetch edilmesini sağlıyoruz
   const commentsQuery = useBrandProductNewsComments(brandId, productId, newsId);
   const { data: commentsData, isLoading: isLoadingComments } = commentsQuery;
   const comments = commentsData?.data || [];
@@ -90,8 +91,8 @@ const NewsDetailScreen: React.FC = () => {
   // Bottom sheet
   const { openBottomSheet } = useGlobalBottomSheet();
 
-  // Handlers
-  const handleLike = () => {
+  // Handlers - memoized
+  const handleLike = useCallback(() => {
     if (isLiked) {
       setIsLiked(false);
       setLikesCount(prev => Math.max(0, prev - 1));
@@ -101,9 +102,9 @@ const NewsDetailScreen: React.FC = () => {
       setLikesCount(prev => prev + 1);
       likeNewsMutation.mutate({ newsId, brandId, productId });
     }
-  };
+  }, [isLiked, newsId, brandId, productId, likeNewsMutation, unlikeNewsMutation]);
 
-  const handleFavorite = () => {
+  const handleFavorite = useCallback(() => {
     if (isFavorited) {
       setIsFavorited(false);
       setFavoritesCount(prev => Math.max(0, prev - 1));
@@ -113,9 +114,9 @@ const NewsDetailScreen: React.FC = () => {
       setFavoritesCount(prev => prev + 1);
       favoriteNewsMutation.mutate({ newsId, brandId, productId });
     }
-  };
+  }, [isFavorited, newsId, brandId, productId, favoriteNewsMutation, unfavoriteNewsMutation]);
 
-  const handleShare = () => {
+  const handleShare = useCallback(() => {
     if (isShared) return;
     setIsShared(true);
     setSharesCount(prev => prev + 1);
@@ -125,7 +126,7 @@ const NewsDetailScreen: React.FC = () => {
       brandId,
       productId,
     });
-  };
+  }, [isShared, newsId, brandId, productId, shareNewsMutation]);
   
   const handleCommentSubmit = useCallback((comment: string) => {
     if (!comment.trim() || !brandId || !productId) return;
@@ -163,6 +164,10 @@ const NewsDetailScreen: React.FC = () => {
         snapPoints: ['75%', '90%'],
         enablePanDownToClose: true,
         backdropPressBehavior: 'close',
+        onClose: () => {
+          // Bottom sheet kapandığında klavyeyi hemen kapat
+          Keyboard.dismiss();
+        },
       }
     );
   }, [newsId, brandId, productId, comments, isLoadingComments, openBottomSheet, handleCommentSubmit, createBrandProductNewsCommentMutation.isPending]);
@@ -344,6 +349,9 @@ const NewsDetailScreen: React.FC = () => {
   );
 };
 
+const NewsDetailScreen = React.memo(NewsDetailScreenComponent);
+NewsDetailScreen.displayName = 'NewsDetailScreen';
+
 // News Comments Bottom Sheet Component
 interface NewsCommentsBottomSheetProps {
   newsId: string;
@@ -482,7 +490,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
       {/* Comment Input - Fixed at bottom */}
       <Box
         position="absolute"
-        bottom={-40}
+        bottom={-20}
         
         left={0}
         right={0}

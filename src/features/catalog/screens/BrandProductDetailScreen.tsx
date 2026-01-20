@@ -144,20 +144,20 @@ const mapExperienceToCardData = (item: BrandFeedPost): ReviewCardData | null => 
           .filter((contentItem) => contentItem != null) // null/undefined item'ları filtrele
           .map((contentItem) => {
             const ratingValue = contentItem?.rating || 0;
-            const stars = Math.floor(ratingValue / 20);
-            
-            return {
-              tag: {
-                icon: 'tag' as const,
+        const stars = Math.floor(ratingValue / 20);
+        
+        return {
+          tag: {
+            icon: 'tag' as const,
                 title: contentItem?.title || '',
-              },
+          },
               text: contentItem?.content || '',
-              rating: Array(5)
-                .fill(false)
-                .map((_, index) => index < stars),
-            };
-          })
-      : [];
+          rating: Array(5)
+            .fill(false)
+            .map((_, index) => index < stars),
+        };
+      })
+    : [];
 
   return {
     id: postData.id,
@@ -565,14 +565,14 @@ const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId
   const flatListRef = useRef<FlatList>(null);
   const navigation = useNavigation();
 
-  // API hooks for each tab - Brand product endpoint'leri kullanıyoruz
-  // Lazy loading: Sadece aktif tab'ın query'si enabled
-  const feedQuery = useBrandProductFeed(brandId, productId, 20);
-  const reviewsQuery = useBrandProductReviews(brandId, productId, 20);
-  const benchmarksQuery = useBrandProductBenchmarks(brandId, productId, 20);
-  const tipsQuery = useBrandProductTips(brandId, productId, 20);
-  const questionsQuery = useBrandProductQuestions(brandId, productId, 20);
-  const newsQuery = useBrandProductNews(brandId, productId, 20);
+  // API hooks for each tab - Lazy loading: Sadece aktif tab'ın query'si enabled
+  // İlk açılışta sadece Feed yüklenecek, diğer tab'lara geçildiğinde o tab'ın verisi çekilecek
+  const feedQuery = useBrandProductFeed(brandId, productId, 20, tabKey === 'feed');
+  const reviewsQuery = useBrandProductReviews(brandId, productId, 20, tabKey === 'reviews');
+  const benchmarksQuery = useBrandProductBenchmarks(brandId, productId, 20, tabKey === 'benchmarks');
+  const tipsQuery = useBrandProductTips(brandId, productId, 20, tabKey === 'tips');
+  const questionsQuery = useBrandProductQuestions(brandId, productId, 20, tabKey === 'questions');
+  const newsQuery = useBrandProductNews(brandId, productId, 20, tabKey === 'news');
   
   const activeTabQuery = useMemo(() => {
     switch (tabKey) {
@@ -607,9 +607,9 @@ const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId
         }
         
         const mapped = {
-          type: 'news' as const,
-          id: item.id,
-          data: item,
+        type: 'news' as const,
+        id: item.id,
+        data: item,
         };
         
         mappingCacheRef.current.set(item.id, mapped);
@@ -705,7 +705,7 @@ const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId
     } catch (error) {
       if (__DEV__) {
         console.error('[BrandProductDetailScreen] Refresh error:', error);
-      }
+    }
     } finally {
       setRefreshing(false);
     }
@@ -788,9 +788,9 @@ const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId
   
   const renderItem = useCallback(({ item }: { item: MappedPost | { type: 'news'; id: string; data: any } }) => {
     return (
-      <Box px={16}>
-        {renderPostCard(item)}
-      </Box>
+          <Box px={16}>
+            {renderPostCard(item)}
+          </Box>
     );
   }, [renderPostCard]);
   
@@ -856,11 +856,11 @@ const TabPage: React.FC<TabPageProps> = React.memo(({ tabKey, brandId, productId
 });
 
 const BrandProductDetailScreen: React.FC = () => {
-  const { colorMode } = useColorMode();
-  const isDark = colorMode === 'dark';
-  const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
-  const route = useRoute<BrandProductDetailScreenRouteProp>();
-  const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
+    const { colorMode } = useColorMode();
+    const isDark = colorMode === 'dark';
+    const navigation = useNavigation<BrandProductDetailScreenNavigationProp>();
+    const route = useRoute<BrandProductDetailScreenRouteProp>();
+    const bottomPadding = useBottomOffset({ includeTabBar: false, extraPadding: 16 });
 
   const { brandId, productId, productName: initialProductName, productImage: initialProductImage } = route.params;
 
@@ -870,12 +870,12 @@ const BrandProductDetailScreen: React.FC = () => {
   const { data: brandCatalog } = useBrandCatalog(brandId);
   const { user } = useAppStore();
   const { data: userProfile } = useUserProfile(user?.id);
-  
-  // Seçilen product bilgisi (navigation'dan gelen veya API'den gelen)
-  const displayProductName = productDetail?.name || initialProductName || '';
-  const displayProductImage = productDetail?.image 
-    ? toImageSource(productDetail.image) 
-    : (initialProductImage || require('@/assets/events/card-icon.png'));
+    
+    // Seçilen product bilgisi (navigation'dan gelen veya API'den gelen)
+    const displayProductName = productDetail?.name || initialProductName || '';
+    const displayProductImage = productDetail?.image 
+        ? toImageSource(productDetail.image) 
+        : (initialProductImage || require('@/assets/events/card-icon.png'));
   
   // Brand bilgisi
   const brandName = brandCatalog?.name || productDetail?.brand?.name;
@@ -886,73 +886,73 @@ const BrandProductDetailScreen: React.FC = () => {
   const userName = userProfile?.name || user?.name || 'User';
   const userAvatar = userProfile?.avatar || user?.avatar;
 
-  // Active tab state
-  const [activeTab, setActiveTab] = useState<TabKey>('feed');
-  const pagerRef = useRef<PagerView>(null);
-  const tabContainerRef = useRef<any>(null);
-  const progress = useSharedValue(0);
-  
-  const getTabIndex = useCallback((tabKey: TabKey) => {
-    return TABS.findIndex(tab => tab.key === tabKey);
-  }, []);
-  
-  const handleTabChange = useCallback((tabKey: TabKey) => {
-    const index = getTabIndex(tabKey);
-    if (index !== -1 && pagerRef.current) {
-      pagerRef.current.setPage(index);
-    }
-  }, [getTabIndex]);
-  
-  const handlePageScroll = useCallback(
-    (e: any) => {
-      'worklet';
-      const { position, offset } = e.nativeEvent;
-      progress.value = position + offset;
-    },
-    [progress]
-  );
+    // Active tab state
+    const [activeTab, setActiveTab] = useState<TabKey>('feed');
+    const pagerRef = useRef<PagerView>(null);
+    const tabContainerRef = useRef<any>(null);
+    const progress = useSharedValue(0);
+    
+    const getTabIndex = useCallback((tabKey: TabKey) => {
+        return TABS.findIndex(tab => tab.key === tabKey);
+    }, []);
+    
+    const handleTabChange = useCallback((tabKey: TabKey) => {
+        const index = getTabIndex(tabKey);
+        if (index !== -1 && pagerRef.current) {
+            pagerRef.current.setPage(index);
+        }
+    }, [getTabIndex]);
+    
+    const handlePageScroll = useCallback(
+        (e: any) => {
+            'worklet';
+            const { position, offset } = e.nativeEvent;
+            progress.value = position + offset;
+        },
+        [progress]
+    );
 
-  const handlePageSelected = useCallback(
-    (e: any) => {
-      const position = e.nativeEvent.position;
-      progress.value = withTiming(position, { duration: 0 });
-      
-      const tabKey = TABS[position]?.key;
-      if (tabKey) {
-        setActiveTab(tabKey);
-      }
-    },
-    [progress]
-  );
-  
-  const handleTabContainerLayout = useCallback((width: number) => {
-    // Tab container width'i state'e kaydet (gerekirse)
-  }, []);
+    const handlePageSelected = useCallback(
+        (e: any) => {
+            const position = e.nativeEvent.position;
+            progress.value = withTiming(position, { duration: 0 });
+            
+            const tabKey = TABS[position]?.key;
+            if (tabKey) {
+                setActiveTab(tabKey);
+            }
+        },
+        [progress]
+    );
+    
+    const handleTabContainerLayout = useCallback((width: number) => {
+        // Tab container width'i state'e kaydet (gerekirse)
+    }, []);
 
-  return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-        {/* Header */}
-        <Header
-          title="Product Details"
-          showBackButton={true}
-          onBackPress={() => navigation.goBack()}
-        />
+    return (
+        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+            <VStack flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+                {/* Header */}
+                <Header
+                    title="Product Details"
+                    showBackButton={true}
+                    onBackPress={() => navigation.goBack()}
+                />
 
         {/* Product Info Card and User Points Card */}
-        <Box px="$4" pt="$4" pb="$3">
+                    <Box px="$4" pt="$4" pb="$3">
           <HStack space="sm" alignItems="stretch">
             {/* Product Info Card */}
             {(displayProductName || initialProductName) && (
               <Box flex={1}>
-                <BrandProductInfoCard
-                  productName={displayProductName}
-                  productImage={displayProductImage}
+                        <BrandProductInfoCard
+                            productName={displayProductName}
+                            productImage={displayProductImage}
                   brandName={brandName}
                   brandImage={brandImage}
-                />
-              </Box>
-            )}
+                        />
+                    </Box>
+                )}
 
             {/* User Points Card */}
             {userPoints !== undefined && (
@@ -1026,40 +1026,40 @@ const BrandProductDetailScreen: React.FC = () => {
           </HStack>
         </Box>
 
-        {/* Tab Bar */}
-        <TabsBar 
-          activeTab={activeTab} 
-          onChangeTab={handleTabChange} 
-          isDark={isDark}
-          progress={progress}
-          tabContainerRef={tabContainerRef}
-          onTabContainerLayout={handleTabContainerLayout}
-        />
+                {/* Tab Bar */}
+                <TabsBar 
+                    activeTab={activeTab} 
+                    onChangeTab={handleTabChange} 
+                    isDark={isDark}
+                    progress={progress}
+                    tabContainerRef={tabContainerRef}
+                    onTabContainerLayout={handleTabContainerLayout}
+                />
 
         {/* PagerView - Lazy loading: Sadece aktif ve komşu tab'lar render edilir */}
-        <AnimatedPagerView
-          ref={pagerRef}
-          style={{ flex: 1 }}
-          initialPage={0}
-          onPageScroll={handlePageScroll}
-          onPageSelected={handlePageSelected}
+                <AnimatedPagerView
+                    ref={pagerRef}
+                    style={{ flex: 1 }}
+                    initialPage={0}
+                    onPageScroll={handlePageScroll}
+                    onPageSelected={handlePageSelected}
           offscreenPageLimit={1}
-        >
-          {TABS.map((tab) => (
+                >
+                    {TABS.map((tab) => (
             <Box key={tab.key} flex={1} collapsable={false}>
-              <TabPage
-                tabKey={tab.key}
+                            <TabPage
+                                tabKey={tab.key}
                 brandId={brandId}
-                productId={productId}
-                isDark={isDark}
-                bottomPadding={bottomPadding}
-              />
-            </Box>
-          ))}
-        </AnimatedPagerView>
-      </VStack>
-    </SafeAreaView>
-  );
+                                productId={productId}
+                                isDark={isDark}
+                                bottomPadding={bottomPadding}
+                            />
+                        </Box>
+                    ))}
+                </AnimatedPagerView>
+            </VStack>
+        </SafeAreaView>
+    );
 };
 
 export default BrandProductDetailScreen;

@@ -223,7 +223,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           style: 'destructive',
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
-            console.log('[PostCard] Block user:', targetUserId);
           },
         },
       ]
@@ -252,8 +251,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   }, [data, openBottomSheet]);
 
   const handleDelete = useCallback(() => {
-    console.log('[PostCard] 🗑️ Delete button clicked for post:', data.id);
-    
     Alert.alert(
       'Post\'u Sil',
       'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
@@ -261,37 +258,15 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         {
           text: 'İptal',
           style: 'cancel',
-          onPress: () => {
-            console.log('[PostCard] ❌ Delete cancelled by user');
-          },
         },
         {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
-            console.log('[PostCard] ✅ Delete confirmed, sending DELETE request to /posts/' + data.id);
-            
             try {
-              const response = await deletePostMutation.mutateAsync(data.id);
-              
-              console.log('[PostCard] ✅ Post deleted successfully:', {
-                postId: data.id,
-                response,
-                timestamp: new Date().toISOString(),
-              });
-              
+              await deletePostMutation.mutateAsync(data.id);
               Alert.alert('Başarılı', 'Post başarıyla silindi.');
             } catch (error: any) {
-              console.error('[PostCard] ❌ Delete post error:', {
-                postId: data.id,
-                url: `/posts/${data.id}`,
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data,
-                message: error.message,
-                timestamp: new Date().toISOString(),
-              });
-              
               Alert.alert(
                 'Hata',
                 error.response?.data?.message || 'Post silinirken bir hata oluştu.'
@@ -394,25 +369,10 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // Product için PostsScreen'e navigate et
-                  console.log('[PostCard] Product clicked:', {
-                    productId: context.id,
-                    productName: context.name,
-                    contextType: data.contextType,
-                    contextImage: context.image,
-                    imageSource: imageSource,
-                    fullContextData: context,
-                    fullPostData: data,
-                  });
-                  
                   if (!context.id || !data.contextType) {
-                    console.warn('[PostCard] Missing required data for navigation:', {
-                      hasContextId: !!context.id,
-                      hasContextType: !!data.contextType,
-                    });
                     return;
                   }
                   
-                  try {
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -433,10 +393,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                       contextId: context.id,
                     },
                   });
-                    console.log('[PostCard] Navigation successful');
-                  } catch (error) {
-                    console.error('[PostCard] Navigation error:', error);
-                  }
                 }}
               />
             </Box>
@@ -459,19 +415,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                 subName={context.subName}
                 onPress={() => {
                   // ProductGroup veya SubCategory için PostsScreen'e navigate et
-                  console.log('[PostCard] ProductGroup/SubCategory clicked:', {
-                    contextId: context.id,
-                    contextName: context.name,
-                    contextType: data.contextType,
-                    contextImage: context.image,
-                    imageSource: imageSource,
-                  });
-                  
                   if (!context.id || !data.contextType) {
-                    console.warn('[PostCard] Missing required data for navigation:', {
-                      hasContextId: !!context.id,
-                      hasContextType: !!data.contextType,
-                    });
                     return;
                   }
                   
@@ -479,7 +423,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                     ? 'ProductGroup' 
                     : 'SubCategories';
                   
-                  try {
                   navigationService.navigate(ROOT_ROUTES.POST, {
                     screen: 'PostsScreen',
                     params: {
@@ -494,10 +437,6 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
                       contextId: context.id,
                     },
                   });
-                    console.log('[PostCard] Navigation successful for ProductGroup/SubCategory');
-                  } catch (error) {
-                    console.error('[PostCard] Navigation error for ProductGroup/SubCategory:', error);
-                  }
                 }}
               />
             </Box>
@@ -704,5 +643,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   );
 };
 
-export default memo(PostCard);
+const MemoizedPostCard = memo(PostCard);
+MemoizedPostCard.displayName = 'PostCard';
+export default MemoizedPostCard;
 

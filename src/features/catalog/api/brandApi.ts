@@ -126,22 +126,28 @@ export const getBrandFeed = async (
 /**
  * Get Brand Product Book endpoint function
  * /brands/{brandId}/groups API'sinden marka ürün gruplarını getirir (pagination ile)
+ * Search parametresi ile sadece eşleşen ürünleri içeren gruplar döner
  *
  * @param brandId - Marka ID'si
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Product adında arama (opsiyonel) - Sadece eşleşen ürünleri içeren gruplar döner
  * @returns BrandProductBookResponse - Marka ürün grupları ve pagination bilgisi
  */
 export const getBrandProductBook = async (
   brandId: string,
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  search?: string
 ): Promise<BrandProductBookResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (search && search.trim().length > 0) {
+    params.append('search', search.trim());
+  }
 
   try {
     const response = await apiService.getClient().get<any>(

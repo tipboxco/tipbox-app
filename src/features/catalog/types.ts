@@ -162,9 +162,8 @@ export interface BrandFeedResponse {
  * Brand Product Stats - /brands/{brandId}/products response'undaki product stats bilgisi
  */
 export interface BrandProductStats {
-  reviews: number;
-  likes: number;
-  share: number; // API'de "share" (tekil) olarak geliyor
+  posts: number; // Ürün için post sayısı
+  news: number; // Ürün için haber sayısı
 }
 
 /**

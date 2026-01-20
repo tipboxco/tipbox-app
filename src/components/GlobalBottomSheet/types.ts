@@ -13,7 +13,8 @@ export interface BottomSheetOptions {
   maxDynamicContentSize?: number;
   
   // Snap points - klavye açıldığında yukarı kayması için (enableDynamicSizing: false ise kullanılır)
-  snapPoints?: number[];
+  // @gorhom/bottom-sheet hem number[] (0-1 arası) hem de string[] (örn: ['50%']) formatını destekler
+  snapPoints?: (number | string)[];
   
   // Initial snap index - hangi snap point'te başlayacağı (default: 0)
   initialSnapIndex?: number;

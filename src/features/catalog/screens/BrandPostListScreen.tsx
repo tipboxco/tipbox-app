@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, VStack, ActivityIndicator, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -18,7 +18,7 @@ import { toImageSource } from '@/src/utils';
 type BrandPostListScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList, 'BrandPostListScreen'>;
 type BrandPostListScreenRouteProp = RouteProp<CatalogStackParamList, 'BrandPostListScreen'>;
 
-const BrandPostListScreen: React.FC = () => {
+const BrandPostListScreenComponent: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<BrandPostListScreenNavigationProp>();
@@ -185,5 +185,8 @@ const BrandPostListScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
+
+const BrandPostListScreen = memo(BrandPostListScreenComponent);
+BrandPostListScreen.displayName = 'BrandPostListScreen';
 
 export default BrandPostListScreen;

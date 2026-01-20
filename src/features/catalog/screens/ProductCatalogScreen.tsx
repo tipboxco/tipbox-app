@@ -39,14 +39,31 @@ interface ProductCatalogScreenProps {
   scrollViewPaddingBottom?: number;
   selectMode?: 'event';
   returnScreen?: string;
+  // Initial state props (from navigation store)
+  initialView?: 'categories' | 'subcategories' | 'productgroups' | 'products';
+  initialSelectedCategoryId?: string;
+  initialSelectedSubCategoryId?: string;
+  initialSelectedProductGroupId?: string;
+  initialBreadcrumbItems?: BreadcrumbItem[];
 }
 
-export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCreatePost, onStateChange, scrollViewPaddingBottom = 52, selectMode, returnScreen }) => {
+export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ 
+  onCreatePost, 
+  onStateChange, 
+  scrollViewPaddingBottom = 52, 
+  selectMode, 
+  returnScreen,
+  initialView,
+  initialSelectedCategoryId,
+  initialSelectedSubCategoryId,
+  initialSelectedProductGroupId,
+  initialBreadcrumbItems,
+}) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<ProductCatalogScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
-  const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>([]);
+  const [breadcrumbItems, setBreadcrumbItems] = useState<BreadcrumbItem[]>(initialBreadcrumbItems || []);
   
   // Create Post Flow Store
   const setFlowContext = useCreatePostFlowStore((state) => state.setFlowContext);
@@ -81,7 +98,27 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
   );
   
   // Seçili kategori ID'si (subcategories çekmek için) - Local state (API için)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+  // Initial state'ten restore et
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(initialSelectedCategoryId);
+  
+  // Initial state'i restore et (sadece ilk render'da)
+  useEffect(() => {
+    if (initialView) {
+      setCurrentView(initialView);
+    }
+    if (initialSelectedSubCategoryId) {
+      setSelectedSubCategory(initialSelectedSubCategoryId);
+    }
+    if (initialSelectedProductGroupId) {
+      setSelectedProductGroup(initialSelectedProductGroupId);
+    }
+    if (initialSelectedCategoryId) {
+      setSelectedCategoryId(initialSelectedCategoryId);
+    }
+    if (initialBreadcrumbItems && initialBreadcrumbItems.length > 0) {
+      setBreadcrumbItems(initialBreadcrumbItems);
+    }
+  }, []); // Sadece mount'ta çalış
   
   // Seçili alt kategori ID'si setter - Store'dan oku
   const setSelectedSubCategoryId = useCatalogUIStore((state) => state.setSelectedSubCategory);
@@ -347,6 +384,7 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({ onCr
     // Seçili alt kategori ID'sini set et (product groups API çağrısı için)
     setSelectedSubCategoryId(subCategory.id);
     setSelectedProductGroupId(undefined); // ProductGroup'u temizle
+    setSelectedProduct(undefined); // Product ID'yi de temizle (store'da yanlış ID kalmasın)
     setSelectedProductLocal(null);
     
     // Product groups'u prefetch et (hızlı yükleme için)
@@ -721,18 +759,41 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
     
     if (productInfo) {
       // ContextType ve contextId'yi belirle
+      // ÖNEMLİ: Store'dan ID'leri al, breadcrumb'tan değil (store daha güvenilir)
+      const selectedProductId = useCatalogUIStore.getState().selectedProductId;
+      const currentSelectedSubCategoryId = useCatalogUIStore.getState().selectedSubCategoryId;
+      const currentSelectedProductGroupId = useCatalogUIStore.getState().selectedProductGroupId;
+      
       let contextType: ProductInfoType | undefined;
       let contextId: string | undefined;
       
-      if (productItem && selectedProduct) {
+      // Priority: Product > ProductGroup > SubCategory
+      if (productItem && selectedProductId) {
         contextType = ProductInfoType.PRODUCT;
-        contextId = productItem.id;
-      } else if (productGroupItem && selectedProductGroupId) {
+        contextId = selectedProductId; // Store'dan al
+      } else if (productGroupItem && currentSelectedProductGroupId) {
         contextType = ProductInfoType.PRODUCT_GROUP;
-        contextId = productGroupItem.id;
-      } else if (subCategoryItem && selectedSubCategoryId) {
+        contextId = currentSelectedProductGroupId; // Store'dan al
+      } else if (subCategoryItem && currentSelectedSubCategoryId) {
         contextType = ProductInfoType.SUB_CATEGORY;
-        contextId = subCategoryItem.id;
+        contextId = currentSelectedSubCategoryId; // Store'dan al
+      }
+      
+      // Store'da ID yoksa breadcrumb'tan fallback yap (ama log bas)
+      if (!contextId) {
+        if (productItem) {
+          contextType = ProductInfoType.PRODUCT;
+          contextId = productItem.id;
+          console.warn('[ProductCatalogScreen] ⚠️ Product ID not found in store, using breadcrumb ID:', contextId);
+        } else if (productGroupItem) {
+          contextType = ProductInfoType.PRODUCT_GROUP;
+          contextId = productGroupItem.id;
+          console.warn('[ProductCatalogScreen] ⚠️ ProductGroup ID not found in store, using breadcrumb ID:', contextId);
+        } else if (subCategoryItem) {
+          contextType = ProductInfoType.SUB_CATEGORY;
+          contextId = subCategoryItem.id;
+          console.warn('[ProductCatalogScreen] ⚠️ SubCategory ID not found in store, using breadcrumb ID:', contextId);
+        }
       }
       
       // Save to flow store for CreatePostScreen

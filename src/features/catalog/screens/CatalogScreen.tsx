@@ -19,6 +19,7 @@ import { RootStackParamList } from '@/src/navigation/navigation.types';
 import { ProductInfoType } from '@/src/types/common';
 import { useCreatePostFlowStore } from '@/src/features/post/store/createPostFlowStore';
 import { useCatalogUIStore } from '../store/catalogUIStore';
+import { useCatalogNavigationStore } from '../store/catalogNavigationStore';
 import { useBottomOffset } from '@/src/utils';
 
 type CatalogScreenNavigationProp = NativeStackNavigationProp<CatalogStackParamList & RootStackParamList> & {
@@ -73,8 +74,55 @@ const CatalogScreenComponent = () => {
   const navigation = useNavigation<CatalogScreenNavigationProp>();
   const route = useRoute<CatalogScreenRouteProp>();
   
-  // Get initial mode from route params
-  const initialMode = route.params?.view === 'brands' ? 'brand-catalog' : 'product';
+  // Catalog Navigation Store - persist edilmiş state
+  const {
+    lastCatalogType,
+    setLastCatalogType,
+    productCatalogState,
+    brandCatalogState,
+    setProductCatalogState,
+    setBrandCatalogState,
+  } = useCatalogNavigationStore();
+  
+  // Get initial mode from route params, fallback to persisted state
+  // Route params öncelikli (başka ekrandan geçişte), yoksa store'dan oku
+  const routeView = route.params?.view;
+  const routeBrandCategoryId = route.params?.brandCategoryId;
+  const routeProductCategoryId = route.params?.productCategoryId;
+  const routeProductSubCategoryId = route.params?.productSubCategoryId;
+  const routeProductGroupId = route.params?.productGroupId;
+  
+  const initialModeFromRoute = routeView === 'brands' ? 'brand-catalog' : routeView === 'products' ? 'product' : undefined;
+  const initialModeFromStore = lastCatalogType === 'brand' ? 'brand-catalog' : 'product';
+  const initialMode = initialModeFromRoute ?? initialModeFromStore;
+  
+  // Route params'tan gelen index'leri store'a kaydet
+  useEffect(() => {
+    if (routeBrandCategoryId && routeView === 'brands') {
+      setBrandCatalogState({
+        selectedCategoryId: routeBrandCategoryId,
+        currentStep: 'brands',
+      });
+    }
+    if (routeProductCategoryId || routeProductSubCategoryId || routeProductGroupId) {
+      // Product catalog için view'ı belirle
+      let view: 'categories' | 'subcategories' | 'productgroups' | 'products' = 'categories';
+      if (routeProductGroupId) {
+        view = 'products';
+      } else if (routeProductSubCategoryId) {
+        view = 'productgroups';
+      } else if (routeProductCategoryId) {
+        view = 'subcategories';
+      }
+      
+      setProductCatalogState({
+        selectedCategoryId: routeProductCategoryId,
+        selectedSubCategoryId: routeProductSubCategoryId,
+        selectedProductGroupId: routeProductGroupId,
+        currentView: view,
+      });
+    }
+  }, [routeBrandCategoryId, routeProductCategoryId, routeProductSubCategoryId, routeProductGroupId, routeView, setBrandCatalogState, setProductCatalogState]);
   
   // PERFORMANCE FIX: Use reducer for related state management
   const [catalogState, dispatch] = useReducer(catalogScreenReducer, {
@@ -83,21 +131,21 @@ const CatalogScreenComponent = () => {
   });
   const { currentMode, selectedCategory, selectedProductLocal, breadcrumbItems } = catalogState;
   
-  // Update mode when route params change (not when currentMode changes)
-  // CONTROL FIX: Always update mode when route params change, regardless of current mode
-  // This ensures that when navigating from "See All Brands" or "See All Products",
-  // the correct mode is set immediately
-  const routeView = route.params?.view;
+  // Update mode when route params change or restore from store
   useEffect(() => {
-    const newMode = routeView === 'brands' ? 'brand-catalog' : 'product';
+    const newMode = routeView === 'brands' ? 'brand-catalog' : routeView === 'products' ? 'product' : (lastCatalogType === 'brand' ? 'brand-catalog' : 'product');
     
     // CONTROL FIX: Always update mode when route params change
     // This ensures correct mode is set when navigating from ExploreScreen
     // PERFORMANCE FIX: Only dispatch if mode actually changed to prevent re-render loops
     if (newMode !== currentMode) {
       dispatch({ type: 'SET_CURRENT_MODE', payload: newMode });
+      
+      // Store'a kaydet
+      const catalogType = newMode === 'brand-catalog' || newMode === 'brand-selection' ? 'brand' : 'product';
+      setLastCatalogType(catalogType);
     }
-  }, [routeView]); // PERFORMANCE FIX: Removed currentMode from dependencies to prevent loop
+  }, [routeView, lastCatalogType, currentMode, setLastCatalogType]);
   
   // UI-specific state (keep as useState for simplicity)
   const [bottomSheetKey, setBottomSheetKey] = useState(0);
@@ -124,6 +172,12 @@ const CatalogScreenComponent = () => {
     dispatch({ type: 'SET_SELECTED_CATEGORY', payload: category });
     // Brand catalog modunda kal, sadece seçilen kategoriyi güncelle
     // Kullanıcı floating button ile brand-selection moduna geçebilir
+    
+    // Store'a kaydet
+    setBrandCatalogState({
+      selectedCategoryId: category.id,
+      currentStep: 'brands',
+    });
   };
 
   const handleViewChange = useCallback((view: 'options' | 'experience' | 'product-selection') => {
@@ -465,13 +519,16 @@ const CatalogScreenComponent = () => {
     if (currentMode === 'brand-selection') {
       // Brand selection modundan brand catalog moduna geri dön
       dispatch({ type: 'SET_CURRENT_MODE', payload: 'brand-catalog' });
+      setLastCatalogType('brand');
     } else if (currentMode === 'brand-catalog') {
       // Brand catalog modundan normal moda geri dön
       dispatch({ type: 'SET_CURRENT_MODE', payload: 'product' });
       dispatch({ type: 'SET_SELECTED_CATEGORY', payload: null });
+      setLastCatalogType('product');
     } else {
       // Normal moddan brand catalog moduna geç
       dispatch({ type: 'SET_CURRENT_MODE', payload: 'brand-catalog' });
+      setLastCatalogType('brand');
     }
   };
 
@@ -525,7 +582,16 @@ const CatalogScreenComponent = () => {
     if (breadcrumbChanged) {
       dispatch({ type: 'SET_BREADCRUMB_ITEMS', payload: data.breadcrumbItems });
     }
-  }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup, selectedProductLocal, breadcrumbItems]);
+    
+    // Catalog Navigation Store'a kaydet (persist için)
+    setProductCatalogState({
+      currentView: data.currentView,
+      selectedSubCategoryId: data.selectedSubCategoryId,
+      selectedProductGroupId: data.selectedProductGroupId,
+      selectedProductId: data.selectedProduct?.id,
+      breadcrumbItems: data.breadcrumbItems,
+    });
+  }, [setSelectedProduct, setCurrentView, setSelectedSubCategory, setSelectedProductGroup, selectedProductLocal, breadcrumbItems, setProductCatalogState]);
 
   const renderContent = () => {
     const paddingBottom = 52;
@@ -538,6 +604,12 @@ const CatalogScreenComponent = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             showHeader={false}
+            initialCategoryId={routeBrandCategoryId || brandCatalogState.selectedCategoryId}
+            initialStep={brandCatalogState.currentStep}
+            initialBreadcrumbItems={brandCatalogState.breadcrumbItems}
+            onStateChange={(state) => {
+              setBrandCatalogState(state);
+            }}
           />
         );
       case 'brand-selection':
@@ -547,6 +619,12 @@ const CatalogScreenComponent = () => {
             onCategorySelect={handleBrandCategorySelection}
             scrollViewPaddingBottom={paddingBottom}
             showHeader={false}
+            initialCategoryId={routeBrandCategoryId || brandCatalogState.selectedCategoryId}
+            initialStep={brandCatalogState.currentStep}
+            initialBreadcrumbItems={brandCatalogState.breadcrumbItems}
+            onStateChange={(state) => {
+              setBrandCatalogState(state);
+            }}
           />
         );
       default:
@@ -556,6 +634,11 @@ const CatalogScreenComponent = () => {
             scrollViewPaddingBottom={paddingBottom}
             selectMode={route.params?.selectMode}
             returnScreen={route.params?.returnScreen}
+            initialView={productCatalogState.currentView}
+            initialSelectedCategoryId={routeProductCategoryId || productCatalogState.selectedCategoryId}
+            initialSelectedSubCategoryId={routeProductSubCategoryId || productCatalogState.selectedSubCategoryId}
+            initialSelectedProductGroupId={routeProductGroupId || productCatalogState.selectedProductGroupId}
+            initialBreadcrumbItems={productCatalogState.breadcrumbItems}
           />
         );
     }

@@ -251,7 +251,7 @@ export const getProductDetail = async (
 /**
  * Get Product Posts endpoint function
  * /products/{productId}/posts endpoint'inden product postlarını getirir (pagination ile)
- * 
+ *
  * Filter Parametreleri:
  * - all: Tüm gönderiler (default)
  * - reviews: Sadece Experience (Review) gönderileri
