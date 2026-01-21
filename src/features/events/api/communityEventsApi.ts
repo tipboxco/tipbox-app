@@ -914,9 +914,21 @@ export const getEventBadgeDetail = async (
  */
 export interface CreateEventPostWithContextRequest {
   body: string; // Content (max 2000 char)
-  inventoryId: string; // ✅ Sadece inventory ID - Backend her şeyi halleder
+  contextType: string; // Backend requires (e.g. 'product', 'sub_category')
+  contextId: string; // Backend requires
   images?: string[]; // Opsiyonel: Array of image URIs
 }
+
+export type EventPostProductStatus = 'own' | 'tried';
+
+export type CreateEventPostWithContextRequestV2 =
+  | (CreateEventPostWithContextRequest & {
+      inventoryId: string; // ✅ Sadece inventory ID - Backend her şeyi halleder
+    })
+  | (CreateEventPostWithContextRequest & {
+      productId: string; // Roast gibi senaryolarda doğrudan productId
+      productStatus: EventPostProductStatus; // own | tried
+    });
 
 export interface CreateEventPostWithContextResponse {
   id: string;
@@ -925,14 +937,22 @@ export interface CreateEventPostWithContextResponse {
 
 export const createEventPostWithContext = async (
   eventId: string,
-  data: CreateEventPostWithContextRequest
+  data: CreateEventPostWithContextRequestV2
 ): Promise<CreateEventPostWithContextResponse> => {
   const client = apiService.getClient();
   
   // FormData oluştur (multipart/form-data için)
   const formData = new FormData();
   formData.append('body', data.body);
-  formData.append('inventoryId', data.inventoryId);
+  formData.append('contextType', data.contextType);
+  formData.append('contextId', data.contextId);
+  
+  if ('inventoryId' in data) {
+    formData.append('inventoryId', data.inventoryId);
+  } else {
+    formData.append('productId', data.productId);
+    formData.append('productStatus', data.productStatus);
+  }
   
   // Request bilgilerini JSON formatında log'la
   const requestJson = {
@@ -941,7 +961,11 @@ export const createEventPostWithContext = async (
     contentType: 'multipart/form-data',
     fields: {
       body: data.body,
-      inventoryId: data.inventoryId,
+      contextType: data.contextType,
+      contextId: data.contextId,
+      ...(('inventoryId' in data)
+        ? { inventoryId: data.inventoryId }
+        : { productId: data.productId, productStatus: data.productStatus }),
     },
     imageCount: data.images?.length || 0,
     images: data.images?.map((uri, index) => ({
@@ -997,9 +1021,6 @@ export const createEventPostWithContext = async (
       `/posts/${eventId}/post`,
       formData,
       {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
         // React Native için timeout'u artır (image upload uzun sürebilir)
         timeout: 30000, // 30 saniye
       }
@@ -1021,7 +1042,11 @@ export const createEventPostWithContext = async (
       errorMessage: error.message,
       requestData: {
         body: data.body?.substring(0, 50) + '...',
-        inventoryId: data.inventoryId,
+        contextType: data.contextType,
+        contextId: data.contextId,
+        ...(('inventoryId' in data)
+          ? { inventoryId: data.inventoryId }
+          : { productId: data.productId, productStatus: data.productStatus }),
         imageCount: data.images?.length || 0,
       },
     };

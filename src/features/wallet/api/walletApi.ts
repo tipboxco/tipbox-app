@@ -106,6 +106,28 @@ export interface SendTipResponse {
 }
 
 /**
+ * NFT Transfer Request
+ * Backend endpoint: POST /transactions/nft-transfer
+ */
+export interface NftTransferRequest {
+  nftId: string;
+  recipientId: string;
+  message?: string;
+}
+
+/**
+ * NFT Transfer Response
+ */
+export interface NftTransferResponse {
+  success: boolean;
+  nftId: string;
+  fromUserId: string;
+  toUserId: string;
+  nftTransactionId: string;
+  transferredAt: string;
+}
+
+/**
  * ============================================
  * WALLET ENDPOINTS
  * ============================================
@@ -177,6 +199,26 @@ export const sendTips = async (data: SendTipRequest): Promise<SendTipResponse> =
   } catch (error: any) {
     console.error('[sendTips] API Error:', {
       url: '/transactions/send-tip',
+      status: error.response?.status,
+      data: error.response?.data,
+      requestData: data,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Transfer NFT (User -> User)
+ *
+ * Backend endpoint: POST /transactions/nft-transfer
+ */
+export const transferNft = async (data: NftTransferRequest): Promise<NftTransferResponse> => {
+  try {
+    const response = await apiService.getClient().post<NftTransferResponse>('/transactions/nft-transfer', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[transferNft] API Error:', {
+      url: '/transactions/nft-transfer',
       status: error.response?.status,
       data: error.response?.data,
       requestData: data,
@@ -309,22 +351,8 @@ export const getWalletTransactions = async (params?: {
       { params }
     );
 
-    console.log('[getWalletTransactions] ✅ Raw API Response:', {
-      itemsCount: response.data.items.length,
-      hasMore: response.data.pagination.hasMore,
-      firstItem: response.data.items[0],
-    });
-
     // Transform: Backend format -> Frontend grouped format
     const grouped = groupTransactionsByTime(response.data.items);
-
-    console.log('[getWalletTransactions] ✅ Grouped Transactions:', {
-      today: grouped.today.length,
-      yesterday: grouped.yesterday.length,
-      lastWeek: grouped.lastWeek.length,
-      lastMonth: grouped.lastMonth.length,
-      total: grouped.total,
-    });
 
     return grouped;
   } catch (error: any) {

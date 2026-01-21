@@ -13,7 +13,9 @@ export interface EventDetailReward {
 export interface EventDetailProduct {
   id: string;
   name: string;
-  // İleride daha fazla field eklenebilir
+  image?: string | null;
+  description?: string | null;
+  shortDescription?: string | null;
 }
 
 // Event Detail API Response Tipi
@@ -24,7 +26,7 @@ export interface EventDetailApiResponse {
   startDate: string; // ISO string
   endDate: string; // ISO string
   interaction: number; // Etkileşim sayısı
-  eventType: string; // 'default' veya 'product'
+  eventType: string; // backend string (örn: 'default', 'product', 'Roasts', ...)
   status: EventStatus; // 'active' veya 'upcoming'
   isJoined: boolean;
   banner?: string | null; // API'den gelen banner field'ı (detail sayfası banner'ı)
@@ -35,7 +37,7 @@ export interface EventDetailApiResponse {
     avatar: string | null;
     userName: string;
   }>; // Avatar'lar için (soldaki resimler)
-  product?: EventDetailProduct; // Sadece eventType === 'product' olan eventlerde
+  product?: EventDetailProduct; // eventType'a göre opsiyonel
 }
 
 // Limited Event Leaderboard User
@@ -104,6 +106,21 @@ export interface EventBadgesApiResponse {
     cursor?: string;
     hasMore: boolean;
     limit: number;
+  };
+}
+
+// Event Badge Detail Response - /events/:eventId/badges/:badgeId endpoint'inden gelen detay ve progress
+export interface EventBadgeDetailResponse {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  userProgress: {
+    current: number;
+    target: number;
+    progressPercentage: number;
+    isCompleted: boolean;
+    completedAt?: string | null;
   };
 }
 

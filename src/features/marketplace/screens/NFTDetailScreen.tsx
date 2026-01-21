@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, Dimensions, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { ScrollView, Dimensions, Alert, ActivityIndicator, TextInput, Modal, Pressable as RNPressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Text, Box, Image, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
@@ -7,14 +7,12 @@ import { Header } from '@/src/components/Header';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MarketplaceStackParamList } from '../navigation';
-import { useNFTSellDetail, useBuyNFT } from '../api/hooks';
+import { useNFTSellDetail, useNFTSellInfo, useBuyNFT } from '../api/hooks';
 import { useBottomOffset, toImageSource } from '@/src/utils';
 import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import { NFTPurchaseSuccessBottomSheet } from '../components/NFTPurchaseSuccessBottomSheet';
 import { SimpleLineChart } from '../components/SimpleLineChart';
 import { EllipsisVerticalIcon, PencilSquareIcon, TrashIcon } from 'react-native-heroicons/outline';
-import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
-import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
 import { useDeleteListing, useUpdateListingPrice } from '../api/hooks';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -33,7 +31,6 @@ const NFTDetailScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<MarketplaceStackParamList>>();
     const route = useRoute();
     const { nftId, mode = 'buy' } = route.params as { nftId: string; mode?: 'view' | 'buy' };
-    const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
 
     const [footerHeight, setFooterHeight] = useState(100);
     const bottomOffset = useBottomOffset({ includeTabBar: false, extraPadding: 8 });
@@ -44,10 +41,12 @@ const NFTDetailScreen = () => {
 
     // Context menu state
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-    const contextMenuCloseRef = React.useRef<(() => void) | null>(null);
 
     // Fetch NFT detail data
     const { data: nftDetail, isLoading, error, refetch } = useNFTSellDetail(nftId);
+    // NOTE: sell-info endpoint includes active listing object (id/price/status)
+    // We need listing.id (not nft.id) for update/delist calls.
+    const { data: nftSellInfo } = useNFTSellInfo(nftId);
 
     // Refetch when screen comes back into focus
     useFocusEffect(
@@ -85,175 +84,119 @@ const NFTDetailScreen = () => {
     const activeListing = nftDetail?.priceHistory?.find(
         item => item.status === 'ACTIVE'
     );
-    const activeListingId = activeListing?.id;
+    const listingIdFromPriceHistory = activeListing?.id;
+    const listingIdFromSellInfo = nftSellInfo?.listing?.id;
+    const listingIdForActions = listingIdFromSellInfo || listingIdFromPriceHistory;
 
-    // Handle Edit Price
+    const canEditListingPrice = Boolean(isMyNFT && listingIdForActions);
+    const [priceDraft, setPriceDraft] = useState('');
+    const [isEditingPrice, setIsEditingPrice] = useState(false);
+    const priceInputRef = React.useRef<TextInput>(null);
+
+    React.useEffect(() => {
+        if (!__DEV__) return;
+        console.log('[NFTDetailScreen] price-edit state', {
+            nftId,
+            isMyNFT,
+            canEditListingPrice,
+            listingIdForActions,
+            isEditingPrice,
+            currentPrice: nftDetail?.price,
+            priceDraft,
+        });
+    }, [nftId, isMyNFT, canEditListingPrice, listingIdForActions, isEditingPrice, nftDetail?.price, priceDraft]);
+
+    React.useEffect(() => {
+        if (!isEditingPrice && nftDetail?.price !== undefined && nftDetail?.price !== null) {
+            setPriceDraft(nftDetail.price.toString());
+        }
+    }, [nftDetail?.price, isEditingPrice]);
+
     const handleEditPrice = React.useCallback(() => {
-        contextMenuCloseRef.current?.();
-        
-        // EditPriceBottomSheet component'ini oluştur
-        const EditPriceBottomSheet = () => {
-            const [localPrice, setLocalPrice] = React.useState(nftDetail?.price?.toString() || '');
+        setIsContextMenuOpen(false);
 
-            return (
-                <Box bg={isDark ? '$backgroundDark900' : '$white'} pb={20} pt={16} px={20}>
-                    <VStack space="lg">
-                        <Text fontSize="$xl" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
-                            Edit Price
-                        </Text>
+        if (__DEV__) {
+            console.log('[NFTDetailScreen] handleEditPrice pressed', {
+                nftId,
+                isMyNFT,
+                listingIdForActions,
+                before_isEditingPrice: isEditingPrice,
+            });
+        }
 
-                        {/* Current Price */}
-                        <VStack space="xs">
-                            <Text fontSize="$sm" color={isDark ? '$textDark400' : '#666'}>
-                                Current Price
-                            </Text>
-                            <Text fontSize="$2xl" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
-                                {nftDetail?.price} TIPS
-                            </Text>
-                        </VStack>
+        if (!isMyNFT) return;
 
-                        {/* New Price Input */}
-                        <VStack space="xs">
-                            <Text fontSize="$sm" color={isDark ? '$textDark400' : '#666'}>
-                                New Price (TIPS)
-                            </Text>
-                            <TextInput
-                                value={localPrice}
-                                onChangeText={setLocalPrice}
-                                placeholder="Enter new price"
-                                placeholderTextColor={isDark ? '#666' : '#999'}
-                                keyboardType="numeric"
-                                autoFocus
-                                style={{
-                                    backgroundColor: isDark ? '#1A1A1A' : '#F7F7F7',
-                                    color: isDark ? '#FFF' : '#000',
-                                    fontSize: 16,
-                                    fontWeight: '600',
-                                    paddingHorizontal: 16,
-                                    paddingVertical: 14,
-                                    borderRadius: 10,
-                                    borderWidth: 1,
-                                    borderColor: isDark ? '#404040' : '#D1D1D1',
-                                }}
-                            />
-                        </VStack>
+        if (!listingIdForActions) {
+            Alert.alert('Error', 'Listing ID not found (cannot edit price)');
+            return;
+        }
 
-                        {/* Gas Fee */}
-                        <HStack justifyContent="space-between" alignItems="center">
-                            <Text fontSize="$sm" color={isDark ? '$textDark400' : '#666'}>
-                                Gas Fee (10%)
-                            </Text>
-                            <Text fontSize="$sm" fontWeight="$semibold" color={isDark ? '$textDark50' : '#000'}>
-                                {localPrice ? (parseFloat(localPrice) * 0.1).toFixed(2) : '0'} TIPS
-                            </Text>
-                        </HStack>
-
-                        {/* Total */}
-                        <Box
-                            bg={isDark ? '#1A1A1A' : '#F7F7F7'}
-                            p="$4"
-                            borderRadius="$lg"
-                        >
-                            <HStack justifyContent="space-between" alignItems="center">
-                                <Text fontSize="$md" fontWeight="$bold" color={isDark ? '$textDark50' : '#000'}>
-                                    You will receive
-                                </Text>
-                                <Text fontSize="$md" fontWeight="$bold" color={isDark ? '#FFF' : '#000'}>
-                                    {localPrice ? (parseFloat(localPrice) * 0.9).toFixed(2) : '0'} TIPS
-                                </Text>
-                            </HStack>
-                        </Box>
-
-                        {/* Buttons */}
-                        <HStack space="md" pt="$2">
-                            <Pressable
-                                flex={1}
-                                onPress={() => closeBottomSheet()}
-                                bg={isDark ? '#2A2A2A' : '#F7F7F7'}
-                                py="$3"
-                                borderRadius="$lg"
-                                alignItems="center"
-                            >
-                                <Text fontSize="$md" fontWeight="$semibold" color={isDark ? '$textDark400' : '#666'}>
-                                    Cancel
-                                </Text>
-                            </Pressable>
-
-                            <Pressable
-                                flex={1}
-                                onPress={() => {
-                                    const price = parseFloat(localPrice);
-
-                                    if (!price || price <= 0) {
-                                        Alert.alert('Invalid Price', 'Please enter a valid price greater than 0.');
-                                        return;
-                                    }
-
-                                    if (!activeListingId) {
-                                        Alert.alert('Error', 'Listing ID not found');
-                                        return;
-                                    }
-
-                                    Alert.alert(
-                                        'Confirm Price Update',
-                                        `Update price to ${price} TIPS?`,
-                                        [
-                                            { text: 'No', style: 'cancel' },
-                                            {
-                                                text: 'Yes',
-                                                onPress: () => {
-                                                    updatePriceMutation.mutate(
-                                                        { listingId: activeListingId, amount: price },
-                                                        {
-                                                            onSuccess: () => {
-                                                                closeBottomSheet();
-                                                                setTimeout(() => {
-                                                                    Alert.alert('Success', 'Price has been updated successfully!');
-                                                                }, 500);
-                                                                refetch();
-                                                            },
-                                                            onError: (error: any) => {
-                                                                Alert.alert('Error', error?.message || 'Failed to update price');
-                                                            },
-                                                        }
-                                                    );
-                                                },
-                                            },
-                                        ]
-                                    );
-                                }}
-                                bg="#C2E607"
-                                py="$3"
-                                borderRadius="$lg"
-                                alignItems="center"
-                                opacity={!localPrice || parseFloat(localPrice) <= 0 ? 0.5 : 1}
-                            >
-                                <Text fontSize="$md" fontWeight="$bold" color="#000">
-                                    Update Price
-                                </Text>
-                            </Pressable>
-                        </HStack>
-                    </VStack>
-                </Box>
-            );
-        };
-
-        // Edit Price bottom sheet'i aç
+        setIsEditingPrice(true);
+        // focus input after render
         setTimeout(() => {
-            openBottomSheet(
-                <EditPriceBottomSheet />,
-                {
-                    snapPoints: [600],
-                    enableDynamicSizing: false,
-                    keyboardBehavior: 'extend',
-                }
-            );
-        }, 400);
-    }, [nftDetail?.price, activeListingId, isDark, updatePriceMutation, openBottomSheet, refetch]);
+            if (__DEV__) {
+                console.log('[NFTDetailScreen] focusing price input', {
+                    hasRef: Boolean(priceInputRef.current),
+                });
+            }
+            priceInputRef.current?.focus();
+        }, 50);
+    }, [nftId, isMyNFT, listingIdForActions, isEditingPrice]);
+
+    const handleUpdatePriceInline = React.useCallback(() => {
+        const price = parseFloat(priceDraft);
+
+        if (!price || price <= 0) {
+            Alert.alert('Invalid Price', 'Please enter a valid price greater than 0.');
+            return;
+        }
+
+        if (!listingIdForActions) {
+            Alert.alert('Error', 'Listing ID not found (cannot update price)');
+            return;
+        }
+
+        Alert.alert('Confirm Price Update', `Update price to ${price} TIPS?`, [
+            { text: 'No', style: 'cancel' },
+            {
+                text: 'Yes',
+                onPress: () => {
+                    updatePriceMutation.mutate(
+                        { listingId: listingIdForActions, amount: price },
+                        {
+                            onSuccess: () => {
+                                Alert.alert('Success', 'Price has been updated successfully!');
+                                setIsEditingPrice(false);
+                                refetch();
+                            },
+                            onError: (error: any) => {
+                                Alert.alert(
+                                    'Error',
+                                    error?.response?.data?.error?.message || error?.message || 'Failed to update price'
+                                );
+                            },
+                        }
+                    );
+                },
+            },
+        ]);
+    }, [priceDraft, listingIdForActions, updatePriceMutation, refetch]);
 
     // Handle Delist NFT
     const handleDelist = React.useCallback(() => {
-        contextMenuCloseRef.current?.();
+        setIsContextMenuOpen(false);
+
+        if (__DEV__) {
+            console.log('[NFTDetailScreen] handleDelist', {
+                nftId,
+                mode,
+                isMyNFT,
+                listingIdFromSellInfo,
+                listingIdFromPriceHistory,
+                listingIdForActions,
+                title: nftDetail?.title,
+            });
+        }
         
         Alert.alert(
             'Delist NFT',
@@ -267,12 +210,18 @@ const NFTDetailScreen = () => {
                     text: 'Yes',
                     style: 'destructive',
                     onPress: () => {
-                        if (!activeListingId) {
-                            Alert.alert('Error', 'Listing ID not found');
+                        if (!listingIdForActions) {
+                            Alert.alert('Error', 'Listing ID not found (cannot delist)');
                             return;
                         }
 
-                        deleteListingMutation.mutate(activeListingId, {
+                        if (__DEV__) {
+                            console.log('[NFTDetailScreen] deleteListing request', {
+                                listingId: listingIdForActions,
+                            });
+                        }
+
+                        deleteListingMutation.mutate(listingIdForActions, {
                             onSuccess: () => {
                                 Alert.alert('Success', 'NFT has been delisted from marketplace');
                                 refetch();
@@ -284,14 +233,36 @@ const NFTDetailScreen = () => {
                                 }, 300);
                             },
                             onError: (error: any) => {
-                                Alert.alert('Error', error?.message || 'Failed to delist NFT');
+                                if (__DEV__) {
+                                    console.error('[NFTDetailScreen] deleteListing error', {
+                                        message: error?.message,
+                                        status: error?.response?.status,
+                                        data: error?.response?.data,
+                                        listingId: listingIdForActions,
+                                    });
+                                }
+                                Alert.alert(
+                                    'Error',
+                                    error?.response?.data?.error?.message || error?.message || 'Failed to delist NFT'
+                                );
                             },
                         });
                     },
                 },
             ]
         );
-    }, [nftDetail?.title, activeListingId, deleteListingMutation, refetch, navigation]);
+    }, [
+        nftId,
+        mode,
+        isMyNFT,
+        listingIdFromSellInfo,
+        listingIdFromPriceHistory,
+        listingIdForActions,
+        nftDetail?.title,
+        deleteListingMutation,
+        refetch,
+        navigation,
+    ]);
 
     // Handle Buy NFT
     const handleBuyNFT = () => {
@@ -434,27 +405,13 @@ const NFTDetailScreen = () => {
                     rightAction={
                         isMyNFT ? (
                             <Box position="relative" zIndex={2001}>
-                                <ContextMenuReanimated
-                                    menuItems={[
-                                        {
-                                            label: 'Edit Price',
-                                            icon: <PencilSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-                                            onPress: handleEditPrice,
-                                        },
-                                        {
-                                            label: 'Delist NFT',
-                                            icon: <TrashIcon width={20} height={20} color="#CE4A4A" />,
-                                            onPress: handleDelist,
-                                            color: '#CE4A4A',
-                                        },
-                                    ]}
-                                    onMenuStateChange={setIsContextMenuOpen}
-                                    onCloseRef={(closeFn) => {
-                                        contextMenuCloseRef.current = closeFn;
-                                    }}
+                                <Pressable
+                                    onPress={() => setIsContextMenuOpen(true)}
+                                    p="$2"
+                                    borderRadius="$full"
                                 >
                                     <EllipsisVerticalIcon width={24} height={24} color={isDark ? '#FFF' : '#000'} />
-                                </ContextMenuReanimated>
+                                </Pressable>
                             </Box>
                         ) : undefined
                     }
@@ -557,40 +514,157 @@ const NFTDetailScreen = () => {
                             borderColor={isDark ? '$borderDark700' : '$borderLight200'}
                             p="$3"
                         >
-                            {/* Current Price */}
-                            <Text
-                                fontSize={10}
-                                fontWeight="$medium"
-                                color={isDark ? '$textDark400' : '$textLight500'}
-                                mb="$2"
-                            >
-                                Current Price
-                            </Text>
-                            
-                            <HStack space="sm" alignItems="center" mb="$2.5">
-                                <Box
-                                    width={40}
-                                    height={40}
-                                    bg={isDark ? '$backgroundDark700' : '$backgroundLight200'}
-                                    borderRadius="$md"
-                                />
-                                <VStack>
+                            {canEditListingPrice ? (
+                                <VStack space="sm" mb="$2.5">
                                     <Text
-                                        fontSize="$xl"
-                                        fontWeight="$bold"
-                                        color={isDark ? '$textDark50' : '$textLight900'}
-                                    >
-                                        {nftDetail.price} TIPS
-                                    </Text>
-                                    <Text
-                                        fontSize="$sm"
+                                        fontSize={10}
                                         fontWeight="$medium"
-                                        color={isDark ? '$textDark400' : '$textLight600'}
+                                        color={isDark ? '$textDark400' : '$textLight500'}
                                     >
-                                        (${(nftDetail.price * 0.01).toFixed(2)})
+                                        Current Price
                                     </Text>
+
+                                    <HStack
+                                        bg={isDark ? '$backgroundDark900' : '$backgroundLight100'}
+                                        borderRadius="$md"
+                                        borderWidth={1}
+                                        borderColor={isEditingPrice ? '#C2E607' : (isDark ? '$borderDark600' : '$borderLight300')}
+                                        px="$3"
+                                        py="$2"
+                                        alignItems="center"
+                                    >
+                                        <TextInput
+                                            ref={priceInputRef}
+                                            value={priceDraft}
+                                            onChangeText={setPriceDraft}
+                                            placeholder="0.00"
+                                            placeholderTextColor={isDark ? '#666666' : '#AAAAAA'}
+                                            keyboardType="decimal-pad"
+                                            editable={isEditingPrice}
+                                            style={{
+                                                flex: 1,
+                                                fontSize: 18,
+                                                fontWeight: '700',
+                                                color: isDark ? '#FFFFFF' : '#000000',
+                                                padding: 8,
+                                            }}
+                                        />
+                                        <Text
+                                            fontSize="$sm"
+                                            fontWeight="$semibold"
+                                            color={isDark ? '$textDark300' : '$textLight700'}
+                                        >
+                                            TIPS
+                                        </Text>
+                                    </HStack>
+
+                                    {!isEditingPrice && (
+                                        <Text
+                                            fontSize={10}
+                                            color={isDark ? '$textDark400' : '$textLight600'}
+                                        >
+                                            Select "Edit Price" from the top right menu to change the price.
+                                        </Text>
+                                    )}
+
+                                    <Pressable
+                                        onPress={handleUpdatePriceInline}
+                                        bg={
+                                            isEditingPrice &&
+                                            parseFloat(priceDraft || '0') > 0 &&
+                                            parseFloat(priceDraft || '0') !== nftDetail.price
+                                                ? '#C2E607'
+                                                : '#CCCCCC'
+                                        }
+                                        borderRadius="$lg"
+                                        py="$2.5"
+                                        disabled={
+                                            updatePriceMutation.isPending ||
+                                            !isEditingPrice ||
+                                            parseFloat(priceDraft || '0') <= 0 ||
+                                            parseFloat(priceDraft || '0') === nftDetail.price
+                                        }
+                                        opacity={
+                                            updatePriceMutation.isPending ||
+                                            !isEditingPrice ||
+                                            parseFloat(priceDraft || '0') <= 0 ||
+                                            parseFloat(priceDraft || '0') === nftDetail.price
+                                                ? 0.6
+                                                : 1
+                                        }
+                                    >
+                                        {updatePriceMutation.isPending ? (
+                                            <ActivityIndicator size="small" color="#000000" />
+                                        ) : (
+                                            <Text
+                                                fontSize={12}
+                                                fontWeight="$bold"
+                                                color="#000000"
+                                                textAlign="center"
+                                            >
+                                                Update Price
+                                            </Text>
+                                        )}
+                                    </Pressable>
+
+                                    {isEditingPrice && (
+                                        <Pressable
+                                            onPress={() => setIsEditingPrice(false)}
+                                            bg={isDark ? '$backgroundDark700' : '#F5F5F5'}
+                                            borderRadius="$lg"
+                                            py="$2.5"
+                                            borderWidth={1}
+                                            borderColor={isDark ? '$borderDark600' : '#E0E0E0'}
+                                        >
+                                            <Text
+                                                fontSize={12}
+                                                fontWeight="$bold"
+                                                color={isDark ? '$textDark200' : '$textLight700'}
+                                                textAlign="center"
+                                            >
+                                                Cancel
+                                            </Text>
+                                        </Pressable>
+                                    )}
                                 </VStack>
-                            </HStack>
+                            ) : (
+                                <>
+                                    {/* Current Price */}
+                                    <Text
+                                        fontSize={10}
+                                        fontWeight="$medium"
+                                        color={isDark ? '$textDark400' : '$textLight500'}
+                                        mb="$2"
+                                    >
+                                        Current Price
+                                    </Text>
+
+                                    <HStack space="sm" alignItems="center" mb="$2.5">
+                                        <Box
+                                            width={40}
+                                            height={40}
+                                            bg={isDark ? '$backgroundDark700' : '$backgroundLight200'}
+                                            borderRadius="$md"
+                                        />
+                                        <VStack>
+                                            <Text
+                                                fontSize="$xl"
+                                                fontWeight="$bold"
+                                                color={isDark ? '$textDark50' : '$textLight900'}
+                                            >
+                                                {nftDetail.price} TIPS
+                                            </Text>
+                                            <Text
+                                                fontSize="$sm"
+                                                fontWeight="$medium"
+                                                color={isDark ? '$textDark400' : '$textLight600'}
+                                            >
+                                                (${(nftDetail.price * 0.01).toFixed(2)})
+                                            </Text>
+                                        </VStack>
+                                    </HStack>
+                                </>
+                            )}
 
                             {/* Suggested Price */}
                             <Box
@@ -810,6 +884,53 @@ const NFTDetailScreen = () => {
                     </Box>
                 )}
             </Box>
+
+            {/* NFT Options Modal (RN Modal) */}
+            <Modal
+                transparent
+                visible={isContextMenuOpen}
+                animationType="fade"
+                onRequestClose={() => setIsContextMenuOpen(false)}
+            >
+                <RNPressable style={{ flex: 1 }} onPress={() => setIsContextMenuOpen(false)}>
+                    <RNPressable
+                        onPress={() => {}}
+                        style={{ position: 'absolute', top: 70, right: 16, minWidth: 180 }}
+                    >
+                        <Box
+                            bg={isDark ? '$backgroundDark900' : '$white'}
+                            borderRadius="$lg"
+                            borderWidth={1}
+                            borderColor={isDark ? '$borderDark700' : '$borderLight200'}
+                            overflow="hidden"
+                        >
+                            <Pressable
+                                onPress={handleEditPrice}
+                                px="$4"
+                                py="$3"
+                                borderBottomWidth={1}
+                                borderBottomColor={isDark ? '$borderDark700' : '$borderLight200'}
+                            >
+                                <HStack space="sm" alignItems="center">
+                                    <PencilSquareIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                    <Text color={isDark ? '$textDark50' : '$textLight900'} fontSize="$sm" fontWeight="$medium">
+                                        Edit Price
+                                    </Text>
+                                </HStack>
+                            </Pressable>
+
+                            <Pressable onPress={handleDelist} px="$4" py="$3">
+                                <HStack space="sm" alignItems="center">
+                                    <TrashIcon width={20} height={20} color="#CE4A4A" />
+                                    <Text color="#CE4A4A" fontSize="$sm" fontWeight="$medium">
+                                        Delist NFT
+                                    </Text>
+                                </HStack>
+                            </Pressable>
+                        </Box>
+                    </RNPressable>
+                </RNPressable>
+            </Modal>
 
             {/* Success Bottom Sheet */}
             {showSuccessSheet && successData && (

@@ -361,12 +361,17 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
                       />
                     </Box>
 
-                    {/* Pagination Dots - Minimal version (5 nokta max, +N yok) */}
+                    {/* Pagination Dots - Active event sayısı kadar */}
                     {activeEvents.length > 1 && (
-                      <HStack justifyContent="center" space="xs" pt="$2">
-                        {activeEvents.slice(0, Math.min(activeEvents.length, 5)).map((_, index) => (
+                      <HStack
+                        justifyContent="center"
+                        space="xs"
+                        pt="$2"
+                        flexWrap="wrap"
+                      >
+                        {activeEvents.map((event, index) => (
                           <Box
-                            key={index}
+                            key={event.id}
                             width={currentActiveIndex === index ? 20 : 6}
                             height={6}
                             borderRadius={3}

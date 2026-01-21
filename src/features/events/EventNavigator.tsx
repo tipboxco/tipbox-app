@@ -4,7 +4,8 @@ import { EventDetailScreen, EventCreatePost, RewardsBadgesScreen } from './scree
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { EventType } from '@/src/utils';
 import { EventProduct } from '@/src/mock/events/communityEvents/types';
-import { InventoryBrand } from '@/src/features/profile/types';
+import type { InventoryBrand } from '@/src/features/profile/types';
+import type { EventDetailProduct } from './types';
 
 /**
  * Event Navigator - Root Navigator için
@@ -19,6 +20,8 @@ export type EventStackParamList = {
     eventId?: string; 
     eventType?: EventType; 
     product?: EventProduct; 
+    eventTypeRaw?: string;
+    roastProduct?: EventDetailProduct;
     productSource?: 'Catalog' | 'Inventory';
     selectedProduct?: {
       id: string;
