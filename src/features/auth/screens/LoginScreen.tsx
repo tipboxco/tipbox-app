@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { CheckCircle, Mail, Eye, EyeOff } from 'lucide-react-native';
+import { CheckCircle, Mail, Eye, EyeOff, Check, Fingerprint } from 'lucide-react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
@@ -11,6 +11,8 @@ import { useAppStore } from '@/src/store/appStore';
 import { useLogin, useGoogleLogin } from '../api/hooks';
 import { googleService } from '@/src/services/GoogleService';
 import { showCustomToast } from '@/src/components/CustomToast';
+import { LoginCredentialsService } from '@/src/services/LoginCredentialsService';
+import { BiometricService } from '@/src/services/BiometricService';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 type LoginScreenRouteProp = RouteProp<AuthStackParamList, 'Login'>;
@@ -35,6 +37,11 @@ export const LoginScreen = () => {
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [savedEmail, setSavedEmail] = useState<string | null>(null);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+  const [hasBiometricPassword, setHasBiometricPassword] = useState(false);
 
   // Onboarding'den geldiğinde success toast göster
   useEffect(() => {
@@ -48,6 +55,46 @@ export const LoginScreen = () => {
       navigation.setParams({ showSuccessToast: false });
     }
   }, [route.params?.showSuccessToast]);
+
+  // Kaydedilmiş email'i yükle ve biometrik desteğini kontrol et
+  useEffect(() => {
+    const loadSavedEmail = async () => {
+      try {
+        const saved = await LoginCredentialsService.getEmail();
+        if (saved) {
+          setSavedEmail(saved);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.error('[LoginScreen] ❌ Error loading saved email:', error);
+      }
+    };
+
+    const checkBiometric = async () => {
+      try {
+        const available = await BiometricService.isAvailable();
+        setIsBiometricAvailable(available);
+        
+        // Biometrik şifre kaydedilmiş mi kontrol et
+        if (available) {
+          const hasPassword = await BiometricService.isBiometricEnabled();
+          setHasBiometricPassword(hasPassword);
+          
+          if (__DEV__) {
+            console.log('[LoginScreen] 🔐 Biometric check:', {
+              available,
+              hasPassword,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[LoginScreen] ❌ Error checking biometric:', error);
+      }
+    };
+
+    loadSavedEmail();
+    checkBiometric();
+  }, []);
 
   const validateEmail = (text: string) => {
     const lowerText = text.toLowerCase();
@@ -79,6 +126,25 @@ export const LoginScreen = () => {
             hasToken: !!result.token,
             hasRefreshToken: !!result.refreshToken,
           });
+        }
+
+        // Remember me seçiliyse email'i kaydet
+        if (rememberMe) {
+          await LoginCredentialsService.saveEmail(email);
+          // Şifreyi biometrik ile kaydet (eğer biometrik mevcut ise)
+          if (isBiometricAvailable) {
+            try {
+              await BiometricService.savePassword(password);
+              setHasBiometricPassword(true);
+            } catch (error) {
+              console.error('[LoginScreen] ❌ Error saving password with biometric:', error);
+            }
+          }
+        } else {
+          // Remember me seçili değilse email'i temizle
+          await LoginCredentialsService.clearEmail();
+          await BiometricService.clearPassword();
+          setHasBiometricPassword(false);
         }
 
         // Başarılı toast göster
@@ -113,6 +179,71 @@ export const LoginScreen = () => {
           duration: 4000,
         });
       }
+    }
+  };
+
+  const handleEmailInputFocus = () => {
+    if (savedEmail && !email) {
+      setShowEmailSuggestions(true);
+    }
+  };
+
+  const handleEmailSuggestionPress = async () => {
+    if (savedEmail) {
+      setEmail(savedEmail);
+      validateEmail(savedEmail);
+      setShowEmailSuggestions(false);
+      
+      // Email seçildiğinde, eğer biometrik şifre varsa otomatik Face ID tetikle
+      if (__DEV__) {
+        console.log('[LoginScreen] 📧 Email suggestion pressed:', {
+          isBiometricAvailable,
+          hasBiometricPassword,
+          savedEmail,
+        });
+      }
+      
+      if (isBiometricAvailable && hasBiometricPassword) {
+        // Kısa bir gecikme sonrası Face ID'i tetikle (kullanıcı deneyimi için)
+        // skipEmailSet=true çünkü email zaten set edildi
+        if (__DEV__) {
+          console.log('[LoginScreen] 🔐 Triggering Face ID...');
+        }
+        setTimeout(async () => {
+          await handleBiometricLogin(true);
+        }, 300);
+      } else {
+        if (__DEV__) {
+          console.log('[LoginScreen] ⚠️ Face ID not available or password not saved:', {
+            isBiometricAvailable,
+            hasBiometricPassword,
+          });
+        }
+      }
+    }
+  };
+
+  const handleBiometricLogin = async (skipEmailSet = false) => {
+    try {
+      const savedPassword = await BiometricService.authenticateAndGetPassword();
+      if (savedPassword) {
+        // Email zaten set edilmişse tekrar set etme
+        if (!skipEmailSet && savedEmail) {
+          setEmail(savedEmail);
+          validateEmail(savedEmail);
+        }
+        setPassword(savedPassword);
+        validatePassword(savedPassword);
+        // Otomatik login yap
+        setTimeout(() => {
+          handleSignIn();
+        }, 300);
+      } else {
+        // Şifre bulunamadıysa kullanıcıya bilgi ver
+        console.log('[LoginScreen] ⚠️ No saved password found');
+      }
+    } catch (error) {
+      console.error('[LoginScreen] ❌ Biometric login error:', error);
     }
   };
 
@@ -237,6 +368,7 @@ export const LoginScreen = () => {
                 placeholder="Your email address"
                 value={email}
                 onChangeText={validateEmail}
+                onFocus={handleEmailInputFocus}
               />
               <Icon 
                 as={CheckCircle} 
@@ -246,6 +378,23 @@ export const LoginScreen = () => {
                 alignSelf="center"
               />
             </Input>
+            {showEmailSuggestions && savedEmail && (
+              <Pressable onPress={handleEmailSuggestionPress} mt="$1">
+                <Box
+                  bg={isDark ? '$backgroundDark200' : '$backgroundLight200'}
+                  borderRadius="$md"
+                  px="$3"
+                  py="$2"
+                >
+                  <HStack alignItems="center" space="sm">
+                    <Icon as={Mail} size="sm" color={isDark ? '$textDark300' : '$textLight600'} />
+                    <Text fontSize="$sm" color={isDark ? '$textDark300' : '$textLight600'}>
+                      {savedEmail}
+                    </Text>
+                  </HStack>
+                </Box>
+              </Pressable>
+            )}
           </FormControl>
 
           <FormControl>
@@ -265,17 +414,52 @@ export const LoginScreen = () => {
                 value={password}
                 onChangeText={validatePassword}
               />
-              <Pressable onPress={() => setShowPassword(!showPassword)}>
-                <Icon 
-                  as={showPassword ? EyeOff : Eye} 
-                  color={isDark ? '$textDark300' : '$textLight600'} 
-                  size="md" 
-                  mr="$2"
-                  alignSelf="center"
-                />
-              </Pressable>
+              <HStack space="sm" alignItems="center" mr="$2">
+                {isBiometricAvailable && savedEmail && hasBiometricPassword && (
+                  <Pressable onPress={handleBiometricLogin}>
+                    <Icon 
+                      as={Fingerprint} 
+                      color={isDark ? '$primary400' : '$primary600'} 
+                      size="md" 
+                      alignSelf="center"
+                    />
+                  </Pressable>
+                )}
+                <Pressable onPress={() => setShowPassword(!showPassword)}>
+                  <Icon 
+                    as={showPassword ? EyeOff : Eye} 
+                    color={isDark ? '$textDark300' : '$textLight600'} 
+                    size="md" 
+                    alignSelf="center"
+                  />
+                </Pressable>
+              </HStack>
             </Input>
-            <Box flexDirection="row" justifyContent="flex-end" mt="$1">
+            <Box flexDirection="row" justifyContent="space-between" alignItems="center" mt="$1">
+              <Pressable onPress={() => setRememberMe(!rememberMe)}>
+                <HStack alignItems="center" space="xs">
+                  <Box
+                    width={18}
+                    height={18}
+                    borderWidth={1.5}
+                    borderColor={rememberMe ? (isDark ? '$primary400' : '$primary600') : (isDark ? '$borderDark300' : '$borderLight300')}
+                    borderRadius={4}
+                    bg={rememberMe ? (isDark ? '$primary400' : '$primary600') : 'transparent'}
+                    justifyContent="center"
+                    alignItems="center"
+                  >
+                    {rememberMe && (
+                      <Icon as={Check} size={12} color="$white" />
+                    )}
+                  </Box>
+                  <Text
+                    fontSize="$xs"
+                    color={isDark ? '$textDark300' : '$textLight600'}
+                  >
+                    Remember me
+                  </Text>
+                </HStack>
+              </Pressable>
               <Text
                 fontSize="$xs"
                 color={isDark ? '$primary400' : '$primary600'}

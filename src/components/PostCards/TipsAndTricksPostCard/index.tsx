@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Platform, View, Pressable as RNPressable } from 'react-native';
+import { Platform, View, Pressable as RNPressable, Modal, Dimensions } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -13,8 +13,9 @@ import {
   BookmarkIcon,
   PencilIcon,
   TrashIcon,
+  UserIcon,
+  FlagIcon,
 } from 'react-native-heroicons/outline';
-import { ContextMenuReanimated } from '../PostCard/ContextMenuReanimated';
 import {
   HeartIcon as HeartIconSolid,
   BookmarkIcon as BookmarkIconSolid,
@@ -58,8 +59,9 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
   const { user } = useAppStore();
   const targetUserId = data.user.id;
   const isPostOwner = user?.id && targetUserId && user.id === targetUserId;
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-  const contextMenuCloseRef = useRef<(() => void) | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuTriggerRef = useRef<View>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { openBottomSheet } = useGlobalBottomSheet();
     
     const [isLiked, setIsLiked] = useState(false);
@@ -231,6 +233,22 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
         );
     }, [data.id, deletePostMutation]);
 
+    // Calculate menu position
+    const handleMenuOpen = React.useCallback(() => {
+        if (menuTriggerRef.current) {
+            menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+                const screenWidth = Dimensions.get('window').width;
+                const menuWidth = 180;
+                const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
+                const top = Math.max(12, y - 8);
+                setMenuPosition({ top, left });
+                setIsMenuOpen(true);
+            });
+        } else {
+            setIsMenuOpen(true);
+        }
+    }, []);
+
     return (
         <VStack
             bg={isDark ? '$backgroundDark900' : '$white'}
@@ -271,29 +289,124 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                             </Text>
                         </VStack>
                     </Pressable>
-                    <ContextMenuReanimated
-                        onViewProfile={handleViewProfile}
-                        onReport={!isPostOwner ? handleReport : undefined}
-                        menuItems={isPostOwner ? [
-                            {
-                                label: 'Güncelle',
-                                icon: <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />,
-                                onPress: handleUpdate,
-                            },
-                            {
-                                label: 'Sil',
-                                icon: <TrashIcon width={20} height={20} color="#FF3040" />,
-                                onPress: handleDelete,
-                                color: '#FF3040',
-                            },
-                        ] : undefined}
-                        onMenuStateChange={setIsContextMenuOpen}
-                        onCloseRef={(closeFn) => {
-                            contextMenuCloseRef.current = closeFn;
-                        }}
+                    <View ref={menuTriggerRef} collapsable={false}>
+                        <Pressable onPress={handleMenuOpen}>
+                            <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
+                        </Pressable>
+                    </View>
+
+                    {/* Menu Modal */}
+                    <Modal
+                        visible={isMenuOpen}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setIsMenuOpen(false)}
                     >
-                        <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
-                    </ContextMenuReanimated>
+                        <RNPressable
+                            style={{ flex: 1 }}
+                            onPress={() => setIsMenuOpen(false)}
+                        />
+                        <Box
+                            position="absolute"
+                            top={menuPosition.top}
+                            left={menuPosition.left}
+                            width={180}
+                            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                            borderRadius={16}
+                            shadowColor="#000"
+                            shadowOffset={{ width: 0, height: 2 }}
+                            shadowOpacity={0.25}
+                            shadowRadius={8}
+                            elevation={8}
+                            overflow="hidden"
+                        >
+                            {isPostOwner ? (
+                                <>
+                                    <Pressable
+                                        onPress={() => {
+                                            setIsMenuOpen(false);
+                                            handleUpdate();
+                                        }}
+                                        px={16}
+                                        py={12}
+                                    >
+                                        <HStack alignItems="center" space="md">
+                                            <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                                            <Text
+                                                color={isDark ? '#FFFFFF' : '#000000'}
+                                                fontSize="$md"
+                                                fontWeight="$medium"
+                                            >
+                                                Güncelle
+                                            </Text>
+                                        </HStack>
+                                    </Pressable>
+                                    <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                                    <Pressable
+                                        onPress={() => {
+                                            setIsMenuOpen(false);
+                                            handleDelete();
+                                        }}
+                                        px={16}
+                                        py={12}
+                                    >
+                                        <HStack alignItems="center" space="md">
+                                            <TrashIcon width={20} height={20} color="#FF3040" />
+                                            <Text
+                                                color="#FF3040"
+                                                fontSize="$md"
+                                                fontWeight="$medium"
+                                            >
+                                                Sil
+                                            </Text>
+                                        </HStack>
+                                    </Pressable>
+                                </>
+                            ) : (
+                                <>
+                                    <Pressable
+                                        onPress={() => {
+                                            setIsMenuOpen(false);
+                                            handleViewProfile();
+                                        }}
+                                        px={16}
+                                        py={12}
+                                    >
+                                        <HStack alignItems="center" space="md">
+                                            <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                            <Text
+                                                color={isDark ? '#FFFFFF' : '#000000'}
+                                                fontSize="$md"
+                                                fontWeight="$medium"
+                                            >
+                                                Profili Görüntüle
+                                            </Text>
+                                        </HStack>
+                                    </Pressable>
+                                    <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                                    <Pressable
+                                        onPress={() => {
+                                            setIsMenuOpen(false);
+                                            handleReport();
+                                        }}
+                                        px={16}
+                                        py={12}
+                                    >
+                                        <HStack alignItems="center" space="md">
+                                            <FlagIcon width={20} height={20} color="#FF3040" />
+                                            <Text
+                                                color="#FF3040"
+                                                fontSize="$md"
+                                                fontWeight="$medium"
+                                            >
+                                                Raporla
+                                            </Text>
+                                        </HStack>
+                                    </Pressable>
+                                </>
+                            )}
+                        </Box>
+                    </Modal>
                 </HStack>
             </VStack>
 
@@ -520,23 +633,6 @@ const TipsAndTricksPostCard = ({ data, hideProduct = false, isDetailMode = false
                 </HStack>
         </HStack>
 
-        {/* Overlay - menu açıkken PostCard'a tıklamayı engellemek için */}
-        {isContextMenuOpen && (
-            <RNPressable
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'transparent',
-                    zIndex: 999,
-                }}
-                onPress={() => {
-                    contextMenuCloseRef.current?.();
-                }}
-            />
-        )}
     </VStack>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import {
   Box,
   HStack,
@@ -10,7 +10,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource } from '@/src/utils';
-import { ReactNativeMenuModal, MenuItem } from '@/src/components/ReactNativeMenuModal';
+import { Modal, Dimensions, Pressable as RNPressable } from 'react-native';
 import { View } from 'react-native';
 import {
   ArrowUpTrayIcon,
@@ -45,42 +45,23 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
   const isDark = colorMode === 'dark';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  // Menu items - only show if recipientUserId is provided (not own profile)
-  const menuItems = useMemo<MenuItem[]>(() => {
-    if (!recipientUserId) return [];
-    
-    return [
-      {
-        label: 'Share',
-        icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-        onPress: () => {
-          if (onShare) {
-            onShare();
-          }
-        },
-      },
-      {
-        label: 'Report',
-        icon: <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-        onPress: () => {
-          if (onReport) {
-            onReport();
-          }
-        },
-      },
-      {
-        label: 'Block',
-        icon: <NoSymbolIcon width={20} height={20} color="#FF3040" />,
-        onPress: () => {
-          if (onBlock) {
-            onBlock();
-          }
-        },
-        color: '#FF3040',
-      },
-    ];
-  }, [recipientUserId, isDark, onShare, onReport, onBlock]);
+  // Calculate menu position
+  const handleMenuOpen = useCallback(() => {
+    if (menuTriggerRef.current) {
+      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+        const screenWidth = Dimensions.get('window').width;
+        const menuWidth = 180;
+        const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
+        const top = Math.max(12, y - 8);
+        setMenuPosition({ top, left });
+        setIsMenuOpen(true);
+      });
+    } else {
+      setIsMenuOpen(true);
+    }
+  }, []);
 
   return (
     <VStack
@@ -145,8 +126,8 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
           {/* Menü Butonu */}
           <View ref={menuTriggerRef} collapsable={false}>
             <Pressable onPress={() => {
-              if (menuItems.length > 0) {
-                setIsMenuOpen(true);
+              if (recipientUserId) {
+                handleMenuOpen();
               } else if (onMenuPress) {
                 onMenuPress();
               }
@@ -159,15 +140,92 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
             </Pressable>
           </View>
           
-          {menuItems.length > 0 && (
-            <ReactNativeMenuModal
+          {recipientUserId && (
+            <Modal
               visible={isMenuOpen}
-              onClose={() => setIsMenuOpen(false)}
-              triggerRef={menuTriggerRef}
-              placement="top-left"
-              offsetX={10}
-              items={menuItems}
-            />
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setIsMenuOpen(false)}
+            >
+              <RNPressable
+                style={{ flex: 1 }}
+                onPress={() => setIsMenuOpen(false)}
+              />
+              <Box
+                position="absolute"
+                top={menuPosition.top}
+                left={menuPosition.left}
+                width={180}
+                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                borderRadius={16}
+                shadowColor="#000"
+                shadowOffset={{ width: 0, height: 2 }}
+                shadowOpacity={0.25}
+                shadowRadius={8}
+                elevation={8}
+                overflow="hidden"
+              >
+                <Pressable
+                  onPress={() => {
+                    setIsMenuOpen(false);
+                    if (onShare) onShare();
+                  }}
+                  px={16}
+                  py={12}
+                >
+                  <HStack alignItems="center" space="md">
+                    <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize="$md"
+                      fontWeight="$medium"
+                    >
+                      Share
+                    </Text>
+                  </HStack>
+                </Pressable>
+                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                <Pressable
+                  onPress={() => {
+                    setIsMenuOpen(false);
+                    if (onReport) onReport();
+                  }}
+                  px={16}
+                  py={12}
+                >
+                  <HStack alignItems="center" space="md">
+                    <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                    <Text
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      fontSize="$md"
+                      fontWeight="$medium"
+                    >
+                      Report
+                    </Text>
+                  </HStack>
+                </Pressable>
+                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                <Pressable
+                  onPress={() => {
+                    setIsMenuOpen(false);
+                    if (onBlock) onBlock();
+                  }}
+                  px={16}
+                  py={12}
+                >
+                  <HStack alignItems="center" space="md">
+                    <NoSymbolIcon width={20} height={20} color="#FF3040" />
+                    <Text
+                      color="#FF3040"
+                      fontSize="$md"
+                      fontWeight="$medium"
+                    >
+                      Block
+                    </Text>
+                  </HStack>
+                </Pressable>
+              </Box>
+            </Modal>
           )}
         </HStack>
       </Box>

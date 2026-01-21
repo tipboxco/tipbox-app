@@ -8,7 +8,7 @@ import {
     Image
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { CachedImage } from '@/src/components/CachedImage';
+import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 
 interface SuggestedUserCardProps {
     id: string;
@@ -62,27 +62,14 @@ export const SuggestedUserCard = ({
                         borderRadius={23}
                         overflow="hidden"
                     >
-                        {avatar ? (
-                            <CachedImage
-                                source={{ uri: avatar }}
-                                alt={name}
-                                width={50}
-                                height={50}
-                                resizeMode="cover"
-                            />
-                        ) : (
-                            <Box
-                                width={50}
-                                height={50}
-                                bg="#8C8C8C"
-                                alignItems="center"
-                                justifyContent="center"
-                            >
-                                <Text color="#FFF" fontSize="$md" fontWeight="$bold">
-                                    {name.charAt(0).toUpperCase()}
-                                </Text>
-                            </Box>
-                        )}
+                        <Image
+                            source={toImageSource(avatar) || DEFAULT_USER_AVATAR}
+                            alt={name}
+                            width={50}
+                            height={50}
+                            borderRadius={23}
+                            resizeMode="cover"
+                        />
                     </Box>
                 </Box>
 

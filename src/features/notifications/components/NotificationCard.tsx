@@ -32,7 +32,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { LikedUsersBottomSheet } from './LikedUsersBottomSheet';
 import { Platform, Share, Alert } from 'react-native';
 import { useSafeAreaValues } from '@/src/utils';
-import { ReactNativeMenuModal, MenuItem } from '@/src/components/ReactNativeMenuModal';
+import { Modal, Dimensions } from 'react-native';
 import { View } from 'react-native';
 
 export interface NotificationCardProps {
@@ -773,6 +773,23 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     // Context menu state
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const menuTriggerRef = React.useRef<View>(null);
+    const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0 });
+
+    // Calculate menu position
+    const handleMenuOpen = React.useCallback(() => {
+        if (menuTriggerRef.current) {
+            menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+                const screenWidth = Dimensions.get('window').width;
+                const menuWidth = 180;
+                const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
+                const top = Math.max(12, y - 8);
+                setMenuPosition({ top, left });
+                setIsMenuOpen(true);
+            });
+        } else {
+            setIsMenuOpen(true);
+        }
+    }, []);
     
     // CRITICAL FIX: Liked users bottom sheet açma handler'ı
     // Worklet hatası önlemek için useCallback ile wrap et ve değerleri güvenli hale getir
@@ -1833,40 +1850,104 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     {targetUserId && user?.id && targetUserId !== user.id && (
                         <Box position="relative" zIndex={2001}>
                             <View ref={menuTriggerRef} collapsable={false}>
-                                <Pressable onPress={() => setIsMenuOpen(true)}>
+                                <Pressable onPress={handleMenuOpen}>
                                     <EllipsisVerticalIcon width={16} height={16} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
                                 </Pressable>
                             </View>
                             
-                            <ReactNativeMenuModal
+                            <Modal
                                 visible={isMenuOpen}
-                                onClose={() => setIsMenuOpen(false)}
-                                triggerRef={menuTriggerRef}
-                                placement="top-left"
-                                offsetX={10}
-                                items={React.useMemo<MenuItem[]>(() => [
-                                    {
-                                        label: 'Share',
-                                        icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-                                        onPress: handleShare,
-                                    },
-                                    {
-                                        label: isReporting ? 'Reporting...' : 'Report',
-                                        icon: <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-                                        onPress: handleReport,
-                                        disabled: isReporting,
-                                    },
-                                    {
-                                        label: (isBlocking || isUnblocking)
-                                            ? (userProfile?.isBlocked ? 'Unblocking...' : 'Blocking...')
-                                            : (userProfile?.isBlocked ? 'Unblock' : 'Block'),
-                                        icon: <NoSymbolIcon width={20} height={20} color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'} />,
-                                        onPress: handleBlock,
-                                        color: userProfile?.isBlocked ? undefined : '#FF3040',
-                                        disabled: isBlocking || isUnblocking,
-                                    },
-                                ], [isDark, isReporting, isBlocking, isUnblocking, userProfile?.isBlocked, handleShare, handleReport, handleBlock])}
-                            />
+                                transparent={true}
+                                animationType="fade"
+                                onRequestClose={() => setIsMenuOpen(false)}
+                            >
+                                <Pressable
+                                    style={{ flex: 1 }}
+                                    onPress={() => setIsMenuOpen(false)}
+                                />
+                                <Box
+                                    position="absolute"
+                                    top={menuPosition.top}
+                                    left={menuPosition.left}
+                                    width={180}
+                                    bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+                                    borderRadius={16}
+                                    shadowColor="#000"
+                                    shadowOffset={{ width: 0, height: 2 }}
+                                    shadowOpacity={0.25}
+                                    shadowRadius={8}
+                                    elevation={8}
+                                    overflow="hidden"
+                                >
+                                    <Pressable
+                                        onPress={() => {
+                                            setIsMenuOpen(false);
+                                            handleShare();
+                                        }}
+                                        px={16}
+                                        py={12}
+                                    >
+                                        <HStack alignItems="center" space="md">
+                                            <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                            <Text
+                                                color={isDark ? '#FFFFFF' : '#000000'}
+                                                fontSize="$md"
+                                                fontWeight="$medium"
+                                            >
+                                                Share
+                                            </Text>
+                                        </HStack>
+                                    </Pressable>
+                                    <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                                    <Pressable
+                                        onPress={() => {
+                                            if (!isReporting) {
+                                                setIsMenuOpen(false);
+                                                handleReport();
+                                            }
+                                        }}
+                                        px={16}
+                                        py={12}
+                                        opacity={isReporting ? 0.6 : 1}
+                                    >
+                                        <HStack alignItems="center" space="md">
+                                            <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                                            <Text
+                                                color={isDark ? '#FFFFFF' : '#000000'}
+                                                fontSize="$md"
+                                                fontWeight="$medium"
+                                            >
+                                                {isReporting ? 'Reporting...' : 'Report'}
+                                            </Text>
+                                        </HStack>
+                                    </Pressable>
+                                    <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                                    <Pressable
+                                        onPress={() => {
+                                            if (!isBlocking && !isUnblocking) {
+                                                setIsMenuOpen(false);
+                                                handleBlock();
+                                            }
+                                        }}
+                                        px={16}
+                                        py={12}
+                                        opacity={(isBlocking || isUnblocking) ? 0.6 : 1}
+                                    >
+                                        <HStack alignItems="center" space="md">
+                                            <NoSymbolIcon width={20} height={20} color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'} />
+                                            <Text
+                                                color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'}
+                                                fontSize="$md"
+                                                fontWeight="$medium"
+                                            >
+                                                {(isBlocking || isUnblocking)
+                                                    ? (userProfile?.isBlocked ? 'Unblocking...' : 'Blocking...')
+                                                    : (userProfile?.isBlocked ? 'Unblock' : 'Block')}
+                                            </Text>
+                                        </HStack>
+                                    </Pressable>
+                                </Box>
+                            </Modal>
                         </Box>
                     )}
                     <Text

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable } from 'react-native';
+import { ActivityIndicator, StyleSheet, ScrollView, Alert, Dimensions, RefreshControl, Pressable as RNPressable, View, Modal as RNModal, Text as RNText } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box, Text, Pressable, HStack, VStack, Image, Modal, ModalBackdrop, ModalContent } from '@gluestack-ui/themed';
@@ -58,7 +58,6 @@ import {
   UserPlusIcon,
 } from 'react-native-heroicons/outline';
 import { FeedSkeleton } from '@/src/components/Skeletons';
-import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
 import BadgeBottomSheet from '@/src/features/events/components/BadgeBottomSheet';
 import type { SeeAllReward } from '@/src/mock/events/communityEvents/types';
 import type { Badge } from '../types';
@@ -766,8 +765,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   const isOwnProfile = user?.id === targetUserId;
   
   // Context menu state
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-  const contextMenuCloseRef = useRef<(() => void) | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const triggerViewRef = useRef<View>(null);
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<TabKey>('feed');
@@ -966,6 +966,44 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       ]
     );
   }, [targetUserId, navigation]);
+
+  // Calculate menu position - butona tıklandığında pozisyonu hesapla
+  const handleMenuOpen = useCallback(() => {
+    console.log('handleMenuOpen called, ref:', triggerViewRef.current);
+    
+    // InteractionManager kullanarak UI thread'inde çalıştır
+    const InteractionManager = require('react-native').InteractionManager;
+    
+    InteractionManager.runAfterInteractions(() => {
+      const tryMeasure = (attempts = 0) => {
+        if (triggerViewRef.current) {
+          triggerViewRef.current.measureInWindow((wx, wy, w, h) => {
+            console.log('handleMenuOpen - measureInWindow:', { wx, wy, w, h });
+            if (w > 0 && h > 0) {
+              const screenWidth = Dimensions.get('window').width;
+              const menuWidth = 200;
+              const top = wy + h + 8;
+              const left = Math.max(16, wx - menuWidth);
+              console.log('handleMenuOpen - Menu position calculated:', { top, left });
+              setMenuPosition({ top, left });
+              setIsMenuOpen(true);
+            } else {
+              setIsMenuOpen(true);
+            }
+          });
+        } else if (attempts < 10) {
+          // Ref henüz hazır değil, 100ms sonra tekrar dene
+          console.log(`handleMenuOpen - ref null, retrying... (attempt ${attempts + 1})`);
+          setTimeout(() => tryMeasure(attempts + 1), 100);
+        } else {
+          console.log('handleMenuOpen - ref still null after 10 attempts, opening modal anyway');
+          setIsMenuOpen(true);
+        }
+      };
+      
+      tryMeasure();
+    });
+  }, []);
 
   const handleMute = useCallback(() => {
     if (!user?.id || !targetUserId) {
@@ -1201,59 +1239,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                 <EllipsisVerticalIcon size={24} color="#fff" />
               </Pressable>
             ) : (
-              <Box position="relative" zIndex={2001}>
-                <ContextMenuReanimated
-                  menuItems={[
-                    {
-                      label: 'Paylaş',
-                      icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-                      onPress: handleShare,
-                    },
-                    {
-                      label: (isMuting || isUnmuting) 
-                        ? (userProfile?.isMuted ? 'Sessizlik kaldırılıyor...' : 'Sessize alınıyor...')
-                        : (userProfile?.isMuted ? 'Sessizliği Kaldır' : 'Sessize Al'),
-                      icon: userProfile?.isMuted ? (
-                        <Box position="relative" justifyContent="center" alignItems="center">
-                          <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                          <Box
-                            position="absolute"
-                            width={24}
-                            height={1}
-                            bg={isDark ? '#FFFFFF' : '#000000'}
-                            style={{
-                              transform: [{ rotate: '-45deg' }],
-                            }}
-                          />
-                        </Box>
-                      ) : (
-                        <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                      ),
-                      onPress: handleMute,
-                    },
-                    {
-                      label: 'Şikayet Et',
-                      icon: <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-                      onPress: handleReport,
-                    },
-                    {
-                      label: 'Engelle',
-                      icon: <NoSymbolIcon width={20} height={20} color="#FF3040" />,
-                      onPress: handleBlock,
-                      color: '#FF3040',
-                    },
-                  ]}
-                  onMenuStateChange={setIsContextMenuOpen}
-                  onCloseRef={(closeFn: () => void) => {
-                    // FIX: undefined kontrolü - ref'e undefined atanmasını önle
-                    if (closeFn !== undefined && closeFn !== null) {
-                      contextMenuCloseRef.current = closeFn;
-                    }
-                  }}
-                >
+              <View 
+                ref={triggerViewRef}
+                collapsable={false}
+                style={{ position: 'relative', zIndex: 2001 }}
+              >
+                <Pressable onPress={handleMenuOpen}>
                   <EllipsisVerticalIcon size={24} color="#fff" />
-                </ContextMenuReanimated>
-              </Box>
+                </Pressable>
+              </View>
             )}
           </Box>
         </Box>
@@ -1812,24 +1806,162 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         />
       </ScrollView>
 
-      {/* Context Menu Backdrop - Boş bir yere tıklandığında context menu'yu kapat */}
-      {isContextMenuOpen && (
-        <Pressable
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          zIndex={2000}
-          onPress={() => {
-            if (contextMenuCloseRef.current) {
-              contextMenuCloseRef.current();
-            }
-          }}
-          style={{
-            backgroundColor: 'transparent',
-          }}
-        />
+
+      {/* Profile Menu Modal - React Native Modal */}
+      {!isOwnProfile && (
+        <RNModal
+          visible={isMenuOpen}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setIsMenuOpen(false)}
+        >
+          <RNPressable 
+            style={styles.overlay} 
+            onPress={() => setIsMenuOpen(false)} 
+          >
+            <View 
+              style={[
+                styles.menuContent, 
+                { 
+                  top: menuPosition.top, 
+                  left: menuPosition.left,
+                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF' 
+                }
+              ]}
+              onLayout={(event) => {
+                const { x, y, width, height } = event.nativeEvent.layout;
+                console.log('Modal menu opened at position:', {
+                  styleTop: menuPosition.top,
+                  styleLeft: menuPosition.left,
+                  actualLayout: { x, y, width, height },
+                  screenWidth: Dimensions.get('window').width,
+                  screenHeight: Dimensions.get('window').height,
+                });
+              }}
+            >
+              {/* Paylaş */}
+              <RNPressable 
+                onPress={() => {
+                  setIsMenuOpen(false);
+                  handleShare();
+                }}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  { backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent' }
+                ]}
+              >
+                <HStack alignItems="center" space="md">
+                  <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize="$md"
+                    fontWeight="$medium"
+                  >
+                    Paylaş
+                  </Text>
+                </HStack>
+              </RNPressable>
+
+              <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
+
+              {/* Sessize Al / Sessizliği Kaldır */}
+              <RNPressable 
+                onPress={() => {
+                  if (!isMuting && !isUnmuting) {
+                    setIsMenuOpen(false);
+                    handleMute();
+                  }
+                }}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  { 
+                    backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent',
+                    opacity: (isMuting || isUnmuting) ? 0.6 : 1,
+                  }
+                ]}
+                disabled={isMuting || isUnmuting}
+              >
+                <HStack alignItems="center" space="md">
+                  {userProfile?.isMuted ? (
+                    <Box position="relative" justifyContent="center" alignItems="center">
+                      <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <Box
+                        position="absolute"
+                        width={24}
+                        height={1}
+                        bg={isDark ? '#FFFFFF' : '#000000'}
+                        style={{
+                          transform: [{ rotate: '-45deg' }],
+                        }}
+                      />
+                    </Box>
+                  ) : (
+                    <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                  )}
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize="$md"
+                    fontWeight="$medium"
+                  >
+                    {(isMuting || isUnmuting) 
+                      ? (userProfile?.isMuted ? 'Sessizlik kaldırılıyor...' : 'Sessize alınıyor...')
+                      : (userProfile?.isMuted ? 'Sessizliği Kaldır' : 'Sessize Al')}
+                  </Text>
+                </HStack>
+              </RNPressable>
+
+              <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
+
+              {/* Şikayet Et */}
+              <RNPressable 
+                onPress={() => {
+                  setIsMenuOpen(false);
+                  handleReport();
+                }}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  { backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent' }
+                ]}
+              >
+                <HStack alignItems="center" space="md">
+                  <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize="$md"
+                    fontWeight="$medium"
+                  >
+                    Şikayet Et
+                  </Text>
+                </HStack>
+              </RNPressable>
+
+              <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
+
+              {/* Engelle */}
+              <RNPressable 
+                onPress={() => {
+                  setIsMenuOpen(false);
+                  handleBlock();
+                }}
+                style={({ pressed }) => [
+                  styles.menuItem,
+                  { backgroundColor: pressed ? (isDark ? '#333333' : '#F5F5F5') : 'transparent' }
+                ]}
+              >
+                <HStack alignItems="center" space="md">
+                  <NoSymbolIcon width={20} height={20} color="#FF3040" />
+                  <Text
+                    color="#FF3040"
+                    fontSize="$md"
+                    fontWeight="$medium"
+                  >
+                    Engelle
+                  </Text>
+                </HStack>
+              </RNPressable>
+            </View>
+          </RNPressable>
+        </RNModal>
       )}
 
       {/* Badge Detail Modal */}
@@ -1862,3 +1994,31 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
 };
 
 export default ProfileScreen;
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  menuContent: {
+    position: 'absolute',
+    width: 200,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+  },
+});

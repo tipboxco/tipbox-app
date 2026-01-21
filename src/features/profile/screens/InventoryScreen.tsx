@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Platform } from 'react-native';
 import { FlatList, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
@@ -10,6 +9,7 @@ import { Search } from 'lucide-react-native';
 import { VStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
 import { PencilSquareIcon } from 'react-native-heroicons/outline';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
+import { Platform } from 'react-native';
 
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
@@ -130,15 +130,11 @@ const InventoryScreen = () => {
     // Close bottom sheet first
     closeBottomSheet();
     
-    // Navigate to CreateExperiencePostScreen
-    if (type === 'experience') {
-      navigationService.navigate(ROOT_ROUTES.POST, {
-        screen: 'CreateExperiencePostScreen',
-        params: {
-          product: undefined,
-          fromInventory: true,
-          experienceOption: experienceOption,
-        },
+    // Navigate to ProductSelectScreen with experienceOption
+    if (type === 'experience' && experienceOption) {
+      navigationService.navigate(ROOT_ROUTES.PRODUCT_SELECT, {
+        returnScreen: 'CreateExperiencePostScreen',
+        experienceOption: experienceOption,
       });
     }
   };

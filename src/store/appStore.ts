@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TokenService } from '../services/TokenService';
 import { WalletService } from '../services/WalletService';
 import { ImageCacheService } from '../services/ImageCacheService';
+import { BiometricService } from '../services/BiometricService';
 import { updateTokenCache, clearTokenCache } from '../services/ApiService/interceptors';
 
 // PERFORMANCE FIX: Debounced AsyncStorage wrapper to reduce I/O overhead
@@ -282,7 +283,7 @@ export const useAppStore = create<AppState>()(
               console.warn('[logout] QueryClient clear failed:', queryError);
             }
             
-            // ARKA PLANDA: Wallet ve image cache temizleme (await etmeden)
+            // ARKA PLANDA: Wallet, image cache ve biometrik şifre temizleme (await etmeden)
             // Kullanıcı zaten çıkış yaptı, bu işlemler arka planda tamamlanabilir
             Promise.all([
               (async () => {
@@ -295,6 +296,15 @@ export const useAppStore = create<AppState>()(
               (async () => {
                 try {
                   await ImageCacheService.clearAll();
+                } catch (error) {
+                  // Silent fail
+                }
+              })(),
+              (async () => {
+                try {
+                  // Logout'ta biometrik şifreyi temizle (güvenlik için)
+                  // Email'i tutuyoruz çünkü kullanıcı "remember me" seçmiş olabilir
+                  await BiometricService.clearPassword();
                 } catch (error) {
                   // Silent fail
                 }

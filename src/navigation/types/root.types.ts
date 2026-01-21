@@ -71,5 +71,13 @@ export type RootStackParamList = {
     recipientUserId?: string;
     status?: 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported';
   };
+  
+  // ProductSelect - Global product selection screen
+  ProductSelect: {
+    returnScreen?: string;
+    eventId?: string;
+    eventType?: string;
+    experienceOption?: 'own' | 'tried';
+  };
 };
 

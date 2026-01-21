@@ -10,3 +10,4 @@ export { default as NotificationSettingsScreen } from './NotificationSettingsScr
 export { default as PrivacySettingsScreen } from './PrivacySettingsScreen';
 export { default as SupportSettingsScreen } from './SupportSettingsScreen';
 export { PaymentAndSubscriptionScreen } from './PaymentAndSubscriptionScreen';
+export { CannyWebViewScreen } from './CannyWebViewScreen';

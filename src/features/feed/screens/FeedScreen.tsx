@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Platform, ActivityIndicator, FlatList, Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, interpolate, useAnimatedReaction, type SharedValue } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, interpolate, type SharedValue } from 'react-native-reanimated';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
@@ -909,20 +909,40 @@ const FeedScreenInner = React.memo(() => {
   // PERFORMANCE FIX: Animated contentContainerStyle - smooth animasyon için Reanimated kullan
   // Panel açıldığında panel height kadar padding top ekle (smooth animasyon)
   // FilterBar'dan gelen sharedValues'ları senkronize et
-  useAnimatedReaction(
-    () => {
-      // FilterBar'dan gelen progress ve panelHeight değerlerini al
-      const progress = filterBarProgressRef.current?.value ?? 0;
-      const panelHeight = filterBarPanelHeightRef.current?.value ?? 0;
-      return { progress, panelHeight };
-    },
-    ({ progress, panelHeight }) => {
-      'worklet';
-      // FeedScreen'deki sharedValues'ları güncelle
-      filterPanelProgress.value = progress;
-      filterPanelHeight.value = panelHeight;
+  // FIX: useAnimatedReaction worklet yapısı kaldırıldı - useEffect ile senkronize et
+  // Ref'ler hazır olduğunda sharedValues'ları güncelle
+  useEffect(() => {
+    // Ref'ler hazır değilse çık
+    if (!filterBarProgressRef.current || !filterBarPanelHeightRef.current) {
+      return;
     }
-  );
+
+    // Ref'lerdeki sharedValues'ları al
+    const progressRef = filterBarProgressRef.current;
+    const panelHeightRef = filterBarPanelHeightRef.current;
+
+    // SharedValues'ları senkronize et (JS thread'de)
+    // Ref'lerdeki sharedValue'lar değiştiğinde local sharedValue'ları güncelle
+    const updateSharedValues = () => {
+      if (progressRef && panelHeightRef) {
+        filterPanelProgress.value = progressRef.value;
+        filterPanelHeight.value = panelHeightRef.value;
+      }
+    };
+
+    // İlk değerleri set et
+    updateSharedValues();
+
+    // Ref'lerdeki sharedValue'ları dinle (her frame'de güncelle)
+    // Not: Bu JS thread'de çalışır, performans için ideal değil ama worklet sorununu çözer
+    const intervalId = setInterval(() => {
+      updateSharedValues();
+    }, 16); // ~60fps
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [filterBarProgressRef.current, filterBarPanelHeightRef.current]);
   
   const animatedContentContainerStyle = useAnimatedStyle(() => {
     'worklet';

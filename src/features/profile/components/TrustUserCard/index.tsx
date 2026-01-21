@@ -1,5 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { Alert, View, Pressable as RNPressable } from 'react-native';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { Alert, View, Pressable as RNPressable, Modal, Dimensions } from 'react-native';
 import {
     VStack, 
     HStack, 
@@ -9,11 +9,11 @@ import {
     Image,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { XCircleIcon, BellIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useRemoveFromTrustList } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { DEFAULT_USER_AVATAR } from '@/src/utils';
-import { ReactNativeMenuModal, MenuItem } from '@/src/components/ReactNativeMenuModal';
 
 export interface TrustUserCardUser {
   id: string;
@@ -49,6 +49,8 @@ export const TrustUserCard = ({
   const isDark = colorMode === 'dark';
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuTriggerRef = useRef<View>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 16 });
 
   const getTrustColor = (level: number) => {
     const colors = ['#CE4A4A', '#FF6B35', '#FFA500', '#32CD32', '#00BFFF'];
@@ -101,38 +103,20 @@ export const TrustUserCard = ({
     console.log('[TrustUserCard] Mute user:', user.id);
   };
 
-  // Menu items
-  const menuItems = useMemo<MenuItem[]>(() => {
-    const iconColor = isDark ? '#fff' : '#000';
-    const items: MenuItem[] = [];
-    
-    if (handleRemoveFromTrustList) {
-      items.push({
-        label: 'Remove from Trust List',
-        icon: <XCircleIcon width={20} height={20} color={iconColor} />,
-        onPress: handleRemoveFromTrustList,
+  // Calculate menu position
+  const handleMenuOpen = useCallback(() => {
+    if (menuTriggerRef.current) {
+      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+        const screenWidth = Dimensions.get('window').width;
+        const menuWidth = 200;
+        const right = Math.max(16, screenWidth - x - width);
+        setMenuPosition({ top: y, right });
+        setIsMenuOpen(true);
       });
+    } else {
+      setIsMenuOpen(true);
     }
-    
-    if (handleMute) {
-      items.push({
-        label: 'Mute',
-        icon: <BellIcon width={20} height={20} color={iconColor} />,
-        onPress: handleMute,
-      });
-    }
-    
-    if (handleBlock) {
-      items.push({
-        label: 'Block',
-        icon: <XCircleIcon width={20} height={20} color="#FF3040" />,
-        onPress: handleBlock,
-        color: '#FF3040',
-      });
-    }
-    
-    return items;
-  }, [isDark, handleRemoveFromTrustList, handleMute, handleBlock]);
+  }, []);
 
   const avatarSource =
     user.avatar ??
@@ -206,24 +190,104 @@ export const TrustUserCard = ({
       </Pressable>
 
       {/* Context Menu - More Icon */}
-      <Pressable onPress={() => setIsMenuOpen(true)}>
-        <Box p={8}>
-          <Feather
-            name="more-horizontal"
-            size={24}
-            color={isDark ? '#959595' : '#959595'}
-          />
-        </Box>
-      </Pressable>
+      <View ref={menuTriggerRef} collapsable={false}>
+        <Pressable onPress={handleMenuOpen}>
+          <Box p={8}>
+            <Feather
+              name="more-horizontal"
+              size={24}
+              color={isDark ? '#959595' : '#959595'}
+            />
+          </Box>
+        </Pressable>
+      </View>
 
       {/* Menu Modal */}
-      <ReactNativeMenuModal
+      <Modal
         visible={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        items={menuItems}
-        position={{ top: 0, right: 16 }}
-        width={200}
-      />
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsMenuOpen(false)}
+      >
+        <RNPressable
+          style={{ flex: 1 }}
+          onPress={() => setIsMenuOpen(false)}
+        />
+        <Box
+          position="absolute"
+          top={menuPosition.top}
+          right={menuPosition.right}
+          width={200}
+          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+          borderRadius={16}
+          shadowColor="#000"
+          shadowOffset={{ width: 0, height: 2 }}
+          shadowOpacity={0.25}
+          shadowRadius={8}
+          elevation={8}
+          overflow="hidden"
+        >
+          <Pressable
+            onPress={() => {
+              setIsMenuOpen(false);
+              handleRemoveFromTrustList();
+            }}
+            px={16}
+            py={12}
+          >
+            <HStack alignItems="center" space="md">
+              <XCircleIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize="$md"
+                fontWeight="$medium"
+              >
+                Remove from Trust List
+              </Text>
+            </HStack>
+          </Pressable>
+          <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+          <Pressable
+            onPress={() => {
+              setIsMenuOpen(false);
+              handleMute();
+            }}
+            px={16}
+            py={12}
+          >
+            <HStack alignItems="center" space="md">
+              <BellIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+              <Text
+                color={isDark ? '#FFFFFF' : '#000000'}
+                fontSize="$md"
+                fontWeight="$medium"
+              >
+                Mute
+              </Text>
+            </HStack>
+          </Pressable>
+          <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+          <Pressable
+            onPress={() => {
+              setIsMenuOpen(false);
+              handleBlock();
+            }}
+            px={16}
+            py={12}
+          >
+            <HStack alignItems="center" space="md">
+              <XCircleIcon width={20} height={20} color="#FF3040" />
+              <Text
+                color="#FF3040"
+                fontSize="$md"
+                fontWeight="$medium"
+              >
+                Block
+              </Text>
+            </HStack>
+          </Pressable>
+        </Box>
+      </Modal>
     </HStack>
   );
 };

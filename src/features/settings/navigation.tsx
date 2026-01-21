@@ -13,6 +13,7 @@ import {
   NotificationSettingsScreen,
   PrivacySettingsScreen,
   SupportSettingsScreen,
+  CannyWebViewScreen,
 } from './screens';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
@@ -29,6 +30,7 @@ export type SettingsStackParamList = {
   PrivacySettings: undefined;
   SupportSettings: undefined;
   PaymentAndSubscription: undefined;
+  CannyWebView: undefined;
 };
 
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
@@ -135,6 +137,13 @@ export const SettingsNavigator = () => {
         component={PaymentAndSubscriptionScreen}
         options={{
           title: 'Payment & Subscription',
+        }}
+      />
+      <SettingsStack.Screen
+        name='CannyWebView'
+        component={CannyWebViewScreen}
+        options={{
+          title: 'Vote New Features',
         }}
       />
     </SettingsStack.Navigator>

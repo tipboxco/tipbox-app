@@ -1,6 +1,7 @@
 import React from 'react';
 import { VStack, ScrollView, Text, Box } from '@gluestack-ui/themed';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import PostCard from '@/src/components/PostCards/PostCard';
 import BenchmarkPostCard from '@/src/components/PostCards/BenchmarkPostCard';
@@ -27,6 +28,7 @@ const BookMarksScreen = () => {
   const isDark = colorMode === 'dark';
   const screenWidth = Dimensions.get('window').width;
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   // Eski endpoint'i dene, hata durumunda yeni endpoint'e geç
   const { data: bookmarksData, isLoading, error } = useUserBookmarksWithFallback();
   
@@ -226,8 +228,21 @@ const BookMarksScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <VStack flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+    <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
+      <StatusBar style="dark" backgroundColor="#FFFFFF" translucent={true} />
+      
+      {/* Top inset view - Status bar için beyaz arka plan */}
+      <Box 
+        height={insets.top} 
+        bg="#FFFFFF"
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        zIndex={1}
+      />
+      
+      <VStack flex={1} pt={insets.top}>
         {/* Header */}
         <Header
           title="Bookmarks"
@@ -241,6 +256,7 @@ const BookMarksScreen = () => {
           px={15} 
           py={0}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom }}
         >
           {isLoading && !bookmarksData && (
             <Box py={20} alignItems="center">
@@ -273,7 +289,18 @@ const BookMarksScreen = () => {
           )}
         </ScrollView>
       </VStack>
-    </SafeAreaView>
+      
+      {/* Bottom inset view - Device router için beyaz arka plan */}
+      <Box 
+        height={insets.bottom} 
+        bg="#FFFFFF"
+        position="absolute"
+        bottom={0}
+        left={0}
+        right={0}
+        zIndex={1}
+      />
+    </Box>
   );
 };
 

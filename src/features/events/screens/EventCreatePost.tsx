@@ -222,53 +222,6 @@ const EventCreatePost: React.FC = () => {
         closeBottomSheet();
     }, [closeBottomSheet]);
 
-    // handleInventoryProductSelect'i önce tanımla (useEffect ve useFocusEffect'te kullanılıyor)
-    const handleInventoryProductSelect = useCallback((product: InventoryItem) => {
-        console.log('🔍 [EventCreatePost] Inventory product selected (API):', {
-            inventoryItemId: product.id,
-            productId: product.productId,
-            brand: product.brand,
-            image: product.image,
-            willSendInventoryId: true,
-        });
-        
-        // Backend inventoryId'den productId'yi bulacak
-        const brandName = product.brand?.name || 'Unknown';
-        const brandModel = product.brand?.model || '';
-        
-        const productCategory: Category = {
-            id: product.id, // Inventory item ID (UI'da gösterim için)
-            name: brandModel ? `${brandName} ${brandModel}` : brandName,
-            image: product.image,
-            category: brandName,
-            inventoryId: product.id, // ✅ Backend için inventory ID
-        };
-        
-        console.log('✅ [EventCreatePost] Product category created from inventory:', {
-            inventoryItemId: product.id,
-            categoryId: productCategory.id,
-            categoryInventoryId: productCategory.inventoryId,
-            name: productCategory.name,
-            inventoryId: productCategory.inventoryId,
-            willSendInventoryIdToBackend: true,
-            backendWillFetchProductId: true,
-            CHECK: {
-                hasInventoryId: !!productCategory.inventoryId ? '✅ YES' : '❌ NO',
-                inventoryIdValue: productCategory.inventoryId,
-            }
-        });
-        
-        // CRITICAL: inventoryId yoksa hata ver
-        if (!productCategory.inventoryId) {
-            console.error('❌ [EventCreatePost] CRITICAL: inventoryId is missing after creation!');
-        }
-        
-        setSelectedProduct(productCategory);
-        setShowProductSelector(false);
-        setProductSource(null);
-        navigation.setParams({ productSource: undefined });
-    }, [navigation]);
-
     // Handle selected product from CatalogScreen or InventoryScreen
     // selectedProduct is stored in state and preserved when navigating back from Catalog/Inventory
     useEffect(() => {

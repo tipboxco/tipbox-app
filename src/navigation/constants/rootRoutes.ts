@@ -25,6 +25,7 @@ export const ROOT_ROUTES = {
   EVENT: 'Event',
   MESSAGE_DETAIL: 'MessageDetail',
   SUPPORT_MESSAGE_DETAIL: 'SupportMessageDetail',
+  PRODUCT_SELECT: 'ProductSelect',
 } as const;
 
 /**
