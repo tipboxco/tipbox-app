@@ -786,20 +786,20 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
   // Handle Send TIPS - Bottom sheet aç
   const handleSendTips = useCallback((amount: number, message?: string) => {
     if (!user?.id || !targetUserId) {
-      Alert.alert('Hata', 'Kullanıcı bilgisi bulunamadı');
+      Alert.alert('Error', 'User information not found');
       return;
     }
 
     // Amount validation (minimum 0.01)
     if (amount <= 0 || amount < 0.01) {
-      Alert.alert('Hata', 'TIPS miktarı en az 0.01 olmalıdır');
+      Alert.alert('Error', 'TIPS amount must be at least 0.01');
       return;
     }
 
     // Message validation (boş string olamaz)
     const finalMessage = message?.trim() || '';
     if (finalMessage.length === 0) {
-      Alert.alert('Hata', 'Mesaj boş olamaz');
+      Alert.alert('Error', 'Message cannot be empty');
       return;
     }
 
@@ -831,15 +831,15 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
         onSuccess: (response) => {
           console.log('[ProfileScreen] ✅ TIPS sent successfully:', response);
           showCustomToast(toast, {
-            title: 'TIPS gönderildi',
-            description: `${amount} TIPS başarıyla gönderildi`,
+            title: 'TIPS Sent',
+            description: `${amount} TIPS has been sent successfully`,
             action: 'success',
           });
         },
         onError: (error: any) => {
           console.error('[ProfileScreen] ❌ TIPS send failed:', error);
-          const errorMessage = error.response?.data?.message || error.message || 'TIPS gönderilirken bir hata oluştu';
-          Alert.alert('Hata', errorMessage);
+          const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
+          Alert.alert('Error', errorMessage);
         },
       }
     );
@@ -934,7 +934,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               targetUserId,
               data: {
                 category: 'OTHER',
-                description: 'Kullanıcı raporlandı',
+                description: 'User reported',
               },
             });
           },
@@ -1024,8 +1024,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User unmuted successfully');
             }
             showCustomToast(toast, {
-              title: 'Sessizlik kaldırıldı',
-              description: `${currentProfile.name} artık bildirim gönderebilir`,
+              title: 'Unmuted',
+              description: `${currentProfile.name} can now send notifications`,
               action: 'success',
             });
           },
@@ -1034,8 +1034,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Unmute error:', error);
             }
             showCustomToast(toast, {
-              title: 'Hata',
-              description: 'Sessizlik kaldırılırken bir hata oluştu',
+              title: 'Error',
+              description: 'An error occurred while unmuting',
               action: 'error',
             });
           },
@@ -1053,8 +1053,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.log('[ProfileScreen] ✅ User muted successfully');
             }
             showCustomToast(toast, {
-              title: 'Kullanıcı sessize alındı',
-              description: `${currentProfile.name} artık bildirim göndermeyecek`,
+              title: 'User Muted',
+              description: `${currentProfile.name} will no longer send notifications`,
               action: 'info',
             });
           },
@@ -1063,8 +1063,8 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
               console.error('[ProfileScreen] ❌ Mute error:', error);
             }
             showCustomToast(toast, {
-              title: 'Hata',
-              description: 'Kullanıcı sessize alınırken bir hata oluştu',
+              title: 'Error',
+              description: 'An error occurred while muting user',
               action: 'error',
             });
           },
@@ -1081,7 +1081,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       id: badge.id,
       title: badge.title,
       image: imageSource,
-      description: `"${badge.title}" rozetini kazandın!`,
+      description: `You earned the "${badge.title}" badge!`,
       category: 'achievement',
       isUnlocked: true, // Profile'da gösterilen badge'ler zaten kazanılmış
       completed: 1,
@@ -1244,7 +1244,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
                     },
                   ]}
                   onMenuStateChange={setIsContextMenuOpen}
-                  onCloseRef={(closeFn) => {
+                  onCloseRef={(closeFn: () => void) => {
                     // FIX: undefined kontrolü - ref'e undefined atanmasını önle
                     if (closeFn !== undefined && closeFn !== null) {
                       contextMenuCloseRef.current = closeFn;

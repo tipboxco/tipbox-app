@@ -106,6 +106,7 @@ export interface VerifyEmailRequest {
 export interface VerifyEmailResponse {
   success: boolean;
   token: string;
+  refreshToken?: string; // Backend'den geliyorsa eklenir
   message: string;
 }
 
@@ -316,7 +317,12 @@ export const logout = async (): Promise<LogoutResponse> => {
 export interface SetupProfileRequest {
   fullName: string;
   username: string;
-  profileImage?: string; // Base64 veya URI
+  profileImage?: string; // URI
+  banner?: string; // URI
+  selectCategories: Array<{
+    categoryId: string;
+    subCategoryIds: string[];
+  }>;
 }
 
 export interface SetupProfileResponse {
@@ -330,32 +336,95 @@ export interface SetupProfileResponse {
   };
 }
 
+/**
+ * Get MIME type from file extension or URI
+ * Backend'in beklediği formatlar: jpg, jpeg, png, gif, webp
+ */
+const getImageMimeType = (uri: string): string => {
+  const filename = uri.split('/').pop() || '';
+  const extension = filename.split('.').pop()?.toLowerCase() || '';
+  
+  // MIME type mapping
+  const mimeTypes: Record<string, string> = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+  };
+  
+  return mimeTypes[extension] || 'image/jpeg'; // Default to jpeg
+};
+
+/**
+ * Get file extension from URI
+ */
+const getFileExtension = (uri: string): string => {
+  const filename = uri.split('/').pop() || '';
+  const extension = filename.split('.').pop()?.toLowerCase() || 'jpg';
+  
+  // Backend'in beklediği formatlar: jpg, jpeg, png, gif, webp
+  const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  return allowedExtensions.includes(extension) ? extension : 'jpg';
+};
+
 export const setupProfile = async (
   data: SetupProfileRequest
 ): Promise<SetupProfileResponse> => {
   try {
     // FormData oluştur (React Native için)
     const formData = new FormData();
-    formData.append('fullName', data.fullName);
-    formData.append('username', data.username);
     
-    // Profile image varsa ekle
-    if (data.profileImage) {
-      // React Native'de FormData için image objesi
+    // Field isimleri backend'e göre: FullName, UserName
+    formData.append('FullName', data.fullName);
+    formData.append('UserName', data.username);
+    
+    // selectCategories JSON formatında gönder
+    // Backend sadece selectedCategories array'ini bekliyor
+    formData.append('selectCategories', JSON.stringify({
+      selectedCategories: data.selectCategories
+    }));
+    
+    // Profile image varsa ekle (field name: Avatar)
+    // Backend: max 5MB, JPG/PNG/GIF/WebP formatları
+    if (data.profileImage && !data.profileImage.startsWith('avatar://')) {
       const imageUri = data.profileImage;
-      const filename = imageUri.split('/').pop() || 'profile.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      const extension = getFileExtension(imageUri);
+      const mimeType = getImageMimeType(imageUri);
+      const filename = `avatar.${extension}`;
       
-      formData.append('profileImage', {
+      formData.append('Avatar', {
         uri: imageUri,
-        type: type,
+        type: mimeType,
         name: filename,
       } as any);
     }
     
-    const response = await apiService.getClient().put<SetupProfileResponse>(
-      '/users/profile',
+    // Banner varsa ekle (field name: Banner)
+    // Backend: max 5MB, JPG/PNG/GIF/WebP formatları
+    if (data.banner) {
+      const imageUri = data.banner;
+      const extension = getFileExtension(imageUri);
+      const mimeType = getImageMimeType(imageUri);
+      const filename = `banner.${extension}`;
+      
+      formData.append('Banner', {
+        uri: imageUri,
+        type: mimeType,
+        name: filename,
+      } as any);
+    }
+    
+    console.log('[setupProfile] Request data:', {
+      fullName: data.fullName,
+      username: data.username,
+      hasAvatar: !!data.profileImage,
+      hasBanner: !!data.banner,
+      categoriesCount: data.selectCategories.length,
+    });
+    
+    const response = await apiService.getClient().post<SetupProfileResponse>(
+      '/users/setup-profile',
       formData,
       {
         headers: {
@@ -364,10 +433,82 @@ export const setupProfile = async (
       }
     );
     
+    console.log('[setupProfile] ✅ Success:', {
+      success: response.data.success,
+      message: response.data.message,
+      user: response.data.user,
+    });
+    
     return response.data;
   } catch (error: any) {
-    console.error('[setupProfile] API Error:', {
-      url: '/users/profile',
+    console.error('[setupProfile] ❌ API Error:', {
+      url: '/users/setup-profile',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Check Username Availability endpoint function
+ * Username'in müsait olup olmadığını kontrol eder
+ * 
+ * @param username - Kontrol edilecek username
+ * @returns Username availability response
+ */
+export interface UsernameCheckResponse {
+  isValid: boolean;
+  isAvailable: boolean;
+  message: string | null;
+}
+
+export const checkUsernameAvailability = async (
+  username: string
+): Promise<UsernameCheckResponse> => {
+  try {
+    const response = await apiService.getClient().get<UsernameCheckResponse>(
+      `/users/username/check?username=${encodeURIComponent(username)}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[checkUsernameAvailability] API Error:', {
+      url: '/users/username/check',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Get Username Suggestions endpoint function
+ * Username için öneriler getirir
+ * 
+ * @param username - Temel username
+ * @param limit - Öneri sayısı (1-10 arası, varsayılan: 5)
+ * @returns Username suggestions response
+ */
+export interface UsernameSuggestionsResponse {
+  suggestions: string[];
+}
+
+export const getUsernameSuggestions = async (
+  username: string,
+  limit: number = 5
+): Promise<UsernameSuggestionsResponse> => {
+  try {
+    const response = await apiService.getClient().get<UsernameSuggestionsResponse>(
+      `/users/username/suggestions?username=${encodeURIComponent(username)}&limit=${limit}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getUsernameSuggestions] API Error:', {
+      url: '/users/username/suggestions',
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
@@ -450,3 +591,42 @@ export const googleLogin = async (
   }
 };
 
+/**
+ * User Category types
+ * Kullanıcı kategori seçimi için type tanımları
+ */
+export interface UserSubCategory {
+  subCategoryId: string;
+  name: string;
+}
+
+export interface UserCategory {
+  categoryId: string;
+  name: string;
+  subCategories: UserSubCategory[];
+}
+
+/**
+ * Get User Categories endpoint function
+ * Kullanıcı kategori seçimi için tüm kategorileri ve alt kategorileri getirir
+ * Her kategori için en fazla 10 alt kategori döner (alfabetik sıraya göre)
+ * 
+ * @returns UserCategory[] - Kategori listesi (her kategori içinde subCategories var)
+ */
+export const getUserCategories = async (): Promise<UserCategory[]> => {
+  try {
+    const response = await apiService.getClient().get<UserCategory[]>(
+      '/users/categories'
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getUserCategories] API Error:', {
+      url: '/users/categories',
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};

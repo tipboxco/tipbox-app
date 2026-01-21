@@ -87,7 +87,7 @@ export const PostContextMenu: React.FC<PostContextMenuProps> = ({
           onPress: () => {
             // TODO: Post report API endpoint eklendiğinde buraya entegre edilecek
             console.log('[PostContextMenu] Report post:', postId);
-            Alert.alert('Başarılı', 'Post raporlandı. İnceleme için teşekkürler.');
+            Alert.alert('Success', 'Post reported. Thank you for your review.');
           },
         },
       ]

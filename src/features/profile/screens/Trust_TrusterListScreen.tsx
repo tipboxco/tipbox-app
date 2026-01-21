@@ -97,6 +97,8 @@ export const Trust_TrusterListScreen = () => {
     const { 
         data: trustListData, 
         isLoading: isTrustListLoading, 
+        isPending: isTrustListPending,
+        isFetching: isTrustListFetching,
         error: trustListError,
         refetch: refetchTrustList,
         isRefetching: isRefetchingTrustList
@@ -109,14 +111,20 @@ export const Trust_TrusterListScreen = () => {
     const { 
         data: trusterListData, 
         isLoading: isTrusterListLoading, 
+        isPending: isTrusterListPending,
+        isFetching: isTrusterListFetching,
         error: trusterListError,
         refetch: refetchTrusterList,
         isRefetching: isRefetchingTrusterList
     } = useTrusterList(
         userId, // Her zaman userId geçir (cache'den veri göster)
         activeTab === 'truster' ? (debouncedSearchQuery.trim() || undefined) : undefined, // Sadece truster tab'ında search query kullan
-        selectedSort === 'newest' ? 'date_desc' : selectedSort === 'oldest' ? 'date_asc' : undefined
+        activeTab === 'truster' ? (selectedSort === 'newest' ? 'date_desc' : selectedSort === 'oldest' ? 'date_asc' : undefined) : undefined
     );
+
+    // userId yoksa veya cache'den data varsa loading gösterme
+    const shouldShowTrustLoading = !!userId && (isTrustListLoading || isTrustListPending) && !trustListData;
+    const shouldShowTrusterLoading = !!userId && (isTrusterListLoading || isTrusterListPending) && !trusterListData;
 
     // API'den gelen data'yı mock formatına transform et (sadece TrustUserCard için gerekli)
     const transformTrustApiUserToCardUser = (apiUser: ApiTrustUser): TrustUserCardUser => {
@@ -576,9 +584,13 @@ export const Trust_TrusterListScreen = () => {
                             />
 
                             {/* Trust Users List */}
-                            {isTrustListLoading ? (
+                            {shouldShowTrustLoading ? (
                                 <Box py={20} alignItems="center">
                                     <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+                                </Box>
+                            ) : !userId ? (
+                                <Box py={20} alignItems="center">
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı ID bulunamadı</Text>
                                 </Box>
                             ) : trustListError ? (
                                 <Box py={20} alignItems="center">
@@ -649,9 +661,13 @@ export const Trust_TrusterListScreen = () => {
                             />
 
                             {/* Truster Users List */}
-                            {isTrusterListLoading ? (
+                            {shouldShowTrusterLoading ? (
                                 <Box py={20} alignItems="center">
                                     <Text color={isDark ? '#fff' : '#000'}>Yükleniyor...</Text>
+                                </Box>
+                            ) : !userId ? (
+                                <Box py={20} alignItems="center">
+                                    <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Kullanıcı ID bulunamadı</Text>
                                 </Box>
                             ) : trusterListError ? (
                                 <Box py={20} alignItems="center">

@@ -41,8 +41,8 @@ export const ForgotPasswordScreen = () => {
           return (
             <CustomToast
               id={id}
-              title="Geçersiz e-posta"
-              description="Lütfen geçerli bir e-posta adresi girin."
+              title="Invalid email"
+              description="Please enter a valid email address."
               action="error"
               duration={3000}
             />
@@ -68,8 +68,8 @@ export const ForgotPasswordScreen = () => {
           return (
             <CustomToast
               id={id}
-              title="E-posta gönderildi"
-              description="Doğrulama kodu e-posta adresinize gönderildi."
+              title="Email sent"
+              description="Verification code has been sent to your email address."
               action="success"
               duration={3000}
             />
@@ -88,7 +88,7 @@ export const ForgotPasswordScreen = () => {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        'Bir hata oluştu. Lütfen tekrar deneyin.';
+        'An error occurred. Please try again.';
       
       toast.show({
         placement: 'top',

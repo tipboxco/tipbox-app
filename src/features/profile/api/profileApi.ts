@@ -241,18 +241,26 @@ export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarRespo
     console.log('[uploadAvatar] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
+    // 400 Bad Request hatası için backend'den gelen detaylı hata mesajını logla
+    const backendError = error.response?.data;
     console.error('[uploadAvatar] ❌ API Error:', {
       url: '/users/me/avatar',
       status: error.response?.status,
       statusText: error.response?.statusText,
-      data: error.response?.data,
       message: error.message,
       code: error.code,
+      // Backend'den gelen hata detayları
+      backendError: backendError,
+      backendErrorMessage: backendError?.message || backendError?.error || backendError,
+      backendErrorDetails: JSON.stringify(backendError, null, 2),
+      // Request detayları
       request: {
         url: error.config?.url,
         method: error.config?.method,
         headers: error.config?.headers,
       },
+      // Avatar URI bilgisi
+      avatarUri: avatarUri.substring(0, 100),
     });
     throw error;
   }
@@ -325,18 +333,26 @@ export const uploadBanner = async (bannerUri: string): Promise<UploadBannerRespo
     console.log('[uploadBanner] ✅ Success:', response.data);
     return response.data;
   } catch (error: any) {
+    // 400 Bad Request hatası için backend'den gelen detaylı hata mesajını logla
+    const backendError = error.response?.data;
     console.error('[uploadBanner] ❌ API Error:', {
       url: '/users/me/banner',
       status: error.response?.status,
       statusText: error.response?.statusText,
-      data: error.response?.data,
       message: error.message,
       code: error.code,
+      // Backend'den gelen hata detayları
+      backendError: backendError,
+      backendErrorMessage: backendError?.message || backendError?.error || backendError,
+      backendErrorDetails: JSON.stringify(backendError, null, 2),
+      // Request detayları
       request: {
         url: error.config?.url,
         method: error.config?.method,
         headers: error.config?.headers,
       },
+      // Banner URI bilgisi
+      bannerUri: bannerUri.substring(0, 100),
     });
     throw error;
   }
@@ -1876,7 +1892,7 @@ export const reportUser = async (
  * Mute User endpoint function
  * Kullanıcıyı sessize alır
  * 
- * API Endpoint: POST /users/{id}/mute (Request Body ile)
+ * API Endpoint: POST /users/{id}/mute/{targetUserId}
  * 
  * @param userId - Sessize alan kullanıcı ID'si (JWT token'daki userId ile eşleşmeli)
  * @param targetUserId - Sessize alınacak kullanıcı ID'si
@@ -1887,16 +1903,24 @@ export const muteUser = async (
   targetUserId: string
 ): Promise<void> => {
   try {
-    await apiService.getClient().post(`/users/${userId}/mute`, {
-      targetUserId,
-    });
+    const response = await apiService.getClient().post(`/users/${userId}/mute/${targetUserId}`);
+    
+    if (__DEV__) {
+      console.log('[muteUser] ✅ Success:', {
+        url: `/users/${userId}/mute/${targetUserId}`,
+        status: response.status,
+        targetUserId,
+      });
+    }
   } catch (error: any) {
     console.error('[muteUser] API Error:', {
-      url: `/users/${userId}/mute`,
+      url: `/users/${userId}/mute/${targetUserId}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      userId,
+      targetUserId,
     });
     throw error;
   }
@@ -1906,7 +1930,7 @@ export const muteUser = async (
  * Unmute User endpoint function
  * Kullanıcının sessizliğini kaldırır
  * 
- * API Endpoint: POST /users/{id}/unmute (Request Body ile)
+ * API Endpoint: DELETE /users/{id}/mute/{targetUserId}
  * 
  * @param userId - Sessizliği kaldıran kullanıcı ID'si (JWT token'daki userId ile eşleşmeli)
  * @param targetUserId - Sessizliği kaldırılacak kullanıcı ID'si
@@ -1917,26 +1941,132 @@ export const unmuteUser = async (
   targetUserId: string
 ): Promise<boolean> => {
   try {
-    await apiService.getClient().post(`/users/${userId}/unmute`, {
-      targetUserId,
-    });
+    const response = await apiService.getClient().delete(`/users/${userId}/mute/${targetUserId}`);
+    
+    if (__DEV__) {
+      console.log('[unmuteUser] ✅ Success:', {
+        url: `/users/${userId}/mute/${targetUserId}`,
+        status: response.status,
+        targetUserId,
+      });
+    }
+    
+    // 204 No Content veya 200 OK başarılı kabul edilir
     return true;
   } catch (error: any) {
     // 404 hatası: Kullanıcı zaten sessize alınmamış olabilir
     if (error?.response?.status === 404) {
-      console.warn('[unmuteUser] User is not muted (404):', {
-        url: `/users/${userId}/unmute`,
-        message: 'User may not be muted',
-      });
+      if (__DEV__) {
+        console.warn('[unmuteUser] User is not muted (404):', {
+          url: `/users/${userId}/mute/${targetUserId}`,
+          message: 'User may not be muted',
+          userId,
+          targetUserId,
+        });
+      }
       // 404'ü sessizce yut (idempotent işlem) ve false döndür
       return false;
     }
     console.error('[unmuteUser] API Error:', {
-      url: `/users/${userId}/unmute`,
+      url: `/users/${userId}/mute/${targetUserId}`,
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      userId,
+      targetUserId,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Block User endpoint function
+ * Kullanıcıyı engeller
+ * 
+ * API Endpoint: POST /users/{id}/block/{targetUserId}
+ * 
+ * @param userId - Engelleyen kullanıcı ID'si (JWT token'daki userId ile eşleşmeli)
+ * @param targetUserId - Engellenecek kullanıcı ID'si
+ * @returns void - Başarılı durumda 201 Created döner
+ */
+export const blockUser = async (
+  userId: string,
+  targetUserId: string
+): Promise<void> => {
+  try {
+    const response = await apiService.getClient().post(`/users/${userId}/block/${targetUserId}`);
+    
+    if (__DEV__) {
+      console.log('[blockUser] ✅ Success:', {
+        url: `/users/${userId}/block/${targetUserId}`,
+        status: response.status,
+        targetUserId,
+      });
+    }
+  } catch (error: any) {
+    console.error('[blockUser] API Error:', {
+      url: `/users/${userId}/block/${targetUserId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      userId,
+      targetUserId,
+    });
+    throw error;
+  }
+};
+
+/**
+ * Unblock User endpoint function
+ * Kullanıcının engelini kaldırır
+ * 
+ * API Endpoint: DELETE /users/{id}/block/{targetUserId}
+ * 
+ * @param userId - Engeli kaldıran kullanıcı ID'si (JWT token'daki userId ile eşleşmeli)
+ * @param targetUserId - Engeli kaldırılacak kullanıcı ID'si
+ * @returns boolean - Başarılı ise true, kayıt yoksa false döner
+ */
+export const unblockUser = async (
+  userId: string,
+  targetUserId: string
+): Promise<boolean> => {
+  try {
+    const response = await apiService.getClient().delete(`/users/${userId}/block/${targetUserId}`);
+    
+    if (__DEV__) {
+      console.log('[unblockUser] ✅ Success:', {
+        url: `/users/${userId}/block/${targetUserId}`,
+        status: response.status,
+        targetUserId,
+      });
+    }
+    
+    // 204 No Content veya 200 OK başarılı kabul edilir
+    return true;
+  } catch (error: any) {
+    // 404 hatası: Kullanıcı zaten engellenmemiş olabilir
+    if (error?.response?.status === 404) {
+      if (__DEV__) {
+        console.warn('[unblockUser] User is not blocked (404):', {
+          url: `/users/${userId}/block/${targetUserId}`,
+          message: 'User may not be blocked',
+          userId,
+          targetUserId,
+        });
+      }
+      // 404'ü sessizce yut (idempotent işlem) ve false döndür
+      return false;
+    }
+    console.error('[unblockUser] API Error:', {
+      url: `/users/${userId}/block/${targetUserId}`,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      userId,
+      targetUserId,
     });
     throw error;
   }

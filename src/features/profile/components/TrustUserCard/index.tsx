@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Alert, View, Pressable as RNPressable } from 'react-native';
 import {
     VStack, 
@@ -13,7 +13,7 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { useRemoveFromTrustList } from '../../api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { DEFAULT_USER_AVATAR } from '@/src/utils';
-import { RemoveFromTrustlistContextMenu } from '../RemoveFromTrustlistContextMenu';
+import { ReactNativeMenuModal, MenuItem } from '@/src/components/ReactNativeMenuModal';
 
 export interface TrustUserCardUser {
   id: string;
@@ -48,22 +48,7 @@ export const TrustUserCard = ({
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const { mutate: untrustUser, isPending: isUntrusting } = useRemoveFromTrustList();
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-  const contextMenuCloseRef = useRef<(() => void) | null>(null);
-
-  // Debug: Log component mount
-  React.useEffect(() => {
-    console.log('[TrustUserCard] Component mounted', { userId: user.id, userName: user.name });
-  }, [user.id, user.name]);
-
-  // Debug: Log context menu state changes
-  React.useEffect(() => {
-    console.log('[TrustUserCard] isContextMenuOpen changed', { 
-      isContextMenuOpen, 
-      userId: user.id,
-      hasCloseRef: !!contextMenuCloseRef.current 
-    });
-  }, [isContextMenuOpen, user.id]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const getTrustColor = (level: number) => {
     const colors = ['#CE4A4A', '#FF6B35', '#FFA500', '#32CD32', '#00BFFF'];
@@ -85,7 +70,6 @@ export const TrustUserCard = ({
           onPress: () => {
             // TODO: Block user API endpoint eklendiğinde buraya entegre edilecek
             console.log('[TrustUserCard] Block user:', user.id);
-            contextMenuCloseRef.current?.();
           },
         },
       ]
@@ -106,7 +90,6 @@ export const TrustUserCard = ({
           style: 'destructive',
           onPress: () => {
             untrustUser(user.id);
-            contextMenuCloseRef.current?.();
           },
         },
       ]
@@ -116,8 +99,40 @@ export const TrustUserCard = ({
   const handleMute = () => {
     // TODO: Mute functionality eklendiğinde buraya entegre edilecek
     console.log('[TrustUserCard] Mute user:', user.id);
-    contextMenuCloseRef.current?.();
   };
+
+  // Menu items
+  const menuItems = useMemo<MenuItem[]>(() => {
+    const iconColor = isDark ? '#fff' : '#000';
+    const items: MenuItem[] = [];
+    
+    if (handleRemoveFromTrustList) {
+      items.push({
+        label: 'Remove from Trust List',
+        icon: <XCircleIcon width={20} height={20} color={iconColor} />,
+        onPress: handleRemoveFromTrustList,
+      });
+    }
+    
+    if (handleMute) {
+      items.push({
+        label: 'Mute',
+        icon: <BellIcon width={20} height={20} color={iconColor} />,
+        onPress: handleMute,
+      });
+    }
+    
+    if (handleBlock) {
+      items.push({
+        label: 'Block',
+        icon: <XCircleIcon width={20} height={20} color="#FF3040" />,
+        onPress: handleBlock,
+        color: '#FF3040',
+      });
+    }
+    
+    return items;
+  }, [isDark, handleRemoveFromTrustList, handleMute, handleBlock]);
 
   const avatarSource =
     user.avatar ??
@@ -191,19 +206,7 @@ export const TrustUserCard = ({
       </Pressable>
 
       {/* Context Menu - More Icon */}
-      <RemoveFromTrustlistContextMenu
-        onRemoveFromTrustList={handleRemoveFromTrustList}
-        onMute={handleMute}
-        onBlock={handleBlock}
-        onMenuStateChange={(isOpen) => {
-          console.log('[TrustUserCard] onMenuStateChange called', { isOpen, userId: user.id });
-          setIsContextMenuOpen(isOpen);
-        }}
-        onCloseRef={(closeFn) => {
-          console.log('[TrustUserCard] onCloseRef called', { userId: user.id, hasCloseFn: !!closeFn });
-          contextMenuCloseRef.current = closeFn;
-        }}
-      >
+      <Pressable onPress={() => setIsMenuOpen(true)}>
         <Box p={8}>
           <Feather
             name="more-horizontal"
@@ -211,25 +214,16 @@ export const TrustUserCard = ({
             color={isDark ? '#959595' : '#959595'}
           />
         </Box>
-      </RemoveFromTrustlistContextMenu>
+      </Pressable>
 
-      {/* Overlay - menu açıkken TrustUserCard'a tıklamayı engellemek için */}
-      {isContextMenuOpen && (
-        <RNPressable
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'transparent',
-            zIndex: 9999, // Menüden düşük ama yüksek z-index
-          }}
-          onPress={() => {
-            contextMenuCloseRef.current?.();
-          }}
-        />
-      )}
+      {/* Menu Modal */}
+      <ReactNativeMenuModal
+        visible={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        items={menuItems}
+        position={{ top: 0, right: 16 }}
+        width={200}
+      />
     </HStack>
   );
 };

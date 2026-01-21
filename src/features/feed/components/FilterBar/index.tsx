@@ -13,7 +13,7 @@ import type { FeedFilterParams } from '../../api/feedApi';
  * 
  * Supported Tags:
  * - Review: Review posts
- * - Benchmark: Comparison posts
+ * - Benchmark: Benchmark posts
  * - Tips: Tips posts
  * - Question: Question posts
  * - Experience: Experience posts

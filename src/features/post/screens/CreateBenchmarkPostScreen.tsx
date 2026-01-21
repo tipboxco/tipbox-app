@@ -13,7 +13,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { useBenchmarkPostForm } from '../hooks/useBenchmarkPostForm';
 import { ControlledTextarea } from '../components/FormFields/ControlledTextarea';
-import { ProductComparisonCard } from '../components/ProductComparisonCard';
+import { ProductBenchmarkCard } from '../components/ProductBenchmarkCard';
 import { DashedProductCard } from '../components/DashedProductCard';
 import { useCreateBenchmarkPost } from '../api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
@@ -29,8 +29,8 @@ import type { BenchmarkPostFormData } from '../schemas/benchmarkPostSchema';
 type CreateBenchmarkPostScreenRouteProp = RouteProp<PostStackParamList, 'CreateBenchmarkPostScreen'>;
 type CreateBenchmarkPostScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Product Comparison Field Component
-const ProductComparisonField: React.FC = () => {
+// Product Benchmark Field Component
+const ProductBenchmarkField: React.FC = () => {
   const { control, watch, setValue } = useFormContext<BenchmarkPostFormData>();
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -188,7 +188,7 @@ const ProductComparisonField: React.FC = () => {
         fontSize={10}
         fontWeight="$bold"
       >
-        Product Comparison
+        Product Benchmark
       </Text>
       <Box position="relative" width="100%">
         <HStack justifyContent="space-between" width="100%" alignItems="stretch">
@@ -197,7 +197,7 @@ const ProductComparisonField: React.FC = () => {
               name="selectedChoice"
               control={control}
               render={({ field: { onChange, value } }) => (
-                <ProductComparisonCard
+                <ProductBenchmarkCard
                   product={selectedProduct1}
                   isSelected={value === 'product1'}
                   onPress={() => onChange('product1')}
@@ -211,7 +211,7 @@ const ProductComparisonField: React.FC = () => {
               name="selectedChoice"
               control={control}
               render={({ field: { onChange, value } }) => (
-                <ProductComparisonCard
+                <ProductBenchmarkCard
                   product={selectedProduct2}
                   isSelected={value === 'product2'}
                   onPress={() => onChange('product2')}
@@ -395,7 +395,7 @@ export const CreateBenchmarkPostScreen = () => {
       // Başarılı toast göster
       showCustomToast(toast, {
         title: 'Post Created',
-        description: 'Your comparison post has been created successfully!',
+        description: 'Your benchmark post has been created successfully!',
         action: 'success',
       });
       
@@ -490,7 +490,7 @@ export const CreateBenchmarkPostScreen = () => {
         <Box flex={1} bg={isDark ? '$backgroundDark950' : '#FAFAFA'}>
           {/* Header */}
           <Header
-            title="Comparison Post"
+            title="Benchmark Post"
             leftAction="cancel"
             onLeftActionPress={handleBackPress}
             rightButton={{
@@ -515,14 +515,14 @@ export const CreateBenchmarkPostScreen = () => {
           {/* Content */}
           <ScrollView flex={1} showsVerticalScrollIndicator={false}>
             <VStack space="md">
-              {/* Product Comparison Section */}
-              <ProductComparisonField />
+              {/* Product Benchmark Section */}
+              <ProductBenchmarkField />
 
               {/* Post Description Section */}
               <VStack px={16} space="xs">
                 <ControlledTextarea
                   name="postText"
-                  placeholder="Type your Comparison Post here..."
+                  placeholder="Type your Benchmark Post here..."
                   maxLength={500}
                   label="Benchmark Description"
                 />

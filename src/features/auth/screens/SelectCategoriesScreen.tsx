@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, ScrollView, HStack, Pressable, Spinner } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
-import categories from '@/src/mock/auth/categorys';
-import type { Category, SubCategory } from '@/src/mock/auth/categorys';
-import { useUpdateUserInterests } from '../api/hooks';
+import { useUserCategories } from '../api/hooks';
+import type { UserCategory } from '../api/authApi';
 import { Alert } from 'react-native';
 
 type SelectCategoriesScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectCategories'>;
 
 interface CategoryItemProps {
-  category: Category;
+  category: UserCategory;
   selectedSubCategories: string[];
   onSelectSubCategory: (subCategoryId: string) => void;
   isDark: boolean;
@@ -27,34 +26,52 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
   isDark,
 }) => {
   return (
-    <VStack space="sm" mb="$4">
+    <VStack space="sm" mb="$6">
       <Text
         fontSize="$lg"
         fontWeight="$bold"
         color={isDark ? '$textDark50' : '$textLight900'}
+        mb="$2"
       >
         {category.name}
       </Text>
-      <HStack flexWrap="wrap" space="sm">
+      <Box 
+        flexDirection="row" 
+        flexWrap="wrap"
+        style={{ marginHorizontal: -4 }}
+      >
         {category.subCategories.map((subCategory) => (
-          <Pressable
-            key={subCategory.id}
-            onPress={() => onSelectSubCategory(subCategory.id)}
-            bg={selectedSubCategories.includes(subCategory.id) ? '$yellow400' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
-            px="$3"
-            py="$2"
-            rounded="$full"
-            mb="$2"
+          <Box
+            key={subCategory.subCategoryId}
+            style={{ 
+              width: '48%',
+              marginHorizontal: '1%',
+              marginBottom: 8,
+            }}
           >
-            <Text
-              color={selectedSubCategories.includes(subCategory.id) ? '$textLight900' : isDark ? '$textDark50' : '$textLight900'}
-              fontSize="$sm"
+            <Pressable
+              onPress={() => onSelectSubCategory(subCategory.subCategoryId)}
+              bg={selectedSubCategories.includes(subCategory.subCategoryId) ? '$buttonPrimary' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
+              borderWidth={1}
+              borderColor={selectedSubCategories.includes(subCategory.subCategoryId) ? '$buttonPrimary' : isDark ? '$borderDark100' : '$borderLight100'}
+              px="$3"
+              py="$2.5"
+              rounded="$lg"
+              w="$full"
             >
-              {subCategory.name}
-            </Text>
-          </Pressable>
+              <Text
+                color={selectedSubCategories.includes(subCategory.subCategoryId) ? '$textLight900' : isDark ? '$textDark50' : '$textLight900'}
+                fontSize="$sm"
+                fontWeight={selectedSubCategories.includes(subCategory.subCategoryId) ? '$medium' : '$normal'}
+                textAlign="center"
+                numberOfLines={2}
+              >
+                {subCategory.name}
+              </Text>
+            </Pressable>
+          </Box>
         ))}
-      </HStack>
+      </Box>
     </VStack>
   );
 };
@@ -63,9 +80,11 @@ export const SelectCategoriesScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<SelectCategoriesScreenNavigationProp>();
-  const updateInterestsMutation = useUpdateUserInterests();
   const insets = useSafeAreaInsets();
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
+  
+  // API'den kategorileri getir
+  const { data: categories, isLoading, error } = useUserCategories();
   
   // Edge-to-Edge Design: Top ve bottom insets için beyaz background
   const backgroundColor = '#FFFFFF';
@@ -79,110 +98,176 @@ export const SelectCategoriesScreen = () => {
     });
   };
 
-  const handleNext = async () => {
-    if (selectedSubCategories.length > 0) {
-      try {
-        // API'ye seçilen kategorileri gönder
-        await updateInterestsMutation.mutateAsync(selectedSubCategories);
-        
-        // Başarılı olursa Onboarding ekranına yönlendir
-        navigation.navigate('Onboarding');
-      } catch (error: any) {
-        // Hata durumunda kullanıcıya bilgi ver
-        const errorMessage = error.response?.data?.message || error.message || 'An error occurred while saving categories.';
-        Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
-        console.error('[SelectCategoriesScreen] Update interests error:', error);
-      }
+  const handleNext = () => {
+    const MIN_SELECTED = 3;
+    if (!categories) {
+      Alert.alert('Error', 'Categories not loaded. Please try again.');
+      return;
+    }
+    
+    if (selectedSubCategories.length >= MIN_SELECTED) {
+      // Seçilen subCategory'leri categoryId'lerine göre grupla
+      const categoriesMap = new Map<string, string[]>();
+      
+      categories.forEach((category) => {
+        category.subCategories.forEach((subCategory) => {
+          if (selectedSubCategories.includes(subCategory.subCategoryId)) {
+            const existing = categoriesMap.get(category.categoryId) || [];
+            categoriesMap.set(category.categoryId, [...existing, subCategory.subCategoryId]);
+          }
+        });
+      });
+
+      // Backend formatına çevir
+      const selectedCategories = Array.from(categoriesMap.entries()).map(([categoryId, subCategoryIds]) => ({
+        categoryId,
+        subCategoryIds,
+      }));
+
+      // SetupProfile ekranına yönlendir ve seçilen kategorileri gönder
+      navigation.navigate('SetupProfile', { selectedCategories });
+    } else {
+      Alert.alert('Error', `Please select at least ${MIN_SELECTED} categories`);
     }
   };
 
+  // Minimum 3 kategori seçilmesi gerekiyor (görseldeki tasarıma göre)
+  const MIN_SELECTED = 3;
+  const selectedCount = selectedSubCategories.length;
+  const isNextEnabled = selectedCount >= MIN_SELECTED;
+
   return (
-    <View style={{ flex: 1, backgroundColor }}>
-      {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
-      <View 
-        style={{ 
-          height: insets.top, 
-          backgroundColor,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }} 
-      />
+    <SafeAreaView style={{ flex: 1, backgroundColor }} edges={['top', 'bottom']}>
+      <Box
+        flex={1}
+        bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
+      >
+        {/* Header */}
+        <Box px="$4" pt="$4" pb="$2">
+          <Text
+            fontSize="$2xl"
+            fontWeight="$bold"
+            color={isDark ? '$textDark50' : '$textLight900'}
+          >
+            Set Up Profile
+          </Text>
+          
+          <Text
+            fontSize="$sm"
+            color={isDark ? '$textDark300' : '$textLight600'}
+            mt="$2"
+            mb="$4"
+          >
+            Select your interests to personalize your experience
+          </Text>
+        </Box>
 
-      {/* Ana İçerik */}
-      <View style={{ flex: 1 }}>
-        <Box
-          flex={1}
-          bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
-          p="$4"
+        {/* Content */}
+        <ScrollView 
+          flex={1} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
         >
-      <VStack flex={1} space="md">
-        <Text
-          fontSize="$2xl"
-          fontWeight="$bold"
-          color={isDark ? '$textDark50' : '$textLight900'}
-          textAlign="center"
-        >
-          Select Your Interests
-        </Text>
-        
-        <Text
-          fontSize="$sm"
-          color={isDark ? '$textDark300' : '$textLight600'}
-          textAlign="center"
-          mb="$4"
-        >
-          Select at least one category so we can provide you with personalized content
-        </Text>
-
-        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-          {categories?.map((category) => (
-            <CategoryItem
-              key={category.id}
-              category={category}
-              selectedSubCategories={selectedSubCategories}
-              onSelectSubCategory={handleSelectSubCategory}
-              isDark={isDark}
-            />
-          ))}
+          {isLoading ? (
+            <Box flex={1} alignItems="center" justifyContent="center" py="$20">
+              <Spinner size="large" color={isDark ? '$textDark300' : '$textLight600'} />
+              <Text
+                fontSize="$sm"
+                color={isDark ? '$textDark300' : '$textLight600'}
+                mt="$4"
+              >
+                Loading categories...
+              </Text>
+            </Box>
+          ) : error ? (
+            <Box flex={1} alignItems="center" justifyContent="center" py="$20" px="$4">
+              <Text
+                fontSize="$md"
+                color="$error500"
+                textAlign="center"
+                mb="$4"
+              >
+                Failed to load categories
+              </Text>
+              <Text
+                fontSize="$sm"
+                color={isDark ? '$textDark300' : '$textLight600'}
+                textAlign="center"
+              >
+                {error instanceof Error ? error.message : 'An error occurred'}
+              </Text>
+            </Box>
+          ) : categories && categories.length > 0 ? (
+            categories.map((category) => (
+              <CategoryItem
+                key={category.categoryId}
+                category={category}
+                selectedSubCategories={selectedSubCategories}
+                onSelectSubCategory={handleSelectSubCategory}
+                isDark={isDark}
+              />
+            ))
+          ) : (
+            <Box flex={1} alignItems="center" justifyContent="center" py="$20">
+              <Text
+                fontSize="$sm"
+                color={isDark ? '$textDark300' : '$textLight600'}
+                textAlign="center"
+              >
+                No categories available
+              </Text>
+            </Box>
+          )}
         </ScrollView>
 
-        <Button
-          bg="$yellow400"
-          py="$1"
-          rounded="$lg"
-          mt="$4"
-          mb={insets.bottom + 16}
-          onPress={handleNext}
-          opacity={selectedSubCategories.length > 0 && !updateInterestsMutation.isPending ? 1 : 0.5}
-          disabled={selectedSubCategories.length === 0 || updateInterestsMutation.isPending}
+        {/* Sticky Footer */}
+        <Box
+          position="absolute"
+          bottom={0}
+          left={0}
+          right={0}
+          bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
+          borderTopWidth={1}
+          borderTopColor={isDark ? '$borderDark100' : '$borderLight100'}
+          px="$4"
+          py="$4"
+          pb={insets.bottom }
         >
-          {updateInterestsMutation.isPending ? (
-            <Spinner size="small" color="$textLight900" />
-          ) : (
-            <ButtonText color="$textLight900">
-              {`Continue (${selectedSubCategories.length} selected)`}
-            </ButtonText>
-          )}
-        </Button>
-      </VStack>
+          <HStack alignItems="center" justifyContent="space-between">
+            <VStack space="xs">
+              <Text
+                fontSize="$sm"
+                fontWeight="$medium"
+                color={isDark ? '$textDark50' : '$textLight900'}
+              >
+                {selectedCount}/{MIN_SELECTED} Selected
+              </Text>
+              {selectedCount < MIN_SELECTED && (
+                <Text
+                  fontSize="$xs"
+                  color={isDark ? '$textDark300' : '$textLight600'}
+                >
+                  Select at least {MIN_SELECTED} categories to continue
+                </Text>
+              )}
+            </VStack>
+            
+            <Button
+              bg="$buttonPrimary"
+              px="$6"
+              py="$3"
+              rounded="$lg"
+              onPress={handleNext}
+              opacity={isNextEnabled ? 1 : 0.5}
+              disabled={!isNextEnabled}
+            >
+              <ButtonText color="$textLight900" fontWeight="$bold" fontSize="$md">
+                Next
+              </ButtonText>
+            </Button>
+          </HStack>
+        </Box>
       </Box>
-      </View>
-
-      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
-      <View 
-        style={{ 
-          height: insets.bottom, 
-          backgroundColor,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }} 
-      />
-    </View>
+    </SafeAreaView>
   );
 };

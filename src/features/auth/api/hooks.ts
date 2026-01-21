@@ -1,11 +1,13 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { register, login, setupProfile, updateUserInterests, googleLogin } from './authApi';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { register, login, setupProfile, updateUserInterests, googleLogin, verifyEmail, checkUsernameAvailability, getUsernameSuggestions, getUserCategories } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
 import type { RegisterResponse, ApiLoginResponse } from '../types';
-import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse } from './authApi';
+import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse, VerifyEmailRequest, VerifyEmailResponse, UsernameCheckResponse, UsernameSuggestionsResponse, UserCategory } from './authApi';
 import { useAppStore } from '../../../store/appStore';
 import { notificationService } from '@/src/services/ExpoNotificationService';
 import { notificationKeys } from '@/src/features/notifications/api/hooks';
+import { TokenService } from '@/src/services/TokenService';
+import { updateTokenCache } from '@/src/services/ApiService/interceptors';
 
 /**
  * Query Keys - Auth feature için cache key pattern'leri
@@ -13,6 +15,7 @@ import { notificationKeys } from '@/src/features/notifications/api/hooks';
 export const authKeys = {
   all: ['auth'] as const,
   currentUser: () => [...authKeys.all, 'currentUser'] as const,
+  userCategories: () => [...authKeys.all, 'userCategories'] as const,
 };
 
 /**
@@ -113,6 +116,58 @@ export const useLogin = () => {
 };
 
 /**
+ * Verify Email mutation hook
+ * Email doğrulama kodu ile email'i doğrular ve token alır
+ * 
+ * @example
+ * const verifyEmailMutation = useVerifyEmail();
+ * verifyEmailMutation.mutate({ email, code });
+ */
+export const useVerifyEmail = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<VerifyEmailResponse, Error, VerifyEmailRequest>({
+    mutationFn: verifyEmail,
+    onSuccess: async (data) => {
+      // Token'ı store'a kaydet
+      if (data.token) {
+        // Eğer refreshToken varsa login fonksiyonunu kullan, yoksa sadece token'ı kaydet
+        if (data.refreshToken) {
+          await useAppStore.getState().login({
+            id: '', // VerifyEmail'de user bilgisi yok, setupProfile'da alınacak
+            fullName: '',
+            email: '',
+            avatar: undefined,
+            token: data.token,
+            refreshToken: data.refreshToken,
+          });
+        } else {
+          // Sadece access token varsa, TokenService ile kaydet
+          await TokenService.setAccessToken(data.token);
+          // Token cache'i güncelle
+          updateTokenCache(data.token);
+          // Temp user olarak işaretle (setupProfile sonrası tamamlanacak)
+          useAppStore.getState().setTempUser(
+            {
+              id: '',
+              name: '',
+              email: '',
+              isGuest: false,
+            },
+            data.token
+          );
+        }
+      }
+
+      console.log('[useVerifyEmail] ✅ Email verification successful');
+    },
+    onError: (error) => {
+      console.error('[useVerifyEmail] ❌ Email verification error:', error);
+    },
+  });
+};
+
+/**
  * Setup Profile mutation hook
  * Kullanıcı profil bilgilerini kaydetmek için React Query mutation hook'u
  * 
@@ -146,6 +201,67 @@ export const useSetupProfile = () => {
     onError: (error) => {
       console.error('[useSetupProfile] ❌ Profile setup error:', error);
     },
+  });
+};
+
+/**
+ * Check Username Availability query hook
+ * Username'in müsait olup olmadığını kontrol eder
+ * 
+ * @param username - Kontrol edilecek username
+ * @param enabled - Query'nin aktif olup olmayacağı
+ * @example
+ * const { data, isLoading } = useCheckUsernameAvailability('username', true);
+ */
+export const useCheckUsernameAvailability = (username: string, enabled: boolean = true) => {
+  return useQuery<UsernameCheckResponse, Error>({
+    queryKey: ['username', 'check', username],
+    queryFn: () => checkUsernameAvailability(username),
+    enabled: Boolean(enabled && username.length >= 3 && /^[a-zA-Z0-9_]+$/.test(username)),
+    staleTime: 0, // Her zaman fresh data al
+    gcTime: 0, // Cache'de tutma
+  });
+};
+
+/**
+ * Get Username Suggestions query hook
+ * Username için öneriler getirir
+ * 
+ * @param username - Temel username
+ * @param limit - Öneri sayısı
+ * @param enabled - Query'nin aktif olup olmayacağı
+ * @example
+ * const { data, isLoading } = useUsernameSuggestions('username', 5, true);
+ */
+export const useUsernameSuggestions = (username: string, limit: number = 5, enabled: boolean = true) => {
+  return useQuery<UsernameSuggestionsResponse, Error>({
+    queryKey: ['username', 'suggestions', username, limit],
+    queryFn: () => getUsernameSuggestions(username, limit),
+    enabled: Boolean(enabled && username.length >= 3),
+    staleTime: 0,
+    gcTime: 0,
+  });
+};
+
+/**
+ * Get User Categories query hook
+ * Kullanıcı kategori seçimi için tüm kategorileri ve alt kategorileri getirir
+ * 
+ * @returns React Query hook result
+ * 
+ * @example
+ * const { data, isLoading, error } = useUserCategories();
+ */
+export const useUserCategories = () => {
+  return useQuery<UserCategory[], Error>({
+    queryKey: authKeys.userCategories(),
+    queryFn: getUserCategories,
+    staleTime: 24 * 60 * 60 * 1000, // 24 saat - kategoriler nadiren değişir
+    gcTime: 7 * 24 * 60 * 60 * 1000, // 7 gün - cache'de tut
+    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
+    refetchOnWindowFocus: false,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 

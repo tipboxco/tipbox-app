@@ -426,7 +426,7 @@ const CatalogScreenComponent = () => {
           experienceOption: experienceOption,
         },
       });
-    } else if (type === 'comparison') {
+    } else if (type === 'benchmark') {
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateBenchmarkPostScreen',
         params: {
@@ -748,26 +748,28 @@ const CatalogScreenComponent = () => {
         {renderContent()}
       </Box>
 
-      {/* Floating Action Button */}
-      <Pressable
-        position="absolute"
-        bottom={Platform.OS === 'ios' ? 34 + 28 : 45 + 28}
-        right={16}
-        width={60}
-        height={60}
-        borderRadius={30}
-        bg="#4619B1"
-        justifyContent="center"
-        alignItems="center"
-        onPress={handleFloatingButtonPress}
-      >
-        <Image
-          source={require('@/assets/catalog_change.png')}
-          alt="Change catalog"
-          width={27}
-          height={27}
-        />
-      </Pressable>
+      {/* Floating Action Button - Hide when in select mode (e.g., from EventCreatePost) */}
+      {!route.params?.selectMode && !route.params?.returnScreen && (
+        <Pressable
+          position="absolute"
+          bottom={Platform.OS === 'ios' ? 34 + 28 : 45 + 28}
+          right={16}
+          width={60}
+          height={60}
+          borderRadius={30}
+          bg="#4619B1"
+          justifyContent="center"
+          alignItems="center"
+          onPress={handleFloatingButtonPress}
+        >
+          <Image
+            source={require('@/assets/catalog_change.png')}
+            alt="Change catalog"
+            width={27}
+            height={27}
+          />
+        </Pressable>
+      )}
         </VStack>
       </Box>
     </SafeAreaView>

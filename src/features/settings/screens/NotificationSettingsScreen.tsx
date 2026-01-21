@@ -79,13 +79,13 @@ export const NotificationSettingsScreen = () => {
         } catch (error: any) {
             // Revert optimistic update on error
             setLocalSettings((prev) => ({ ...prev, [code]: !value }));
-            const errorMessage = error?.response?.data?.message || error?.message || 'Bildirim ayarları güncellenirken bir hata oluştu';
+            const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while updating notification settings';
             toast.show({
                 placement: 'top',
                 render: ({ id }) => (
                     <Box maxWidth="90%" alignSelf="center" px="$4">
                         <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                            <ToastTitle>Hata</ToastTitle>
+                            <ToastTitle>Error</ToastTitle>
                             <ToastDescription>{errorMessage}</ToastDescription>
                         </Toast>
                     </Box>

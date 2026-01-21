@@ -51,7 +51,7 @@ export const WelcomeScreen = () => {
       const errorMessage =
         error?.message ||
         error?.response?.data?.message ||
-        'Google ile giriş yapılırken bir hata oluştu';
+        'An error occurred during Google login';
 
       showCustomToast(toast, {
         title: 'Google Login Error',

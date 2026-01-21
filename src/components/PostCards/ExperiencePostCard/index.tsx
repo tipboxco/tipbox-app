@@ -176,7 +176,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               targetUserId,
               data: {
                 category: 'OTHER',
-                description: 'Kullanıcı raporlandı',
+                description: 'User reported',
               },
             });
           },
@@ -220,7 +220,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
           onPress: async () => {
             try {
               await deletePostMutation.mutateAsync(data.id);
-              Alert.alert('Başarılı', 'Post başarıyla silindi.');
+              Alert.alert('Success', 'Post deleted successfully.');
             } catch (error: any) {
               Alert.alert(
                 'Hata',

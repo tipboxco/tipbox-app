@@ -225,7 +225,7 @@ export const ResetPasswordScreen = () => {
           </VStack>
 
           <Button
-            bg="$yellow400"
+            bg="$buttonPrimary"
             py="$1"
             rounded="$lg"
             mt="$4"

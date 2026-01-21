@@ -97,8 +97,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/tipbox-white-logo.jpg",
-          "color": "#ffffff",
+          "icon": "./assets/notification-icon.png",
+          "color": "#000000",
           "enableBackgroundRemoteNotifications": true
         }
       ],

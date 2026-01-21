@@ -4,9 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Image } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
-import { useAppStore } from '@/src/store/appStore';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type OnboardingScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Onboarding'>;
 
@@ -22,33 +22,27 @@ interface OnboardingItem {
 const onboardingData: OnboardingItem[] = [
   {
     id: 0,
-    image: require('@/assets/onboard/onboarding0.png'),
-    title: 'Hoş Geldiniz',
-    description: 'Tipbox\'a hoş geldiniz! Deneyimlerinizi paylaşın ve keşfedin.',
+    image: require('@/assets/onboard/onboarding4.png'),
+    title: 'Build Your Digital Inventory',
+    description: 'Add the products you own and showcase your digital collection.',
   },
   {
     id: 1,
     image: require('@/assets/onboard/onboarding1.png'),
-    title: 'Keşfet',
-    description: 'İlginç içerikler keşfedin ve toplulukla etkileşime geçin.',
+    title: 'Review Shopping and Products',
+    description: 'Post your shopping journey and product usage experiences.',
   },
   {
     id: 2,
     image: require('@/assets/onboard/onboarding2.png'),
-    title: 'Paylaş',
-    description: 'Deneyimlerinizi paylaşın ve başkalarına ilham verin.',
+    title: 'Connect With Your Community',
+    description: 'Gain followers and lead the community with your expertise.',
   },
   {
     id: 3,
     image: require('@/assets/onboard/onboarding3.png'),
-    title: 'Bağlan',
-    description: 'Benzer ilgi alanlarına sahip insanlarla bağlantı kurun.',
-  },
-  {
-    id: 4,
-    image: require('@/assets/onboard/onboarding4.png'),
-    title: 'Başlayalım',
-    description: 'Hesabınızı oluşturun ve yolculuğunuza başlayın!',
+    title: 'Earn Exclusive Web3 Rewards',
+    description: 'Climb the ladder and collect Web3 connected badges.',
   },
 ];
 
@@ -56,7 +50,6 @@ export const OnboardingScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
-  const { completeRegistration } = useAppStore();
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -84,10 +77,10 @@ export const OnboardingScreen = () => {
   };
 
   const handleGetStarted = () => {
-    // Onboarding tamamlandığında kullanıcıyı giriş yapmış olarak işaretle
-    // completeRegistration() çağrıldığında RootNavigator otomatik olarak
-    // isAuthenticated kontrolü yapacak ve MainDrawer'ı render edecek
-    completeRegistration();
+    // Onboarding tamamlandığında Login ekranına yönlendir
+    // Kullanıcı kayıt işlemini tamamladı, şimdi login yapması gerekiyor
+    // Success toast göstermek için parametre gönder
+    navigation.navigate('Login', { showSuccessToast: true });
   };
 
   const renderItem = ({ item }: { item: OnboardingItem }) => {
@@ -97,24 +90,32 @@ export const OnboardingScreen = () => {
           flex={1}
           bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
           alignItems="center"
-          justifyContent="center"
+          justifyContent="flex-start"
           px="$6"
+          pt={insets.top + 50}
+          pb={200}
         >
           {/* Image */}
-          <Box flex={1} w="$full" alignItems="center" justifyContent="center" mb="$8">
+          <Box 
+            w="$full" 
+            alignItems="center" 
+            justifyContent="center" 
+            mb="$4"
+            style={{ maxHeight: 280 }}
+          >
             <Image
               source={item.image}
               alt={item.title}
               width={SCREEN_WIDTH - 48}
-              height={400}
+              height={280}
               resizeMode="contain"
             />
           </Box>
 
           {/* Content */}
-          <VStack space="md" alignItems="center" mb="$12" px="$4">
+          <VStack space="sm" alignItems="center" px="$4">
             <Text
-              fontSize="$3xl"
+              fontSize="$2xl"
               fontWeight="$bold"
               color={isDark ? '$textDark50' : '$textLight900'}
               textAlign="center"
@@ -122,7 +123,7 @@ export const OnboardingScreen = () => {
               {item.title}
             </Text>
             <Text
-              fontSize="$md"
+              fontSize="$sm"
               color={isDark ? '$textDark300' : '$textLight600'}
               textAlign="center"
               px="$4"
@@ -152,24 +153,13 @@ export const OnboardingScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor }}>
-      {/* Üst Güvenli Alan */}
-      <View
-        style={{
-          height: insets.top,
-          backgroundColor,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }}
-      />
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor }}>
+   
 
       {/* Ana İçerik */}
       <View style={{ flex: 1 }}>
         {/* Skip Button */}
-        <Box position="absolute" top={insets.top + 16} right="$6" zIndex={2}>
+        <Box position="absolute" top={insets.top } right="$6" zIndex={2}>
           <Button
             variant="link"
             onPress={handleSkip}
@@ -180,7 +170,7 @@ export const OnboardingScreen = () => {
               color={isDark ? '$textDark300' : '$textLight600'}
               fontWeight="$medium"
             >
-              Atla
+              Skip
             </ButtonText>
           </Button>
         </Box>
@@ -197,6 +187,7 @@ export const OnboardingScreen = () => {
           onScroll={handleScroll}
           scrollEventThrottle={16}
           onMomentumScrollEnd={handleScroll}
+          contentContainerStyle={{ paddingBottom: 0 }}
           getItemLayout={(_, index) => ({
             length: SCREEN_WIDTH,
             offset: SCREEN_WIDTH * index,
@@ -224,25 +215,13 @@ export const OnboardingScreen = () => {
               onPress={handleNext}
             >
               <ButtonText color="$textLight900" fontWeight="$bold" fontSize="$md">
-                {currentIndex === onboardingData.length - 1 ? 'Başlayalım' : 'Devam Et'}
+                {currentIndex === onboardingData.length - 1 ? "Let's Begin" : 'Continue'}
               </ButtonText>
             </Button>
           </Box>
         </Box>
       </View>
 
-      {/* Alt Güvenli Alan */}
-      <View
-        style={{
-          height: insets.bottom,
-          backgroundColor,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }}
-      />
-    </View>
+    </SafeAreaView>
   );
 };

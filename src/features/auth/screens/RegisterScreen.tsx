@@ -66,8 +66,8 @@ export const RegisterScreen = () => {
             return (
               <CustomToast
                 id={id}
-                title="Kayıt başarılı"
-                description={result.message || 'Hesabınız başarıyla oluşturuldu!'}
+                title="Registration successful"
+                description={result.message || 'Your account has been created successfully!'}
                 action="success"
                 duration={3000}
               />
@@ -92,7 +92,7 @@ export const RegisterScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'Kayıt sırasında bir hata oluştu';
+          'An error occurred during registration';
 
         toast.show({
           placement: 'top',
@@ -101,7 +101,7 @@ export const RegisterScreen = () => {
             return (
               <CustomToast
                 id={id}
-                title="Kayıt başarısız"
+                title="Registration failed"
                 description={errorMessage}
                 action="error"
                 duration={4000}

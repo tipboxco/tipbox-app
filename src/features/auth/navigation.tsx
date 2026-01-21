@@ -5,7 +5,9 @@ import { OnboardingScreen, WelcomeScreen, LoginScreen, RegisterScreen, AuthVerif
 export type AuthStackParamList = {
   Onboarding: undefined;
   Welcome: undefined;
-  Login: undefined;
+  Login: {
+    showSuccessToast?: boolean;
+  };
   Register: undefined;
   ForgotPassword: undefined;
   VerifyCode: {
@@ -17,9 +19,16 @@ export type AuthStackParamList = {
   };
   SetupProfile: {
     avatarData?: { type: 'avatar'; id: string } | { type: 'upload'; uri: string };
+    selectedCategories?: Array<{
+      categoryId: string;
+      subCategoryIds: string[];
+    }>;
   };
   SelectAvatar: {
-    onSelectAvatar?: (avatarData: { type: 'avatar'; id: string } | { type: 'upload'; uri: string }) => void;
+    selectedCategories?: Array<{
+      categoryId: string;
+      subCategoryIds: string[];
+    }>;
   };
   SelectCategories: undefined;
 };

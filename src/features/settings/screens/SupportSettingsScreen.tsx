@@ -69,8 +69,8 @@ export const SupportSettingsScreen = () => {
         render: ({ id }) => (
           <CustomToast
             id={id}
-            title="Geçersiz fiyat"
-            description={`Minimum ${MIN_PRICE} TIPS olmalıdır`}
+            title="Invalid Price"
+            description={`Minimum ${MIN_PRICE} TIPS required`}
             action="error"
             duration={3000}
           />
@@ -88,8 +88,8 @@ export const SupportSettingsScreen = () => {
         render: ({ id }) => (
           <CustomToast
             id={id}
-            title="Fiyat güncellendi"
-            description="Destek oturumu fiyatı başarıyla güncellendi"
+            title="Price Updated"
+            description="Support session price has been updated successfully"
             action="success"
             duration={3000}
           />
@@ -99,14 +99,14 @@ export const SupportSettingsScreen = () => {
       const errorMessage = error?.response?.data?.error?.message || 
                           error?.response?.data?.message || 
                           error?.message || 
-                          'Fiyat güncellenirken bir hata oluştu';
+                          'An error occurred while updating price';
       toast.show({
         placement: 'top',
         duration: 4000,
         render: ({ id }) => (
           <CustomToast
             id={id}
-            title="Hata"
+            title="Error"
             description={errorMessage}
             action="error"
             duration={4000}
@@ -136,7 +136,7 @@ export const SupportSettingsScreen = () => {
           ) : error ? (
             <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
               <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                {error.message || 'Fiyat bilgisi yüklenirken bir hata oluştu'}
+                {error.message || 'An error occurred while loading price information'}
               </Text>
             </Box>
           ) : (
@@ -264,7 +264,7 @@ export const SupportSettingsScreen = () => {
                     fontSize={14}
                     fontWeight="$bold"
                   >
-                    {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                    {updateMutation.isPending ? 'Saving...' : 'Save'}
                   </ButtonText>
                 </Button>
               )}

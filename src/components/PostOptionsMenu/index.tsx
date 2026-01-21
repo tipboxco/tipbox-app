@@ -80,7 +80,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
       });
     } else {
       // Diğer post tipleri için TODO: Update screen'leri eklenebilir
-      Alert.alert('Bilgi', 'Bu post tipi için güncelleme özelliği henüz mevcut değil.');
+      Alert.alert('Info', 'Update feature is not yet available for this post type.');
     }
   }, [postId, postType, postContextType, postContextId, closeBottomSheet]);
 
@@ -90,18 +90,18 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     console.log('[PostOptionsMenu] 🗑️ Delete button clicked for post:', postId);
     
     Alert.alert(
-      'Post\'u Sil',
-      'Bu post\'u silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
           onPress: () => {
             console.log('[PostOptionsMenu] ❌ Delete cancelled by user');
           },
         },
         {
-          text: 'Sil',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             console.log('[PostOptionsMenu] ✅ Delete confirmed, sending DELETE request to /posts/' + postId);
@@ -115,7 +115,7 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
                 timestamp: new Date().toISOString(),
               });
               
-              Alert.alert('Başarılı', 'Post başarıyla silindi.');
+              Alert.alert('Success', 'Post deleted successfully.');
               // Navigate back if needed
               navigationService.goBack();
             } catch (error: any) {
@@ -130,8 +130,8 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
               });
               
               Alert.alert(
-                'Hata',
-                error.response?.data?.message || 'Post silinirken bir hata oluştu.'
+                'Error',
+                error.response?.data?.message || 'An error occurred while deleting the post.'
               );
             }
           },
@@ -144,20 +144,20 @@ export const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
     closeBottomSheet();
     
     Alert.alert(
-      'Post\'u Raporla',
-      'Bu post\'u raporlamak istediğinizden emin misiniz?',
+      'Report Post',
+      'Are you sure you want to report this post?',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Raporla',
+          text: 'Report',
           style: 'destructive',
           onPress: () => {
             // TODO: Post report API endpoint eklendiğinde buraya entegre edilecek
             console.log('[PostOptionsMenu] Report post:', postId);
-            Alert.alert('Başarılı', 'Post raporlandı. İnceleme için teşekkürler.');
+            Alert.alert('Success', 'Post reported. Thank you for your review.');
           },
         },
       ]

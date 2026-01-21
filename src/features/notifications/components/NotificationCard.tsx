@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
     Box,
     VStack,
@@ -15,7 +15,14 @@ import {
 } from '../api/hooks';
 import type { Notification, NotificationType } from '../api/types';
 import { LightBulbIcon } from 'react-native-heroicons/solid';
-import { TrophyIcon } from 'react-native-heroicons/outline';
+import { TrophyIcon, BellIcon, BellSlashIcon, EllipsisVerticalIcon, ArrowUpTrayIcon, NoSymbolIcon, FlagIcon } from 'react-native-heroicons/outline';
+import { useMuteUser, useUnmuteUser, useBlockUser, useUnblockUser, useReportUser, useUserProfile, profileKeys } from '@/src/features/profile/api/hooks';
+import type { UserReportCategory } from '@/src/features/profile/api/profileApi';
+import type { UserProfile } from '@/src/features/profile/types';
+import { useAppStore } from '@/src/store/appStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@gluestack-ui/themed';
+import { showCustomToast } from '@/src/components/CustomToast';
 import { notificationService } from '@/src/services/NotificationService';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -23,8 +30,10 @@ import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/shared
 import { TAB_ROUTES } from '@/src/navigation/constants/tabRoutes';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { LikedUsersBottomSheet } from './LikedUsersBottomSheet';
-import { Platform } from 'react-native';
+import { Platform, Share, Alert } from 'react-native';
 import { useSafeAreaValues } from '@/src/utils';
+import { ReactNativeMenuModal, MenuItem } from '@/src/components/ReactNativeMenuModal';
+import { View } from 'react-native';
 
 export interface NotificationCardProps {
     notification: Notification;
@@ -718,6 +727,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const isDark = colorMode === 'dark';
     const markAsReadMutation = useMarkNotificationAsRead();
     const deleteMutation = useDeleteNotification();
+    const { user } = useAppStore();
+    const queryClient = useQueryClient();
+    const toast = useToast();
     
     // Global bottom sheet hook
     const { openBottomSheet, closeBottomSheet } = useGlobalBottomSheet();
@@ -736,6 +748,31 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const groupedCount = notification.count || (hasPrimaryUser && hasOtherUsers ? otherUsersArray.length + 1 : 0);
     const primaryUser = notification.primaryUser;
     const otherUsers = Array.isArray(notification.otherUsers) ? notification.otherUsers : [];
+    
+    // Mute/Unmute için kullanıcı ID'sini belirle
+    const targetUserId = isGrouped && primaryUser?.id 
+        ? primaryUser.id 
+        : notification.userId;
+    
+    // Kullanıcının mute durumunu kontrol et
+    const profileQuery = useUserProfile(targetUserId);
+    const userProfile = profileQuery.data as UserProfile | undefined;
+    const isMuted = userProfile?.isMuted === true;
+    
+    // Mute/Unmute mutations
+    const { mutate: muteUser, isPending: isMuting } = useMuteUser();
+    const { mutate: unmuteUser, isPending: isUnmuting } = useUnmuteUser();
+    
+    // Block/Unblock mutations
+    const { mutate: blockUser, isPending: isBlocking } = useBlockUser();
+    const { mutate: unblockUser, isPending: isUnblocking } = useUnblockUser();
+    
+    // Report mutation
+    const { mutate: reportUser, isPending: isReporting } = useReportUser();
+    
+    // Context menu state
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const menuTriggerRef = React.useRef<View>(null);
     
     // CRITICAL FIX: Liked users bottom sheet açma handler'ı
     // Worklet hatası önlemek için useCallback ile wrap et ve değerleri güvenli hale getir
@@ -1110,6 +1147,363 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         }
     };
 
+    // Handle Mute/Unmute
+    const handleMute = useCallback(() => {
+        if (!user?.id || !targetUserId) {
+            if (__DEV__) {
+                console.warn('[NotificationCard] handleMute: Missing required data', {
+                    hasUserId: !!user?.id,
+                    hasTargetUserId: !!targetUserId,
+                });
+            }
+            return;
+        }
+        
+        // Mutation zaten devam ediyorsa işlem yapma
+        if (isMuting || isUnmuting) {
+            if (__DEV__) {
+                console.log('[NotificationCard] handleMute: Mutation already in progress, skipping');
+            }
+            return;
+        }
+        
+        // Cache'den güncel profile'ı al
+        const queryKey = profileKeys.profile(targetUserId);
+        const cachedProfile = queryClient.getQueryData<any>(queryKey);
+        const currentProfile = cachedProfile || userProfile;
+        
+        if (!currentProfile) {
+            if (__DEV__) {
+                console.warn('[NotificationCard] handleMute: No profile data available');
+            }
+            return;
+        }
+        
+        // isMuted değerini güvenilir şekilde kontrol et
+        const currentIsMuted = currentProfile.isMuted === true;
+        
+        if (__DEV__) {
+            console.log('[NotificationCard] handleMute called:', {
+                userId: user.id,
+                targetUserId,
+                isMuted: currentIsMuted,
+                userName: currentProfile.name || notification.username,
+            });
+        }
+        
+        if (currentIsMuted) {
+            // Unmute
+            if (__DEV__) {
+                console.log('[NotificationCard] Unmuting user...');
+            }
+            unmuteUser(
+                { userId: user.id, targetUserId },
+                {
+                    onSuccess: (result) => {
+                        if (__DEV__) {
+                            console.log('[NotificationCard] ✅ User unmuted successfully', { result });
+                        }
+                        if (result === false) {
+                            showCustomToast(toast, {
+                                title: 'Info',
+                                description: `${currentProfile.name || notification.username || 'User'} is already unmuted`,
+                                action: 'info',
+                            });
+                        } else {
+                            showCustomToast(toast, {
+                                title: 'Unmuted',
+                                description: `${currentProfile.name || notification.username || 'User'} can now send notifications`,
+                                action: 'success',
+                            });
+                        }
+                    },
+                    onError: (error: any) => {
+                        if (__DEV__) {
+                            console.error('[NotificationCard] ❌ Unmute error:', error);
+                        }
+                        const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while unmuting';
+                        showCustomToast(toast, {
+                            title: 'Error',
+                            description: errorMessage,
+                            action: 'error',
+                        });
+                    },
+                }
+            );
+        } else {
+            // Mute
+            if (__DEV__) {
+                console.log('[NotificationCard] Muting user...');
+            }
+            muteUser(
+                { userId: user.id, targetUserId },
+                {
+                    onSuccess: () => {
+                        if (__DEV__) {
+                            console.log('[NotificationCard] ✅ User muted successfully');
+                        }
+                        showCustomToast(toast, {
+                            title: 'User Muted',
+                            description: `${currentProfile.name || notification.username || 'User'} will no longer send notifications`,
+                            action: 'info',
+                        });
+                    },
+                    onError: (error: any) => {
+                        if (__DEV__) {
+                            console.error('[NotificationCard] ❌ Mute error:', error);
+                        }
+                        const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while muting user';
+                        showCustomToast(toast, {
+                            title: 'Error',
+                            description: errorMessage,
+                            action: 'error',
+                        });
+                    },
+                }
+            );
+        }
+    }, [targetUserId, user?.id, userProfile, muteUser, unmuteUser, toast, isMuting, isUnmuting, queryClient, notification.username]);
+
+    // Handle Share
+    const handleShare = useCallback(async () => {
+        if (!targetUserId) return;
+        
+        try {
+            const username = notification.username || userProfile?.name || 'User';
+            await Share.share({
+                message: `Check out ${username}'s profile on Tipbox!`,
+                url: `tipboxapp://profile/user/${targetUserId}`,
+            });
+        } catch (error) {
+            console.error('[NotificationCard] Share error:', error);
+        }
+    }, [targetUserId, notification.username, userProfile?.name]);
+
+    // Handle Block/Unblock
+    const handleBlock = useCallback(() => {
+        if (!user?.id || !targetUserId) {
+            if (__DEV__) {
+                console.warn('[NotificationCard] handleBlock: Missing required data', {
+                    hasUserId: !!user?.id,
+                    hasTargetUserId: !!targetUserId,
+                });
+            }
+            return;
+        }
+        
+        // Mutation zaten devam ediyorsa işlem yapma
+        if (isBlocking || isUnblocking) {
+            if (__DEV__) {
+                console.log('[NotificationCard] handleBlock: Mutation already in progress, skipping');
+            }
+            return;
+        }
+        
+        // Cache'den güncel profile'ı al
+        const queryKey = profileKeys.profile(targetUserId);
+        const cachedProfile = queryClient.getQueryData<UserProfile>(queryKey);
+        const currentProfile = cachedProfile || userProfile;
+        
+        if (!currentProfile) {
+            if (__DEV__) {
+                console.warn('[NotificationCard] handleBlock: No profile data available');
+            }
+            return;
+        }
+        
+        // isBlocked değerini güvenilir şekilde kontrol et
+        const isBlocked = currentProfile.isBlocked === true;
+        const username = currentProfile.name || notification.username || 'User';
+        
+        if (isBlocked) {
+            // Unblock
+            Alert.alert(
+                'Unblock User',
+                `Are you sure you want to unblock ${username}?`,
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Unblock',
+                        onPress: () => {
+                            unblockUser(
+                                { userId: user.id, targetUserId },
+                                {
+                                    onSuccess: (result) => {
+                                        if (__DEV__) {
+                                            console.log('[NotificationCard] ✅ User unblocked successfully', { result });
+                                        }
+                                        if (result === false) {
+                                            showCustomToast(toast, {
+                                                title: 'Info',
+                                                description: `${username} is not blocked`,
+                                                action: 'info',
+                                            });
+                                        } else {
+                                            showCustomToast(toast, {
+                                                title: 'User unblocked',
+                                                description: `${username} can now interact with you`,
+                                                action: 'success',
+                                            });
+                                        }
+                                    },
+                                    onError: (error: any) => {
+                                        if (__DEV__) {
+                                            console.error('[NotificationCard] ❌ Unblock error:', error);
+                                        }
+                                        const errorMessage = error?.response?.data?.message || error?.message || 'Failed to unblock user';
+                                        showCustomToast(toast, {
+                                            title: 'Error',
+                                            description: errorMessage,
+                                            action: 'error',
+                                        });
+                                    },
+                                }
+                            );
+                        },
+                    },
+                ]
+            );
+        } else {
+            // Block
+            Alert.alert(
+                'Block User',
+                `Are you sure you want to block ${username}? Blocked users cannot interact with you.`,
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Block',
+                        style: 'destructive',
+                        onPress: () => {
+                            blockUser(
+                                { userId: user.id, targetUserId },
+                                {
+                                    onSuccess: () => {
+                                        if (__DEV__) {
+                                            console.log('[NotificationCard] ✅ User blocked successfully');
+                                        }
+                                        showCustomToast(toast, {
+                                            title: 'User blocked',
+                                            description: `${username} can no longer interact with you`,
+                                            action: 'info',
+                                        });
+                                        // Navigate back after blocking - goBack will handle if it can go back
+                                        try {
+                                            navigationService.goBack();
+                                        } catch (error) {
+                                            // Ignore if cannot go back
+                                        }
+                                    },
+                                    onError: (error: any) => {
+                                        if (__DEV__) {
+                                            console.error('[NotificationCard] ❌ Block error:', error);
+                                        }
+                                        const errorMessage = error?.response?.data?.message || error?.message || 'Failed to block user';
+                                        showCustomToast(toast, {
+                                            title: 'Error',
+                                            description: errorMessage,
+                                            action: 'error',
+                                        });
+                                    },
+                                }
+                            );
+                        },
+                    },
+                ]
+            );
+        }
+    }, [targetUserId, user?.id, userProfile, blockUser, unblockUser, toast, isBlocking, isUnblocking, queryClient, notification.username]);
+
+    // Report categories with labels - memoized
+    const reportCategories = React.useMemo<Array<{ value: UserReportCategory; label: string }>>(() => [
+        { value: 'SPAM', label: 'Spam' },
+        { value: 'HARASSMENT', label: 'Harassment' },
+        { value: 'SCAM', label: 'Scam' },
+        { value: 'INAPPROPRIATE_CONTENT', label: 'Inappropriate Content' },
+        { value: 'FAKE_ACCOUNT', label: 'Fake Account' },
+        { value: 'OTHER', label: 'Other' },
+    ], []);
+
+    // Handle Report
+    const handleReport = useCallback(() => {
+        if (!user?.id || !targetUserId) {
+            if (__DEV__) {
+                console.warn('[NotificationCard] handleReport: Missing required data', {
+                    hasUserId: !!user?.id,
+                    hasTargetUserId: !!targetUserId,
+                });
+            }
+            return;
+        }
+        
+        // Mutation zaten devam ediyorsa işlem yapma
+        if (isReporting) {
+            if (__DEV__) {
+                console.log('[NotificationCard] handleReport: Mutation already in progress, skipping');
+            }
+            return;
+        }
+        
+        const username = userProfile?.name || notification.username || 'User';
+        
+        // Report category seçimi için alert
+        Alert.alert(
+            'Report User',
+            `Why are you reporting ${username}?`,
+            [
+                ...reportCategories.map((category) => ({
+                    text: category.label,
+                    onPress: () => {
+                        // Seçilen kategori ile raporla
+                        reportUser(
+                            {
+                                userId: user.id,
+                                targetUserId,
+                                data: {
+                                    category: category.value,
+                                    description: `Reported for: ${category.label}`,
+                                },
+                            },
+                            {
+                                onSuccess: () => {
+                                    if (__DEV__) {
+                                        console.log('[NotificationCard] ✅ User reported successfully');
+                                    }
+                                    showCustomToast(toast, {
+                                        title: 'User reported',
+                                        description: `Thank you for reporting. We'll review this report.`,
+                                        action: 'success',
+                                    });
+                                },
+                                onError: (error: any) => {
+                                    if (__DEV__) {
+                                        console.error('[NotificationCard] ❌ Report error:', error);
+                                    }
+                                    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to report user';
+                                    showCustomToast(toast, {
+                                        title: 'Error',
+                                        description: errorMessage,
+                                        action: 'error',
+                                    });
+                                },
+                            }
+                        );
+                    },
+                })),
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+            ],
+            { cancelable: true }
+        );
+    }, [targetUserId, user?.id, userProfile, notification.username, reportUser, toast, isReporting]);
+
     // DEBUG: Gruplandırma bilgilerini logla
     React.useEffect(() => {
         if (__DEV__) {
@@ -1427,7 +1821,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     )}
             </HStack>
 
-                {/* Timestamp and Unread Badge - Position Absolute (MessageCard ile aynı) */}
+                {/* Timestamp, Context Menu and Unread Badge - Position Absolute */}
                 <HStack
                     position="absolute"
                     top="$3"
@@ -1435,6 +1829,46 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     space="xs"
                     alignItems="center"
                 >
+                    {/* Context Menu - Sadece kendi profiliniz değilse göster */}
+                    {targetUserId && user?.id && targetUserId !== user.id && (
+                        <Box position="relative" zIndex={2001}>
+                            <View ref={menuTriggerRef} collapsable={false}>
+                                <Pressable onPress={() => setIsMenuOpen(true)}>
+                                    <EllipsisVerticalIcon width={16} height={16} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                                </Pressable>
+                            </View>
+                            
+                            <ReactNativeMenuModal
+                                visible={isMenuOpen}
+                                onClose={() => setIsMenuOpen(false)}
+                                triggerRef={menuTriggerRef}
+                                placement="top-left"
+                                offsetX={10}
+                                items={React.useMemo<MenuItem[]>(() => [
+                                    {
+                                        label: 'Share',
+                                        icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+                                        onPress: handleShare,
+                                    },
+                                    {
+                                        label: isReporting ? 'Reporting...' : 'Report',
+                                        icon: <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+                                        onPress: handleReport,
+                                        disabled: isReporting,
+                                    },
+                                    {
+                                        label: (isBlocking || isUnblocking)
+                                            ? (userProfile?.isBlocked ? 'Unblocking...' : 'Blocking...')
+                                            : (userProfile?.isBlocked ? 'Unblock' : 'Block'),
+                                        icon: <NoSymbolIcon width={20} height={20} color={userProfile?.isBlocked ? (isDark ? '#FFFFFF' : '#000000') : '#FF3040'} />,
+                                        onPress: handleBlock,
+                                        color: userProfile?.isBlocked ? undefined : '#FF3040',
+                                        disabled: isBlocking || isUnblocking,
+                                    },
+                                ], [isDark, isReporting, isBlocking, isUnblocking, userProfile?.isBlocked, handleShare, handleReport, handleBlock])}
+                            />
+                        </Box>
+                    )}
                     <Text
                         color={isDark ? '#8C8C8C' : '#8C8C8C'}
                         fontSize="$xs"
@@ -1453,6 +1887,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         />
                     )}
                 </HStack>
+                
         </Pressable>
     );
 };

@@ -11,6 +11,7 @@ import type { AuthStackParamList } from '../navigation';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { toImageSource } from '@/src/utils';
 import { Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SelectAvatarScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'SelectAvatar'>;
 type SelectAvatarScreenRouteProp = RouteProp<AuthStackParamList, 'SelectAvatar'>;
@@ -60,11 +61,11 @@ export const SelectAvatarScreen = () => {
         setUploadedImage(result.asset.uri);
         setSelectedAvatarId(null); // Avatar seçimini temizle
       } else {
-        Alert.alert('Hata', result.error || 'Fotoğraf seçilirken bir hata oluştu');
+        Alert.alert('Error', result.error || 'An error occurred while selecting photo');
       }
     } catch (error: any) {
       console.error('[SelectAvatarScreen] Gallery pick error:', error);
-      Alert.alert('Hata', 'Fotoğraf seçilirken bir hata oluştu');
+      Alert.alert('Error', 'An error occurred while selecting photo');
     } finally {
       setIsUploading(false);
     }
@@ -79,11 +80,11 @@ export const SelectAvatarScreen = () => {
         setUploadedImage(result.asset.uri);
         setSelectedAvatarId(null); // Avatar seçimini temizle
       } else {
-        Alert.alert('Hata', result.error || 'Fotoğraf çekilirken bir hata oluştu');
+        Alert.alert('Error', result.error || 'An error occurred while taking photo');
       }
     } catch (error: any) {
       console.error('[SelectAvatarScreen] Camera error:', error);
-      Alert.alert('Hata', 'Fotoğraf çekilirken bir hata oluştu');
+      Alert.alert('Error', 'An error occurred while taking photo');
     } finally {
       setIsUploading(false);
     }
@@ -96,41 +97,30 @@ export const SelectAvatarScreen = () => {
         ? { type: 'upload' as const, uri: uploadedImage }
         : { type: 'avatar' as const, id: selectedAvatarId! };
       
-      // Callback varsa çağır
-      if (route.params?.onSelectAvatar) {
-        route.params.onSelectAvatar(avatarData);
-      }
-      
       // SetupProfile ekranına navigate et ve avatar bilgisini params ile gönder
-      navigation.navigate('SetupProfile', { avatarData } as any);
+      // Mevcut selectedCategories varsa onu da koru
+      const currentParams = route.params as any;
+      navigation.navigate('SetupProfile', { 
+        avatarData,
+        selectedCategories: currentParams?.selectedCategories 
+      });
     }
   };
 
   const hasSelection = selectedAvatarId !== null || uploadedImage !== null;
 
   return (
-    <View style={{ flex: 1, backgroundColor }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor }} edges={['top', 'bottom']}>
       {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
-      <View 
-        style={{ 
-          height: insets.top, 
-          backgroundColor,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }} 
-      />
+
 
       {/* Ana İçerik */}
-      <View style={{ flex: 1 }}>
         <Box
           flex={1}
           bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
           p="$4"
         >
-          <VStack flex={1} space="md" pt="$4">
+          <VStack flex={1} space="md"  >
             <Text
               fontSize="$2xl"
               fontWeight="$bold"
@@ -144,7 +134,7 @@ export const SelectAvatarScreen = () => {
             <HStack space="sm" justifyContent="center" mt="$4">
               <Pressable
                 onPress={() => setActiveTab('avatars')}
-                bg={activeTab === 'avatars' ? '$yellow400' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
+                bg={activeTab === 'avatars' ? '$buttonPrimary' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
                 px="$6"
                 py="$2"
                 rounded="$full"
@@ -160,7 +150,7 @@ export const SelectAvatarScreen = () => {
 
               <Pressable
                 onPress={() => setActiveTab('upload')}
-                bg={activeTab === 'upload' ? '$yellow400' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
+                bg={activeTab === 'upload' ? '$buttonPrimary' : isDark ? '$backgroundDark100' : '$backgroundLight100'}
                 px="$6"
                 py="$2"
                 rounded="$full"
@@ -196,7 +186,7 @@ export const SelectAvatarScreen = () => {
                             h="100%"
                             rounded="$lg"
                             borderWidth={isSelected ? 3 : 1}
-                            borderColor={isSelected ? '$yellow400' : isDark ? '$borderDark100' : '$borderLight100'}
+                            borderColor={isSelected ? '$buttonPrimary' : isDark ? '$borderDark100' : '$borderLight100'}
                             overflow="hidden"
                             bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
                           >
@@ -211,7 +201,7 @@ export const SelectAvatarScreen = () => {
                                 position="absolute"
                                 top="$2"
                                 right="$2"
-                                bg="$yellow400"
+                                bg="$buttonPrimary"
                                 rounded="$full"
                                 p="$1"
                               >
@@ -230,11 +220,11 @@ export const SelectAvatarScreen = () => {
                     <Box
                       w="100%"
                       aspectRatio={1}
-                      maxW={300}
+                      
                       rounded="$lg"
                       overflow="hidden"
                       borderWidth={2}
-                      borderColor="$yellow400"
+                      borderColor="$buttonPrimary"
                     >
                       <Image
                         source={toImageSource(uploadedImage)}
@@ -247,7 +237,6 @@ export const SelectAvatarScreen = () => {
                     <Box
                       w="100%"
                       aspectRatio={1}
-                      maxW={300}
                       rounded="$lg"
                       bg={isDark ? '$backgroundDark100' : '$backgroundLight100'}
                       borderWidth={1}
@@ -264,7 +253,7 @@ export const SelectAvatarScreen = () => {
                           textAlign="center"
                           px="$4"
                         >
-                          Fotoğraf yüklemek için aşağıdaki butonları kullanın
+                          Use the buttons below to upload a photo
                         </Text>
                       </VStack>
                     </Box>
@@ -274,7 +263,6 @@ export const SelectAvatarScreen = () => {
                     <Button
                       variant="outline"
                       flex={1}
-                      maxW={150}
                       onPress={handlePickFromGallery}
                       isDisabled={isUploading}
                       borderColor={isDark ? '$borderDark100' : '$borderLight100'}
@@ -285,7 +273,7 @@ export const SelectAvatarScreen = () => {
                         <>
                           <Icon as={Upload} size="md" color={isDark ? '$textDark50' : '$textLight900'} mr="$2" />
                           <ButtonText color={isDark ? '$textDark50' : '$textLight900'}>
-                            Galeri
+                            Gallery
                           </ButtonText>
                         </>
                       )}
@@ -294,7 +282,6 @@ export const SelectAvatarScreen = () => {
                     <Button
                       variant="outline"
                       flex={1}
-                      maxW={150}
                       onPress={handleTakePhoto}
                       isDisabled={isUploading}
                       borderColor={isDark ? '$borderDark100' : '$borderLight100'}
@@ -305,7 +292,7 @@ export const SelectAvatarScreen = () => {
                         <>
                           <Icon as={Camera} size="md" color={isDark ? '$textDark50' : '$textLight900'} mr="$2" />
                           <ButtonText color={isDark ? '$textDark50' : '$textLight900'}>
-                            Kamera
+                            Camera
                           </ButtonText>
                         </>
                       )}
@@ -316,11 +303,11 @@ export const SelectAvatarScreen = () => {
             </ScrollView>
 
             <Button
-              bg="$yellow400"
+              bg="$buttonPrimary"
               py="$1"
               rounded="$lg"
               mt="auto"
-              mb={insets.bottom + 16}
+              mb="$4"
               onPress={handleNext}
               opacity={hasSelection ? 1 : 0.5}
               disabled={!hasSelection}
@@ -329,20 +316,8 @@ export const SelectAvatarScreen = () => {
             </Button>
           </VStack>
         </Box>
-      </View>
 
-      {/* Alt Güvenli Alan - Home Indicator arkasını beyaz boyar */}
-      <View 
-        style={{ 
-          height: insets.bottom, 
-          backgroundColor,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1,
-        }} 
-      />
-    </View>
+   
+    </SafeAreaView>
   );
 };

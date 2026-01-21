@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Box,
   HStack,
@@ -10,7 +10,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { toImageSource } from '@/src/utils';
-import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
+import { ReactNativeMenuModal, MenuItem } from '@/src/components/ReactNativeMenuModal';
+import { View } from 'react-native';
 import {
   ArrowUpTrayIcon,
   FlagIcon,
@@ -42,49 +43,44 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-  const contextMenuCloseRef = useRef<(() => void) | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuTriggerRef = useRef<View>(null);
 
   // Menu items - only show if recipientUserId is provided (not own profile)
-  const menuItems = recipientUserId ? [
-    {
-      label: 'Share',
-      icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-      onPress: () => {
-        if (onShare) {
-          onShare();
-        }
-        if (contextMenuCloseRef.current) {
-          contextMenuCloseRef.current();
-        }
+  const menuItems = useMemo<MenuItem[]>(() => {
+    if (!recipientUserId) return [];
+    
+    return [
+      {
+        label: 'Share',
+        icon: <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+        onPress: () => {
+          if (onShare) {
+            onShare();
+          }
+        },
       },
-    },
-    {
-      label: 'Report',
-      icon: <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
-      onPress: () => {
-        if (onReport) {
-          onReport();
-        }
-        if (contextMenuCloseRef.current) {
-          contextMenuCloseRef.current();
-        }
+      {
+        label: 'Report',
+        icon: <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
+        onPress: () => {
+          if (onReport) {
+            onReport();
+          }
+        },
       },
-    },
-    {
-      label: 'Block',
-      icon: <NoSymbolIcon width={20} height={20} color="#FF3040" />,
-      onPress: () => {
-        if (onBlock) {
-          onBlock();
-        }
-        if (contextMenuCloseRef.current) {
-          contextMenuCloseRef.current();
-        }
+      {
+        label: 'Block',
+        icon: <NoSymbolIcon width={20} height={20} color="#FF3040" />,
+        onPress: () => {
+          if (onBlock) {
+            onBlock();
+          }
+        },
+        color: '#FF3040',
       },
-      color: '#FF3040',
-    },
-  ] : [];
+    ];
+  }, [recipientUserId, isDark, onShare, onReport, onBlock]);
 
   return (
     <VStack
@@ -147,55 +143,35 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
           </HStack>
 
           {/* Menü Butonu */}
-          {menuItems.length > 0 ? (
-            <Box position="relative" zIndex={2001}>
-              <ContextMenuReanimated
-                menuItems={menuItems}
-                onMenuStateChange={setIsContextMenuOpen}
-                onCloseRef={(closeFn) => {
-                  contextMenuCloseRef.current = closeFn;
-                }}
-              >
-                <Pressable onPress={onMenuPress}>
-                  <Feather
-                    name="more-vertical"
-                    size={20}
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                  />
-                </Pressable>
-              </ContextMenuReanimated>
-            </Box>
-          ) : (
-            <Pressable onPress={onMenuPress}>
+          <View ref={menuTriggerRef} collapsable={false}>
+            <Pressable onPress={() => {
+              if (menuItems.length > 0) {
+                setIsMenuOpen(true);
+              } else if (onMenuPress) {
+                onMenuPress();
+              }
+            }}>
               <Feather
                 name="more-vertical"
                 size={20}
                 color={isDark ? '#FFFFFF' : '#000000'}
               />
             </Pressable>
+          </View>
+          
+          {menuItems.length > 0 && (
+            <ReactNativeMenuModal
+              visible={isMenuOpen}
+              onClose={() => setIsMenuOpen(false)}
+              triggerRef={menuTriggerRef}
+              placement="top-left"
+              offsetX={10}
+              items={menuItems}
+            />
           )}
         </HStack>
       </Box>
 
-      {/* Context Menu Backdrop */}
-      {isContextMenuOpen && (
-        <Pressable
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          zIndex={2000}
-          onPress={() => {
-            if (contextMenuCloseRef.current) {
-              contextMenuCloseRef.current();
-            }
-          }}
-          style={{
-            backgroundColor: 'transparent',
-          }}
-        />
-      )}
     </VStack>
   );
 };

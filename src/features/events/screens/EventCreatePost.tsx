@@ -185,6 +185,59 @@ const EventCreatePost: React.FC = () => {
         }
     }, [routeProductSource]);
 
+    // handleProductSelect'i önce tanımla (handleSelectProduct'ta kullanılıyor)
+    const handleProductSelect = useCallback((product: Category) => {
+        setSelectedProduct(product);
+        closeBottomSheet();
+    }, [closeBottomSheet]);
+
+    // handleInventoryProductSelect'i önce tanımla (useEffect ve useFocusEffect'te kullanılıyor)
+    const handleInventoryProductSelect = useCallback((product: InventoryItem) => {
+        console.log('🔍 [EventCreatePost] Inventory product selected (API):', {
+            inventoryItemId: product.id,
+            productId: product.productId,
+            brand: product.brand,
+            image: product.image,
+            willSendInventoryId: true,
+        });
+        
+        // Backend inventoryId'den productId'yi bulacak
+        const brandName = product.brand?.name || 'Unknown';
+        const brandModel = product.brand?.model || '';
+        
+        const productCategory: Category = {
+            id: product.id, // Inventory item ID (UI'da gösterim için)
+            name: brandModel ? `${brandName} ${brandModel}` : brandName,
+            image: product.image,
+            category: brandName,
+            inventoryId: product.id, // ✅ Backend için inventory ID
+        };
+        
+        console.log('✅ [EventCreatePost] Product category created from inventory:', {
+            inventoryItemId: product.id,
+            categoryId: productCategory.id,
+            categoryInventoryId: productCategory.inventoryId,
+            name: productCategory.name,
+            inventoryId: productCategory.inventoryId,
+            willSendInventoryIdToBackend: true,
+            backendWillFetchProductId: true,
+            CHECK: {
+                hasInventoryId: !!productCategory.inventoryId ? '✅ YES' : '❌ NO',
+                inventoryIdValue: productCategory.inventoryId,
+            }
+        });
+        
+        // CRITICAL: inventoryId yoksa hata ver
+        if (!productCategory.inventoryId) {
+            console.error('❌ [EventCreatePost] CRITICAL: inventoryId is missing after creation!');
+        }
+        
+        setSelectedProduct(productCategory);
+        setShowProductSelector(false);
+        setProductSource(null);
+        navigation.setParams({ productSource: undefined });
+    }, [navigation]);
+
     // Handle selected product from CatalogScreen or InventoryScreen
     // selectedProduct is stored in state and preserved when navigating back from Catalog/Inventory
     useEffect(() => {
@@ -213,7 +266,17 @@ const EventCreatePost: React.FC = () => {
                 image: selectedProductFromInventory.image,
             });
             
-            handleInventoryProductSelect(selectedProductFromInventory);
+            // Convert route params to InventoryItem format
+            const inventoryItem: InventoryItem = {
+                id: selectedProductFromInventory.id,
+                productId: selectedProductFromInventory.productId,
+                brand: selectedProductFromInventory.brand,
+                image: selectedProductFromInventory.image,
+                reviews: [], // Not needed for post creation
+                tags: [], // Not needed for post creation
+            };
+            
+            handleInventoryProductSelect(inventoryItem);
             
             // Clear from params
             navigation.setParams({ selectedInventoryProduct: undefined });
@@ -245,16 +308,20 @@ const EventCreatePost: React.FC = () => {
                     productId: selectedProductFromInventory.productId,
                 });
                 
-                handleInventoryProductSelect(selectedProductFromInventory);
+                // Convert route params to InventoryItem format
+                const inventoryItem: InventoryItem = {
+                    id: selectedProductFromInventory.id,
+                    productId: selectedProductFromInventory.productId,
+                    brand: selectedProductFromInventory.brand,
+                    image: selectedProductFromInventory.image,
+                    reviews: [], // Not needed for post creation
+                    tags: [], // Not needed for post creation
+                };
+                
+                handleInventoryProductSelect(inventoryItem);
             }
         }, [selectedProductFromCatalog, selectedProductFromInventory, handleInventoryProductSelect])
     );
-
-    // handleProductSelect'i önce tanımla (handleSelectProduct'ta kullanılıyor)
-    const handleProductSelect = useCallback((product: Category) => {
-        setSelectedProduct(product);
-        closeBottomSheet();
-    }, [closeBottomSheet]);
 
     const handleSelectProduct = useCallback(() => {
         // Open bottom sheet using global manager
@@ -304,52 +371,6 @@ const EventCreatePost: React.FC = () => {
         // Clear route params to prevent re-triggering
         navigation.setParams({ productSource: undefined });
     };
-
-    const handleInventoryProductSelect = useCallback((product: InventoryItem) => {
-        console.log('🔍 [EventCreatePost] Inventory product selected (API):', {
-            inventoryItemId: product.id,
-            productId: product.productId,
-            brand: product.brand,
-            image: product.image,
-            willSendInventoryId: true,
-        });
-        
-        // Backend inventoryId'den productId'yi bulacak
-        const brandName = product.brand?.name || 'Unknown';
-        const brandModel = product.brand?.model || '';
-        
-        const productCategory: Category = {
-            id: product.id, // Inventory item ID (UI'da gösterim için)
-            name: brandModel ? `${brandName} ${brandModel}` : brandName,
-            image: product.image,
-            category: brandName,
-            inventoryId: product.id, // ✅ Backend için inventory ID
-        };
-        
-        console.log('✅ [EventCreatePost] Product category created from inventory:', {
-            inventoryItemId: product.id,
-            categoryId: productCategory.id,
-            categoryInventoryId: productCategory.inventoryId,
-            name: productCategory.name,
-            inventoryId: productCategory.inventoryId,
-            willSendInventoryIdToBackend: true,
-            backendWillFetchProductId: true,
-            CHECK: {
-                hasInventoryId: !!productCategory.inventoryId ? '✅ YES' : '❌ NO',
-                inventoryIdValue: productCategory.inventoryId,
-            }
-        });
-        
-        // CRITICAL: inventoryId yoksa hata ver
-        if (!productCategory.inventoryId) {
-            console.error('❌ [EventCreatePost] CRITICAL: inventoryId is missing after creation!');
-        }
-        
-        setSelectedProduct(productCategory);
-        setShowProductSelector(false);
-        setProductSource(null);
-        navigation.setParams({ productSource: undefined });
-    }, [navigation]);
 
     const handleCloseProductSelector = () => {
         setShowProductSelector(false);

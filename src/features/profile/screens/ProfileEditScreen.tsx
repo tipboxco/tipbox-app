@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { ScrollView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -41,6 +41,89 @@ const AVAILABLE_BADGES = [
   { id: 'tech_expert', label: 'Tech Expert' },
 ] as const;
 
+// Badge item component - memoized for performance
+interface BadgeItemProps {
+  badge: typeof AVAILABLE_BADGES[number];
+  isSelected: boolean;
+  isUsedInOtherSlot: boolean;
+  isDark: boolean;
+  onSelect: (badgeId: string) => void;
+}
+
+const BadgeItem = memo<BadgeItemProps>(({ 
+  badge, 
+  isSelected, 
+  isUsedInOtherSlot, 
+  isDark, 
+  onSelect 
+}) => {
+  const handlePress = useCallback(() => {
+    if (isUsedInOtherSlot) {
+      Alert.alert('Warning', 'This badge is already used in another slot');
+      return;
+    }
+    onSelect(badge.id);
+  }, [badge.id, isUsedInOtherSlot, onSelect]);
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      opacity={isUsedInOtherSlot ? 0.5 : 1}
+      py="$1.5"
+    >
+      <HStack 
+        justifyContent="space-between" 
+        alignItems="center"
+        space="md"
+      >
+        {/* Radio Button */}
+        {isSelected ? (
+          <Box
+            w={20}
+            h={20}
+            rounded="$full"
+            borderWidth={2}
+            borderColor="#000000"
+            bg="#FFFFFF"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Box
+              w={8}
+              h={8}
+              rounded="$full"
+              bg="#000000"
+            />
+          </Box>
+        ) : (
+          <Box
+            w={20}
+            h={20}
+            rounded="$full"
+            borderWidth={2}
+            borderColor={isDark ? '#666666' : '#D4D4D4'}
+          />
+        )}
+
+        {/* Badge Label */}
+        <Text
+          fontSize="$sm"
+          fontWeight="$semibold"
+          color={isSelected 
+            ? (isDark ? '#FFFFFF' : '#000000') 
+            : (isDark ? '#999999' : '#666666')
+          }
+          flex={1}
+        >
+          {badge.label}
+        </Text>
+      </HStack>
+    </Pressable>
+  );
+});
+
+BadgeItem.displayName = 'BadgeItem';
+
 const ProfileEditScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -75,10 +158,36 @@ const ProfileEditScreen: React.FC = () => {
     const currentBadges = [badge1, badge2, badge3];
     const currentSlotValue = currentBadges[slot - 1];
     
+    // Badge seçim handler'ı - closure içinde tanımla
+    const handleBadgePress = (badgeId: string) => {
+      if (slot === 1) setBadge1(badgeId);
+      else if (slot === 2) setBadge2(badgeId);
+      else if (slot === 3) setBadge3(badgeId);
+      closeBottomSheet();
+      setSelectedBadgeSlot(null);
+    };
+    
     // Bottom sheet içeriği
     const badgeContent = (
-      <Box px="$4" pb={bottomOffset}>
-        <VStack space="sm">
+      <Box 
+        bg={isDark ? '$backgroundDark950' : '#FDFDFB'} 
+        width="100%"
+        px="$4" 
+        py="$3" 
+        pb={bottomOffset}
+      >
+        <VStack space="xs">
+          {/* Header */}
+          <HStack alignItems="center" justifyContent="center" mb="$1">
+            <Text
+              fontSize="$md"
+              fontWeight="$bold"
+              color={isDark ? '#FFFFFF' : '#000000'}
+            >
+              Select Badge {slot}
+            </Text>
+          </HStack>
+
           {/* Badge seçenekleri */}
           {AVAILABLE_BADGES.map((badge) => {
             const isSelected = currentSlotValue === badge.id;
@@ -88,44 +197,14 @@ const ProfileEditScreen: React.FC = () => {
               (slot !== 3 && badge3 === badge.id);
             
             return (
-              <Pressable
+              <BadgeItem
                 key={badge.id}
-                onPress={() => {
-                  if (isUsedInOtherSlot) {
-                    Alert.alert('Warning', 'This badge is already used in another slot');
-                    return;
-                  }
-                  if (slot === 1) setBadge1(badge.id);
-                  else if (slot === 2) setBadge2(badge.id);
-                  else if (slot === 3) setBadge3(badge.id);
-                  closeBottomSheet();
-                  setSelectedBadgeSlot(null);
-                }}
-                bg={isSelected 
-                  ? (isDark ? '$backgroundDark800' : '#E8E8E8')
-                  : (isDark ? '$backgroundDark900' : '#F5F5F5')
-                }
-                borderRadius={8}
-                p="$3"
-                opacity={isUsedInOtherSlot ? 0.5 : 1}
-              >
-                <HStack justifyContent="space-between" alignItems="center">
-                  <Text
-                    color={isDark ? '$textDark50' : '$textLight900'}
-                    fontSize={14}
-                    fontWeight={isSelected ? '$semibold' : '$normal'}
-                  >
-                    {badge.label}
-                  </Text>
-                  {isSelected && (
-                    <Feather
-                      name="check"
-                      size={18}
-                      color={isDark ? '#E8FF6B' : '#000000'}
-                    />
-                  )}
-                </HStack>
-              </Pressable>
+                badge={badge}
+                isSelected={isSelected}
+                isUsedInOtherSlot={isUsedInOtherSlot}
+                isDark={isDark}
+                onSelect={handleBadgePress}
+              />
             );
           })}
         </VStack>
@@ -147,20 +226,39 @@ const ProfileEditScreen: React.FC = () => {
   }, []);
 
   const handleSave = async () => {
+    console.log('[ProfileEditScreen] 🚀 handleSave başlatıldı');
+    console.log('[ProfileEditScreen] 📋 Mevcut state değerleri:', {
+      name: name,
+      nameLength: name.trim().length,
+      bio: bio,
+      bioLength: bio.trim().length,
+      badge1,
+      badge2,
+      badge3,
+      cosmetic,
+      selectedAvatarUri,
+      selectedAvatarUriType: selectedAvatarUri ? (selectedAvatarUri.startsWith('http') ? 'URL' : 'Local') : 'null',
+      selectedBannerUri,
+      selectedBannerUriType: selectedBannerUri ? (selectedBannerUri.startsWith('http') ? 'URL' : 'Local') : 'null',
+    });
+
     // Validate name (min 2 characters)
     if (name.trim().length < 2) {
+      console.log('[ProfileEditScreen] ❌ Validation hatası: Name çok kısa');
       Alert.alert('Error', 'Name must be at least 2 characters');
       return;
     }
 
     // Validate biography (max 500 characters)
     if (bio.trim().length > 500) {
+      console.log('[ProfileEditScreen] ❌ Validation hatası: Bio çok uzun');
       Alert.alert('Error', 'Biography can be at most 500 characters');
       return;
     }
 
     // Collect badge IDs (filter out empty strings)
     const badgeIds = [badge1, badge2, badge3].filter((badge) => badge.trim().length > 0);
+    console.log('[ProfileEditScreen] 🏷️ Badge ID\'leri:', badgeIds);
 
     try {
       // CRITICAL FIX: Önce avatar ve banner'ı upload et (eğer local URI ise)
@@ -168,68 +266,173 @@ const ProfileEditScreen: React.FC = () => {
       let bannerUrl: string | null = null;
 
       // Avatar upload - eğer local URI ise (http ile başlamıyorsa)
-      if (selectedAvatarUri && !selectedAvatarUri.startsWith('http')) {
-        setIsUploadingAvatar(true);
-        try {
-          const uploadResponse = await uploadAvatar(selectedAvatarUri);
-          if (uploadResponse.success && uploadResponse.data.avatarUrl) {
-            avatarUrl = uploadResponse.data.avatarUrl;
-            console.log('[ProfileEditScreen] ✅ Avatar uploaded:', avatarUrl);
-          } else {
-            throw new Error('Avatar yüklenemedi');
+      if (selectedAvatarUri) {
+        if (!selectedAvatarUri.startsWith('http')) {
+          console.log('[ProfileEditScreen] 📤 Avatar upload başlatılıyor (Local URI):', {
+            uri: selectedAvatarUri,
+            uriLength: selectedAvatarUri.length,
+            uriType: typeof selectedAvatarUri,
+          });
+          setIsUploadingAvatar(true);
+          try {
+            console.log('[ProfileEditScreen] 📤 uploadAvatar fonksiyonu çağrılıyor...');
+            const uploadResponse = await uploadAvatar(selectedAvatarUri);
+            console.log('[ProfileEditScreen] 📤 uploadAvatar response:', {
+              success: uploadResponse.success,
+              hasData: !!uploadResponse.data,
+              avatarUrl: uploadResponse.data?.avatarUrl,
+              fullResponse: JSON.stringify(uploadResponse, null, 2),
+            });
+            
+            if (uploadResponse.success && uploadResponse.data?.avatarUrl) {
+              avatarUrl = uploadResponse.data.avatarUrl;
+              console.log('[ProfileEditScreen] ✅ Avatar başarıyla yüklendi:', {
+                avatarUrl,
+                avatarUrlLength: avatarUrl.length,
+              });
+            } else {
+              console.error('[ProfileEditScreen] ❌ Avatar upload başarısız - response formatı hatalı:', {
+                success: uploadResponse.success,
+                data: uploadResponse.data,
+                fullResponse: uploadResponse,
+              });
+              throw new Error('Avatar yüklenemedi - response formatı hatalı');
+            }
+          } catch (error: any) {
+            const backendError = error?.response?.data;
+            console.error('[ProfileEditScreen] ❌ Avatar upload error - detaylı log:', {
+              error,
+              errorType: typeof error,
+              errorMessage: error?.message,
+              errorStack: error?.stack,
+              // Backend response detayları
+              responseStatus: error?.response?.status,
+              responseStatusText: error?.response?.statusText,
+              responseData: backendError,
+              // Backend'den gelen spesifik hata mesajı
+              backendErrorMessage: backendError?.message || backendError?.error || backendError,
+              backendErrorString: JSON.stringify(backendError, null, 2),
+              responseHeaders: error?.response?.headers,
+              // Request detayları
+              request: error?.request,
+              config: error?.config,
+              selectedAvatarUri,
+            });
+            setIsUploadingAvatar(false);
+            
+            // Hata mesajını kullanıcıya göster - backend'den gelen mesajı öncelikle kullan
+            const errorMessage = backendError?.message 
+              || backendError?.error
+              || (typeof backendError === 'string' ? backendError : null)
+              || error?.message 
+              || 'Avatar yüklenirken bir hata oluştu';
+            
+            console.error('[ProfileEditScreen] ❌ Avatar upload hatası - Backend mesajı:', {
+              backendError,
+              extractedMessage: errorMessage,
+              status: error?.response?.status,
+            });
+            Alert.alert('Avatar Upload Failed', errorMessage);
+            return;
+          } finally {
+            setIsUploadingAvatar(false);
+            console.log('[ProfileEditScreen] 📤 Avatar upload işlemi tamamlandı (finally)');
           }
-        } catch (error: any) {
-          console.error('[ProfileEditScreen] ❌ Avatar upload error:', error);
-          setIsUploadingAvatar(false);
-          
-          // Hata mesajını kullanıcıya göster
-          const errorMessage = error?.response?.data?.message 
-            || error?.message 
-            || 'Avatar yüklenirken bir hata oluştu';
-          
-          Alert.alert('Avatar Yüklenemedi', errorMessage);
-          return;
-        } finally {
-          setIsUploadingAvatar(false);
+        } else {
+          // Zaten upload edilmiş (URL formatında)
+          avatarUrl = selectedAvatarUri;
+          console.log('[ProfileEditScreen] ℹ️ Avatar zaten yüklenmiş (URL formatında):', avatarUrl);
         }
-      } else if (selectedAvatarUri && selectedAvatarUri.startsWith('http')) {
-        // Zaten upload edilmiş (URL formatında)
-        avatarUrl = selectedAvatarUri;
+      } else {
+        console.log('[ProfileEditScreen] ℹ️ Avatar seçilmemiş, upload atlanıyor');
       }
 
       // Banner upload - eğer local URI ise (http ile başlamıyorsa)
-      if (selectedBannerUri && !selectedBannerUri.startsWith('http')) {
-        setIsUploadingBanner(true);
-        try {
-          const uploadResponse = await uploadBanner(selectedBannerUri);
-          if (uploadResponse.success && uploadResponse.data.bannerUrl) {
-            bannerUrl = uploadResponse.data.bannerUrl;
-            console.log('[ProfileEditScreen] ✅ Banner uploaded:', bannerUrl);
-          } else {
-            throw new Error('Banner yüklenemedi');
+      if (selectedBannerUri) {
+        if (!selectedBannerUri.startsWith('http')) {
+          console.log('[ProfileEditScreen] 📤 Banner upload başlatılıyor (Local URI):', {
+            uri: selectedBannerUri,
+            uriLength: selectedBannerUri.length,
+            uriType: typeof selectedBannerUri,
+          });
+          setIsUploadingBanner(true);
+          try {
+            console.log('[ProfileEditScreen] 📤 uploadBanner fonksiyonu çağrılıyor...');
+            const uploadResponse = await uploadBanner(selectedBannerUri);
+            console.log('[ProfileEditScreen] 📤 uploadBanner response:', {
+              success: uploadResponse.success,
+              hasData: !!uploadResponse.data,
+              bannerUrl: uploadResponse.data?.bannerUrl,
+              fullResponse: JSON.stringify(uploadResponse, null, 2),
+            });
+            
+            if (uploadResponse.success && uploadResponse.data?.bannerUrl) {
+              bannerUrl = uploadResponse.data.bannerUrl;
+              console.log('[ProfileEditScreen] ✅ Banner başarıyla yüklendi:', {
+                bannerUrl,
+                bannerUrlLength: bannerUrl.length,
+              });
+            } else {
+              console.error('[ProfileEditScreen] ❌ Banner upload başarısız - response formatı hatalı:', {
+                success: uploadResponse.success,
+                data: uploadResponse.data,
+                fullResponse: uploadResponse,
+              });
+              throw new Error('Banner yüklenemedi - response formatı hatalı');
+            }
+          } catch (error: any) {
+            const backendError = error?.response?.data;
+            console.error('[ProfileEditScreen] ❌ Banner upload error - detaylı log:', {
+              error,
+              errorType: typeof error,
+              errorMessage: error?.message,
+              errorStack: error?.stack,
+              // Backend response detayları
+              responseStatus: error?.response?.status,
+              responseStatusText: error?.response?.statusText,
+              responseData: backendError,
+              // Backend'den gelen spesifik hata mesajı
+              backendErrorMessage: backendError?.message || backendError?.error || backendError,
+              backendErrorString: JSON.stringify(backendError, null, 2),
+              responseHeaders: error?.response?.headers,
+              // Request detayları
+              request: error?.request,
+              config: error?.config,
+              selectedBannerUri,
+            });
+            setIsUploadingBanner(false);
+            
+            // Hata mesajını kullanıcıya göster - backend'den gelen mesajı öncelikle kullan
+            const errorMessage = backendError?.message 
+              || backendError?.error
+              || (typeof backendError === 'string' ? backendError : null)
+              || error?.message 
+              || 'Banner yüklenirken bir hata oluştu';
+            
+            console.error('[ProfileEditScreen] ❌ Banner upload hatası - Backend mesajı:', {
+              backendError,
+              extractedMessage: errorMessage,
+              status: error?.response?.status,
+            });
+            Alert.alert('Banner Upload Failed', errorMessage);
+            return;
+          } finally {
+            setIsUploadingBanner(false);
+            console.log('[ProfileEditScreen] 📤 Banner upload işlemi tamamlandı (finally)');
           }
-        } catch (error: any) {
-          console.error('[ProfileEditScreen] ❌ Banner upload error:', error);
-          setIsUploadingBanner(false);
-          
-          // Hata mesajını kullanıcıya göster
-          const errorMessage = error?.response?.data?.message 
-            || error?.message 
-            || 'Banner yüklenirken bir hata oluştu';
-          
-          Alert.alert('Banner Yüklenemedi', errorMessage);
-          return;
-        } finally {
-          setIsUploadingBanner(false);
+        } else {
+          // Zaten upload edilmiş (URL formatında)
+          bannerUrl = selectedBannerUri;
+          console.log('[ProfileEditScreen] ℹ️ Banner zaten yüklenmiş (URL formatında):', bannerUrl);
         }
-      } else if (selectedBannerUri && selectedBannerUri.startsWith('http')) {
-        // Zaten upload edilmiş (URL formatında)
-        bannerUrl = selectedBannerUri;
+      } else {
+        console.log('[ProfileEditScreen] ℹ️ Banner seçilmemiş, upload atlanıyor');
       }
 
       // Prepare update data - API formatına uygun
       // NOT: Avatar ve banner ayrı endpoint'lerle yüklenir (POST /users/me/avatar, POST /users/me/banner)
       // Bu endpoint sadece metin alanlarını günceller (name, biography, cosmetic, badge)
+      console.log('[ProfileEditScreen] 📝 Profile update data hazırlanıyor...');
       const updateData: {
         name?: string;
         biography?: string;
@@ -240,21 +443,28 @@ const ProfileEditScreen: React.FC = () => {
       // Name zorunlu - her zaman gönder
       if (name.trim().length > 0) {
         updateData.name = name.trim();
+        console.log('[ProfileEditScreen] 📝 Name eklendi:', updateData.name);
       }
 
       // Biography sadece doluysa ekle (boş string gönderme)
       if (bio.trim().length > 0) {
         updateData.biography = bio.trim();
+        console.log('[ProfileEditScreen] 📝 Biography eklendi:', {
+          length: updateData.biography.length,
+          preview: updateData.biography.substring(0, 50) + '...',
+        });
       }
 
       // Badge array'i sadece varsa ekle
       if (badgeIds.length > 0) {
         updateData.badge = badgeIds;
+        console.log('[ProfileEditScreen] 📝 Badge array eklendi:', badgeIds);
       }
 
       // Cosmetic - seçili cosmetic ID'sini ekle (null olabilir)
       if (cosmetic !== undefined) {
         updateData.cosmetic = cosmetic;
+        console.log('[ProfileEditScreen] 📝 Cosmetic eklendi:', cosmetic);
       }
 
       // NOT: Avatar ve banner URL'leri burada gönderilmez
@@ -262,38 +472,69 @@ const ProfileEditScreen: React.FC = () => {
       // başarılı olduğunda backend otomatik olarak kullanıcının profilini günceller
 
       // Request data'yı logla
-      console.log('[ProfileEditScreen] Sending update request:', JSON.stringify(updateData, null, 2));
+      console.log('[ProfileEditScreen] 📤 Profile update request gönderiliyor:', {
+        updateData: JSON.stringify(updateData, null, 2),
+        updateDataKeys: Object.keys(updateData),
+        hasName: !!updateData.name,
+        hasBiography: !!updateData.biography,
+        hasBadge: !!updateData.badge,
+        badgeCount: updateData.badge?.length || 0,
+        hasCosmetic: updateData.cosmetic !== undefined,
+        cosmeticValue: updateData.cosmetic,
+        avatarUrl,
+        bannerUrl,
+      });
       
       // Profile update
+      console.log('[ProfileEditScreen] 📤 updateProfileMutation.mutate çağrılıyor...');
       updateProfileMutation.mutate(updateData, {
         onSuccess: (data) => {
-          console.log('[ProfileEditScreen] ✅ Profile updated successfully:', data);
+          console.log('[ProfileEditScreen] ✅ Profile update başarılı:', {
+            data,
+            dataType: typeof data,
+            hasData: !!data,
+            responseKeys: data ? Object.keys(data) : [],
+            fullResponse: JSON.stringify(data, null, 2),
+          });
           Alert.alert('Success', 'Profile updated successfully!', [
             { text: 'OK', onPress: () => navigation.goBack() }
           ]);
         },
         onError: (error: any) => {
-          console.error('[ProfileEditScreen] ❌ Update profile error:', {
+          console.error('[ProfileEditScreen] ❌ Profile update error - detaylı log:', {
             error,
-            message: error?.message,
+            errorType: typeof error,
+            errorMessage: error?.message,
+            errorStack: error?.stack,
             response: error?.response,
             responseData: error?.response?.data,
             responseStatus: error?.response?.status,
+            responseHeaders: error?.response?.headers,
+            request: error?.request,
+            config: error?.config,
             requestData: updateData,
+            requestDataString: JSON.stringify(updateData, null, 2),
           });
           
           // Backend'den gelen detaylı hata mesajını göster
-          const errorMessage = error?.response?.data?.message || 
-                             error?.response?.data?.error ||
-                             error?.message || 
-                             'Profil güncellenirken bir hata oluştu';
+          const errorMessage = error?.response?.data?.message 
+            || error?.response?.data?.error
+            || error?.message 
+            || 'Profil güncellenirken bir hata oluştu';
           
-          Alert.alert('Hata', errorMessage);
+          console.error('[ProfileEditScreen] ❌ Profile update hatası - kullanıcıya gösterilecek mesaj:', errorMessage);
+          Alert.alert('Error', errorMessage);
         },
       });
     } catch (error: any) {
-      console.error('[ProfileEditScreen] ❌ Save error:', error);
-      Alert.alert('Hata', error?.message || 'Profil kaydedilirken bir hata oluştu');
+      console.error('[ProfileEditScreen] ❌ handleSave catch bloğu - beklenmeyen hata:', {
+        error,
+        errorType: typeof error,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
+      });
+      Alert.alert('Error', error?.message || 'An error occurred while saving profile');
     }
   };
 
@@ -312,8 +553,8 @@ const ProfileEditScreen: React.FC = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Hata</ToastTitle>
-                  <ToastDescription>{result.error || 'Fotoğraf seçilirken bir hata oluştu'}</ToastDescription>
+                  <ToastTitle>Error</ToastTitle>
+                  <ToastDescription>{result.error || 'An error occurred while selecting photo'}</ToastDescription>
                 </Toast>
               </Box>
             );
@@ -328,8 +569,8 @@ const ProfileEditScreen: React.FC = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Fotoğraf seçilirken bir hata oluştu</ToastDescription>
+                <ToastTitle>Error</ToastTitle>
+                <ToastDescription>An error occurred while selecting photo</ToastDescription>
               </Toast>
             </Box>
           );
@@ -352,8 +593,8 @@ const ProfileEditScreen: React.FC = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Hata</ToastTitle>
-                  <ToastDescription>{result.error || 'Fotoğraf seçilirken bir hata oluştu'}</ToastDescription>
+                  <ToastTitle>Error</ToastTitle>
+                  <ToastDescription>{result.error || 'An error occurred while selecting photo'}</ToastDescription>
                 </Toast>
               </Box>
             );
@@ -368,8 +609,8 @@ const ProfileEditScreen: React.FC = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Fotoğraf seçilirken bir hata oluştu</ToastDescription>
+                <ToastTitle>Error</ToastTitle>
+                <ToastDescription>An error occurred while selecting photo</ToastDescription>
               </Toast>
             </Box>
           );
@@ -406,8 +647,8 @@ const ProfileEditScreen: React.FC = () => {
             return (
               <Box maxWidth="90%" alignSelf="center" px="$4">
                 <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                  <ToastTitle>Hata</ToastTitle>
-                  <ToastDescription>{result.error || 'Fotoğraf seçilirken bir hata oluştu'}</ToastDescription>
+                  <ToastTitle>Error</ToastTitle>
+                  <ToastDescription>{result.error || 'An error occurred while selecting photo'}</ToastDescription>
                 </Toast>
               </Box>
             );
@@ -422,8 +663,8 @@ const ProfileEditScreen: React.FC = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
-                <ToastDescription>Fotoğraf seçilirken bir hata oluştu</ToastDescription>
+                <ToastTitle>Error</ToastTitle>
+                <ToastDescription>An error occurred while selecting photo</ToastDescription>
               </Toast>
             </Box>
           );
@@ -451,7 +692,7 @@ const ProfileEditScreen: React.FC = () => {
           borderWidth: 1,
           borderColor: '#B8CC04',
           textColor: '#111111',
-          fontSize: 11,
+          fontSize: 14,
           borderRadius: 25,
           paddingX: 16, // CreatePostScreen'deki 22'den daha az (sola almak için)
           paddingY: 8,
@@ -552,7 +793,7 @@ const ProfileEditScreen: React.FC = () => {
             <VStack space="xs">
               <Text
                 color={isDark ? '$textDark200' : '$textLight700'}
-                fontSize={11}
+                fontSize="$sm"
                 fontWeight="$semibold"
               >
                 Name
@@ -570,7 +811,7 @@ const ProfileEditScreen: React.FC = () => {
                   placeholder="Enter your name"
                   placeholderTextColor={isDark ? '#666' : '#999'}
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={11}
+                  fontSize="$sm"
                 />
               </Input>
             </VStack>
@@ -579,7 +820,7 @@ const ProfileEditScreen: React.FC = () => {
             <VStack space="xs">
               <Text
                 color={isDark ? '$textDark200' : '$textLight700'}
-                fontSize={11}
+                fontSize="$sm"
                 fontWeight="$semibold"
               >
                 Bio
@@ -598,7 +839,7 @@ const ProfileEditScreen: React.FC = () => {
                   placeholder="Tell us about yourself"
                   placeholderTextColor={isDark ? '#666' : '#999'}
                   color={isDark ? '$textDark50' : '$textLight900'}
-                  fontSize={11}
+                  fontSize="$sm"
                   multiline
                 />
               </Textarea>
@@ -608,7 +849,7 @@ const ProfileEditScreen: React.FC = () => {
             <VStack space="xs">
               <Text
                 color={isDark ? '$textDark200' : '$textLight700'}
-                fontSize={11}
+                fontSize="$sm"
                 fontWeight="$semibold"
               >
                 Badge
@@ -627,7 +868,7 @@ const ProfileEditScreen: React.FC = () => {
               >
                 <Text
                   color={badge1 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
-                  fontSize={11}
+                  fontSize="$sm"
                 >
                   {badge1 ? getBadgeLabel(badge1) : 'Select Badge 1'}
                 </Text>
@@ -651,7 +892,7 @@ const ProfileEditScreen: React.FC = () => {
               >
                 <Text
                   color={badge2 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
-                  fontSize={11}
+                  fontSize="$sm"
                 >
                   {badge2 ? getBadgeLabel(badge2) : 'Select Badge 2'}
                 </Text>
@@ -675,7 +916,7 @@ const ProfileEditScreen: React.FC = () => {
               >
                 <Text
                   color={badge3 ? (isDark ? '$textDark50' : '$textLight900') : (isDark ? '#666' : '#999')}
-                  fontSize={11}
+                  fontSize="$sm"
                 >
                   {badge3 ? getBadgeLabel(badge3) : 'Select Badge 3'}
                 </Text>
@@ -721,7 +962,7 @@ const ProfileEditScreen: React.FC = () => {
 
                 {/* Name */}
                 <Text
-                  fontSize={18}
+                  fontSize="$lg"
                   fontWeight="$bold"
                   color={isDark ? '#FFFFFF' : '#000000'}
                   textAlign="center"
@@ -759,8 +1000,8 @@ const ProfileEditScreen: React.FC = () => {
                       />
                     </Box>
                     <Text
-                      fontSize={12}
-                      fontWeight={"#semibold"}
+                      fontSize="$sm"
+                      fontWeight="$semibold"
                       color={isDark ? '#FFFFFF' : '#818181'}
                       textAlign="center"
                     >
@@ -795,8 +1036,8 @@ const ProfileEditScreen: React.FC = () => {
                       />
                     </Box>
                     <Text
-                      fontSize={12}
-                      fontWeight={"#semibold"}
+                      fontSize="$sm"
+                      fontWeight="$semibold"
                       color={isDark ? '#FFFFFF' : '#818181'}
                       textAlign="center"
                     >
@@ -818,7 +1059,7 @@ const ProfileEditScreen: React.FC = () => {
                   alignItems="center"
                 >
                   <Text
-                    fontSize={14}
+                    fontSize="$md"
                     fontWeight="$semibold"
                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                   >
@@ -840,7 +1081,7 @@ const ProfileEditScreen: React.FC = () => {
                     <ActivityIndicator size="small" color="#000000" />
                   ) : (
                     <Text
-                      fontSize={12}
+                      fontSize="$sm"
                       fontWeight="$bold"
                       color="#000000"
                     >

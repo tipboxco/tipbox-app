@@ -6,50 +6,45 @@ import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
 import VerifyCodeScreen from '@/src/components/VerifyCodeScreen';
+import { useVerifyEmail } from '../api/hooks';
+import { Alert } from 'react-native';
 
 type VerifyCodeScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'VerifyCode'>;
 type VerifyCodeScreenRouteProp = RouteProp<AuthStackParamList, 'VerifyCode'>;
 
 export const AuthVerifyCodeScreen = () => {
-  const { setTempUser } = useAppStore();
   const navigation = useNavigation<VerifyCodeScreenNavigationProp>();
   const route = useRoute<VerifyCodeScreenRouteProp>();
   const { email, context = 'signUp' } = route.params;
+  const verifyEmailMutation = useVerifyEmail();
 
   const handleVerify = async (verificationCode: string) => {
-    // TODO: Endpoint'e doğrulama isteği atılacak
-    // const response = await verifyCodeApi.verify({ email, code: verificationCode });
-    
-    // Şimdilik mock doğrulama (123456 veya herhangi bir 6 haneli kod)
-    if (verificationCode.length === 6) {
-      try {
-        console.log('Verification successful:', { email, context, code: verificationCode });
+    if (verificationCode.length !== 6) {
+      Alert.alert('Error', 'Please enter the 6-digit verification code');
+      return;
+    }
 
-        if (context === 'forgotPassword') {
-          // ForgotPassword akışı: ResetPassword ekranına yönlendir
-          navigation.navigate('ResetPassword', { email });
-        } else {
-          // Sign Up akışı: SetupProfile ekranına yönlendir
-          const mockUser = {
-            id: '1',
-            fullName: email.split('@')[0],
-            email,
-          };
-          const mockAccessToken = 'mock-access-token';
-          
-          // Kullanıcıyı giriş yapmış olarak işaretle
-          setTempUser(mockUser, mockAccessToken);
-          
-          // SetupProfile ekranına yönlendir
-          navigation.navigate('SetupProfile');
-        }
-      } catch (error) {
-        console.error('Verification error:', error);
-        // TODO: Hata mesajını kullanıcıya göster
-      }
-    } else {
-      console.error('Invalid verification code');
-      // TODO: Hata mesajını kullanıcıya göster
+    if (context === 'forgotPassword') {
+      // ForgotPassword akışı: ResetPassword ekranına yönlendir
+      // TODO: Forgot password için verify endpoint'i kullanılacak
+      navigation.navigate('ResetPassword', { email });
+      return;
+    }
+
+    // Sign Up akışı: Email doğrulama API'sini çağır
+    try {
+      await verifyEmailMutation.mutateAsync({
+        email,
+        code: verificationCode,
+      });
+
+      // Başarılı doğrulama sonrası SelectCategories ekranına yönlendir
+      // Kategoriler seçildikten sonra SetupProfile'a gidilecek
+      navigation.navigate('SelectCategories');
+    } catch (error: any) {
+      console.error('[AuthVerifyCodeScreen] Verification error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Invalid or expired verification code';
+      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
     }
   };
 
@@ -73,6 +68,7 @@ export const AuthVerifyCodeScreen = () => {
         maskedEmail={maskedEmail}
         onVerify={handleVerify}
         onBackPress={() => navigation.goBack()}
+        isLoading={verifyEmailMutation.isPending}
       />
   );
 };

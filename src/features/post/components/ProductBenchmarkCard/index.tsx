@@ -3,7 +3,7 @@ import { Box, VStack, HStack, Text, Pressable, Image } from '@gluestack-ui/theme
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
-interface ProductComparisonCardProps {
+interface ProductBenchmarkCardProps {
   product: {
     id: string;
     name: string;
@@ -15,7 +15,7 @@ interface ProductComparisonCardProps {
   onPress?: () => void;
 }
 
-export const ProductComparisonCard: React.FC<ProductComparisonCardProps> = ({
+export const ProductBenchmarkCard: React.FC<ProductBenchmarkCardProps> = ({
   product,
   isSelected = false,
   onPress,
@@ -108,4 +108,3 @@ export const ProductComparisonCard: React.FC<ProductComparisonCardProps> = ({
     </Pressable>
   );
 };
-

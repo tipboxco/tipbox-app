@@ -1576,8 +1576,8 @@ const MessageDetailScreen: React.FC = () => {
           // Hata durumunda optimistic mesajı geri al
           setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
           
-          const errorMessage = error.response?.data?.message || error.message || 'TIPS gönderilirken bir hata oluştu';
-          Alert.alert('Hata', errorMessage);
+          const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
+          Alert.alert('Error', errorMessage);
         },
       }
     );
@@ -1995,15 +1995,15 @@ const MessageDetailScreen: React.FC = () => {
       if (result.success && result.asset) {
         console.log('[MessageDetail] 📷 Image selected:', result.asset.uri);
         // TODO: Seçilen görseli mesaj olarak gönder veya önizleme göster
-        Alert.alert('Başarılı', 'Görsel seçildi: ' + result.asset.uri);
+        Alert.alert('Success', 'Image selected: ' + result.asset.uri);
       } else {
         if (result.error) {
-          Alert.alert('Hata', result.error);
+          Alert.alert('Error', result.error);
         }
       }
     } catch (error: any) {
       console.error('[MessageDetail] ❌ Image picker error:', error);
-      Alert.alert('Hata', 'Görsel seçilirken bir hata oluştu');
+      Alert.alert('Error', 'An error occurred while selecting image');
     }
   }, []);
 

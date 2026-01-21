@@ -42,7 +42,7 @@ export type PostType =
     | 'tips'
     | 'question'
     | 'experience'
-    | 'comparison'
+    | 'benchmark'
     | 'update';
 
 interface PostOption {
@@ -73,7 +73,7 @@ const postOptions: PostOption[] = [
         description: 'Bu ürün hakkında deneyimini paylaş',
     },
     {
-        id: 'comparison',
+        id: 'benchmark',
         title: 'Karşılaştırma Gönderisi',
         description: 'Bu ürünü benzerleriyle karşılaştır',
     },
@@ -131,7 +131,7 @@ export const CreatePostBottomSheet: React.FC<CreatePostBottomSheetProps> = ({
                 return postOptions.filter(option => 
                     option.id === 'experience' || 
                     option.id === 'tips' || 
-                    option.id === 'comparison' || 
+                    option.id === 'benchmark' || 
                     option.id === 'update' || 
                     option.id === 'question'
                 );

@@ -23,6 +23,8 @@ import {
   deleteInventoryItem,
   muteUser,
   unmuteUser,
+  blockUser,
+  unblockUser,
   type UserFeedApiResponse,
   type UpdateProfileRequest,
   type UpdateProfileResponse,
@@ -325,7 +327,7 @@ export const useUserProfile = (userId: string | undefined) => {
       }
       return getUserProfile(userId.trim());
     },
-    enabled: isValidUserId,
+    enabled: Boolean(isValidUserId),
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000, // 4 saat - cache'de tut
     refetchOnMount: false,
@@ -412,7 +414,7 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3, opti
       // Bu durumda backend'in cursor desteği eklenmesi gerekir
       return lastPage.pagination.cursor;
     },
-    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
+    enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -453,7 +455,7 @@ export const useUserReviews = (userId: string | undefined, limit: number = 5, op
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
+    enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -494,7 +496,7 @@ export const useUserBenchmarks = (userId: string | undefined, limit: number = 5,
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
+    enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -535,7 +537,7 @@ export const useUserTipsAndTricks = (userId: string | undefined, limit: number =
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
+    enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -616,7 +618,7 @@ export const useUserReplies = (userId: string | undefined, limit: number = 5, op
       }
       return lastPage.pagination?.cursor;
     },
-    enabled: options?.enabled !== undefined ? options.enabled : !!userId,
+    enabled: options?.enabled !== undefined ? Boolean(options.enabled) : !!userId,
     // Screen-based caching: Ekran değişimlerinde anında yüklenmiş ekran göster
     staleTime: 2 * 60 * 60 * 1000,  // 2 saat - cache invalid olana kadar backend'e istek atma
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
@@ -1106,12 +1108,13 @@ export const useUnmuteUser = () => {
         console.log('[useUnmuteUser] ✅ User unmuted successfully');
       } else {
         // 404 durumunda optimistic update'i geri al (kullanıcı zaten mute değildi)
+        // FIX: isMuted: false olmalı çünkü kullanıcı zaten mute değil
         const queryKey = profileKeys.profile(variables.targetUserId);
         const previousProfile = queryClient.getQueryData<UserProfile>(queryKey);
         if (previousProfile) {
           queryClient.setQueryData<UserProfile>(queryKey, {
             ...previousProfile,
-            isMuted: true, // Geri al (çünkü zaten mute değildi)
+            isMuted: false, // FIX: Kullanıcı zaten mute değilse isMuted: false olmalı
           });
           
           if (__DEV__) {
@@ -1130,6 +1133,156 @@ export const useUnmuteUser = () => {
         );
       }
       console.error('[useUnmuteUser] ❌ Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Block User mutation hook
+ * Kullanıcıyı engeller
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: blockUser, isPending } = useBlockUser();
+ * blockUser({
+ *   userId: 'current-user-id',
+ *   targetUserId: 'target-user-id'
+ * });
+ */
+export const useBlockUser = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<
+    void,
+    Error,
+    { userId: string; targetUserId: string }
+  >({
+    mutationFn: ({ userId, targetUserId }) => blockUser(userId, targetUserId),
+    onMutate: async ({ targetUserId }) => {
+      // Optimistic update: Cache'i hemen güncelle
+      const queryKey = profileKeys.profile(targetUserId);
+      await queryClient.cancelQueries({ queryKey });
+      
+      const previousProfile = queryClient.getQueryData<UserProfile>(queryKey);
+      
+      if (__DEV__) {
+        console.log('[useBlockUser] onMutate - Previous profile:', {
+          targetUserId,
+          previousIsBlocked: previousProfile?.isBlocked,
+        });
+      }
+      
+      if (previousProfile) {
+        // Optimistic update: isBlocked'ı true yap
+        queryClient.setQueryData<UserProfile>(queryKey, {
+          ...previousProfile,
+          isBlocked: true,
+        });
+        
+        if (__DEV__) {
+          console.log('[useBlockUser] ✅ Optimistic update: isBlocked set to true');
+        }
+      }
+      
+      return { previousProfile };
+    },
+    onSuccess: (_, variables) => {
+      console.log('[useBlockUser] ✅ User blocked successfully');
+    },
+    onError: (error, variables, context) => {
+      // Hata durumunda önceki değeri geri yükle
+      if (context?.previousProfile) {
+        queryClient.setQueryData(
+          profileKeys.profile(variables.targetUserId),
+          context.previousProfile
+        );
+      }
+      console.error('[useBlockUser] ❌ Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Unblock User mutation hook
+ * Kullanıcının engelini kaldırır
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: unblockUser, isPending } = useUnblockUser();
+ * unblockUser({
+ *   userId: 'current-user-id',
+ *   targetUserId: 'target-user-id'
+ * });
+ */
+export const useUnblockUser = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<
+    boolean,
+    Error,
+    { userId: string; targetUserId: string }
+  >({
+    mutationFn: ({ userId, targetUserId }) => unblockUser(userId, targetUserId),
+    onMutate: async ({ targetUserId }) => {
+      // Optimistic update: Cache'i hemen güncelle
+      const queryKey = profileKeys.profile(targetUserId);
+      await queryClient.cancelQueries({ queryKey });
+      
+      const previousProfile = queryClient.getQueryData<UserProfile>(queryKey);
+      
+      if (__DEV__) {
+        console.log('[useUnblockUser] onMutate - Previous profile:', {
+          targetUserId,
+          previousIsBlocked: previousProfile?.isBlocked,
+        });
+      }
+      
+      if (previousProfile) {
+        // Optimistic update: isBlocked'ı false yap
+        queryClient.setQueryData<UserProfile>(queryKey, {
+          ...previousProfile,
+          isBlocked: false,
+        });
+        
+        if (__DEV__) {
+          console.log('[useUnblockUser] ✅ Optimistic update: isBlocked set to false');
+        }
+      }
+      
+      return { previousProfile };
+    },
+    onSuccess: (result, variables) => {
+      if (result) {
+        // Başarılı unblock - optimistic update zaten isBlocked: false yaptı
+        console.log('[useUnblockUser] ✅ User unblocked successfully');
+      } else {
+        // 404 durumunda optimistic update'i geri al (kullanıcı zaten block değildi)
+        const queryKey = profileKeys.profile(variables.targetUserId);
+        const previousProfile = queryClient.getQueryData<UserProfile>(queryKey);
+        if (previousProfile) {
+          queryClient.setQueryData<UserProfile>(queryKey, {
+            ...previousProfile,
+            isBlocked: false, // Kullanıcı zaten block değilse isBlocked: false olmalı
+          });
+          
+          if (__DEV__) {
+            console.log('[useUnblockUser] ⚠️ Reverted optimistic update (user was not blocked)');
+          }
+        }
+        console.log('[useUnblockUser] ⚠️ User was not blocked (404)');
+      }
+    },
+    onError: (error, variables, context) => {
+      // Hata durumunda önceki değeri geri yükle
+      if (context?.previousProfile) {
+        queryClient.setQueryData(
+          profileKeys.profile(variables.targetUserId),
+          context.previousProfile
+        );
+      }
+      console.error('[useUnblockUser] ❌ Mutation error:', error);
     },
   });
 };

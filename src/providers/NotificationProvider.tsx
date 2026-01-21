@@ -303,6 +303,55 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Background'da backend'den push notification gelir, burada sadece foreground için local notification gösteriyoruz
       if (shouldShowNotification && state.permissionStatus === 'granted') {
         try {
+          // Farklı bildirim tipleri için farklı image/icon belirle
+          const getNotificationImage = (notif: Notification): string | undefined => {
+            const data = notif.data || notif.metadata || {};
+            
+            switch (notif.type) {
+              // Post bildirimleri: Post image göster
+              case 'POST_LIKED':
+              case 'POST_COMMENTED':
+              case 'POST_SHARED':
+              case 'POST_FAVORITED':
+              case 'COMMENT_LIKED':
+              case 'COMMENT_REPLIED':
+                return data.imageUrl || data.postImageUrl;
+              
+              // Mesaj bildirimleri: Kullanıcı avatar'ı göster
+              case 'NEW_MESSAGE':
+              case 'DM_REQUEST_RECEIVED':
+              case 'DM_REQUEST_ACCEPTED':
+              case 'DM_REQUEST_DECLINED':
+                return notif.avatar || data.avatar || data.senderAvatar;
+              
+              // Trust bildirimleri: Kullanıcı avatar'ı göster
+              case 'NEW_TRUSTER':
+              case 'NEW_TRUSTED_BY':
+                return notif.avatar || data.avatar || data.userAvatar;
+              
+              // Event bildirimleri: Event banner/image göster
+              case 'EVENT_STARTED':
+              case 'EVENT_ENDING_SOON':
+              case 'EVENT_REWARD_AVAILABLE':
+                return data.imageUrl || data.eventImageUrl || data.bannerUrl;
+              
+              // Badge bildirimleri: Badge image göster
+              case 'NEW_BADGE':
+              case 'ACHIEVEMENT_UNLOCKED':
+                return data.imageUrl || data.badgeImageUrl;
+              
+              // Collection bildirimleri: Post image göster
+              case 'COLLECTION_POST_ADDED':
+                return data.imageUrl || data.postImageUrl;
+              
+              // Diğer bildirimler: Varsa avatar, yoksa undefined
+              default:
+                return notif.avatar || data.avatar || data.imageUrl;
+            }
+          };
+          
+          const notificationImage = getNotificationImage(notification);
+          
           // Foreground'da OS notification göster (üstten banner olarak)
           await notificationService.sendLocalNotification({
             title: notification.title || 'Yeni Bildirim',
@@ -313,6 +362,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               metadata: notification.metadata || notification.data || {},
               navigation: notification.navigation,
             },
+            // Large icon/image: Farklı bildirim tipleri için farklı görseller
+            largeIcon: notificationImage,
+            imageUrl: notificationImage,
             // Foreground'da da OS notification göster
             priority: 'high',
             sound: true,

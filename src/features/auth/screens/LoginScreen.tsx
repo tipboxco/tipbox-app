@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Input, InputField, FormControl, FormControlLabel, FormControlLabelText, Icon, Pressable, useToast } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CheckCircle, Mail, Eye, EyeOff } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
@@ -13,11 +13,13 @@ import { googleService } from '@/src/services/GoogleService';
 import { showCustomToast } from '@/src/components/CustomToast';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginScreenRouteProp = RouteProp<AuthStackParamList, 'Login'>;
 
 export const LoginScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const route = useRoute<LoginScreenRouteProp>();
   const { loginAsGuest } = useAppStore();
   const toast = useToast();
   const loginMutation = useLogin();
@@ -33,6 +35,19 @@ export const LoginScreen = () => {
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Onboarding'den geldiğinde success toast göster
+  useEffect(() => {
+    if (route.params?.showSuccessToast) {
+      showCustomToast(toast, {
+        title: 'Your account has been created',
+        action: 'success',
+        duration: 3000,
+      });
+      // Param'ı temizle (bir daha gösterilmesin)
+      navigation.setParams({ showSuccessToast: false });
+    }
+  }, [route.params?.showSuccessToast]);
 
   const validateEmail = (text: string) => {
     const lowerText = text.toLowerCase();
@@ -68,7 +83,7 @@ export const LoginScreen = () => {
 
         // Başarılı toast göster
         showCustomToast(toast, {
-          title: `Hoş geldin ${result.fullName || result.email?.split('@')[0] || 'Kullanıcı'}!`,
+          title: `Welcome ${result.fullName || result.email?.split('@')[0] || 'User'}!`,
           action: 'success',
           duration: 3000,
         });
@@ -89,7 +104,7 @@ export const LoginScreen = () => {
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
-          'Giriş yapılırken bir hata oluştu';
+          'An error occurred during login';
 
         showCustomToast(toast, {
           title: 'Login Failed',
@@ -139,7 +154,7 @@ export const LoginScreen = () => {
 
       // Başarılı toast göster
       showCustomToast(toast, {
-        title: `Hoş geldin ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'Kullanıcı'}!`,
+        title: `Welcome ${googleResult.user.name || googleResult.user.email?.split('@')[0] || 'User'}!`,
         action: 'success',
         duration: 3000,
       });
@@ -153,7 +168,7 @@ export const LoginScreen = () => {
       const errorMessage =
         error?.message ||
         error?.response?.data?.message ||
-        'Google ile giriş yapılırken bir hata oluştu';
+        'An error occurred during Google login';
 
       showCustomToast(toast, {
         title: 'Google Login Failed',

@@ -1,11 +1,12 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { TouchableOpacity, Pressable as RNPressable } from 'react-native';
 import { Box, VStack, Text } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { InventoryItem } from '../../types';
 import { toImageSource, cleanNewlines } from '@/src/utils';
 import { CachedImage } from '@/src/components/CachedImage';
-import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
+import { ReactNativeMenuModal, MenuItem } from '@/src/components/ReactNativeMenuModal';
+import { View } from 'react-native';
 import { PencilIcon, TrashIcon } from 'react-native-heroicons/outline';
 
 // Default post image
@@ -25,8 +26,8 @@ export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDele
   const isDark = colorMode === 'dark';
   
   // Context menu state
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-  const contextMenuCloseRef = useRef<(() => void) | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuTriggerRef = useRef<View>(null);
   
   // Image source state - görsel yüklenemezse default image'a geçiş için
   const initialImageSource = toImageSource(item.image) || DEFAULT_POST_IMAGE;
@@ -121,9 +122,65 @@ export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDele
       w={width}
       mb={10}
     >
-      {isOwnProfile ? (
-        <ContextMenuReanimated
-          menuItems={[
+      <View ref={menuTriggerRef} collapsable={false}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onPress}
+          onLongPress={isOwnProfile ? () => setIsMenuOpen(true) : undefined}
+        >
+          <Box
+            bg={isDark ? '$backgroundDark800' : '$white'}
+            borderWidth={1}
+            borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
+            borderRadius={5}
+            w={width}
+            h={175}
+            overflow="hidden"
+          >
+            <Box
+              flex={1}
+              p={15}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <CachedImage
+                source={imageSource}
+                placeholder={DEFAULT_POST_IMAGE}
+                style={{
+                  width: 100,
+                  height: 100,
+                }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                priority="normal"
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            </Box>
+            <VStack p={8} space="xs">
+              <Text
+                color={isDark ? '$textDark400' : '#A3A3A3'}
+                fontSize={11}
+                fontWeight="$bold"
+                numberOfLines={3}
+              >
+                {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
+                  .filter(Boolean)
+                  .join(' ')}
+              </Text>
+            </VStack>
+          </Box>
+        </TouchableOpacity>
+      </View>
+      
+      {isOwnProfile && (
+        <ReactNativeMenuModal
+          visible={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          triggerRef={menuTriggerRef}
+          placement="top-left"
+          offsetX={10}
+          items={useMemo<MenuItem[]>(() => [
             {
               label: 'Update Experience',
               icon: <PencilIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />,
@@ -135,128 +192,9 @@ export const InventoryCard = ({ item, width, onPress, onUpdateExperience, onDele
               onPress: handleDeleteProduct,
               color: '#FF3040',
             },
-          ]}
-          onMenuStateChange={setIsContextMenuOpen}
-          onCloseRef={(closeFn) => {
-            contextMenuCloseRef.current = closeFn;
-          }}
-          enableLongPress={true}
-          longPressDelay={2000}
-        >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onPress}
-          >
-          <Box
-            bg={isDark ? '$backgroundDark800' : '$white'}
-            borderWidth={1}
-            borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-            borderRadius={5}
-            w={width}
-            h={175}
-            overflow="hidden"
-          >
-            <Box
-              flex={1}
-              p={15}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <CachedImage
-                source={imageSource}
-                placeholder={DEFAULT_POST_IMAGE}
-                style={{
-                  width: 100,
-                  height: 100,
-                }}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-                priority="normal"
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-              />
-            </Box>
-            <VStack p={8} space="xs">
-              <Text
-                color={isDark ? '$textDark400' : '#A3A3A3'}
-                fontSize={11}
-                fontWeight="$bold"
-                numberOfLines={3}
-              >
-                {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
-                  .filter(Boolean)
-                  .join(' ')}
-              </Text>
-            </VStack>
-          </Box>
-        </TouchableOpacity>
-        </ContextMenuReanimated>
-      ) : (
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={onPress}
-        >
-          <Box
-            bg={isDark ? '$backgroundDark800' : '$white'}
-            borderWidth={1}
-            borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-            borderRadius={5}
-            w={width}
-            h={175}
-            overflow="hidden"
-          >
-            <Box
-              flex={1}
-              p={15}
-              alignItems="center"
-              justifyContent="center"
-            >
-              <CachedImage
-                source={imageSource}
-                placeholder={DEFAULT_POST_IMAGE}
-                style={{
-                  width: 100,
-                  height: 100,
-                }}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-                priority="normal"
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-              />
-            </Box>
-            <VStack p={8} space="xs">
-              <Text
-                color={isDark ? '$textDark400' : '#A3A3A3'}
-                fontSize={11}
-                fontWeight="$bold"
-                numberOfLines={3}
-              >
-                {[cleanNewlines(item.brand.name), cleanNewlines(item.brand.model), cleanNewlines(item.brand.specs)]
-                  .filter(Boolean)
-                  .join(' ')}
-              </Text>
-            </VStack>
-          </Box>
-        </TouchableOpacity>
-      )}
-
-      {/* Overlay - menu açıkken card'a tıklamayı engellemek için */}
-      {isContextMenuOpen && isOwnProfile && (
-        <RNPressable
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'transparent',
-            zIndex: 999,
-          }}
-          onPress={() => {
-            contextMenuCloseRef.current?.();
-          }}
+          ], [isDark, handleUpdateExperience, handleDeleteProduct])}
         />
+      )}
       )}
     </Box>
   );

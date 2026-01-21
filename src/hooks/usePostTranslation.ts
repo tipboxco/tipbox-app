@@ -61,7 +61,7 @@ export const usePostTranslation = ({
 
       return translated;
     },
-    enabled: shouldTranslate && manualTrigger, // Sadece manuel tetiklendiğinde çalış
+    enabled: Boolean(shouldTranslate && manualTrigger), // Sadece manuel tetiklendiğinde çalış
     staleTime: Infinity, // Cache sonsuza kadar fresh
     gcTime: 7 * 24 * 60 * 60 * 1000, // 7 gün (React Query cache)
   });

@@ -69,8 +69,8 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
         render: ({ id }) => (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-              <ToastTitle>Başarılı</ToastTitle>
-              <ToastDescription>Cihaz başarıyla kaldırıldı</ToastDescription>
+              <ToastTitle>Success</ToastTitle>
+              <ToastDescription>Device has been successfully removed</ToastDescription>
             </Toast>
           </Box>
         ),
@@ -79,13 +79,13 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
-                          'Cihaz kaldırılırken bir hata oluştu';
+                          'An error occurred while removing device';
       toast.show({
         placement: 'top',
         render: ({ id }) => (
           <Box maxWidth="90%" alignSelf="center" px="$4">
             <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-              <ToastTitle>Hata</ToastTitle>
+              <ToastTitle>Error</ToastTitle>
               <ToastDescription>{errorMessage}</ToastDescription>
             </Toast>
           </Box>
@@ -244,13 +244,13 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
         ) : error ? (
           <Box py="$10" px="$4" alignItems="center">
             <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-              {error.message || 'Cihazlar yüklenirken bir hata oluştu'}
+              {error.message || 'An error occurred while loading devices'}
             </Text>
           </Box>
         ) : !devices || devices.length === 0 ? (
           <Box py="$10" px="$4" alignItems="center">
             <Text color={isDark ? '#FFFFFF' : '#000000'} fontSize="$sm" textAlign="center">
-              Bağlı cihaz bulunmuyor
+              No linked devices found
             </Text>
           </Box>
         ) : (
@@ -290,7 +290,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              Cihazı Kaldır
+              Remove Device
             </Text>
             <AlertDialogCloseButton>
               <XMarkIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
@@ -301,7 +301,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
               fontSize={12}
               color={isDark ? '#FFFFFF' : '#000000'}
             >
-              {deviceToDelete?.name} cihazını listeden kaldırmak istediğinizden emin misiniz?
+              Are you sure you want to remove {deviceToDelete?.name} from the list?
             </Text>
           </AlertDialogBody>
           <AlertDialogFooter>
@@ -311,7 +311,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
               mr="$3"
               borderColor={isDark ? '#333333' : '#E5E5E5'}
             >
-              <ButtonText color={isDark ? '#FFFFFF' : '#000000'}>İptal</ButtonText>
+              <ButtonText color={isDark ? '#FFFFFF' : '#000000'}>Cancel</ButtonText>
             </Button>
             <Button
               bg="#CE4A4A"
@@ -320,7 +320,7 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
               opacity={deleteMutation.isPending ? 0.5 : 1}
             >
               <ButtonText color="#FFFFFF">
-                {deleteMutation.isPending ? 'Kaldırılıyor...' : 'Kaldır'}
+                {deleteMutation.isPending ? 'Removing...' : 'Remove'}
               </ButtonText>
             </Button>
           </AlertDialogFooter>

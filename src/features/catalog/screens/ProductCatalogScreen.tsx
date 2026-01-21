@@ -1199,7 +1199,7 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
           experienceOption: experienceOption,
         },
       });
-    } else if (type === 'comparison') {
+    } else if (type === 'benchmark') {
       navigationService.navigate(ROOT_ROUTES.POST, {
         screen: 'CreateBenchmarkPostScreen',
         params: {

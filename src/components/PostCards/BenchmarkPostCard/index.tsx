@@ -270,7 +270,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                             targetUserId,
                             data: {
                                 category: 'OTHER',
-                                description: 'Kullanıcı raporlandı',
+                                description: 'User reported',
                             },
                         });
                     },
@@ -314,7 +314,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                     onPress: async () => {
                         try {
                             await deletePostMutation.mutateAsync(data.id);
-                            Alert.alert('Başarılı', 'Post başarıyla silindi.');
+                            Alert.alert('Success', 'Post deleted successfully.');
                         } catch (error: any) {
                             Alert.alert(
                                 'Hata',
@@ -462,7 +462,7 @@ export const BenchmarkPostCard = ({ data, onCommentPress, isDetailMode = false }
                 </Box>
             )}
 
-            {/* Product Comparison */}
+            {/* Product Benchmark */}
             {isDetailMode ? (
                 <VStack px={12} pb={8}>
                     <Box position="relative" width="100%">

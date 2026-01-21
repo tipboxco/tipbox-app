@@ -180,7 +180,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
               targetUserId,
               data: {
                 category: 'OTHER',
-                description: 'Kullanıcı raporlandı',
+                description: 'User reported',
               },
             });
           },
@@ -226,7 +226,7 @@ const UpdatePostCard = ({ data, hideProduct = false, isDetailMode = false, showR
           onPress: async () => {
             try {
               await deletePostMutation.mutateAsync(data.id);
-              Alert.alert('Başarılı', 'Post başarıyla silindi.');
+              Alert.alert('Success', 'Post deleted successfully.');
             } catch (error: any) {
               Alert.alert(
                 'Hata',

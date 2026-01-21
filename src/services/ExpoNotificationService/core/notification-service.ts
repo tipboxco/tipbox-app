@@ -473,6 +473,17 @@ export class NotificationService {
 
     // CRITICAL FIX: categoryIdentifier sadece iOS'ta ve değer varsa gönderilmeli
     // iOS'ta nil categoryIdentifier hataya neden olur
+    
+    // Large icon/image support
+    // Android: largeIcon (user avatar, post image, etc.)
+    // iOS: attachments (image attachments for rich notifications)
+    const largeIcon = payload.largeIcon || payload.imageUrl;
+    const attachments = payload.attachments || (payload.imageUrl ? [{
+      identifier: 'image',
+      url: payload.imageUrl,
+      mimeType: 'image/jpeg',
+    }] : undefined);
+    
     const content: Notifications.NotificationContentInput = {
       title: payload.title,
       body: payload.body,
@@ -481,6 +492,13 @@ export class NotificationService {
       badge: this.config.defaultBadge,
       ...(Platform.OS === 'ios' && payload.categoryId && {
         categoryIdentifier: payload.categoryId,
+      }),
+      ...(Platform.OS === 'ios' && attachments && {
+        attachments: attachments.map(att => ({
+          identifier: att.identifier,
+          url: att.url,
+          mimeType: att.mimeType || 'image/jpeg',
+        })),
       }),
       ...(Platform.OS === 'android' && {
         android: {
@@ -494,6 +512,10 @@ export class NotificationService {
           sound: typeof soundValue === 'string' 
             ? soundValue 
             : (soundValue ? 'default' : undefined),
+          // Large icon: kullanıcı avatar'ı, post image'i vb. için
+          ...(largeIcon && {
+            largeIcon,
+          }),
         },
       }),
     };

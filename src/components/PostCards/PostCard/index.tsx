@@ -198,7 +198,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               targetUserId,
               data: {
                 category: 'OTHER',
-                description: 'Kullanıcı raporlandı',
+                description: 'User reported',
               },
             });
           },
@@ -265,7 +265,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
           onPress: async () => {
             try {
               await deletePostMutation.mutateAsync(data.id);
-              Alert.alert('Başarılı', 'Post başarıyla silindi.');
+              Alert.alert('Success', 'Post deleted successfully.');
             } catch (error: any) {
               Alert.alert(
                 'Hata',

@@ -30,8 +30,8 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Geçersiz Kod</ToastTitle>
-                <ToastDescription>Lütfen 6 haneli kodu girin.</ToastDescription>
+                <ToastTitle>Invalid Code</ToastTitle>
+                <ToastDescription>Please enter the 6-digit code.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -51,8 +51,8 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Başarılı</ToastTitle>
-                <ToastDescription>Google Authenticator başarıyla etkinleştirildi.</ToastDescription>
+                <ToastTitle>Success</ToastTitle>
+                <ToastDescription>Google Authenticator has been successfully enabled.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -68,9 +68,9 @@ export const GoogleAuthenticatorVerifyScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
+                <ToastTitle>Error</ToastTitle>
                 <ToastDescription>
-                  {error?.response?.data?.message || 'Kod doğrulanamadı. Lütfen tekrar deneyin.'}
+                  {error?.response?.data?.message || 'Code verification failed. Please try again.'}
                 </ToastDescription>
               </Toast>
             </Box>

@@ -14,7 +14,7 @@ import {
   PencilIcon,
   TrashIcon,
 } from 'react-native-heroicons/outline';
-import { ContextMenuReanimated } from '../PostCard/ContextMenuReanimated';
+import { ContextMenuReanimated } from '@/src/components/PostCards/PostCard/ContextMenuReanimated';
 import {
   HeartIcon as HeartIconSolid,
   BookmarkIcon as BookmarkIconSolid,
@@ -175,7 +175,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               targetUserId,
               data: {
                 category: 'OTHER',
-                description: 'Kullanıcı raporlandı',
+                description: 'User reported',
               },
             });
           },
@@ -219,7 +219,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
           onPress: async () => {
             try {
               await deletePostMutation.mutateAsync(data.id);
-              Alert.alert('Başarılı', 'Post başarıyla silindi.');
+              Alert.alert('Success', 'Post deleted successfully.');
             } catch (error: any) {
               Alert.alert(
                 'Hata',
@@ -376,7 +376,6 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
       {/* Badges */}
       <HStack px={12} pb={8} pt={hideProduct ? 8 : 0} borderRightWidth={1} borderLeftWidth={1} borderColor="#E9E9E9">
         <Box
-          bg={isDark ? '$backgroundDark900' : '$white'}
           borderWidth={2}
           borderColor="#B8CC04"
           bgColor="#758600"
@@ -402,9 +401,9 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
 
         {data.isBoosted && (
           <Box
-            bgColor="#E0195B"
             borderWidth={2}
             borderColor="#EF4D81"
+            bgColor="#E0195B"
             borderRadius={20}
             width={90}
             px={10}

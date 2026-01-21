@@ -9,7 +9,7 @@ import {
   ButtonText,
   Pressable
 } from '@gluestack-ui/themed';
-import { TextInput, View } from 'react-native';
+import { TextInput, View, Clipboard } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 
@@ -83,11 +83,61 @@ export const VerifyCodeScreen = ({
   };
 
   // Digit değişimi → sonraki input focus
-  const handleCodeChange = (value: string, index: number) => {
+  const handleCodeChange = async (value: string, index: number) => {
     // Sadece rakamları kabul et
     const digits = value.replace(/[^0-9]/g, '');
     
-    // Yapıştırma işlemi: Eğer birden fazla karakter varsa, tüm kodu dağıt
+    // Paste işlemini algıla: İlk input'a paste yapıldığında
+    if (index === 0 && digits.length > 1) {
+      // İlk input'a birden fazla karakter geldiğinde, paste işlemi yapılmış demektir
+      // Tüm kodu dağıt
+      setCode((prevCode) => {
+        const newCode = [...prevCode];
+        const codeToPaste = digits.slice(0, 6);
+        
+        for (let i = 0; i < 6; i++) {
+          newCode[i] = codeToPaste[i] || '';
+        }
+        
+        // Tüm kod dolduruldu, focus'u kaldır
+        nextFocusIndexRef.current = null;
+        
+        return newCode;
+      });
+      return;
+    }
+    
+    // İlk input'a tek karakter geldiğinde, clipboard'u kontrol et (paste olup olmadığını anlamak için)
+    if (index === 0 && digits.length === 1) {
+      try {
+        const clipboardContent = await Clipboard.getString();
+        const clipboardDigits = clipboardContent.replace(/[^0-9]/g, '');
+        
+        // Eğer clipboard'ta 6 haneli bir kod varsa ve kullanıcı paste yapmış olabilir
+        // (Bazı durumlarda paste işlemi tek karakter olarak gelebilir)
+        if (clipboardDigits.length >= 6) {
+          // Paste işlemi: Tüm kodu dağıt
+          setCode((prevCode) => {
+            const newCode = [...prevCode];
+            const codeToPaste = clipboardDigits.slice(0, 6);
+            
+            for (let i = 0; i < 6; i++) {
+              newCode[i] = codeToPaste[i] || '';
+            }
+            
+            // Tüm kod dolduruldu, focus'u kaldır
+            nextFocusIndexRef.current = null;
+            
+            return newCode;
+          });
+          return;
+        }
+      } catch (error) {
+        // Clipboard okuma hatası, normal akışa devam et
+      }
+    }
+    
+    // Yapıştırma işlemi: Eğer birden fazla karakter varsa (diğer input'larda), tüm kodu dağıt
     if (digits.length > 1) {
       setCode((prevCode) => {
         const newCode = [...prevCode];
@@ -239,7 +289,7 @@ export const VerifyCodeScreen = ({
                       onKeyPress={e => handleKeyPress(e, index)}
                       onFocus={() => handleFocus(index)}
                       keyboardType="number-pad"
-                      maxLength={1}
+                      maxLength={index === 0 ? 6 : 1}
                       style={{
                         position: 'absolute',
                         width: 43,

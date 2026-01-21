@@ -497,7 +497,7 @@ export const PostsScreen = () => {
         fromInventory: experienceOption === 'own',
         experienceOption: experienceOption,
       });
-    } else if (type === 'comparison') {
+    } else if (type === 'benchmark') {
       navigation.navigate('CreateBenchmarkPostScreen', {
         product: selectedProductPayload,
       });

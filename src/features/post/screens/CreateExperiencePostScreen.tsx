@@ -313,8 +313,10 @@ export const CreateExperiencePostScreen = () => {
             return;
         }
         
-        // Status'u belirle (fromInventory ve experienceOption'a göre)
-        const status: 'own' | 'tested' = (fromInventory && experienceOption === 'own') ? 'own' : 'tested';
+        // Status'u belirle (experienceOption'a göre)
+        // - experienceOption === 'own' → status: 'own' (ürün envantere eklenir veya zaten envanterde ise post paylaşılır)
+        // - experienceOption === 'tried' → status: 'tested' (ürün envantere eklenmez, sadece post paylaşılır)
+        const status: 'own' | 'tested' = experienceOption === 'own' ? 'own' : 'tested';
         
         // Form değerlerini ID'lere çevir
         const selectedDurationId = mapFormValueToId(data.step1Duration);
