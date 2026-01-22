@@ -8,8 +8,8 @@ import { WebView } from 'react-native-webview';
 import { useAppStore } from '@/src/store/appStore';
 import { useShallow } from 'zustand/react/shallow';
 
-// Canny URL - Bu URL'i environment variable'dan alabilirsiniz
-const CANNY_URL = 'https://canny.io'; // Gerçek Canny URL'inizi buraya ekleyin
+// Canny URL - Tipbox Canny sayfası
+const CANNY_URL = 'https://tipbox.canny.io/';
 
 export const CannyWebViewScreen: React.FC = () => {
   const { colorMode } = useColorMode();
