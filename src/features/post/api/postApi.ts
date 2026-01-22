@@ -98,7 +98,7 @@ export const createFreePost = async (
     formData,
     {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
       },
     }
   );
@@ -172,7 +172,7 @@ export const createBenchmarkPost = async (
     formData,
     {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
       },
     }
   );
@@ -236,7 +236,7 @@ export const createTipsAndTricksPost = async (
     formData,
     {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
       },
     }
   );
@@ -318,7 +318,7 @@ export const createQuestionPost = async (
       formData,
       {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
         },
       }
     );
@@ -399,7 +399,7 @@ export const createUpdatePost = async (
     formData,
     {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
       },
     }
   );
@@ -519,7 +519,7 @@ export const createExperiencePost = async (
       formData,
       {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
         },
       }
     );

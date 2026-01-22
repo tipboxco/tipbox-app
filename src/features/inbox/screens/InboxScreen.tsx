@@ -265,7 +265,7 @@ const InboxScreen: React.FC = () => {
           >
             {/* Messages Tab */}
             <Box key="0" flex={1}>
-              <MessagesScreen onDrawerOpen={openDrawer} isActiveTab={currentPage === 0} />
+              <MessagesScreen onDrawerOpen={openDrawer} isActiveTab={currentPage === 0} searchQuery={searchQuery} />
             </Box>
 
             {/* Support Requests Tab */}

@@ -110,9 +110,27 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
  */
 export const setupApiInterceptors = (client: AxiosInstance) => {
 
-  // Request Interceptor - JWT Token ekleme
+  // Request Interceptor - JWT Token ekleme ve FormData Content-Type yönetimi
   client.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
+      // FormData kontrolü - React Native'de FormData gönderirken Content-Type header'ını kaldır
+      // Axios otomatik olarak multipart/form-data boundary ekler
+      // CRITICAL: Request formatı için - field adı 'avatar' (küçük harf) ve multipart/form-data olmalı
+      if (config.data && (config.data instanceof FormData || config.data?.constructor?.name === 'FormData')) {
+        // Content-Type header'ını tamamen kaldır - Axios otomatik olarak doğru boundary ile multipart/form-data ekleyecek
+        if (config.headers) {
+          // Tüm Content-Type varyasyonlarını kaldır
+          delete config.headers['Content-Type'];
+          delete config.headers['content-type'];
+          delete config.headers['Content-type'];
+          // Axios'un otomatik olarak multipart/form-data boundary eklemesine izin ver
+        }
+        // Log for debugging
+        if (__DEV__) {
+          console.log('[ApiInterceptor] FormData detected, Content-Type header removed - Axios will add multipart/form-data automatically');
+        }
+      }
+
       // Token gerektirmeyen endpoint'ler (login, register gibi)
       const publicEndpoints = ['/auth/login', '/auth/register', '/auth/refresh'];
       const isPublicEndpoint = publicEndpoints.some((endpoint) =>

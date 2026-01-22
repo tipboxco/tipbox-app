@@ -19,11 +19,112 @@ export interface GetMessagesParams {
  * 
  * @param params - Query parameters (search, unreadOnly, threadType, limit)
  */
+/**
+ * Backend Response Format - Paginated response
+ */
+interface GetMessagesResponse {
+  items: InboxMessage[];
+  pagination: {
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
 export const getMessages = async (params?: GetMessagesParams): Promise<InboxMessage[]> => {
   try {
-    const response = await apiService.getClient().get<InboxMessage[]>('/inbox', { params });
-    return response.data;
+    console.log('[getMessages] 📡 API çağrısı başlatılıyor:', {
+      endpoint: '/inbox',
+      params,
+    });
+    
+    const response = await apiService.getClient().get<GetMessagesResponse>('/inbox', { params });
+    
+    // 🔍 DETAYLI DEBUG: Response'un tamamını logla
+    console.log('[getMessages] ✅ API çağrısı başarılı:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      responseDataType: typeof response.data,
+      responseDataKeys: response.data ? Object.keys(response.data) : null,
+      responseDataFull: JSON.stringify(response.data, null, 2),
+    });
+    
+    // Response formatını kontrol et
+    if (!response.data) {
+      console.error('[getMessages] ❌ Response data is null or undefined!');
+      return [];
+    }
+    
+    // Backend'den gelen response formatı: { items: [...], pagination: {...} }
+    // Frontend direkt array bekliyor, bu yüzden items'ı döndürüyoruz
+    const items = response.data?.items || [];
+    
+    console.log('[getMessages] 📋 Response analizi:', {
+      hasItems: !!response.data.items,
+      itemsIsArray: Array.isArray(response.data.items),
+      itemsLength: items.length,
+      pagination: response.data.pagination,
+      firstItem: items[0] ? {
+        id: items[0].id,
+        recipientUserId: items[0].recipientUserId,
+        senderName: items[0].senderName,
+        senderTitle: items[0].senderTitle,
+        lastMessage: items[0].lastMessage,
+        isUnread: items[0].isUnread,
+        unreadCount: items[0].unreadCount,
+        timestamp: items[0].timestamp,
+        fullItem: items[0],
+      } : null,
+      allItems: items.map((item, index) => ({
+        index,
+        id: item.id,
+        recipientUserId: item.recipientUserId,
+        senderName: item.senderName,
+        lastMessage: item.lastMessage,
+        lastMessageType: typeof item.lastMessage,
+        lastMessageIsNull: item.lastMessage === null,
+        lastMessageIsEmpty: item.lastMessage === '',
+        isUnread: item.isUnread,
+        unreadCount: item.unreadCount,
+      })),
+    });
+    
+    if (items.length === 0) {
+      console.warn('[getMessages] ⚠️ Backend\'den boş array geldi! Veritabanında mesaj olmayabilir veya filtreleme sorunu olabilir.');
+    }
+    
+    // 🔍 BACKEND SORUNU KONTROLÜ: lastMessage null ise ama thread'de mesaj varsa backend sorunu
+    const itemsWithNullLastMessage = items.filter((item) => {
+      const hasMessages = item.isUnread || (item.unreadCount && item.unreadCount > 0);
+      const hasNullLastMessage = !item.lastMessage || item.lastMessage.trim() === '';
+      return hasMessages && hasNullLastMessage;
+    });
+    
+    if (itemsWithNullLastMessage.length > 0) {
+      console.error('[getMessages] ❌ BACKEND SORUNU: lastMessage null ama thread\'de mesaj var!', {
+        count: itemsWithNullLastMessage.length,
+        items: itemsWithNullLastMessage.map((item) => ({
+          threadId: item.id,
+          senderName: item.senderName,
+          isUnread: item.isUnread,
+          unreadCount: item.unreadCount,
+          lastMessage: item.lastMessage,
+          timestamp: item.timestamp,
+        })),
+      });
+      console.error('[getMessages] 💡 Backend\'de lastMessage hesaplaması yapılmıyor olabilir. Thread\'de mesaj varsa lastMessage mutlaka olmalı!');
+    }
+    
+    return items;
   } catch (error: any) {
+    console.error('[getMessages] ❌ API çağrısı başarısız:', {
+      status: error?.response?.status,
+      statusText: error?.response?.statusText,
+      message: error?.message,
+      data: error?.response?.data,
+      params,
+    });
+    
     // 404 hatası: Endpoint backend'de henüz implement edilmemiş olabilir
     if (error?.response?.status === 404) {
       console.error('[getMessages] 404 - Endpoint not found. Backend may not have implemented /inbox endpoint yet.');
@@ -95,14 +196,30 @@ export const getThreadDetail = async (threadId: string): Promise<ThreadResponse>
 };
 
 /**
- * Backend Response Format - Thread mesajları için
+ * Thread Participant - Thread'deki kullanıcı bilgileri
+ * ✅ OPTIMIZE: Thread başında participants bilgisi gönderilir (her mesajda sender bilgisi göndermek yerine)
  */
-export interface ThreadMessageResponse {
+export interface ThreadParticipant {
   id: string;
-  type: 'message' | 'support-request' | 'send-tips';
+  name: string;
+  title: string | null;
+  avatar: string | null;
+}
+
+/**
+ * Backend Response Format - Thread mesajları için (Single Item)
+ * ✅ OPTIMIZE: sender objesi yerine sadece senderId gönderilir
+ * Sender bilgileri participants'tan alınır
+ */
+export interface ThreadMessageResponseItem {
+  id: string;
+  type: 'message' | 'image' | 'support-request' | 'send-tips'; // ✅ 'image' eklendi
   data: {
     id: string;
-    sender: {
+    senderId: string; // ✅ OPTIMIZE: Sadece senderId gönderilir (sender objesi yerine)
+    // ✅ OPTIONAL: Backward compatibility için sender objesi hala gönderilebilir
+    // Ama yeni implementasyonlarda sadece senderId kullanılmalı
+    sender?: {
       id: string;
       senderName: string;
       senderTitle: string;
@@ -113,6 +230,11 @@ export interface ThreadMessageResponse {
     message?: string;
     timestamp: string;
     isUnread?: boolean;
+    // ✅ For image type - Görsel mesajlar için
+    mediaUrl?: string;        // Görsel URL'i (CDN'den)
+    thumbnailUrl?: string | null; // Thumbnail URL'i (opsiyonel)
+    caption?: string;         // Görsel altı yazı (opsiyonel)
+    imageUrl?: string;        // Backward compatibility için (mediaUrl yerine)
     // For support-request type
     type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
     amount?: number | string;
@@ -125,6 +247,24 @@ export interface ThreadMessageResponse {
 }
 
 /**
+ * Backend Response Format - Thread mesajları için (Paginated Response)
+ * ✅ OPTIMIZE: Thread başında participants bilgisi gönderilir
+ * Mesajlarda sadece senderId gönderilir, sender bilgileri participants'tan alınır
+ */
+export interface GetThreadMessagesResponse {
+  // ✅ OPTIMIZE: Thread participants bilgisi (her mesajda sender bilgisi göndermek yerine)
+  participants?: {
+    userOne: ThreadParticipant;
+    userTwo: ThreadParticipant;
+  };
+  items: ThreadMessageResponseItem[];
+  pagination: {
+    hasMore: boolean;
+    limit: number;
+  };
+}
+
+/**
  * Thread Message - Normalized thread mesajı tipi (internal use)
  */
 export interface ThreadMessage {
@@ -133,12 +273,16 @@ export interface ThreadMessage {
   senderId: string;
   recipientId?: string;
   message: string;
-  messageType: 'message' | 'support-request' | 'send-tips';
-  context?: 'DM' | 'SUPPORT'; // Sadece mesajlar için geçerli (type: "message")
+  messageType: 'message' | 'image' | 'support-request' | 'send-tips'; // ✅ 'image' eklendi
+  context?: 'DM' | 'SUPPORT'; // Sadece mesajlar için geçerli (type: "message" veya "image")
   isRead: boolean;
   sentAt: string; // ISO 8601
   readAt?: string; // ISO 8601 (opsiyonel)
   amount?: number; // For send-tips
+  // ✅ Image message fields - Görsel mesajlar için
+  mediaUrl?: string;        // Görsel URL'i (CDN'den)
+  thumbnailUrl?: string | null; // Thumbnail URL'i (opsiyonel)
+  caption?: string;         // Görsel altı yazı (opsiyonel)
   // Sender info
   senderName?: string;
   senderTitle?: string;
@@ -160,30 +304,117 @@ export interface ThreadMessage {
  */
 export const getThreadMessages = async (threadId: string): Promise<ThreadMessage[]> => {
   try {
-    const response = await apiService.getClient().get<ThreadMessageResponse[]>(`/inbox/${threadId}`);
+    console.log('[getThreadMessages] 📡 API çağrısı başlatılıyor:', {
+      endpoint: `/inbox/${threadId}`,
+      threadId,
+    });
+    
+    const response = await apiService.getClient().get<GetThreadMessagesResponse>(`/inbox/${threadId}`);
+    
+    console.log('[getThreadMessages] ✅ API çağrısı başarılı:', {
+      status: response.status,
+      itemsLength: response.data?.items?.length || 0,
+      pagination: response.data?.pagination,
+      responseData: response.data,
+    });
+    
+    // Backend'den gelen response formatı: { items: [...], pagination: {...} }
+    // Frontend direkt array bekliyor, bu yüzden items'ı kullanıyoruz
+    const items = response.data?.items || [];
+    
+    if (items.length === 0) {
+      console.warn('[getThreadMessages] ⚠️ Backend\'den boş array geldi! Thread\'de mesaj olmayabilir.');
+      return [];
+    }
+    
+    // ✅ OPTIMIZE: Participants bilgisini al (thread başında gönderilir)
+    const participants = response.data?.participants;
+    console.log('[getThreadMessages] 👥 Participants bilgisi:', participants);
+    
+    // Helper: senderId'ye göre sender bilgilerini participants'tan bul
+    const getSenderInfo = (senderId: string) => {
+      // Önce backward compatibility için data.sender objesi var mı kontrol et
+      // (Eski format desteği için)
+      
+      // Participants'tan bul
+      if (participants) {
+        if (participants.userOne.id === senderId) {
+          return {
+            id: participants.userOne.id,
+            senderName: participants.userOne.name,
+            senderTitle: participants.userOne.title || '',
+            senderAvatar: participants.userOne.avatar,
+          };
+        } else if (participants.userTwo.id === senderId) {
+          return {
+            id: participants.userTwo.id,
+            senderName: participants.userTwo.name,
+            senderTitle: participants.userTwo.title || '',
+            senderAvatar: participants.userTwo.avatar,
+          };
+        }
+      }
+      
+      // Participants'ta bulunamadıysa null döndür (fallback için)
+      return null;
+    };
     
     // Backend response'unu normalize et
-    const normalizedMessages: ThreadMessage[] = response.data.map((item) => {
+    const normalizedMessages: ThreadMessage[] = items.map((item) => {
       const { id, type, data } = item;
-      const { sender, timestamp } = data;
+      const timestamp = data.timestamp;
+      
+      // ✅ OPTIMIZE: Sender bilgilerini participants'tan al (senderId'ye göre)
+      // Backward compatibility: Eğer data.sender varsa onu kullan (eski format)
+      const senderId = data.senderId || data.sender?.id;
+      if (!senderId) {
+        console.warn('[getThreadMessages] ⚠️ SenderId bulunamadı:', { itemId: id, data });
+      }
+      
+      // Sender bilgilerini al (önce backward compatibility, sonra participants)
+      let senderInfo = data.sender ? {
+        id: data.sender.id,
+        senderName: data.sender.senderName,
+        senderTitle: data.sender.senderTitle || '',
+        senderAvatar: data.sender.senderAvatar,
+      } : getSenderInfo(senderId);
+      
+      // Eğer hala sender bilgisi yoksa, default değerler kullan
+      if (!senderInfo) {
+        console.warn('[getThreadMessages] ⚠️ Sender bilgisi bulunamadı, default kullanılıyor:', { senderId, itemId: id });
+        senderInfo = {
+          id: senderId || 'unknown',
+          senderName: 'Unknown',
+          senderTitle: '',
+          senderAvatar: null,
+        };
+      }
       
       // Base message structure
       const baseMessage: ThreadMessage = {
         id: data.id || id,
         threadId: data.threadId || threadId,
-        senderId: sender.id,
-        message: data.message || data.lastMessage || '',
+        senderId: senderInfo.id,
+        message: data.message || data.lastMessage || data.caption || '', // ✅ caption da message olarak kullanılabilir
         messageType: type,
         // Context sadece mesajlar için geçerli (DM_THREAD.md'ye göre)
         // Support request ve send-tips için context yok
         // Backend'de context filtreleme yapılıyor olmalı
-        context: type === 'message' ? 'DM' : undefined,
+        context: (type === 'message' || type === 'image') ? 'DM' : undefined, // ✅ image mesajları da DM context'inde
         isRead: !data.isUnread, // isUnread varsa, isRead = !isUnread
         sentAt: timestamp,
-        senderName: sender.senderName,
-        senderTitle: sender.senderTitle,
-        senderAvatar: sender.senderAvatar,
+        senderName: senderInfo.senderName,
+        senderTitle: senderInfo.senderTitle,
+        senderAvatar: senderInfo.senderAvatar,
       };
+      
+      // ✅ Image message fields - Görsel mesajlar için
+      if (type === 'image' || data.mediaUrl || data.imageUrl) {
+        baseMessage.messageType = 'image';
+        baseMessage.mediaUrl = data.mediaUrl || data.imageUrl; // Backward compatibility için imageUrl de kontrol et
+        baseMessage.thumbnailUrl = data.thumbnailUrl || null;
+        baseMessage.caption = data.caption || data.message || data.lastMessage || '';
+      }
       
       // Type-specific fields
       if (type === 'send-tips' && data.amount) {

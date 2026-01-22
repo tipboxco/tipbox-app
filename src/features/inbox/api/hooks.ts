@@ -53,7 +53,15 @@ export const useMessages = (params?: GetMessagesParams) => {
   
   return useQuery<InboxMessage[], Error>({
     queryKey: [...inboxKeys.messages(), params],
-    queryFn: () => getMessages(params),
+    queryFn: async () => {
+      console.log('[useMessages] 🔄 Query başlatılıyor:', { params });
+      const result = await getMessages(params);
+      console.log('[useMessages] ✅ Query tamamlandı:', {
+        resultLength: result?.length || 0,
+        result: result,
+      });
+      return result;
+    },
     // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
     staleTime: 5 * 60 * 1000,  // 5 dakika - cache invalid olana kadar backend'e istek atma
     gcTime: 10 * 60 * 1000,    // 10 dakika - cache'de tut
@@ -90,7 +98,21 @@ export const useMessages = (params?: GetMessagesParams) => {
           const isBackendRead = !backendMsg.isUnread && (backendMsg.unreadCount || 0) === 0;
           const isBackendUnread = backendMsg.isUnread || (backendMsg.unreadCount || 0) > 0;
           
-          // ✅ Öncelik 1: Backend'den unreadCount === 0 geldiyse (thread okundu), backend verisini kullan
+          // ✅ Öncelik 1: Cache'de okunmamış mesaj varsa (optimistic update), cache'i koru
+          // Yeni mesaj geldiğinde handleNewMessage optimistic update yapıyor (isUnread: true, unreadCount++)
+          // Backend otomatik okundu işaretliyor olsa bile, cache'deki optimistic update'i koru
+          // Çünkü kullanıcı henüz mesajı okumadı, sadece yeni mesaj geldi
+          const isCachedUnread = cachedMsg.isUnread || (cachedMsg.unreadCount || 0) > 0;
+          if (isCachedUnread) {
+            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... cache'de okunmamış (optimistic update), cache'i koru`);
+            console.log(`[useMessages]     Backend: isUnread=${backendMsg.isUnread}, unreadCount=${backendMsg.unreadCount || 0}`);
+            console.log(`[useMessages]     Cache: isUnread=${cachedMsg.isUnread}, unreadCount=${cachedMsg.unreadCount || 0}`);
+            // Cache'deki optimistic update'i koru (yeni mesaj geldiğinde badge gösterilmeli)
+            // Backend otomatik okundu işaretliyor olsa bile, kullanıcı henüz mesajı görmedi
+            return cachedMsg;
+          }
+          
+          // ✅ Öncelik 2: Backend'den unreadCount === 0 geldiyse (thread okundu), backend verisini kullan
           // thread_read event'i geldiğinde backend doğru veriyi döndürüyor
           if (isBackendRead) {
             console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... backend'de okundu (unreadCount=0), backend verisini kullan`);
@@ -100,25 +122,22 @@ export const useMessages = (params?: GetMessagesParams) => {
             return backendMsg;
           }
           
-          // ✅ Öncelik 2: Cache'de okundu ama backend'de okunmamış görünüyorsa, cache'i koru
-          // Bu durum genellikle optimistic update yapıldıktan hemen sonra backend'den eski veri gelirse oluşur
+          // ✅ Öncelik 3: Cache'de okundu ama backend'de okunmamış görünüyorsa, backend verisini kullan
+          // Backend'den gelen veri daha güncel olabilir (başka cihazdan mesaj geldi)
           if (isCachedRead && isBackendUnread) {
-            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... cache'de okundu, backend verisi override ediliyor`);
+            console.log(`[useMessages]   ✅ Thread ${backendMsg.id.substring(0, 8)}... backend'de okunmamış, backend verisini kullan`);
             console.log(`[useMessages]     Backend: isUnread=${backendMsg.isUnread}, unreadCount=${backendMsg.unreadCount || 0}`);
             console.log(`[useMessages]     Cache: isUnread=${cachedMsg.isUnread}, unreadCount=${cachedMsg.unreadCount || 0}`);
-            return {
-              ...backendMsg,
-              isUnread: false,
-              unreadCount: 0,
-            };
+            // Backend verisini kullan (başka cihazdan yeni mesaj gelmiş olabilir)
+            return backendMsg;
           }
           
-          // ✅ Öncelik 3: Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
+          // ✅ Öncelik 4: Her iki tarafta da okundu, backend verisini kullan (daha güncel olabilir)
           if (isCachedRead && !isBackendUnread) {
             return backendMsg;
           }
           
-          // ✅ Öncelik 4: Cache'de okunmamışsa backend verisini kullan (backend artık doğru veriyi döndürüyor)
+          // ✅ Öncelik 5: Diğer durumlarda backend verisini kullan
           return backendMsg;
         });
         
@@ -137,8 +156,11 @@ export const useMessages = (params?: GetMessagesParams) => {
       }
       
       // Cache yoksa backend verisini direkt döndür (backend artık doğru veriyi döndürüyor)
-      console.log('[useMessages]   ⚠️ Cache boş, backend verisi direkt kullanılıyor');
-      return data;
+      console.log('[useMessages]   ⚠️ Cache boş, backend verisi direkt kullanılıyor:', {
+        dataLength: data?.length || 0,
+        data: data,
+      });
+      return data || [];
     },
   });
 };

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
@@ -25,6 +25,7 @@ import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { navigateToSharedScreenWithPruning } from '@/src/utils/navigation/sharedScreenNavigation';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
+import { useReportUser, useBlockUser } from '@/src/features/profile/api/hooks';
 import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
 import MessageDetailActionButtons from '../components/MessageDetailActionButtons';
@@ -38,7 +39,7 @@ interface MessageDetailItem {
   isSent: boolean;
   senderName?: string;
   senderAvatar?: any;
-  type?: 'message' | 'support_request' | 'tips';
+  type?: 'message' | 'support_request' | 'tips' | 'image';
   supportRequest?: {
     supportType: string;
     message: string;
@@ -50,6 +51,11 @@ interface MessageDetailItem {
     toUserId?: string; // Request'in gönderildiği kullanıcı ID'si (expert)
   };
   tipsAmount?: number; // TIPS mesajı için amount
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video' | 'file';
+  thumbnailUrl?: string | null | undefined;
+  uploadStatus?: 'uploading' | 'uploaded' | 'failed';
+  uploadProgress?: number;
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
   readAt?: string; // Okunma zamanı
@@ -213,6 +219,8 @@ const MessageDetailScreen: React.FC = () => {
   const cancelSupportRequestMutation = useCancelSupportRequest();
   const markThreadAsReadMutation = useMarkThreadAsRead();
   const queryClient = useQueryClient();
+  const reportUserMutation = useReportUser();
+  const blockUserMutation = useBlockUser();
   
   // Socket context
   const {
@@ -403,16 +411,18 @@ const MessageDetailScreen: React.FC = () => {
               : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
             
             // Mesaj tipini belirle
-            let messageType: 'message' | 'support_request' | 'tips' = 'message';
+            let messageType: 'message' | 'image' | 'support_request' | 'tips' = 'message';
             if (msg.messageType === 'support-request') {
               messageType = 'support_request';
             } else if (msg.messageType === 'send-tips') {
               messageType = 'tips';
+            } else if (msg.messageType === 'image' || msg.mediaUrl) {
+              messageType = 'image';
             }
 
             return {
               id: msg.id,
-              text: msg.message || '', // Boş string fallback
+              text: msg.message || msg.caption || '', // ✅ Görsel mesajlarda caption kullanılabilir
               timestamp: formatMessageTime(msg.sentAt),
               isSent,
               senderName,
@@ -420,6 +430,10 @@ const MessageDetailScreen: React.FC = () => {
               isRead: msg.isRead,
               readAt: msg.readAt,
               type: messageType,
+              // ✅ Image message fields - Görsel mesajlar için
+              mediaUrl: msg.mediaUrl,
+              mediaType: msg.mediaUrl ? 'image' : undefined,
+              thumbnailUrl: msg.thumbnailUrl,
               // TIPS mesajı için amount
               tipsAmount: msg.messageType === 'send-tips' ? (msg.amount || 0) : undefined,
               // Support request için özel alanlar
@@ -819,6 +833,87 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
 
+      // Normal FlatList'te scroll to end = en alta scroll
+      setTimeout(() => {
+        safeScrollToEnd(true);
+      }, 100);
+    } else if (eventData.messageType === 'image' || eventData.messageType === 'video' || eventData.messageType === 'audio' || eventData.messageType === 'file') {
+      // Image/Video/Audio/File mesajı - Backend'den gelen new_message event'i
+      const isSent = eventData.senderId === currentUserId;
+      console.log('[MessageDetail] 📷 Media message received:', {
+        messageId: eventData.messageId,
+        messageType: eventData.messageType,
+        mediaUrl: eventData.mediaUrl,
+        senderId: eventData.senderId,
+        currentUserId,
+        isSent,
+      });
+      
+      const currentParams = paramsRef.current;
+      const newMediaMessage: MessageDetailItem = {
+        id: eventData.messageId,
+        text: eventData.message || eventData.caption || '', // Caption varsa
+        timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        isSent,
+        senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
+        senderAvatar: isSent ? undefined : currentParams.senderAvatar,
+        type: eventData.messageType === 'image' ? 'image' : 'message',
+        mediaUrl: eventData.mediaUrl,
+        mediaType: eventData.messageType,
+        thumbnailUrl: eventData.thumbnailUrl,
+        isRead: false,
+      };
+      
+      setMessages((prev) => {
+        // Duplicate kontrolü
+        const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
+        if (existingMessage) {
+          console.log('[MessageDetail] 📷 Media message already exists, skipping duplicate');
+          return prev;
+        }
+        
+        // Optimistic mesajı (pending-image- ile başlayan) gerçek mesajla değiştir
+        const optimisticMessageIndex = prev.findIndex(
+          (msg) => msg.id.startsWith('pending-image-') && 
+                   msg.isSent === isSent &&
+                   msg.type === 'image'
+        );
+        
+        if (optimisticMessageIndex !== -1) {
+          console.log('[MessageDetail] 📷 Replacing optimistic image message with real message:', {
+            optimisticId: prev[optimisticMessageIndex].id,
+            realId: eventData.messageId,
+          });
+          const updated = [...prev];
+          updated[optimisticMessageIndex] = newMediaMessage;
+          return updated;
+        }
+        
+        // Normal FlatList: Yeni mesajı sona ekle
+        return [...prev, newMediaMessage];
+      });
+      
+      // Mesaj geldiğinde anında okundu işaretle
+      if (!isSent && isSocketReady && threadId && isMountedRef.current) {
+        console.log('[MessageDetail] 📖 Marking received media message as read immediately:', eventData.messageId);
+        socketMarkMessageAsRead(eventData.messageId);
+        
+        if (isMountedRef.current) {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id === eventData.messageId) {
+                return {
+                  ...msg,
+                  isRead: true,
+                  readAt: new Date().toISOString(),
+                };
+              }
+              return msg;
+            })
+          );
+        }
+      }
+      
       // Normal FlatList'te scroll to end = en alta scroll
       setTimeout(() => {
         safeScrollToEnd(true);
@@ -1479,6 +1574,94 @@ const MessageDetailScreen: React.FC = () => {
     // Sadece handler callback'leri ve threadId, isConnected gibi değişken değerleri dependency olarak kalmalı
   }, [isConnected, threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, handleThreadRead, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled]);
 
+  // Handle Share
+  const handleShare = useCallback(async () => {
+    if (!effectiveRecipientUserId || !params.senderName) return;
+    try {
+      await Share.share({
+        message: `Check out ${params.senderName}'s profile on Tipbox!`,
+        url: `tipboxapp://profile/user/${effectiveRecipientUserId}`,
+      });
+    } catch (error) {
+      console.error('[MessageDetail] Share error:', error);
+    }
+  }, [effectiveRecipientUserId, params.senderName]);
+
+  // Handle Report
+  const handleReport = useCallback(() => {
+    if (!user?.id || !effectiveRecipientUserId) return;
+    
+    Alert.alert(
+      'Kullanıcıyı Raporla',
+      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Raporla',
+          style: 'destructive',
+          onPress: () => {
+            reportUserMutation.mutate({
+              userId: user.id,
+              targetUserId: effectiveRecipientUserId,
+              data: {
+                category: 'OTHER',
+                description: 'User reported from message detail',
+              },
+            }, {
+              onSuccess: () => {
+                Alert.alert('Başarılı', 'Kullanıcı raporlandı');
+              },
+              onError: (error) => {
+                Alert.alert('Hata', error.message || 'Kullanıcı raporlanırken bir hata oluştu');
+              },
+            });
+          },
+        },
+      ]
+    );
+  }, [user?.id, effectiveRecipientUserId, reportUserMutation]);
+
+  // Handle Block
+  const handleBlock = useCallback(() => {
+    if (!user?.id || !effectiveRecipientUserId) return;
+    
+    Alert.alert(
+      'Kullanıcıyı Engelle',
+      `${params.senderName} kullanıcısını engellemek istediğinizden emin misiniz? Bu kullanıcıdan artık mesaj alamayacaksınız.`,
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Engelle',
+          style: 'destructive',
+          onPress: () => {
+            blockUserMutation.mutate({
+              userId: user.id,
+              targetUserId: effectiveRecipientUserId,
+            }, {
+              onSuccess: () => {
+                Alert.alert('Başarılı', 'Kullanıcı engellendi', [
+                  {
+                    text: 'Tamam',
+                    onPress: () => navigation.goBack(),
+                  },
+                ]);
+              },
+              onError: (error) => {
+                Alert.alert('Hata', error.message || 'Kullanıcı engellenirken bir hata oluştu');
+              },
+            });
+          },
+        },
+      ]
+    );
+  }, [user?.id, effectiveRecipientUserId, params.senderName, blockUserMutation, navigation]);
+
   // Handle Send TIPS
   const handleSendTips = useCallback((amount: number, message?: string) => {
     if (!user?.id) {
@@ -1737,6 +1920,8 @@ const MessageDetailScreen: React.FC = () => {
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true, // Content boyutuna göre dinamik height
+        detached: true, // Detached mod - bottom sheet daha yukarıda açılır
+        bottomInset: 20, // Detached mod için bottom inset
         animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
         keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar (klavye üzerinde)
@@ -1987,25 +2172,192 @@ const MessageDetailScreen: React.FC = () => {
     );
   }, [isConnected, isSocketReady, socketCancelSupportRequest, cancelSupportRequestMutation]);
 
-  // Handle Add Image - Galeriyi aç
+  // Handle Add Image - Galeriyi aç ve görseli mesaj olarak gönder
   const handleAddImage = useCallback(async () => {
+    if (!threadId || !effectiveRecipientUserId) {
+      Alert.alert('Error', 'Thread ID or recipient user not found');
+      return;
+    }
+
     try {
       const result = await imagePickerService.pickFromGallery();
       
       if (result.success && result.asset) {
         console.log('[MessageDetail] 📷 Image selected:', result.asset.uri);
-        // TODO: Seçilen görseli mesaj olarak gönder veya önizleme göster
-        Alert.alert('Success', 'Image selected: ' + result.asset.uri);
+        
+        // Görseli FormData ile backend'e gönder
+        const formData = new FormData();
+        
+        // File extension ve mime type belirle
+        let fileExtension = 'jpg';
+        let mimeType = 'image/jpeg';
+        const uriLower = result.asset.uri.toLowerCase();
+        if (uriLower.includes('.')) {
+          const ext = result.asset.uri.split('.').pop()?.toLowerCase();
+          if (ext === 'png') {
+            fileExtension = 'png';
+            mimeType = 'image/png';
+          } else if (ext === 'jpg' || ext === 'jpeg') {
+            fileExtension = 'jpg';
+            mimeType = 'image/jpeg';
+          }
+        }
+        
+        // FormData'ya görseli ekle
+        const mediaFile = {
+          uri: result.asset.uri,
+          type: mimeType,
+          name: `image_${Date.now()}.${fileExtension}`,
+        } as any;
+        
+        formData.append('media', mediaFile);
+        formData.append('mediaType', 'image');
+        if (result.asset.fileSize) {
+          formData.append('fileSize', result.asset.fileSize.toString());
+        }
+        
+        // 🔍 REQUEST YAPISI LOG'U
+        console.log('[MessageDetail] 📤 BACKEND REQUEST YAPISI:', {
+          endpoint: `POST /inbox/threads/${threadId}/media`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': 'Bearer <token>', // Token otomatik ekleniyor
+          },
+          formData: {
+            media: {
+              uri: result.asset.uri,
+              type: mimeType,
+              name: mediaFile.name,
+              fileSize: result.asset.fileSize,
+            },
+            mediaType: 'image',
+            fileSize: result.asset.fileSize?.toString(),
+          },
+          threadId,
+          recipientUserId: effectiveRecipientUserId,
+        });
+        
+        // Optimistic update: Görsel mesajını anında local state'e ekle
+        const optimisticMessageId = `pending-image-${Date.now()}`;
+        const optimisticImageMessage: MessageDetailItem = {
+          id: optimisticMessageId,
+          text: '',
+          timestamp: formatMessageTime(new Date()),
+          isSent: true,
+          type: 'image',
+          mediaUrl: result.asset.uri,
+          mediaType: 'image',
+          uploadStatus: 'uploading',
+          uploadProgress: 0,
+          isRead: false,
+        };
+        
+        console.log('[MessageDetail] 📝 Optimistic image message oluşturuluyor:', {
+          id: optimisticMessageId,
+          type: optimisticImageMessage.type,
+          mediaUrl: optimisticImageMessage.mediaUrl,
+          uploadStatus: optimisticImageMessage.uploadStatus,
+        });
+        
+        setMessages((prev) => {
+          const newMessages = [...prev, optimisticImageMessage];
+          console.log('[MessageDetail] 📋 Messages state güncellendi:', {
+            prevLength: prev.length,
+            newLength: newMessages.length,
+            lastMessage: newMessages[newMessages.length - 1],
+          });
+          return newMessages;
+        });
+        setTimeout(() => safeScrollToEnd(true), 100);
+        
+        // Backend'e görseli yükle
+        const apiClient = (await import('@/src/services/ApiService')).apiService.getClient();
+        const response = await apiClient.post(`/inbox/threads/${threadId}/media`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              console.log('[MessageDetail] 📊 Upload progress:', progress + '%');
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === optimisticMessageId
+                    ? { ...msg, uploadProgress: progress }
+                    : msg
+                )
+              );
+            }
+          },
+        });
+        
+        console.log('[MessageDetail] ✅ Image upload response:', {
+          status: response.status,
+          data: response.data,
+          messageId: response.data?.messageId,
+          mediaUrl: response.data?.mediaUrl,
+          thumbnailUrl: response.data?.thumbnailUrl,
+        });
+        
+        // Optimistic mesajı gerçek mesajla değiştir
+        if (response.data?.messageId) {
+          console.log('[MessageDetail] 🔄 Optimistic mesaj gerçek mesajla değiştiriliyor:', {
+            optimisticId: optimisticMessageId,
+            realId: response.data.messageId,
+            mediaUrl: response.data.mediaUrl,
+          });
+          
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === optimisticMessageId
+                ? {
+                    ...msg,
+                    id: response.data.messageId,
+                    mediaUrl: response.data.mediaUrl || response.data.imageUrl,
+                    thumbnailUrl: response.data.thumbnailUrl,
+                    uploadStatus: 'uploaded',
+                    uploadProgress: 100,
+                  }
+                : msg
+            )
+          );
+        } else {
+          console.warn('[MessageDetail] ⚠️ Response\'da messageId yok!', response.data);
+        }
       } else {
         if (result.error) {
           Alert.alert('Error', result.error);
         }
       }
     } catch (error: any) {
-      console.error('[MessageDetail] ❌ Image picker error:', error);
-      Alert.alert('Error', 'An error occurred while selecting image');
+      console.error('[MessageDetail] ❌ Image upload error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        error: error,
+      });
+      
+      // Optimistic mesajı kaldır veya hata durumuna geçir
+      // Tüm pending-image- ile başlayan mesajları hata durumuna geçir
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id.startsWith('pending-image-')
+            ? { ...msg, uploadStatus: 'failed' }
+            : msg
+        )
+      );
+      
+      const errorMessage = error.response?.data?.error?.message || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'An error occurred while uploading image';
+      
+      console.error('[MessageDetail] ❌ Image upload failed, showing alert:', errorMessage);
+      Alert.alert('Error', errorMessage);
     }
-  }, []);
+  }, [threadId, effectiveRecipientUserId, safeScrollToEnd]);
 
 
 
@@ -2513,7 +2865,11 @@ const MessageDetailScreen: React.FC = () => {
           senderTitle={params.senderTitle}
           senderAvatar={params.senderAvatar}
           onBackPress={() => navigation.goBack()}
-          onMenuPress={() => console.log('Menü tıklandı')}
+          onMenuPress={() => {}}
+          onShare={handleShare}
+          onReport={handleReport}
+          onBlock={handleBlock}
+          recipientUserId={effectiveRecipientUserId}
         />
 
           {/* Mesaj Geçmişi - WhatsApp Stili Normal FlatList */}

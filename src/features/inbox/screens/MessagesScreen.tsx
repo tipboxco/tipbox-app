@@ -32,34 +32,52 @@ type MessagesScreenNavigationProp = NativeStackNavigationProp<InboxStackParamLis
 interface MessagesScreenProps {
     onDrawerOpen?: () => void;
     isActiveTab?: boolean;
+    searchQuery?: string;
 }
 
-const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveTab = true }) => {
+const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveTab = true, searchQuery = '' }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
     const [activeCategory, setActiveCategory] = useState<string>('1');
     const navigation = useNavigation<MessagesScreenNavigationProp>();
     const bottomInset = useSafeAreaValues('bottom');
     
-    const { data: messages, isLoading, error, refetch } = useMessages();
+    // Search parametresini useMessages hook'una geçir (username ve son mesaj bazlı arama)
+    const searchParams = searchQuery.trim() ? { search: searchQuery.trim() } : undefined;
+    const { data: messages, isLoading, error, refetch } = useMessages(searchParams);
     const [isManualRefreshing, setIsManualRefreshing] = useState(false);
     const queryClient = useQueryClient();
     
     // 🔍 DEBUG: Mesaj listesi yüklendiğinde isRead durumunu logla
     useEffect(() => {
+        console.log('[MessagesScreen] 🔍 MESAJ STATE DURUMU:', {
+            messages: messages,
+            messagesType: typeof messages,
+            isArray: Array.isArray(messages),
+            length: messages?.length || 0,
+            isLoading,
+            error: error?.message,
+        });
+        
         if (messages && messages.length > 0) {
             console.log('[MessagesScreen] 📋 MESAJ LİSTESİ YÜKLENDİ - isRead Durumları:');
-            messages.forEach((msg) => {
-                console.log(`[MessagesScreen]   - Thread ID: ${msg.id}`);
+            messages.forEach((msg, index) => {
+                console.log(`[MessagesScreen]   [${index}] Thread ID: ${msg.id}`);
                 console.log(`[MessagesScreen]     Sender: ${msg.senderName || 'Unknown'}`);
+                console.log(`[MessagesScreen]     RecipientUserId: ${msg.recipientUserId || 'N/A'}`);
                 console.log(`[MessagesScreen]     isUnread: ${msg.isUnread}`);
                 console.log(`[MessagesScreen]     unreadCount: ${msg.unreadCount || 0}`);
                 console.log(`[MessagesScreen]     Last Message: ${msg.lastMessage?.substring(0, 50) || 'N/A'}...`);
+                console.log(`[MessagesScreen]     Timestamp: ${msg.timestamp}`);
                 console.log('[MessagesScreen]     ---');
             });
             console.log(`[MessagesScreen] 📊 TOPLAM: ${messages.length} mesaj, ${messages.filter(m => m.isUnread || (m.unreadCount || 0) > 0).length} okunmamış`);
+        } else if (messages && messages.length === 0) {
+            console.warn('[MessagesScreen] ⚠️ Mesaj listesi boş! Veritabanında mesaj olmayabilir veya API filtreleme yapıyor olabilir.');
+        } else if (!messages && !isLoading && !error) {
+            console.warn('[MessagesScreen] ⚠️ Messages undefined ve loading/error yok. API çağrısı henüz yapılmamış olabilir.');
         }
-    }, [messages]);
+    }, [messages, isLoading, error]);
     
     // 🔍 DEBUG: Ekrana geri dönüldüğünde cache'deki durumu logla
     useFocusEffect(
@@ -100,16 +118,26 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             messageId: eventData.messageId,
             senderId: eventData.senderId,
             message: eventData.message || eventData.text,
+            messageType: eventData.messageType,
+            timestamp: eventData.timestamp,
+            fullEventData: eventData,
         });
         
         // Yeni mesaj geldiğinde, eğer kullanıcı inbox listesindeyse (MessageDetail ekranında değilse),
         // thread'i okunmamış olarak işaretle (optimistic update)
         // Not: Eğer kullanıcı MessageDetail ekranındaysa, MessageDetail'deki handleNewMessage mesajı okundu olarak işaretleyecek
         if (eventData.threadId) {
+            console.log('[MessagesScreen] 🔄 Updating inbox list with new message:', {
+                threadId: eventData.threadId,
+                senderId: eventData.senderId,
+                currentUserId: user?.id,
+            });
+            
             // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
             queryClient.setQueryData([...inboxKeys.messages(), undefined], (oldData: InboxMessage[] | undefined) => {
                 if (!oldData) {
                     // Eğer data yoksa, backend'den çekilecek (invalidate ile)
+                    console.log('[MessagesScreen] ⚠️ Old data is null, will fetch from backend');
                     return oldData;
                 }
                 
@@ -117,10 +145,22 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 const isReceivedMessage = eventData.senderId && eventData.senderId !== currentUserId;
                 const threadIndex = oldData.findIndex((msg) => msg.id === eventData.threadId);
                 
+                console.log('[MessagesScreen] 🔍 Thread search result:', {
+                    threadIndex,
+                    isReceivedMessage,
+                    threadId: eventData.threadId,
+                    totalThreads: oldData.length,
+                });
+                
                 if (threadIndex !== -1) {
                     // Thread bulundu: Güncelle ve en üste taşı
                     const thread = oldData[threadIndex];
                     let updated: InboxMessage;
+                    
+                    // Image mesajları için lastMessage'i güncelle
+                    const lastMessageText = eventData.messageType === 'image' 
+                        ? '📷 Bir görsel gönderdi'
+                        : (eventData.message || eventData.text || eventData.caption || thread.lastMessage);
                     
                     if (isReceivedMessage) {
                         // Alınan mesaj: Okunmamış olarak işaretle
@@ -128,22 +168,34 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                             ...thread,
                             isUnread: true,
                             unreadCount: (thread.unreadCount || 0) + 1,
-                            lastMessage: eventData.message || eventData.text || thread.lastMessage,
-                            timestamp: eventData.timestamp || new Date().toISOString(),
+                            lastMessage: lastMessageText,
+                            timestamp: eventData.timestamp || eventData.sentAt || new Date().toISOString(),
                         };
+                        console.log('[MessagesScreen] ✅ Thread updated (received message):', {
+                            threadId: updated.id,
+                            isUnread: updated.isUnread,
+                            unreadCount: updated.unreadCount,
+                            lastMessage: updated.lastMessage,
+                        });
                     } else {
                         // Gönderilen mesaj: Sadece lastMessage ve timestamp'i güncelle
                         updated = {
                             ...thread,
-                            lastMessage: eventData.message || eventData.text || thread.lastMessage,
-                            timestamp: eventData.timestamp || new Date().toISOString(),
+                            lastMessage: lastMessageText,
+                            timestamp: eventData.timestamp || eventData.sentAt || new Date().toISOString(),
                         };
+                        console.log('[MessagesScreen] ✅ Thread updated (sent message):', {
+                            threadId: updated.id,
+                            lastMessage: updated.lastMessage,
+                        });
                     }
                     
                     // Thread'i en üste taşı (yeni mesaj geldiği/gönderildiği için)
                     const newData = [...oldData];
                     newData.splice(threadIndex, 1);
                     newData.unshift(updated);
+                    
+                    console.log('[MessagesScreen] ✅ Inbox list updated, thread moved to top');
                     return newData;
                 } else {
                     // Thread bulunamadı: Yeni thread olabilir, backend'den çekilecek (invalidate ile)
@@ -154,9 +206,12 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             });
         }
         
-        // Cache'i invalidate et (optimistic update zaten yapıldı, sadece cache'i güncelle)
-        // Refetch yapmıyoruz çünkü optimistic update yeterli ve isRefetching state'ini true yapıp loader'ı takılı bırakıyor
-        queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+        // CRITICAL FIX: invalidateQueries kaldırıldı - backend otomatik okundu işaretliyor
+        // invalidateQueries çağrıldığında backend'den veri çekiliyor ve cache'deki optimistic update override ediliyor
+        // Backend'den isUnread: false geldiğinde badge gösterilmiyor
+        // Optimistic update yeterli, backend'den veri çekmeye gerek yok
+        // Sadece kullanıcı manuel pull-to-refresh yaptığında veya ekran açıldığında backend'den veri çekilecek
+        // queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     }, [queryClient, user?.id]);
 
     // Socket event handler - thread_read event (thread okundu olarak işaretlendiğinde)
@@ -293,8 +348,12 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
 
     // Socket event listeners
     useEffect(() => {
-        if (!isConnected) return;
+        if (!isConnected) {
+            console.log('[MessagesScreen] ⚠️ Socket not connected, skipping event listeners');
+            return;
+        }
 
+        console.log('[MessagesScreen] ✅ Socket connected, registering event listeners');
         on('new_message', handleNewMessage);
         on('thread_read', handleThreadRead);
         on('user_typing', handleUserTyping);
@@ -313,17 +372,18 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping]);
 
     // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
-    // ve mesajları refetch et (MessageDetail'den geri dönüldüğünde okundu durumu güncellensin)
+    // ✅ CRITICAL FIX: refetch() kaldırıldı - optimistic update'i override ediyordu
+    // Socket event'leri (thread_read) zaten cache'i güncelliyor
+    // Sadece bottom sheet'i kapat, refetch yapma (cache optimistic update'i korur)
     useFocusEffect(
         useCallback(() => {
             // Screen focus olduğunda bottom sheet'i kapat
             closeBottomSheet();
             
-            // MessageDetail'den geri dönüldüğünde mesajları refetch et
-            // Bu sayede okundu durumu güncellenmiş mesajlar gösterilir
-            queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-            refetch();
-        }, [closeBottomSheet, queryClient, refetch])
+            // ✅ refetch() kaldırıldı - optimistic update'i override ediyordu
+            // Socket event'leri (thread_read) zaten cache'i güncelliyor
+            // Eğer socket bağlı değilse, kullanıcı pull-to-refresh yapabilir
+        }, [closeBottomSheet])
     );
     
     const handleMessagePress = (messageId: string) => {

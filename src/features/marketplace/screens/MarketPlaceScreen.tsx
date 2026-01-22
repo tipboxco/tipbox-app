@@ -2,7 +2,6 @@ import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VStack, HStack, Box, Text, Pressable } from '@/src/components/ui';
 import { FlatList, ActivityIndicator, RefreshControl } from 'react-native';
-import PagerView from 'react-native-pager-view';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,6 +22,10 @@ import type { NFTCardData } from '../types';
 import { toImageSource } from '@/src/utils';
 import { useAppStore } from '@/src/store/appStore';
 
+// Import PagerView for native platforms only
+// Web için MarketPlaceScreen.web.tsx dosyası kullanılır
+import PagerView from 'react-native-pager-view';
+
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 
 const MarketPlaceScreen = () => {
@@ -41,7 +44,7 @@ const MarketPlaceScreen = () => {
   // Tab state
   const [activeTab, setActiveTab] = useState<'all' | 'myListings'>(initialTab);
   const [currentPage, setCurrentPage] = useState(initialTab === 'myListings' ? 1 : 0);
-  const pagerRef = useRef<PagerView>(null);
+  const pagerRef = useRef<any>(null);
   const tabContainerRef = useRef<any>(null);
   const [tabContainerWidth, setTabContainerWidth] = useState(0);
   

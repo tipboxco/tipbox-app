@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Alert, Keyboard } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, KeyboardAvoidingView, Platform, Alert, Keyboard, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -31,6 +31,9 @@ import { useSocket } from '@/src/providers/SocketProvider';
 import { useAppStore } from '@/src/store/appStore';
 import { useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useCloseSupportRequest, useReportSupportRequest, inboxKeys } from '../api/hooks';
 import { useQueryClient } from '@tanstack/react-query';
+import { useReportUser, useBlockUser } from '@/src/features/profile/api/hooks';
+import { Share, Alert as RNAlert } from 'react-native';
+import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import type { ThreadMessage } from '../api/messagesApi';
 
 interface MessageDetailItem {
@@ -91,6 +94,8 @@ const SupportMessageDetailScreen: React.FC = () => {
   const cancelMutation = useCancelSupportRequest();
   const closeMutation = useCloseSupportRequest();
   const reportMutation = useReportSupportRequest();
+  const reportUserMutation = useReportUser();
+  const blockUserMutation = useBlockUser();
 
   // Socket context
   const {
@@ -129,6 +134,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const insets = useSafeAreaInsets();
   
   // Support request bilgilerini thread mesajlarından al
   const [supportRequestInfo, setSupportRequestInfo] = useState<{
@@ -222,23 +228,52 @@ const SupportMessageDetailScreen: React.FC = () => {
   const handleNewMessage = useCallback((eventData: any) => {
     if (eventData.threadId !== threadId) return;
 
-    if (eventData.messageType === 'message' && eventData.context === 'SUPPORT') {
+    // Normal mesaj veya image/video/audio/file mesajı
+    if ((eventData.messageType === 'message' || 
+         eventData.messageType === 'image' || 
+         eventData.messageType === 'video' || 
+         eventData.messageType === 'audio' || 
+         eventData.messageType === 'file') && 
+        eventData.context === 'SUPPORT') {
+      
+      const isSent = eventData.senderId === user?.id;
       const newMessage: MessageDetailItem = {
         id: eventData.messageId,
-        text: eventData.message,
-        timestamp: new Date(eventData.timestamp).toLocaleTimeString('tr-TR', {
+        text: eventData.message || eventData.caption || '',
+        timestamp: new Date(eventData.timestamp || eventData.sentAt).toLocaleTimeString('tr-TR', {
           hour: '2-digit',
           minute: '2-digit',
         }),
-        isSent: eventData.senderId === user?.id,
-        senderName: eventData.senderId === user?.id ? undefined : params.expertName,
-        senderAvatar: eventData.senderId === user?.id ? undefined : params.expertAvatar,
+        isSent,
+        senderName: isSent ? undefined : params.expertName,
+        senderAvatar: isSent ? undefined : params.expertAvatar,
+        type: eventData.messageType === 'image' ? 'image' : undefined,
+        mediaUrl: eventData.mediaUrl,
+        mediaType: eventData.messageType === 'image' || eventData.messageType === 'video' || eventData.messageType === 'audio' || eventData.messageType === 'file' 
+          ? eventData.messageType 
+          : undefined,
+        thumbnailUrl: eventData.thumbnailUrl,
       };
 
       setMessages((prev) => {
+        // Duplicate kontrolü
         if (prev.some((msg) => msg.id === eventData.messageId)) {
           return prev;
         }
+        
+        // Optimistic image mesajını gerçek mesajla değiştir
+        const optimisticIndex = prev.findIndex(
+          (msg) => msg.id.startsWith('pending-image-') && 
+                   msg.isSent === isSent &&
+                   msg.type === 'image'
+        );
+        
+        if (optimisticIndex !== -1) {
+          const updated = [...prev];
+          updated[optimisticIndex] = newMessage;
+          return updated;
+        }
+        
         return [...prev, newMessage];
       });
 
@@ -635,7 +670,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Close support request error:', error);
-          Alert.alert('Error', error.message || 'An error occurred while closing the support request');
+          Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while closing the support request');
         },
       }
     );
@@ -689,7 +724,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Report support request error:', error);
-          Alert.alert('Error', error.message || 'An error occurred while reporting the support request');
+          Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while reporting the support request');
         },
       }
     );
@@ -700,6 +735,134 @@ const SupportMessageDetailScreen: React.FC = () => {
     setIsReportModalVisible(false);
     setReportReason('');
   };
+
+  // Format message time helper
+  const formatMessageTime = (timestamp: string | Date): string => {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Handle Add Image - Galeriyi aç ve görseli mesaj olarak gönder
+  const handleAddImage = useCallback(async () => {
+    if (!threadId) {
+      Alert.alert('Error', 'Thread ID not found');
+      return;
+    }
+
+    try {
+      const result = await imagePickerService.pickFromGallery();
+      
+      if (result.success && result.asset) {
+        console.log('[SupportMessageDetail] 📷 Image selected:', result.asset.uri);
+        
+        // Görseli FormData ile backend'e gönder
+        const formData = new FormData();
+        
+        // File extension ve mime type belirle
+        let fileExtension = 'jpg';
+        let mimeType = 'image/jpeg';
+        const uriLower = result.asset.uri.toLowerCase();
+        if (uriLower.includes('.')) {
+          const ext = result.asset.uri.split('.').pop()?.toLowerCase();
+          if (ext === 'png') {
+            fileExtension = 'png';
+            mimeType = 'image/png';
+          } else if (ext === 'jpg' || ext === 'jpeg') {
+            fileExtension = 'jpg';
+            mimeType = 'image/jpeg';
+          }
+        }
+        
+        // FormData'ya görseli ekle
+        formData.append('media', {
+          uri: result.asset.uri,
+          type: mimeType,
+          name: `image_${Date.now()}.${fileExtension}`,
+        } as any);
+        formData.append('mediaType', 'image');
+        if (result.asset.fileSize) {
+          formData.append('fileSize', result.asset.fileSize.toString());
+        }
+        
+        // Optimistic update: Görsel mesajını anında local state'e ekle
+        const optimisticMessageId = `pending-image-${Date.now()}`;
+        const optimisticImageMessage: MessageDetailItem = {
+          id: optimisticMessageId,
+          text: '',
+          timestamp: formatMessageTime(new Date()),
+          isSent: true,
+          type: 'image',
+          mediaUrl: result.asset.uri,
+          mediaType: 'image',
+          uploadStatus: 'uploading',
+          uploadProgress: 0,
+          isRead: false,
+        };
+        
+        setMessages((prev) => [...prev, optimisticImageMessage]);
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+        
+        // Backend'e görseli yükle
+        const apiClient = (await import('@/src/services/ApiService')).apiService.getClient();
+        const response = await apiClient.post(`/inbox/threads/${threadId}/media`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === optimisticMessageId
+                    ? { ...msg, uploadProgress: progress }
+                    : msg
+                )
+              );
+            }
+          },
+        });
+        
+        // Optimistic mesajı gerçek mesajla değiştir
+        if (response.data.messageId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === optimisticMessageId
+                ? {
+                    ...msg,
+                    id: response.data.messageId,
+                    mediaUrl: response.data.mediaUrl,
+                    thumbnailUrl: response.data.thumbnailUrl,
+                    uploadStatus: 'uploaded',
+                    uploadProgress: 100,
+                  }
+                : msg
+            )
+          );
+        }
+        
+        console.log('[SupportMessageDetail] ✅ Image uploaded successfully:', response.data);
+      } else {
+        if (result.error) {
+          Alert.alert('Error', result.error);
+        }
+      }
+    } catch (error: any) {
+      console.error('[SupportMessageDetail] ❌ Image upload error:', error);
+      
+      // Optimistic mesajı kaldır veya hata durumuna geçir
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id.startsWith('pending-image-')
+            ? { ...msg, uploadStatus: 'failed' }
+            : msg
+        )
+      );
+      
+      Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while uploading image');
+    }
+  }, [threadId]);
 
   // Mesaj öğesi render fonksiyonu
   const renderMessageItem = ({ item }: { item: MessageDetailItem }) => {
@@ -1031,60 +1194,137 @@ const SupportMessageDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+      {/* Status Bar - Beyaz arka plan */}
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        backgroundColor="#FFFFFF"
+        translucent={false}
+      />
+      
+      {/* Top inset view - Status bar için */}
+      <Box 
+        height={insets.top} 
+        bg="#FFFFFF"
+      />
+      
       {/* Header */}
       <MessageDetailHeader
         senderName={params.expertName ?? 'Expert'}
         senderTitle={params.expertTitle ?? ''}
         senderAvatar={params.expertAvatar}
         onBackPress={() => navigation.goBack()}
-        onMenuPress={() => console.log('Menü tıklandı')}
+        onMenuPress={() => {}}
+        onShare={async () => {
+          if (!params.userName) return;
+          try {
+            await Share.share({
+              message: `Check out ${params.userName}'s profile on Tipbox!`,
+              url: `tipboxapp://profile/user/${params.recipientUserId || ''}`,
+            });
+          } catch (error) {
+            console.error('[SupportMessageDetail] Share error:', error);
+          }
+        }}
+        onReport={() => {
+          if (!user?.id || !params.recipientUserId) return;
+          RNAlert.alert(
+            'Kullanıcıyı Raporla',
+            'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+            [
+              { text: 'İptal', style: 'cancel' },
+              {
+                text: 'Raporla',
+                style: 'destructive',
+                onPress: () => {
+                  reportUserMutation.mutate({
+                    userId: user.id,
+                    targetUserId: params.recipientUserId!,
+                    data: { category: 'OTHER', description: 'User reported from support message detail' },
+                  }, {
+                    onSuccess: () => RNAlert.alert('Başarılı', 'Kullanıcı raporlandı'),
+                    onError: (error) => RNAlert.alert('Hata', error.message || 'Kullanıcı raporlanırken bir hata oluştu'),
+                  });
+                },
+              },
+            ]
+          );
+        }}
+        onBlock={() => {
+          if (!user?.id || !params.recipientUserId) return;
+          RNAlert.alert(
+            'Kullanıcıyı Engelle',
+            `${params.userName || 'Bu kullanıcı'} kullanıcısını engellemek istediğinizden emin misiniz? Bu kullanıcıdan artık mesaj alamayacaksınız.`,
+            [
+              { text: 'İptal', style: 'cancel' },
+              {
+                text: 'Engelle',
+                style: 'destructive',
+                onPress: () => {
+                  blockUserMutation.mutate({
+                    userId: user.id,
+                    targetUserId: params.recipientUserId!,
+                  }, {
+                    onSuccess: () => {
+                      RNAlert.alert('Başarılı', 'Kullanıcı engellendi', [
+                        { text: 'Tamam', onPress: () => navigation.goBack() },
+                      ]);
+                    },
+                    onError: (error) => RNAlert.alert('Hata', error.message || 'Kullanıcı engellenirken bir hata oluştu'),
+                  });
+                },
+              },
+            ]
+          );
+        }}
+        recipientUserId={params.recipientUserId}
       />
 
       {/* Mesaj Geçmişi */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        enabled={true}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessageItem}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={
-            params.status === 'active' && threadId ? (
-              <SupportChatParticipants
-                user1Name={params.expertName ?? 'Expert'}
-                user1Title={params.expertTitle ?? ''}
-                user1Avatar={params.expertAvatar}
-                user2Name={params.userName || 'Trevor Nace'}
-                user2Title={params.userTitle || 'Technology Enthusiast'}
-                user2Avatar={params.userAvatar || DEFAULT_USER_AVATAR }
-                supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
-                tipsAmount={supportRequestInfo?.amount || 50}
-                requestDetails={supportRequestInfo?.message || ''}
-              />
-            ) : null
-          }
-          ListEmptyComponent={
-            isLoadingMessages ? (
-              <Box py={20} alignItems="center">
-                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Yükleniyor...</Text>
-              </Box>
-            ) : (
-              <Box py={20} alignItems="center">
-                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz mesaj yok</Text>
-              </Box>
-            )
-          }
-          contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-        />
-      </KeyboardAvoidingView>
+        <Box flex={1}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessageItem}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={
+              params.status === 'active' && threadId ? (
+                <SupportChatParticipants
+                  user1Name={params.expertName ?? 'Expert'}
+                  user1Title={params.expertTitle ?? ''}
+                  user1Avatar={params.expertAvatar}
+                  user2Name={params.userName || 'Trevor Nace'}
+                  user2Title={params.userTitle || 'Technology Enthusiast'}
+                  user2Avatar={params.userAvatar || DEFAULT_USER_AVATAR }
+                  supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
+                  tipsAmount={supportRequestInfo?.amount || 50}
+                  requestDetails={supportRequestInfo?.message || ''}
+                />
+              ) : null
+            }
+            ListEmptyComponent={
+              isLoadingMessages ? (
+                <Box py={20} alignItems="center">
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Yükleniyor...</Text>
+                </Box>
+              ) : (
+                <Box py={20} alignItems="center">
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz mesaj yok</Text>
+                </Box>
+              )
+            }
+            contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+          />
+        </Box>
 
       {/* Typing Indicator */}
       {isTyping && typingUserId && typingUserId !== user?.id && (
@@ -1134,16 +1374,26 @@ const SupportMessageDetailScreen: React.FC = () => {
         />
       )}
 
-      {/* Mesaj Gönderme Alanı - Sadece active status'ta göster */}
+      {/* Mesaj Gönderme Alanı - Sadece active status'ta göster (awaiting_completion ve completed'da kapalı) */}
       {params.status === 'active' && threadId && (
-        <MessageInput
-          onSendMessage={handleSendMessage}
-          onAddImage={() => console.log('Görsel eklenecek')}
-          placeholder="Write a message..."
-          threadId={threadId}
-          onTypingStart={handleTypingStart}
-          onTypingStop={handleTypingStop}
-        />
+        <Box 
+          pb={isKeyboardVisible 
+            ? (Platform.OS === 'ios' ? 4 : 0) 
+            : 0}
+          zIndex={1004}
+          elevation={1004}
+          position="relative"
+          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+        >
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            onAddImage={handleAddImage}
+            placeholder="Write a message..."
+            threadId={threadId}
+            onTypingStart={handleTypingStart}
+            onTypingStop={handleTypingStop}
+          />
+        </Box>
       )}
 
       {/* Action Buttons - Status'a göre farklı butonlar göster */}
@@ -1194,6 +1444,37 @@ const SupportMessageDetailScreen: React.FC = () => {
         </Box>
       )}
 
+      {/* Awaiting Completion Status - Mesaj gönderme kapalı, sadece görüntüleme */}
+      {params.status === 'awaiting_completion' && (
+        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <VStack space="sm" alignItems="center">
+            <Text
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              fontSize={12}
+              fontWeight="$normal"
+              textAlign="center"
+            >
+              Support request is awaiting completion. Rating has been submitted.
+            </Text>
+          </VStack>
+        </Box>
+      )}
+
+      {/* Completed Status - Sadece görüntüleme */}
+      {params.status === 'completed' && (
+        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <VStack space="sm" alignItems="center">
+            <Text
+              color={isDark ? '#4CAF50' : '#4CAF50'}
+              fontSize={12}
+              fontWeight="$semibold"
+              textAlign="center"
+            >
+              Support request has been completed.
+            </Text>
+          </VStack>
+        </Box>
+      )}
 
       {/* Pending status'ta sender için Cancel butonu */}
       {params.status === 'pending' && user?.id && (
@@ -1230,6 +1511,16 @@ const SupportMessageDetailScreen: React.FC = () => {
         userTitle={params.expertTitle ?? ''}
         userAvatar={params.expertAvatar}
       />
+
+      </KeyboardAvoidingView>
+      
+      {/* Bottom inset view - Router bottom bg beyaz (klavye kapalıyken) */}
+      {!isKeyboardVisible && (
+        <Box 
+          height={insets.bottom} 
+          bg="#FFFFFF"
+        />
+      )}
 
       {/* Report Support Request Modal */}
       <Modal isOpen={isReportModalVisible} onClose={handleCancelReport} flex={1}>
@@ -1305,7 +1596,6 @@ const SupportMessageDetailScreen: React.FC = () => {
         </ModalContent>
       </Modal>
     </Box>
-    </SafeAreaView>
   );
 };
 

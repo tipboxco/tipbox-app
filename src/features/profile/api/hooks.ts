@@ -943,6 +943,13 @@ export const useUpdateProfile = () => {
           fullName: data.profile.name,
           avatar: data.profile.avatar || undefined,
         });
+        // CRITICAL FIX: Cache'i invalidate et - backend'den güncel veriyi çek
+        // Avatar ve banner upload sonrası backend otomatik güncelliyor, cache'i yenile
+        queryClient.invalidateQueries({
+          queryKey: profileKeys.profile(user.id),
+          exact: false,
+        });
+        console.log('[useUpdateProfile] ✅ Profile cache invalidated after update');
       }
     },
     onError: (error) => {

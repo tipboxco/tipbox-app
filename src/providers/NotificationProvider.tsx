@@ -250,10 +250,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const socket = socketService.getSocket();
     const isSocketConnected = socketService.isConnected();
     
+    console.log('[NotificationProvider] 🔌 Socket connection check:', {
+      isSocketConnected,
+      hasSocket: !!socket,
+      isAuthenticated,
+      isInitialized: state.isInitialized,
+    });
+    
     if (!isSocketConnected || !socket) {
       // Socket bağlı değilse listener ekleme (socket bağlandığında tekrar denenecek)
+      console.log('[NotificationProvider] ⚠️ Socket not connected, skipping notification listener');
       return;
     }
+    
+    console.log('[NotificationProvider] ✅ Socket connected, setting up notification listeners');
 
     const handleSocketNotification = async (notification: Notification) => {
 
@@ -375,25 +385,35 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       }
 
-      // State Sync: Zustand store'a ekle (instant UI update için)
-      // ÖNEMLİ: Bu optimistic update yapıyor, bildirim anında görünecek
-      // addNotification içinde zaten debounce ile invalidateQueries yapılıyor, burada tekrar yapmaya gerek yok
-      notificationStateSync.addNotification(notification);
+      // ✅ CRITICAL FIX: Mesaj bildirimleri için state'e ekleme (notifications listesine düşmesin)
+      // Sadece OS notification göster, notifications listesine ekleme
+      // isMessageNotification zaten 268. satırda tanımlanmış
+      if (!isMessageNotification) {
+        // Mesaj bildirimi değilse normal akışı takip et (notifications listesine ekle)
+        // State Sync: Zustand store'a ekle (instant UI update için)
+        // ÖNEMLİ: Bu optimistic update yapıyor, bildirim anında görünecek
+        // addNotification içinde zaten debounce ile invalidateQueries yapılıyor, burada tekrar yapmaya gerek yok
+        notificationStateSync.addNotification(notification);
 
-      // Domain Service'e yönlendir (EventService → NotificationService)
-      // Bu katmanlı mimari: Transport → Domain → State + Navigation
-      const { eventService } = await import('@/src/services/EventService');
-      
-      eventService.handleSocketEvent(
-        {
-          type: 'notification',
-          payload: notification,
-        },
-        {
-          isForeground,
-          shouldNavigate: false, // Socket notification'da otomatik navigate yok, kullanıcı tıklayınca olur
-        }
-      );
+        // Domain Service'e yönlendir (EventService → NotificationService)
+        // Bu katmanlı mimari: Transport → Domain → State + Navigation
+        const { eventService } = await import('@/src/services/EventService');
+        
+        eventService.handleSocketEvent(
+          {
+            type: 'notification',
+            payload: notification,
+          },
+          {
+            isForeground,
+            shouldNavigate: false, // Socket notification'da otomatik navigate yok, kullanıcı tıklayınca olur
+          }
+        );
+      } else {
+        // Mesaj bildirimi: Sadece OS notification göster, notifications listesine ekleme
+        // Inbox ekranı zaten new_message event'i ile güncelleniyor (MessagesScreen.tsx)
+        console.log('[NotificationProvider] 📨 Message notification - OS notification shown, skipping notifications list');
+      }
 
       // NOT: React Query cache invalidate işlemi NotificationStateSync.addNotification içinde
       // debounce ile yapılıyor (500ms). Burada tekrar invalidate etmeye gerek yok çünkü:
@@ -404,6 +424,92 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     // Register socket notification listener
     socketService.onNotification(handleSocketNotification);
+
+    // ✅ CRITICAL FIX: new_message event'ini de dinle ve notification oluştur
+    // Backend'den new_message event'i geldiğinde, eğer kullanıcı o thread'de değilse notification göster
+    const handleNewMessage = async (eventData: any) => {
+      console.log('[NotificationProvider] 📨 new_message event received:', {
+        threadId: eventData.threadId,
+        messageId: eventData.messageId,
+        senderId: eventData.senderId,
+        messageType: eventData.messageType,
+      });
+      
+      // Sadece alınan mesajlar için notification göster (kendi gönderdiğimiz mesajlar için değil)
+      const { useAppStore } = await import('@/src/store/appStore');
+      const currentUser = useAppStore.getState().user;
+      
+      if (!currentUser || eventData.senderId === currentUser.id) {
+        // Kendi gönderdiğimiz mesaj için notification gösterme
+        console.log('[NotificationProvider] ⏭️ Skipping notification - own message');
+        return;
+      }
+
+      // Eğer kullanıcı o thread'deyse (MessageDetail ekranında) notification gösterme
+      const activeThreadId = useAppStore.getState().activeThreadId;
+      if (activeThreadId && eventData.threadId === activeThreadId) {
+        // Kullanıcı o thread'de, notification gösterme
+        return;
+      }
+
+      // NavigationService'den aktif route'u kontrol et (fallback)
+      try {
+        const { navigationService } = await import('@/src/services/NavigationService');
+        const currentRoute = navigationService.getCurrentRoute();
+        
+        if (currentRoute?.name === 'MessageDetail' || currentRoute?.params?.screen === 'MessageDetailScreen') {
+          const currentThreadId = currentRoute?.params?.threadId || currentRoute?.params?.messageId;
+          if (eventData.threadId === currentThreadId) {
+            // Kullanıcı o thread'de, notification gösterme
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn('[NotificationProvider] ⚠️ Error checking current route:', error);
+      }
+
+      // Notification oluştur
+      const notification: Notification = {
+        id: `new_message_${eventData.messageId}_${Date.now()}`,
+        type: 'NEW_MESSAGE',
+        title: eventData.senderName || 'Yeni Mesaj',
+        message: eventData.messageType === 'image' 
+          ? '📷 Bir görsel gönderdi' 
+          : (eventData.message || eventData.text || 'Yeni mesaj'),
+        timestamp: new Date(eventData.timestamp || eventData.sentAt || Date.now()).toISOString(),
+        isRead: false,
+        avatar: eventData.senderAvatar,
+        metadata: {
+          threadId: eventData.threadId,
+          messageId: eventData.messageId,
+          senderId: eventData.senderId,
+          messageType: eventData.messageType,
+        },
+        navigation: {
+          screen: 'MessageDetail',
+          params: {
+            threadId: eventData.threadId,
+            messageId: eventData.threadId,
+            recipientUserId: eventData.senderId,
+            senderName: eventData.senderName || 'Unknown',
+            senderTitle: eventData.senderTitle || '',
+            senderAvatar: eventData.senderAvatar,
+          },
+        },
+      };
+
+      // Notification'ı handle et (aynı handler'ı kullan)
+      console.log('[NotificationProvider] 📬 Creating notification for new message:', {
+        notificationId: notification.id,
+        title: notification.title,
+        message: notification.message,
+      });
+      await handleSocketNotification(notification);
+    };
+
+    // new_message event'ini dinle
+    console.log('[NotificationProvider] 👂 Registering new_message listener');
+    socketService.on('new_message', handleNewMessage);
 
     // DEBUG: Tüm socket event'lerini dinle (sadece development için)
     if (__DEV__ && socket) {
@@ -420,6 +526,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     return () => {
       socketService.off('notification', handleSocketNotification);
+      socketService.off('new_message', handleNewMessage);
     };
   }, [isAuthenticated, state.isInitialized, isForeground, queryClient]);
 
@@ -431,7 +538,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     const handleNotificationReceived = async (notification: NotificationPayload) => {
       
-      // Mesaj bildirimleri için özel kontrol: Eğer kullanıcı MessageDetail ekranındaysa ve aynı thread'deyse notification gösterilmemeli
+      // Mesaj bildirimleri için özel kontrol: Eğer kullanıcı MessageDetail ekranındaysa tüm mesaj bildirimleri gösterilmemeli
       const notificationType = notification.data?.type as string;
       const isMessageNotification = ['NEW_MESSAGE', 'DM_REQUEST_RECEIVED', 'DM_REQUEST_ACCEPTED'].includes(notificationType);
       
@@ -441,32 +548,35 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           const { useAppStore } = await import('@/src/store/appStore');
           const activeThreadId = useAppStore.getState().activeThreadId;
           
-          // Notification'dan thread ID'sini al
-          const metadata = notification.data?.metadata as NotificationMetadata | undefined;
-          const notificationThreadId = metadata?.threadId || metadata?.messageId || metadata?.requestId;
-          
-          // Eğer aktif thread ID varsa ve notification thread ID ile eşleşiyorsa notification gösterilmemeli
-          if (activeThreadId && notificationThreadId && activeThreadId === notificationThreadId) {
+          // CRITICAL FIX: MessageDetail ekranındayken (activeThreadId varsa) tüm mesaj bildirimlerini engelle
+          // Sadece aynı thread değil, herhangi bir MessageDetail ekranındayken tüm mesaj bildirimleri gösterilmemeli
+          if (activeThreadId) {
+            console.log('[NotificationProvider] 📱 MessageDetail ekranındayken mesaj bildirimi engellendi:', {
+              activeThreadId,
+              notificationType,
+            });
             // Query'leri yine de refresh et (state update için)
             queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
             queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
             return;
-          } else {
-            // Fallback: NavigationService'den aktif route'u kontrol et (eski yöntem)
-            const { navigationService } = await import('@/src/services/NavigationService');
-            const currentRoute = navigationService.getCurrentRoute();
-            
-            // Eğer MessageDetail ekranındaysa ve threadId eşleşiyorsa notification gösterilmemeli
-            if (currentRoute?.name === 'MessageDetail' || currentRoute?.params?.screen === 'MessageDetailScreen') {
-              const currentThreadId = currentRoute?.params?.threadId || currentRoute?.params?.messageId;
-              
-              if (notificationThreadId && currentThreadId && notificationThreadId === currentThreadId) {
-                // Query'leri yine de refresh et (state update için)
-                queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
-                queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
-                return;
-              }
-            }
+          }
+          
+          // Fallback: NavigationService'den aktif route'u kontrol et
+          const { navigationService } = await import('@/src/services/NavigationService');
+          const currentRoute = navigationService.getCurrentRoute();
+          
+          // Eğer MessageDetail ekranındaysa tüm mesaj bildirimlerini engelle
+          if (currentRoute?.name === 'MessageDetailScreen' || 
+              currentRoute?.params?.screen === 'MessageDetailScreen' ||
+              (currentRoute?.params && 'threadId' in currentRoute.params)) {
+            console.log('[NotificationProvider] 📱 MessageDetail ekranındayken mesaj bildirimi engellendi (fallback):', {
+              routeName: currentRoute?.name,
+              notificationType,
+            });
+            // Query'leri yine de refresh et (state update için)
+            queryClient.invalidateQueries({ queryKey: notificationKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+            return;
           }
         } catch (error) {
           console.warn('[NotificationProvider] ⚠️ Error checking active thread for push notification:', error);

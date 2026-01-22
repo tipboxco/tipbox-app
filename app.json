@@ -121,7 +121,8 @@
             "extraPods": []
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "extra": {
       "eas": {

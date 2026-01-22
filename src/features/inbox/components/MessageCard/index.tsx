@@ -65,7 +65,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
             fontSize="$xs"
             fontWeight="$semibold"
           >
-            {data.senderName}
+            {data.senderName || 'Unknown'}
           </Text>
           
           {isTyping ? (
@@ -76,7 +76,7 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
                 fontWeight="$normal"
                 fontStyle="italic"
               >
-                {typingUserName || data.senderName} yazıyor
+                {typingUserName || data.senderName || 'Kullanıcı'} yazıyor
               </Text>
               <HStack space="xs" alignItems="center">
                 <Box
@@ -106,10 +106,32 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
               fontSize="$sm"
-              fontWeight={data.isUnread ? '$semibold' : '$normal'}
+              fontWeight={(data.isUnread || (data.unreadCount && data.unreadCount > 0)) ? '$bold' : '$normal'}
               numberOfLines={2}
             >
-              {data.lastMessage}
+              {(() => {
+                // Eğer lastMessage null/empty ise
+                if (!data.lastMessage || data.lastMessage.trim() === '') {
+                  const hasUnreadMessages = data.isUnread || (data.unreadCount && data.unreadCount > 0);
+                  // Eğer thread'de mesaj varsa ama lastMessage null ise, bu backend sorunu
+                  // Geçici çözüm: "Yeni mesajlar var" göster
+                  if (hasUnreadMessages) {
+                    // 🔍 DEBUG: Backend sorunu logla
+                    if (__DEV__) {
+                      console.warn('[MessageCard] ⚠️ Backend sorunu: lastMessage null ama thread\'de mesaj var!', {
+                        threadId: data.id,
+                        senderName: data.senderName,
+                        isUnread: data.isUnread,
+                        unreadCount: data.unreadCount,
+                      });
+                    }
+                    return 'Yeni mesajlar var';
+                  }
+                  // Thread'de mesaj yoksa "Mesaj yok" göster
+                  return 'Mesaj yok';
+                }
+                return data.lastMessage;
+              })()}
             </Text>
           )}
         </VStack>
@@ -123,22 +145,68 @@ export const MessageCard: React.FC<MessageCardProps> = ({ data, onPress, isTypin
         space="xs"
         alignItems="center"
       >
-        <Text
-          color={isDark ? '#8C8C8C' : '#8C8C8C'}
-          fontSize="$xs"
-          fontWeight="$medium"
-        >
-          {formatRelativeTime(data.timestamp)}
-        </Text>
-        {data.isUnread && (
-          <Box
-            width={8}
-            height={8}
-            borderRadius={4}
-            bg="#E8FF6B"
-            alignItems="center"
-            justifyContent="center"
-          />
+        {/* Okunmayan mesaj sayısı badge'i - Timestamp'ten önce göster */}
+        {(() => {
+          const unreadCount = data.unreadCount || 0;
+          const hasUnread = data.isUnread || unreadCount > 0;
+          
+          if (!hasUnread) {
+            return null;
+          }
+          
+          if (unreadCount > 0) {
+            // Sayı varsa badge göster
+            return (
+              <Box
+                minWidth={22}
+                height={22}
+                borderRadius={11}
+                bg="#E8FF6B"
+                alignItems="center"
+                justifyContent="center"
+                px={unreadCount > 9 ? 5 : 6}
+                shadowColor="#000"
+                shadowOffset={{ width: 0, height: 1 }}
+                shadowOpacity={0.2}
+                shadowRadius={2}
+                elevation={3}
+              >
+                <Text
+                  color="#000000"
+                  fontSize={11}
+                  fontWeight="$bold"
+                  lineHeight={13}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount.toString()}
+                </Text>
+              </Box>
+            );
+          } else {
+            // Sayı yoksa küçük yeşil nokta göster
+            return (
+              <Box
+                width={10}
+                height={10}
+                borderRadius={5}
+                bg="#E8FF6B"
+                shadowColor="#000"
+                shadowOffset={{ width: 0, height: 1 }}
+                shadowOpacity={0.2}
+                shadowRadius={2}
+                elevation={3}
+              />
+            );
+          }
+        })()}
+        
+        {data.timestamp && (
+          <Text
+            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+            fontSize="$xs"
+            fontWeight="$medium"
+          >
+            {formatRelativeTime(data.timestamp)}
+          </Text>
         )}
       </HStack>
     </Pressable>

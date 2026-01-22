@@ -110,7 +110,7 @@ export const createExpertRequest = async (
       formData,
       {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': undefined, // Axios'un otomatik olarak multipart/form-data boundary eklemesi için
         },
       }
     );
