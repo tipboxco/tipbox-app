@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { ActivityIndicator, Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -329,6 +329,35 @@ const ExploreScreen: React.FC = () => {
     data: banners,
     isLoading: isLoadingBanners,
   } = useMarketplaceBanners();
+
+  // Static Explore Banners from local assets
+  // Note: imageUrl will be a number (require result), but BannerCarousel's toImageSource handles both string URLs and require() results
+  const staticExploreBanners: MarketplaceBanner[] = useMemo(() => [
+    {
+      id: 'explore-banner-1',
+      title: 'Tipbox Explore',
+      description: 'Keşfetmeye devam edin',
+      imageUrl: require('@/src/Explore Banners/Tipbox-explorebanners.png') as any,
+      linkUrl: '',
+    },
+    {
+      id: 'explore-banner-2',
+      title: 'Tipbox Explore',
+      description: 'Yeni içerikler keşfedin',
+      imageUrl: require('@/src/Explore Banners/Tipbox-explorebanners2.png') as any,
+      linkUrl: '',
+    },
+  ], []);
+
+  // Combine API banners with static explore banners
+  const combinedBanners = useMemo(() => {
+    // Her zaman statik banner'ları göster, API banner'ları varsa onları da ekle
+    if (!banners || banners.length === 0) {
+      return staticExploreBanners;
+    }
+    // API banner'ları önce, sonra statik banner'lar
+    return [...banners, ...staticExploreBanners];
+  }, [banners, staticExploreBanners]);
 
   // Callback fonksiyonlarını useCallback ile sarmalayarak referanslarını stabilize et
   const handleEventPress = useCallback((eventId: string) => {
@@ -710,17 +739,7 @@ const ExploreScreen: React.FC = () => {
                       onLayout={handleBannerLayout}
                     >
                       <BannerCarousel 
-                        banners={
-                          banners && banners.length > 0 
-                            ? banners 
-                            : [{
-                                id: 'default-banner',
-                                title: 'Tipbox\'a Hoş Geldiniz',
-                                description: 'En yeni ürünler ve deneyimler için keşfetmeye başlayın',
-                                imageUrl: '', // Empty string will trigger default image in BannerCarousel
-                                linkUrl: '',
-                              }]
-                        } 
+                        banners={combinedBanners}
                         isDark={isDark} 
                         onBannerPress={handleBannerPress} 
                       />
@@ -742,12 +761,12 @@ const ExploreScreen: React.FC = () => {
                 onSeeAllProducts={handleSeeAllProducts}
                 headerComponent={
                   /* Marketplace Banners Carousel - Scrollable */
-                  !isLoadingBanners && banners && banners.length > 0 ? (
+                  !isLoadingBanners ? (
                     <Box
                       mb="$4"
                       onLayout={handleBannerLayout}
                     >
-                      <BannerCarousel banners={banners} isDark={isDark} onBannerPress={handleBannerPress} />
+                      <BannerCarousel banners={combinedBanners} isDark={isDark} onBannerPress={handleBannerPress} />
                     </Box>
                   ) : null
                 }

@@ -34,13 +34,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({
       {showDateSeparator && <DateSeparator timestamp={item.timestamp} isDark={isDark} />}
       
       {item.type === 'image' && item.mediaUrl ? (
-        <ImageMessage
-          item={item}
-          isDark={isDark}
-          params={params}
-          isFirstInGroup={isFirstInGroup}
-          onDelete={onDelete}
-        />
+        <>
+          {__DEV__ && console.log('[MessageItem] 🖼️ Image message render ediliyor:', {
+            id: item.id,
+            type: item.type,
+            mediaUrl: item.mediaUrl,
+            uploadStatus: item.uploadStatus,
+            uploadProgress: item.uploadProgress,
+          })}
+          <ImageMessage
+            item={item}
+            isDark={isDark}
+            params={params}
+            isFirstInGroup={isFirstInGroup}
+            onDelete={onDelete}
+          />
+        </>
       ) : item.type === 'tips' ? (
         <TipsMessage
           item={item}

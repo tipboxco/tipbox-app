@@ -13,8 +13,9 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Keyboard, Platform } from 'react-native';
+import { Keyboard, Platform, Alert } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useWalletBalance } from '@/src/features/wallet/api/hooks';
 import TipsSuccessModal from '../TipsSuccessModal';
 
 interface SendTipsBottomSheetProps {
@@ -37,6 +38,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+    const [isConfirmed, setIsConfirmed] = useState(false); // Confirm sonrası re-render kontrolü
     
     // Refs for input focus handling
     const descriptionInputRef = useRef<any>(null);
@@ -44,8 +46,9 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [focusedInput, setFocusedInput] = useState<'description' | 'amount' | null>(null);
 
-    // Kullanıcının mevcut bakiyesi (normalde prop veya store'dan gelecek)
-    const currentBalance = 500;
+    // Wallet balance API'den getir
+    const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
+    const currentBalance = walletBalance?.balance || 0;
 
     // Conversion rate: 1 TIPS = $0.01
     const TIPS_TO_USD_RATE = 0.01;
@@ -64,6 +67,12 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         const numericAmount = parseFloat(amount) || 0;
         const finalDescription = description?.trim() || '';
         
+        // Balance kontrolü
+        if (numericAmount > currentBalance) {
+            Alert.alert('Yetersiz Bakiye', `Mevcut bakiyeniz ${currentBalance} TIPS. Göndermek istediğiniz miktar bakiyenizi aşıyor.`);
+            return;
+        }
+        
         // Validation
         if (numericAmount >= 0.01 && finalDescription.length > 0) {
             // Onay modalını aç
@@ -76,17 +85,26 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         
         // Validation
         if (numericAmount <= 0 || numericAmount < 0.01) {
-            // Validation error will be handled by parent component
+            Alert.alert('Hata', 'TIPS miktarı en az 0.01 olmalıdır');
+            return;
+        }
+        
+        // Balance kontrolü (tekrar kontrol et - balance değişmiş olabilir)
+        if (numericAmount > currentBalance) {
+            Alert.alert('Yetersiz Bakiye', `Mevcut bakiyeniz ${currentBalance} TIPS. Göndermek istediğiniz miktar bakiyenizi aşıyor.`);
             return;
         }
         
         const finalDescription = description?.trim() || '';
         if (finalDescription.length === 0) {
-            // Validation error will be handled by parent component
+            Alert.alert('Hata', 'Mesaj boş olamaz');
             return;
         }
         
-        console.log('Send TIPS:', { amount: numericAmount, description: finalDescription });
+        // Confirm işaretle - re-render ile tekrar büyük modal gösterilmesini önle
+        setIsConfirmed(true);
+        
+        console.log('Send TIPS:', { amount: numericAmount, description: finalDescription, currentBalance });
         onSend?.(numericAmount, finalDescription);
         // Modal'ı kapat
         setIsSuccessModalVisible(false);
@@ -95,6 +113,8 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         // Formu temizle
         setAmount('');
         setDescription('');
+        // Confirm state'ini sıfırla (bir sonraki açılış için)
+        setTimeout(() => setIsConfirmed(false), 100);
     };
 
     const handleSuccessModalClose = () => {
@@ -476,6 +496,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                 recipientTitle={senderTitle}
                 recipientAvatar={senderAvatar}
                 currentBalance={currentBalance}
+                isConfirmed={isConfirmed}
             />
         </BottomSheetScrollView>
     );

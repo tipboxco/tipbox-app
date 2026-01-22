@@ -23,12 +23,14 @@ import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
 import { mock_user_card } from '@/src/mock/profile/userCardData';
-import { useUpdateProfile } from '../api/hooks';
+import { useUpdateProfile, profileKeys } from '../api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useBottomOffset } from '@/src/utils';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { uploadAvatar, uploadBanner } from '../api/profileApi';
 import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAppStore } from '@/src/store/appStore';
 import type { ProfileStackParamList } from '../navigation';
 
 type ProfileEditScreenNavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
@@ -149,6 +151,8 @@ const ProfileEditScreen: React.FC = () => {
   // Update Profile mutation
   const updateProfileMutation = useUpdateProfile();
   const toast = useToast();
+  const queryClient = useQueryClient();
+  const { user, updateUser } = useAppStore();
 
   // Badge seçimi için bottom sheet aç
   const handleBadgeSelect = useCallback((slot: 1 | 2 | 3) => {
@@ -264,169 +268,264 @@ const ProfileEditScreen: React.FC = () => {
       // CRITICAL FIX: Önce avatar ve banner'ı upload et (eğer local URI ise)
       let avatarUrl: string | null = null;
       let bannerUrl: string | null = null;
+      let avatarUploaded = false;
+      let bannerUploaded = false;
 
       // Avatar upload - eğer local URI ise (http ile başlamıyorsa)
-      if (selectedAvatarUri) {
-        if (!selectedAvatarUri.startsWith('http')) {
-          console.log('[ProfileEditScreen] 📤 Avatar upload başlatılıyor (Local URI):', {
-            uri: selectedAvatarUri,
-            uriLength: selectedAvatarUri.length,
-            uriType: typeof selectedAvatarUri,
+      if (selectedAvatarUri && !selectedAvatarUri.startsWith('http')) {
+        console.log('[ProfileEditScreen] 📤 Avatar upload başlatılıyor (Local URI):', {
+          uri: selectedAvatarUri.substring(0, 50) + '...',
+          uriLength: selectedAvatarUri.length,
+          uriType: typeof selectedAvatarUri,
+        });
+        setIsUploadingAvatar(true);
+        try {
+          console.log('[ProfileEditScreen] 📤 uploadAvatar fonksiyonu çağrılıyor...');
+          const uploadResponse = await uploadAvatar(selectedAvatarUri);
+          
+          // CRITICAL: Gönderilen request formatını logla
+          console.log('[ProfileEditScreen] 📤 Avatar upload request formatı:', {
+            endpoint: 'POST /users/me/avatar',
+            contentType: 'multipart/form-data',
+            fieldName: 'avatar',
+            fileFormat: {
+              uri: selectedAvatarUri.substring(0, 50) + '...',
+              type: 'image/jpeg' || 'image/png',
+              name: 'avatar.jpg' || 'avatar.png',
+            },
+            headers: {
+              'Content-Type': 'multipart/form-data (with boundary)',
+              'Authorization': 'Bearer <token>',
+            },
           });
-          setIsUploadingAvatar(true);
-          try {
-            console.log('[ProfileEditScreen] 📤 uploadAvatar fonksiyonu çağrılıyor...');
-            const uploadResponse = await uploadAvatar(selectedAvatarUri);
-            console.log('[ProfileEditScreen] 📤 uploadAvatar response:', {
-              success: uploadResponse.success,
-              hasData: !!uploadResponse.data,
-              avatarUrl: uploadResponse.data?.avatarUrl,
-              fullResponse: JSON.stringify(uploadResponse, null, 2),
+          
+          console.log('[ProfileEditScreen] 📤 uploadAvatar response:', {
+            success: uploadResponse.success,
+            hasData: !!uploadResponse.data,
+            avatarUrl: uploadResponse.data?.avatarUrl,
+            fullResponse: JSON.stringify(uploadResponse, null, 2),
+          });
+          
+          if (uploadResponse.success && uploadResponse.data?.avatarUrl) {
+            avatarUrl = uploadResponse.data.avatarUrl;
+            avatarUploaded = true;
+            console.log('[ProfileEditScreen] ✅ Avatar başarıyla yüklendi:', {
+              avatarUrl,
+              avatarUrlLength: avatarUrl.length,
             });
             
-            if (uploadResponse.success && uploadResponse.data?.avatarUrl) {
-              avatarUrl = uploadResponse.data.avatarUrl;
-              console.log('[ProfileEditScreen] ✅ Avatar başarıyla yüklendi:', {
-                avatarUrl,
-                avatarUrlLength: avatarUrl.length,
+            // CRITICAL FIX: Avatar upload başarılı olduktan sonra cache'i invalidate et ve refetch yap
+            // Backend otomatik olarak kullanıcının profilini güncelliyor, cache'i yenile
+            if (user?.id) {
+              // Cache'i invalidate et
+              await queryClient.invalidateQueries({
+                queryKey: profileKeys.profile(user.id),
+                exact: false,
               });
-            } else {
-              console.error('[ProfileEditScreen] ❌ Avatar upload başarısız - response formatı hatalı:', {
-                success: uploadResponse.success,
-                data: uploadResponse.data,
-                fullResponse: uploadResponse,
+              console.log('[ProfileEditScreen] ✅ Profile cache invalidated after avatar upload');
+              
+              // CRITICAL: Cache invalidate sonrası hemen refetch yap - ProfileScreen'de güncel avatar görünsün
+              await queryClient.refetchQueries({
+                queryKey: profileKeys.profile(user.id),
+                exact: false,
               });
-              throw new Error('Avatar yüklenemedi - response formatı hatalı');
+              console.log('[ProfileEditScreen] ✅ Profile cache refetched after avatar upload');
             }
-          } catch (error: any) {
-            const backendError = error?.response?.data;
-            console.error('[ProfileEditScreen] ❌ Avatar upload error - detaylı log:', {
-              error,
-              errorType: typeof error,
-              errorMessage: error?.message,
-              errorStack: error?.stack,
-              // Backend response detayları
-              responseStatus: error?.response?.status,
-              responseStatusText: error?.response?.statusText,
-              responseData: backendError,
-              // Backend'den gelen spesifik hata mesajı
-              backendErrorMessage: backendError?.message || backendError?.error || backendError,
-              backendErrorString: JSON.stringify(backendError, null, 2),
-              responseHeaders: error?.response?.headers,
-              // Request detayları
-              request: error?.request,
-              config: error?.config,
-              selectedAvatarUri,
-            });
-            setIsUploadingAvatar(false);
             
-            // Hata mesajını kullanıcıya göster - backend'den gelen mesajı öncelikle kullan
-            const errorMessage = backendError?.message 
-              || backendError?.error
-              || (typeof backendError === 'string' ? backendError : null)
-              || error?.message 
-              || 'Avatar yüklenirken bir hata oluştu';
-            
-            console.error('[ProfileEditScreen] ❌ Avatar upload hatası - Backend mesajı:', {
-              backendError,
-              extractedMessage: errorMessage,
-              status: error?.response?.status,
+            // CRITICAL FIX: Store'daki user bilgisini de güncelle
+            // Login response'unda avatar bilgisi geliyor, store'da güncellenmeli
+            updateUser({
+              avatar: avatarUrl,
             });
-            Alert.alert('Avatar Upload Failed', errorMessage);
-            return;
-          } finally {
-            setIsUploadingAvatar(false);
-            console.log('[ProfileEditScreen] 📤 Avatar upload işlemi tamamlandı (finally)');
+            console.log('[ProfileEditScreen] ✅ Store user avatar updated:', {
+              oldAvatar: user?.avatar,
+              newAvatar: avatarUrl,
+            });
+          } else {
+            console.error('[ProfileEditScreen] ❌ Avatar upload başarısız - response formatı hatalı:', {
+              success: uploadResponse.success,
+              data: uploadResponse.data,
+              fullResponse: uploadResponse,
+            });
+            throw new Error('Avatar yüklenemedi - response formatı hatalı');
           }
-        } else {
-          // Zaten upload edilmiş (URL formatında)
-          avatarUrl = selectedAvatarUri;
-          console.log('[ProfileEditScreen] ℹ️ Avatar zaten yüklenmiş (URL formatında):', avatarUrl);
+        } catch (error: any) {
+          const backendError = error?.response?.data;
+          console.error('[ProfileEditScreen] ❌ Avatar upload error - detaylı log:', {
+            error,
+            errorType: typeof error,
+            errorMessage: error?.message,
+            errorStack: error?.stack,
+            // Backend response detayları
+            responseStatus: error?.response?.status,
+            responseStatusText: error?.response?.statusText,
+            responseData: backendError,
+            // Backend'den gelen spesifik hata mesajı
+            backendErrorMessage: backendError?.message || backendError?.error || backendError,
+            backendErrorString: JSON.stringify(backendError, null, 2),
+            responseHeaders: error?.response?.headers,
+            // Request detayları
+            request: error?.request,
+            config: error?.config,
+            selectedAvatarUri,
+          });
+          setIsUploadingAvatar(false);
+          
+          // Hata mesajını kullanıcıya göster - backend'den gelen mesajı öncelikle kullan
+          const errorMessage = backendError?.message 
+            || backendError?.error
+            || (typeof backendError === 'string' ? backendError : null)
+            || error?.message 
+            || 'Avatar yüklenirken bir hata oluştu';
+          
+          console.error('[ProfileEditScreen] ❌ Avatar upload hatası - Backend mesajı:', {
+            backendError,
+            extractedMessage: errorMessage,
+            status: error?.response?.status,
+          });
+          Alert.alert('Avatar Upload Failed', errorMessage);
+          return;
+        } finally {
+          setIsUploadingAvatar(false);
+          console.log('[ProfileEditScreen] 📤 Avatar upload işlemi tamamlandı (finally)');
         }
-      } else {
-        console.log('[ProfileEditScreen] ℹ️ Avatar seçilmemiş, upload atlanıyor');
+      } else if (selectedAvatarUri && selectedAvatarUri.startsWith('http')) {
+        // Zaten upload edilmiş (URL formatında)
+        avatarUrl = selectedAvatarUri;
+        console.log('[ProfileEditScreen] ℹ️ Avatar zaten yüklenmiş (URL formatında):', avatarUrl);
       }
 
       // Banner upload - eğer local URI ise (http ile başlamıyorsa)
-      if (selectedBannerUri) {
-        if (!selectedBannerUri.startsWith('http')) {
-          console.log('[ProfileEditScreen] 📤 Banner upload başlatılıyor (Local URI):', {
-            uri: selectedBannerUri,
-            uriLength: selectedBannerUri.length,
-            uriType: typeof selectedBannerUri,
+      if (selectedBannerUri && !selectedBannerUri.startsWith('http')) {
+        console.log('[ProfileEditScreen] 📤 Banner upload başlatılıyor (Local URI):', {
+          uri: selectedBannerUri.substring(0, 50) + '...',
+          uriLength: selectedBannerUri.length,
+          uriType: typeof selectedBannerUri,
+        });
+        setIsUploadingBanner(true);
+        try {
+          console.log('[ProfileEditScreen] 📤 uploadBanner fonksiyonu çağrılıyor...');
+          const uploadResponse = await uploadBanner(selectedBannerUri);
+          
+          // CRITICAL: Gönderilen request formatını logla
+          console.log('[ProfileEditScreen] 📤 Banner upload request formatı:', {
+            endpoint: 'POST /users/me/banner',
+            contentType: 'multipart/form-data',
+            fieldName: 'banner',
+            fileFormat: {
+              uri: selectedBannerUri.substring(0, 50) + '...',
+              type: 'image/jpeg' || 'image/png',
+              name: 'banner.jpg' || 'banner.png',
+            },
+            headers: {
+              'Content-Type': 'multipart/form-data (with boundary)',
+              'Authorization': 'Bearer <token>',
+            },
           });
-          setIsUploadingBanner(true);
-          try {
-            console.log('[ProfileEditScreen] 📤 uploadBanner fonksiyonu çağrılıyor...');
-            const uploadResponse = await uploadBanner(selectedBannerUri);
-            console.log('[ProfileEditScreen] 📤 uploadBanner response:', {
-              success: uploadResponse.success,
-              hasData: !!uploadResponse.data,
-              bannerUrl: uploadResponse.data?.bannerUrl,
-              fullResponse: JSON.stringify(uploadResponse, null, 2),
+          
+          console.log('[ProfileEditScreen] 📤 uploadBanner response:', {
+            success: uploadResponse.success,
+            hasData: !!uploadResponse.data,
+            bannerUrl: uploadResponse.data?.bannerUrl,
+            fullResponse: JSON.stringify(uploadResponse, null, 2),
+          });
+          
+          if (uploadResponse.success && uploadResponse.data?.bannerUrl) {
+            bannerUrl = uploadResponse.data.bannerUrl;
+            bannerUploaded = true;
+            console.log('[ProfileEditScreen] ✅ Banner başarıyla yüklendi:', {
+              bannerUrl,
+              bannerUrlLength: bannerUrl.length,
             });
             
-            if (uploadResponse.success && uploadResponse.data?.bannerUrl) {
-              bannerUrl = uploadResponse.data.bannerUrl;
-              console.log('[ProfileEditScreen] ✅ Banner başarıyla yüklendi:', {
-                bannerUrl,
-                bannerUrlLength: bannerUrl.length,
+            // CRITICAL FIX: Banner upload başarılı olduktan sonra cache'i invalidate et ve refetch yap
+            // Backend otomatik olarak kullanıcının profilini güncelliyor, cache'i yenile
+            if (user?.id) {
+              // Cache'i invalidate et
+              await queryClient.invalidateQueries({
+                queryKey: profileKeys.profile(user.id),
+                exact: false,
               });
-            } else {
-              console.error('[ProfileEditScreen] ❌ Banner upload başarısız - response formatı hatalı:', {
-                success: uploadResponse.success,
-                data: uploadResponse.data,
-                fullResponse: uploadResponse,
+              console.log('[ProfileEditScreen] ✅ Profile cache invalidated after banner upload');
+              
+              // CRITICAL: Cache invalidate sonrası hemen refetch yap - ProfileScreen'de güncel banner görünsün
+              await queryClient.refetchQueries({
+                queryKey: profileKeys.profile(user.id),
+                exact: false,
               });
-              throw new Error('Banner yüklenemedi - response formatı hatalı');
+              console.log('[ProfileEditScreen] ✅ Profile cache refetched after banner upload');
             }
-          } catch (error: any) {
-            const backendError = error?.response?.data;
-            console.error('[ProfileEditScreen] ❌ Banner upload error - detaylı log:', {
-              error,
-              errorType: typeof error,
-              errorMessage: error?.message,
-              errorStack: error?.stack,
-              // Backend response detayları
-              responseStatus: error?.response?.status,
-              responseStatusText: error?.response?.statusText,
-              responseData: backendError,
-              // Backend'den gelen spesifik hata mesajı
-              backendErrorMessage: backendError?.message || backendError?.error || backendError,
-              backendErrorString: JSON.stringify(backendError, null, 2),
-              responseHeaders: error?.response?.headers,
-              // Request detayları
-              request: error?.request,
-              config: error?.config,
-              selectedBannerUri,
-            });
-            setIsUploadingBanner(false);
             
-            // Hata mesajını kullanıcıya göster - backend'den gelen mesajı öncelikle kullan
-            const errorMessage = backendError?.message 
-              || backendError?.error
-              || (typeof backendError === 'string' ? backendError : null)
-              || error?.message 
-              || 'Banner yüklenirken bir hata oluştu';
-            
-            console.error('[ProfileEditScreen] ❌ Banner upload hatası - Backend mesajı:', {
-              backendError,
-              extractedMessage: errorMessage,
-              status: error?.response?.status,
+            // CRITICAL FIX: Store'daki user bilgisini de güncelle (banner store'da yok ama profil cache'i güncelleniyor)
+            // Banner bilgisi profile cache'inde tutuluyor, store'da user.avatar yok
+            console.log('[ProfileEditScreen] ✅ Banner upload completed, profile cache updated and refetched');
+          } else {
+            console.error('[ProfileEditScreen] ❌ Banner upload başarısız - response formatı hatalı:', {
+              success: uploadResponse.success,
+              data: uploadResponse.data,
+              fullResponse: uploadResponse,
             });
-            Alert.alert('Banner Upload Failed', errorMessage);
-            return;
-          } finally {
-            setIsUploadingBanner(false);
-            console.log('[ProfileEditScreen] 📤 Banner upload işlemi tamamlandı (finally)');
+            throw new Error('Banner yüklenemedi - response formatı hatalı');
           }
-        } else {
-          // Zaten upload edilmiş (URL formatında)
-          bannerUrl = selectedBannerUri;
-          console.log('[ProfileEditScreen] ℹ️ Banner zaten yüklenmiş (URL formatında):', bannerUrl);
+        } catch (error: any) {
+          const backendError = error?.response?.data;
+          console.error('[ProfileEditScreen] ❌ Banner upload error - detaylı log:', {
+            error,
+            errorType: typeof error,
+            errorMessage: error?.message,
+            errorStack: error?.stack,
+            // Backend response detayları
+            responseStatus: error?.response?.status,
+            responseStatusText: error?.response?.statusText,
+            responseData: backendError,
+            // Backend'den gelen spesifik hata mesajı
+            backendErrorMessage: backendError?.message || backendError?.error || backendError,
+            backendErrorString: JSON.stringify(backendError, null, 2),
+            responseHeaders: error?.response?.headers,
+            // Request detayları
+            request: error?.request,
+            config: error?.config,
+            selectedBannerUri,
+          });
+          setIsUploadingBanner(false);
+          
+          // Hata mesajını kullanıcıya göster - backend'den gelen mesajı öncelikle kullan
+          const errorMessage = backendError?.message 
+            || backendError?.error
+            || (typeof backendError === 'string' ? backendError : null)
+            || error?.message 
+            || 'Banner yüklenirken bir hata oluştu';
+          
+          console.error('[ProfileEditScreen] ❌ Banner upload hatası - Backend mesajı:', {
+            backendError,
+            extractedMessage: errorMessage,
+            status: error?.response?.status,
+          });
+          Alert.alert('Banner Upload Failed', errorMessage);
+          return;
+        } finally {
+          setIsUploadingBanner(false);
+          console.log('[ProfileEditScreen] 📤 Banner upload işlemi tamamlandı (finally)');
         }
-      } else {
-        console.log('[ProfileEditScreen] ℹ️ Banner seçilmemiş, upload atlanıyor');
+      } else if (selectedBannerUri && selectedBannerUri.startsWith('http')) {
+        // Zaten upload edilmiş (URL formatında)
+        bannerUrl = selectedBannerUri;
+        console.log('[ProfileEditScreen] ℹ️ Banner zaten yüklenmiş (URL formatında):', bannerUrl);
+      }
+
+      // CRITICAL FIX: Eğer sadece avatar veya sadece banner upload edildiyse, profile update çağırma
+      // Avatar/banner upload endpoint'leri zaten backend'de profili güncelliyor
+      const hasOnlyAvatarUpload = avatarUploaded && !bannerUploaded;
+      const hasOnlyBannerUpload = bannerUploaded && !avatarUploaded;
+      
+      if (hasOnlyAvatarUpload || hasOnlyBannerUpload) {
+        const uploadType = hasOnlyAvatarUpload ? 'avatar' : 'banner';
+        console.log(`[ProfileEditScreen] ℹ️ Sadece ${uploadType} upload edildi - profile update atlanıyor`);
+        // Cache zaten upload sonrası invalidate edildi
+        Alert.alert('Success', `${uploadType === 'avatar' ? 'Avatar' : 'Banner'} updated successfully!`, [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
+        return;
       }
 
       // Prepare update data - API formatına uygun
@@ -485,7 +584,24 @@ const ProfileEditScreen: React.FC = () => {
         bannerUrl,
       });
       
-      // Profile update
+      // CRITICAL FIX: Eğer sadece avatar/banner upload edildiyse ve form alanlarında değişiklik yoksa
+      // profile update mutation'ını çağırma - avatar/banner upload endpoint'leri zaten backend'de profili güncelliyor
+      const hasFormChanges = Object.keys(updateData).length > 0;
+      const hasOnlyAvatarOrBannerUpload = (avatarUploaded || bannerUploaded) && !hasFormChanges;
+      
+      if (hasOnlyAvatarOrBannerUpload) {
+        const uploadTypes = [];
+        if (avatarUploaded) uploadTypes.push('avatar');
+        if (bannerUploaded) uploadTypes.push('banner');
+        console.log(`[ProfileEditScreen] ℹ️ Sadece ${uploadTypes.join(' ve ')} upload edildi, form alanlarında değişiklik yok - profile update atlanıyor`);
+        // Cache zaten upload sonrası invalidate edildi
+        Alert.alert('Success', `${uploadTypes.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(' ve ')} updated successfully!`, [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
+        return;
+      }
+      
+      // Profile update - sadece form alanlarında değişiklik varsa
       console.log('[ProfileEditScreen] 📤 updateProfileMutation.mutate çağrılıyor...');
       updateProfileMutation.mutate(updateData, {
         onSuccess: (data) => {

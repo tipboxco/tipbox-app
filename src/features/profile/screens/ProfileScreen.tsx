@@ -1259,9 +1259,9 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
             <Box 
               borderRadius={100}
               overflow="hidden"
-              w={90}
-              h={90}
-              borderWidth={2}
+              w={100}
+              h={100}
+              borderWidth={4}
               borderColor="$white"
               flexShrink={0}
               position="relative"
@@ -1743,14 +1743,6 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
       }
     }
   }, [activeTab]);
-  
-  if (isProfileLoading) {
-    return (
-      <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'} justifyContent="center" alignItems="center">
-        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
-      </Box>
-    );
-  }
   
   if (profileError || !userProfile) {
     return (

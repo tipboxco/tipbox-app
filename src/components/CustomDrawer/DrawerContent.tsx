@@ -9,10 +9,12 @@ import {
   ScrollView,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Modal, View, ActivityIndicator } from 'react-native';
 import { navigationService } from '@/src/services/NavigationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { XMarkIcon } from 'react-native-heroicons/outline';
 import { useAppStore } from '@/src/store/appStore';
 import { useDrawerStore } from '@/src/store/drawerStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -104,6 +106,17 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
   const { data: trusterListData } = useTrusterList(user?.id || '', undefined, undefined);
   
   // PERFORMANCE FIX: Computed değerleri useMemo ile memoize et
+  // Banner source - profile'dan gelen banner URL'i veya fallback
+  const bannerSource = useMemo(() => {
+    // İlk olarak userProfile'dan banner al (API'den gelen güncel veri)
+    if (typedUserProfile?.bannerUrl) {
+      const profileBanner = toImageSource(typedUserProfile.bannerUrl);
+      if (profileBanner) return profileBanner;
+    }
+    // Hiçbiri yoksa default banner
+    return require('@/assets/banner/banner_01.png');
+  }, [typedUserProfile?.bannerUrl]);
+  
   // Avatar source - profile'dan gelen avatar URL'i veya fallback
   const initialAvatarSource = useMemo(() => {
     // İlk olarak userProfile'dan avatar al (API'den gelen güncel veri)
@@ -306,6 +319,30 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
     navigationService.navigate('MoreSchoise', undefined);
   }, [handleCloseDrawer]);
 
+  // Prime Pass Video Modal State
+  const [isPrimePassVideoVisible, setIsPrimePassVideoVisible] = useState(false);
+  const videoRef = useRef<Video>(null);
+
+  const handlePrimePassPress = useCallback(() => {
+    handleCloseDrawer();
+    setIsPrimePassVideoVisible(true);
+  }, [handleCloseDrawer]);
+
+  const handleClosePrimePassVideo = useCallback(() => {
+    setIsPrimePassVideoVisible(false);
+    // Video'yu durdur
+    if (videoRef.current) {
+      videoRef.current.pauseAsync();
+    }
+  }, []);
+
+  const handleVideoLoad = useCallback((status: AVPlaybackStatus) => {
+    if (status.isLoaded) {
+      // Video yüklendiğinde otomatik oynat
+      videoRef.current?.playAsync();
+    }
+  }, []);
+
   // PERFORMANCE FIX: Profile section handler'ını memoize et
   const handleProfilePress = useCallback(() => {
     if (!user?.id) {
@@ -421,7 +458,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
       id: 'prime-pass',
       icon: TrophyIcon,
       label: 'Prime Pass',
-      onPress: handleCloseDrawer,
+      onPress: handlePrimePassPress,
     },
     {
       id: 'settings',
@@ -491,12 +528,21 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
           {/* Banner Section – FULL BLEED */}
           <Box h={280} w="100%" position="relative" bg={isDark ? '#000000' : '#FFFFFF'}>
           {/* Banner */}
-          <Box h={120} w="100%" overflow="hidden">
-            <LinearGradient
-              colors={['#4A1D96', '#1E293B']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.gradient, { height: 120 }]}
+          <Box h={120} w="100%" overflow="hidden" position="relative">
+            <Image
+              source={bannerSource}
+              alt="Profile Banner"
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+            {/* Overlay - gradient yerine hafif overlay */}
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg="rgba(0, 0, 0, 0.3)"
             />
           </Box>
           
@@ -645,7 +691,7 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
             position="relative"
           >
             <Image
-              source={require('@/assets/banner/premium-banner.png')}
+              source={require('@/src/Drawer Premium Selling Banner/getpremium.png')}
               alt="Premium Banner"
               w="100%"
               h="100%"
@@ -805,6 +851,54 @@ const DrawerContentComponent: React.FC<DrawerContentComponentProps> = (props) =>
         </Pressable>
       </VStack>
       </Box>
+
+      {/* Prime Pass Video Modal */}
+      <Modal
+        visible={isPrimePassVideoVisible}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        onRequestClose={handleClosePrimePassVideo}
+      >
+        <View style={{ 
+          flex: 1, 
+          backgroundColor: '#000000',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          {/* Close Button */}
+          <Pressable
+            onPress={handleClosePrimePassVideo}
+            style={{
+              position: 'absolute',
+              top: 50,
+              right: 20,
+              zIndex: 10,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <XMarkIcon width={24} height={24} color="#FFFFFF" />
+          </Pressable>
+
+          {/* Video Player */}
+          <Video
+            ref={videoRef}
+            source={require('@/src/Expert Now Video/expertnow-comingsoon.mp4')}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay={true}
+            isLooping={false}
+            onLoad={handleVideoLoad}
+            onError={(error) => {
+              console.error('[DrawerContent] Video error:', error);
+            }}
+          />
+        </View>
+      </Modal>
     </Box>
   );
 };

@@ -132,7 +132,7 @@ export const Trust_TrusterListScreen = () => {
             id: apiUser.id,
             name: apiUser.name,
             title: apiUser.titles?.[0] || '', // İlk title'ı kullan
-            avatar: apiUser.avatar ? { uri: apiUser.avatar } : undefined, // String URL'yi Image source formatına çevir
+            avatar: apiUser.avatar ? { uri: apiUser.avatar } : DEFAULT_USER_AVATAR, // String URL'yi Image source formatına çevir, yoksa default avatar
             trustLevel: 3, // Varsayılan trust level (API'de yok)
             isOnline: false, // Varsayılan
         };
@@ -143,7 +143,7 @@ export const Trust_TrusterListScreen = () => {
             id: apiUser.id,
             name: apiUser.name,
             title: apiUser.titles?.[0] || '',
-            avatar: apiUser.avatar ? { uri: apiUser.avatar } : undefined,
+            avatar: apiUser.avatar ? { uri: apiUser.avatar } : DEFAULT_USER_AVATAR, // Yoksa default avatar
             trustLevel: 3,
             isOnline: false,
         };

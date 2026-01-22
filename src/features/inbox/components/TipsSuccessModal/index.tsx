@@ -24,6 +24,7 @@ interface TipsSuccessModalProps {
     recipientTitle: string;
     recipientAvatar: any;
     currentBalance: number;
+    isConfirmed?: boolean; // Confirm sonrası re-render kontrolü
 }
 
 const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({ 
@@ -35,7 +36,8 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
     recipientName,
     recipientTitle,
     recipientAvatar,
-    currentBalance
+    currentBalance,
+    isConfirmed = false
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -45,8 +47,8 @@ const TipsSuccessModal: React.FC<TipsSuccessModalProps> = ({
             <ModalBackdrop  />
             <ModalContent
                 width="90%"
-                maxWidth={320}
-                maxHeight="80%"
+                maxWidth={isConfirmed ? 400 : 400} // Confirm sonrası da aynı boyutta kal
+                maxHeight="85%"
                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                 borderRadius={16}
             >

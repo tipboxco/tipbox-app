@@ -212,22 +212,44 @@ export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarRespo
     
     // iOS'ta ph:// veya assets-library:// URI'leri için varsayılan JPEG kullan
     // Expo Image Picker zaten görsel formatlarını destekliyor
+    // CRITICAL: React Native FormData formatı - RNFetchBlob örneğine göre
+    // Field adı: 'avatar' (küçük harf), format: { uri, type, name }
     const fileObject = {
       uri: avatarUri,
       type: mimeType,
-      name: `avatar.${fileExtension}`,
+      name: `avatar.${fileExtension}`, // filename olarak kullanılacak
     };
     
     console.log('[uploadAvatar] File object:', {
       uri: avatarUri.substring(0, 50) + '...',
       type: mimeType,
       name: fileObject.name,
+      fieldName: 'avatar', // Field adı küçük harf 'avatar' olmalı
     });
     
+    // CRITICAL: Field adı 'avatar' (küçük harf) - backend'in beklediği format
+    // RNFetchBlob örneğine göre: name: 'avatar', filename: 'avatar.jpg', type: 'image/jpeg'
     formData.append('avatar', fileObject as any);
     
-    // React Native'de FormData gönderirken Content-Type header'ını manuel ayarlama
-    // Axios otomatik olarak boundary'yi ekler
+    // CRITICAL: Gönderilen request formatını detaylı logla
+    console.log('[uploadAvatar] 📤 Request formatı (RNFetchBlob örneğine göre):', {
+      endpoint: 'POST /users/me/avatar',
+      contentType: 'multipart/form-data',
+      fieldName: 'avatar', // Küçük harf - backend'in beklediği format
+      fileObject: {
+        uri: avatarUri.substring(0, 50) + '...',
+        type: mimeType, // 'image/jpeg' veya 'image/png'
+        name: fileObject.name, // 'avatar.jpg' veya 'avatar.png'
+      },
+      headers: {
+        'Content-Type': 'multipart/form-data (Axios otomatik boundary ekler)',
+        'Authorization': 'Bearer <token> (Interceptor tarafından eklenir)',
+      },
+      formDataType: formData.constructor.name,
+    });
+    
+    // React Native'de FormData gönderirken Content-Type header'ını kaldırmalıyız
+    // Axios otomatik olarak multipart/form-data boundary'yi ekler
     console.log('[uploadAvatar] Sending request to /users/me/avatar');
     
     const response = await apiService.getClient().post<UploadAvatarResponse>(
@@ -235,6 +257,8 @@ export const uploadAvatar = async (avatarUri: string): Promise<UploadAvatarRespo
       formData,
       {
         timeout: 30000, // 30 saniye timeout (büyük dosyalar için)
+        // Content-Type header'ı interceptor'da otomatik olarak kaldırılacak (FormData için)
+        // Request formatı: multipart/form-data, field name: 'avatar' (küçük harf)
       }
     );
     
@@ -314,12 +338,31 @@ export const uploadBanner = async (bannerUri: string): Promise<UploadBannerRespo
       uri: bannerUri.substring(0, 50) + '...',
       type: mimeType,
       name: fileObject.name,
+      fieldName: 'banner', // Field adı küçük harf 'banner' olmalı
     });
     
+    // CRITICAL: Field adı 'banner' (küçük harf) - backend'in beklediği format
     formData.append('banner', fileObject as any);
     
-    // React Native'de FormData gönderirken Content-Type header'ını manuel ayarlama
-    // Axios otomatik olarak boundary'yi ekler
+    // CRITICAL: Gönderilen request formatını detaylı logla
+    console.log('[uploadBanner] 📤 Request formatı (RNFetchBlob örneğine göre):', {
+      endpoint: 'POST /users/me/banner',
+      contentType: 'multipart/form-data',
+      fieldName: 'banner', // Küçük harf - backend'in beklediği format
+      fileObject: {
+        uri: bannerUri.substring(0, 50) + '...',
+        type: mimeType, // 'image/jpeg' veya 'image/png'
+        name: fileObject.name, // 'banner.jpg' veya 'banner.png'
+      },
+      headers: {
+        'Content-Type': 'multipart/form-data (Axios otomatik boundary ekler)',
+        'Authorization': 'Bearer <token> (Interceptor tarafından eklenir)',
+      },
+      formDataType: formData.constructor.name,
+    });
+    
+    // React Native'de FormData gönderirken Content-Type header'ını kaldırmalıyız
+    // Axios otomatik olarak multipart/form-data boundary'yi ekler
     console.log('[uploadBanner] Sending request to /users/me/banner');
     
     const response = await apiService.getClient().post<UploadBannerResponse>(
@@ -327,6 +370,7 @@ export const uploadBanner = async (bannerUri: string): Promise<UploadBannerRespo
       formData,
       {
         timeout: 30000, // 30 saniye timeout (büyük dosyalar için)
+        // Content-Type header'ı interceptor'da otomatik olarak kaldırılacak (FormData için)
       }
     );
     
