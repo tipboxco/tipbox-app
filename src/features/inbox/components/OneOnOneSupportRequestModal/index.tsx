@@ -5,12 +5,9 @@ import {
     HStack,
     Text,
     Image,
-    Modal,
-    ModalBackdrop,
-    ModalContent,
-    ModalBody,
     Pressable,
 } from '@gluestack-ui/themed';
+import { Modal, View, StyleSheet, Dimensions, Pressable as RNPressable } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
 interface OneOnOneSupportRequestModalProps {
@@ -40,18 +37,30 @@ const OneOnOneSupportRequestModal: React.FC<OneOnOneSupportRequestModalProps> = 
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
+    const { width } = Dimensions.get('window');
 
     return (
-        <Modal isOpen={isVisible} onClose={onClose} flex={1}>
-            <ModalBackdrop />
-            <ModalContent
-                width="90%"
-                maxWidth={320}
-                maxHeight="80%"
-                bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-                borderRadius={16}
+        <Modal
+            visible={isVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={onClose}
+        >
+            <RNPressable
+                style={styles.modalOverlay}
+                onPress={onClose}
             >
-                <ModalBody p="$0">
+                <View
+                    style={[
+                        styles.modalContent,
+                        {
+                            backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                            width: width * 0.9,
+                            maxWidth: 320,
+                        },
+                    ]}
+                    onStartShouldSetResponder={() => true}
+                >
                     <VStack space="md">
                         {/* Kullanıcı Profil Bilgileri */}
                         <HStack space="sm" alignItems="center" px="$4" mt="$4">
@@ -123,6 +132,7 @@ const OneOnOneSupportRequestModal: React.FC<OneOnOneSupportRequestModalProps> = 
                             justifyContent="space-between" 
                             alignItems="flex-end" 
                             py="$2"
+                            px="$4"
                         >
                             {/* Sol: TIPS Miktarı */}
                             <VStack>
@@ -193,11 +203,25 @@ const OneOnOneSupportRequestModal: React.FC<OneOnOneSupportRequestModalProps> = 
                             </Pressable>
                         </VStack>
                     </VStack>
-                </ModalBody>
-            </ModalContent>
+                </View>
+            </RNPressable>
         </Modal>
     );
 };
+
+const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        borderRadius: 16,
+        padding: 0,
+        maxHeight: '80%',
+    },
+});
 
 export default OneOnOneSupportRequestModal;
 

@@ -1189,7 +1189,7 @@ const ProfileScreen = ({ route }: ProfileScreenProps) => {
           />
           
           {/* Pull to Refresh Loading Overlay - Banner'ın üstünde */}
-          {(refreshing || isRefreshingOnFocus) && (
+          {refreshing && (
             <Box
               position="absolute"
               top={0}

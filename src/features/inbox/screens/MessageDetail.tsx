@@ -102,7 +102,6 @@ const formatMessageTime = (dateInput: string | Date | null | undefined): string 
     
     // Geçersiz tarih kontrolü
     if (isNaN(date.getTime())) {
-      console.warn('[MessageDetail] Invalid date:', dateInput);
       return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     }
     
@@ -111,7 +110,6 @@ const formatMessageTime = (dateInput: string | Date | null | undefined): string 
       minute: '2-digit',
     });
   } catch (error) {
-    console.error('[MessageDetail] Date formatting error:', error, 'Input:', dateInput);
     return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   }
 };
@@ -141,7 +139,6 @@ const formatDateHeader = (timestamp: string | Date): string => {
       return `${month} ${day}, ${year}`;
     }
   } catch (error) {
-    console.error('[MessageDetail] Date header formatting error:', error);
     return '';
   }
 };
@@ -2156,12 +2153,16 @@ const MessageDetailScreen: React.FC = () => {
         enableContentPanningGesture: true,
         enableDynamicSizing: true, // Content boyutuna göre dinamik height
         detached: true, // Detached mod - bottom sheet daha yukarıda açılır
-        bottomInset: 20, // Detached mod için bottom inset
-        animateOnMount: false, // PERFORMANCE FIX: Disabled for instant opening
+        bottomInset: 0, // Alt boşluk yok - ekranın altına yapışık
+        animateOnMount: true, // PERFORMANCE FIX: Disabled for instant opening
         paddingBottom: Platform.OS === 'ios' ? insets.bottom + 8 : 8,
         keyboardBehavior: 'interactive', // Klavye açıldığında bottom sheet yukarı kayar (klavye üzerinde)
         keyboardBlurBehavior: 'restore', // Klavye kapandığında eski haline döner
         android_keyboardInputMode: 'adjustResize',
+        style: {
+          marginHorizontal: 0, // Full width - yan boşluk yok
+          width: '100%', // Tam genişlik
+        },
       }
     );
   };
@@ -2821,7 +2822,8 @@ const MessageDetailScreen: React.FC = () => {
             space="sm"
             alignItems="flex-end"
             maxWidth="80%"
-            flexDirection={isSent ? 'row-reverse' : 'row'}
+            flexDirection="row"
+            justifyContent={isSent ? 'flex-end' : 'flex-start'}
           >
             <Box
               bg={isSent ? (isDark ? '#6366F1' : '#6366F1') : (isDark ? '#1A1A1A' : '#F2F2F2')}
@@ -2860,7 +2862,7 @@ const MessageDetailScreen: React.FC = () => {
               </VStack>
             </Box>
 
-            <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
+            <VStack space="xs" alignItems={isSent ? 'flex-start' : 'flex-start'}>
               <Text
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
                 fontSize="$2xs"
@@ -3219,7 +3221,8 @@ const MessageDetailScreen: React.FC = () => {
           space="sm"
           alignItems="flex-end"
           maxWidth="80%"
-          flexDirection={isSent ? 'row-reverse' : 'row'}
+          flexDirection="row"
+          justifyContent={isSent ? 'flex-end' : 'flex-start'}
         >
           <Box
             bg={isSent ? (isDark ? '#6366F1' : '#6366F1') : (isDark ? '#1A1A1A' : '#F2F2F2')}
@@ -3272,7 +3275,7 @@ const MessageDetailScreen: React.FC = () => {
             </VStack>
           </Box>
 
-          <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
+          <VStack space="xs" alignItems={isSent ? 'flex-start' : 'flex-start'}>
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
               fontSize="$2xs"
@@ -3381,14 +3384,14 @@ const MessageDetailScreen: React.FC = () => {
                 contentContainerStyle={{ 
                   // ✅ Inverted FlatList: paddingTop = en yeni mesajların (ekranın altındaki) altına padding ekler
                   // En yeni mesajın altından 20px yukarıda sonlanması için paddingTop: 20
-                  paddingTop: 100,
+                  paddingTop:isKeyboardVisible ? 80 : 120,
                   // CRITICAL FIX: Butonların üstüne 10px ekstra padding ekle
                   // Butonlar: bottom={isKeyboardVisible ? keyboardHeight + 60 : 60 + insets.bottom}
                   // Buton yüksekliği: ~100px (2 buton + space="sm")
                   // Mesajlar butonların 10px üzerine kadar gelebilir
                   paddingBottom: isKeyboardVisible 
-                    ? keyboardHeight + 60 + 100 + 10  // Klavye + Input (~60px) + Butonlar (~100px) + 10px ekstra
-                    : 60 + insets.bottom + 100 + 10,  // Input (~60px) + Bottom inset + Butonlar (~100px) + 10px ekstra
+                    ? keyboardHeight + 0  // Klavye + Input (~60px) + Butonlar (~100px) + 10px ekstra
+                    : 0 , // Input (~60px) + Bottom inset + Butonlar (~100px) + 10px ekstra
                   // Empty state için: Mesaj yoksa ekranın tamamını kapla ve ortala
                   flexGrow: messages.length === 0 ? 1 : 0,
                 }}

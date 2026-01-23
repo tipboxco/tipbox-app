@@ -10,17 +10,9 @@ import {
     Image,
     Textarea,
     TextareaInput,
-    Select,
-    SelectTrigger,
-    SelectInput,
-    SelectIcon,
-    SelectPortal,
-    SelectBackdrop,
-    SelectContent,
-    SelectItem,
-    ChevronDownIcon,
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import { ChatBubbleLeftIcon, Cog6ToothIcon, CubeIcon } from 'react-native-heroicons/outline';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Keyboard, Platform } from 'react-native';
@@ -43,11 +35,12 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
-    const [supportType, setSupportType] = useState('');
+    const [supportType, setSupportType] = useState<'GENERAL' | 'TECHNICAL' | 'PRODUCT' | ''>('');
     const [message, setMessage] = useState('');
     const [amount, setAmount] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [showSupportTypeDropdown, setShowSupportTypeDropdown] = useState(false);
 
     // Kullanıcının mevcut bakiyesi (normalde prop veya store'dan gelecek)
     const currentBalance = 500;
@@ -55,13 +48,35 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
     // Conversion rate: 1 TIPS = $0.01
     const TIPS_TO_USD_RATE = 0.01;
 
-    const supportTypes = [
-        'Collection Management',
-        'Product Authentication',
-        'Marketplace Help',
-        'Trading Advice',
-        'Other',
+    const supportTypes: Array<'GENERAL' | 'TECHNICAL' | 'PRODUCT'> = [
+        'GENERAL',
+        'TECHNICAL',
+        'PRODUCT',
     ];
+
+    const getSupportTypeLabel = (type: 'GENERAL' | 'TECHNICAL' | 'PRODUCT' | '') => {
+        switch (type) {
+            case 'GENERAL':
+                return 'General';
+            case 'TECHNICAL':
+                return 'Technical';
+            case 'PRODUCT':
+                return 'Product';
+            default:
+                return 'Select Support Type';
+        }
+    };
+
+    const getSupportTypeIcon = (type: 'GENERAL' | 'TECHNICAL' | 'PRODUCT') => {
+        switch (type) {
+            case 'GENERAL':
+                return ChatBubbleLeftIcon;
+            case 'TECHNICAL':
+                return Cog6ToothIcon;
+            case 'PRODUCT':
+                return CubeIcon;
+        }
+    };
 
     const handleMaxAmount = () => {
         setAmount(currentBalance.toString());
@@ -139,6 +154,9 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
             contentContainerStyle={{ paddingBottom: isKeyboardVisible ? 120 : 20 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            keyboardBehavior="interactive"
+
         >
             <VStack flex={1}>
                 {/* Başlık */}
@@ -237,41 +255,108 @@ export const OneOnOneSupportBottomSheet: React.FC<OneOnOneSupportBottomSheetProp
                             Which area do you need support in?
                         </Text>
 
-                        <Select
-                            selectedValue={supportType}
-                            onValueChange={(value) => setSupportType(value)}
-                        >
-                            <SelectTrigger
-                                variant="outline"
-                                size="md"
-                                borderRadius={12}
-                                borderWidth={1}
-                                borderColor={isDark ? '#333' : '#E9E9E9'}
-                                bg="transparent"
-                                height={48}
-                            >
-                                <SelectInput
-                                    placeholder="Select Support Type"
-                                    placeholderTextColor={isDark ? '#8C8C8C' : '#8C8C8C'}
-                                    color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize={13}
-                                    fontWeight="$normal"
-                                />
-                                <SelectIcon mr="$3" as={ChevronDownIcon} />
-                            </SelectTrigger>
-                            <SelectPortal>
-                                <SelectBackdrop />
-                                <SelectContent>
-                                    {supportTypes.map((type) => (
-                                        <SelectItem
-                                            key={type}
-                                            label={type}
-                                            value={type}
+                        <VStack space="xs" position="relative">
+                            <Pressable onPress={() => setShowSupportTypeDropdown((v) => !v)}>
+                                <Box
+                                    bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+                                    borderWidth={1}
+                                    borderColor={isDark ? '#333' : '#E9E9E9'}
+                                    borderTopLeftRadius={12}
+                                    borderTopRightRadius={12}
+                                    borderBottomLeftRadius={showSupportTypeDropdown ? 0 : 12}
+                                    borderBottomRightRadius={showSupportTypeDropdown ? 0 : 12}
+                                    height={48}
+                                    px="$4"
+                                    justifyContent="center"
+                                >
+                                    <HStack
+                                        flex={1}
+                                        alignItems="center"
+                                        justifyContent="space-between"
+                                    >
+                                        <HStack alignItems="center" space="sm" flex={1}>
+                                            {supportType && (() => {
+                                                const IconComponent = getSupportTypeIcon(supportType);
+                                                return IconComponent ? (
+                                                    <IconComponent
+                                                        width={20}
+                                                        height={20}
+                                                        color={supportType ? (isDark ? '#FFFFFF' : '#000000') : (isDark ? '#8C8C8C' : '#8C8C8C')}
+                                                    />
+                                                ) : null;
+                                            })()}
+                                            <Text
+                                                color={
+                                                    supportType
+                                                        ? (isDark ? '#FFFFFF' : '#000000')
+                                                        : (isDark ? '#8C8C8C' : '#8C8C8C')
+                                                }
+                                                fontSize={13}
+                                                fontWeight="$normal"
+                                                flex={1}
+                                            >
+                                                {getSupportTypeLabel(supportType)}
+                                            </Text>
+                                        </HStack>
+                                        <Feather
+                                            name={showSupportTypeDropdown ? 'chevron-up' : 'chevron-down'}
+                                            size={20}
+                                            color={isDark ? '#FFFFFF' : '#000000'}
                                         />
-                                    ))}
-                                </SelectContent>
-                            </SelectPortal>
-                        </Select>
+                                    </HStack>
+                                </Box>
+                            </Pressable>
+
+                            {showSupportTypeDropdown && (
+                                <Box
+                                    bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+                                    borderWidth={1}
+                                    borderColor={isDark ? '#333' : '#E9E9E9'}
+                                    borderTopWidth={0}
+                                    borderTopLeftRadius={0}
+                                    borderTopRightRadius={0}
+                                    borderBottomLeftRadius={12}
+                                    borderBottomRightRadius={12}
+                                    overflow="hidden"
+                                >
+                                    <VStack>
+                                        {supportTypes.map((type, index) => (
+                                            <React.Fragment key={type}>
+                                                {index > 0 && (
+                                                    <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} width="100%" />
+                                                )}
+                                                <Pressable
+                                                    onPress={() => {
+                                                        setSupportType(type);
+                                                        setShowSupportTypeDropdown(false);
+                                                    }}
+                                                >
+                                                    <HStack px="$4" py="$3" alignItems="center" space="sm">
+                                                        {(() => {
+                                                            const IconComponent = getSupportTypeIcon(type);
+                                                            return IconComponent ? (
+                                                                <IconComponent
+                                                                    width={20}
+                                                                    height={20}
+                                                                    color={isDark ? '#FFFFFF' : '#2F2F2F'}
+                                                                />
+                                                            ) : null;
+                                                        })()}
+                                                        <Text
+                                                            color={isDark ? '#FFFFFF' : '#2F2F2F'}
+                                                            fontSize={13}
+                                                            fontWeight="$normal"
+                                                        >
+                                                            {getSupportTypeLabel(type)}
+                                                        </Text>
+                                                    </HStack>
+                                                </Pressable>
+                                            </React.Fragment>
+                                        ))}
+                                    </VStack>
+                                </Box>
+                            )}
+                        </VStack>
                     </VStack>
 
                     {/* Mesaj Girişi */}
