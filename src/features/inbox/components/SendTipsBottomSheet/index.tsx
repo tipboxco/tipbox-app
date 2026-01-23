@@ -13,10 +13,10 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { Keyboard, Platform, Alert } from 'react-native';
+import { Keyboard, Platform, Alert, Modal as RNModal, View, ScrollView, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useWalletBalance } from '@/src/features/wallet/api/hooks';
-import TipsSuccessModal from '../TipsSuccessModal';
+import { useAppStore } from '@/src/store/appStore';
 
 interface SendTipsBottomSheetProps {
     senderName: string;
@@ -37,8 +37,8 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     const isDark = colorMode === 'dark';
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
-    const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
-    const [isConfirmed, setIsConfirmed] = useState(false); // Confirm sonrası re-render kontrolü
+    const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+    const { width } = Dimensions.get('window');
     
     // Refs for input focus handling
     const descriptionInputRef = useRef<any>(null);
@@ -46,9 +46,11 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [focusedInput, setFocusedInput] = useState<'description' | 'amount' | null>(null);
 
-    // Wallet balance API'den getir
+    // Wallet balance - Önce store'dan al, yoksa API'den getir
+    const { walletBalance: storeBalance } = useAppStore();
     const { data: walletBalance, isLoading: isLoadingBalance } = useWalletBalance();
-    const currentBalance = walletBalance?.balance || 0;
+    // Store'daki balance varsa onu kullan, yoksa API'den gelen balance'ı kullan
+    const currentBalance = storeBalance !== null && storeBalance !== undefined ? storeBalance : (walletBalance?.balance || 0);
 
     // Conversion rate: 1 TIPS = $0.01
     const TIPS_TO_USD_RATE = 0.01;
@@ -67,16 +69,16 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         const numericAmount = parseFloat(amount) || 0;
         const finalDescription = description?.trim() || '';
         
-        // Balance kontrolü
+        // Balance check
         if (numericAmount > currentBalance) {
-            Alert.alert('Yetersiz Bakiye', `Mevcut bakiyeniz ${currentBalance} TIPS. Göndermek istediğiniz miktar bakiyenizi aşıyor.`);
+            Alert.alert('Insufficient Balance', `Your current balance is ${currentBalance} TIPS. The amount you want to send exceeds your balance.`);
             return;
         }
         
         // Validation
         if (numericAmount >= 0.01 && finalDescription.length > 0) {
-            // Onay modalını aç
-            setIsSuccessModalVisible(true);
+            // Open confirmation modal
+            setIsConfirmModalVisible(true);
         }
     };
 
@@ -85,40 +87,35 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
         
         // Validation
         if (numericAmount <= 0 || numericAmount < 0.01) {
-            Alert.alert('Hata', 'TIPS miktarı en az 0.01 olmalıdır');
+            Alert.alert('Error', 'TIPS amount must be at least 0.01');
             return;
         }
         
-        // Balance kontrolü (tekrar kontrol et - balance değişmiş olabilir)
+        // Balance check (check again - balance may have changed)
         if (numericAmount > currentBalance) {
-            Alert.alert('Yetersiz Bakiye', `Mevcut bakiyeniz ${currentBalance} TIPS. Göndermek istediğiniz miktar bakiyenizi aşıyor.`);
+            Alert.alert('Insufficient Balance', `Your current balance is ${currentBalance} TIPS. The amount you want to send exceeds your balance.`);
             return;
         }
         
         const finalDescription = description?.trim() || '';
         if (finalDescription.length === 0) {
-            Alert.alert('Hata', 'Mesaj boş olamaz');
+            Alert.alert('Error', 'Message cannot be empty');
             return;
         }
         
-        // Confirm işaretle - re-render ile tekrar büyük modal gösterilmesini önle
-        setIsConfirmed(true);
-        
         console.log('Send TIPS:', { amount: numericAmount, description: finalDescription, currentBalance });
         onSend?.(numericAmount, finalDescription);
-        // Modal'ı kapat
-        setIsSuccessModalVisible(false);
-        // BottomSheet'i kapat
+        // Close modal
+        setIsConfirmModalVisible(false);
+        // Close BottomSheet
         onClose();
-        // Formu temizle
+        // Clear form
         setAmount('');
         setDescription('');
-        // Confirm state'ini sıfırla (bir sonraki açılış için)
-        setTimeout(() => setIsConfirmed(false), 100);
     };
 
-    const handleSuccessModalClose = () => {
-        setIsSuccessModalVisible(false);
+    const handleConfirmModalClose = () => {
+        setIsConfirmModalVisible(false);
     };
 
     const getUSDAmount = () => {
@@ -199,7 +196,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
             keyboardShouldPersistTaps="handled"
         >
             <VStack flex={1}>
-                {/* Başlık */}
+                {/* Header */}
                 <HStack justifyContent="center" alignItems="center" py="$2">
                     <Text
                         color={isDark ? '#FFFFFF' : '#000000'}
@@ -207,7 +204,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                         fontWeight="$bold"
                         textAlign="center"
                     >
-                        Bahşiş Gönder
+                        Send Tips
                     </Text>
                 </HStack>
                 {/* Banner ve Profil Bölümü */}
@@ -284,14 +281,14 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
 
                 {/* İçerik */}
                 <VStack space="lg" px="$4" pb="$4">
-                    {/* Miktar Girişi */}
+                    {/* Description Input */}
                     <VStack space="md" mt="$4">
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             fontSize={11}
                             fontWeight="$medium"
                         >
-                            Bahşiş Açıklaması (Opsiyonel)
+                            Tips Description (Optional)
                         </Text>
 
                         <Box
@@ -323,7 +320,7 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 />
                             </Textarea>
 
-                            {/* Karakter Sayacı - Textarea içinde sağ alt köşe */}
+                            {/* Character Counter - Bottom right inside Textarea */}
                             <Box
                                 position="absolute"
                                 bottom={8}
@@ -340,14 +337,14 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                         </Box>
                     </VStack>
 
-                    {/* TIPS Miktarı Girişi */}
+                    {/* TIPS Amount Input */}
                     <VStack space="sm" mt="$4">
                         <Text
                             color={isDark ? '#8C8C8C' : '#8C8C8C'}
                             fontSize={11}
                             fontWeight="$medium"
                         >
-                            TIPS Miktarı
+                            TIPS Amount
                         </Text>
 
                         {/* TIPS Miktarı ve Alt Bilgiler - Tek Bileşen */}
@@ -412,14 +409,14 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 bg={isDark ? '#333' : '#E9E9E9'}
                             />
 
-                            {/* Alt Kısım: USD Eşdeğeri ve Bakiye */}
+                            {/* Bottom Section: USD Equivalent and Balance */}
                             <HStack 
                                 justifyContent="space-between" 
                                 alignItems="center" 
                                 px="$4"
                                 py="$3"
                             >
-                                {/* USD Eşdeğeri */}
+                                {/* USD Equivalent */}
                                 <Text
                                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     fontSize={9}
@@ -428,21 +425,21 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                     {amount && parseFloat(amount) > 0 ? `$${getUSDAmount()}` : '$5'}
                                 </Text>
 
-                                {/* Mevcut Bakiye */}
+                                {/* Current Balance */}
                                 <Text
                                     color={isDark ? '#8C8C8C' : '#8C8C8C'}
                                     fontSize={9}
                                     fontWeight="$normal"
                                 >
-                                    Current Balance : {currentBalance} TIPS
+                                    Current Balance: {currentBalance} TIPS
                                 </Text>
                             </HStack>
                         </Box>
                     </VStack>
 
-                    {/* Butonlar: Vazgeç ve Gönder */}
+                    {/* Buttons: Cancel and Send */}
                     <HStack space="md" mt="$2">
-                        {/* Vazgeç Butonu */}
+                        {/* Cancel Button */}
                         <Pressable
                             onPress={onClose}
                             flex={1}
@@ -458,11 +455,11 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                Vazgeç
+                                Cancel
                             </Text>
                         </Pressable>
 
-                        {/* Gönder Butonu */}
+                        {/* Send Button */}
                         <Pressable
                             onPress={handleSend}
                             flex={1}
@@ -478,26 +475,182 @@ export const SendTipsBottomSheet: React.FC<SendTipsBottomSheetProps> = ({
                                 fontWeight="$bold"
                                 textAlign="center"
                             >
-                                Gönder
+                                Send
                             </Text>
                         </Pressable>
                     </HStack>
                 </VStack>
             </VStack>
 
-            {/* Onay Modalı */}
-            <TipsSuccessModal
-                isVisible={isSuccessModalVisible}
-                onClose={handleSuccessModalClose}
-                onConfirm={handleConfirm}
-                amount={parseFloat(amount) || 0}
-                description={description}
-                recipientName={senderName}
-                recipientTitle={senderTitle}
-                recipientAvatar={senderAvatar}
-                currentBalance={currentBalance}
-                isConfirmed={isConfirmed}
-            />
+            {/* Confirmation Modal - RNModal */}
+            <RNModal
+                visible={isConfirmModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={handleConfirmModalClose}
+            >
+                <TouchableWithoutFeedback onPress={handleConfirmModalClose}>
+                    <View style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}>
+                        <TouchableWithoutFeedback>
+                            <View style={{
+                                backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                                borderRadius: 16,
+                                width: width * 0.9,
+                                maxWidth: 400,
+                                maxHeight: '85%',
+                                padding: 0,
+                            }}>
+                                <ScrollView showsVerticalScrollIndicator={false}>
+                                    <VStack space="md" p="$4">
+                                        {/* User Profile Info */}
+                                        <HStack space="sm" alignItems="center">
+                                            {/* Avatar */}
+                                            <Box
+                                                width={40}
+                                                height={40}
+                                                borderRadius={20}
+                                                overflow="hidden"
+                                                bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                                            >
+                                                <Image
+                                                    source={senderAvatar}
+                                                    alt={senderName}
+                                                    style={{ width: '100%', height: '100%' }}
+                                                    resizeMode="cover"
+                                                />
+                                            </Box>
+
+                                            <VStack flex={1}>
+                                                {/* Name */}
+                                                <Text
+                                                    fontSize={12}
+                                                    fontWeight="$bold"
+                                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                                >
+                                                    {senderName}
+                                                </Text>
+
+                                                {/* Title/Tags */}
+                                                <Text
+                                                    fontSize={9}
+                                                    fontWeight="$normal"
+                                                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                                    numberOfLines={1}
+                                                >
+                                                    {senderTitle}
+                                                </Text>
+                                            </VStack>
+                                        </HStack>
+
+                                        {/* Title */}
+                                        <Text
+                                            fontSize={11}
+                                            fontWeight="$bold"
+                                            color={isDark ? '#FFFFFF' : '#000000'}
+                                            lineHeight={14}
+                                        >
+                                            Confirm Tips Payment
+                                        </Text>
+
+                                        {/* Tips Description */}
+                                        <Text
+                                            fontSize={9}
+                                            fontWeight="$normal"
+                                            color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                            lineHeight={13}
+                                        >
+                                            {description || 'No description provided'}
+                                        </Text>
+
+                                        {/* TIPS Amount and Balance */}
+                                        <HStack 
+                                            borderTopWidth={1} 
+                                            borderBottomWidth={1} 
+                                            borderColor={'#D9D9D9'} 
+                                            justifyContent="space-between" 
+                                            alignItems="flex-end" 
+                                            py="$2"
+                                        >
+                                            {/* Left: TIPS Amount */}
+                                            <VStack>
+                                                <Text
+                                                    fontSize={24}
+                                                    fontWeight="$bold"
+                                                    color={isDark ? '#FFFFFF' : '#000000'}
+                                                >
+                                                    {parseFloat(amount) || 0} TIPS
+                                                </Text>
+                                            </VStack>
+
+                                            {/* Right: Current Balance */}
+                                            <VStack alignItems="flex-end">
+                                                <Text
+                                                    fontSize={9}
+                                                    fontWeight="$normal"
+                                                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                                >
+                                                    Current Balance
+                                                </Text>
+                                                <Text
+                                                    fontSize={9}
+                                                    fontWeight="$semibold"
+                                                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                                >
+                                                    {currentBalance} TIPS
+                                                </Text>
+                                            </VStack>
+                                        </HStack>
+
+                                        {/* Buttons */}
+                                        <VStack space="xs" mt="$2">
+                                            {/* Confirm Button */}
+                                            <Pressable
+                                                onPress={handleConfirm}
+                                                bg="#E2FF46"
+                                                borderRadius={8}
+                                                py="$2"
+                                            >
+                                                <Text
+                                                    color="#000000"
+                                                    fontSize={12}
+                                                    fontWeight="$bold"
+                                                    textAlign="center"
+                                                >
+                                                    Confirm
+                                                </Text>
+                                            </Pressable>
+
+                                            {/* Cancel Button */}
+                                            <Pressable
+                                                onPress={handleConfirmModalClose}
+                                                bg="#EDEDED"
+                                                borderWidth={1}
+                                                borderColor={'#D3D3D3'}
+                                                borderRadius={8}
+                                                py="$2"
+                                            >
+                                                <Text
+                                                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                                                    fontSize={12}
+                                                    fontWeight="$normal"
+                                                    textAlign="center"
+                                                >
+                                                    Cancel
+                                                </Text>
+                                            </Pressable>
+                                        </VStack>
+                                    </VStack>
+                                </ScrollView>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </RNModal>
         </BottomSheetScrollView>
     );
 };

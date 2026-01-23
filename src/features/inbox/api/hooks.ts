@@ -17,6 +17,7 @@ import {
   removeReaction,
   getMessageReactions,
   getMessageFeed,
+  deleteMessage,
   type GetMessagesParams,
   type AddReactionRequest,
   type MessageFeedItem,
@@ -508,6 +509,27 @@ export const useRemoveReaction = () => {
     onSuccess: () => {
       // Invalidate thread messages to refetch with updated reactions
       queryClient.invalidateQueries({ queryKey: inboxKeys.all });
+    },
+  });
+};
+
+/**
+ * Delete message mutation hook
+ * 
+ * @returns React Query mutation hook result
+ * 
+ * @example
+ * const deleteMutation = useDeleteMessage();
+ * deleteMutation.mutate('message-123');
+ */
+export const useDeleteMessage = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<void, Error, string>({
+    mutationFn: (messageId: string) => deleteMessage(messageId),
+    onSuccess: () => {
+      // ✅ FIX: Query invalidation kaldırıldı - socket event'leri zaten state'i güncelleyecek
+      // Query invalidation gereksiz refetch yapıp performansı düşürüyor
     },
   });
 };

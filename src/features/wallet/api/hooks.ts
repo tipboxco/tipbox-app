@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppStore } from '@/src/store/appStore';
 import {
   getWalletInfo,
   getWalletBalance,
@@ -99,9 +100,18 @@ export const useWalletInfo = () => {
  * - Balance asla direkt tutulmaz, transaction'lardan hesaplanır
  */
 export const useWalletBalance = () => {
+  const setWalletBalance = useAppStore((state) => state.setWalletBalance);
+  
   return useQuery<WalletBalance, Error>({
     queryKey: walletKeys.balance(),
-    queryFn: () => getWalletBalance(),
+    queryFn: async () => {
+      const balance = await getWalletBalance();
+      // ✅ Store'u güncelle
+      if (balance?.balance !== undefined && balance.balance !== null) {
+        setWalletBalance(balance.balance);
+      }
+      return balance;
+    },
     refetchInterval: 10000, // 10 saniye
     staleTime: 5000, // 5 saniye
     gcTime: 30000, // 30 saniye

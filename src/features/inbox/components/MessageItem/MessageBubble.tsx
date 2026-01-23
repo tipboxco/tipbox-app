@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
-import { Pressable, Alert, Animated } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { Pressable, Alert, Animated, View, Text as RNText, Modal, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { Box, VStack, HStack, Text, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
+import ReanimatedAnimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { WhatsAppContextMenu } from './WhatsAppContextMenu';
+
+// Haptic feedback - opsiyonel
+let Haptics: any = null;
+try {
+  Haptics = require('expo-haptics');
+} catch (e) {
+  // expo-haptics yoksa sessizce devam et
+}
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
@@ -26,8 +36,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isDeleted = item.isDeleted;
   const reactions = item.reactions || [];
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const [messagePosition, setMessagePosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const messageRef = useRef<any>(null);
   const widthAnim = React.useRef(new Animated.Value(24)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  
+  // Reanimated values for message bubble scale
+  const messageScale = useSharedValue(1);
   
   // Reaction animasyonları için ref'ler
   const reactionAnimsRef = React.useRef<{ [key: string]: Animated.Value }>({});
@@ -44,6 +61,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       }
     });
   }, [reactions.length, item.id]);
+
 
   const openEmojiPicker = () => {
     setIsEmojiPickerOpen(true);
@@ -111,6 +129,141 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     onReact?.(item.id, emoji);
   };
 
+  const handleLongPress = (event?: any) => {
+    if (__DEV__) {
+      console.log('[MessageBubble] 🔍 Long press detected!', {
+        messageId: item.id,
+        isDeleted,
+        hasRef: !!messageRef.current,
+        event: event?.nativeEvent,
+      });
+    }
+    
+    if (isDeleted) return;
+    
+    // Haptic feedback (opsiyonel)
+    if (Haptics && Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    
+    // Mesaj pozisyonunu ölç
+    const ref = messageRef.current;
+    if (ref && typeof ref.measureInWindow === 'function') {
+      // Kısa bir gecikme ile ölç (layout tamamlanması için)
+      setTimeout(() => {
+        if (messageRef.current) {
+          messageRef.current.measureInWindow((x, y, width, height) => {
+            if (__DEV__) {
+              console.log('[MessageBubble] 📐 Measured position:', { x, y, width, height });
+            }
+            
+            if (x !== 0 || y !== 0 || width !== 0 || height !== 0) {
+              setMessagePosition({ x, y, width, height });
+              setIsContextMenuOpen(true);
+            } else {
+              // Ölçüm başarısız, fallback kullan
+              if (__DEV__) {
+                console.log('[MessageBubble] ⚠️ Measurement returned zeros, using fallback');
+              }
+              handleLongPressFallback(event);
+            }
+          });
+        } else {
+          handleLongPressFallback(event);
+        }
+      }, 50);
+    } else {
+      if (__DEV__) {
+        console.log('[MessageBubble] ⚠️ Ref is null or measureInWindow not available');
+      }
+      handleLongPressFallback(event);
+    }
+  };
+
+  const handleLongPressFallback = (event?: any) => {
+    // Fallback: Event'ten pozisyon al veya mesajın yaklaşık pozisyonunu kullan
+    if (event?.nativeEvent) {
+      const touchX = event.nativeEvent.pageX || event.nativeEvent.locationX || 0;
+      const touchY = event.nativeEvent.pageY || event.nativeEvent.locationY || 0;
+      
+      if (touchX > 0 && touchY > 0) {
+        if (__DEV__) {
+          console.log('[MessageBubble] 📐 Using touch position from event:', { touchX, touchY });
+        }
+        // Yaklaşık boyutlar (mesaj balonu için)
+        setMessagePosition({ 
+          x: touchX - 100, 
+          y: touchY - 20, 
+          width: 200, 
+          height: 40 
+        });
+        setIsContextMenuOpen(true);
+        return;
+      }
+    }
+    
+    // Son çare: Mesajın yaklaşık pozisyonu (isSent'e göre)
+    if (__DEV__) {
+      console.log('[MessageBubble] ⚠️ Using approximate position');
+    }
+    const approximateX = isSent ? screenWidth - 250 : 16;
+    const approximateY = screenHeight / 2;
+    setMessagePosition({ 
+      x: approximateX, 
+      y: approximateY, 
+      width: 200, 
+      height: 40 
+    });
+    setIsContextMenuOpen(true);
+  };
+
+  const closeContextMenu = () => {
+    setIsContextMenuOpen(false);
+    setMessagePosition(null);
+    messageScale.value = withSpring(1);
+  };
+
+  // Menu actions
+  const menuActions = React.useMemo(() => {
+    const actions: Array<{ id: string; label: string; icon: string; color?: string; onPress: () => void }> = [];
+    
+    if (!isDeleted && item.type === 'message') {
+      if (onReply) {
+        actions.push({
+          id: 'reply',
+          label: 'Reply',
+          icon: 'corner-up-left',
+          onPress: () => onReply(item),
+        });
+      }
+      
+      if (isSent && onEdit) {
+        actions.push({
+          id: 'edit',
+          label: 'Edit',
+          icon: 'edit',
+          onPress: () => onEdit(item.id, item.text),
+        });
+      }
+    }
+    
+    if (isSent && onDelete) {
+      actions.push({
+        id: 'delete',
+        label: 'Delete',
+        icon: 'trash-2',
+        color: '#F44336',
+        onPress: () => onDelete(item.id),
+      });
+    }
+    
+    return actions;
+  }, [isDeleted, item.type, isSent, onReply, onEdit, onDelete, item]);
+
+  const messageBubbleAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: messageScale.value }],
+  }));
+
   return (
     <VStack
       space="xs"
@@ -140,109 +293,111 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </HStack>
       )}
 
-      <Pressable
-        onLongPress={() => {
-          if (isSent && !isDeleted && item.type === 'message') {
-            Alert.alert(
-              'Mesaj İşlemleri',
-              'Ne yapmak istersiniz?',
-              [
-                { text: 'İptal', style: 'cancel' },
-                {
-                  text: 'Yanıtla',
-                  onPress: () => onReply?.(item),
-                },
-                {
-                  text: 'Düzenle',
-                  onPress: () => onEdit?.(item.id, item.text),
-                },
-                {
-                  text: 'Sil',
-                  style: 'destructive',
-                  onPress: () => onDelete?.(item.id),
-                },
-              ]
-            );
-          } else if (isSent && !isDeleted) {
-            onDelete?.(item.id);
-          }
-        }}
-        delayLongPress={500}
+      <View
+        ref={messageRef}
+        collapsable={false}
       >
-        <HStack
-          space="sm"
-          alignItems="flex-end"
-          maxWidth="80%"
-          flexDirection={isSent ? 'row-reverse' : 'row'}
+        <Pressable
+          onLongPress={handleLongPress}
+          delayLongPress={300}
         >
-          <Box
-            bg={
-              isDeleted
-                ? (isDark ? '#2A2A2A' : '#E5E5E5')
-                : isSent
-                ? (isDark ? '#6366F1' : '#6366F1')
-                : (isDark ? '#1A1A1A' : '#F2F2F2')
-            }
-            px="$3"
-            py="$2"
-            borderRadius={16}
-            borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
-            borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
-            opacity={isDeleted ? 0.6 : 1}
+          <ReanimatedAnimated.View
+            style={isContextMenuOpen ? messageBubbleAnimatedStyle : undefined}
           >
-            <Text
-              color={
-                isDeleted
-                  ? (isDark ? '#8C8C8C' : '#8C8C8C')
+          <HStack
+            space="sm"
+            alignItems="flex-end"
+            maxWidth="80%"
+            flexDirection={isSent ? 'row-reverse' : 'row'}
+          >
+            <View
+              style={{
+                backgroundColor: isDeleted
+                  ? (isDark ? '#2A2A2A' : '#E5E5E5')
                   : isSent
-                  ? '#FFFFFF'
-                  : (isDark ? '#FFFFFF' : '#000000')
-              }
-              fontSize="$xs"
-              fontWeight="$normal"
-              fontStyle={isDeleted ? 'italic' : 'normal'}
+                  ? (isDark ? '#6366F1' : '#6366F1')
+                  : (isDark ? '#1A1A1A' : '#F2F2F2'),
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 16,
+                borderTopLeftRadius: isSent ? 16 : (isFirstInGroup ? 16 : 4),
+                borderTopRightRadius: isSent ? (isFirstInGroup ? 16 : 4) : 16,
+                opacity: isDeleted ? 0.6 : 1,
+              }}
             >
-              {isDeleted ? 'Bu mesaj silindi' : (item.text || '(Mesaj içeriği yok)')}
-            </Text>
-          </Box>
+              <Text
+                color={
+                  isDeleted
+                    ? (isDark ? '#8C8C8C' : '#8C8C8C')
+                    : isSent
+                    ? '#FFFFFF'
+                    : (isDark ? '#FFFFFF' : '#000000')
+                }
+                fontSize="$xs"
+                fontWeight="$normal"
+                fontStyle={isDeleted ? 'italic' : 'normal'}
+              >
+                {isDeleted ? 'Bu mesaj silindi' : (item.text || '(Mesaj içeriği yok)')}
+              </Text>
+            </View>
 
-          <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
-            <Text
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize="$2xs"
-              fontWeight="$normal"
-            >
-              {formatMessageTime(item.timestamp)}
-            </Text>
-            {isSent && (
-              <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
-                {item.isRead ? (
-                  <>
+            <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$2xs"
+                fontWeight="$normal"
+              >
+                {formatMessageTime(item.timestamp)}
+              </Text>
+              {isSent && (
+                <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
+                  {item.isRead ? (
+                    <>
+                      <Feather
+                        name="check"
+                        size={14}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 0, top: 0 }}
+                      />
+                      <Feather
+                        name="check"
+                        size={14}
+                        color="#4CAF50"
+                        style={{ position: 'absolute', left: 4, top: 0 }}
+                      />
+                    </>
+                  ) : (
                     <Feather
                       name="check"
-                      size={14}
-                      color="#4CAF50"
-                      style={{ position: 'absolute', left: 0, top: 0 }}
+                      size={12}
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     />
-                    <Feather
-                      name="check"
-                      size={14}
-                      color="#4CAF50"
-                      style={{ position: 'absolute', left: 4, top: 0 }}
-                    />
-                  </>
-                ) : (
-                  <Feather
-                    name="check"
-                    size={12}
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  />
-                )}
-              </Box>
-            )}
-          </VStack>
-        </HStack>
-      </Pressable>
+                  )}
+                </Box>
+              )}
+            </VStack>
+          </HStack>
+          </ReanimatedAnimated.View>
+        </Pressable>
+      </View>
+
+      {/* WhatsApp-style Context Menu with Reaction Bar */}
+      {isContextMenuOpen && (
+        <WhatsAppContextMenu
+          visible={isContextMenuOpen}
+          onClose={closeContextMenu}
+          messagePosition={messagePosition}
+          reactionBarPosition={null}
+          actions={menuActions}
+          reactionEmojis={emojis}
+          onReactionPress={(emoji) => {
+            onReact?.(item.id, emoji);
+            closeContextMenu();
+          }}
+          isDark={isDark}
+          isSent={isSent}
+        />
+      )}
 
       {/* Reaction Button and Reactions */}
       <HStack

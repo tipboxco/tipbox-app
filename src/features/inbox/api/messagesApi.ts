@@ -1230,6 +1230,29 @@ export const addReaction = async (messageId: string, data: AddReactionRequest): 
 };
 
 /**
+ * Delete message endpoint
+ * DELETE /inbox/messages/:messageId
+ * 
+ * @param messageId - Message ID to delete
+ * @returns Promise<void>
+ */
+export const deleteMessage = async (messageId: string): Promise<void> => {
+  try {
+    console.log('[deleteMessage] 📤 Deleting message:', messageId);
+    await apiService.getClient().delete(`/inbox/messages/${messageId}`);
+    console.log('[deleteMessage] ✅ Message deleted successfully');
+  } catch (error: any) {
+    console.error('[deleteMessage] ❌ Error:', {
+      messageId,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+    throw error;
+  }
+};
+
+/**
  * Remove reaction from a message
  * DELETE /inbox/:messageId/reactions/:reactionId
  */

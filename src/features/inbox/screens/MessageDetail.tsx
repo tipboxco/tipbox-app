@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead, useAddReaction, useRemoveReaction } from '../api/hooks';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead, useAddReaction, useRemoveReaction, useDeleteMessage } from '../api/hooks';
 import { getThreadMessages } from '../api/messagesApi';
 import type { ThreadMessage } from '../api/messagesApi';
 import { useSocket } from '@/src/providers/SocketProvider';
@@ -301,6 +301,7 @@ const MessageDetailScreen: React.FC = () => {
   const markThreadAsReadMutation = useMarkThreadAsRead();
   const addReactionMutation = useAddReaction();
   const removeReactionMutation = useRemoveReaction();
+  const deleteMessageMutation = useDeleteMessage();
   const queryClient = useQueryClient();
   const reportUserMutation = useReportUser();
   const blockUserMutation = useBlockUser();
@@ -1267,14 +1268,58 @@ const MessageDetailScreen: React.FC = () => {
           console.log('[MessageDetail] 💰 Replacing optimistic TIPS message with real message:', {
             optimisticId: prev[optimisticMessageIndex].id,
             realId: eventData.messageId,
+            optimisticAmount: prev[optimisticMessageIndex].tipsAmount,
+            realAmount: tipsAmount,
+            optimisticText: prev[optimisticMessageIndex].text,
+            realText: tipsMessageText,
           });
           // Optimistic mesajı gerçek mesajla değiştir ve doğru pozisyona taşı
           const updated = prev.filter((_, idx) => idx !== optimisticMessageIndex);
-          return insertMessageInOrder(updated, newTipsMessage);
+          const finalMessages = insertMessageInOrder(updated, newTipsMessage);
+          
+          // ✅ TIPS sonrası detaylı log - Socket event geldiğinde
+          console.log('[MessageDetail] 💰 TIPS SOCKET EVENT - Full Details:', {
+            eventData: eventData,
+            messageId: eventData.messageId,
+            amount: tipsAmount,
+            message: tipsMessageText,
+            senderId: eventData.senderId,
+            currentUserId: currentUserId,
+            isSent: isSent,
+            threadId: eventData.threadId,
+            currentThreadId: currentThreadId,
+            timestamp: eventData.timestamp || eventData.sentAt,
+            optimisticMessageIndex: optimisticMessageIndex,
+            optimisticMessageId: prev[optimisticMessageIndex]?.id,
+            messagesCountBefore: prev.length,
+            messagesCountAfter: finalMessages.length,
+            optimisticMessageReplaced: true,
+          });
+          
+          return finalMessages;
         }
         
         // ✅ OPTIMIZE: Yeni mesajı sentAt'a göre doğru pozisyona ekle
-        return insertMessageInOrder(prev, newTipsMessage);
+        const finalMessages = insertMessageInOrder(prev, newTipsMessage);
+        
+        // ✅ TIPS sonrası detaylı log - Socket event geldiğinde (optimistic mesaj bulunamadı)
+        console.log('[MessageDetail] 💰 TIPS SOCKET EVENT - Full Details (No Optimistic):', {
+          eventData: eventData,
+          messageId: eventData.messageId,
+          amount: tipsAmount,
+          message: tipsMessageText,
+          senderId: eventData.senderId,
+          currentUserId: currentUserId,
+          isSent: isSent,
+          threadId: eventData.threadId,
+          currentThreadId: currentThreadId,
+          timestamp: eventData.timestamp || eventData.sentAt,
+          messagesCountBefore: prev.length,
+          messagesCountAfter: finalMessages.length,
+          optimisticMessageReplaced: false,
+        });
+        
+        return finalMessages;
       });
       
       // Mesaj geldiğinde anında okundu işaretle (eğer kullanıcı ekrandaysa ve mesaj alıcı tarafından gönderildiyse)
@@ -1743,6 +1788,25 @@ const MessageDetailScreen: React.FC = () => {
     // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
   }, []);
 
+  // Handle Message Deleted (socket event)
+  const handleMessageDeleted = useCallback((eventData: { messageId: string; threadId?: string }) => {
+    console.log('[MessageDetail] 🗑️ Message deleted event:', eventData);
+    
+    const currentThreadId = threadId;
+    
+    // Thread ID kontrolü
+    if (eventData.threadId && eventData.threadId !== currentThreadId) {
+      return;
+    }
+    
+    // Local state'ten mesajı kaldır
+    if (isMountedRef.current) {
+      setMessages((prev) => prev.filter((msg) => msg.id !== eventData.messageId));
+    }
+    
+    // ✅ FIX: Query invalidation kaldırıldı - socket event'leri zaten state'i güncelledi
+  }, [threadId]);
+
   // Handle Message Reaction Event (from socket)
   const handleMessageReaction = useCallback((eventData: { messageId: string; emoji: string; userId: string; count?: number; users?: string[] }) => {
     console.log('[MessageDetail] 😀 Message reaction event:', eventData);
@@ -1889,6 +1953,8 @@ const MessageDetailScreen: React.FC = () => {
     on('support_request_accepted', handleSupportRequestAccepted);
     on('support_request_rejected', handleSupportRequestRejected);
     on('support_request_cancelled', handleSupportRequestCancelled);
+    // Message deleted event
+    on('message_deleted', handleMessageDeleted);
 
     return () => {
       console.log('[MessageDetail] 🧹 Removing socket event listeners');
@@ -1908,6 +1974,8 @@ const MessageDetailScreen: React.FC = () => {
       off('support_request_accepted', handleSupportRequestAccepted);
       off('support_request_rejected', handleSupportRequestRejected);
       off('support_request_cancelled', handleSupportRequestCancelled);
+      // Message deleted event
+      off('message_deleted', handleMessageDeleted);
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -1923,7 +1991,7 @@ const MessageDetailScreen: React.FC = () => {
     };
     // CRITICAL FIX: Socket fonksiyonları (on, off, socketStopTyping, leaveThread) stable olduğu için dependency array'den çıkarıldı
     // Sadece handler callback'leri ve threadId, isConnected gibi değişken değerleri dependency olarak kalmalı
-  }, [isConnected, threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, handleThreadRead, handleMessageReaction, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled]);
+  }, [isConnected, threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, handleThreadRead, handleMessageReaction, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, handleMessageDeleted]);
 
   // Handle Share
   const handleShare = useCallback(async () => {
@@ -2087,28 +2155,45 @@ const MessageDetailScreen: React.FC = () => {
     sendGiftMutation.mutate(
       requestData,
       {
-        onSuccess: (response) => {
+        onSuccess: () => {
           console.log('[MessageDetail] ✅ TIPS sent successfully:', {
             amount: amount,
             message: finalMessage.substring(0, 50),
             recipientUserId: finalRecipientUserId,
-            response: response,
             timestamp: new Date().toISOString(),
           });
+          
+          // ✅ TIPS sonrası detaylı log
+          const currentMessages = messages; // State'i capture et
+          console.log('[MessageDetail] 💰 TIPS SENT - Full Details:', {
+            optimisticMessageId: optimisticMessageId,
+            amount: amount,
+            message: finalMessage,
+            messageLength: finalMessage.length,
+            recipientUserId: finalRecipientUserId,
+            threadId: effectiveThreadId,
+            currentThreadId: threadId,
+            timestamp: new Date().toISOString(),
+            messagesCount: Array.isArray(currentMessages) ? currentMessages.length : 0,
+            optimisticMessageExists: Array.isArray(currentMessages) ? currentMessages.some(msg => msg.id === optimisticMessageId) : false,
+            socketConnected: isConnected,
+            socketReady: isSocketReady,
+          });
+          
           Alert.alert(
             'Success', 
-            `${amount} TIPS başarıyla gönderildi!`,
+            `${amount} TIPS sent successfully!`,
             [{ text: 'OK' }]
           );
           closeBottomSheet();
           
-          // Mesaj listesini invalidate et (socket event'i geldiğinde optimistic mesaj gerçek mesajla değiştirilecek)
-          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-          
-          // Thread mesajlarını da invalidate et (socket event'i geldiğinde güncellenecek)
-          if (effectiveThreadId) {
-            queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(effectiveThreadId) });
-          }
+          // ✅ FIX: Query invalidation'ı kaldır - socket event'i geldiğinde handleNewMessage zaten mesajı ekleyecek
+          // Query invalidation yapmak optimistic mesajın kaybolmasına neden oluyor
+          // Socket event'i (new_message veya message_sent) geldiğinde optimistic mesaj gerçek mesajla değiştirilecek
+          // queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          // if (effectiveThreadId) {
+          //   queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(effectiveThreadId) });
+          // }
         },
         onError: (error: any) => {
           console.error('[MessageDetail] ❌ TIPS send error:', {
@@ -2126,7 +2211,7 @@ const MessageDetailScreen: React.FC = () => {
           // Hata durumunda optimistic mesajı geri al
           setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
           
-          const errorMessage = error.response?.data?.message || error.message || 'TIPS gönderilirken bir hata oluştu';
+          const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
           Alert.alert(
             'Error', 
             errorMessage,
@@ -2161,6 +2246,7 @@ const MessageDetailScreen: React.FC = () => {
       {
         enablePanDownToClose: true,
         enableOverDrag: false,
+        
         enableHandlePanningGesture: true,
         enableContentPanningGesture: true,
         enableDynamicSizing: true,
@@ -2595,6 +2681,56 @@ const MessageDetailScreen: React.FC = () => {
       ]
     );
   }, [isConnected, isSocketReady, socketCancelSupportRequest, cancelSupportRequestMutation, queryClient]);
+
+  // Handle Delete Message
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    if (!messageId) {
+      Alert.alert('Error', 'Message ID not found');
+      return;
+    }
+
+    const message = messages.find((msg) => msg.id === messageId);
+    if (!message) {
+      Alert.alert('Error', 'Message not found');
+      return;
+    }
+
+    // Optimistic update: Mesajı silindi olarak işaretle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === messageId) {
+          return {
+            ...msg,
+            isDeleted: true,
+            text: 'This message was deleted',
+          };
+        }
+        return msg;
+      })
+    );
+
+    // API'ye silme isteği gönder
+    deleteMessageMutation.mutate(messageId, {
+      onSuccess: () => {
+        console.log('[MessageDetail] ✅ Message deleted successfully:', messageId);
+        // ✅ FIX: Query invalidation kaldırıldı - socket event'leri zaten state'i güncelleyecek
+        // Socket event'i (message_deleted) geldiğinde mesaj tamamen kaldırılacak
+      },
+      onError: (error: any) => {
+        console.error('[MessageDetail] ❌ Message delete error:', error);
+        // Hata durumunda optimistic update'i geri al
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId) {
+              return message; // Orijinal mesajı geri yükle
+            }
+            return msg;
+          })
+        );
+        Alert.alert('Error', error.message || 'Failed to delete message');
+      },
+    });
+  }, [messages, deleteMessageMutation]);
 
   // Handle React to Message (user action)
   const handleReact = useCallback((messageId: string, emoji: string) => {
@@ -3125,10 +3261,7 @@ const MessageDetailScreen: React.FC = () => {
             isDark={isDark}
             params={params}
             isFirstInGroup={isFirstInGroup}
-            onDelete={(messageId) => {
-              // TODO: Delete message functionality
-              console.log('[MessageDetail] Delete image message:', messageId);
-            }}
+            onDelete={handleDeleteMessage}
           />
         </VStack>
       );
@@ -3507,7 +3640,8 @@ const MessageDetailScreen: React.FC = () => {
                 color={isDark ? '#8C8C8C' : '#999999'}
               />
               <Text
-                fontSize="$sm"
+                fontSize="$xs"
+                lineHeight={14}
                 fontWeight="$normal"
                 color={isDark ? '#8C8C8C' : '#999999'}
                 flex={1}
@@ -3515,7 +3649,7 @@ const MessageDetailScreen: React.FC = () => {
                 {requestStatus === 'pending' 
                   ? 'Support request will close automatically in 24 hours if unanswered.'
                   : requestStatus === 'accepted'
-                  ? 'Support request has been accepted. Click "Go to Support Chat" to start the conversation.'
+                  ? 'Click "Go to Support Chat" to start.'
                   : requestStatus === 'rejected'
                   ? 'This support request has been rejected.'
                   : requestStatus === 'canceled'
@@ -3540,7 +3674,7 @@ const MessageDetailScreen: React.FC = () => {
           messages={messages}
           isDark={isDark}
           params={params}
-          onDelete={undefined}
+          onDelete={handleDeleteMessage}
           onEdit={undefined}
           onReply={undefined}
           onReact={handleReact}
@@ -3554,7 +3688,7 @@ const MessageDetailScreen: React.FC = () => {
         />
       </VStack>
     );
-  }, [messages, isDark, params.senderName, params.senderTitle, params.senderAvatar, user?.id, threadId, handleAcceptSupportRequest, handleRejectSupportRequest, handleCancelSupportRequest, handleReport, handleBlock, handleReact, handleMessageReaction, emojiPickerOpen, getOrCreateAnimation, openEmojiPicker, closeEmojiPicker, handleEmojiSelect, emojis, expandedSupportRequests, toggleSupportRequest, handleGoToSupportChat]);
+  }, [messages, isDark, params.senderName, params.senderTitle, params.senderAvatar, user?.id, threadId, handleAcceptSupportRequest, handleRejectSupportRequest, handleCancelSupportRequest, handleReport, handleBlock, handleReact, handleMessageReaction, handleDeleteMessage, emojiPickerOpen, getOrCreateAnimation, openEmojiPicker, closeEmojiPicker, handleEmojiSelect, emojis, expandedSupportRequests, toggleSupportRequest, handleGoToSupportChat]);
 
   // CRITICAL FIX: SafeAreaView kullanmıyoruz, flicker önlemek için manuel insets kullanıyoruz
   // Üstte top inset kadar, altta bottom inset kadar view kullan

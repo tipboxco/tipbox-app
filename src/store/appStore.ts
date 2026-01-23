@@ -111,6 +111,9 @@ interface AppState {
   
   // Active Thread Actions
   setActiveThreadId: (threadId: string | null) => void;
+  
+  // Wallet Actions
+  setWalletBalance: (balance: number) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -348,6 +351,12 @@ export const useAppStore = create<AppState>()(
         setActiveThreadId: (threadId: string | null) => {
           set({ activeThreadId: threadId });
           console.log('[AppStore] 💬 Active thread ID set:', threadId);
+        },
+        
+        // Wallet Actions
+        setWalletBalance: (balance: number) => {
+          set({ walletBalance: balance });
+          console.log('[AppStore] 💰 Wallet balance updated:', balance);
         },
       }),
       {

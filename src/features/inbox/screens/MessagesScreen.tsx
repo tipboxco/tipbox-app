@@ -524,27 +524,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         // CRITICAL FIX: messages undefined veya array değilse boş array kullan
         let filtered: InboxMessage[] = Array.isArray(messages) ? messages : [];
         
-        // 🔍 DEBUG: getFilteredMessages çağrıldığında mesaj listesini logla
-        console.log('[MessagesScreen] 📋 getFilteredMessages çağrıldı - messages state:');
-        if (Array.isArray(messages) && messages.length > 0) {
-            messages.forEach((msg, index) => {
-                console.log(`[MessagesScreen]   [${index}] Thread ID: ${msg.id}`);
-                console.log(`[MessagesScreen]       Sender: ${msg.senderName || 'Unknown'}`);
-                console.log(`[MessagesScreen]       isUnread: ${msg.isUnread}`);
-                console.log(`[MessagesScreen]       unreadCount: ${msg.unreadCount || 0}`);
-            });
-        } else {
-            console.log('[MessagesScreen]   ⚠️ Mesaj listesi boş veya geçersiz');
-        }
-
-        // CRITICAL FIX: filtered array kontrolü
-        if (!Array.isArray(filtered)) {
-            console.warn('[MessagesScreen] ⚠️ filtered is not an array, returning empty array');
-            return [];
-        }
-
-        // Aynı recipientUserId'ye sahip thread'leri birleştir
-        // Aynı kullanıcıdan gelen mesajlar tek bir thread'de gösterilmeli
+       
         const mergedMessages = new Map<string, InboxMessage>();
         
         filtered.forEach((message) => {
