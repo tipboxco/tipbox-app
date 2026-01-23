@@ -48,6 +48,20 @@ export interface MessageDetailItem {
     count: number;
     users: string[];
   }>;
+  // Image dimensions (backend'den gelebilir)
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar)
+  groupedMessages?: Array<{
+    id: string;
+    text: string;
+    timestamp: string;
+    sentAt: string;
+  }>;
+  // CRITICAL: Sıralama için ISO timestamp (backend'den gelen sentAt)
+  sentAt?: string;
 }
 
 export interface MessageItemProps {

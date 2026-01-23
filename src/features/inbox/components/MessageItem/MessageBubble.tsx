@@ -122,7 +122,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize="$xs"
+              fontSize="$2xs"
               fontWeight="$normal"
             >
               {formatMessageTime(item.timestamp)}

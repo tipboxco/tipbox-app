@@ -628,10 +628,12 @@ const ExploreScreen: React.FC = () => {
               />
               <Input flex={1} borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="Select product group or search product name"
+                  placeholder="Search posts, products, or brands"
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                   color={isDark ? '#000' : '#000'}
                   fontSize="$xs"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
                 />
               </Input>
             </HStack>

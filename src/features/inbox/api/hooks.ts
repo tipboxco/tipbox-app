@@ -253,24 +253,26 @@ export const useSendDirectMessage = () => {
  * Thread ID'sine göre mesaj geçmişini getirir ve cache'ler
  *
  * @param threadId - Thread ID
+ * @param params - Pagination parametreleri (limit, beforeMessageId, cursor)
  * @returns React Query hook result
  *
  * @example
  * const { data, isLoading, error } = useThreadMessages('thread-123');
+ * const { data, isLoading, error } = useThreadMessages('thread-123', { limit: 50, beforeMessageId: 'msg-123' });
  */
-export const useThreadMessages = (threadId: string | null) => {
+export const useThreadMessages = (threadId: string | null, params?: GetThreadMessagesParams) => {
   return useQuery<ThreadMessage[], Error>({
-    queryKey: inboxKeys.threadMessages(threadId || ''),
+    queryKey: [...inboxKeys.threadMessages(threadId || ''), params],
     queryFn: () => {
       if (!threadId) {
         throw new Error('Thread ID is required');
       }
-      return getThreadMessages(threadId);
+      return getThreadMessages(threadId, params);
     },
     enabled: !!threadId,
-    // Cache ayarları: Veri bir kez gelince invalid olana kadar cache'den kullan
-    staleTime: 2 * 60 * 1000,  // 2 dakika - cache invalid olana kadar backend'e istek atma
-    gcTime: 5 * 60 * 1000,     // 5 dakika - cache'de tut
+    // ✅ Cache ayarları: Mesajlar invalid olana veya silinene kadar cache'te tutulsun
+    staleTime: Infinity,  // Veri hiçbir zaman stale olmaz, sadece invalidate edilince güncellenir
+    gcTime: Infinity,     // Veri hiçbir zaman garbage collect edilmez, sadece manuel olarak silinince kaldırılır
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
     retry: 1,

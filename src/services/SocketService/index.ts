@@ -173,7 +173,23 @@ class SocketService {
    * Dokümana göre: send_message event'i recipientId bekliyor
    */
   public sendMessage(recipientId: string, message: string): void {
+    console.log('[SocketService] 📤 Sending message via socket:', {
+      event: 'send_message',
+      recipientId,
+      message: message.substring(0, 50) + (message.length > 50 ? '...' : ''),
+      messageLength: message.length,
+      socketConnected: this.socket?.connected,
+      socketId: this.socket?.id,
+    });
+    
+    if (!this.socket?.connected) {
+      console.error('[SocketService] ❌ Socket not connected, cannot send message');
+      return;
+    }
+    
     this.socket?.emit('send_message', { recipientId, message });
+    
+    console.log('[SocketService] ✅ Message emit edildi (socket event gönderildi)');
   }
 
   /**

@@ -88,14 +88,14 @@ export const TipsMessage: React.FC<TipsMessageProps> = ({
           </VStack>
         </Box>
 
-        <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize="$xs"
-            fontWeight="$normal"
-          >
-            {formatMessageTime(item.timestamp)}
-          </Text>
+            <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$2xs"
+                fontWeight="$normal"
+              >
+                {formatMessageTime(item.timestamp)}
+              </Text>
           {isSent && (
             <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
               {item.isRead ? (

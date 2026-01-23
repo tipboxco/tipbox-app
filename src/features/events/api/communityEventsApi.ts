@@ -9,17 +9,22 @@ import type { FeedApiResponse } from '@/src/features/feed/api/feedApi';
  *
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
  * @returns EventsApiResponse - Events items ve pagination bilgisi
  */
 export const getActiveEvents = async (
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  search?: string
 ): Promise<EventsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (search) {
+    params.append('search', search);
+  }
 
   try {
     const response = await apiService.getClient().get<EventsApiResponse>(
@@ -44,17 +49,22 @@ export const getActiveEvents = async (
  *
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
  * @returns UpcomingEventsApiResponse - Events items ve pagination bilgisi (interaction ve participants yok)
  */
 export const getUpcomingEvents = async (
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  search?: string
 ): Promise<UpcomingEventsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (search) {
+    params.append('search', search);
+  }
 
   try {
     const response = await apiService.getClient().get<UpcomingEventsApiResponse>(
@@ -130,17 +140,22 @@ export const getLimitedEvent = async (): Promise<LimitedEventApiResponse> => {
  *
  * @param cursor - Pagination cursor (opsiyonel)
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Achievement başlığı veya açıklamasında arama (opsiyonel)
  * @returns AchievementsApiResponse - Achievement items ve pagination bilgisi
  */
 export const getAchievements = async (
   cursor?: string,
-  limit: number = 20
+  limit: number = 20,
+  search?: string
 ): Promise<AchievementsApiResponse> => {
   const params = new URLSearchParams();
   if (cursor) {
     params.append('cursor', cursor);
   }
   params.append('limit', limit.toString());
+  if (search) {
+    params.append('search', search);
+  }
 
   try {
     const response = await apiService.getClient().get<AchievementsApiResponse>(

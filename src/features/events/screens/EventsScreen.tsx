@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import Animated, {
@@ -80,6 +80,15 @@ const EventsScreen: React.FC = () => {
   
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Debounce search query for API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // PERFORMANCE FIX: Background colors - direkt hesapla (useMemo overhead'i yok)
   const backgroundColor = isDark ? '$backgroundDark950' : '#FFFFFF';
@@ -242,7 +251,7 @@ const EventsScreen: React.FC = () => {
               />
               <Input flex={1} borderWidth={0} bg="transparent">
                 <InputField
-                  placeholder="Select product group or search product name"
+                  placeholder="Search events"
                   placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
                   color={isDark ? '#000' : '#000'}
                   fontSize="$xs"
@@ -337,12 +346,16 @@ const EventsScreen: React.FC = () => {
           >
             {/* Community Tab */}
             <Box key="0" flex={1}>
-              <CommunityTab onEventPress={handleEventPress} />
+              <CommunityTab 
+                searchQuery={debouncedSearchQuery}
+                onEventPress={handleEventPress} 
+              />
             </Box>
 
             {/* Achievement Tab */}
             <Box key="1" flex={1}>
               <AchievementTab
+                searchQuery={debouncedSearchQuery}
                 activeFilter={activeFilter}
                 onFilterChange={handleFilterChange}
               />

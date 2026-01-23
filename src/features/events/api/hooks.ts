@@ -45,10 +45,10 @@ import { feedKeys } from '@/src/features/feed/api/hooks';
  */
 export const eventsKeys = {
   all: ['events'] as const,
-  active: (cursor?: string, limit?: number) =>
-    [...eventsKeys.all, 'active', cursor, limit] as const,
-  upcoming: (cursor?: string, limit?: number) =>
-    [...eventsKeys.all, 'upcoming', cursor, limit] as const,
+  active: (cursor?: string, limit?: number, search?: string) =>
+    [...eventsKeys.all, 'active', cursor, limit, search] as const,
+  upcoming: (cursor?: string, limit?: number, search?: string) =>
+    [...eventsKeys.all, 'upcoming', cursor, limit, search] as const,
   detail: (eventId: string) => [...eventsKeys.all, 'detail', eventId] as const,
   posts: (eventId: string, cursor?: string, limit?: number) =>
     [...eventsKeys.all, 'posts', eventId, cursor, limit] as const,
@@ -64,8 +64,8 @@ export const eventsKeys = {
   badgeDetail: (eventId: string, badgeId: string) =>
     [...eventsKeys.all, 'badges', 'detail', eventId, badgeId] as const,
   limited: () => [...eventsKeys.all, 'limited'] as const,
-  achievements: (cursor?: string, limit?: number) =>
-    [...eventsKeys.all, 'achievements', cursor, limit] as const,
+  achievements: (cursor?: string, limit?: number, search?: string) =>
+    [...eventsKeys.all, 'achievements', cursor, limit, search] as const,
   requirements: (eventId: string) => [...eventsKeys.all, 'requirements', eventId] as const,
 };
 
@@ -76,17 +76,18 @@ export const eventsKeys = {
  * Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useActiveEvents();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useActiveEvents(20, 'iphone');
  */
-export const useActiveEvents = (limit: number = 20) => {
+export const useActiveEvents = (limit: number = 20, search?: string) => {
   return useInfiniteQuery<EventsApiResponse, Error>({
-    queryKey: eventsKeys.active(undefined, limit),
+    queryKey: eventsKeys.active(undefined, limit, search),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getActiveEvents(cursor, limit);
+      return getActiveEvents(cursor, limit, search);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -111,17 +112,18 @@ export const useActiveEvents = (limit: number = 20) => {
  * Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Event başlığı veya açıklamasında arama (opsiyonel)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useUpcomingEvents();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useUpcomingEvents(20, 'survey');
  */
-export const useUpcomingEvents = (limit: number = 20) => {
+export const useUpcomingEvents = (limit: number = 20, search?: string) => {
   return useInfiniteQuery<UpcomingEventsApiResponse, Error>({
-    queryKey: eventsKeys.upcoming(undefined, limit),
+    queryKey: eventsKeys.upcoming(undefined, limit, search),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getUpcomingEvents(cursor, limit);
+      return getUpcomingEvents(cursor, limit, search);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {
@@ -298,17 +300,18 @@ export const useLimitedEvent = () => {
  * Tab-based caching: Tab geçişlerinde anında yüklenmiş ekran göster
  *
  * @param limit - Sayfa başına item sayısı (default: 20)
+ * @param search - Achievement başlığı veya açıklamasında arama (opsiyonel)
  * @returns React Query infinite query hook result
  *
  * @example
- * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useAchievements();
+ * const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useAchievements(20, 'badge');
  */
-export const useAchievements = (limit: number = 20) => {
+export const useAchievements = (limit: number = 20, search?: string) => {
   return useInfiniteQuery<AchievementsApiResponse, Error>({
-    queryKey: eventsKeys.achievements(undefined, limit),
+    queryKey: eventsKeys.achievements(undefined, limit, search),
     queryFn: ({ pageParam }) => {
       const cursor = pageParam as string | undefined;
-      return getAchievements(cursor, limit);
+      return getAchievements(cursor, limit, search);
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => {

@@ -235,6 +235,11 @@ export interface ThreadMessageResponseItem {
     thumbnailUrl?: string | null; // Thumbnail URL'i (opsiyonel)
     caption?: string;         // Görsel altı yazı (opsiyonel)
     imageUrl?: string;        // Backward compatibility için (mediaUrl yerine)
+    groupedMessages?: any[];  // ✅ Gruplanmış mesajlar (backend'den gelebilir)
+    dimensions?: {            // ✅ Görsel boyutları (opsiyonel)
+      width: number;
+      height: number;
+    };
     // For support-request type
     type?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
     amount?: number | string;
@@ -247,20 +252,116 @@ export interface ThreadMessageResponseItem {
 }
 
 /**
+ * ✅ OPTIMIZE: Optimize Backend Response Format
+ * Tarih grupları ve mesaj grupları ile organize edilmiş yapı
+ */
+
+// Optimize mesaj yapısı (backend'den gelen)
+export interface OptimizedMessage {
+  id: string;
+  type: 'message' | 'image' | 'support-request' | 'send-tips';
+  sentAt: string; // ISO 8601
+  isRead: boolean;
+  readAt?: string; // ISO 8601 (opsiyonel)
+  content: {
+    text?: string;
+    mediaUrl?: string;
+    thumbnailUrl?: string | null;
+    caption?: string;
+    fileSize?: number;
+    dimensions?: {
+      width: number;
+      height: number;
+    };
+    amount?: number;
+    currency?: string;
+    supportType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
+    supportStatus?: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
+    requestId?: string;
+    fromUserId?: string;
+    toUserId?: string;
+  };
+  threadId?: string | null;
+}
+
+// Mesaj grubu (5 dakika içinde aynı kullanıcıdan gelen mesajlar)
+export interface MessageGroup {
+  groupId: string;
+  senderId: string;
+  startTime: string; // ISO 8601
+  endTime: string; // ISO 8601
+  messages: OptimizedMessage[];
+}
+
+// Tarih grubu
+export interface DateGroup {
+  date: {
+    timestamp: string; // ISO 8601: "2024-01-15T00:00:00.000Z"
+    displayText: string; // "Today", "Yesterday", "January 15, 2024"
+    dayKey: string; // "2024-01-15"
+  };
+  messageGroups: MessageGroup[];
+}
+
+// Optimize response formatı
+export interface OptimizedChatResponse {
+  thread: {
+    id: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  participants: {
+    [userId: string]: {
+      id: string;
+      name: string;
+      title?: string;
+      avatar: string | null;
+      isOnline?: boolean;
+      lastSeen?: string;
+    };
+  };
+  dateGroups: DateGroup[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor?: string;
+    totalCount?: number;
+  };
+}
+
+/**
  * Backend Response Format - Thread mesajları için (Paginated Response)
  * ✅ OPTIMIZE: Thread başında participants bilgisi gönderilir
  * Mesajlarda sadece senderId gönderilir, sender bilgileri participants'tan alınır
+ * 
+ * ✅ YENİ: Optimize format desteği (backward compatibility için eski format da destekleniyor)
  */
 export interface GetThreadMessagesResponse {
-  // ✅ OPTIMIZE: Thread participants bilgisi (her mesajda sender bilgisi göndermek yerine)
-  participants?: {
-    userOne: ThreadParticipant;
-    userTwo: ThreadParticipant;
+  // ✅ YENİ: Optimize format (backend optimize format gönderirse)
+  thread?: {
+    id: string;
+    createdAt: string;
+    updatedAt: string;
   };
-  items: ThreadMessageResponseItem[];
+  participants?: {
+    [userId: string]: {
+      id: string;
+      name: string;
+      title?: string;
+      avatar: string | null;
+      isOnline?: boolean;
+      lastSeen?: string;
+    };
+  } | {
+    // Eski format (backward compatibility)
+    userOne?: ThreadParticipant;
+    userTwo?: ThreadParticipant;
+  };
+  dateGroups?: DateGroup[]; // ✅ YENİ: Optimize format
+  items?: ThreadMessageResponseItem[]; // Eski format (backward compatibility)
   pagination: {
     hasMore: boolean;
     limit: number;
+    nextCursor?: string; // Cursor-based pagination için
   };
 }
 
@@ -283,6 +384,10 @@ export interface ThreadMessage {
   mediaUrl?: string;        // Görsel URL'i (CDN'den)
   thumbnailUrl?: string | null; // Thumbnail URL'i (opsiyonel)
   caption?: string;         // Görsel altı yazı (opsiyonel)
+  dimensions?: {            // ✅ Görsel boyutları (opsiyonel)
+    width: number;
+    height: number;
+  };
   // Sender info
   senderName?: string;
   senderTitle?: string;
@@ -293,33 +398,160 @@ export interface ThreadMessage {
   requestId?: string;
   fromUserId?: string; // Support request için: Request'i oluşturan kullanıcı ID'si (required)
   toUserId?: string; // Support request için: Request'in gönderildiği kullanıcı ID'si (required)
+  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
+  groupedMessages?: Array<{
+    id: string;
+    message: string;
+    timestamp: string;
+    sentAt: string;
+    isRead: boolean;
+  }>;
 }
+
+/**
+ * Get Thread Messages Parameters
+ */
+export interface GetThreadMessagesParams {
+  limit?: number; // Maksimum mesaj sayısı (default: 50)
+  beforeMessageId?: string; // Bu mesaj ID'sinden önceki mesajları getir (pagination için)
+  cursor?: string; // Cursor-based pagination için timestamp
+}
+
+/**
+ * ✅ Helper: Optimize format'tan flat array'e çevir (backward compatibility için)
+ * Eğer frontend optimize format'ı direkt kullanmak isterse, bu fonksiyon kullanılmayabilir
+ */
+export const convertOptimizedToFlat = (
+  dateGroups: DateGroup[],
+  participants: { [userId: string]: { id: string; name: string; title?: string; avatar: string | null } },
+  threadId: string
+): ThreadMessage[] => {
+  const allMessages: ThreadMessage[] = [];
+  
+  const getSenderInfo = (senderId: string) => {
+    if (participants && participants[senderId]) {
+      return {
+        id: participants[senderId].id,
+        senderName: participants[senderId].name,
+        senderTitle: participants[senderId].title || '',
+        senderAvatar: participants[senderId].avatar,
+      };
+    }
+    return null;
+  };
+  
+  dateGroups.forEach((dateGroup) => {
+    dateGroup.messageGroups.forEach((messageGroup) => {
+      messageGroup.messages.forEach((optimizedMsg) => {
+        const senderInfo = getSenderInfo(messageGroup.senderId);
+        
+        if (!senderInfo) {
+          console.warn('[convertOptimizedToFlat] ⚠️ Sender bilgisi bulunamadı:', { senderId: messageGroup.senderId });
+        }
+        
+        const threadMessage: ThreadMessage = {
+          id: optimizedMsg.id,
+          threadId: optimizedMsg.threadId || threadId,
+          senderId: messageGroup.senderId,
+          message: optimizedMsg.content.text || optimizedMsg.content.caption || '',
+          messageType: optimizedMsg.type,
+          isRead: optimizedMsg.isRead,
+          sentAt: optimizedMsg.sentAt,
+          readAt: optimizedMsg.readAt,
+          senderName: senderInfo?.senderName,
+          senderTitle: senderInfo?.senderTitle,
+          senderAvatar: senderInfo?.senderAvatar || null,
+        };
+        
+        if (optimizedMsg.type === 'image') {
+          threadMessage.mediaUrl = optimizedMsg.content.mediaUrl;
+          threadMessage.thumbnailUrl = optimizedMsg.content.thumbnailUrl;
+          threadMessage.caption = optimizedMsg.content.caption;
+        }
+        
+        if (optimizedMsg.type === 'send-tips') {
+          threadMessage.amount = optimizedMsg.content.amount;
+        }
+        
+        if (optimizedMsg.type === 'support-request') {
+          threadMessage.supportRequestType = optimizedMsg.content.supportType;
+          threadMessage.supportRequestStatus = optimizedMsg.content.supportStatus;
+          threadMessage.requestId = optimizedMsg.content.requestId;
+          threadMessage.fromUserId = optimizedMsg.content.fromUserId;
+          threadMessage.toUserId = optimizedMsg.content.toUserId;
+        }
+        
+        allMessages.push(threadMessage);
+      });
+    });
+  });
+  
+  return allMessages;
+};
 
 /**
  * Get Thread Messages endpoint
  * Thread ID'sine göre mesaj geçmişini getirir
  * 
  * @param threadId - Thread ID
- * @returns Thread mesajları listesi (normalized)
+ * @param params - Pagination parametreleri (limit, beforeMessageId, cursor)
+ * @returns Thread mesajları listesi (normalized) - Optimize format varsa flat array'e çevrilir
  */
-export const getThreadMessages = async (threadId: string): Promise<ThreadMessage[]> => {
+export const getThreadMessages = async (threadId: string, params?: GetThreadMessagesParams): Promise<ThreadMessage[]> => {
   try {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.beforeMessageId) queryParams.append('beforeMessageId', params.beforeMessageId);
+    if (params?.cursor) queryParams.append('cursor', params.cursor);
+    
+    const queryString = queryParams.toString();
+    const endpoint = `/inbox/${threadId}${queryString ? `?${queryString}` : ''}`;
+    
     console.log('[getThreadMessages] 📡 API çağrısı başlatılıyor:', {
-      endpoint: `/inbox/${threadId}`,
+      endpoint,
       threadId,
+      params,
     });
     
-    const response = await apiService.getClient().get<GetThreadMessagesResponse>(`/inbox/${threadId}`);
+    const response = await apiService.getClient().get<GetThreadMessagesResponse>(endpoint);
     
     console.log('[getThreadMessages] ✅ API çağrısı başarılı:', {
       status: response.status,
+      hasDateGroups: !!response.data?.dateGroups,
+      dateGroupsLength: response.data?.dateGroups?.length || 0,
       itemsLength: response.data?.items?.length || 0,
       pagination: response.data?.pagination,
       responseData: response.data,
     });
     
-    // Backend'den gelen response formatı: { items: [...], pagination: {...} }
-    // Frontend direkt array bekliyor, bu yüzden items'ı kullanıyoruz
+    // ✅ YENİ: Optimize format kontrolü (dateGroups varsa optimize format kullan)
+    if (response.data?.dateGroups && response.data.dateGroups.length > 0) {
+      console.log('[getThreadMessages] ✅ Optimize format kullanılıyor (dateGroups)');
+      
+      // Participants bilgisini al (yeni format)
+      const participants = response.data.participants as { [userId: string]: { id: string; name: string; title?: string; avatar: string | null } } | undefined;
+      
+      if (!participants) {
+        console.warn('[getThreadMessages] ⚠️ Participants bilgisi yok, optimize format kullanılamıyor');
+        // Fallback to old format
+      } else {
+        // Optimize format'tan flat array'e çevir
+        const allMessages = convertOptimizedToFlat(
+          response.data.dateGroups,
+          participants,
+          threadId
+        );
+        
+        console.log('[getThreadMessages] ✅ Optimize format\'tan normalize edildi:', allMessages.length, 'mesaj');
+        return allMessages;
+      }
+    }
+    
+    // ✅ Eski format (backward compatibility)
+    // Eski format: Backend'den { items: [...], pagination: {...} } formatında geliyor
+    // Yeni optimize format: Backend'den { dateGroups: [...], participants: {...}, pagination: {...} } formatında geliyor
+    // Şu anda backend henüz optimize format göndermiyor, bu yüzden eski format kullanılıyor
+    console.log('[getThreadMessages] 📦 Eski format kullanılıyor (items) - Backend henüz optimize format (dateGroups) göndermiyor');
     const items = response.data?.items || [];
     
     if (items.length === 0) {
@@ -360,9 +592,53 @@ export const getThreadMessages = async (threadId: string): Promise<ThreadMessage
     };
     
     // Backend response'unu normalize et
-    const normalizedMessages: ThreadMessage[] = items.map((item) => {
+    // ✅ YENİ: groupedMessages desteği - önce groupedMessages'ı parse et, sonra ana mesajları
+    const allMessagesToNormalize: Array<{ item: ThreadMessageResponseItem; isGrouped: boolean; parentId?: string }> = [];
+    
+    items.forEach((item) => {
+      // ✅ DEBUG: Her item'ı logla
+      if (item.type === 'image') {
+        console.log('[getThreadMessages] 🖼️ Image item found in items:', {
+          id: item.id,
+          type: item.type,
+          mediaUrl: item.data.mediaUrl,
+          thumbnailUrl: item.data.thumbnailUrl,
+          caption: item.data.caption,
+          hasGroupedMessages: !!(item.data.groupedMessages && item.data.groupedMessages.length > 0),
+        });
+      }
+      
+      // ✅ YENİ: groupedMessages varsa, bunları ana mesajın içinde tut (ayrı mesaj olarak ekleme)
+      // Ana mesajı ekle (groupedMessages bilgisi ile birlikte)
+      allMessagesToNormalize.push({ 
+        item: {
+          ...item,
+          // groupedMessages bilgisini item'a ekle (normalize ederken kullanılacak)
+          data: {
+            ...item.data,
+            _groupedMessages: item.data.groupedMessages, // Geçici olarak sakla
+          },
+        }, 
+        isGrouped: false 
+      });
+    });
+    
+    const normalizedMessages: ThreadMessage[] = allMessagesToNormalize.map(({ item, isGrouped, parentId }) => {
       const { id, type, data } = item;
       const timestamp = data.timestamp;
+      
+      // ✅ DEBUG: Image type kontrolü
+      if (type === 'image' || data.mediaUrl || data.imageUrl) {
+        console.log('[getThreadMessages] 🖼️ Processing image item:', {
+          id,
+          type,
+          mediaUrl: data.mediaUrl,
+          imageUrl: data.imageUrl,
+          thumbnailUrl: data.thumbnailUrl,
+          isGrouped,
+          parentId,
+        });
+      }
       
       // ✅ OPTIMIZE: Sender bilgilerini participants'tan al (senderId'ye göre)
       // Backward compatibility: Eğer data.sender varsa onu kullan (eski format)
@@ -410,10 +686,32 @@ export const getThreadMessages = async (threadId: string): Promise<ThreadMessage
       
       // ✅ Image message fields - Görsel mesajlar için
       if (type === 'image' || data.mediaUrl || data.imageUrl) {
+        console.log('[getThreadMessages] 🖼️ Image message detected in normalization:', {
+          id: baseMessage.id,
+          type,
+          mediaUrl: data.mediaUrl,
+          imageUrl: data.imageUrl,
+          thumbnailUrl: data.thumbnailUrl,
+          caption: data.caption,
+        });
         baseMessage.messageType = 'image';
         baseMessage.mediaUrl = data.mediaUrl || data.imageUrl; // Backward compatibility için imageUrl de kontrol et
         baseMessage.thumbnailUrl = data.thumbnailUrl || null;
         baseMessage.caption = data.caption || data.message || data.lastMessage || '';
+        // ✅ Dimensions bilgisi varsa ekle (opsiyonel)
+        if (data.dimensions && typeof data.dimensions === 'object' && data.dimensions.width && data.dimensions.height) {
+          baseMessage.dimensions = {
+            width: typeof data.dimensions.width === 'number' ? data.dimensions.width : parseInt(data.dimensions.width),
+            height: typeof data.dimensions.height === 'number' ? data.dimensions.height : parseInt(data.dimensions.height),
+          };
+        }
+        console.log('[getThreadMessages] 🖼️ Image message normalized:', {
+          id: baseMessage.id,
+          messageType: baseMessage.messageType,
+          mediaUrl: baseMessage.mediaUrl,
+          thumbnailUrl: baseMessage.thumbnailUrl,
+          caption: baseMessage.caption,
+        });
       }
       
       // Type-specific fields
@@ -438,8 +736,57 @@ export const getThreadMessages = async (threadId: string): Promise<ThreadMessage
         }
       }
       
+      // ✅ Grup mesajları ekle (5 dakika içinde aynı kullanıcıdan gelen text mesajlar - tek balonda gösterilecek)
+      // ✅ Backend güncellemesi: Sadece type: 'message' olan mesajlar gruplanıyor
+      // Backend'den data.groupedMessages olarak geliyor (data._groupedMessages değil)
+      const groupedMessages = data.groupedMessages || data._groupedMessages;
+      // ✅ Backend güncellemesi: groupedMessages sadece text mesajları için gelir
+      // Eğer baseMessage type: 'message' değilse, groupedMessages olmamalı
+      if (groupedMessages && Array.isArray(groupedMessages) && groupedMessages.length > 0 && baseMessage.messageType === 'message') {
+        baseMessage.groupedMessages = groupedMessages.map((groupedMsg: any) => ({
+          id: groupedMsg.id,
+          text: groupedMsg.message || groupedMsg.text || '', // Backend'den message olarak geliyor
+          message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
+          timestamp: groupedMsg.timestamp || timestamp,
+          sentAt: groupedMsg.timestamp || timestamp,
+          isRead: !groupedMsg.isUnread,
+        }));
+        console.log('[getThreadMessages] 📦 Grouped messages added to message:', {
+          messageId: baseMessage.id,
+          messageType: baseMessage.messageType,
+          groupedCount: baseMessage.groupedMessages.length,
+          groupedMessages: baseMessage.groupedMessages.map(gm => ({ id: gm.id, text: gm.text })),
+        });
+      } else if (groupedMessages && Array.isArray(groupedMessages) && groupedMessages.length > 0 && baseMessage.messageType !== 'message') {
+        // ✅ Backend güncellemesi: Text olmayan mesajlarda groupedMessages olmamalı (backend'den gelse bile)
+        console.warn('[getThreadMessages] ⚠️ groupedMessages received for non-text message, ignoring:', {
+          messageId: baseMessage.id,
+          messageType: baseMessage.messageType,
+          groupedCount: groupedMessages.length,
+        });
+      }
+      
       return baseMessage;
     });
+    
+    // CRITICAL FIX: Backend'den gelen mesajları timestamp'e göre sırala (en eski başta, en yeni sonda)
+    // Backend'den gelen mesajlar ters sırada gelebilir, bu yüzden frontend'de sıralama yapıyoruz
+    normalizedMessages.sort((a, b) => {
+      const timeA = new Date(a.sentAt).getTime();
+      const timeB = new Date(b.sentAt).getTime();
+      return timeA - timeB; // Ascending (en eski başta, en yeni sonda)
+    });
+    
+    // Pagination bilgisini mesajlara ekle (hasMore kontrolü için)
+    // Backend'den gelen pagination.hasMore bilgisini kullan
+    const paginationInfo = response.data?.pagination;
+    if (paginationInfo) {
+      // Pagination bilgisini her mesaja ekle (sonraki sayfa kontrolü için)
+      (normalizedMessages as any).__pagination = {
+        hasMore: paginationInfo.hasMore,
+        nextCursor: paginationInfo.nextCursor,
+      };
+    }
     
     return normalizedMessages;
   } catch (error: any) {
@@ -567,7 +914,53 @@ export interface DirectMessageRequest {
  * @returns Promise<void> - 201 Created (no body)
  */
 export const sendDirectMessage = async (data: DirectMessageRequest): Promise<void> => {
-  await apiService.getClient().post('/inbox', data);
+  try {
+    console.log('[sendDirectMessage] 📤 Request Details:', {
+      url: '/inbox',
+      method: 'POST',
+      data: {
+        recipientUserId: data.recipientUserId,
+        message: data.message,
+        messageLength: data.message.length,
+      },
+    });
+
+    const response = await apiService.getClient().post('/inbox', data);
+
+    console.log('[sendDirectMessage] ✅ Response Details:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      data: response.data,
+      success: response.status >= 200 && response.status < 300,
+    });
+
+    return;
+  } catch (error: any) {
+    console.error('[sendDirectMessage] ❌ Error Details:', {
+      message: error.message,
+      response: {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      },
+      request: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data,
+        headers: error.config?.headers,
+      },
+      requestData: data,
+    });
+
+    // Hata mesajını daha detaylı logla
+    if (error.response?.data) {
+      console.error('[sendDirectMessage] ❌ Backend Error Response:', JSON.stringify(error.response.data, null, 2));
+    }
+
+    throw error;
+  }
 };
 
 /**

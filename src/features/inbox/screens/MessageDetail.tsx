@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -18,6 +18,7 @@ import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead } from '../api/hooks';
+import { getThreadMessages } from '../api/messagesApi';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
@@ -31,12 +32,15 @@ import MessageInput from '../components/MessageInput';
 import MessageDetailActionButtons from '../components/MessageDetailActionButtons';
 import SendTipsBottomSheet from '../components/SendTipsBottomSheet';
 import OneOnOneSupportBottomSheet from '../components/OneOnOneSupportBottomSheet';
+import { ImageMessage } from '../components/MessageItem/ImageMessage';
 
 interface MessageDetailItem {
   id: string;
   text: string;
   timestamp: string;
+  sentAt: string; // CRITICAL: Sıralama için ISO timestamp (backend'den gelen sentAt)
   isSent: boolean;
+  senderId?: string; // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
   senderName?: string;
   senderAvatar?: any;
   type?: 'message' | 'support_request' | 'tips' | 'image';
@@ -56,6 +60,18 @@ interface MessageDetailItem {
   thumbnailUrl?: string | null | undefined;
   uploadStatus?: 'uploading' | 'uploaded' | 'failed';
   uploadProgress?: number;
+  // Image dimensions (backend'den gelebilir)
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar)
+  groupedMessages?: Array<{
+    id: string;
+    text: string;
+    timestamp: string;
+    sentAt: string;
+  }>;
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
   readAt?: string; // Okunma zamanı
@@ -73,64 +89,7 @@ interface MessageDetailScreenParams {
   openSendTips?: boolean; // Send tips bottom sheet'i açılsın mı? (root.types.ts ile uyumlu)
 }
 
-// Mock mesaj geçmişi verisi
-const mockMessageHistory: MessageDetailItem[] = [
-  {
-    id: '1',
-    text: 'Merhaba! Ürününüz hakkında bilgi almak istiyorum.',
-    timestamp: '10:30',
-    isSent: false,
-    senderName: 'Mehmet Koç',
-    senderAvatar: DEFAULT_USER_AVATAR,
-  },
-  {
-    id: '2',
-    text: 'Tabii ki! Hangi konuda yardımcı olabilirim?',
-    timestamp: '10:32',
-    isSent: true,
-  },
-  {
-    id: '3',
-    text: 'Ürünün teknik özelliklerini ve garantisini öğrenmek istiyorum.',
-    timestamp: '10:33',
-    isSent: false,
-    senderName: 'Mehmet Koç',
-    senderAvatar: DEFAULT_USER_AVATAR,
-  },
-  {
-    id: '4',
-    text: 'Ürünümüzün teknik özellikleri şunlardır:\n\n• İşlemci: Intel Core i7\n• RAM: 16GB DDR4\n• Depolama: 512GB SSD\n• Garanti: 2 yıl\n\nDaha fazla bilgi için web sitemizi ziyaret edebilirsiniz.',
-    timestamp: '10:35',
-    isSent: true,
-  },
-  {
-    id: '5',
-    text: 'Teşekkürler! Fiyat bilgisi de alabilir miyim?',
-    timestamp: '10:36',
-    isSent: false,
-    senderName: 'Mehmet Koç',
-    senderAvatar: DEFAULT_USER_AVATAR,
-  },
-  {
-    id: '6',
-    text: 'Tabii! Fiyat bilgisi için özel mesaj gönderebilirim.',
-    timestamp: '10:37',
-    isSent: true,
-  },
-  {
-    id: '7',
-    text: '',
-    timestamp: '10:40',
-    isSent: false,
-    type: 'support_request',
-    supportRequest: {
-      supportType: 'Product Authentication',
-      message: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
-      amount: 150,
-      status: 'pending',
-    },
-  },
-];
+
 
 // Güvenli tarih formatlama fonksiyonu
 const formatMessageTime = (dateInput: string | Date | null | undefined): string => {
@@ -157,12 +116,115 @@ const formatMessageTime = (dateInput: string | Date | null | undefined): string 
   }
 };
 
+// Date header formatting function (Yesterday, or date) - English
+const formatDateHeader = (timestamp: string | Date): string => {
+  try {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    if (isNaN(date.getTime())) return '';
+    
+    const now = new Date();
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (messageDate.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    } else {
+      const day = date.getDate();
+      const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      return `${month} ${day}, ${year}`;
+    }
+  } catch (error) {
+    console.error('[MessageDetail] Date header formatting error:', error);
+    return '';
+  }
+};
+
+// İki tarihin aynı güne ait olup olmadığını kontrol eden helper fonksiyon
+const isSameDay = (date1: string | Date, date2: string | Date): boolean => {
+  try {
+    const d1 = typeof date1 === 'string' ? new Date(date1) : date1;
+    const d2 = typeof date2 === 'string' ? new Date(date2) : date2;
+    
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
+    
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  } catch (error) {
+    return false;
+  }
+};
+
+// ✅ OPTIMIZE: İki mesaj arasında 5 dakikadan az fark var mı kontrol et (mesaj gruplama için)
+const isWithin5Minutes = (date1: string | Date, date2: string | Date): boolean => {
+  try {
+    const d1 = typeof date1 === 'string' ? new Date(date1) : date1;
+    const d2 = typeof date2 === 'string' ? new Date(date2) : date2;
+    
+    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return false;
+    
+    const diff = Math.abs(d1.getTime() - d2.getTime());
+    return diff <= 5 * 60 * 1000; // 5 dakika = 300000 ms
+  } catch (error) {
+    return false;
+  }
+};
+
+// ✅ WhatsApp Engine: Yeni mesajı doğru pozisyona ekle (descending order - inverted FlashList için)
+// Inverted FlashList: index 0 = en yeni mesaj (ekranın altında), index length-1 = en eski mesaj (ekranın üstünde)
+const insertMessageInOrder = (
+  messages: MessageDetailItem[],
+  newMessage: MessageDetailItem
+): MessageDetailItem[] => {
+  // Eğer mesaj zaten varsa, güncelle
+  const existingIndex = messages.findIndex(msg => msg.id === newMessage.id);
+  if (existingIndex !== -1) {
+    const updated = [...messages];
+    updated[existingIndex] = newMessage;
+    return updated;
+  }
+  
+  // ✅ WhatsApp Engine: Descending order (en yeni başta, en eski sonda)
+  // Inverted FlashList için: Yeni mesajı başa ekle (unshift) - en yeni mesaj index 0'da olmalı
+  const newSentAt = new Date(newMessage.sentAt).getTime();
+  
+  // En yeni mesajdan başlayarak kontrol et (descending order için)
+  // Yeni mesaj daha yeni ise, buraya ekle (bu mesajdan önce, yani başa)
+  for (let i = 0; i < messages.length; i++) {
+    const currentSentAt = new Date(messages[i].sentAt).getTime();
+    
+    // Yeni mesaj daha yeni ise, buraya ekle (başa, index 0'a yakın)
+    if (newSentAt > currentSentAt) {
+      const updated = [...messages];
+      updated.splice(i, 0, newMessage);
+      return updated;
+    }
+  }
+  
+  // Tüm mesajlardan daha eski veya eşit ise, sona ekle (en eski mesaj olarak)
+  return [...messages, newMessage];
+};
+
+// ✅ WhatsApp Engine: Mesaj gruplama pre-processor (isFirst, isMiddle, isLast flag'leri)
+// Not: Şu an renderItem içinde hesaplanıyor, performans için useMemo ile pre-process edilebilir
+// Şimdilik renderItem içindeki hesaplama yeterli (her mesaj için sadece bir önceki mesajı kontrol ediyor)
+// Gelecekte: useMemo ile tüm mesajları bir kerede process edip groupInfo eklenebilir
+
 const MessageDetailScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<MessageDetailScreenNavigationProp>();
   const route = useRoute();
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList<MessageDetailItem>>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
   // Mesaj görünürlüğü takibi için (okundu işaretleme)
@@ -263,26 +325,23 @@ const MessageDetailScreen: React.FC = () => {
   const contentSizeRef = useRef({ width: 0, height: 0 });
   const layoutSizeRef = useRef({ width: 0, height: 0 });
 
-  // Güvenli scroll helper - Normal FlatList için scrollToEnd kullan
-  // CRITICAL FIX: useCallback yerine normal fonksiyon kullan (dependency loop'u önlemek için)
+  // ✅ WhatsApp Engine: Güvenli scroll helper - Inverted FlatList için scrollToEnd kullan
+  // Inverted FlatList: index 0 = en yeni mesaj (ekranın altında), scrollToEnd en yeni mesaja scroll yapar
   const safeScrollToEnd = useCallback((animated: boolean = true) => {
     try {
-      // Normal FlatList'te en yeni mesaj en altta, scrollToEnd en alta scroll yapar
+      // Inverted FlatList'te en yeni mesaj index 0'da, scrollToEnd en yeni mesaja scroll yapar
       if (flatListRef.current) {
         flatListRef.current.scrollToEnd({ animated });
       }
     } catch (error) {
-      // Hata durumunda scrollToOffset ile son mesajın offset'ini hesapla
+      // Hata durumunda scrollToOffset ile en yeni mesajın offset'ini hesapla
       try {
-        // Son mesajın yaklaşık offset'ini hesapla (her mesaj ~100px varsayarak)
-        // messages.length yerine ref kullan (dependency loop'u önlemek için)
-        const estimatedOffset = 10000; // Büyük bir değer kullan (en alta scroll için)
-        flatListRef.current?.scrollToOffset({ offset: estimatedOffset, animated });
+        // Inverted list'te offset 0 = en yeni mesaj (index 0)
+        flatListRef.current?.scrollToOffset({ offset: 0, animated });
       } catch (offsetError) {
         // Sessizce yakala
       }
     }
-    // CRITICAL FIX: messages.length dependency'den çıkarıldı - flatListRef.current zaten güncel
   }, []);
 
   // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth)
@@ -303,13 +362,13 @@ const MessageDetailScreen: React.FC = () => {
         messageHeight,
       });
       
-      // Smooth scroll to end (mesaj baloncuğu height'ı kadar yukarı kayar)
+      // ✅ WhatsApp Engine: Inverted FlatList'te scrollToEnd en yeni mesaja scroll yapar
       flatListRef.current?.scrollToEnd({ animated: true });
       
       // Ekstra smooth scroll için küçük bir delay ile tekrar scroll
       // Bu sayede mesaj baloncuğu tam görünür olur
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        safeScrollToEnd(true);
       }, 100);
     } catch (error) {
       console.warn('[MessageDetail] ⚠️ Scroll error, using fallback:', error);
@@ -321,7 +380,16 @@ const MessageDetailScreen: React.FC = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Thread mesajlarını yükle
-  const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(threadId);
+  // Pagination state
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
+  const [oldestMessageId, setOldestMessageId] = useState<string | undefined>(undefined);
+  
+  // Thread messages query - İlk yüklemede en yeni mesajları getir (limit: 50)
+  const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(
+    threadId,
+    { limit: 50 } // İlk yüklemede 50 mesaj getir
+  );
 
   // Klavye event listener'ları - scroll ve buton pozisyonu için
   useEffect(() => {
@@ -334,21 +402,10 @@ const MessageDetailScreen: React.FC = () => {
         setIsKeyboardVisible(true);
         console.log('[MessageDetail] ⌨️ Keyboard opened, height:', height);
         
-        // Klavye açıldığında en son mesaja scroll yap - KeyboardAvoidingView animasyonu tamamlanana kadar bekle
-        // iOS'ta animasyon daha uzun sürdüğü için daha fazla bekle
+        // ✅ Normal FlatList kullanıldığı için klavye açıldığında en son mesaja scroll yap
         setTimeout(() => {
           safeScrollToEnd(true);
-        }, Platform.OS === 'ios' ? 300 : 200);
-        
-        // Ek bir scroll daha yap (bazı durumlarda ilk scroll yeterli olmayabilir)
-        setTimeout(() => {
-          safeScrollToEnd(true);
-        }, Platform.OS === 'ios' ? 500 : 400);
-        
-        // Son bir scroll daha (kesinlik için)
-        setTimeout(() => {
-          safeScrollToEnd(true);
-        }, Platform.OS === 'ios' ? 700 : 600);
+        }, 100);
       }
     );
 
@@ -382,6 +439,111 @@ const MessageDetailScreen: React.FC = () => {
       keyboardDidHideListener.remove();
     };
   }, [safeScrollToEnd]);
+
+  // Pagination: Eski mesajları yükle (yukarı scroll yapıldığında)
+  const loadOlderMessages = useCallback(async () => {
+    if (!threadId || !hasMoreMessages || isLoadingMoreMessages || !oldestMessageId) {
+      return;
+    }
+    
+    setIsLoadingMoreMessages(true);
+    try {
+      const olderMessages = await getThreadMessages(threadId, {
+        limit: 50,
+        beforeMessageId: oldestMessageId,
+      });
+      
+      // Pagination bilgisini kontrol et
+      const paginationInfo = (olderMessages as any).__pagination;
+      if (olderMessages.length === 0 || (paginationInfo && !paginationInfo.hasMore)) {
+        setHasMoreMessages(false);
+        setIsLoadingMoreMessages(false);
+        return;
+      }
+      
+      // Eğer mesaj sayısı limit'ten azsa, daha fazla mesaj yok demektir
+      if (olderMessages.length < 50) {
+        setHasMoreMessages(false);
+      }
+      
+      // Eski mesajları mevcut mesajların başına ekle
+      setMessages((prev) => {
+        const currentParams = paramsRef.current;
+        const convertedOlderMessages: MessageDetailItem[] = olderMessages.map((msg) => {
+          const isSent = msg.senderId === user?.id;
+          const senderName = isSent 
+            ? undefined 
+            : (msg.senderName || currentParams.senderName || 'Unknown');
+          const senderAvatar = isSent 
+            ? undefined 
+            : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
+          
+          let messageType: 'message' | 'image' | 'support_request' | 'tips' = 'message';
+          if (msg.messageType === 'support-request') {
+            messageType = 'support_request';
+          } else if (msg.messageType === 'send-tips') {
+            messageType = 'tips';
+          } else if (msg.messageType === 'image' || msg.mediaUrl) {
+            messageType = 'image';
+          }
+          
+          return {
+            id: msg.id,
+            text: msg.message || msg.caption || '',
+            timestamp: formatMessageTime(msg.sentAt),
+            sentAt: msg.sentAt,
+            isSent,
+            senderName,
+            senderAvatar,
+            type: messageType,
+            mediaUrl: msg.mediaUrl,
+            mediaType: msg.mediaUrl ? 'image' : undefined,
+            thumbnailUrl: msg.thumbnailUrl,
+            // ✅ Image dimensions (backend'den gelebilir)
+            dimensions: msg.dimensions || (msg as any).content?.dimensions,
+            tipsAmount: msg.messageType === 'send-tips' ? (msg.amount || 0) : undefined,
+            supportRequest: msg.messageType === 'support-request' ? {
+              supportType: msg.supportRequestType || 'GENERAL',
+              message: msg.message,
+              amount: msg.amount || 0,
+              status: (msg.supportRequestStatus || 'pending') as 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported',
+              requestId: msg.id,
+              threadId: msg.threadId || null,
+              fromUserId: msg.fromUserId,
+              toUserId: msg.toUserId,
+            } : undefined,
+          };
+        });
+        
+        // ✅ WhatsApp Engine: Inverted FlashList için - Eski mesajları sona ekle (en yeni başta, en eski sonda)
+        const merged = [...prev, ...convertedOlderMessages];
+        merged.sort((a, b) => {
+          const timeA = new Date(a.sentAt).getTime();
+          const timeB = new Date(b.sentAt).getTime();
+          return timeB - timeA; // Descending (en yeni başta, en eski sonda) - inverted FlashList için
+        });
+        
+          // ✅ WhatsApp Engine: En eski mesaj ID'sini güncelle (inverted FlashList'te en eski mesaj dizinin sonunda)
+          if (merged.length > 0) {
+            setOldestMessageId(merged[merged.length - 1].id);
+          }
+        
+        return merged;
+      });
+    } catch (error) {
+      console.error('[MessageDetail] ❌ Error loading older messages:', error);
+    } finally {
+      setIsLoadingMoreMessages(false);
+    }
+  }, [threadId, hasMoreMessages, isLoadingMoreMessages, oldestMessageId, user?.id]);
+
+  // ThreadId değiştiğinde pagination state'ini reset et
+  useEffect(() => {
+    if (threadId) {
+      setHasMoreMessages(true);
+      setOldestMessageId(undefined);
+    }
+  }, [threadId]);
 
   // Thread mesajlarını local state'e dönüştür
   useEffect(() => {
@@ -418,13 +580,23 @@ const MessageDetailScreen: React.FC = () => {
               messageType = 'tips';
             } else if (msg.messageType === 'image' || msg.mediaUrl) {
               messageType = 'image';
+              // ✅ DEBUG: Görsel mesaj tespit edildi
+              console.log('[MessageDetail] 🖼️ Image message detected:', {
+                id: msg.id,
+                messageType: msg.messageType,
+                mediaUrl: msg.mediaUrl,
+                thumbnailUrl: msg.thumbnailUrl,
+                caption: msg.caption,
+              });
             }
 
-            return {
+            const convertedMessage: MessageDetailItem = {
               id: msg.id,
               text: msg.message || msg.caption || '', // ✅ Görsel mesajlarda caption kullanılabilir
               timestamp: formatMessageTime(msg.sentAt),
+              sentAt: msg.sentAt, // CRITICAL: Sıralama için ISO timestamp
               isSent,
+              senderId: msg.senderId, // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
               senderName,
               senderAvatar,
               isRead: msg.isRead,
@@ -434,6 +606,8 @@ const MessageDetailScreen: React.FC = () => {
               mediaUrl: msg.mediaUrl,
               mediaType: msg.mediaUrl ? 'image' : undefined,
               thumbnailUrl: msg.thumbnailUrl,
+              // ✅ Image dimensions (backend'den gelebilir)
+              dimensions: msg.dimensions || (msg as any).content?.dimensions,
               // TIPS mesajı için amount
               tipsAmount: msg.messageType === 'send-tips' ? (msg.amount || 0) : undefined,
               // Support request için özel alanlar
@@ -447,9 +621,33 @@ const MessageDetailScreen: React.FC = () => {
                 fromUserId: msg.fromUserId, // Request'i oluşturan kullanıcı
                 toUserId: msg.toUserId, // Request'in gönderildiği kullanıcı (expert)
               } : undefined,
+              // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
+              groupedMessages: msg.groupedMessages ? msg.groupedMessages.map((groupedMsg: any) => ({
+                id: groupedMsg.id,
+                text: groupedMsg.text || groupedMsg.message || '', // Backend'den message olarak gelebilir
+                message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
+                timestamp: formatMessageTime(groupedMsg.sentAt || groupedMsg.timestamp),
+                sentAt: groupedMsg.sentAt || groupedMsg.timestamp,
+              })) : undefined,
             };
+            
+            // ✅ DEBUG: Görsel mesaj için kontrol
+            if (messageType === 'image') {
+              console.log('[MessageDetail] 🖼️ Converted image message:', {
+                id: convertedMessage.id,
+                hasGroupedMessages: !!(convertedMessage.groupedMessages && convertedMessage.groupedMessages.length > 0),
+                groupedMessagesCount: convertedMessage.groupedMessages?.length || 0,
+                type: convertedMessage.type,
+                mediaUrl: convertedMessage.mediaUrl,
+                thumbnailUrl: convertedMessage.thumbnailUrl,
+                text: convertedMessage.text,
+                hasMediaUrl: !!convertedMessage.mediaUrl,
+              });
+            }
+            
+            return convertedMessage;
           });
-          // Normal sırada tut - en eski mesaj index 0'da, en yeni mesaj sonda
+          // ✅ FIX: Normal FlatList için normal sırada tut - en eski mesaj index 0'da, en yeni mesaj sonda
         
         // Optimistic mesajları koru (pending- ile başlayan mesajlar)
         // Backend'den gelen mesajlarla merge yap
@@ -485,11 +683,13 @@ const MessageDetailScreen: React.FC = () => {
           // Backend mesajları + henüz backend'e gitmemiş pending mesajlar
           const merged = [...convertedMessages, ...pendingMessagesToKeep];
           
-          // Timestamp'e göre sırala (en eski başta, en yeni sonda - normal FlatList için)
+          // ✅ WhatsApp Engine: Timestamp'e göre sırala (descending - en yeni başta, en eski sonda)
+          // Inverted FlashList için: index 0 = en yeni mesaj (ekranın altında)
+          // CRITICAL FIX: sentAt kullan (ISO timestamp, formatMessageTime string'i değil)
           merged.sort((a, b) => {
-            const timeA = new Date(a.timestamp).getTime();
-            const timeB = new Date(b.timestamp).getTime();
-            return timeA - timeB; // Ascending (en eski başta, en yeni sonda)
+            const timeA = new Date(a.sentAt).getTime();
+            const timeB = new Date(b.sentAt).getTime();
+            return timeB - timeA; // Descending (en yeni başta, en eski sonda) - inverted FlashList için
           });
           
           console.log('[MessageDetail] 📥 Merged messages:', {
@@ -499,13 +699,26 @@ const MessageDetailScreen: React.FC = () => {
             total: merged.length,
           });
           
+          // ✅ WhatsApp Engine: En eski mesaj ID'sini kaydet (pagination için - inverted FlashList'te en eski mesaj dizinin sonunda)
+          if (merged.length > 0) {
+            setOldestMessageId(merged[merged.length - 1].id);
+          }
+          
+          // Backend'den gelen pagination bilgisini kontrol et (hasMore)
+          // getThreadMessages response'unda __pagination property'si var
+          const paginationInfo = (threadMessages as any).__pagination;
+          if (paginationInfo) {
+            setHasMoreMessages(paginationInfo.hasMore || false);
+          } else {
+            // Fallback: Mesaj sayısı limit'e eşitse daha fazla mesaj olabilir
+            setHasMoreMessages(convertedMessages.length >= 50);
+          }
+          
           return merged;
         });
         
-        // Normal FlatList'te scroll to end = en alta scroll
-        setTimeout(() => {
-          safeScrollToEnd(false);
-        }, 100);
+        // ✅ Normal FlatList kullanıldığı için en yeni mesajlara scroll yap
+        // Manuel scroll mantığına gerek yok - inverted prop otomatik hallediyor
       } else {
         console.log('[MessageDetail] 📭 No messages in thread yet');
         // Pending mesajları koru (henüz backend'e gitmemiş olanlar)
@@ -766,6 +979,7 @@ const MessageDetailScreen: React.FC = () => {
         id: eventData.messageId,
         text: eventData.message || eventData.text || '', // Fallback için birden fazla field kontrol et
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
         senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
@@ -780,6 +994,7 @@ const MessageDetailScreen: React.FC = () => {
       });
 
       setMessages((prev) => {
+        // ✅ OPTIMIZE: Optimize format mantığı ile mesajı doğru pozisyona ekle
         // Duplicate kontrolü - eğer mesaj zaten varsa (gerçek ID ile), optimistic mesajı (pending- ile başlayan) gerçek mesajla değiştir
         const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
         if (existingMessage) {
@@ -799,14 +1014,13 @@ const MessageDetailScreen: React.FC = () => {
             optimisticId: prev[optimisticMessageIndex].id,
             realId: eventData.messageId,
           });
-          // Optimistic mesajı gerçek mesajla değiştir
-          const updated = [...prev];
-          updated[optimisticMessageIndex] = newMessage;
-          return updated;
+          // Optimistic mesajı gerçek mesajla değiştir ve doğru pozisyona taşı
+          const updated = prev.filter((_, idx) => idx !== optimisticMessageIndex);
+          return insertMessageInOrder(updated, newMessage);
         }
         
-      // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
-      return [...prev, newMessage];
+        // ✅ OPTIMIZE: Yeni mesajı sentAt'a göre doğru pozisyona ekle (tarih gruplama ve mesaj gruplama mantığı)
+        return insertMessageInOrder(prev, newMessage);
       });
 
       // Mesaj geldiğinde anında okundu işaretle (eğer kullanıcı ekrandaysa ve mesaj alıcı tarafından gönderildiyse)
@@ -833,7 +1047,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
 
-      // Normal FlatList'te scroll to end = en alta scroll
+      // ✅ WhatsApp Engine: Inverted FlashList'te scrollToIndex(0) = en yeni mesajlara scroll (altta)
       setTimeout(() => {
         safeScrollToEnd(true);
       }, 100);
@@ -854,6 +1068,7 @@ const MessageDetailScreen: React.FC = () => {
         id: eventData.messageId,
         text: eventData.message || eventData.caption || '', // Caption varsa
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
         senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
@@ -861,10 +1076,13 @@ const MessageDetailScreen: React.FC = () => {
         mediaUrl: eventData.mediaUrl,
         mediaType: eventData.messageType,
         thumbnailUrl: eventData.thumbnailUrl,
+        // ✅ Image dimensions (backend'den gelebilir)
+        dimensions: eventData.dimensions || eventData.content?.dimensions,
         isRead: false,
       };
       
       setMessages((prev) => {
+        // ✅ OPTIMIZE: Optimize format mantığı ile mesajı doğru pozisyona ekle
         // Duplicate kontrolü
         const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
         if (existingMessage) {
@@ -884,13 +1102,23 @@ const MessageDetailScreen: React.FC = () => {
             optimisticId: prev[optimisticMessageIndex].id,
             realId: eventData.messageId,
           });
+          // ✅ FIX: Optimistic mesajı gerçek mesajla değiştir, pozisyonu koru
+          // Sadece optimistic mesajı gerçek mesajla değiştir, tüm listeyi yeniden sıralama
           const updated = [...prev];
-          updated[optimisticMessageIndex] = newMediaMessage;
+          updated[optimisticMessageIndex] = {
+            ...updated[optimisticMessageIndex],
+            id: eventData.messageId,
+            mediaUrl: eventData.mediaUrl || updated[optimisticMessageIndex].mediaUrl,
+            thumbnailUrl: eventData.thumbnailUrl || updated[optimisticMessageIndex].thumbnailUrl,
+            uploadStatus: 'uploaded',
+            uploadProgress: 100,
+            sentAt: eventData.timestamp || eventData.sentAt || updated[optimisticMessageIndex].sentAt,
+          };
           return updated;
         }
         
-        // Normal FlatList: Yeni mesajı sona ekle
-        return [...prev, newMediaMessage];
+        // ✅ OPTIMIZE: Yeni mesajı sentAt'a göre doğru pozisyona ekle
+        return insertMessageInOrder(prev, newMediaMessage);
       });
       
       // Mesaj geldiğinde anında okundu işaretle
@@ -914,7 +1142,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
       
-      // Normal FlatList'te scroll to end = en alta scroll
+      // ✅ WhatsApp Engine: Inverted FlashList'te scrollToIndex(0) = en yeni mesajlara scroll (altta)
       setTimeout(() => {
         safeScrollToEnd(true);
       }, 100);
@@ -939,6 +1167,7 @@ const MessageDetailScreen: React.FC = () => {
         id: eventData.messageId,
         text: tipsMessageText,
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
         senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
@@ -948,6 +1177,7 @@ const MessageDetailScreen: React.FC = () => {
       };
       
       setMessages((prev) => {
+        // ✅ OPTIMIZE: Optimize format mantığı ile mesajı doğru pozisyona ekle
         // Duplicate kontrolü
         const existingMessage = prev.find((msg) => msg.id === eventData.messageId);
         if (existingMessage) {
@@ -969,13 +1199,13 @@ const MessageDetailScreen: React.FC = () => {
             optimisticId: prev[optimisticMessageIndex].id,
             realId: eventData.messageId,
           });
-          const updated = [...prev];
-          updated[optimisticMessageIndex] = newTipsMessage;
-          return updated;
+          // Optimistic mesajı gerçek mesajla değiştir ve doğru pozisyona taşı
+          const updated = prev.filter((_, idx) => idx !== optimisticMessageIndex);
+          return insertMessageInOrder(updated, newTipsMessage);
         }
         
-        // Normal FlatList: Yeni mesajı sona ekle
-        return [...prev, newTipsMessage];
+        // ✅ OPTIMIZE: Yeni mesajı sentAt'a göre doğru pozisyona ekle
+        return insertMessageInOrder(prev, newTipsMessage);
       });
       
       // Mesaj geldiğinde anında okundu işaretle (eğer kullanıcı ekrandaysa ve mesaj alıcı tarafından gönderildiyse)
@@ -999,7 +1229,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       }
       
-      // Normal FlatList'te scroll to end = en alta scroll
+      // ✅ WhatsApp Engine: Inverted FlashList'te scrollToIndex(0) = en yeni mesajlara scroll (altta)
       setTimeout(() => {
         safeScrollToEnd(true);
       }, 100);
@@ -1060,6 +1290,8 @@ const MessageDetailScreen: React.FC = () => {
 
       if (optimisticIndex !== -1) {
         console.log('[MessageDetail] ✅ Updating optimistic message with real ID:', messageId);
+        // ✅ FIX: Sadece ID'yi güncelle, pozisyonu koru (zaten doğru pozisyonda)
+        // Optimistic mesaj zaten insertMessageInOrder ile doğru pozisyona eklenmişti
         const updated = [...prev];
         updated[optimisticIndex] = {
           ...updated[optimisticIndex],
@@ -1079,15 +1311,16 @@ const MessageDetailScreen: React.FC = () => {
       const messageExists = Array.isArray(prev) && prev.some(msg => msg.text === messageText && msg.isSent);
       if (!messageExists && messageText) {
         console.log('[MessageDetail] ⚠️ Optimistic message not found, adding new message');
-    const newMessage: MessageDetailItem = {
+        const newMessage: MessageDetailItem = {
           id: messageId,
           text: messageText,
           timestamp: formatMessageTime(eventData.timestamp || new Date()),
-      isSent: true,
-      isRead: false,
+          sentAt: eventData.timestamp || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
+          isSent: true,
+          isRead: false,
         };
-        // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
-        return [...prev, newMessage];
+        // ✅ FIX: Yeni mesajı doğru pozisyona ekle (sentAt'a göre sıralı)
+        return insertMessageInOrder(prev, newMessage);
       }
 
       return prev;
@@ -1592,15 +1825,15 @@ const MessageDetailScreen: React.FC = () => {
     if (!user?.id || !effectiveRecipientUserId) return;
     
     Alert.alert(
-      'Kullanıcıyı Raporla',
-      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      'Report User',
+      'Are you sure you want to report this user?',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Raporla',
+          text: 'Report',
           style: 'destructive',
           onPress: () => {
             reportUserMutation.mutate({
@@ -1612,10 +1845,10 @@ const MessageDetailScreen: React.FC = () => {
               },
             }, {
               onSuccess: () => {
-                Alert.alert('Başarılı', 'Kullanıcı raporlandı');
+                Alert.alert('Success', 'User reported');
               },
               onError: (error) => {
-                Alert.alert('Hata', error.message || 'Kullanıcı raporlanırken bir hata oluştu');
+                Alert.alert('Error', error.message || 'An error occurred while reporting the user');
               },
             });
           },
@@ -1629,15 +1862,15 @@ const MessageDetailScreen: React.FC = () => {
     if (!user?.id || !effectiveRecipientUserId) return;
     
     Alert.alert(
-      'Kullanıcıyı Engelle',
-      `${params.senderName} kullanıcısını engellemek istediğinizden emin misiniz? Bu kullanıcıdan artık mesaj alamayacaksınız.`,
+      'Block User',
+      `Are you sure you want to block ${params.senderName}? You will no longer receive messages from this user.`,
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Engelle',
+          text: 'Block',
           style: 'destructive',
           onPress: () => {
             blockUserMutation.mutate({
@@ -1645,15 +1878,15 @@ const MessageDetailScreen: React.FC = () => {
               targetUserId: effectiveRecipientUserId,
             }, {
               onSuccess: () => {
-                Alert.alert('Başarılı', 'Kullanıcı engellendi', [
+                Alert.alert('Success', 'User blocked', [
                   {
-                    text: 'Tamam',
+                    text: 'OK',
                     onPress: () => navigation.goBack(),
                   },
                 ]);
               },
               onError: (error) => {
-                Alert.alert('Hata', error.message || 'Kullanıcı engellenirken bir hata oluştu');
+                Alert.alert('Error', error.message || 'An error occurred while blocking the user');
               },
             });
           },
@@ -1718,14 +1951,15 @@ const MessageDetailScreen: React.FC = () => {
       id: optimisticMessageId,
       text: finalMessage,
       timestamp: formatMessageTime(new Date()),
+      sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
       isSent: true,
       type: 'tips',
       tipsAmount: amount,
       isRead: false,
     };
 
-    // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
-    setMessages((prev) => [...prev, optimisticTipsMessage]);
+    // ✅ WhatsApp Engine: Inverted FlatList - Yeni mesajı başa ekle (en yeni mesaj index 0'da)
+    setMessages((prev) => [optimisticTipsMessage, ...prev]);
 
     // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth animasyon)
     setTimeout(() => {
@@ -1867,6 +2101,7 @@ const MessageDetailScreen: React.FC = () => {
             id: Date.now().toString(),
             text: '',
             timestamp: formatMessageTime(new Date()),
+      sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
             isSent: true,
             type: 'support_request',
             supportRequest: {
@@ -1964,12 +2199,14 @@ const MessageDetailScreen: React.FC = () => {
       id: optimisticMessageId,
       text: messageText.trim(),
       timestamp: formatMessageTime(new Date()),
+      sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
       isSent: true,
       isRead: false, // Henüz okunmadı
     };
 
-    // Normal FlatList: Yeni mesajı sona ekle (en yeni mesaj en altta)
-    setMessages((prev) => [...prev, newMessage]);
+    // ✅ FIX: Optimistic mesajı doğru pozisyona ekle (sentAt'a göre sıralı)
+    // Bu sayede flicker olmaz - mesaj zaten doğru pozisyonda görünür
+    setMessages((prev) => insertMessageInOrder(prev, newMessage));
 
     // Mesaj baloncuğu height'ı kadar yukarı scroll (smooth animasyon)
     // State update tamamlandıktan sonra scroll yap
@@ -2140,12 +2377,12 @@ const MessageDetailScreen: React.FC = () => {
     }
 
     Alert.alert(
-      'Destek Talebini İptal Et',
-      'Bu destek talebini iptal etmek istediğinizden emin misiniz?',
+      'Cancel Support Request',
+      'Are you sure you want to cancel this support request?',
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'İptal Et',
+          text: 'Cancel',
           style: 'destructive',
           onPress: () => {
             if (isConnected && isSocketReady) {
@@ -2244,6 +2481,7 @@ const MessageDetailScreen: React.FC = () => {
           id: optimisticMessageId,
           text: '',
           timestamp: formatMessageTime(new Date()),
+      sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
           isSent: true,
           type: 'image',
           mediaUrl: result.asset.uri,
@@ -2260,12 +2498,14 @@ const MessageDetailScreen: React.FC = () => {
           uploadStatus: optimisticImageMessage.uploadStatus,
         });
         
+        // ✅ FIX: Optimistic görsel mesajını doğru pozisyona ekle (sentAt'a göre sıralı)
         setMessages((prev) => {
-          const newMessages = [...prev, optimisticImageMessage];
+          const newMessages = insertMessageInOrder(prev, optimisticImageMessage);
           console.log('[MessageDetail] 📋 Messages state güncellendi:', {
             prevLength: prev.length,
             newLength: newMessages.length,
             lastMessage: newMessages[newMessages.length - 1],
+            optimisticId: optimisticMessageId,
           });
           return newMessages;
         });
@@ -2308,20 +2548,52 @@ const MessageDetailScreen: React.FC = () => {
             mediaUrl: response.data.mediaUrl,
           });
           
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === optimisticMessageId
-                ? {
-                    ...msg,
-                    id: response.data.messageId,
-                    mediaUrl: response.data.mediaUrl || response.data.imageUrl,
-                    thumbnailUrl: response.data.thumbnailUrl,
-                    uploadStatus: 'uploaded',
-                    uploadProgress: 100,
-                  }
-                : msg
-            )
-          );
+          setMessages((prev) => {
+            // ✅ FIX: Duplicate kontrolü - eğer mesaj zaten varsa (new_message event'i önce gelmiş), sadece optimistic mesajı kaldır
+            const existingMessage = prev.find((msg) => msg.id === response.data.messageId);
+            if (existingMessage) {
+              console.log('[MessageDetail] ✅ Message already exists (from new_message event), removing optimistic message only');
+              return prev.filter((msg) => msg.id !== optimisticMessageId);
+            }
+            
+            // ✅ FIX: Optimistic mesajı gerçek mesajla değiştir
+            // Backend'den gelen timestamp'i kullan (eğer varsa) ve pozisyonu güncelle
+            const optimisticIndex = prev.findIndex((msg) => msg.id === optimisticMessageId);
+            if (optimisticIndex === -1) {
+              console.warn('[MessageDetail] ⚠️ Optimistic message not found');
+              return prev;
+            }
+            
+            const optimisticMsg = prev[optimisticIndex];
+            const backendTimestamp = response.data.timestamp || response.data.sentAt;
+            const updatedMessage: MessageDetailItem = {
+              ...optimisticMsg,
+              id: response.data.messageId,
+              mediaUrl: response.data.mediaUrl || response.data.imageUrl,
+              thumbnailUrl: response.data.thumbnailUrl,
+              uploadStatus: 'uploaded',
+              uploadProgress: 100,
+              // ✅ FIX: Backend'den gelen timestamp'i kullan (eğer varsa)
+              sentAt: backendTimestamp || optimisticMsg.sentAt,
+              timestamp: backendTimestamp ? formatMessageTime(backendTimestamp) : optimisticMsg.timestamp,
+            };
+            
+            // ✅ FIX: Eğer timestamp değiştiyse, mesajı doğru pozisyona taşı
+            if (backendTimestamp && backendTimestamp !== optimisticMsg.sentAt) {
+              console.log('[MessageDetail] 🔄 Timestamp changed, repositioning message:', {
+                oldSentAt: optimisticMsg.sentAt,
+                newSentAt: backendTimestamp,
+              });
+              // Optimistic mesajı kaldır ve yeni pozisyona ekle
+              const withoutOptimistic = prev.filter((msg) => msg.id !== optimisticMessageId);
+              return insertMessageInOrder(withoutOptimistic, updatedMessage);
+            }
+            
+            // Timestamp değişmediyse, sadece güncelle
+            return prev.map((msg) =>
+              msg.id === optimisticMessageId ? updatedMessage : msg
+            );
+          });
         } else {
           console.warn('[MessageDetail] ⚠️ Response\'da messageId yok!', response.data);
         }
@@ -2362,20 +2634,168 @@ const MessageDetailScreen: React.FC = () => {
 
 
   // Mesaj öğesi render fonksiyonu
-  const renderMessageItem = ({ item }: { item: MessageDetailItem }) => {
+  // ✅ FIX: useCallback ile memoize et - flicker'ı önlemek için
+  const renderMessageItem = useCallback(({ item, index }: { item: MessageDetailItem; index: number }) => {
+    // Date header check: Show header if not the same day as next message (older message above)
+    // CRITICAL FIX: Always use sentAt (ISO timestamp) for date comparison, not timestamp (formatted time string)
+    // ✅ WhatsApp Engine: Inverted FlatList kullanılıyor: index 0 = newest message (visually at bottom), index length-1 = oldest message (visually at top)
+    const showDateHeader = (() => {
+      // CRITICAL: Always use sentAt for date comparison (ISO timestamp with full date info)
+      const currentDate = item.sentAt;
+      
+      if (!currentDate) {
+        console.warn('[MessageDetail] ⚠️ Missing sentAt for current message:', { 
+          currentId: item.id,
+        });
+        return false;
+      }
+      
+      // ✅ WhatsApp Engine: Inverted FlatList'te index 0 = en yeni mesaj (görsel olarak en altta)
+      // En son mesajsa (index length-1, en eski mesaj) veya bir sonraki mesaj (index + 1, görsel olarak üstteki, daha eski) farklı gündeyse tarih başlığı göster
+      const isLastMessage = index === messages.length - 1;
+      if (isLastMessage) {
+        // En son mesaj (en eski) - her zaman tarih başlığı göster
+        return true;
+      }
+      
+      const nextItem = messages[index + 1]; // Next message in array = older message visually (above current in inverted list)
+      
+      if (!nextItem) {
+        return true;
+      }
+      
+      const nextDate = nextItem.sentAt;
+      
+      // If sentAt is missing, skip date header (shouldn't happen but safety check)
+      if (!nextDate) {
+        console.warn('[MessageDetail] ⚠️ Missing sentAt for next message:', { 
+          nextId: nextItem.id,
+        });
+        return false;
+      }
+      
+      // ✅ WhatsApp Engine: Tarih başlığı göster - eğer mevcut mesaj ile bir sonraki mesaj (görsel olarak üstteki, daha eski) farklı günlerdeyse
+      // Inverted FlatList: index 0 = en yeni, index artarken eskiye gidiyor
+      const isDifferentDay = !isSameDay(currentDate, nextDate);
+      
+      // ✅ DEBUG: Tarih başlığı mantığı
+      if (__DEV__) {
+        console.log('[MessageDetail] 📅 Date header check:', {
+          index,
+          currentId: item.id,
+          currentDate: currentDate,
+          nextId: nextItem.id,
+          nextDate: nextDate,
+          isDifferentDay,
+          showHeader: isDifferentDay,
+        });
+      }
+      
+      return isDifferentDay;
+    })();
+    
+    // Date header render with divider line (WhatsApp style)
+    const DateHeader = showDateHeader ? (
+      <Box py="$4" alignItems="center" justifyContent="center" width="100%">
+        <HStack 
+          alignItems="center" 
+          justifyContent="center" 
+          width="100%"
+          space="sm"
+        >
+          {/* Left divider line */}
+          <Box 
+            flex={1} 
+            height={1} 
+            bg={isDark ? '#2A2A2A' : '#E5E5E5'} 
+          />
+          
+          {/* Date text */}
+          <Box
+            bg={isDark ? '#1A1A1A' : '#F2F2F2'}
+            px="$3"
+            py="$1.5"
+            borderRadius="$full"
+          >
+            <Text
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              fontSize="$xs"
+              fontWeight="$medium"
+            >
+              {formatDateHeader(item.sentAt)}
+            </Text>
+          </Box>
+          
+          {/* Right divider line */}
+          <Box 
+            flex={1} 
+            height={1} 
+            bg={isDark ? '#2A2A2A' : '#E5E5E5'} 
+          />
+        </HStack>
+      </Box>
+    ) : null;
+    
+    // ✅ Görsel mesaj render'ı
+    if (item.type === 'image' && item.mediaUrl) {
+    // ✅ WhatsApp Engine: isFirstInGroup hesapla (5 dakika içinde aynı kullanıcıdan text mesaj varsa grup)
+    // Backend güncellemesi: Sadece type: 'message' olan mesajlar gruplanıyor
+    // Inverted FlatList: index 0 = en yeni mesaj, index - 1 = daha yeni mesaj (görsel olarak aşağıda)
+    const prevMessage = index > 0 ? messages[index - 1] : null; // Daha yeni mesaj (inverted'da aşağıda)
+    
+    // ✅ Backend güncellemesi: Sadece text mesajları gruplanıyor
+    // Eğer mevcut mesaj text değilse (image, tips, support_request), her zaman isFirstInGroup = true
+    // type undefined ise text mesaj kabul et (backward compatibility)
+    const isTextMessage = item.type === undefined || (item.type !== 'image' && item.type !== 'support_request' && item.type !== 'tips');
+    const isPrevTextMessage = prevMessage ? (prevMessage.type === undefined || (prevMessage.type !== 'image' && prevMessage.type !== 'support_request' && prevMessage.type !== 'tips')) : false;
+    
+    // Eğer mevcut mesaj text değilse veya önceki mesaj text değilse, grup sıfırlanır
+    const isFirstInGroup = !prevMessage || 
+      !isTextMessage || // Mevcut mesaj text değilse
+      !isPrevTextMessage || // Önceki mesaj text değilse (grup sıfırlanır)
+      prevMessage.isSent !== item.isSent || 
+      !isSameDay(prevMessage.sentAt, item.sentAt) ||
+      !isWithin5Minutes(prevMessage.sentAt, item.sentAt);
+      
+      return (
+        <VStack space="xs">
+          {DateHeader}
+          <ImageMessage
+            item={item}
+            isDark={isDark}
+            params={params}
+            isFirstInGroup={isFirstInGroup}
+            onDelete={(messageId) => {
+              // TODO: Delete message functionality
+              console.log('[MessageDetail] Delete image message:', messageId);
+            }}
+          />
+        </VStack>
+      );
+    }
+    
     // TIPS mesajı render'ı
     if (item.type === 'tips') {
       const isSent = item.isSent;
       const tipsAmount = item.tipsAmount || 0;
+      
+      // ✅ OPTIMIZE: isFirstInGroup hesapla (5 dakika içinde aynı kullanıcıdan mesaj varsa grup)
+      const prevMessage = index > 0 ? messages[index - 1] : null;
+      const isFirstInGroup = !prevMessage || 
+        prevMessage.isSent !== item.isSent || 
+        !isSameDay(prevMessage.sentAt, item.sentAt) ||
+        !isWithin5Minutes(prevMessage.sentAt, item.sentAt);
 
       return (
-        <VStack
-          space="xs"
-          alignItems={isSent ? 'flex-end' : 'flex-start'}
-          px="$4"
-          py="$2"
-        >
-          {!isSent && (
+        <VStack space="xs">
+          {DateHeader}
+          <VStack
+            space="xs"
+            alignItems={isSent ? 'flex-end' : 'flex-start'}
+            px="$4"
+            py="$2"
+          >
+          {!isSent && isFirstInGroup && (
             <HStack space="sm" alignItems="center" mb="$1">
               <Image
                 source={
@@ -2383,13 +2803,13 @@ const MessageDetailScreen: React.FC = () => {
                   DEFAULT_USER_AVATAR
                 }
                 alt={item.senderName || params.senderName || 'User'}
-                width={24}
-                height={24}
-                borderRadius={12}
+                width={32}
+                height={32}
+                borderRadius={16}
               />
               <Text
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize="$xs"
+                fontSize="$sm"
                 fontWeight="$medium"
               >
                 {item.senderName || params.senderName || 'Unknown User'}
@@ -2408,8 +2828,8 @@ const MessageDetailScreen: React.FC = () => {
               px="$3"
               py="$2"
               borderRadius={16}
-              borderTopLeftRadius={isSent ? 16 : 4}
-              borderTopRightRadius={isSent ? 4 : 16}
+              borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
+              borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
             >
               <VStack space="xs">
                 {/* TIPS Amount */}
@@ -2421,7 +2841,7 @@ const MessageDetailScreen: React.FC = () => {
                   />
                   <Text
                     color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
-                    fontSize="$xs"
+                    fontSize="$sm"
                     fontWeight="$bold"
                   >
                     {tipsAmount} TIPS
@@ -2431,7 +2851,7 @@ const MessageDetailScreen: React.FC = () => {
                 {item.text && (
                   <Text
                     color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
-                    fontSize="$xs"
+                    fontSize="$sm"
                     fontWeight="$normal"
                   >
                     {item.text}
@@ -2443,7 +2863,7 @@ const MessageDetailScreen: React.FC = () => {
             <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
               <Text
                 color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize="$xs"
+                fontSize="$2xs"
                 fontWeight="$normal"
               >
                 {item.timestamp}
@@ -2479,6 +2899,7 @@ const MessageDetailScreen: React.FC = () => {
               )}
             </VStack>
           </HStack>
+          </VStack>
         </VStack>
       );
     }
@@ -2498,12 +2919,14 @@ const MessageDetailScreen: React.FC = () => {
       const isRecipient = toUserId === user?.id;
 
       return (
-        <VStack
-          space="xs"
-          alignItems={isSent ? 'flex-end' : 'flex-start'}
-          px="$4"
-          py="$2"
-        >
+        <VStack space="xs">
+          {DateHeader}
+          <VStack
+            space="xs"
+            alignItems={isSent ? 'flex-end' : 'flex-start'}
+            px="$4"
+            py="$2"
+          >
           <Box minWidth={250}>
             <Pressable onPress={() => toggleSupportRequest(item.id)}>
               <Box
@@ -2528,7 +2951,7 @@ const MessageDetailScreen: React.FC = () => {
                     />
                   </Box>
                   <Text
-                    fontSize="$xs"
+                    fontSize="$sm"
                     fontWeight="$semibold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
@@ -2556,14 +2979,14 @@ const MessageDetailScreen: React.FC = () => {
                   {/* Support Type */}
                   <VStack space="xs">
                     <Text
-                      fontSize="$xs"
+                      fontSize="$sm"
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
                       Support Type
                     </Text>
                     <Text
-                      fontSize="$xs"
+                      fontSize="$sm"
                       fontWeight="$semibold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
@@ -2574,14 +2997,14 @@ const MessageDetailScreen: React.FC = () => {
                   {/* Message */}
                   <VStack space="xs">
                     <Text
-                      fontSize="$xs"
+                      fontSize="$sm"
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
                       Request Details
                     </Text>
                     <Text
-                      fontSize="$xs"
+                      fontSize="$sm"
                       fontWeight="$normal"
                       color={isDark ? '#CCCCCC' : '#666666'}
                       lineHeight={16}
@@ -2598,7 +3021,7 @@ const MessageDetailScreen: React.FC = () => {
                       color="#E2FF46"
                     />
                     <Text
-                      fontSize="$xs"
+                      fontSize="$sm"
                       fontWeight="$bold"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
@@ -2609,7 +3032,7 @@ const MessageDetailScreen: React.FC = () => {
                   {/* Status Badge */}
                   <VStack space="xs" mt="$2">
                     <Text
-                      fontSize="$xs"
+                      fontSize="$sm"
                       fontWeight="$medium"
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                     >
@@ -2629,7 +3052,7 @@ const MessageDetailScreen: React.FC = () => {
                       alignSelf="flex-start"
                     >
                       <Text
-                        fontSize="$xs"
+                        fontSize="$sm"
                         fontWeight="$semibold"
                         color={
                           requestStatus === 'pending' ? '#FFC107' :
@@ -2723,7 +3146,7 @@ const MessageDetailScreen: React.FC = () => {
                 color={isDark ? '#8C8C8C' : '#999999'}
               />
               <Text
-                fontSize="$xs"
+                fontSize="$sm"
                 fontWeight="$normal"
                 color={isDark ? '#8C8C8C' : '#999999'}
                 flex={1}
@@ -2741,39 +3164,54 @@ const MessageDetailScreen: React.FC = () => {
               </Text>
             </HStack>
           </Box>
+          </VStack>
         </VStack>
       );
     }
 
     // Normal mesaj render'ı
     const isSent = item.isSent;
+    
+    // ✅ FIX: isFirstInGroup hesapla (5 dakika içinde aynı kullanıcıdan mesaj varsa grup)
+    // Optimize: Sadece bir önceki mesajı kontrol et, daha önceki mesajları kontrol etme
+    // Bu sayede yeni mesaj eklendiğinde sadece etkilenen mesajlar yeniden render edilir
+    const prevMessage = index > 0 ? messages[index - 1] : null;
+    const isFirstInGroup = !prevMessage || 
+      prevMessage.isSent !== item.isSent || 
+      !isSameDay(prevMessage.sentAt, item.sentAt) ||
+      !isWithin5Minutes(prevMessage.sentAt, item.sentAt);
+    
+    // ✅ FIX: isFirstInGroup değerini item'a ekle (memoization için)
+    // Bu sayede aynı mesaj için aynı değer döner ve gereksiz re-render'lar önlenir
 
     return (
-      <VStack
-        space="xs"
-        alignItems={isSent ? 'flex-end' : 'flex-start'}
-        px="$4"
-        py="$2"
-      >
-        {!isSent && (
+      <VStack space="xs">
+        {DateHeader}
+        <VStack
+          space="xs"
+          alignItems={isSent ? 'flex-end' : 'flex-start'}
+          px="$4"
+          py="$2"
+        >
+        {!isSent && isFirstInGroup && (
           <HStack space="sm" alignItems="center" mb="$1">
             <Image
-              source={
-                toImageSource(item.senderAvatar || params.senderAvatar) ||
-                DEFAULT_USER_AVATAR
-              }
-              alt={item.senderName || params.senderName || 'User'}
-              width={24}
-              height={24}
-              borderRadius={12}
-            />
-            <Text
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize="$xs"
-              fontWeight="$medium"
-            >
-              {item.senderName || params.senderName || 'Unknown User'}
-            </Text>
+                source={
+                  toImageSource(item.senderAvatar || params.senderAvatar) ||
+                  DEFAULT_USER_AVATAR
+                }
+                alt={item.senderName || params.senderName || 'User'}
+                width={32}
+                height={32}
+                borderRadius={16}
+              />
+              <Text
+                color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                fontSize="$sm"
+                fontWeight="$medium"
+              >
+                {item.senderName || params.senderName || 'Unknown User'}
+              </Text>
           </HStack>
         )}
 
@@ -2788,22 +3226,56 @@ const MessageDetailScreen: React.FC = () => {
             px="$3"
             py="$2"
             borderRadius={16}
-            borderTopLeftRadius={isSent ? 16 : 4}
-            borderTopRightRadius={isSent ? 4 : 16}
+            borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
+            borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
           >
-            <Text
-              color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
-              fontSize="$xs"
-              fontWeight="$normal"
-            >
-              {item.text || '(Mesaj içeriği yok)'}
-            </Text>
+            <VStack space="xs">
+              {/* Ana mesaj - sadece text varsa göster */}
+              {item.text && item.text.trim() && (
+                <Text
+                  color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
+                  fontSize="$sm"
+                  fontWeight="$normal"
+                >
+                  {item.text}
+                </Text>
+              )}
+              
+              {/* ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar) */}
+              {item.groupedMessages && item.groupedMessages.length > 0 && (() => {
+                const groupedMessages = item.groupedMessages; // TypeScript guard: Yukarıdaki kontrol zaten yapıldı
+                if (!groupedMessages) return null; // Type guard için ek kontrol
+                
+                if (__DEV__) {
+                  console.log('[MessageDetail] 📦 Rendering grouped messages:', {
+                    messageId: item.id,
+                    groupedCount: groupedMessages.length,
+                    firstGroupedMessage: groupedMessages[0] ? { id: groupedMessages[0].id, text: groupedMessages[0].text } : null,
+                  });
+                }
+                return (
+                  <VStack space="xs" mt="$1">
+                    {groupedMessages.map((groupedMsg) => (
+                      <Text
+                        key={groupedMsg.id}
+                        color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
+                        fontSize="$sm"
+                        fontWeight="$normal"
+                        opacity={0.9}
+                      >
+                        {groupedMsg.text || '(Mesaj içeriği yok)'}
+                      </Text>
+                    ))}
+                  </VStack>
+                );
+              })()}
+            </VStack>
           </Box>
 
           <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize="$xs"
+              fontSize="$2xs"
               fontWeight="$normal"
             >
               {item.timestamp}
@@ -2839,9 +3311,10 @@ const MessageDetailScreen: React.FC = () => {
             )}
           </VStack>
         </HStack>
+        </VStack>
       </VStack>
     );
-  };
+  }, [messages, isDark, params.senderName, params.senderTitle, params.senderAvatar, user?.id, threadId, handleAcceptSupportRequest, handleRejectSupportRequest, handleCancelSupportRequest, handleReport, handleBlock]);
 
   // CRITICAL FIX: SafeAreaView kullanmıyoruz, flicker önlemek için manuel insets kullanıyoruz
   // Üstte top inset kadar, altta bottom inset kadar view kullan
@@ -2856,7 +3329,7 @@ const MessageDetailScreen: React.FC = () => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0: 0}
         enabled={true}
       >
         {/* Header */}
@@ -2872,7 +3345,7 @@ const MessageDetailScreen: React.FC = () => {
           recipientUserId={effectiveRecipientUserId}
         />
 
-          {/* Mesaj Geçmişi - WhatsApp Stili Normal FlatList */}
+          {/* ✅ WhatsApp Engine: Inverted FlashList - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir */}
           <Box flex={1}>
             {isLoadingMessages && messages.length === 0 ? (
               // Loading state - Mesajlar yüklenene kadar göster
@@ -2886,67 +3359,80 @@ const MessageDetailScreen: React.FC = () => {
                     color={isDark ? '#8C8C8C' : '#8C8C8C'} 
                     fontSize="$sm"
                   >
-                    Mesajlar yükleniyor...
+                    Loading messages...
                   </Text>
                 </VStack>
               </Box>
             ) : (
-              <FlatList
+              <FlatList<MessageDetailItem>
                 ref={flatListRef}
                 data={messages}
                 renderItem={renderMessageItem}
                 keyExtractor={(item) => item.id}
-                inverted={false} // Normal FlatList: En eski mesajlar üstte, en yeni mesajlar altta
+                // ✅ WhatsApp Engine: Inverted mode - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir
+                inverted={true}
+                // ✅ WhatsApp Engine: Performance optimizations (FlashList benzeri)
+                removeClippedSubviews={true}
+                windowSize={10}
+                maxToRenderPerBatch={10}
+                updateCellsBatchingPeriod={50}
+                initialNumToRender={15}
+                // ✅ WhatsApp Engine: Content container style
                 contentContainerStyle={{ 
-                  paddingTop: 16,
+                  // ✅ Inverted FlatList: paddingTop = en yeni mesajların (ekranın altındaki) altına padding ekler
+                  // En yeni mesajın altından 20px yukarıda sonlanması için paddingTop: 20
+                  paddingTop: 100,
+                  // CRITICAL FIX: Butonların üstüne 10px ekstra padding ekle
+                  // Butonlar: bottom={isKeyboardVisible ? keyboardHeight + 60 : 60 + insets.bottom}
+                  // Buton yüksekliği: ~100px (2 buton + space="sm")
+                  // Mesajlar butonların 10px üzerine kadar gelebilir
                   paddingBottom: isKeyboardVisible 
-                    ? keyboardHeight + 60  // Klavye + Input (~60px: height + minimal padding)
-                    : 16,
+                    ? keyboardHeight + 60 + 100 + 10  // Klavye + Input (~60px) + Butonlar (~100px) + 10px ekstra
+                    : 60 + insets.bottom + 100 + 10,  // Input (~60px) + Bottom inset + Butonlar (~100px) + 10px ekstra
+                  // Empty state için: Mesaj yoksa ekranın tamamını kapla ve ortala
+                  flexGrow: messages.length === 0 ? 1 : 0,
                 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="interactive"
                 style={{ flex: 1 }}
                 viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+                // ✅ WhatsApp Engine: Pagination - Inverted FlatList'te yukarı scroll yapıldığında (listenin sonuna gelince) eski mesajları getir
+                // Inverted FlatList: onEndReached = listenin sonuna gelince (yukarı scroll yapınca) tetiklenir
+                onEndReached={() => {
+                  if (hasMoreMessages && !isLoadingMoreMessages && oldestMessageId) {
+                    loadOlderMessages();
+                  }
+                }}
+                onEndReachedThreshold={0.5}
+                // ✅ WhatsApp Engine: Loading indicator - Eski mesajlar yüklenirken göster (inverted FlatList'te footer üstte görünür)
+                ListFooterComponent={
+                  isLoadingMoreMessages ? (
+                    <Box py="$4" alignItems="center">
+                      <ActivityIndicator size="small" color={isDark ? '#6366F1' : '#6366F1'} />
+                      <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$xs" mt="$2">
+                        Loading older messages...
+                      </Text>
+                    </Box>
+                  ) : null
+                }
                 ListEmptyComponent={
                   !isLoadingMessages ? (
-                    <Box py={40} alignItems="center" justifyContent="center">
-                      <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$sm">
-                        Henüz mesaj yok
+                    <Box flex={1} alignItems="center" justifyContent="center">
+                      <Text color={isDark ? '#8C8C8C' : '#8C8C8C'} fontSize="$md">
+                        No messages yet
                       </Text>
                     </Box>
                   ) : null
                 }
                 onContentSizeChange={(width, height) => {
-                  // Content size'ı kaydet
+                  // Content size'ı kaydet (viewability için)
                   contentSizeRef.current = { width, height };
-                  
-                  // İçerik değiştiğinde (yeni mesaj eklendiğinde) en alta scroll
-                  // Sadece klavye açıksa scroll yap (gönder butonu zaten scroll yapıyor)
-                  if (messages.length > 0 && isKeyboardVisible) {
-                    const delay = Platform.OS === 'ios' ? 200 : 150;
-                    setTimeout(() => {
-                      safeScrollToEnd(true);
-                    }, delay);
-                  }
                 }}
                 onLayout={(event) => {
-                  // Layout size'ı kaydet
+                  // Layout size'ı kaydet (viewability için)
                   const { width, height } = event.nativeEvent.layout;
                   layoutSizeRef.current = { width, height };
-                  
-                  // İlk render'da en alta scroll yap
-                  if (messages.length > 0) {
-                    setTimeout(() => {
-                      safeScrollToEnd(false);
-                    }, 100);
-                  }
-                }}
-                onScrollToIndexFailed={(info) => {
-                  // Index bulunamazsa scrollToEnd kullan
-                  setTimeout(() => {
-                    flatListRef.current?.scrollToEnd({ animated: true });
-                  }, 100);
                 }}
               />
             )}

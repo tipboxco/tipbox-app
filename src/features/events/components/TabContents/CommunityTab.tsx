@@ -22,6 +22,7 @@ const CARD_GAP = 12;
 const CARD_WIDTH = width * 0.55; // Ekranın %55'i = çok daha kompakt ve peek effect güçlü
 
 type CommunityTabProps = {
+  searchQuery?: string;
   onEventPress: (eventId: string) => void;
 };
 
@@ -73,7 +74,7 @@ const mapUpcomingEventToCardData = (event: UpcomingEventApiItem): UpcomingEventC
   };
 };
 
-export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
+export const CommunityTab: React.FC<CommunityTabProps> = ({ searchQuery, onEventPress }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const bottomInset = useSafeAreaValues('bottom');
@@ -92,7 +93,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     isLoading: isActiveEventsLoading,
     error: activeEventsError,
     isRefetching: isRefetchingActiveEvents, // Refresh durumu
-  } = useActiveEvents(20);
+  } = useActiveEvents(20, searchQuery);
 
   // Upcoming Events API hook - 4'erli veri gelecek
   const {
@@ -103,7 +104,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ onEventPress }) => {
     isLoading: isUpcomingEventsLoading,
     error: upcomingEventsError,
     isRefetching: isRefetchingUpcomingEvents, // Refresh durumu
-  } = useUpcomingEvents(4);
+  } = useUpcomingEvents(4, searchQuery);
 
   // Transform events data for display (flatten all pages and remove duplicates)
   const activeEvents = useMemo(() => {

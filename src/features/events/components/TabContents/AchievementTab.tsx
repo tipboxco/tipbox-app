@@ -24,12 +24,14 @@ import { LimitedTimeEventSkeleton, BadgeSkeleton } from '@/src/components/Skelet
 const { width } = Dimensions.get('window');
 
 type AchievementTabProps = {
+  searchQuery?: string;
   activeFilter: FilterOption;
   onFilterChange: (filter: FilterOption) => void;
   onRewardPress?: (reward: SeeAllReward) => void; // Optional - artık kullanılmıyor
 };
 
 const AchievementTab: React.FC<AchievementTabProps> = ({
+  searchQuery,
   activeFilter,
   onFilterChange,
   onRewardPress,
@@ -58,7 +60,7 @@ const AchievementTab: React.FC<AchievementTabProps> = ({
     error: achievementsError,
     refetch: refetchAchievements, // Pull-to-refresh için
     isRefetching: isRefetchingAchievements, // Refresh durumu
-  } = useAchievements(6);
+  } = useAchievements(6, searchQuery);
 
   // Map AchievementApiItem to SeeAllReward format (BadgeCard component'i için)
   const mapAchievementToSeeAllReward = useCallback((achievement: AchievementApiItem): SeeAllReward => {
