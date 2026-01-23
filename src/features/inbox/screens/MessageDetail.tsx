@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator, Share } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Alert, Keyboard, Dimensions, ActivityIndicator, Share, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
@@ -17,8 +17,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead } from '../api/hooks';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead, useAddReaction, useRemoveReaction } from '../api/hooks';
 import { getThreadMessages } from '../api/messagesApi';
+import type { ThreadMessage } from '../api/messagesApi';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { inboxKeys } from '../api/hooks';
@@ -33,6 +34,7 @@ import MessageDetailActionButtons from '../components/MessageDetailActionButtons
 import SendTipsBottomSheet from '../components/SendTipsBottomSheet';
 import OneOnOneSupportBottomSheet from '../components/OneOnOneSupportBottomSheet';
 import { ImageMessage } from '../components/MessageItem/ImageMessage';
+import { MessageItem } from '../components/MessageItem';
 
 interface MessageDetailItem {
   id: string;
@@ -75,6 +77,14 @@ interface MessageDetailItem {
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
   readAt?: string; // Okunma zamanı
+  // Reactions
+  reactions?: Array<{
+    emoji: string;
+    count: number;
+    users: string[];
+  }>;
+  // Message deletion status
+  isDeleted?: boolean;
 }
 
 type MessageDetailScreenNavigationProp = NativeStackNavigationProp<any, 'MessageDetailScreen'>;
@@ -224,6 +234,9 @@ const MessageDetailScreen: React.FC = () => {
   const flatListRef = useRef<FlatList<MessageDetailItem>>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
+  // Emoji picker state for each message
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState<{ [key: string]: boolean }>({});
+  const emojiPickerAnimations = useRef<{ [key: string]: { width: Animated.Value; opacity: Animated.Value } }>({}).current;
   // Mesaj görünürlüğü takibi için (okundu işaretleme)
   const visibleMessageIdsRef = useRef<Set<string>>(new Set());
   // Component mount durumunu takip et (unmount olduktan sonra okundu işaretleme yapılmasın)
@@ -257,6 +270,15 @@ const MessageDetailScreen: React.FC = () => {
   const routeParams = (route.params as MessageDetailScreenParams) || {};
   const recipientUserId = routeParams.recipientUserId;
   const initialThreadId = routeParams.threadId || routeParams.messageId;
+  
+  // DEBUG: Route params'ı logla
+  console.log('[MessageDetail] 🔍 Route params:', {
+    threadId: routeParams.threadId,
+    messageId: routeParams.messageId,
+    recipientUserId: routeParams.recipientUserId,
+    initialThreadId,
+    allParams: routeParams,
+  });
 
   // Helper: Thread'den diğer kullanıcıyı bul (DM_THREAD.md'ye göre)
   const getOtherUserIdFromThread = useCallback((thread: { userOneId: string; userTwoId: string }, currentUserId: string): string | null => {
@@ -277,6 +299,8 @@ const MessageDetailScreen: React.FC = () => {
   const rejectSupportRequestMutation = useRejectSupportRequest();
   const cancelSupportRequestMutation = useCancelSupportRequest();
   const markThreadAsReadMutation = useMarkThreadAsRead();
+  const addReactionMutation = useAddReaction();
+  const removeReactionMutation = useRemoveReaction();
   const queryClient = useQueryClient();
   const reportUserMutation = useReportUser();
   const blockUserMutation = useBlockUser();
@@ -353,11 +377,7 @@ const MessageDetailScreen: React.FC = () => {
       const textHeight = Math.max(20, lines * 20); // Minimum 20px (tek satır)
       const messageHeight = textHeight + 24; // Padding (12px top + 12px bottom)
       
-      console.log('[MessageDetail] 📜 Scrolling by message height:', {
-        messageLength: messageText.length,
-        lines,
-        messageHeight,
-      });
+     
       
       // ✅ WhatsApp Engine: Inverted FlatList'te scrollToEnd en yeni mesaja scroll yapar
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -387,6 +407,39 @@ const MessageDetailScreen: React.FC = () => {
     threadId,
     { limit: 50 } // İlk yüklemede 50 mesaj getir
   );
+  
+  // DEBUG: ThreadId ve query durumunu logla
+  useEffect(() => {
+    console.log('[MessageDetail] 🔍 Query durumu kontrolü:', {
+      threadId,
+      queryEnabled: !!threadId,
+      isLoadingMessages,
+      isFetching: queryClient.getQueryState([...inboxKeys.threadMessages(threadId || ''), { limit: 50 }])?.fetchStatus,
+      threadMessagesLength: threadMessages?.length || 0,
+      hasThreadMessages: !!threadMessages,
+      threadMessagesType: Array.isArray(threadMessages) ? 'array' : typeof threadMessages,
+    });
+    
+    // Query durumunu kontrol et
+    if (threadId) {
+      const queryKey = [...inboxKeys.threadMessages(threadId), { limit: 50 }];
+      const queryState = queryClient.getQueryState(queryKey);
+      const queryData = queryClient.getQueryData<ThreadMessage[]>(queryKey);
+      
+      console.log('[MessageDetail] 🔍 React Query state:', {
+        queryKey: queryKey.join('/'),
+        status: queryState?.status,
+        fetchStatus: queryState?.fetchStatus,
+        dataUpdatedAt: queryState?.dataUpdatedAt ? new Date(queryState.dataUpdatedAt).toISOString() : null,
+        errorUpdatedAt: queryState?.errorUpdatedAt ? new Date(queryState.errorUpdatedAt).toISOString() : null,
+        error: queryState?.error?.message,
+        hasCachedData: !!queryData,
+        cachedDataLength: queryData?.length || 0,
+      });
+    } else {
+      console.log('[MessageDetail] ⚠️ ThreadId yok, query disabled');
+    }
+  }, [threadId, isLoadingMessages, threadMessages?.length, queryClient]);
 
   // Klavye event listener'ları - scroll ve buton pozisyonu için
   useEffect(() => {
@@ -476,9 +529,10 @@ const MessageDetailScreen: React.FC = () => {
             : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : currentParams.senderAvatar);
           
           let messageType: 'message' | 'image' | 'support_request' | 'tips' = 'message';
-          if (msg.messageType === 'support-request') {
+          if (msg.messageType === 'support-request' || msg.supportRequestType) {
             messageType = 'support_request';
-          } else if (msg.messageType === 'send-tips') {
+          } else if (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) {
+            // ✅ FIX: amount var ama supportRequestType yoksa ve mediaUrl yoksa -> TIPS mesajı
             messageType = 'tips';
           } else if (msg.messageType === 'image' || msg.mediaUrl) {
             messageType = 'image';
@@ -498,17 +552,19 @@ const MessageDetailScreen: React.FC = () => {
             thumbnailUrl: msg.thumbnailUrl,
             // ✅ Image dimensions (backend'den gelebilir)
             dimensions: msg.dimensions || (msg as any).content?.dimensions,
-            tipsAmount: msg.messageType === 'send-tips' ? (msg.amount || 0) : undefined,
-            supportRequest: msg.messageType === 'support-request' ? {
+            tipsAmount: (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) ? (msg.amount || 0) : undefined,
+            supportRequest: (msg.messageType === 'support-request' || msg.supportRequestType) ? {
               supportType: msg.supportRequestType || 'GENERAL',
               message: msg.message,
               amount: msg.amount || 0,
               status: (msg.supportRequestStatus || 'pending') as 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported',
-              requestId: msg.id,
+              requestId: msg.requestId || msg.id, // Backend'den gelen requestId kullan, yoksa message ID kullan
               threadId: msg.threadId || null,
               fromUserId: msg.fromUserId,
               toUserId: msg.toUserId,
             } : undefined,
+            // Reactions (backend'den gelebilir)
+            reactions: (msg as any).reactions || undefined,
           };
         });
         
@@ -571,20 +627,13 @@ const MessageDetailScreen: React.FC = () => {
             
             // Mesaj tipini belirle
             let messageType: 'message' | 'image' | 'support_request' | 'tips' = 'message';
-            if (msg.messageType === 'support-request') {
+            if (msg.messageType === 'support-request' || msg.supportRequestType) {
               messageType = 'support_request';
-            } else if (msg.messageType === 'send-tips') {
+            } else if (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) {
+              // ✅ FIX: amount var ama supportRequestType yoksa ve mediaUrl yoksa -> TIPS mesajı
               messageType = 'tips';
             } else if (msg.messageType === 'image' || msg.mediaUrl) {
               messageType = 'image';
-              // ✅ DEBUG: Görsel mesaj tespit edildi
-              console.log('[MessageDetail] 🖼️ Image message detected:', {
-                id: msg.id,
-                messageType: msg.messageType,
-                mediaUrl: msg.mediaUrl,
-                thumbnailUrl: msg.thumbnailUrl,
-                caption: msg.caption,
-              });
             }
 
             const convertedMessage: MessageDetailItem = {
@@ -606,14 +655,14 @@ const MessageDetailScreen: React.FC = () => {
               // ✅ Image dimensions (backend'den gelebilir)
               dimensions: msg.dimensions || (msg as any).content?.dimensions,
               // TIPS mesajı için amount
-              tipsAmount: msg.messageType === 'send-tips' ? (msg.amount || 0) : undefined,
+              tipsAmount: (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) ? (msg.amount || 0) : undefined,
               // Support request için özel alanlar
-              supportRequest: msg.messageType === 'support-request' ? {
+              supportRequest: (msg.messageType === 'support-request' || msg.supportRequestType) ? {
                 supportType: msg.supportRequestType || 'GENERAL',
                 message: msg.message,
                 amount: msg.amount || 0,
                 status: (msg.supportRequestStatus || 'pending') as 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported',
-                requestId: msg.id, // Support request ID = message ID
+                requestId: msg.requestId || msg.id, // Backend'den gelen requestId kullan, yoksa message ID kullan
                 threadId: msg.threadId || null, // Support thread ID (accepted ise)
                 fromUserId: msg.fromUserId, // Request'i oluşturan kullanıcı
                 toUserId: msg.toUserId, // Request'in gönderildiği kullanıcı (expert)
@@ -628,19 +677,7 @@ const MessageDetailScreen: React.FC = () => {
               })) : undefined,
             };
             
-            // ✅ DEBUG: Görsel mesaj için kontrol
-            if (messageType === 'image') {
-              console.log('[MessageDetail] 🖼️ Converted image message:', {
-                id: convertedMessage.id,
-                hasGroupedMessages: !!(convertedMessage.groupedMessages && convertedMessage.groupedMessages.length > 0),
-                groupedMessagesCount: convertedMessage.groupedMessages?.length || 0,
-                type: convertedMessage.type,
-                mediaUrl: convertedMessage.mediaUrl,
-                thumbnailUrl: convertedMessage.thumbnailUrl,
-                text: convertedMessage.text,
-                hasMediaUrl: !!convertedMessage.mediaUrl,
-              });
-            }
+         
             
             return convertedMessage;
           });
@@ -755,7 +792,11 @@ const MessageDetailScreen: React.FC = () => {
         // (Inbox listesinden gelen threadId'yi kullan)
         if (initialThreadId && initialThreadId !== currentRecipientUserId && initialThreadId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
           // Thread ID zaten var (inbox listesinden geldi), direkt kullan
-          console.log('[MessageDetail] Using existing threadId from inbox:', initialThreadId);
+          console.log('[MessageDetail] ✅ Using existing threadId from inbox:', {
+            initialThreadId,
+            currentRecipientUserId,
+            threadIdMatch: initialThreadId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ? 'valid UUID' : 'invalid UUID',
+          });
           currentThreadId = initialThreadId;
           setThreadId(initialThreadId);
           // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
@@ -767,6 +808,12 @@ const MessageDetailScreen: React.FC = () => {
           try {
             thread = await getOrCreateThread(currentRecipientUserId);
             currentThreadId = thread.id;
+            console.log('[MessageDetail] ✅ Thread oluşturuldu/getirildi:', {
+              threadId: thread.id,
+              userOneId: thread.userOneId,
+              userTwoId: thread.userTwoId,
+              isSupportThread: thread.isSupportThread,
+            });
             setThreadId(thread.id);
             // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
             setActiveThreadId(thread.id);
@@ -1671,6 +1718,51 @@ const MessageDetailScreen: React.FC = () => {
     // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
   }, []);
 
+  // Handle Message Reaction Event (from socket)
+  const handleMessageReaction = useCallback((eventData: { messageId: string; emoji: string; userId: string; count?: number; users?: string[] }) => {
+    console.log('[MessageDetail] 😀 Message reaction event:', eventData);
+    
+    if (!eventData.messageId || !eventData.emoji) {
+      return;
+    }
+
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === eventData.messageId) {
+          const existingReactions = msg.reactions || [];
+          const reactionIndex = existingReactions.findIndex((r) => r.emoji === eventData.emoji);
+          
+          let updatedReactions: typeof existingReactions;
+          if (reactionIndex !== -1) {
+            // Reaction already exists, update count
+            updatedReactions = [...existingReactions];
+            updatedReactions[reactionIndex] = {
+              ...updatedReactions[reactionIndex],
+              count: eventData.count || updatedReactions[reactionIndex].count + 1,
+              users: eventData.users || [...(updatedReactions[reactionIndex].users || []), eventData.userId],
+            };
+          } else {
+            // New reaction
+            updatedReactions = [
+              ...existingReactions,
+              {
+                emoji: eventData.emoji,
+                count: eventData.count || 1,
+                users: eventData.users || [eventData.userId],
+              },
+            ];
+          }
+          
+          return {
+            ...msg,
+            reactions: updatedReactions,
+          };
+        }
+        return msg;
+      })
+    );
+  }, []);
+
   // Mesaj okundu işaretleme - Mesaj görünür olduğunda otomatik okundu işaretle
   const viewabilityConfig = {
     itemVisiblePercentThreshold: 50, // Mesajın %50'si görünür olduğunda
@@ -1766,6 +1858,8 @@ const MessageDetailScreen: React.FC = () => {
     on('user_typing', handleUserTyping);
     on('message_read', handleMessageRead);
     on('thread_read', handleThreadRead);
+    // Message reaction event
+    on('message_reaction', handleMessageReaction);
     // Support request event'leri
     on('support_request_accepted', handleSupportRequestAccepted);
     on('support_request_rejected', handleSupportRequestRejected);
@@ -1783,6 +1877,8 @@ const MessageDetailScreen: React.FC = () => {
       off('user_typing', handleUserTyping);
       off('message_read', handleMessageRead);
       off('thread_read', handleThreadRead);
+      // Message reaction event
+      off('message_reaction', handleMessageReaction);
       // Support request event'leri
       off('support_request_accepted', handleSupportRequestAccepted);
       off('support_request_rejected', handleSupportRequestRejected);
@@ -1802,7 +1898,7 @@ const MessageDetailScreen: React.FC = () => {
     };
     // CRITICAL FIX: Socket fonksiyonları (on, off, socketStopTyping, leaveThread) stable olduğu için dependency array'den çıkarıldı
     // Sadece handler callback'leri ve threadId, isConnected gibi değişken değerleri dependency olarak kalmalı
-  }, [isConnected, threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, handleThreadRead, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled]);
+  }, [isConnected, threadId, handleNewMessage, handleMessageSent, handleThreadJoined, handleThreadLeft, handleThreadJoinError, handleMessageSendError, handleUserTyping, handleMessageRead, handleThreadRead, handleMessageReaction, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled]);
 
   // Handle Share
   const handleShare = useCallback(async () => {
@@ -1966,9 +2062,19 @@ const MessageDetailScreen: React.FC = () => {
     sendGiftMutation.mutate(
       requestData,
       {
-        onSuccess: () => {
-          console.log('[MessageDetail] ✅ TIPS sent successfully');
-          Alert.alert('Success', 'TIPS sent successfully');
+        onSuccess: (response) => {
+          console.log('[MessageDetail] ✅ TIPS sent successfully:', {
+            amount: amount,
+            message: finalMessage.substring(0, 50),
+            recipientUserId: finalRecipientUserId,
+            response: response,
+            timestamp: new Date().toISOString(),
+          });
+          Alert.alert(
+            'Success', 
+            `${amount} TIPS başarıyla gönderildi!`,
+            [{ text: 'OK' }]
+          );
           closeBottomSheet();
           
           // Mesaj listesini invalidate et (socket event'i geldiğinde optimistic mesaj gerçek mesajla değiştirilecek)
@@ -1984,14 +2090,23 @@ const MessageDetailScreen: React.FC = () => {
             message: error.message,
             response: error.response?.data,
             status: error.response?.status,
-            requestData,
+            statusText: error.response?.statusText,
+            requestData: {
+              ...requestData,
+              messagePreview: finalMessage.substring(0, 50),
+            },
+            errorStack: error.stack,
           });
           
           // Hata durumunda optimistic mesajı geri al
           setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
           
-          const errorMessage = error.response?.data?.message || error.message || 'An error occurred while sending TIPS';
-          Alert.alert('Error', errorMessage);
+          const errorMessage = error.response?.data?.message || error.message || 'TIPS gönderilirken bir hata oluştu';
+          Alert.alert(
+            'Error', 
+            errorMessage,
+            [{ text: 'OK' }]
+          );
         },
       }
     );
@@ -2386,6 +2501,28 @@ const MessageDetailScreen: React.FC = () => {
           text: 'Cancel',
           style: 'destructive',
           onPress: () => {
+            // Optimistic update: Local state'te hemen canceled olarak işaretle
+            setMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.type === 'support_request' && msg.supportRequest && (msg.supportRequest.requestId === requestId || msg.id === requestId)) {
+                  return {
+                    ...msg,
+                    supportRequest: {
+                      supportType: msg.supportRequest.supportType,
+                      message: msg.supportRequest.message,
+                      amount: msg.supportRequest.amount,
+                      status: 'canceled' as const,
+                      requestId: msg.supportRequest.requestId,
+                      threadId: msg.supportRequest.threadId,
+                      fromUserId: msg.supportRequest.fromUserId,
+                      toUserId: msg.supportRequest.toUserId,
+                    },
+                  };
+                }
+                return msg;
+              })
+            );
+
             if (isConnected && isSocketReady) {
               // Socket ile cancel et
               console.log('[MessageDetail] 🚫 Canceling support request via socket:', requestId);
@@ -2396,10 +2533,34 @@ const MessageDetailScreen: React.FC = () => {
               cancelSupportRequestMutation.mutate(requestId, {
                 onSuccess: () => {
                   console.log('[MessageDetail] ✅ Support request canceled');
-                  Alert.alert('Success', 'Support request cancelled');
+                  // Local state zaten güncellendi (optimistic update)
+                  // Inbox listesini invalidate et
+                  queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+                  queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
                 },
                 onError: (error: any) => {
                   console.error('[MessageDetail] ❌ Support request cancel error:', error);
+                  // Hata durumunda optimistic update'i geri al
+                  setMessages((prev) =>
+                    prev.map((msg) => {
+                      if (msg.type === 'support_request' && msg.supportRequest && (msg.supportRequest.requestId === requestId || msg.id === requestId)) {
+                        return {
+                          ...msg,
+                          supportRequest: {
+                            supportType: msg.supportRequest.supportType,
+                            message: msg.supportRequest.message,
+                            amount: msg.supportRequest.amount,
+                            status: 'pending' as const,
+                            requestId: msg.supportRequest.requestId,
+                            threadId: msg.supportRequest.threadId,
+                            fromUserId: msg.supportRequest.fromUserId,
+                            toUserId: msg.supportRequest.toUserId,
+                          },
+                        };
+                      }
+                      return msg;
+                    })
+                  );
                   Alert.alert('Error', error.message || 'Support request could not be cancelled');
                 },
               });
@@ -2408,7 +2569,134 @@ const MessageDetailScreen: React.FC = () => {
         },
       ]
     );
-  }, [isConnected, isSocketReady, socketCancelSupportRequest, cancelSupportRequestMutation]);
+  }, [isConnected, isSocketReady, socketCancelSupportRequest, cancelSupportRequestMutation, queryClient]);
+
+  // Handle React to Message (user action)
+  const handleReact = useCallback((messageId: string, emoji: string) => {
+    if (!messageId || !emoji) {
+      return;
+    }
+
+    // Check if user already reacted with this emoji
+    const message = messages.find((msg) => msg.id === messageId);
+    if (message?.reactions) {
+      const existingReaction = message.reactions.find((r) => r.emoji === emoji);
+      const userReacted = existingReaction?.users?.includes(user?.id || '');
+      
+      if (userReacted && existingReaction) {
+        // Remove reaction - find reactionId from backend
+        // For now, we'll just call the API and let backend handle it
+        // TODO: Get reactionId from message reactions
+        console.log('[MessageDetail] Removing reaction:', { messageId, emoji });
+        // Optimistic update
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId && msg.reactions) {
+              const updatedReactions = msg.reactions.map((r) => {
+                if (r.emoji === emoji) {
+                  const updatedUsers = r.users.filter((uid) => uid !== user?.id);
+                  return {
+                    ...r,
+                    count: Math.max(0, r.count - 1),
+                    users: updatedUsers,
+                  };
+                }
+                return r;
+              }).filter((r) => r.count > 0);
+              
+              return {
+                ...msg,
+                reactions: updatedReactions,
+              };
+            }
+            return msg;
+          })
+        );
+        
+        // Call API to remove reaction
+        // Note: We need reactionId, but for simplicity, we'll use a workaround
+        // Backend should handle removing reaction by messageId + userId + emoji
+        removeReactionMutation.mutate(
+          { messageId, reactionId: 'temp' }, // Backend should handle this
+          {
+            onError: () => {
+              // Revert optimistic update on error
+              setMessages((prev) =>
+                prev.map((msg) => {
+                  if (msg.id === messageId) {
+                    // Restore previous reactions
+                    return message;
+                  }
+                  return msg;
+                })
+              );
+            },
+          }
+        );
+      } else {
+        // Add reaction
+        console.log('[MessageDetail] Adding reaction:', { messageId, emoji });
+        
+        // Optimistic update
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === messageId) {
+              const existingReactions = msg.reactions || [];
+              const reactionIndex = existingReactions.findIndex((r) => r.emoji === emoji);
+              
+              if (reactionIndex !== -1) {
+                // Update existing reaction
+                const updatedReactions = [...existingReactions];
+                updatedReactions[reactionIndex] = {
+                  ...updatedReactions[reactionIndex],
+                  count: updatedReactions[reactionIndex].count + 1,
+                  users: [...(updatedReactions[reactionIndex].users || []), user?.id || ''],
+                };
+                return {
+                  ...msg,
+                  reactions: updatedReactions,
+                };
+              } else {
+                // Add new reaction
+                return {
+                  ...msg,
+                  reactions: [
+                    ...existingReactions,
+                    {
+                      emoji,
+                      count: 1,
+                      users: [user?.id || ''],
+                    },
+                  ],
+                };
+              }
+            }
+            return msg;
+          })
+        );
+        
+        addReactionMutation.mutate(
+          { messageId, emoji },
+          {
+            onError: () => {
+              // Revert optimistic update on error
+              setMessages((prev) =>
+                prev.map((msg) => {
+                  if (msg.id === messageId) {
+                    return message;
+                  }
+                  return msg;
+                })
+              );
+            },
+          }
+        );
+      }
+    } else {
+      // No existing reactions, add new one
+      addReactionMutation.mutate({ messageId, emoji });
+    }
+  }, [messages, user?.id, addReactionMutation, removeReactionMutation]);
 
   // Handle Add Image - Galeriyi aç ve görseli mesaj olarak gönder
   const handleAddImage = useCallback(async () => {
@@ -2636,6 +2924,63 @@ const MessageDetailScreen: React.FC = () => {
 
   // Mesaj öğesi render fonksiyonu
   // ✅ FIX: useCallback ile memoize et - flicker'ı önlemek için
+  // Initialize animation for message if not exists
+  const getOrCreateAnimation = useCallback((messageId: string) => {
+    if (!emojiPickerAnimations[messageId]) {
+      emojiPickerAnimations[messageId] = {
+        width: new Animated.Value(24),
+        opacity: new Animated.Value(0),
+      };
+    }
+    return emojiPickerAnimations[messageId];
+  }, []);
+
+  const openEmojiPicker = useCallback((messageId: string) => {
+    const anim = getOrCreateAnimation(messageId);
+    setEmojiPickerOpen((prev) => ({ ...prev, [messageId]: true }));
+    Animated.parallel([
+      Animated.timing(anim.width, {
+        toValue: 200,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(anim.opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [getOrCreateAnimation]);
+
+  const closeEmojiPicker = useCallback((messageId: string) => {
+    const anim = getOrCreateAnimation(messageId);
+    Animated.parallel([
+      Animated.timing(anim.width, {
+        toValue: 24,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(anim.opacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start(() => {
+      setEmojiPickerOpen((prev) => {
+        const newState = { ...prev };
+        delete newState[messageId];
+        return newState;
+      });
+    });
+  }, [getOrCreateAnimation]);
+
+  const handleEmojiSelect = useCallback((messageId: string, emoji: string) => {
+    handleReact(messageId, emoji);
+    closeEmojiPicker(messageId);
+  }, [handleReact, closeEmojiPicker]);
+
+  const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
   const renderMessageItem = useCallback(({ item, index }: { item: MessageDetailItem; index: number }) => {
     // Date header check: Show header if not the same day as next message (older message above)
     // CRITICAL FIX: Always use sentAt (ISO timestamp) for date comparison, not timestamp (formatted time string)
@@ -2679,18 +3024,7 @@ const MessageDetailScreen: React.FC = () => {
       // Inverted FlatList: index 0 = en yeni, index artarken eskiye gidiyor
       const isDifferentDay = !isSameDay(currentDate, nextDate);
       
-      // ✅ DEBUG: Tarih başlığı mantığı
-      if (__DEV__) {
-        console.log('[MessageDetail] 📅 Date header check:', {
-          index,
-          currentId: item.id,
-          currentDate: currentDate,
-          nextId: nextItem.id,
-          nextDate: nextDate,
-          isDifferentDay,
-          showHeader: isDifferentDay,
-        });
-      }
+    
       
       return isDifferentDay;
     })();
@@ -3171,153 +3505,31 @@ const MessageDetailScreen: React.FC = () => {
       );
     }
 
-    // Normal mesaj render'ı
-    const isSent = item.isSent;
-    
-    // ✅ FIX: isFirstInGroup hesapla (5 dakika içinde aynı kullanıcıdan mesaj varsa grup)
-    // Optimize: Sadece bir önceki mesajı kontrol et, daha önceki mesajları kontrol etme
-    // Bu sayede yeni mesaj eklendiğinde sadece etkilenen mesajlar yeniden render edilir
-    const prevMessage = index > 0 ? messages[index - 1] : null;
-    const isFirstInGroup = !prevMessage || 
-      prevMessage.isSent !== item.isSent || 
-      !isSameDay(prevMessage.sentAt, item.sentAt) ||
-      !isWithin5Minutes(prevMessage.sentAt, item.sentAt);
-    
-    // ✅ FIX: isFirstInGroup değerini item'a ekle (memoization için)
-    // Bu sayede aynı mesaj için aynı değer döner ve gereksiz re-render'lar önlenir
-
+    // Normal mesaj render'ı - MessageItem component'ini kullan
     return (
       <VStack space="xs">
         {DateHeader}
-        <VStack
-          space="xs"
-          alignItems={isSent ? 'flex-end' : 'flex-start'}
-          px="$4"
-          py="$2"
-        >
-        {!isSent && isFirstInGroup && (
-          <HStack space="sm" alignItems="center" mb="$1">
-            <Image
-                source={
-                  toImageSource(item.senderAvatar || params.senderAvatar) ||
-                  DEFAULT_USER_AVATAR
-                }
-                alt={item.senderName || params.senderName || 'User'}
-                width={32}
-                height={32}
-                borderRadius={16}
-              />
-              <Text
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize="$sm"
-                fontWeight="$medium"
-              >
-                {item.senderName || params.senderName || 'Unknown User'}
-              </Text>
-          </HStack>
-        )}
-
-        <HStack
-          space="sm"
-          alignItems="flex-end"
-          maxWidth="80%"
-          flexDirection="row"
-          justifyContent={isSent ? 'flex-end' : 'flex-start'}
-        >
-          <Box
-            bg={isSent ? (isDark ? '#6366F1' : '#6366F1') : (isDark ? '#1A1A1A' : '#F2F2F2')}
-            px="$3"
-            py="$2"
-            borderRadius={16}
-            borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
-            borderTopRightRadius={isSent ? (isFirstInGroup ? 16 : 4) : 16}
-          >
-            <VStack space="xs">
-              {/* Ana mesaj - sadece text varsa göster */}
-              {item.text && item.text.trim() && (
-                <Text
-                  color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
-                  fontSize="$sm"
-                  fontWeight="$normal"
-                >
-                  {item.text}
-                </Text>
-              )}
-              
-              {/* ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar) */}
-              {item.groupedMessages && item.groupedMessages.length > 0 && (() => {
-                const groupedMessages = item.groupedMessages; // TypeScript guard: Yukarıdaki kontrol zaten yapıldı
-                if (!groupedMessages) return null; // Type guard için ek kontrol
-                
-                if (__DEV__) {
-                  console.log('[MessageDetail] 📦 Rendering grouped messages:', {
-                    messageId: item.id,
-                    groupedCount: groupedMessages.length,
-                    firstGroupedMessage: groupedMessages[0] ? { id: groupedMessages[0].id, text: groupedMessages[0].text } : null,
-                  });
-                }
-                return (
-                  <VStack space="xs" mt="$1">
-                    {groupedMessages.map((groupedMsg) => (
-                      <Text
-                        key={groupedMsg.id}
-                        color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
-                        fontSize="$sm"
-                        fontWeight="$normal"
-                        opacity={0.9}
-                      >
-                        {groupedMsg.text || '(Mesaj içeriği yok)'}
-                      </Text>
-                    ))}
-                  </VStack>
-                );
-              })()}
-            </VStack>
-          </Box>
-
-          <VStack space="xs" alignItems={isSent ? 'flex-start' : 'flex-start'}>
-            <Text
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize="$2xs"
-              fontWeight="$normal"
-            >
-              {item.timestamp}
-            </Text>
-            {/* Read receipt (görüldü) - sadece gönderilen mesajlarda */}
-            {isSent && (
-              <Box position="relative" width={16} height={14} alignItems="center" justifyContent="center">
-                {item.isRead ? (
-                  // Çift yeşil tik (WhatsApp stili)
-                  <>
-                    <Feather
-                      name="check"
-                      size={14}
-                      color="#4CAF50"
-                      style={{ position: 'absolute', left: 0, top: 0 }}
-                    />
-                    <Feather
-                      name="check"
-                      size={14}
-                      color="#4CAF50"
-                      style={{ position: 'absolute', left: 4, top: 0 }}
-                    />
-                  </>
-                ) : (
-                  // Tek gri tik (gönderildi ama okunmadı)
-                  <Feather
-                    name="check"
-                    size={12}
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                  />
-                )}
-              </Box>
-            )}
-          </VStack>
-        </HStack>
-        </VStack>
+        <MessageItem
+          item={item}
+          index={index}
+          messages={messages}
+          isDark={isDark}
+          params={params}
+          onDelete={undefined}
+          onEdit={undefined}
+          onReply={undefined}
+          onReact={handleReact}
+          expandedSupportRequests={expandedSupportRequests}
+          onToggleSupportRequest={toggleSupportRequest}
+          onAcceptSupportRequest={handleAcceptSupportRequest}
+          onRejectSupportRequest={handleRejectSupportRequest}
+          onCancelSupportRequest={handleCancelSupportRequest}
+          onGoToSupportChat={handleGoToSupportChat}
+          currentUserId={user?.id}
+        />
       </VStack>
     );
-  }, [messages, isDark, params.senderName, params.senderTitle, params.senderAvatar, user?.id, threadId, handleAcceptSupportRequest, handleRejectSupportRequest, handleCancelSupportRequest, handleReport, handleBlock]);
+  }, [messages, isDark, params.senderName, params.senderTitle, params.senderAvatar, user?.id, threadId, handleAcceptSupportRequest, handleRejectSupportRequest, handleCancelSupportRequest, handleReport, handleBlock, handleReact, handleMessageReaction, emojiPickerOpen, getOrCreateAnimation, openEmojiPicker, closeEmojiPicker, handleEmojiSelect, emojis, expandedSupportRequests, toggleSupportRequest, handleGoToSupportChat]);
 
   // CRITICAL FIX: SafeAreaView kullanmıyoruz, flicker önlemek için manuel insets kullanıyoruz
   // Üstte top inset kadar, altta bottom inset kadar view kullan

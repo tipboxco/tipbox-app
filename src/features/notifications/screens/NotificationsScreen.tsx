@@ -378,6 +378,15 @@ const NotificationsScreenComponent: React.FC = () => {
             return [];
         }
 
+        // CRITICAL FIX: Bildirimleri önce tarihe göre sırala (en yeni en üstte - descending)
+        const sortedNotifications = [...notifications].sort((a, b) => {
+            const createdAtA = 'createdAt' in a ? a.createdAt : (a as any).createdAt;
+            const createdAtB = 'createdAt' in b ? b.createdAt : (b as any).createdAt;
+            const dateA = new Date(createdAtA).getTime();
+            const dateB = new Date(createdAtB).getTime();
+            return dateB - dateA; // Descending: en yeni en üstte
+        });
+
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const yesterday = new Date(today);
@@ -387,10 +396,19 @@ const NotificationsScreenComponent: React.FC = () => {
         const thisMonth = new Date(today);
         thisMonth.setMonth(thisMonth.getMonth() - 1);
 
+        // Grup sıralama önceliği (daha yüksek sayı = daha üstte)
+        const getGroupPriority = (groupLabel: string): number => {
+            if (groupLabel === 'Today') return 4;
+            if (groupLabel === 'Yesterday') return 3;
+            if (groupLabel === 'This Week') return 2;
+            if (groupLabel === 'This Month') return 1;
+            return 0; // Eski aylar/yıllar
+        };
+
         const grouped: Array<{ type: 'header' | 'notification'; data: any }> = [];
         let currentGroup: string | null = null;
 
-        notifications.forEach((notification) => {
+        sortedNotifications.forEach((notification) => {
             // Hem Notification hem de GroupedNotification için createdAt alanını al
             const createdAt = 'createdAt' in notification ? notification.createdAt : (notification as any).createdAt;
             const notificationDate = new Date(createdAt);
@@ -401,9 +419,9 @@ const NotificationsScreenComponent: React.FC = () => {
                 groupLabel = 'Today';
             } else if (notificationDateOnly.getTime() === yesterday.getTime()) {
                 groupLabel = 'Yesterday';
-            } else if (notificationDate >= thisWeek) {
+            } else if (notificationDateOnly >= thisWeek) {
                 groupLabel = 'This Week';
-            } else if (notificationDate >= thisMonth) {
+            } else if (notificationDateOnly >= thisMonth) {
                 groupLabel = 'This Month';
             } else {
                 // Month and year format: "January 2024"

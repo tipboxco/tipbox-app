@@ -509,19 +509,30 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     
     console.log('[getThreadMessages] 📡 API çağrısı başlatılıyor:', {
       endpoint,
+      fullUrl: `${apiService.getClient().defaults.baseURL}${endpoint}`,
       threadId,
       params,
+      baseURL: apiService.getClient().defaults.baseURL,
     });
     
     const response = await apiService.getClient().get<GetThreadMessagesResponse>(endpoint);
     
     console.log('[getThreadMessages] ✅ API çağrısı başarılı:', {
       status: response.status,
+      statusText: response.statusText,
       hasDateGroups: !!response.data?.dateGroups,
       dateGroupsLength: response.data?.dateGroups?.length || 0,
       itemsLength: response.data?.items?.length || 0,
+      itemsIsArray: Array.isArray(response.data?.items),
+      itemsType: typeof response.data?.items,
+      itemsValue: response.data?.items,
       pagination: response.data?.pagination,
-      responseData: response.data,
+      hasParticipants: !!response.data?.participants,
+      participants: response.data?.participants,
+      responseDataKeys: response.data ? Object.keys(response.data) : [],
+      responseDataType: typeof response.data,
+      responseDataIsArray: Array.isArray(response.data),
+      responseDataFull: JSON.stringify(response.data, null, 2).substring(0, 500), // İlk 500 karakter
     });
     
     // ✅ YENİ: Optimize format kontrolü (dateGroups varsa optimize format kullan)
@@ -552,12 +563,36 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     // Yeni optimize format: Backend'den { dateGroups: [...], participants: {...}, pagination: {...} } formatında geliyor
     // Şu anda backend henüz optimize format göndermiyor, bu yüzden eski format kullanılıyor
     console.log('[getThreadMessages] 📦 Eski format kullanılıyor (items) - Backend henüz optimize format (dateGroups) göndermiyor');
+    
+    // CRITICAL DEBUG: Response data yapısını kontrol et
+    console.log('[getThreadMessages] 🔍 Response data analizi:', {
+      hasResponseData: !!response.data,
+      responseDataKeys: response.data ? Object.keys(response.data) : [],
+      hasItems: !!response.data?.items,
+      itemsType: typeof response.data?.items,
+      itemsIsArray: Array.isArray(response.data?.items),
+      itemsLength: response.data?.items?.length,
+      itemsFirstItem: response.data?.items?.[0],
+    });
+    
     const items = response.data?.items || [];
     
     if (items.length === 0) {
       console.warn('[getThreadMessages] ⚠️ Backend\'den boş array geldi! Thread\'de mesaj olmayabilir.');
+      console.warn('[getThreadMessages] ⚠️ Response data:', {
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        dataType: typeof response.data,
+        fullData: response.data,
+      });
       return [];
     }
+    
+    console.log('[getThreadMessages] ✅ Items bulundu:', {
+      itemsCount: items.length,
+      firstItem: items[0],
+      itemTypes: items.map(item => item.type),
+    });
     
     // ✅ OPTIMIZE: Participants bilgisini al (thread başında gönderilir)
     const participants = response.data?.participants;
@@ -625,7 +660,13 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     
     const normalizedMessages: ThreadMessage[] = allMessagesToNormalize.map(({ item, isGrouped, parentId }) => {
       const { id, type, data } = item;
-      const timestamp = data.timestamp;
+      // CRITICAL FIX: timestamp field'ını kontrol et - backend'den timestamp veya sentAt gelebilir
+      const timestamp = data.timestamp || data.sentAt || (item as any).timestamp || (item as any).sentAt;
+      
+      if (!timestamp) {
+        console.warn('[getThreadMessages] ⚠️ Timestamp bulunamadı, mesaj atlanıyor:', { id, type, data });
+        return null; // Timestamp yoksa mesajı atla
+      }
       
       // ✅ DEBUG: Image type kontrolü
       if (type === 'image' || data.mediaUrl || data.imageUrl) {
@@ -767,7 +808,7 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
       }
       
       return baseMessage;
-    });
+    }).filter((msg): msg is ThreadMessage => msg !== null); // null mesajları filtrele
     
     // CRITICAL FIX: Backend'den gelen mesajları timestamp'e göre sırala (en eski başta, en yeni sonda)
     // Backend'den gelen mesajlar ters sırada gelebilir, bu yüzden frontend'de sıralama yapıyoruz
@@ -1012,12 +1053,32 @@ export interface GetSupportRequestsParams {
   limit?: number;
 }
 
+/**
+ * Get Support Requests Response Interface
+ */
+interface GetSupportRequestsResponse {
+  items: SupportRequest[];
+}
+
 export const getSupportRequests = async (params?: GetSupportRequestsParams): Promise<SupportRequest[]> => {
   try {
-    const response = await apiService.getClient().get<SupportRequest[]>('/inbox/support-requests', {
+    console.log('[getSupportRequests] 📡 API çağrısı başlatılıyor:', {
+      endpoint: '/inbox/support-requests',
       params,
     });
-    return response.data;
+    
+    const response = await apiService.getClient().get<GetSupportRequestsResponse>('/inbox/support-requests', {
+      params,
+    });
+    
+    console.log('[getSupportRequests] ✅ API çağrısı başarılı:', {
+      status: response.status,
+      itemsCount: response.data?.items?.length || 0,
+      items: response.data?.items,
+    });
+    
+    // Backend'den items array'i geliyor
+    return response.data?.items || [];
   } catch (error: any) {
     // 404 hatası: Endpoint backend'de henüz implement edilmemiş olabilir
     if (error?.response?.status === 404) {
@@ -1120,6 +1181,86 @@ export const reportSupportRequest = async (requestId: string, data: ReportSuppor
  * @param threadId - Thread ID
  * @returns Promise<void> - 200 OK
  */
+/**
+ * Add Reaction Request
+ */
+export interface AddReactionRequest {
+  emoji: string;
+}
+
+/**
+ * Add Reaction Response
+ */
+export interface AddReactionResponse {
+  reactionId: string;
+  messageId: string;
+  userId: string;
+  emoji: string;
+  createdAt: string;
+}
+
+/**
+ * Add reaction to a message
+ * POST /inbox/:messageId/reactions
+ */
+export const addReaction = async (messageId: string, data: AddReactionRequest): Promise<AddReactionResponse> => {
+  try {
+    const response = await apiService.getClient().post<AddReactionResponse>(
+      `/inbox/${messageId}/reactions`,
+      data
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[addReaction] ❌ Error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove reaction from a message
+ * DELETE /inbox/:messageId/reactions/:reactionId
+ */
+export const removeReaction = async (messageId: string, reactionId: string): Promise<void> => {
+  try {
+    await apiService.getClient().delete(`/inbox/${messageId}/reactions/${reactionId}`);
+  } catch (error: any) {
+    console.error('[removeReaction] ❌ Error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get message reactions
+ * GET /inbox/:messageId/reactions
+ */
+export interface MessageReaction {
+  id: string;
+  emoji: string;
+  userId: string;
+  createdAt: string;
+}
+
+export interface GetMessageReactionsResponse {
+  messageId: string;
+  reactions: Array<{
+    emoji: string;
+    count: number;
+    users: string[];
+  }>;
+}
+
+export const getMessageReactions = async (messageId: string): Promise<GetMessageReactionsResponse> => {
+  try {
+    const response = await apiService.getClient().get<GetMessageReactionsResponse>(
+      `/inbox/${messageId}/reactions`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('[getMessageReactions] ❌ Error:', error);
+    throw error;
+  }
+};
+
 export const markThreadAsRead = async (threadId: string): Promise<void> => {
   try {
     await apiService.getClient().post(`/inbox/threads/${threadId}/read`);

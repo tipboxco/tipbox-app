@@ -1,12 +1,12 @@
-import React from 'react';
-import { Pressable, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, Alert, Animated } from 'react-native';
 import { Box, VStack, HStack, Text, Image } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 
-interface MessageBubbleProps extends Pick<MessageItemProps, 'item' | 'isDark' | 'params' | 'onDelete' | 'onEdit' | 'onReply'> {
+interface MessageBubbleProps extends Pick<MessageItemProps, 'item' | 'isDark' | 'params' | 'onDelete' | 'onEdit' | 'onReply' | 'onReact'> {
   isFirstInGroup: boolean;
   isLastInGroup: boolean;
 }
@@ -20,9 +20,96 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onDelete,
   onEdit,
   onReply,
+  onReact,
 }) => {
   const isSent = item.isSent;
   const isDeleted = item.isDeleted;
+  const reactions = item.reactions || [];
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const widthAnim = React.useRef(new Animated.Value(24)).current;
+  const opacityAnim = React.useRef(new Animated.Value(0)).current;
+  
+  // Reaction animasyonları için ref'ler
+  const reactionAnimsRef = React.useRef<{ [key: string]: Animated.Value }>({});
+  const reactionAnims = reactionAnimsRef.current;
+
+  const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+  
+  // Her reaction için animasyon değeri oluştur (sadece yoksa)
+  React.useEffect(() => {
+    reactions.forEach((reaction) => {
+      const key = `${reaction.emoji}-${item.id}`;
+      if (!reactionAnims[key]) {
+        reactionAnims[key] = new Animated.Value(1);
+      }
+    });
+  }, [reactions.length, item.id]);
+
+  const openEmojiPicker = () => {
+    setIsEmojiPickerOpen(true);
+    Animated.parallel([
+      Animated.timing(widthAnim, {
+        toValue: 200,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const closeEmojiPicker = () => {
+    Animated.parallel([
+      Animated.timing(widthAnim, {
+        toValue: 24,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start(() => {
+      setIsEmojiPickerOpen(false);
+    });
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    onReact?.(item.id, emoji);
+    closeEmojiPicker();
+  };
+
+  const handleReactionPress = (emoji: string) => {
+    const key = `${emoji}-${item.id}`;
+    let animValue = reactionAnims[key];
+    
+    // Eğer animasyon değeri yoksa, oluştur
+    if (!animValue) {
+      animValue = new Animated.Value(1);
+      reactionAnims[key] = animValue;
+    }
+    
+    // Scale animasyonu: basıldığında küçül, sonra büyü
+    Animated.sequence([
+      Animated.timing(animValue, {
+        toValue: 0.7,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(animValue, {
+        toValue: 1,
+        friction: 3,
+        tension: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    onReact?.(item.id, emoji);
+  };
 
   return (
     <VStack
@@ -156,6 +243,123 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </VStack>
         </HStack>
       </Pressable>
+
+      {/* Reaction Button and Reactions */}
+      <HStack
+        space="xs"
+        alignItems="center"
+        mt="$1"
+        flexWrap="wrap"
+        justifyContent={isSent ? 'flex-end' : 'flex-start'}
+      >
+        {/* Reactions */}
+        {reactions.length > 0 && (
+          <>
+            {reactions.map((reaction, index) => {
+              const key = `${reaction.emoji}-${item.id}`;
+              const scaleAnim = reactionAnims[key] || new Animated.Value(1);
+              
+              return (
+                <Animated.View
+                  key={`${reaction.emoji}-${index}`}
+                  style={{
+                    transform: [{ scale: scaleAnim }],
+                  }}
+                >
+                  <Pressable
+                    onPress={() => handleReactionPress(reaction.emoji)}
+                  >
+                    <Box
+                      bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                      px="$2"
+                      py="$1"
+                      borderRadius={12}
+                      borderWidth={1}
+                      borderColor={isDark ? '#333' : '#E5E5E5'}
+                    >
+                      <HStack space="xs" alignItems="center">
+                        <Text fontSize={12}>{reaction.emoji}</Text>
+                        {reaction.count > 0 && (
+                          <Text
+                            fontSize={10}
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontWeight="$medium"
+                          >
+                            {reaction.count}
+                          </Text>
+                        )}
+                      </HStack>
+                    </Box>
+                  </Pressable>
+                </Animated.View>
+              );
+            })}
+          </>
+        )}
+
+        {/* Add Reaction Button / Emoji Picker */}
+        {!isDeleted && item.type === 'message' && (
+          <Animated.View
+            style={{
+              width: widthAnim,
+              height: 24,
+              overflow: 'hidden',
+            }}
+          >
+            {isEmojiPickerOpen ? (
+              <Box
+                height={24}
+                borderRadius={12}
+                borderWidth={1}
+                borderStyle="dashed"
+                borderColor={isDark ? '#666' : '#999'}
+                bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+                flexDirection="row"
+                alignItems="center"
+                px="$2"
+              >
+                <HStack space="sm" alignItems="center" flex={1}>
+                  {emojis.map((emoji) => (
+                    <Pressable
+                      key={emoji}
+                      onPress={() => handleEmojiSelect(emoji)}
+                    >
+                      <Text fontSize={16}>{emoji}</Text>
+                    </Pressable>
+                  ))}
+                </HStack>
+                <Pressable onPress={closeEmojiPicker}>
+                  <Feather
+                    name="x"
+                    size={14}
+                    color={isDark ? '#666' : '#999'}
+                  />
+                </Pressable>
+              </Box>
+            ) : (
+              <Pressable onPress={openEmojiPicker}>
+                <Box
+                  width={24}
+                  height={24}
+                  borderRadius={12}
+                  borderWidth={1}
+                  borderStyle="dashed"
+                  borderColor={isDark ? '#666' : '#999'}
+                  alignItems="center"
+                  justifyContent="center"
+                  bg="transparent"
+                >
+                  <Feather
+                    name="plus"
+                    size={14}
+                    color={isDark ? '#666' : '#999'}
+                  />
+                </Box>
+              </Pressable>
+            )}
+          </Animated.View>
+        )}
+      </HStack>
     </VStack>
   );
 };

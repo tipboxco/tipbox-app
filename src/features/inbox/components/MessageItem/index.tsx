@@ -79,6 +79,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           onDelete={onDelete}
           onEdit={onEdit}
           onReply={onReply}
+          onReact={onReact}
         />
       )}
     </>

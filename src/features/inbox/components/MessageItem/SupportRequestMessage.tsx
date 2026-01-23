@@ -43,33 +43,96 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
       <Box minWidth={250}>
         <Pressable onPress={() => onToggleSupportRequest?.(item.id)}>
           <Box
-            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-            borderRadius={16}
-            borderWidth={1}
-            borderColor={isDark ? '#2A2A2A' : '#E5E5E5'}
-            py="$1"
-            px="$2"
+            bg={isDark ? '#FFFFFF' : '#FFFFFF'}
+            borderRadius={12}
+            borderWidth={0}
+            py="$3"
+            px="$3"
           >
             <HStack space="sm" alignItems="center" justifyContent="space-between">
               <HStack space="sm" alignItems="center" flex={1}>
-                <Box
-                  bg={isDark ? 'rgba(226, 255, 70, 0.15)' : 'rgba(226, 255, 70, 0.2)'}
-                  p="$2"
-                  borderRadius={10}
-                >
-                  <Feather
-                    name="life-buoy"
-                    size={18}
-                    color="#E2FF46"
-                  />
-                </Box>
-                <Text
-                  fontSize="$xs"
-                  fontWeight="$semibold"
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                >
-                  Support Request Created
-                </Text>
+                {requestStatus === 'pending' ? (
+                  <>
+                    <Feather
+                      name="clock"
+                      size={18}
+                      color="#FFC107"
+                    />
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color="#000000"
+                    >
+                      Support Request Created
+                    </Text>
+                  </>
+                ) : requestStatus === 'canceled' ? (
+                  <>
+                    <Feather
+                      name="x-circle"
+                      size={18}
+                      color="#9E9E9E"
+                    />
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color="#000000"
+                    >
+                      Support Request Canceled
+                    </Text>
+                  </>
+                ) : requestStatus === 'accepted' ? (
+                  <>
+                    <Feather
+                      name="check-circle"
+                      size={18}
+                      color="#4CAF50"
+                    />
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color="#000000"
+                    >
+                      Support Request Accepted
+                    </Text>
+                  </>
+                ) : requestStatus === 'rejected' ? (
+                  <>
+                    <Feather
+                      name="x-circle"
+                      size={18}
+                      color="#F44336"
+                    />
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color="#000000"
+                    >
+                      Support Request Rejected
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Box
+                      bg={isDark ? 'rgba(226, 255, 70, 0.15)' : 'rgba(226, 255, 70, 0.2)'}
+                      p="$2"
+                      borderRadius={10}
+                    >
+                      <Feather
+                        name="life-buoy"
+                        size={18}
+                        color="#E2FF46"
+                      />
+                    </Box>
+                    <Text
+                      fontSize="$xs"
+                      fontWeight="$semibold"
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                    >
+                      Support Request
+                    </Text>
+                  </>
+                )}
               </HStack>
               <Feather
                 name="chevron-down"
@@ -238,34 +301,55 @@ export const SupportRequestMessage: React.FC<SupportRequestMessageProps> = ({
           </Box>
         </Pressable>
 
-        <HStack
-          space="xs"
-          alignItems="center"
-          mt="$2"
-        >
-          <Feather
-            name="info"
-            size={12}
-            color={isDark ? '#8C8C8C' : '#999999'}
-          />
-          <Text
-            fontSize="$xs"
-            fontWeight="$normal"
-            color={isDark ? '#8C8C8C' : '#999999'}
-            flex={1}
+        {requestStatus === 'pending' && (
+          <HStack
+            space="xs"
+            alignItems="center"
+            mt="$2"
           >
-            {requestStatus === 'pending' 
-              ? 'Support request will close automatically in 24 hours if unanswered.'
-              : requestStatus === 'accepted'
-              ? 'Support request has been accepted. Click "Go to Support Chat" to start the conversation.'
-              : requestStatus === 'rejected'
-              ? 'This support request has been rejected.'
-              : requestStatus === 'canceled'
-              ? 'This support request has been canceled.'
-              : 'Support request status: ' + requestStatus
-            }
-          </Text>
-        </HStack>
+            <Text
+              fontSize="$xs"
+              fontWeight="$normal"
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+              flex={1}
+            >
+              Support request will close automatically in 24 hours if unanswered.
+            </Text>
+            <Feather
+              name="info"
+              size={14}
+              color={isDark ? '#8C8C8C' : '#8C8C8C'}
+            />
+          </HStack>
+        )}
+        {requestStatus !== 'pending' && (
+          <HStack
+            space="xs"
+            alignItems="center"
+            mt="$2"
+          >
+            <Feather
+              name="info"
+              size={12}
+              color={isDark ? '#8C8C8C' : '#999999'}
+            />
+            <Text
+              fontSize="$xs"
+              fontWeight="$normal"
+              color={isDark ? '#8C8C8C' : '#999999'}
+              flex={1}
+            >
+              {requestStatus === 'accepted'
+                ? 'Support request has been accepted. Click "Go to Support Chat" to start the conversation.'
+                : requestStatus === 'rejected'
+                ? 'This support request has been rejected.'
+                : requestStatus === 'canceled'
+                ? 'This support request has been canceled.'
+                : 'Support request status: ' + requestStatus
+              }
+            </Text>
+          </HStack>
+        )}
       </Box>
     </VStack>
   );

@@ -18,6 +18,7 @@ import type { InboxStackParamList } from '../navigation';
 import { useSafeAreaValues } from '@/src/utils';
 import { useMessages, useMarkThreadAsRead, inboxKeys } from '../api/hooks';
 import type { InboxMessage } from '../types';
+import type { GetMessagesParams } from '../api/messagesApi';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { navigationService } from '@/src/services/NavigationService';
@@ -43,63 +44,16 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     const bottomInset = useSafeAreaValues('bottom');
     
     // Search parametresini useMessages hook'una geçir (username ve son mesaj bazlı arama)
-    const searchParams = searchQuery.trim() ? { search: searchQuery.trim() } : undefined;
+    // ✅ FIX: Sadece DM thread'lerini göster (Support thread'leri MessageDetail'de görünecek)
+    const searchParams: GetMessagesParams = {
+      threadType: 'DM', // Sadece DM thread'lerini getir
+      ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+    };
     const { data: messages, isLoading, error, refetch } = useMessages(searchParams);
     const [isManualRefreshing, setIsManualRefreshing] = useState(false);
     const queryClient = useQueryClient();
     
-    // 🔍 DEBUG: Mesaj listesi yüklendiğinde isRead durumunu logla
-    useEffect(() => {
-        console.log('[MessagesScreen] 🔍 MESAJ STATE DURUMU:', {
-            messages: messages,
-            messagesType: typeof messages,
-            isArray: Array.isArray(messages),
-            length: messages?.length || 0,
-            isLoading,
-            error: error?.message,
-        });
-        
-        if (messages && messages.length > 0) {
-            console.log('[MessagesScreen] 📋 MESAJ LİSTESİ YÜKLENDİ - isRead Durumları:');
-            messages.forEach((msg, index) => {
-                console.log(`[MessagesScreen]   [${index}] Thread ID: ${msg.id}`);
-                console.log(`[MessagesScreen]     Sender: ${msg.senderName || 'Unknown'}`);
-                console.log(`[MessagesScreen]     RecipientUserId: ${msg.recipientUserId || 'N/A'}`);
-                console.log(`[MessagesScreen]     isUnread: ${msg.isUnread}`);
-                console.log(`[MessagesScreen]     unreadCount: ${msg.unreadCount || 0}`);
-                console.log(`[MessagesScreen]     Last Message: ${msg.lastMessage?.substring(0, 50) || 'N/A'}...`);
-                console.log(`[MessagesScreen]     Timestamp: ${msg.timestamp}`);
-                console.log('[MessagesScreen]     ---');
-            });
-            console.log(`[MessagesScreen] 📊 TOPLAM: ${messages.length} mesaj, ${messages.filter(m => m.isUnread || (m.unreadCount || 0) > 0).length} okunmamış`);
-        } else if (messages && messages.length === 0) {
-            console.warn('[MessagesScreen] ⚠️ Mesaj listesi boş! Veritabanında mesaj olmayabilir veya API filtreleme yapıyor olabilir.');
-        } else if (!messages && !isLoading && !error) {
-            console.warn('[MessagesScreen] ⚠️ Messages undefined ve loading/error yok. API çağrısı henüz yapılmamış olabilir.');
-        }
-    }, [messages, isLoading, error]);
-    
-    // 🔍 DEBUG: Ekrana geri dönüldüğünde cache'deki durumu logla
-    useFocusEffect(
-        useCallback(() => {
-            console.log('[MessagesScreen] 🔄 EKRANA GERİ DÖNÜLDÜ - Cache durumu kontrol ediliyor');
-            const queryKey = [...inboxKeys.messages(), undefined];
-            const cacheData = queryClient.getQueryData<InboxMessage[]>(queryKey);
-            if (cacheData && cacheData.length > 0) {
-                console.log('[MessagesScreen] 📋 Cache\'deki mesaj durumları:');
-                cacheData.forEach((msg) => {
-                    console.log(`[MessagesScreen]   - Thread ID: ${msg.id}`);
-                    console.log(`[MessagesScreen]     Sender: ${msg.senderName || 'Unknown'}`);
-                    console.log(`[MessagesScreen]     isUnread: ${msg.isUnread}`);
-                    console.log(`[MessagesScreen]     unreadCount: ${msg.unreadCount || 0}`);
-                    console.log('[MessagesScreen]     ---');
-                });
-                console.log(`[MessagesScreen] 📊 Cache TOPLAM: ${cacheData.length} mesaj, ${cacheData.filter(m => m.isUnread || (m.unreadCount || 0) > 0).length} okunmamış`);
-            } else {
-                console.log('[MessagesScreen] ⚠️ Cache boş veya null');
-            }
-        }, [queryClient])
-    );
+  
     const { isConnected, on, off, markThreadRead } = useSocket();
     const { user } = useAppStore();
     const { closeBottomSheet } = useGlobalBottomSheet();
@@ -113,15 +67,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
 
     // Socket event handler - new_message event
     const handleNewMessage = useCallback((eventData: any) => {
-        console.log('[MessagesScreen] 📨 New message received:', {
-            threadId: eventData.threadId,
-            messageId: eventData.messageId,
-            senderId: eventData.senderId,
-            message: eventData.message || eventData.text,
-            messageType: eventData.messageType,
-            timestamp: eventData.timestamp,
-            fullEventData: eventData,
-        });
+      
         
         // Yeni mesaj geldiğinde, eğer kullanıcı inbox listesindeyse (MessageDetail ekranında değilse),
         // thread'i okunmamış olarak işaretle (optimistic update)
@@ -390,9 +336,22 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         // CRITICAL FIX: messages array kontrolü
         const messagesArray = Array.isArray(messages) ? messages : [];
         const message = messagesArray.find(m => m.id === messageId);
-        if (!message) return;
+        if (!message) {
+            console.warn('[MessagesScreen] ⚠️ Message not found:', messageId);
+            return;
+        }
 
         const threadId = message.id; // message.id = thread ID (DM_THREAD.md'ye göre)
+        
+        console.log('[MessagesScreen] 🔍 handleMessagePress - Message bulundu:', {
+            messageId,
+            threadId,
+            messageIdMatch: messageId === threadId,
+            senderName: message.senderName,
+            recipientUserId: message.recipientUserId,
+            threadType: message.threadType,
+            lastMessage: message.lastMessage?.substring(0, 50),
+        });
         
         // 🔍 DEBUG: Mesaja tıklandığında önceki durumu logla
         console.log('[MessagesScreen] ========================================');
@@ -536,14 +495,25 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         }
         
         // MessageDetail ekranına git (backend'den gelen recipientUserId ile)
-        navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
+        const navigationParams = {
             messageId: threadId,
             threadId: threadId,
             recipientUserId: recipientUserId, // ✅ Backend'den direkt gelen recipientUserId
             senderName: message.senderName,
             senderTitle: message.senderTitle || '',
             senderAvatar: message.senderAvatar,
+        };
+        
+        console.log('[MessagesScreen] 🔗 Navigating to MessageDetail:', {
+            threadId,
+            messageId: threadId,
+            recipientUserId,
+            senderName: message.senderName,
+            threadType: message.threadType,
+            navigationParams,
         });
+        
+        navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, navigationParams);
     };
 
     const handleCategoryPress = (categoryId: string) => {
@@ -656,7 +626,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     );
 
     return (
-        <VStack flex={1} space={0}>
+        <VStack flex={1} space="xs">
             {/* Sol kenardan drawer açma gesture alanı - PagerView swipe'ını engellememek için küçük alan */}
             {isActiveTab && onDrawerOpen && (
                 <GestureDetector gesture={drawerGesture}>

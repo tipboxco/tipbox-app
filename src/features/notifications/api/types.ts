@@ -150,6 +150,106 @@ export interface GetNotificationsParams {
   search?: string;
 }
 
+/**
+ * ✅ OPTIMIZE: Optimize Backend Response Format
+ * Tarih grupları ve aktivite grupları ile organize edilmiş yapı (WhatsApp/Instagram benzeri)
+ */
+
+// Optimize bildirim yapısı (backend'den gelen)
+export interface OptimizedNotification {
+  id: string;
+  type: NotificationType;
+  createdAt: string; // ISO 8601
+  read: boolean;
+  readAt?: string; // ISO 8601 (opsiyonel)
+  userId?: string; // Sadece userId gönderilir, user bilgileri participants'tan alınır
+  content: {
+    // Post-related
+    postId?: string;
+    postContent?: string;
+    postType?: string;
+    imageUrl?: string;
+    // Comment-related
+    commentId?: string;
+    description?: string;
+    // Message-related
+    threadId?: string;
+    username?: string;
+    message?: string;
+    messagePreview?: string;
+    // Event-related
+    eventId?: string;
+    eventName?: string;
+    // Tips-related
+    amount?: number;
+    reason?: string;
+    recipientName?: string;
+    recipientUserId?: string;
+    transactionId?: string;
+    // Support Request-related
+    requestId?: string;
+    requestType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT';
+    requestStatus?: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported';
+    // Other
+    [key: string]: any;
+  };
+}
+
+// Aktivite grubu (aynı post/comment'a yapılan beğeniler/yorumlar - gruplanmış)
+export interface ActivityGroup {
+  groupId: string;
+  type: NotificationType;
+  targetId: string; // postId, commentId, eventId, etc.
+  createdAt: string; // ISO 8601 (en yeni bildirimin zamanı)
+  read: boolean; // Tüm bildirimler okundu mu?
+  // Gruplandırılmış kullanıcılar
+  primaryUser: {
+    id: string;
+    username?: string;
+    avatar?: string | null;
+  };
+  otherUsers: Array<{
+    id: string;
+    username?: string;
+    avatar?: string | null;
+  }>;
+  count: number; // Toplam kullanıcı sayısı (primaryUser + otherUsers.length)
+  // Gruplandırılmamış bildirimler (tek kullanıcılı)
+  notifications: OptimizedNotification[];
+}
+
+// Tarih grubu
+export interface NotificationDateGroup {
+  date: {
+    timestamp: string; // ISO 8601: "2024-01-15T00:00:00.000Z"
+    displayText: string; // "Today", "Yesterday", "January 15, 2024"
+    dayKey: string; // "2024-01-15"
+  };
+  activityGroups: ActivityGroup[];
+  // Gruplandırılmamış bildirimler (tek kullanıcılı, gruplanamayan)
+  ungroupedNotifications: OptimizedNotification[];
+}
+
+// Optimize response formatı
+export interface OptimizedNotificationsResponse {
+  participants: {
+    [userId: string]: {
+      id: string;
+      username?: string;
+      avatar?: string | null;
+      title?: string;
+    };
+  };
+  dateGroups: NotificationDateGroup[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor?: string;
+    totalCount?: number;
+    limit: number;
+    offset: number;
+  };
+}
+
 export interface GetNotificationsResponse {
   success: boolean;
   data: Notification[];
@@ -161,6 +261,16 @@ export interface GetNotificationsResponse {
     offset: number;
     hasMore: boolean;
   };
+  // ✅ YENİ: Optimize format (backend optimize format gönderirse)
+  participants?: {
+    [userId: string]: {
+      id: string;
+      username?: string;
+      avatar?: string | null;
+      title?: string;
+    };
+  };
+  dateGroups?: NotificationDateGroup[]; // ✅ YENİ: Optimize format
 }
 
 export interface UnreadCountResponse {

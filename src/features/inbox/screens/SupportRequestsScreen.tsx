@@ -30,7 +30,7 @@ const DEFAULT_USER_AVATAR = require('@/assets/avatar/default-useravatar.png');
 const SupportRequestsScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [activeFilter, setActiveFilter] = useState<string>('pending');
+  const [activeFilter, setActiveFilter] = useState<string>('all'); // ✅ Default: 'all' (tüm request'leri göster)
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const navigation = useNavigation<SupportRequestsScreenNavigationProp>();
   const queryClient = useQueryClient();
@@ -40,20 +40,50 @@ const SupportRequestsScreen: React.FC = () => {
 
   // Filter mapping: UI filter ID -> API status
   const filterStatusMap: Record<string, 'pending' | 'active' | 'awaiting_completion' | 'completed' | 'finalized' | 'reported' | undefined> = {
+    'all': undefined, // ✅ Tüm request'leri getir
     'pending': 'pending',
     'active': 'active',
     'awaiting_completion': 'awaiting_completion',
     'completed': 'completed',
   };
 
-  // API params
+  // API params - status undefined ise tüm request'leri getir
   const apiParams = {
-    status: filterStatusMap[activeFilter],
+    ...(filterStatusMap[activeFilter] ? { status: filterStatusMap[activeFilter] } : {}),
     limit: 50,
   };
 
   const { data: supportRequests, isLoading, error, refetch } = useSupportRequests(apiParams);
   const supportRequestsArray = Array.isArray(supportRequests) ? supportRequests : [];
+
+  // ✅ Sıralama: awaiting_completion en başta, active ikinci, diğerleri sonra
+  const sortedSupportRequests = React.useMemo(() => {
+    if (!supportRequestsArray.length) return [];
+    
+    // Status öncelik sırası: awaiting_completion > active > diğerleri
+    const statusPriority: Record<string, number> = {
+      'awaiting_completion': 1, // En yüksek öncelik
+      'active': 2,
+      'pending': 3,
+      'completed': 4,
+      'rejected': 5,
+      'canceled': 6,
+      'reported': 7,
+    };
+    
+    return [...supportRequestsArray].sort((a, b) => {
+      const priorityA = statusPriority[a.status] || 999;
+      const priorityB = statusPriority[b.status] || 999;
+      
+      // Önce status önceliğine göre sırala
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // Aynı status ise timestamp'e göre (en yeni en üstte)
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+  }, [supportRequestsArray]);
 
   // Socket event handlers
   const handleSupportRequestAccepted = useCallback((data: { requestId: string; threadId: string; timestamp: string }) => {
@@ -232,6 +262,7 @@ const SupportRequestsScreen: React.FC = () => {
 
   // Filter options for UI
   const filterOptions = [
+    { id: 'all', name: 'All' }, // ✅ Tüm request'leri göster
     { id: 'pending', name: 'Awaiting Resolution' },
     { id: 'active', name: 'Active Requests' },
     { id: 'awaiting_completion', name: 'Awaiting Completion' },
@@ -257,7 +288,7 @@ const SupportRequestsScreen: React.FC = () => {
           </Box>
         ) : (
           <FlatList
-            data={supportRequestsArray}
+            data={sortedSupportRequests}
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
               <SupportRequestCard
@@ -269,7 +300,7 @@ const SupportRequestsScreen: React.FC = () => {
             keyExtractor={(item) => item.id}
             style={{ flex: 1 }}
             contentContainerStyle={{
-              flexGrow: supportRequestsArray.length === 0 ? 1 : 0,
+              flexGrow: sortedSupportRequests.length === 0 ? 1 : 0,
             }}
             refreshControl={
               <RefreshControl

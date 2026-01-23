@@ -14,7 +14,91 @@ import type {
   RegisterPushTokenRequest,
   RegisterPushTokenResponse,
   DeletePushTokenResponse,
+  OptimizedNotificationsResponse,
+  NotificationDateGroup,
+  ActivityGroup,
+  OptimizedNotification,
 } from './types';
+
+/**
+ * ✅ OPTIMIZE: Optimize format'tan flat array'e çevir (backward compatibility için)
+ * Eğer frontend optimize format'ı direkt kullanmak isterse, bu fonksiyon kullanılmayabilir
+ */
+export const convertOptimizedNotificationsToFlat = (
+  dateGroups: NotificationDateGroup[],
+  participants: { [userId: string]: { id: string; username?: string; avatar?: string | null; title?: string } }
+): Notification[] => {
+  const allNotifications: Notification[] = [];
+  
+  const getUserInfo = (userId?: string) => {
+    if (!userId || !participants || !participants[userId]) {
+      return null;
+    }
+    return {
+      id: participants[userId].id,
+      username: participants[userId].username,
+      avatar: participants[userId].avatar,
+      title: participants[userId].title,
+    };
+  };
+  
+  dateGroups.forEach((dateGroup) => {
+    // Activity groups (gruplandırılmış bildirimler)
+    dateGroup.activityGroups.forEach((activityGroup) => {
+      const primaryUserInfo = getUserInfo(activityGroup.primaryUser.id);
+      
+      // Gruplandırılmış bildirim oluştur
+      const groupedNotification: Notification = {
+        id: activityGroup.groupId,
+        userId: activityGroup.primaryUser.id,
+        type: activityGroup.type,
+        username: primaryUserInfo?.username,
+        avatar: primaryUserInfo?.avatar || activityGroup.primaryUser.avatar || null,
+        read: activityGroup.read,
+        createdAt: activityGroup.createdAt,
+        isGrouped: true,
+        count: activityGroup.count,
+        primaryUser: {
+          id: activityGroup.primaryUser.id,
+          username: activityGroup.primaryUser.username,
+          avatar: activityGroup.primaryUser.avatar,
+        },
+        otherUsers: activityGroup.otherUsers.map(u => ({
+          id: u.id,
+          username: u.username,
+          avatar: u.avatar,
+        })),
+        data: {
+          postId: activityGroup.targetId,
+          // Diğer content bilgileri notifications array'inden alınabilir
+        },
+      };
+      
+      allNotifications.push(groupedNotification);
+    });
+    
+    // Ungrouped notifications (gruplandırılmamış bildirimler)
+    dateGroup.ungroupedNotifications.forEach((optimizedNotif) => {
+      const userInfo = getUserInfo(optimizedNotif.userId);
+      
+      const notification: Notification = {
+        id: optimizedNotif.id,
+        userId: optimizedNotif.userId,
+        type: optimizedNotif.type,
+        username: userInfo?.username,
+        avatar: userInfo?.avatar || null,
+        read: optimizedNotif.read,
+        readAt: optimizedNotif.readAt,
+        createdAt: optimizedNotif.createdAt,
+        data: optimizedNotif.content,
+      };
+      
+      allNotifications.push(notification);
+    });
+  });
+  
+  return allNotifications;
+};
 
 /**
  * Get Notifications endpoint function
@@ -22,6 +106,8 @@ import type {
  * 
  * API Response Mapping:
  * Backend'den gelen response'da `data` field'ı var, bunu `metadata`'ya map ediyoruz
+ * 
+ * ✅ YENİ: Optimize format desteği (backward compatibility için eski format da destekleniyor)
  */
 export const getNotifications = async (
   params?: GetNotificationsParams
@@ -30,52 +116,50 @@ export const getNotifications = async (
     // CRITICAL FIX: Log'ları kaldırdık - sürekli istek sorununu önlemek için
     // Sadece hata durumunda log basılacak
     const response = await apiService.getClient().get<{
-      success: boolean;
-      data: Array<{
-        id: string;
-        userId?: string;
-        type: string;
-        title: string;
-        message: string;
-        avatar?: string | null; // CRITICAL FIX: avatarUrl → avatar (backend format)
-        imageUrl?: string | null;
-        data?: {
-          senderId?: string;
-          threadId?: string;
-          navigation?: any;
-          senderName?: string;
-          messagePreview?: string;
-          userAvatar?: string;
-          userName?: string;
-          likerId?: string;
-          likerName?: string;
-          commenterId?: string;
-          commenterName?: string;
-          postId?: string;
-          commentId?: string;
-          eventId?: string;
-          eventName?: string;
-          amount?: number;
-          rewardAmount?: number;
-          [key: string]: any;
-        };
-        metadata?: {
-          userId?: string;
-          userName?: string;
-          userAvatar?: string;
-          postId?: string;
-          commentId?: string;
-          threadId?: string;
-          [key: string]: any;
-        };
-        read?: boolean;
-        isRead?: boolean; // Backend'den isRead de gelebilir
-        readAt?: string;
-        createdAt: string;
-        updatedAt?: string;
-      }>;
+      success?: boolean;
+      data?: Array<any>;
+      participants?: { [userId: string]: { id: string; username?: string; avatar?: string | null; title?: string } };
+      dateGroups?: NotificationDateGroup[];
+      pagination?: {
+        total: number;
+        limit: number;
+        offset: number;
+        hasMore: boolean;
+        nextCursor?: string;
+        totalCount?: number;
+      };
     }>('/notifications', { params });
     
+    // ✅ YENİ: Optimize format kontrolü (dateGroups varsa optimize format kullan)
+    if (response.data?.dateGroups && response.data.dateGroups.length > 0) {
+      console.log('[getNotifications] ✅ Optimize format kullanılıyor (dateGroups)');
+      
+      // Participants bilgisini al (yeni format)
+      const participants = response.data.participants;
+      
+      if (!participants) {
+        console.warn('[getNotifications] ⚠️ Participants bilgisi yok, optimize format kullanılamıyor');
+        // Fallback to old format
+      } else {
+        // Optimize format'tan flat array'e çevir
+        const allNotifications = convertOptimizedNotificationsToFlat(
+          response.data.dateGroups,
+          participants
+        );
+        
+        console.log('[getNotifications] ✅ Optimize format\'tan normalize edildi:', allNotifications.length, 'bildirim');
+        
+        return {
+          success: response.data.success ?? true,
+          data: allNotifications,
+          pagination: response.data.pagination,
+          participants: participants,
+          dateGroups: response.data.dateGroups, // Optimize format'ı da döndür (ileride direkt kullanılabilir)
+        };
+      }
+    }
+    
+    // ✅ Eski format (backward compatibility)
     // Response data kontrolü - Backend formatı: { success: boolean, data: Array<...>, pagination: {...} }
     let notificationsArray: any[] = [];
     let pagination: any = null;
@@ -100,6 +184,7 @@ export const getNotifications = async (
       return {
         success: (response.data as any)?.success ?? false,
         data: [],
+        pagination: pagination,
       };
     }
     

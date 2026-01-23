@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getMessages,
@@ -12,7 +13,13 @@ import {
   closeSupportRequest,
   reportSupportRequest,
   markThreadAsRead,
+  addReaction,
+  removeReaction,
+  getMessageReactions,
+  getMessageFeed,
   type GetMessagesParams,
+  type AddReactionRequest,
+  type MessageFeedItem,
 } from './messagesApi';
 import type { InboxMessage } from '../types';
 import type {
@@ -261,12 +268,13 @@ export const useSendDirectMessage = () => {
  * const { data, isLoading, error } = useThreadMessages('thread-123', { limit: 50, beforeMessageId: 'msg-123' });
  */
 export const useThreadMessages = (threadId: string | null, params?: GetThreadMessagesParams) => {
-  return useQuery<ThreadMessage[], Error>({
+  const query = useQuery<ThreadMessage[], Error>({
     queryKey: [...inboxKeys.threadMessages(threadId || ''), params],
     queryFn: () => {
       if (!threadId) {
         throw new Error('Thread ID is required');
       }
+      console.log('[useThreadMessages] 🔄 Query function çalışıyor:', { threadId, params });
       return getThreadMessages(threadId, params);
     },
     enabled: !!threadId,
@@ -277,6 +285,23 @@ export const useThreadMessages = (threadId: string | null, params?: GetThreadMes
     refetchOnWindowFocus: false,
     retry: 1,
   });
+
+  // DEBUG: Query durumunu logla
+  useEffect(() => {
+    console.log('[useThreadMessages] 🔍 Query durumu:', {
+      threadId,
+      enabled: !!threadId,
+      isLoading: query.isLoading,
+      isFetching: query.isFetching,
+      isError: query.isError,
+      error: query.error?.message,
+      dataLength: query.data?.length || 0,
+      status: query.status,
+      fetchStatus: query.fetchStatus,
+    });
+  }, [threadId, query.isLoading, query.isFetching, query.isError, query.data?.length, query.status, query.fetchStatus]);
+
+  return query;
 };
 
 /**
@@ -455,3 +480,70 @@ export const useMarkThreadAsRead = () => {
   });
 };
 
+/**
+ * Add reaction mutation hook
+ */
+export const useAddReaction = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      addReaction(messageId, { emoji }),
+    onSuccess: (data, variables) => {
+      // Invalidate thread messages to refetch with updated reactions
+      queryClient.invalidateQueries({ queryKey: inboxKeys.all });
+    },
+  });
+};
+
+/**
+ * Remove reaction mutation hook
+ */
+export const useRemoveReaction = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ messageId, reactionId }: { messageId: string; reactionId: string }) =>
+      removeReaction(messageId, reactionId),
+    onSuccess: () => {
+      // Invalidate thread messages to refetch with updated reactions
+      queryClient.invalidateQueries({ queryKey: inboxKeys.all });
+    },
+  });
+};
+
+/**
+ * Get message reactions query hook
+ */
+export const useMessageReactions = (messageId: string) => {
+  return useQuery({
+    queryKey: [...inboxKeys.all, 'reactions', messageId],
+    queryFn: () => getMessageReactions(messageId),
+    enabled: !!messageId,
+  });
+};
+
+/**
+ * Get Message Feed query hook
+ * Mesaj feed'ini getirir (messages, tips, support requests birleşik)
+ *
+ * @param limit - Maksimum feed item sayısı (default: 50, max: 100)
+ * @returns React Query hook result
+ *
+ * @example
+ * const { data, isLoading, error } = useMessageFeed(50);
+ */
+export const useMessageFeed = (limit: number = 50) => {
+  return useQuery<MessageFeedItem[], Error>({
+    queryKey: [...inboxKeys.all, 'feed', limit],
+    queryFn: () => {
+      console.log('[useMessageFeed] 🔄 Fetching message feed:', { limit });
+      return getMessageFeed(limit);
+    },
+    staleTime: 5 * 60 * 1000,  // 5 dakika
+    gcTime: 10 * 60 * 1000,    // 10 dakika
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};
