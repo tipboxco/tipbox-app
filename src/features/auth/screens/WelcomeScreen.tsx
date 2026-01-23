@@ -87,7 +87,7 @@ export const WelcomeScreen = () => {
       {/* Hero Image - Tipbox Logo */}
       <Box h={350} bg={isDark ? '$backgroundDark50' : '$backgroundLight0'} alignItems="center" justifyContent="center">
         <Image
-          source={require('@/assets/tipbox-square-black.png')}
+          source={require('@/src/Onboarding/onboarding0.png')}
           alt="Tipbox Logo"
           width={200}
           height={200}

@@ -56,14 +56,14 @@ const SupportRequestsScreen: React.FC = () => {
   const { data: supportRequests, isLoading, error, refetch } = useSupportRequests(apiParams);
   const supportRequestsArray = Array.isArray(supportRequests) ? supportRequests : [];
 
-  // ✅ Sıralama: awaiting_completion en başta, active ikinci, diğerleri sonra
+  // ✅ Sıralama: active en başta, awaiting_completion ikinci, diğerleri sonra
   const sortedSupportRequests = React.useMemo(() => {
     if (!supportRequestsArray.length) return [];
     
-    // Status öncelik sırası: awaiting_completion > active > diğerleri
+    // Status öncelik sırası: active > awaiting_completion > diğerleri
     const statusPriority: Record<string, number> = {
-      'awaiting_completion': 1, // En yüksek öncelik
-      'active': 2,
+      'active': 1, // En yüksek öncelik
+      'awaiting_completion': 2,
       'pending': 3,
       'completed': 4,
       'rejected': 5,

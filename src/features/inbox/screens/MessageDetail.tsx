@@ -657,16 +657,41 @@ const MessageDetailScreen: React.FC = () => {
               // TIPS mesajı için amount
               tipsAmount: (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) ? (msg.amount || 0) : undefined,
               // Support request için özel alanlar
-              supportRequest: (msg.messageType === 'support-request' || msg.supportRequestType) ? {
-                supportType: msg.supportRequestType || 'GENERAL',
-                message: msg.message,
-                amount: msg.amount || 0,
-                status: (msg.supportRequestStatus || 'pending') as 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported',
-                requestId: msg.requestId || msg.id, // Backend'den gelen requestId kullan, yoksa message ID kullan
-                threadId: msg.threadId || null, // Support thread ID (accepted ise)
-                fromUserId: msg.fromUserId, // Request'i oluşturan kullanıcı
-                toUserId: msg.toUserId, // Request'in gönderildiği kullanıcı (expert)
-              } : undefined,
+              supportRequest: (msg.messageType === 'support-request' || msg.supportRequestType) ? (() => {
+                // ✅ Backend'den gelen status bilgisini al (data.status -> supportRequestStatus olarak map ediliyor)
+                const backendStatus = msg.supportRequestStatus;
+                // ✅ Status bilgisi yoksa veya geçersizse 'pending' kullan
+                const validStatuses: Array<'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported'> = 
+                  ['pending', 'accepted', 'rejected', 'canceled', 'awaiting_completion', 'completed', 'reported'];
+                const finalStatus = (backendStatus && validStatuses.includes(backendStatus as any)) 
+                  ? backendStatus as 'pending' | 'accepted' | 'rejected' | 'canceled' | 'awaiting_completion' | 'completed' | 'reported'
+                  : 'pending';
+                
+                if (__DEV__) {
+                  console.log('[MessageDetail] 🔍 Support Request Status Debug:', {
+                    messageId: msg.id,
+                    messageType: msg.messageType,
+                    supportRequestType: msg.supportRequestType,
+                    backendStatus,
+                    finalStatus,
+                    requestId: msg.requestId,
+                    threadId: msg.threadId,
+                    fromUserId: msg.fromUserId,
+                    toUserId: msg.toUserId,
+                  });
+                }
+                
+                return {
+                  supportType: msg.supportRequestType || 'GENERAL',
+                  message: msg.message,
+                  amount: msg.amount || 0,
+                  status: finalStatus, // ✅ Backend'den gelen status kullanılıyor (accepted, rejected, canceled, pending, vb.)
+                  requestId: msg.requestId || msg.id, // Backend'den gelen requestId kullan, yoksa message ID kullan
+                  threadId: msg.threadId || null, // Support thread ID (accepted ise)
+                  fromUserId: msg.fromUserId, // Request'i oluşturan kullanıcı
+                  toUserId: msg.toUserId, // Request'in gönderildiği kullanıcı (expert)
+                };
+              })() : undefined,
               // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
               groupedMessages: msg.groupedMessages ? msg.groupedMessages.map((groupedMsg: any) => ({
                 id: groupedMsg.id,
@@ -3276,14 +3301,14 @@ const MessageDetailScreen: React.FC = () => {
               <HStack space="sm" alignItems="center" justifyContent="space-between">
                 <HStack space="sm" alignItems="center" flex={1}>
                   <Box
-                    bg={isDark ? 'rgba(226, 255, 70, 0.15)' : 'rgba(226, 255, 70, 0.2)'}
+                    bg={item.supportRequest.status === 'pending' ? (isDark ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255, 193, 7, 0.1)') : item.supportRequest.status === 'accepted' ? (isDark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)') : item.supportRequest.status === 'rejected' ? (isDark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)') : item.supportRequest.status === 'canceled' ? (isDark ? 'rgba(158, 158, 158, 0.2)' : 'rgba(158, 158, 158, 0.1)') : (isDark ? 'rgba(226, 255, 70, 0.15)' : 'rgba(226, 255, 70, 0.2)')}
                     p="$2"
                     borderRadius={10}
                   >
                     <Feather
-                      name="life-buoy"
+                      name={item.supportRequest.status === 'pending' ? 'clock' : item.supportRequest.status === 'accepted' ? 'check-circle' : item.supportRequest.status === 'rejected' ? 'x-circle' : item.supportRequest.status === 'canceled' ? 'x-circle' : 'life-buoy'}
                       size={18}
-                      color="#E2FF46"
+                      color={item.supportRequest.status === 'pending' ? '#FFC107' : item.supportRequest.status === 'accepted' ? '#4CAF50' : item.supportRequest.status === 'rejected' ? '#F44336' : item.supportRequest.status === 'canceled' ? '#9E9E9E' : '#E2FF46'}
                     />
                   </Box>
                   <Text
@@ -3291,7 +3316,7 @@ const MessageDetailScreen: React.FC = () => {
                     fontWeight="$semibold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
-                    Support Request Created
+                    Support Request{item.supportRequest.status === 'pending' ? ' Created' : item.supportRequest.status === 'accepted' ? ' Accepted' : item.supportRequest.status === 'rejected' ? ' Rejected' : item.supportRequest.status === 'canceled' ? ' Canceled' : ''}
                   </Text>
                 </HStack>
                 <Feather

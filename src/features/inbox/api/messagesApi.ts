@@ -762,7 +762,7 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
       
       if (type === 'support-request') {
         baseMessage.supportRequestType = data.type;
-        baseMessage.supportRequestStatus = data.status;
+        baseMessage.supportRequestStatus = data.status; // ✅ Backend'den gelen data.status -> supportRequestStatus
         baseMessage.requestId = data.requestId || data.id;
         if (data.amount) {
           baseMessage.amount = typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount;
@@ -774,6 +774,19 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
           baseMessage.recipientId = data.toUserId; // Backward compatibility
         } else {
           console.warn('[getThreadMessages] Support request missing fromUserId or toUserId:', { id: data.id || id, fromUserId: data.fromUserId, toUserId: data.toUserId });
+        }
+        
+        // ✅ DEBUG: Support request status bilgisini logla
+        if (__DEV__) {
+          console.log('[getThreadMessages] 🔍 Support Request Status Parse:', {
+            messageId: id,
+            type: type,
+            dataStatus: data.status,
+            parsedStatus: baseMessage.supportRequestStatus,
+            requestId: baseMessage.requestId,
+            threadId: data.threadId,
+            fullData: data,
+          });
         }
       }
       
