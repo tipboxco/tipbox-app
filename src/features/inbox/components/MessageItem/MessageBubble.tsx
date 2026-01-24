@@ -16,9 +16,10 @@ import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 
-interface MessageBubbleProps extends Pick<MessageItemProps, 'item' | 'isDark' | 'params' | 'onDelete' | 'onEdit' | 'onReply' | 'onReact'> {
+interface MessageBubbleProps extends Pick<MessageItemProps, 'item' | 'isDark' | 'params' | 'onDelete' | 'onEdit' | 'onReply' | 'onReact' | 'onContextMenuStateChange'> {
   isFirstInGroup: boolean;
   isLastInGroup: boolean;
+  currentUserId?: string; // ✅ FIX: isSent hesaplaması için currentUserId ekle
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -31,20 +32,56 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   onEdit,
   onReply,
   onReact,
+  onContextMenuStateChange,
+  currentUserId,
 }) => {
-  const isSent = item.isSent;
+  // ✅ FIX: isSent değerini yeniden hesapla - item.isSent yanlış olabilir
+  // item.senderId ve currentUserId karşılaştırması yap
+  const isSent = currentUserId && item.senderId 
+    ? String(item.senderId) === String(currentUserId)
+    : item.isSent; // Fallback: item.isSent kullan
+  
+  // ✅ DEBUG: isSent hesaplamasını kontrol et
+  if (__DEV__) {
+    console.log('[MessageBubble] 🔍 isSent yeniden hesaplama:', {
+      messageId: item.id,
+      itemIsSent: item.isSent,
+      itemSenderId: item.senderId,
+      currentUserId,
+      calculatedIsSent: currentUserId && item.senderId 
+        ? String(item.senderId) === String(currentUserId)
+        : item.isSent,
+      finalIsSent: isSent,
+    });
+  }
   const isDeleted = item.isDeleted;
+  const isDeleting = item.isDeleting; // ✅ Optimistic delete state (REST API ile silme işlemi başladığında)
   const reactions = item.reactions || [];
-  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [messagePosition, setMessagePosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const messageRef = useRef<any>(null);
-  const widthAnim = React.useRef(new Animated.Value(24)).current;
-  const opacityAnim = React.useRef(new Animated.Value(0)).current;
+  const messageBubbleRef = useRef<any>(null); // Mesaj balonunun kendisi için ref
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   
   // Reanimated values for message bubble scale
   const messageScale = useSharedValue(1);
+  
+  // Message bubble'ı context menu açıkken daha görünür yap
+  React.useEffect(() => {
+    if (isContextMenuOpen) {
+      messageScale.value = withSpring(1.05, {
+        damping: 15,
+        stiffness: 200,
+        mass: 0.8,
+      });
+    } else {
+      messageScale.value = withSpring(1, {
+        damping: 15,
+        stiffness: 200,
+        mass: 0.8,
+      });
+    }
+  }, [isContextMenuOpen]);
   
   // Reaction animasyonları için ref'ler
   const reactionAnimsRef = React.useRef<{ [key: string]: Animated.Value }>({});
@@ -63,43 +100,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   }, [reactions.length, item.id]);
 
 
-  const openEmojiPicker = () => {
-    setIsEmojiPickerOpen(true);
-    Animated.parallel([
-      Animated.timing(widthAnim, {
-        toValue: 200,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
-
-  const closeEmojiPicker = () => {
-    Animated.parallel([
-      Animated.timing(widthAnim, {
-        toValue: 24,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-    ]).start(() => {
-      setIsEmojiPickerOpen(false);
-    });
-  };
-
-  const handleEmojiSelect = (emoji: string) => {
-    onReact?.(item.id, emoji);
-    closeEmojiPicker();
-  };
 
   const handleReactionPress = (emoji: string) => {
     const key = `${emoji}-${item.id}`;
@@ -139,25 +139,36 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       });
     }
     
-    if (isDeleted) return;
+    // ✅ FIX: Silinen mesajlar veya silme işlemi devam eden mesajlar için context menu açma
+    if (isDeleted || isDeleting) {
+      if (__DEV__) {
+        console.log('[MessageBubble] ⚠️ Mesaj silinmiş veya siliniyor, context menu açılmıyor', {
+          isDeleted,
+          isDeleting,
+        });
+      }
+      return;
+    }
     
     // Haptic feedback (opsiyonel)
     if (Haptics && Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     
-    // Mesaj pozisyonunu ölç
-    const ref = messageRef.current;
-    if (ref && typeof ref.measureInWindow === 'function') {
-      // Kısa bir gecikme ile ölç (layout tamamlanması için)
+    // Mesaj pozisyonunu ölç - Mesaj balonunun orijinal pozisyonunu al (tıklama noktasına göre değil)
+    const bubbleRef = messageBubbleRef.current;
+    
+    // Mesaj balonunun kendisini ölç (orijinal pozisyon)
+    if (bubbleRef && typeof bubbleRef.measureInWindow === 'function') {
       setTimeout(() => {
-        if (messageRef.current) {
-          messageRef.current.measureInWindow((x, y, width, height) => {
+        if (messageBubbleRef.current) {
+          messageBubbleRef.current.measureInWindow((x, y, width, height) => {
             if (__DEV__) {
-              console.log('[MessageBubble] 📐 Measured position:', { x, y, width, height });
+              console.log('[MessageBubble] 📐 Message bubble original position:', { x, y, width, height });
             }
             
             if (x !== 0 || y !== 0 || width !== 0 || height !== 0) {
+              // Orijinal pozisyonu kullan (tıklama noktasına göre değil)
               setMessagePosition({ x, y, width, height });
               setIsContextMenuOpen(true);
             } else {
@@ -173,10 +184,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         }
       }, 50);
     } else {
-      if (__DEV__) {
-        console.log('[MessageBubble] ⚠️ Ref is null or measureInWindow not available');
+      // Mesaj balonu ref'i yok, container'ı ölç
+      if (messageRef.current && typeof messageRef.current.measureInWindow === 'function') {
+        setTimeout(() => {
+          if (messageRef.current) {
+            messageRef.current.measureInWindow((x, y, width, height) => {
+              if (__DEV__) {
+                console.log('[MessageBubble] 📐 Container position:', { x, y, width, height });
+              }
+              
+              if (x !== 0 || y !== 0 || width !== 0 || height !== 0) {
+                setMessagePosition({ x, y, width, height });
+                setIsContextMenuOpen(true);
+              } else {
+                handleLongPressFallback(event);
+              }
+            });
+          } else {
+            handleLongPressFallback(event);
+          }
+        }, 50);
+      } else {
+        if (__DEV__) {
+          console.log('[MessageBubble] ⚠️ Ref is null or measureInWindow not available');
+        }
+        handleLongPressFallback(event);
       }
-      handleLongPressFallback(event);
     }
   };
 
@@ -221,11 +254,28 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     setIsContextMenuOpen(false);
     setMessagePosition(null);
     messageScale.value = withSpring(1);
+    onContextMenuStateChange?.(false);
   };
+  
+  // Context menu açıldığında parent'a bildir
+  React.useEffect(() => {
+    onContextMenuStateChange?.(isContextMenuOpen);
+  }, [isContextMenuOpen, onContextMenuStateChange]);
 
   // Menu actions
   const menuActions = React.useMemo(() => {
     const actions: Array<{ id: string; label: string; icon: string; color?: string; onPress: () => void }> = [];
+    
+    if (__DEV__) {
+      console.log('[MessageBubble] 🔍 Menu actions için kontrol:', {
+        isSent,
+        isDeleted,
+        itemType: item.type,
+        hasOnDelete: !!onDelete,
+        hasOnReply: !!onReply,
+        hasOnEdit: !!onEdit,
+      });
+    }
     
     if (!isDeleted && item.type === 'message') {
       if (onReply) {
@@ -247,52 +297,93 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       }
     }
     
-    if (isSent && onDelete) {
-      actions.push({
-        id: 'delete',
-        label: 'Delete',
-        icon: 'trash-2',
-        color: '#F44336',
-        onPress: () => onDelete(item.id),
-      });
+    // ✅ DISABLED: Delete action geçici olarak devre dışı
+    // // ✅ FIX: Delete action - sadece gönderilen mesajlar için (isSent === true)
+    // // onDelete prop'u varsa ve mesaj gönderilmişse delete action'ı ekle
+    // // Silinen veya silme işlemi devam eden mesajlar için delete action ekleme
+    // if (isSent && onDelete && !isDeleted && !isDeleting) {
+    //   if (__DEV__) {
+    //     console.log('[MessageBubble] ✅ Delete action ekleniyor', {
+    //       isSent,
+    //       hasOnDelete: !!onDelete,
+    //       isDeleted,
+    //       itemId: item.id,
+    //       itemType: item.type,
+    //     });
+    //   }
+    //   actions.push({
+    //     id: 'delete',
+    //     label: 'Delete',
+    //     icon: 'trash-2',
+    //     color: '#F44336',
+    //     onPress: () => {
+    //       if (__DEV__) {
+    //         console.log('[MessageBubble] 🗑️ Delete action tıklandı:', item.id);
+    //       }
+    //       // Delete confirmation
+    //       Alert.alert(
+    //         'Delete Message',
+    //         'Are you sure you want to delete this message?',
+    //         [
+    //           {
+    //             text: 'Cancel',
+    //             style: 'cancel',
+    //             onPress: () => {
+    //               if (__DEV__) {
+    //                 console.log('[MessageBubble] ❌ Delete iptal edildi');
+    //               }
+    //               closeContextMenu();
+    //             },
+    //           },
+    //           {
+    //             text: 'Delete',
+    //             style: 'destructive',
+    //             onPress: () => {
+    //               if (__DEV__) {
+    //                 console.log('[MessageBubble] ✅ Delete onaylandı, mesaj siliniyor:', item.id);
+    //               }
+    //               onDelete(item.id);
+    //               closeContextMenu();
+    //             },
+    //           },
+    //         ]
+    //       );
+    //     },
+    //   });
+    // } else {
+    //   if (__DEV__) {
+    //     console.log('[MessageBubble] ⚠️ Delete action eklenmedi:', {
+    //       isSent,
+    //       hasOnDelete: !!onDelete,
+    //       isDeleted,
+    //       itemId: item.id,
+    //       itemType: item.type,
+    //     });
+    //   }
+    // }
+    
+    if (__DEV__) {
+      console.log('[MessageBubble] 📋 Menu actions:', actions.map(a => a.id));
     }
     
     return actions;
-  }, [isDeleted, item.type, isSent, onReply, onEdit, onDelete, item]);
+  }, [isDeleted, isDeleting, item.type, isSent, onReply, onEdit, onDelete, item, closeContextMenu]);
 
-  const messageBubbleAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: messageScale.value }],
-  }));
+  const messageBubbleAnimatedStyle = useAnimatedStyle(() => {
+    const scale = messageScale.value;
+    
+    return {
+      transform: [{ scale }],
+    };
+  });
 
   return (
     <VStack
       space="xs"
       alignItems={isSent ? 'flex-end' : 'flex-start'}
-      px="$4"
+      px={isSent ? "$2" : "$4"} // ✅ FIX: Gönderilen mesajlar için daha az padding (sağ kenara daha yakın)
       py="$2"
     >
-      {!isSent && isFirstInGroup && (
-        <HStack space="sm" alignItems="center" mb="$1">
-          <Image
-            source={
-              toImageSource(item.senderAvatar || params.senderAvatar) ||
-              DEFAULT_USER_AVATAR
-            }
-            alt={item.senderName || params.senderName || 'User'}
-            width={24}
-            height={24}
-            borderRadius={12}
-          />
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize="$xs"
-            fontWeight="$medium"
-          >
-            {item.senderName || params.senderName || 'Unknown User'}
-          </Text>
-        </HStack>
-      )}
-
       <View
         ref={messageRef}
         collapsable={false}
@@ -300,6 +391,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <Pressable
           onLongPress={handleLongPress}
           delayLongPress={300}
+          disabled={isDeleted || isDeleting} // ✅ FIX: Silinen veya silme işlemi devam eden mesajlar için pressable disable
         >
           <ReanimatedAnimated.View
             style={isContextMenuOpen ? messageBubbleAnimatedStyle : undefined}
@@ -307,10 +399,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <HStack
             space="sm"
             alignItems="flex-end"
-            maxWidth="80%"
+            maxWidth={isSent ? "90%" : "80%"} // ✅ FIX: Gönderilen text mesajlar için %90 (sağ kenara daha yakın)
             flexDirection={isSent ? 'row-reverse' : 'row'}
           >
+            {/* Avatar - Karşı tarafın mesajlarında balonun solunda */}
+            {!isSent && isFirstInGroup && (
+              <Image
+                source={
+                  toImageSource(item.senderAvatar || params.senderAvatar) ||
+                  DEFAULT_USER_AVATAR
+                }
+                alt={item.senderName || params.senderName || 'User'}
+                width={32}
+                height={32}
+                borderRadius={16}
+              />
+            )}
+            
             <View
+              ref={messageBubbleRef}
+              collapsable={false}
               style={{
                 backgroundColor: isDeleted
                   ? (isDark ? '#2A2A2A' : '#E5E5E5')
@@ -333,7 +441,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     ? '#FFFFFF'
                     : (isDark ? '#FFFFFF' : '#000000')
                 }
-                fontSize="$xs"
+                fontSize="$sm"
                 fontWeight="$normal"
                 fontStyle={isDeleted ? 'italic' : 'normal'}
               >
@@ -382,7 +490,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       </View>
 
       {/* WhatsApp-style Context Menu with Reaction Bar */}
-      {isContextMenuOpen && (
+      {isContextMenuOpen && messagePosition && (
         <WhatsAppContextMenu
           visible={isContextMenuOpen}
           onClose={closeContextMenu}
@@ -452,68 +560,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </>
         )}
 
-        {/* Add Reaction Button / Emoji Picker */}
-        {!isDeleted && item.type === 'message' && (
-          <Animated.View
-            style={{
-              width: widthAnim,
-              height: 24,
-              overflow: 'hidden',
-            }}
-          >
-            {isEmojiPickerOpen ? (
-              <Box
-                height={24}
-                borderRadius={12}
-                borderWidth={1}
-                borderStyle="dashed"
-                borderColor={isDark ? '#666' : '#999'}
-                bg={isDark ? '#2A2A2A' : '#F2F2F2'}
-                flexDirection="row"
-                alignItems="center"
-                px="$2"
-              >
-                <HStack space="sm" alignItems="center" flex={1}>
-                  {emojis.map((emoji) => (
-                    <Pressable
-                      key={emoji}
-                      onPress={() => handleEmojiSelect(emoji)}
-                    >
-                      <Text fontSize={16}>{emoji}</Text>
-                    </Pressable>
-                  ))}
-                </HStack>
-                <Pressable onPress={closeEmojiPicker}>
-                  <Feather
-                    name="x"
-                    size={14}
-                    color={isDark ? '#666' : '#999'}
-                  />
-                </Pressable>
-              </Box>
-            ) : (
-              <Pressable onPress={openEmojiPicker}>
-                <Box
-                  width={24}
-                  height={24}
-                  borderRadius={12}
-                  borderWidth={1}
-                  borderStyle="dashed"
-                  borderColor={isDark ? '#666' : '#999'}
-                  alignItems="center"
-                  justifyContent="center"
-                  bg="transparent"
-                >
-                  <Feather
-                    name="plus"
-                    size={14}
-                    color={isDark ? '#666' : '#999'}
-                  />
-                </Box>
-              </Pressable>
-            )}
-          </Animated.View>
-        )}
       </HStack>
     </VStack>
   );

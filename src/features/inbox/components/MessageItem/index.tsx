@@ -3,8 +3,7 @@ import { MessageBubble } from './MessageBubble';
 import { ImageMessage } from './ImageMessage';
 import { TipsMessage } from './TipsMessage';
 import { SupportRequestMessage } from './SupportRequestMessage';
-import { DateSeparator } from './DateSeparator';
-import { getMessageGroup, shouldShowDateSeparator } from '../../utils/messageHelpers';
+import { getMessageGroup } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 
 export const MessageItem: React.FC<MessageItemProps> = ({
@@ -24,30 +23,32 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   onCancelSupportRequest,
   onGoToSupportChat,
   currentUserId,
+  onContextMenuStateChange,
 }) => {
   const { isFirstInGroup, isLastInGroup } = getMessageGroup(messages, index);
-  const prevMessage = index > 0 ? messages[index - 1] : null;
-  const showDateSeparator = shouldShowDateSeparator(item, prevMessage);
 
   return (
     <>
-      {showDateSeparator && <DateSeparator timestamp={item.timestamp} isDark={isDark} />}
-      
       {item.type === 'image' && item.mediaUrl ? (
         <>
-          {__DEV__ && console.log('[MessageItem] 🖼️ Image message render ediliyor:', {
-            id: item.id,
-            type: item.type,
-            mediaUrl: item.mediaUrl,
-            uploadStatus: item.uploadStatus,
-            uploadProgress: item.uploadProgress,
-          })}
+          {__DEV__ && (() => {
+            console.log('[MessageItem] 🖼️ Image message render ediliyor:', {
+              id: item.id,
+              type: item.type,
+              mediaUrl: item.mediaUrl,
+              uploadStatus: item.uploadStatus,
+              uploadProgress: item.uploadProgress,
+            });
+            return null;
+          })()}
           <ImageMessage
             item={item}
             isDark={isDark}
             params={params}
             isFirstInGroup={isFirstInGroup}
             onDelete={onDelete}
+            onContextMenuStateChange={onContextMenuStateChange}
+            currentUserId={currentUserId}
           />
         </>
       ) : item.type === 'tips' ? (
@@ -80,6 +81,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           onEdit={onEdit}
           onReply={onReply}
           onReact={onReact}
+          onContextMenuStateChange={onContextMenuStateChange}
+          currentUserId={currentUserId}
         />
       )}
     </>

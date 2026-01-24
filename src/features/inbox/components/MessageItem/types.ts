@@ -33,6 +33,7 @@ export interface MessageDetailItem {
   uploadStatus?: 'uploading' | 'uploaded' | 'failed';
   uploadProgress?: number;
   isDeleted?: boolean;
+  isDeleting?: boolean; // ✅ Optimistic delete state (REST API ile silme işlemi başladığında)
   isEditing?: boolean;
   editedAt?: string;
   replyToMessageId?: string;
@@ -85,4 +86,5 @@ export interface MessageItemProps {
   onCancelSupportRequest?: (requestId: string) => void;
   onGoToSupportChat?: (supportThreadId: string, requestId: string) => void;
   currentUserId?: string;
+  onContextMenuStateChange?: (isOpen: boolean) => void;
 }

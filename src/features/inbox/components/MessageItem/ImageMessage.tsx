@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Pressable, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Pressable, Dimensions, ActivityIndicator, Alert, View, Platform } from 'react-native';
 import { Box, VStack, HStack, Text, Image } from '@gluestack-ui/themed';
 import { Image as ExpoImage, ImageErrorEventData } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
+import ReanimatedAnimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { WhatsAppContextMenu } from './WhatsAppContextMenu';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
 import { formatMessageTime } from '../../utils/messageHelpers';
 import type { MessageItemProps } from './types';
 
-interface ImageMessageProps extends Pick<MessageItemProps, 'item' | 'isDark' | 'params' | 'onDelete'> {
+// Haptic feedback - opsiyonel
+let Haptics: any = null;
+try {
+  Haptics = require('expo-haptics');
+} catch (e) {
+  // expo-haptics yoksa sessizce devam et
+}
+
+interface ImageMessageProps extends Pick<MessageItemProps, 'item' | 'isDark' | 'params' | 'onDelete' | 'onContextMenuStateChange' | 'currentUserId'> {
   isFirstInGroup: boolean;
 }
 
@@ -23,12 +33,30 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
   params,
   isFirstInGroup,
   onDelete,
+  onContextMenuStateChange,
+  currentUserId,
 }) => {
-  const isSent = item.isSent;
+  // ✅ FIX: isSent değerini yeniden hesapla - item.isSent yanlış olabilir
+  const isSent = currentUserId && item.senderId 
+    ? String(item.senderId) === String(currentUserId)
+    : item.isSent; // Fallback: item.isSent kullan
+  
+  const isDeleted = item.isDeleted;
+  const isDeleting = item.isDeleting; // ✅ Optimistic delete state
+  
   const isUploading = item.uploadStatus === 'uploading';
   const isFailed = item.uploadStatus === 'failed';
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  
+  // Context menu state
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const [messagePosition, setMessagePosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const messageRef = useRef<View>(null);
+  const imageContainerRef = useRef<any>(null);
+  const messageScale = useSharedValue(1);
+  
+  const emojis: string[] = []; // Image mesajlar için emoji reaction yok
   
   // ✅ FIX: Görsel yükleme kontrolü - mediaUrl değiştiğinde loading state'i reset et
   useEffect(() => {
@@ -74,12 +102,162 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
   };
   
   const imageSize = calculateImageSize();
+  
+  // Context menu handlers
+  const handleLongPress = (event: any) => {
+    // ✅ FIX: Silinen veya silme işlemi devam eden mesajlar için context menu açma
+    if (isDeleted || isDeleting) {
+      return;
+    }
+    
+    // ✅ FIX: Context menu her zaman açılsın (text mesajlar gibi)
+    // Delete action sadece isSent && onDelete olduğunda eklenecek (menuActions içinde)
+    
+    // Haptic feedback (opsiyonel)
+    if (Haptics && Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    
+    // Mesaj pozisyonunu ölç - Görsel container'ını ölç
+    const containerRef = imageContainerRef.current;
+    
+    if (containerRef && typeof containerRef.measureInWindow === 'function') {
+      setTimeout(() => {
+        if (imageContainerRef.current) {
+          imageContainerRef.current.measureInWindow((x: number, y: number, width: number, height: number) => {
+            if (x !== 0 || y !== 0 || width !== 0 || height !== 0) {
+              setMessagePosition({ x, y, width, height });
+              setIsContextMenuOpen(true);
+              messageScale.value = withSpring(1.05);
+            } else {
+              // Fallback: touch event'ten pozisyon al
+              handleLongPressFallback(event);
+            }
+          });
+        } else {
+          handleLongPressFallback(event);
+        }
+      }, 50);
+    } else if (messageRef.current && typeof messageRef.current.measureInWindow === 'function') {
+      setTimeout(() => {
+        if (messageRef.current) {
+          messageRef.current.measureInWindow((x, y, width, height) => {
+            if (x !== 0 || y !== 0 || width !== 0 || height !== 0) {
+              setMessagePosition({ x, y, width, height });
+              setIsContextMenuOpen(true);
+              messageScale.value = withSpring(1.05);
+            } else {
+              handleLongPressFallback(event);
+            }
+          });
+        } else {
+          handleLongPressFallback(event);
+        }
+      }, 50);
+    } else {
+      handleLongPressFallback(event);
+    }
+  };
+  
+  const handleLongPressFallback = (event?: any) => {
+    // Fallback: Event'ten pozisyon al veya görselin yaklaşık pozisyonunu kullan
+    if (event?.nativeEvent) {
+      const touchX = event.nativeEvent.pageX || event.nativeEvent.locationX || 0;
+      const touchY = event.nativeEvent.pageY || event.nativeEvent.locationY || 0;
+      
+      if (touchX > 0 && touchY > 0) {
+        setMessagePosition({ 
+          x: touchX - imageSize.width / 2, 
+          y: touchY - imageSize.height / 2, 
+          width: imageSize.width, 
+          height: imageSize.height 
+        });
+        setIsContextMenuOpen(true);
+        messageScale.value = withSpring(1.05);
+        return;
+      }
+    }
+    
+    // Son çare: Görselin yaklaşık pozisyonu
+    const approximateX = isSent ? Dimensions.get('window').width - imageSize.width - 16 : 16;
+    const approximateY = Dimensions.get('window').height / 2;
+    setMessagePosition({ 
+      x: approximateX, 
+      y: approximateY, 
+      width: imageSize.width, 
+      height: imageSize.height 
+    });
+    setIsContextMenuOpen(true);
+    messageScale.value = withSpring(1.05);
+  };
+  
+  const closeContextMenu = () => {
+    setIsContextMenuOpen(false);
+    setMessagePosition(null);
+    messageScale.value = withSpring(1);
+    onContextMenuStateChange?.(false);
+  };
+  
+  // Context menu açıldığında parent'a bildir
+  React.useEffect(() => {
+    onContextMenuStateChange?.(isContextMenuOpen);
+  }, [isContextMenuOpen, onContextMenuStateChange]);
+  
+  // Menu actions
+  const menuActions = React.useMemo(() => {
+    const actions: Array<{ id: string; label: string; icon: string; color?: string; onPress: () => void }> = [];
+    
+    // ✅ DISABLED: Delete action geçici olarak devre dışı
+    // // ✅ FIX: Delete action - sadece gönderilen mesajlar için (isSent === true)
+    // // Silinen veya silme işlemi devam eden mesajlar için delete action ekleme
+    // if (isSent && onDelete && !isDeleted && !isDeleting) {
+    //   actions.push({
+    //     id: 'delete',
+    //     label: 'Delete',
+    //     icon: 'trash-2',
+    //     color: '#F44336',
+    //     onPress: () => {
+    //       // Delete confirmation
+    //       Alert.alert(
+    //         'Delete Message',
+    //         'Are you sure you want to delete this message?',
+    //         [
+    //           {
+    //             text: 'Cancel',
+    //             style: 'cancel',
+    //             onPress: () => {
+    //               closeContextMenu();
+    //             },
+    //           },
+    //           {
+    //             text: 'Delete',
+    //             style: 'destructive',
+    //             onPress: () => {
+    //               onDelete(item.id);
+    //               closeContextMenu();
+    //             },
+    //           },
+    //         ]
+    //       );
+    //     },
+    //   });
+    // }
+    
+    return actions;
+  }, [isDeleted, isDeleting, isSent, onDelete, item, closeContextMenu]);
+  
+  const messageBubbleAnimatedStyle = useAnimatedStyle(() => {
+    const scale = messageScale.value;
+    return {
+      transform: [{ scale }],
+    };
+  });
 
   return (
     <VStack
       space="xs"
       alignItems={isSent ? 'flex-end' : 'flex-start'}
-      px="$4"
+      px={isSent ? "$2" : "$4"} // ✅ FIX: Gönderilen görsel mesajlar için daha az padding (sağ kenara daha yakın)
       py="$2"
     >
       {!isSent && isFirstInGroup && (
@@ -104,16 +282,22 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
         </HStack>
       )}
       
-      <Pressable
-        onLongPress={() => {
-          if (isSent && !isUploading && !isFailed) {
-            onDelete?.(item.id);
-          }
-        }}
-        delayLongPress={500}
+      <View
+        ref={messageRef}
+        collapsable={false}
       >
-        <VStack space="xs" maxWidth="80%" alignItems={isSent ? 'flex-end' : 'flex-start'}>
+        <Pressable
+          onLongPress={handleLongPress}
+          delayLongPress={300}
+          disabled={isDeleted || isDeleting} // ✅ FIX: Silinen veya silme işlemi devam eden mesajlar için pressable disable
+        >
+          <ReanimatedAnimated.View
+            style={isContextMenuOpen ? messageBubbleAnimatedStyle : undefined}
+          >
+        <VStack space="xs" maxWidth={isSent ? "90%" : "80%"} alignItems={isSent ? 'flex-end' : 'flex-start'}> {/* ✅ FIX: Gönderilen görsel mesajlar için %90 (text mesajlar ile aynı) */}
           <Box
+            ref={imageContainerRef as any}
+            collapsable={false}
             bg={isDark ? '#1A1A1A' : '#F2F2F2'}
             borderRadius={16}
             borderTopLeftRadius={isSent ? 16 : (isFirstInGroup ? 16 : 4)}
@@ -368,7 +552,24 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
             </Text>
           </VStack>
         </VStack>
-      </Pressable>
+          </ReanimatedAnimated.View>
+        </Pressable>
+      </View>
+      
+      {/* WhatsApp-style Context Menu */}
+      {isContextMenuOpen && messagePosition && (
+        <WhatsAppContextMenu
+          visible={isContextMenuOpen}
+          onClose={closeContextMenu}
+          messagePosition={messagePosition}
+          reactionBarPosition={null}
+          actions={menuActions}
+          reactionEmojis={emojis}
+          onReactionPress={() => {}}
+          isDark={isDark}
+          isSent={isSent}
+        />
+      )}
     </VStack>
   );
 };

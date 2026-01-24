@@ -234,6 +234,7 @@ const MessageDetailScreen: React.FC = () => {
   const flatListRef = useRef<FlatList<MessageDetailItem>>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   // Emoji picker state for each message
   const [emojiPickerOpen, setEmojiPickerOpen] = useState<{ [key: string]: boolean }>({});
   const emojiPickerAnimations = useRef<{ [key: string]: { width: Animated.Value; opacity: Animated.Value } }>({}).current;
@@ -521,7 +522,20 @@ const MessageDetailScreen: React.FC = () => {
       setMessages((prev) => {
         const currentParams = paramsRef.current;
         const convertedOlderMessages: MessageDetailItem[] = olderMessages.map((msg) => {
-          const isSent = msg.senderId === user?.id;
+          // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
+          // user?.id kontrolü ekle - eğer user henüz yüklenmemişse false döndür
+          const isSent = user?.id ? String(msg.senderId) === String(user.id) : false;
+          
+          // ✅ DEBUG: isSent hesaplamasını kontrol et
+          if (__DEV__) {
+            console.log('[MessageDetail] 🔍 isSent hesaplaması (older messages):', {
+              messageId: msg.id,
+              senderId: msg.senderId,
+              userId: user?.id,
+              isSent,
+              hasUser: !!user,
+            });
+          }
           const senderName = isSent 
             ? undefined 
             : (msg.senderName || currentParams.senderName || 'Unknown');
@@ -617,7 +631,36 @@ const MessageDetailScreen: React.FC = () => {
         const currentParams = paramsRef.current;
         const convertedMessages: MessageDetailItem[] = threadMessages
           .map((msg) => {
-            const isSent = msg.senderId === user?.id;
+            // ✅ DEBUG: TIPS mesajları için özel log
+            if (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) {
+              console.log('[MessageDetail] 💰 TIPS mesajı parse ediliyor:', {
+                messageId: msg.id,
+                messageType: msg.messageType,
+                amount: msg.amount,
+                message: msg.message,
+                supportRequestType: msg.supportRequestType,
+                mediaUrl: msg.mediaUrl,
+                senderId: msg.senderId,
+              });
+            }
+            
+            // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
+            // user?.id kontrolü ekle - eğer user henüz yüklenmemişse false döndür
+            const isSent = user?.id ? String(msg.senderId) === String(user.id) : false;
+            
+            // ✅ DEBUG: isSent hesaplamasını kontrol et (her zaman logla)
+            if (__DEV__) {
+              console.log('[MessageDetail] 🔍 isSent hesaplaması (thread messages):', {
+                messageId: msg.id,
+                senderId: msg.senderId,
+                userId: user?.id,
+                isSent,
+                senderIdType: typeof msg.senderId,
+                userIdType: typeof user?.id,
+                areEqual: user?.id ? String(msg.senderId) === String(user.id) : false,
+                hasUser: !!user,
+              });
+            }
             // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
             const senderName = isSent 
               ? undefined 
@@ -633,6 +676,18 @@ const MessageDetailScreen: React.FC = () => {
             } else if (msg.messageType === 'send-tips' || (msg.amount && !msg.supportRequestType && !msg.mediaUrl)) {
               // ✅ FIX: amount var ama supportRequestType yoksa ve mediaUrl yoksa -> TIPS mesajı
               messageType = 'tips';
+              // ✅ DEBUG: TIPS mesajı tespit edildi
+              if (__DEV__) {
+                console.log('[MessageDetail] 💰 TIPS mesajı tespit edildi:', {
+                  messageId: msg.id,
+                  messageType: msg.messageType,
+                  amount: msg.amount,
+                  message: msg.message,
+                  supportRequestType: msg.supportRequestType,
+                  mediaUrl: msg.mediaUrl,
+                  finalMessageType: messageType,
+                });
+              }
             } else if (msg.messageType === 'image' || msg.mediaUrl) {
               messageType = 'image';
             }
@@ -703,7 +758,17 @@ const MessageDetailScreen: React.FC = () => {
               })) : undefined,
             };
             
-         
+            // ✅ DEBUG: TIPS mesajları için convert sonrası log
+            if (messageType === 'tips') {
+              console.log('[MessageDetail] 💰 TIPS mesajı convert edildi:', {
+                messageId: convertedMessage.id,
+                type: convertedMessage.type,
+                tipsAmount: convertedMessage.tipsAmount,
+                text: convertedMessage.text,
+                isSent: convertedMessage.isSent,
+                senderId: convertedMessage.senderId,
+              });
+            }
             
             return convertedMessage;
           });
@@ -1034,7 +1099,8 @@ const MessageDetailScreen: React.FC = () => {
     // Mesaj tipine göre işle
     if (eventData.messageType === 'message') {
       // Normal mesaj
-      const isSent = eventData.senderId === currentUserId;
+      // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
+      const isSent = String(eventData.senderId) === String(currentUserId);
       const currentParams = paramsRef.current;
       console.log('[MessageDetail] 📨 New message event data:', {
         messageId: eventData.messageId,
@@ -1051,6 +1117,7 @@ const MessageDetailScreen: React.FC = () => {
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
         sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
+        senderId: eventData.senderId, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
         senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         isRead: false, // Yeni mesaj henüz okunmadı
@@ -1123,7 +1190,8 @@ const MessageDetailScreen: React.FC = () => {
       }, 100);
     } else if (eventData.messageType === 'image' || eventData.messageType === 'video' || eventData.messageType === 'audio' || eventData.messageType === 'file') {
       // Image/Video/Audio/File mesajı - Backend'den gelen new_message event'i
-      const isSent = eventData.senderId === currentUserId;
+      // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
+      const isSent = String(eventData.senderId) === String(currentUserId);
       console.log('[MessageDetail] 📷 Media message received:', {
         messageId: eventData.messageId,
         messageType: eventData.messageType,
@@ -1140,6 +1208,7 @@ const MessageDetailScreen: React.FC = () => {
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
         sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
+        senderId: eventData.senderId, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
         senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: eventData.messageType === 'image' ? 'image' : 'message',
@@ -1218,7 +1287,8 @@ const MessageDetailScreen: React.FC = () => {
       }, 100);
     } else if (eventData.messageType === 'send-tips') {
       // TIPS mesajı - anında local state'e ekle
-      const isSent = eventData.senderId === currentUserId;
+      // ✅ FIX: isSent hesaplaması - String karşılaştırması yap (tip uyumsuzluğu olabilir)
+      const isSent = String(eventData.senderId) === String(currentUserId);
       console.log('[MessageDetail] 💰 TIPS message received:', {
         messageId: eventData.messageId,
         amount: eventData.amount,
@@ -1239,6 +1309,7 @@ const MessageDetailScreen: React.FC = () => {
         timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
         sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
+        senderId: eventData.senderId, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
         senderName: isSent ? undefined : (currentParams.senderName || 'Unknown'),
         senderAvatar: isSent ? undefined : currentParams.senderAvatar,
         type: 'tips',
@@ -1375,12 +1446,78 @@ const MessageDetailScreen: React.FC = () => {
 
     const messageText = eventData.message || eventData.text || '';
     const messageId = eventData.messageId;
+    const messageType = eventData.messageType; // TIPS mesajları için 'send-tips'
+    const tipsAmount = eventData.amount || 0;
     
     if (!messageId) {
       console.warn('[MessageDetail] ⚠️ message_sent event missing messageId');
       return;
     }
 
+    // ✅ FIX: TIPS mesajları için özel işlem
+    if (messageType === 'send-tips') {
+      console.log('[MessageDetail] 💰 TIPS message_sent event received:', {
+        messageId,
+        amount: tipsAmount,
+        message: messageText,
+      });
+      
+      setMessages((prev) => {
+        if (!prev || !Array.isArray(prev)) {
+          return prev || [];
+        }
+        
+        // Eğer mesaj zaten gerçek ID ile varsa (new_message event'i önce gelmiş), hiçbir şey yapma
+        const alreadyExists = prev.some(msg => msg.id === messageId);
+        if (alreadyExists) {
+          console.log('[MessageDetail] ✅ TIPS message already exists with real ID, skipping update');
+          return prev;
+        }
+
+        // Optimistic TIPS mesajını bul (pending-tips- ile başlayan, amount eşleşen, gönderilen mesaj)
+        const optimisticIndex = prev.findIndex(
+          (msg) => 
+            msg.id.startsWith('pending-tips-') && 
+            msg.isSent &&
+            msg.type === 'tips' &&
+            Math.abs((msg.tipsAmount || 0) - tipsAmount) < 0.01 // Amount eşleşiyor mu (float karşılaştırması)
+        );
+
+        if (optimisticIndex !== -1) {
+          console.log('[MessageDetail] ✅ Updating optimistic TIPS message with real ID:', messageId);
+          const updated = [...prev];
+          updated[optimisticIndex] = {
+            ...updated[optimisticIndex],
+            id: messageId,
+          };
+          return updated;
+        }
+
+        // Optimistic mesaj bulunamadı, yeni TIPS mesajı ekle
+        console.log('[MessageDetail] ⚠️ Optimistic TIPS message not found, adding new TIPS message');
+        const newTipsMessage: MessageDetailItem = {
+          id: messageId,
+          text: messageText,
+          timestamp: formatMessageTime(eventData.timestamp || new Date()),
+          sentAt: eventData.timestamp || new Date().toISOString(),
+          isSent: true,
+          senderId: user?.id, // ✅ FIX: senderId ekle
+          type: 'tips',
+          tipsAmount: tipsAmount,
+          isRead: false,
+        };
+        return insertMessageInOrder(prev, newTipsMessage);
+      });
+      
+      // Inbox listesini invalidate et
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      if (threadId) {
+        queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(threadId) });
+      }
+      return;
+    }
+
+    // Normal text mesajları için mevcut mantık
     // Optimistic update'teki mesajı gerçek mesaj ID'si ile güncelle
     setMessages((prev) => {
       // CRITICAL FIX: prev array kontrolü
@@ -1398,6 +1535,7 @@ const MessageDetailScreen: React.FC = () => {
       const optimisticIndex = prev.findIndex(
         (msg) => 
           msg.id.startsWith('pending-') && 
+          !msg.id.startsWith('pending-tips-') && // TIPS mesajlarını hariç tut
           msg.text === messageText && 
           msg.isSent
       );
@@ -1449,7 +1587,7 @@ const MessageDetailScreen: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: inboxKeys.threadMessages(threadId) });
     }
     // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
-  }, [threadId]);
+  }, [threadId, user?.id]);
 
   // Thread event handlers
   const handleThreadJoined = useCallback((data: { threadId: string }) => {
@@ -2139,6 +2277,7 @@ const MessageDetailScreen: React.FC = () => {
       timestamp: formatMessageTime(new Date()),
       sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
       isSent: true,
+      senderId: user.id, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
       type: 'tips',
       tipsAmount: amount,
       isRead: false,
@@ -2428,6 +2567,7 @@ const MessageDetailScreen: React.FC = () => {
       timestamp: formatMessageTime(new Date()),
       sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
       isSent: true,
+      senderId: user.id, // ✅ FIX: senderId ekle - isSent yeniden hesaplaması için gerekli
       isRead: false, // Henüz okunmadı
     };
 
@@ -2695,14 +2835,13 @@ const MessageDetailScreen: React.FC = () => {
       return;
     }
 
-    // Optimistic update: Mesajı silindi olarak işaretle
+    // Optimistic update: Mesajı silme işlemi başladı olarak işaretle (isDeleting: true)
     setMessages((prev) =>
       prev.map((msg) => {
         if (msg.id === messageId) {
           return {
             ...msg,
-            isDeleted: true,
-            text: 'This message was deleted',
+            isDeleting: true, // ✅ Optimistic delete state - pressable disable için
           };
         }
         return msg;
@@ -2713,6 +2852,8 @@ const MessageDetailScreen: React.FC = () => {
     deleteMessageMutation.mutate(messageId, {
       onSuccess: () => {
         console.log('[MessageDetail] ✅ Message deleted successfully:', messageId);
+        // ✅ FIX: Silinen mesajı ekrandan tamamen kaldır (silindi olarak gösterme)
+        setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
         // ✅ FIX: Query invalidation kaldırıldı - socket event'leri zaten state'i güncelleyecek
         // Socket event'i (message_deleted) geldiğinde mesaj tamamen kaldırılacak
       },
@@ -2722,7 +2863,10 @@ const MessageDetailScreen: React.FC = () => {
         setMessages((prev) =>
           prev.map((msg) => {
             if (msg.id === messageId) {
-              return message; // Orijinal mesajı geri yükle
+              return {
+                ...message,
+                isDeleting: false, // Silme işlemi başarısız, geri al
+              };
             }
             return msg;
           })
@@ -3142,7 +3286,13 @@ const MessageDetailScreen: React.FC = () => {
 
   const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
+  // ✅ FIX: Silinen mesajları filtrele - ekrandan tamamen kaldır
+  const visibleMessages = useMemo(() => {
+    return messages.filter(msg => !msg.isDeleted);
+  }, [messages]);
+
   const renderMessageItem = useCallback(({ item, index }: { item: MessageDetailItem; index: number }) => {
+    
     // Date header check: Show header if not the same day as next message (older message above)
     // CRITICAL FIX: Always use sentAt (ISO timestamp) for date comparison, not timestamp (formatted time string)
     // ✅ WhatsApp Engine: Inverted FlatList kullanılıyor: index 0 = newest message (visually at bottom), index length-1 = oldest message (visually at top)
@@ -3159,13 +3309,13 @@ const MessageDetailScreen: React.FC = () => {
       
       // ✅ WhatsApp Engine: Inverted FlatList'te index 0 = en yeni mesaj (görsel olarak en altta)
       // En son mesajsa (index length-1, en eski mesaj) veya bir sonraki mesaj (index + 1, görsel olarak üstteki, daha eski) farklı gündeyse tarih başlığı göster
-      const isLastMessage = index === messages.length - 1;
+      const isLastMessage = index === visibleMessages.length - 1;
       if (isLastMessage) {
         // En son mesaj (en eski) - her zaman tarih başlığı göster
         return true;
       }
       
-      const nextItem = messages[index + 1]; // Next message in array = older message visually (above current in inverted list)
+      const nextItem = visibleMessages[index + 1]; // Next message in array = older message visually (above current in inverted list)
       
       if (!nextItem) {
         return true;
@@ -3237,7 +3387,7 @@ const MessageDetailScreen: React.FC = () => {
     // ✅ WhatsApp Engine: isFirstInGroup hesapla (5 dakika içinde aynı kullanıcıdan text mesaj varsa grup)
     // Backend güncellemesi: Sadece type: 'message' olan mesajlar gruplanıyor
     // Inverted FlatList: index 0 = en yeni mesaj, index - 1 = daha yeni mesaj (görsel olarak aşağıda)
-    const prevMessage = index > 0 ? messages[index - 1] : null; // Daha yeni mesaj (inverted'da aşağıda)
+    const prevMessage = index > 0 ? visibleMessages[index - 1] : null; // Daha yeni mesaj (inverted'da aşağıda)
     
     // ✅ Backend güncellemesi: Sadece text mesajları gruplanıyor
     // Eğer mevcut mesaj text değilse (image, tips, support_request), her zaman isFirstInGroup = true
@@ -3671,7 +3821,7 @@ const MessageDetailScreen: React.FC = () => {
         <MessageItem
           item={item}
           index={index}
-          messages={messages}
+          messages={visibleMessages} // ✅ FIX: Silinen mesajları filtrele
           isDark={isDark}
           params={params}
           onDelete={handleDeleteMessage}
@@ -3685,10 +3835,11 @@ const MessageDetailScreen: React.FC = () => {
           onCancelSupportRequest={handleCancelSupportRequest}
           onGoToSupportChat={handleGoToSupportChat}
           currentUserId={user?.id}
+          onContextMenuStateChange={(isOpen: boolean) => setIsContextMenuOpen(isOpen)}
         />
       </VStack>
     );
-  }, [messages, isDark, params.senderName, params.senderTitle, params.senderAvatar, user?.id, threadId, handleAcceptSupportRequest, handleRejectSupportRequest, handleCancelSupportRequest, handleReport, handleBlock, handleReact, handleMessageReaction, handleDeleteMessage, emojiPickerOpen, getOrCreateAnimation, openEmojiPicker, closeEmojiPicker, handleEmojiSelect, emojis, expandedSupportRequests, toggleSupportRequest, handleGoToSupportChat]);
+  }, [visibleMessages, isDark, params.senderName, params.senderTitle, params.senderAvatar, user?.id, threadId, handleAcceptSupportRequest, handleRejectSupportRequest, handleCancelSupportRequest, handleReport, handleBlock, handleReact, handleMessageReaction, handleDeleteMessage, emojiPickerOpen, getOrCreateAnimation, openEmojiPicker, closeEmojiPicker, handleEmojiSelect, emojis, expandedSupportRequests, toggleSupportRequest, handleGoToSupportChat]);
 
   // CRITICAL FIX: SafeAreaView kullanmıyoruz, flicker önlemek için manuel insets kullanıyoruz
   // Üstte top inset kadar, altta bottom inset kadar view kullan
@@ -3740,11 +3891,12 @@ const MessageDetailScreen: React.FC = () => {
             ) : (
               <FlatList<MessageDetailItem>
                 ref={flatListRef}
-                data={messages}
+                data={visibleMessages} // ✅ FIX: Silinen mesajları filtrele
                 renderItem={renderMessageItem}
                 keyExtractor={(item) => item.id}
                 // ✅ WhatsApp Engine: Inverted mode - En yeni mesajlar altta, yukarı scroll yapınca eski mesajlar gelir
                 inverted={true}
+                scrollEnabled={!isContextMenuOpen}
                 // ✅ WhatsApp Engine: Performance optimizations (FlashList benzeri)
                 removeClippedSubviews={true}
                 windowSize={10}
@@ -3764,7 +3916,7 @@ const MessageDetailScreen: React.FC = () => {
                     ? keyboardHeight + 0  // Klavye + Input (~60px) + Butonlar (~100px) + 10px ekstra
                     : 0 , // Input (~60px) + Bottom inset + Butonlar (~100px) + 10px ekstra
                   // Empty state için: Mesaj yoksa ekranın tamamını kapla ve ortala
-                  flexGrow: messages.length === 0 ? 1 : 0,
+                  flexGrow: visibleMessages.length === 0 ? 1 : 0,
                 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
