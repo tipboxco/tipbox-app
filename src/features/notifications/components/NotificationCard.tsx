@@ -1588,6 +1588,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     // Event image - Event bildirimleri için
     const eventImageUrl = (notification.type === 'EVENT_STARTED' || notification.type === 'EVENT_ENDING_SOON' || notification.type === 'EVENT_REWARD_AVAILABLE') ? data.imageUrl : null;
     const eventImage = eventImageUrl ? toImageSource(eventImageUrl) : null;
+    
+    // Badge image - Badge bildirimleri için
+    const badgeImageUrl = (notification.type === 'NEW_BADGE' || notification.type === 'ACHIEVEMENT_UNLOCKED') ? data.imageUrl : null;
+    const badgeImage = badgeImageUrl ? toImageSource(badgeImageUrl) : null;
+    
+    // Avatar sadece user bildirimlerinde gösterilecek (event ve badge bildirimlerinde gösterilmeyecek)
+    const shouldShowAvatar = !eventImage && !badgeImage && (category === 'post' || category === 'comment' || category === 'trust' || category === 'message' || category === 'tips' || category === 'expert');
 
     // Category-based content rendering - Instagram benzeri tasarım
     const showTipsButton = category === 'tips' && tipsAmount; // Tips bildirimlerinde buton gösterilecek
@@ -1623,36 +1630,78 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         >
             <HStack space="md" alignItems="flex-start" flex={1}>
 
-                    {/* Avatar - Sadece primary avatar */}
-                    <Pressable onPress={handleAvatarPress}>
-                        <Box
-                            width={48}
-                            height={48}
-                            justifyContent="center"
-                            alignItems="center"
-                        >
-                            {/* Primary Avatar */}
+                    {/* Avatar/Event Image/Badge Image - Sol tarafta */}
+                    {shouldShowAvatar ? (
+                        <Pressable onPress={handleAvatarPress}>
+                            <Box
+                                width={48}
+                                height={48}
+                                justifyContent="center"
+                                alignItems="center"
+                            >
+                                {/* Primary Avatar */}
+                                <Box
+                                    width={48}
+                                    height={48}
+                                    borderRadius={24}
+                                    borderWidth={2}
+                                    borderColor={isDark ? '#333' : '#E9E9E9'}
+                                    justifyContent="center"
+                                    alignItems="center"
+                                    bg={isDark ? '#2A2A2A' : '#F5F5F5'}
+                                    overflow="hidden"
+                                >
+                                    <Image
+                                        source={primaryAvatar}
+                                        alt="User avatar"
+                                        width={44}
+                                        height={44}
+                                        borderRadius={22}
+                                    />
+                                </Box>
+                            </Box>
+                        </Pressable>
+                    ) : eventImage ? (
+                        <Pressable onPress={handlePress}>
                             <Box
                                 width={48}
                                 height={48}
                                 borderRadius={24}
+                                overflow="hidden"
                                 borderWidth={2}
                                 borderColor={isDark ? '#333' : '#E9E9E9'}
-                                justifyContent="center"
-                                alignItems="center"
-                                bg={isDark ? '#2A2A2A' : '#F5F5F5'}
-                                overflow="hidden"
+                                flexShrink={0}
                             >
                                 <Image
-                                    source={primaryAvatar}
-                                    alt="User avatar"
-                                    width={44}
-                                    height={44}
-                                    borderRadius={22}
+                                    source={eventImage}
+                                    alt="Event preview"
+                                    width={48}
+                                    height={48}
+                                    style={{ resizeMode: 'cover' }}
                                 />
                             </Box>
-                        </Box>
-                    </Pressable>
+                        </Pressable>
+                    ) : badgeImage ? (
+                        <Pressable onPress={handlePress}>
+                            <Box
+                                width={48}
+                                height={48}
+                                borderRadius={24}
+                                overflow="hidden"
+                                borderWidth={2}
+                                borderColor={isDark ? '#333' : '#E9E9E9'}
+                                flexShrink={0}
+                            >
+                                <Image
+                                    source={badgeImage}
+                                    alt="Badge preview"
+                                    width={48}
+                                    height={48}
+                                    style={{ resizeMode: 'cover' }}
+                                />
+                            </Box>
+                        </Pressable>
+                    ) : null}
 
                     {/* Content - Ortada */}
                     <VStack flex={1} space="xs" justifyContent="flex-start" alignSelf="stretch">
@@ -1813,29 +1862,6 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                             </HStack>
                         )}
                     </VStack>
-
-                    {/* Event Preview Image - Sağ tarafta (Event bildirimleri için) */}
-                    {eventImage && (notification.type === 'EVENT_STARTED' || notification.type === 'EVENT_ENDING_SOON' || notification.type === 'EVENT_REWARD_AVAILABLE') && (
-                        <Pressable onPress={handlePress}>
-                            <Box
-                                width={50}
-                                height={50}
-                                borderRadius={8}
-                                overflow="hidden"
-                                borderWidth={1}
-                                borderColor={isDark ? '#333' : '#E9E9E9'}
-                                flexShrink={0}
-                            >
-                                <Image
-                                    source={eventImage}
-                                    alt="Event preview"
-                                    width={50}
-                                    height={50}
-                                    style={{ resizeMode: 'cover' }}
-                                />
-                            </Box>
-                        </Pressable>
-                    )}
             </HStack>
 
                 {/* Timestamp, Context Menu and Unread Badge - Position Absolute */}
