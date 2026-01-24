@@ -1157,14 +1157,49 @@ export interface CloseSupportRequestRequest {
 
 /**
  * Close Support Request endpoint
- * Support request'i rating ile kapatır (completed durumuna geçer)
+ * Support request'i rating ile kapatır (awaiting_completion durumuna geçer)
  *
  * @param requestId - Support request ID
  * @param data - Close request data (rating, comment)
- * @returns Promise<void> - 200 OK
+ * @returns Promise<{ status: string; message: string }> - 200 OK
  */
-export const closeSupportRequest = async (requestId: string, data: CloseSupportRequestRequest): Promise<void> => {
-  await apiService.getClient().post(`/inbox/support-requests/${requestId}/close`, data);
+export interface CloseSupportRequestResponse {
+  status: 'awaiting_completion';
+  message: string;
+}
+
+export const closeSupportRequest = async (requestId: string, data: CloseSupportRequestRequest): Promise<CloseSupportRequestResponse> => {
+  const response = await apiService.getClient().post<CloseSupportRequestResponse>(`/inbox/support-requests/${requestId}/close`, data);
+  return response.data;
+};
+
+/**
+ * Finalize Support Request Request Interface
+ */
+export interface FinalizeSupportRequestRequest {
+  rating: number; // 1-5 arası
+  comment?: string; // Opsiyonel
+}
+
+/**
+ * Finalize Support Request Response Interface
+ */
+export interface FinalizeSupportRequestResponse {
+  status: 'completed';
+  message: string;
+}
+
+/**
+ * Finalize Support Request endpoint
+ * Support request'i finalize eder (completed durumuna geçer)
+ *
+ * @param requestId - Support request ID
+ * @param data - Finalize request data (rating, comment)
+ * @returns Promise<FinalizeSupportRequestResponse> - 200 OK
+ */
+export const finalizeSupportRequest = async (requestId: string, data: FinalizeSupportRequestRequest): Promise<FinalizeSupportRequestResponse> => {
+  const response = await apiService.getClient().post<FinalizeSupportRequestResponse>(`/inbox/support-requests/${requestId}/finalize`, data);
+  return response.data;
 };
 
 /**

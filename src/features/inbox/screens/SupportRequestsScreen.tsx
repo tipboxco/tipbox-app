@@ -107,6 +107,54 @@ const SupportRequestsScreen: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
   }, [queryClient]);
 
+  // ✅ FIX: Support request closed handler (awaiting_completion durumuna geçer)
+  const handleSupportRequestClosed = useCallback((data: { requestId: string; timestamp?: string }) => {
+    console.log('[SupportRequestsScreen] ✅ Support request closed:', data);
+    
+    // ✅ Optimistic update - Request'i anında awaiting_completion status'e çek
+    queryClient.setQueryData(inboxKeys.supportRequests(), (oldData: any) => {
+      if (!oldData || !Array.isArray(oldData)) return oldData;
+      
+      return oldData.map((request: any) => {
+        if (request.id === data.requestId) {
+          return {
+            ...request,
+            status: 'awaiting_completion', // ✅ Close yapıldığında awaiting_completion olur
+          };
+        }
+        return request;
+      });
+    });
+    
+    // Invalidate queries to refresh the list (backend'den güncel veri çek)
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+  }, [queryClient]);
+
+  // ✅ FIX: Support request finalized handler (completed durumuna geçer)
+  const handleSupportRequestFinalized = useCallback((data: { requestId: string; timestamp?: string }) => {
+    console.log('[SupportRequestsScreen] ✅ Support request finalized:', data);
+    
+    // ✅ Optimistic update - Request'i anında completed status'e çek
+    queryClient.setQueryData(inboxKeys.supportRequests(), (oldData: any) => {
+      if (!oldData || !Array.isArray(oldData)) return oldData;
+      
+      return oldData.map((request: any) => {
+        if (request.id === data.requestId) {
+          return {
+            ...request,
+            status: 'completed', // ✅ Finalize yapıldığında completed olur
+          };
+        }
+        return request;
+      });
+    });
+    
+    // Invalidate queries to refresh the list (backend'den güncel veri çek)
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+  }, [queryClient]);
+
   const handleNewMessage = useCallback((eventData: any) => {
     // Support request mesajı geldiğinde listeyi güncelle
     if (eventData.messageType === 'support-request') {
@@ -122,15 +170,19 @@ const SupportRequestsScreen: React.FC = () => {
     on('support_request_accepted', handleSupportRequestAccepted);
     on('support_request_rejected', handleSupportRequestRejected);
     on('support_request_cancelled', handleSupportRequestCancelled);
+    on('support_request_closed', handleSupportRequestClosed); // ✅ FIX: Close request event'ini dinle (awaiting_completion)
+    on('support_request_finalized', handleSupportRequestFinalized); // ✅ FIX: Finalized event'ini dinle (completed)
     on('new_message', handleNewMessage);
 
     return () => {
       off('support_request_accepted', handleSupportRequestAccepted);
       off('support_request_rejected', handleSupportRequestRejected);
       off('support_request_cancelled', handleSupportRequestCancelled);
+      off('support_request_closed', handleSupportRequestClosed); // ✅ FIX: Close request event listener'ını temizle
+      off('support_request_finalized', handleSupportRequestFinalized); // ✅ FIX: Finalized event listener'ını temizle
       off('new_message', handleNewMessage);
     };
-  }, [isConnected, on, off, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, handleNewMessage]);
+  }, [isConnected, on, off, handleSupportRequestAccepted, handleSupportRequestRejected, handleSupportRequestCancelled, handleSupportRequestClosed, handleSupportRequestFinalized, handleNewMessage]);
 
   const handleRequestPress = (requestId: string) => {
     // Find the request data

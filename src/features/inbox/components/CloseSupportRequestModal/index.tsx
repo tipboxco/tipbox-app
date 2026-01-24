@@ -19,6 +19,7 @@ interface CloseSupportRequestModalProps {
   userName: string;
   userTitle: string;
   userAvatar: any;
+  isFinalize?: boolean; // ✅ FIX: Finalize modal'ı mı yoksa close modal'ı mı?
 }
 
 export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> = ({
@@ -29,6 +30,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
   userName,
   userTitle,
   userAvatar,
+  isFinalize = false, // ✅ FIX: Default false (close modal)
 }) => {
   const [rating, setRating] = useState(0);
 
@@ -98,33 +100,67 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
 
                 {/* Description Text */}
                 <VStack space="xs" alignItems="center">
-                  <Text
-                    fontSize={14}
-                    fontWeight="$normal"
-                    color="#4B5563"
-                    textAlign="center"
-                    lineHeight={20}
-                  >
-                    You are about to close the one-on-one
-                  </Text>
-                  <Text
-                    fontSize={14}
-                    fontWeight="$normal"
-                    color="#4B5563"
-                    textAlign="center"
-                    lineHeight={20}
-                  >
-                    support request with the user.
-                  </Text>
-                  <Text
-                    fontSize={15}
-                    fontWeight="$semibold"
-                    color="#000000"
-                    textAlign="center"
-                    mt="$1"
-                  >
-                    Please rate the process!
-                  </Text>
+                  {isFinalize ? (
+                    <>
+                      <Text
+                        fontSize={14}
+                        fontWeight="$normal"
+                        color="#4B5563"
+                        textAlign="center"
+                        lineHeight={20}
+                      >
+                        You are about to finalize the one-on-one
+                      </Text>
+                      <Text
+                        fontSize={14}
+                        fontWeight="$normal"
+                        color="#4B5563"
+                        textAlign="center"
+                        lineHeight={20}
+                      >
+                        support request with the user.
+                      </Text>
+                      <Text
+                        fontSize={15}
+                        fontWeight="$semibold"
+                        color="#000000"
+                        textAlign="center"
+                        mt="$1"
+                      >
+                        Please rate the process!
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text
+                        fontSize={14}
+                        fontWeight="$normal"
+                        color="#4B5563"
+                        textAlign="center"
+                        lineHeight={20}
+                      >
+                        You are about to close the one-on-one
+                      </Text>
+                      <Text
+                        fontSize={14}
+                        fontWeight="$normal"
+                        color="#4B5563"
+                        textAlign="center"
+                        lineHeight={20}
+                      >
+                        support request with the user.
+                      </Text>
+                      <Text
+                        fontSize={15}
+                        fontWeight="$semibold"
+                        color="#000000"
+                        textAlign="center"
+                        mt="$1"
+                      >
+                        Please rate the process!
+                      </Text>
+                    </>
+                  )}
                 </VStack>
 
                 {/* Star Rating */}
@@ -160,7 +196,7 @@ export const CloseSupportRequestModal: React.FC<CloseSupportRequestModalProps> =
                             fontWeight="$semibold"
                             color="#000000"
                           >
-                            Close Support Request
+                            {isFinalize ? 'Finalize Support Request' : 'Close Support Request'}
                           </Text>
                         </Box>
                       </Pressable>

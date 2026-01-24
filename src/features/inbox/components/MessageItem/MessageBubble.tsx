@@ -433,20 +433,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 opacity: isDeleted ? 0.6 : 1,
               }}
             >
-              <Text
-                color={
-                  isDeleted
-                    ? (isDark ? '#8C8C8C' : '#8C8C8C')
-                    : isSent
-                    ? '#FFFFFF'
-                    : (isDark ? '#FFFFFF' : '#000000')
-                }
-                fontSize="$sm"
-                fontWeight="$normal"
-                fontStyle={isDeleted ? 'italic' : 'normal'}
-              >
-                {isDeleted ? 'Bu mesaj silindi' : (item.text || '(Mesaj içeriği yok)')}
-              </Text>
+              <VStack space="xs">
+                {/* Ana mesaj */}
+                <Text
+                  color={
+                    isDeleted
+                      ? (isDark ? '#8C8C8C' : '#8C8C8C')
+                      : isSent
+                      ? '#FFFFFF'
+                      : (isDark ? '#FFFFFF' : '#000000')
+                  }
+                  fontSize="$sm"
+                  fontWeight="$normal"
+                  fontStyle={isDeleted ? 'italic' : 'normal'}
+                >
+                  {isDeleted ? 'Bu mesaj silindi' : (item.text || '(Mesaj içeriği yok)')}
+                </Text>
+                
+                {/* ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - mesaj balonunun içinde) */}
+                {item.groupedMessages && item.groupedMessages.length > 0 && (
+                  <VStack space="xs" mt="$1">
+                    {item.groupedMessages.map((groupedMsg: any) => (
+                      <Text
+                        key={groupedMsg.id || groupedMsg.timestamp}
+                        color={
+                          isDeleted
+                            ? (isDark ? '#8C8C8C' : '#8C8C8C')
+                            : isSent
+                            ? '#FFFFFF'
+                            : (isDark ? '#FFFFFF' : '#000000')
+                        }
+                        fontSize="$sm"
+                        fontWeight="$normal"
+                        opacity={0.9}
+                      >
+                        {groupedMsg.text || '(Mesaj içeriği yok)'}
+                      </Text>
+                    ))}
+                  </VStack>
+                )}
+              </VStack>
             </View>
 
             <VStack space="xs" alignItems={isSent ? 'flex-end' : 'flex-start'}>

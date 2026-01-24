@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Alert, Keyboard, StatusBar } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Alert, Keyboard, StatusBar, Modal, View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
@@ -9,10 +9,6 @@ import {
   Image,
   Button,
   ButtonText,
-  Modal,
-  ModalBackdrop,
-  ModalContent,
-  ModalBody,
   Input,
   InputField,
   Pressable,
@@ -26,24 +22,30 @@ import MessageDetailHeader from '../components/MessageDetailHeader';
 import MessageInput from '../components/MessageInput';
 import SupportMessageDetailActionButtons from '../components/SupportMessageDetailActionButtons';
 import SupportChatParticipants from '../components/SupportChatParticipants';
-import CloseSupportRequestModal from '../components/CloseSupportRequestModal';
+import StarRating from '../components/StarRating';
 import { useSocket } from '@/src/providers/SocketProvider';
 import { useAppStore } from '@/src/store/appStore';
-import { useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useCloseSupportRequest, useReportSupportRequest, inboxKeys } from '../api/hooks';
-import { useQueryClient } from '@tanstack/react-query';
+import { useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useCloseSupportRequest, useFinalizeSupportRequest, useReportSupportRequest, inboxKeys } from '../api/hooks';
+import { apiService } from '@/src/services/ApiService';
+import type { GetThreadMessagesResponse } from '../api/messagesApi';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useReportUser, useBlockUser } from '@/src/features/profile/api/hooks';
 import { Share, Alert as RNAlert } from 'react-native';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import type { ThreadMessage } from '../api/messagesApi';
+import { MessageItem } from '../components/MessageItem';
+import { formatMessageTime } from '../utils/messageHelpers';
 
 interface MessageDetailItem {
   id: string;
   text: string;
   timestamp: string;
+  sentAt: string; // CRITICAL: Sıralama için ISO timestamp
   isSent: boolean;
+  senderId?: string; // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
   senderName?: string;
   senderAvatar?: any;
-  type?: 'message' | 'support_request';
+  type?: 'message' | 'support_request' | 'image';
   supportRequest?: {
     supportType: string;
     message: string;
@@ -54,9 +56,29 @@ interface MessageDetailItem {
     fromUserId?: string; // Request'i oluşturan kullanıcı ID'si
     toUserId?: string; // Request'in gönderildiği kullanıcı ID'si (expert)
   };
+  // Image message fields
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video' | 'file';
+  thumbnailUrl?: string | null | undefined;
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+  uploadStatus?: 'uploading' | 'uploaded' | 'failed';
+  uploadProgress?: number;
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
   readAt?: string; // Okunma zamanı
+  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar)
+  groupedMessages?: Array<{
+    id: string;
+    text: string;
+    timestamp: string;
+    sentAt: string;
+    senderId?: string; // ✅ FIX: groupedMessages için senderId ekle
+  }>;
+  // Message deletion status
+  isDeleted?: boolean;
 }
 
 type SupportMessageDetailScreenNavigationProp = NativeStackNavigationProp<any, 'SupportMessageDetail'>;
@@ -74,6 +96,38 @@ interface SupportMessageDetailParams {
   recipientUserId?: string;
 }
 
+// ✅ WhatsApp Engine: Yeni mesajı doğru pozisyona ekle (descending order - inverted FlashList için)
+const insertMessageInOrder = (
+  messages: MessageDetailItem[],
+  newMessage: MessageDetailItem
+): MessageDetailItem[] => {
+  // Eğer mesaj zaten varsa, güncelle
+  const existingIndex = messages.findIndex(msg => msg.id === newMessage.id);
+  if (existingIndex !== -1) {
+    const updated = [...messages];
+    updated[existingIndex] = newMessage;
+    return updated;
+  }
+  
+  // ✅ WhatsApp Engine: Descending order (en yeni başta, en eski sonda)
+  const newSentAt = new Date(newMessage.sentAt).getTime();
+  
+  // En yeni mesajdan başlayarak kontrol et (descending order için)
+  for (let i = 0; i < messages.length; i++) {
+    const currentSentAt = new Date(messages[i].sentAt).getTime();
+    
+    // Yeni mesaj daha yeni ise, buraya ekle
+    if (newSentAt > currentSentAt) {
+      const updated = [...messages];
+      updated.splice(i, 0, newMessage);
+      return updated;
+    }
+  }
+  
+  // Tüm mesajlardan daha eski veya eşit ise, sona ekle
+  return [...messages, newMessage];
+};
+
 
 
 const SupportMessageDetailScreen: React.FC = () => {
@@ -84,15 +138,20 @@ const SupportMessageDetailScreen: React.FC = () => {
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [isCloseModalVisible, setIsCloseModalVisible] = useState(false);
   const [isReportModalVisible, setIsReportModalVisible] = useState(false);
-  const [reportReason, setReportReason] = useState('');
+  const [reportReason, setReportReason] = useState(''); // Dropdown seçimi
+  const [reportDescription, setReportDescription] = useState(''); // Text area
+  const [showReportReasonDropdown, setShowReportReasonDropdown] = useState(false);
+  const [closeModalRating, setCloseModalRating] = useState(0);
   const { user } = useAppStore();
   const queryClient = useQueryClient();
   const acceptMutation = useAcceptSupportRequest();
   const rejectMutation = useRejectSupportRequest();
   const cancelMutation = useCancelSupportRequest();
   const closeMutation = useCloseSupportRequest();
+  const finalizeMutation = useFinalizeSupportRequest();
   const reportMutation = useReportSupportRequest();
   const reportUserMutation = useReportUser();
   const blockUserMutation = useBlockUser();
@@ -133,6 +192,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const keyboardHeightRef = useRef(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const insets = useSafeAreaInsets();
   
@@ -143,13 +203,63 @@ const SupportMessageDetailScreen: React.FC = () => {
     amount?: number;
     status?: string;
   } | null>(null);
+  
+  // ✅ FIX: Support request'ten fromUserId ve toUserId'yi al (header için)
+  const [supportRequestUserIds, setSupportRequestUserIds] = useState<{
+    fromUserId?: string;
+    toUserId?: string;
+  }>({});
+  
+  // ✅ FIX: Backend'den gelen güncel kullanıcı bilgilerini sakla (header için)
+  const [participantInfo, setParticipantInfo] = useState<{
+    expertName?: string;
+    expertTitle?: string;
+    expertAvatar?: any;
+    userName?: string;
+    userTitle?: string;
+    userAvatar?: any;
+  }>({});
 
   // Thread mesajlarını yükle (eğer threadId varsa)
   const { data: threadMessages, isLoading: isLoadingMessages, refetch: refetchMessages } = useThreadMessages(threadId || null);
+  
+  // ✅ FIX: Backend'den participants bilgisini al (header için güncel kullanıcı bilgileri)
+  const { data: participantsData } = useQuery<GetThreadMessagesResponse>({
+    queryKey: [...inboxKeys.threadMessages(threadId || ''), 'participants'],
+    queryFn: async () => {
+      if (!threadId) throw new Error('Thread ID is required');
+      const response = await apiService.getClient().get<GetThreadMessagesResponse>(`/inbox/${threadId}`);
+      return response.data;
+    },
+    enabled: !!threadId,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
 
   // Thread mesajlarını local state'e dönüştür
   useEffect(() => {
-    if (threadMessages && threadId) {
+    // ✅ FIX: threadId yoksa mesajları temizleme, sadece return et
+    if (!threadId) {
+      return;
+    }
+    
+    // ✅ FIX: threadMessages undefined, null veya boş array ise, mevcut mesajları koru (close/finalize sonrası geçici olarak boş gelebilir)
+    // Eğer threadMessages undefined/null ise ve mevcut mesajlar varsa, mevcut mesajları koru
+    if (!threadMessages && messages.length > 0) {
+      console.log('[SupportMessageDetail] ⚠️ ThreadMessages undefined/null ama mevcut mesajlar var, korunuyor');
+      return; // Mevcut mesajları koru, hiçbir şey yapma
+    }
+    
+    // ✅ FIX: threadMessages boş array ise ve mevcut mesajlar varsa, mevcut mesajları koru
+    if (Array.isArray(threadMessages) && threadMessages.length === 0 && messages.length > 0) {
+      console.log('[SupportMessageDetail] ⚠️ ThreadMessages boş array ama mevcut mesajlar var, korunuyor');
+      return; // Mevcut mesajları koru, hiçbir şey yapma
+    }
+    
+    // ✅ FIX: Sadece threadMessages varsa ve içinde mesaj varsa işle
+    if (threadMessages && Array.isArray(threadMessages) && threadMessages.length > 0) {
       // Support request bilgisini bul (ilk support-request mesajından)
       const supportRequestMsg = threadMessages.find(msg => msg.messageType === 'support-request');
       if (supportRequestMsg) {
@@ -159,10 +269,55 @@ const SupportMessageDetailScreen: React.FC = () => {
           amount: supportRequestMsg.amount || 0,
           status: supportRequestMsg.supportRequestStatus || 'pending',
         });
+        // ✅ FIX: fromUserId ve toUserId'yi kaydet (header için)
+        setSupportRequestUserIds({
+          fromUserId: supportRequestMsg.fromUserId,
+          toUserId: supportRequestMsg.toUserId,
+        });
+      }
+      
+      // ✅ FIX: Backend'den gelen participants bilgisini kullan (header için güncel kullanıcı bilgileri)
+      // Backend response: { participants: { userOne: {...}, userTwo: {...} } }
+      // Birebir field kullan: userOne → userName, userTwo → expertName
+      const participants = participantsData?.participants;
+      if (participants && 'userOne' in participants && 'userTwo' in participants) {
+        const userOne = participants.userOne;
+        const userTwo = participants.userTwo;
+        
+        if (userOne && userTwo) {
+          // Backend'den gelen field'ları birebir kullan (fallback yok)
+          setParticipantInfo({
+            userName: userOne.name,
+            userTitle: userOne.title || '',
+            userAvatar: userOne.avatar ? toImageSource(userOne.avatar) : undefined,
+            expertName: userTwo.name,
+            expertTitle: userTwo.title || '',
+            expertAvatar: userTwo.avatar ? toImageSource(userTwo.avatar) : undefined,
+          });
+        }
+      } else if (participants && typeof participants === 'object' && participants !== null && !('userOne' in participants)) {
+        // Yeni format (userId key'leri ile) - fromUserId ve toUserId'ye göre
+        const participantsObj = participants as { [userId: string]: { id: string; name: string; title?: string; avatar: string | null } };
+        const fromUserId = supportRequestMsg?.fromUserId;
+        const toUserId = supportRequestMsg?.toUserId;
+        
+        if (fromUserId && toUserId && participantsObj[fromUserId] && participantsObj[toUserId]) {
+          const fromUser = participantsObj[fromUserId];
+          const toUser = participantsObj[toUserId];
+          
+          setParticipantInfo({
+            userName: fromUser.name,
+            userTitle: fromUser.title || '',
+            userAvatar: fromUser.avatar ? toImageSource(fromUser.avatar) : undefined,
+            expertName: toUser.name,
+            expertTitle: toUser.title || '',
+            expertAvatar: toUser.avatar ? toImageSource(toUser.avatar) : undefined,
+          });
+        }
       }
       
       const convertedMessages: MessageDetailItem[] = threadMessages
-        .filter(msg => msg.messageType === 'message') // Support thread'de sadece mesajlar gösterilir
+        .filter(msg => msg.messageType === 'message' || msg.messageType === 'image') // Support thread'de mesajlar ve görseller gösterilir
         .map((msg) => {
           const isSent = msg.senderId === user?.id;
           // Backend'den gelen sender bilgilerini kullan (varsa), yoksa params'dan al
@@ -173,30 +328,100 @@ const SupportMessageDetailScreen: React.FC = () => {
             ? undefined 
             : (msg.senderAvatar ? toImageSource(msg.senderAvatar) : params.expertAvatar);
           
-          // Normal mesaj (support thread'de sadece mesajlar var)
+          // Mesaj tipini belirle
+          let messageType: 'message' | 'image' = 'message';
+          if (msg.messageType === 'image' || msg.mediaUrl) {
+            messageType = 'image';
+          }
+          
+          // ✅ DEBUG: Mesaj parse edilirken log
+          if (__DEV__) {
+            console.log('[SupportMessageDetail] 📨 Parsing message:', {
+              id: msg.id,
+              message: msg.message,
+              caption: msg.caption,
+              messageType: msg.messageType,
+              hasGroupedMessages: !!(msg.groupedMessages && msg.groupedMessages.length > 0),
+              groupedMessagesCount: msg.groupedMessages?.length || 0,
+            });
+          }
+          
           return {
             id: msg.id,
-            text: msg.message || '',
-            timestamp: new Date(msg.sentAt).toLocaleTimeString('tr-TR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
+            text: msg.message || msg.caption || '', // ✅ FIX: Ana mesajın text'i buradan geliyor
+            timestamp: formatMessageTime(msg.sentAt),
+            sentAt: msg.sentAt, // CRITICAL: Sıralama için ISO timestamp
             isSent,
+            senderId: msg.senderId, // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
             senderName,
             senderAvatar,
+            type: messageType,
+            // Image message fields
+            mediaUrl: msg.mediaUrl,
+            mediaType: msg.mediaUrl ? 'image' : undefined,
+            thumbnailUrl: msg.thumbnailUrl,
+            dimensions: msg.dimensions,
             isRead: msg.isRead,
             readAt: msg.readAt,
+            // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
+            groupedMessages: msg.groupedMessages && Array.isArray(msg.groupedMessages) && msg.groupedMessages.length > 0
+              ? msg.groupedMessages.map((groupedMsg: any) => ({
+                  id: groupedMsg.id,
+                  text: groupedMsg.text || groupedMsg.message || '', // Backend'den message olarak gelebilir
+                  message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
+                  timestamp: formatMessageTime(groupedMsg.sentAt || groupedMsg.timestamp),
+                  sentAt: groupedMsg.sentAt || groupedMsg.timestamp || msg.sentAt, // ✅ FIX: timestamp yoksa ana mesajın sentAt'ını kullan
+                  senderId: groupedMsg.senderId || msg.senderId, // ✅ FIX: groupedMessages için senderId ekle (ana mesajın senderId'sini kullan)
+                }))
+              : undefined,
           };
         });
       
-      setMessages(convertedMessages);
+      // ✅ FIX: Duplicate kontrolü - Mevcut mesajları koru, sadece yeni mesajları ekle
+      setMessages((prev) => {
+        // ✅ FIX: Eğer threadMessages boşsa (close/finalize sonrası geçici olarak boş gelebilir), mevcut mesajları koru
+        if (convertedMessages.length === 0 && prev.length > 0) {
+          console.log('[SupportMessageDetail] ⚠️ ThreadMessages boş ama mevcut mesajlar var, korunuyor');
+          return prev; // Mevcut mesajları koru
+        }
+        
+        // Eğer prev boşsa, direkt convertedMessages'ı kullan
+        if (prev.length === 0) {
+          return convertedMessages;
+        }
+        
+        // Mevcut mesajları koru, yeni mesajları ekle (duplicate önle)
+        const existingIds = new Set(prev.map(msg => msg.id));
+        const newMessages = convertedMessages.filter(msg => !existingIds.has(msg.id));
+        
+        if (newMessages.length === 0) {
+          // Yeni mesaj yoksa, mevcut mesajları güncelle (isRead gibi field'lar güncellenebilir)
+          const updated = prev.map(prevMsg => {
+            const convertedMsg = convertedMessages.find(msg => msg.id === prevMsg.id);
+            return convertedMsg || prevMsg;
+          });
+          return updated;
+        }
+        
+        // Yeni mesajları tek tek ekle (insertMessageInOrder her seferinde bir mesaj alır)
+        let result = prev;
+        newMessages.forEach(newMsg => {
+          result = insertMessageInOrder(result, newMsg);
+        });
+        return result;
+      });
       
-      // Scroll to bottom
+      // ✅ WhatsApp Engine: Inverted FlatList - Scroll to end (en yeni mesajlar görünür)
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
+        if (flatListRef.current && convertedMessages.length > 0) {
+          // Inverted FlatList'te scrollToEnd en yeni mesajları gösterir
+          flatListRef.current.scrollToEnd({ animated: false });
+        }
       }, 100);
     }
-  }, [threadMessages, threadId, user?.id, params.expertName, params.expertAvatar]);
+    // ✅ FIX: messages dependency'si eklenmedi - sadece threadMessages değiştiğinde çalışmalı
+    // messages state'i bu useEffect içinde güncelleniyor, bu yüzden dependency'ye eklememeliyiz (infinite loop önleme)
+  }, [threadMessages, threadId, user?.id, params.expertName, params.expertAvatar, participantsData]);
 
   // Socket bağlantısı ve thread join
   useEffect(() => {
@@ -224,57 +449,101 @@ const SupportMessageDetailScreen: React.FC = () => {
     }
   }, [threadId, isConnected]);
 
-  // New message handler
+  // New message handler (hem new_message hem message_sent event'leri için)
   const handleNewMessage = useCallback((eventData: any) => {
-    if (eventData.threadId !== threadId) return;
+    // ✅ DEBUG: Tüm gelen event'leri logla
+    if (__DEV__) {
+      console.log('[SupportMessageDetail] 📨 Socket event received:', {
+        eventType: 'new_message/message_sent',
+        threadId: eventData.threadId,
+        currentThreadId: threadId,
+        messageId: eventData.messageId,
+        messageType: eventData.messageType,
+        context: eventData.context,
+        message: eventData.message,
+        senderId: eventData.senderId,
+      });
+    }
+    
+    if (!threadId) {
+      if (__DEV__) {
+        console.log('[SupportMessageDetail] ⚠️ No threadId, ignoring message');
+      }
+      return;
+    }
+    
+    if (eventData.threadId !== threadId) {
+      if (__DEV__) {
+        console.log('[SupportMessageDetail] ⚠️ Thread ID mismatch, ignoring message:', {
+          eventThreadId: eventData.threadId,
+          currentThreadId: threadId,
+        });
+      }
+      return;
+    }
 
     // Normal mesaj veya image/video/audio/file mesajı
-    if ((eventData.messageType === 'message' || 
-         eventData.messageType === 'image' || 
-         eventData.messageType === 'video' || 
-         eventData.messageType === 'audio' || 
-         eventData.messageType === 'file') && 
-        eventData.context === 'SUPPORT') {
+    // context === 'SUPPORT' kontrolü yapılıyor, ama backend'den gelen mesajlarda context olmayabilir
+    // Bu yüzden context kontrolünü kaldırıyoruz veya opsiyonel yapıyoruz
+    if (eventData.messageType === 'message' || 
+        eventData.messageType === 'image' || 
+        eventData.messageType === 'video' || 
+        eventData.messageType === 'audio' || 
+        eventData.messageType === 'file') {
+      
+      if (__DEV__) {
+        console.log('[SupportMessageDetail] ✅ Processing message for support thread');
+      }
       
       const isSent = eventData.senderId === user?.id;
+      const messageType: 'message' | 'image' = eventData.messageType === 'image' ? 'image' : 'message';
       const newMessage: MessageDetailItem = {
         id: eventData.messageId,
         text: eventData.message || eventData.caption || '',
-        timestamp: new Date(eventData.timestamp || eventData.sentAt).toLocaleTimeString('tr-TR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        timestamp: formatMessageTime(eventData.timestamp || eventData.sentAt),
+        sentAt: eventData.timestamp || eventData.sentAt || new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
         isSent,
+        senderId: eventData.senderId, // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
         senderName: isSent ? undefined : params.expertName,
         senderAvatar: isSent ? undefined : params.expertAvatar,
-        type: eventData.messageType === 'image' ? 'image' : undefined,
+        type: messageType,
         mediaUrl: eventData.mediaUrl,
         mediaType: eventData.messageType === 'image' || eventData.messageType === 'video' || eventData.messageType === 'audio' || eventData.messageType === 'file' 
           ? eventData.messageType 
           : undefined,
         thumbnailUrl: eventData.thumbnailUrl,
+        dimensions: eventData.dimensions,
+        isRead: false,
       };
 
       setMessages((prev) => {
-        // Duplicate kontrolü
-        if (prev.some((msg) => msg.id === eventData.messageId)) {
-          return prev;
-        }
-        
-        // Optimistic image mesajını gerçek mesajla değiştir
-        const optimisticIndex = prev.findIndex(
-          (msg) => msg.id.startsWith('pending-image-') && 
-                   msg.isSent === isSent &&
-                   msg.type === 'image'
-        );
-        
-        if (optimisticIndex !== -1) {
+        // ✅ FIX: Duplicate kontrolü - Eğer mesaj zaten varsa, güncelle
+        const existingIndex = prev.findIndex((msg) => msg.id === eventData.messageId);
+        if (existingIndex !== -1) {
+          // Mesaj zaten varsa, güncelle (duplicate önle)
           const updated = [...prev];
-          updated[optimisticIndex] = newMessage;
+          updated[existingIndex] = newMessage;
           return updated;
         }
         
-        return [...prev, newMessage];
+        // ✅ FIX: Optimistic mesajları gerçek mesajla değiştir (hem text hem image için)
+        const optimisticIndex = prev.findIndex(
+          (msg) => 
+            (msg.id.startsWith('pending-') || msg.id.startsWith('pending-image-')) && 
+            msg.isSent === isSent &&
+            (messageType === 'image' ? msg.type === 'image' : msg.type === 'message' || !msg.type)
+        );
+        
+        if (optimisticIndex !== -1) {
+          // Optimistic mesajı gerçek mesajla değiştir
+          const updated = [...prev];
+          updated[optimisticIndex] = newMessage;
+          // ✅ FIX: insertMessageInOrder ile doğru pozisyona taşı
+          return insertMessageInOrder(updated.filter((_, idx) => idx !== optimisticIndex), newMessage);
+        }
+        
+        // Yeni mesaj - doğru pozisyona ekle
+        return insertMessageInOrder(prev, newMessage);
       });
 
       setTimeout(() => {
@@ -385,15 +654,36 @@ const SupportMessageDetailScreen: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
   }, [queryClient]);
 
-  // Klavye event listener'ları
+  // ✅ WhatsApp Engine: Güvenli scroll helper - Inverted FlatList için scrollToEnd kullan
+  const safeScrollToEnd = useCallback((animated: boolean = true) => {
+    try {
+      if (flatListRef.current) {
+        flatListRef.current.scrollToEnd({ animated });
+      }
+    } catch (error) {
+      try {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated });
+      } catch (offsetError) {
+        // Sessizce yakala
+      }
+    }
+  }, []);
+
+  // Klavye event listener'ları - scroll ve buton pozisyonu için
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (event) => {
         const height = event.endCoordinates.height;
         setKeyboardHeight(height);
+        keyboardHeightRef.current = height;
         setIsKeyboardVisible(true);
         console.log('[SupportMessageDetail] ⌨️ Keyboard opened, height:', height);
+        
+        // ✅ Inverted FlatList - Klavye açıldığında en yeni mesaja scroll yap
+        setTimeout(() => {
+          safeScrollToEnd(true);
+        }, 100);
       }
     );
 
@@ -401,6 +691,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
         setKeyboardHeight(0);
+        keyboardHeightRef.current = 0;
         setIsKeyboardVisible(false);
         console.log('[SupportMessageDetail] ⌨️ Keyboard closed');
       }
@@ -410,7 +701,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
-  }, []);
+  }, [safeScrollToEnd]);
 
   // Socket event listeners
   useEffect(() => {
@@ -418,6 +709,7 @@ const SupportMessageDetailScreen: React.FC = () => {
 
     on('thread_joined', handleThreadJoined);
     on('new_message', handleNewMessage);
+    on('message_sent', handleNewMessage); // ✅ FIX: message_sent event'ini de dinle (backend'den gelen mesajlar için)
     on('user_typing', handleUserTyping);
     on('support_request_accepted', handleSupportRequestAccepted);
     on('support_request_rejected', handleSupportRequestRejected);
@@ -426,6 +718,7 @@ const SupportMessageDetailScreen: React.FC = () => {
     return () => {
       off('thread_joined', handleThreadJoined);
       off('new_message', handleNewMessage);
+      off('message_sent', handleNewMessage); // ✅ FIX: message_sent event listener'ını temizle
       off('user_typing', handleUserTyping);
       off('support_request_accepted', handleSupportRequestAccepted);
       off('support_request_rejected', handleSupportRequestRejected);
@@ -451,14 +744,18 @@ const SupportMessageDetailScreen: React.FC = () => {
 
     // Optimistic update
     const optimisticMessageId = `pending-${Date.now()}`;
+    const now = new Date();
     const newMessage: MessageDetailItem = {
       id: optimisticMessageId,
       text: messageText.trim(),
-      timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: formatMessageTime(now),
+      sentAt: now.toISOString(), // CRITICAL: Sıralama için ISO timestamp
       isSent: true,
+      senderId: user?.id, // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
+      isRead: false,
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => insertMessageInOrder(prev, newMessage));
 
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -531,12 +828,12 @@ const SupportMessageDetailScreen: React.FC = () => {
     }
 
     Alert.alert(
-      'Destek Talebini Reddet',
-      'Bu destek talebini reddetmek istediğinizden emin misiniz?',
+      'Reject Support Request',
+      'Are you sure you want to reject this support request?',
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Reddet',
+          text: 'Reject',
           style: 'destructive',
           onPress: () => {
             if (isConnected && isSocketReady) {
@@ -579,12 +876,12 @@ const SupportMessageDetailScreen: React.FC = () => {
     }
 
     Alert.alert(
-      'Destek Talebini İptal Et',
-      'Bu destek talebini iptal etmek istediğinizden emin misiniz?',
+      'Cancel Support Request',
+      'Are you sure you want to cancel this support request?',
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'İptal Et',
+          text: 'Cancel',
           style: 'destructive',
           onPress: () => {
             if (isConnected && isSocketReady) {
@@ -633,8 +930,18 @@ const SupportMessageDetailScreen: React.FC = () => {
     }
   };
 
+  // ✅ FIX: Modal'ın close mu finalize mi olduğunu takip et
+  const [isFinalizeModal, setIsFinalizeModal] = useState(false);
+
   // Handle close support request button press
   const handleCloseRequest = () => {
+    setIsFinalizeModal(false);
+    setIsCloseModalVisible(true);
+  };
+
+  // ✅ FIX: Handle finalize support request button press
+  const handleFinalizeRequest = () => {
+    setIsFinalizeModal(true);
     setIsCloseModalVisible(true);
   };
 
@@ -645,6 +952,88 @@ const SupportMessageDetailScreen: React.FC = () => {
       return;
     }
 
+    // ✅ FIX: Eğer finalize modal'ı açıksa, finalize işlemi yap
+    if (isFinalizeModal) {
+      console.log('[SupportMessageDetail] Finalizing support request with rating:', rating);
+      
+      finalizeMutation.mutate(
+        {
+          requestId: requestId,
+          data: {
+            rating: rating,
+            comment: undefined, // Opsiyonel yorum eklenebilir
+          },
+        },
+        {
+          onSuccess: () => {
+            console.log('[SupportMessageDetail] ✅ Support request finalized successfully');
+            Alert.alert('Success', 'Support request finalized successfully');
+            setCloseModalRating(0); // Reset rating
+            setIsCloseModalVisible(false);
+            setIsFinalizeModal(false);
+            
+            // ✅ FIX: Sadece supportRequests'i invalidate et (messages invalidate etme - threadMessages kaybolmasın)
+            queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+            // ❌ messages invalidate etme - threadMessages query'si etkilenmesin, mesajlar görünmeye devam etsin
+            
+            // ✅ FIX: Optimistic update - Request'i completed status'e çek
+            queryClient.setQueryData(inboxKeys.supportRequests(), (oldData: any) => {
+              if (!oldData || !Array.isArray(oldData)) return oldData;
+              
+              return oldData.map((request: any) => {
+                if (request.id === requestId) {
+                  return {
+                    ...request,
+                    status: 'completed', // ✅ Finalize yapıldığında completed olur
+                  };
+                }
+                return request;
+              });
+            });
+            
+            // ✅ FIX: Navigation params'ı güncelle (completed status'e çek)
+            navigation.setParams({ status: 'completed' });
+            
+            // ✅ FIX: Local state'te support request status'ünü güncelle (mesajlar görünmeye devam etsin)
+            setSupportRequestInfo((prev) => {
+              if (prev) {
+                return {
+                  ...prev,
+                  status: 'completed',
+                };
+              }
+              return prev;
+            });
+            
+            // ✅ FIX: Mesajlar state'inde support request mesajının status'ünü güncelle
+            setMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.type === 'support_request' && msg.supportRequest?.requestId === requestId) {
+                  return {
+                    ...msg,
+                    supportRequest: {
+                      ...msg.supportRequest,
+                      status: 'completed',
+                    },
+                  };
+                }
+                return msg;
+              })
+            );
+            
+            // ✅ FIX: Finalize sonrası ekran kapanmamalı - completed durumunda mesajlar görüntülenebilir
+            // navigation.goBack() kaldırıldı
+          },
+          onError: (error: any) => {
+            console.error('[SupportMessageDetail] ❌ Finalize support request error:', error);
+            Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while finalizing the support request');
+          },
+        }
+      );
+      return;
+    }
+
+    // Normal close işlemi
     console.log('[SupportMessageDetail] Closing support request with rating:', rating);
     
     closeMutation.mutate(
@@ -659,14 +1048,63 @@ const SupportMessageDetailScreen: React.FC = () => {
         onSuccess: () => {
           console.log('[SupportMessageDetail] ✅ Support request closed successfully');
           Alert.alert('Success', 'Support request closed successfully');
+          setCloseModalRating(0); // Reset rating
           setIsCloseModalVisible(false);
+          setIsFinalizeModal(false);
           
-          // Inbox listesini invalidate et
-          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          // ✅ FIX: Sadece supportRequests'i invalidate et (messages invalidate etme - threadMessages kaybolmasın)
+          // Bu sayede SupportRequestsScreen otomatik olarak güncellenecek
           queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+          // ❌ messages invalidate etme - threadMessages query'si etkilenmesin, mesajlar görünmeye devam etsin
           
-          // Geri dön
-          navigation.goBack();
+          // ✅ FIX: Optimistic update - SupportRequestsScreen'deki listeyi anında güncelle
+          // Request'i awaiting_completion status'e çek (close yapıldığında awaiting_completion olur)
+          queryClient.setQueryData(inboxKeys.supportRequests(), (oldData: any) => {
+            if (!oldData || !Array.isArray(oldData)) return oldData;
+            
+            return oldData.map((request: any) => {
+              if (request.id === requestId) {
+                return {
+                  ...request,
+                  status: 'awaiting_completion', // ✅ FIX: Close yapıldığında awaiting_completion olur
+                };
+              }
+              return request;
+            });
+          });
+          
+          // ✅ FIX: Navigation params'ı güncelle (awaiting_completion status'e çek)
+          navigation.setParams({ status: 'awaiting_completion' });
+          
+          // ✅ FIX: Local state'te support request status'ünü güncelle (mesajlar görünmeye devam etsin)
+          setSupportRequestInfo((prev) => {
+            if (prev) {
+              return {
+                ...prev,
+                status: 'awaiting_completion',
+              };
+            }
+            return prev;
+          });
+          
+          // ✅ FIX: Mesajlar state'inde support request mesajının status'ünü güncelle
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.type === 'support_request' && msg.supportRequest?.requestId === requestId) {
+                return {
+                  ...msg,
+                  supportRequest: {
+                    ...msg.supportRequest,
+                    status: 'awaiting_completion',
+                  },
+                };
+              }
+              return msg;
+            })
+          );
+          
+          // ✅ FIX: Ekran kapanmamalı - awaiting_completion durumunda finalize butonu gösterilecek
+          // navigation.goBack() kaldırıldı
         },
         onError: (error: any) => {
           console.error('[SupportMessageDetail] ❌ Close support request error:', error);
@@ -678,12 +1116,51 @@ const SupportMessageDetailScreen: React.FC = () => {
 
   // Handle cancel close request
   const handleCancelClose = () => {
+    setCloseModalRating(0); // Reset rating
     setIsCloseModalVisible(false);
+    setIsFinalizeModal(false);
   };
 
   // Handle report button press
   const handleReport = () => {
     setIsReportModalVisible(true);
+    setReportReason('');
+    setReportDescription('');
+    setShowReportReasonDropdown(false);
+  };
+
+  // Handle cancel report
+  const handleCancelReport = () => {
+    setIsReportModalVisible(false);
+    setReportReason('');
+    setReportDescription('');
+    setShowReportReasonDropdown(false);
+  };
+
+  // Rapor sebepleri
+  const reportReasons: Array<'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'SCAM' | 'OTHER'> = [
+    'SPAM',
+    'INAPPROPRIATE',
+    'HARASSMENT',
+    'SCAM',
+    'OTHER',
+  ];
+
+  const getReportReasonLabel = (reason: 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'SCAM' | 'OTHER' | '') => {
+    switch (reason) {
+      case 'SPAM':
+        return 'Spam';
+      case 'INAPPROPRIATE':
+        return 'Inappropriate Content';
+      case 'HARASSMENT':
+        return 'Harassment';
+      case 'SCAM':
+        return 'Scam';
+      case 'OTHER':
+        return 'Other';
+      default:
+        return 'Rapor sebebi seçiniz...';
+    }
   };
 
   // Handle confirm report
@@ -698,14 +1175,14 @@ const SupportMessageDetailScreen: React.FC = () => {
       return;
     }
 
-    console.log('[SupportMessageDetail] Reporting support request:', reportReason);
+    console.log('[SupportMessageDetail] Reporting support request:', { reason: reportReason, description: reportDescription });
     
     reportMutation.mutate(
       {
         requestId: requestId,
         data: {
           reason: reportReason.trim(),
-          description: undefined, // Opsiyonel açıklama eklenebilir
+          description: reportDescription.trim() || undefined, // Opsiyonel açıklama
         },
       },
       {
@@ -714,6 +1191,8 @@ const SupportMessageDetailScreen: React.FC = () => {
           Alert.alert('Success', 'Support request reported successfully');
           setIsReportModalVisible(false);
           setReportReason('');
+          setReportDescription('');
+          setShowReportReasonDropdown(false);
           
           // Inbox listesini invalidate et
           queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
@@ -728,12 +1207,6 @@ const SupportMessageDetailScreen: React.FC = () => {
         },
       }
     );
-  };
-
-  // Handle cancel report
-  const handleCancelReport = () => {
-    setIsReportModalVisible(false);
-    setReportReason('');
   };
 
   // Format message time helper
@@ -786,11 +1259,14 @@ const SupportMessageDetailScreen: React.FC = () => {
         
         // Optimistic update: Görsel mesajını anında local state'e ekle
         const optimisticMessageId = `pending-image-${Date.now()}`;
+        const now = new Date();
         const optimisticImageMessage: MessageDetailItem = {
           id: optimisticMessageId,
           text: '',
-          timestamp: formatMessageTime(new Date()),
+          timestamp: formatMessageTime(now),
+          sentAt: now.toISOString(), // CRITICAL: Sıralama için ISO timestamp
           isSent: true,
+          senderId: user?.id, // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
           type: 'image',
           mediaUrl: result.asset.uri,
           mediaType: 'image',
@@ -799,7 +1275,7 @@ const SupportMessageDetailScreen: React.FC = () => {
           isRead: false,
         };
         
-        setMessages((prev) => [...prev, optimisticImageMessage]);
+        setMessages((prev) => insertMessageInOrder(prev, optimisticImageMessage));
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
@@ -826,20 +1302,42 @@ const SupportMessageDetailScreen: React.FC = () => {
         
         // Optimistic mesajı gerçek mesajla değiştir
         if (response.data.messageId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === optimisticMessageId
-                ? {
-                    ...msg,
-                    id: response.data.messageId,
-                    mediaUrl: response.data.mediaUrl,
-                    thumbnailUrl: response.data.thumbnailUrl,
-                    uploadStatus: 'uploaded',
-                    uploadProgress: 100,
-                  }
-                : msg
-            )
-          );
+          setMessages((prev) => {
+            // Optimistic mesajı bul
+            const optimisticIndex = prev.findIndex(msg => msg.id === optimisticMessageId);
+            if (optimisticIndex === -1) {
+              // Optimistic mesaj bulunamadı, yeni mesaj ekle
+              const newMessage: MessageDetailItem = {
+                id: response.data.messageId,
+                text: '',
+                timestamp: formatMessageTime(new Date()),
+                sentAt: new Date().toISOString(),
+                isSent: true,
+                senderId: user?.id,
+                type: 'image',
+                mediaUrl: response.data.mediaUrl,
+                mediaType: 'image',
+                thumbnailUrl: response.data.thumbnailUrl,
+                uploadStatus: 'uploaded',
+                uploadProgress: 100,
+                isRead: false,
+              };
+              return insertMessageInOrder(prev, newMessage);
+            }
+            
+            // Optimistic mesajı gerçek mesajla değiştir
+            const updated = [...prev];
+            updated[optimisticIndex] = {
+              ...updated[optimisticIndex],
+              id: response.data.messageId,
+              mediaUrl: response.data.mediaUrl,
+              thumbnailUrl: response.data.thumbnailUrl,
+              uploadStatus: 'uploaded',
+              uploadProgress: 100,
+            };
+            // ✅ FIX: insertMessageInOrder ile doğru pozisyona taşı
+            return insertMessageInOrder(updated.filter((_, idx) => idx !== optimisticIndex), updated[optimisticIndex]);
+          });
         }
         
         console.log('[SupportMessageDetail] ✅ Image uploaded successfully:', response.data);
@@ -865,7 +1363,7 @@ const SupportMessageDetailScreen: React.FC = () => {
   }, [threadId]);
 
   // Mesaj öğesi render fonksiyonu
-  const renderMessageItem = ({ item }: { item: MessageDetailItem }) => {
+  const renderMessageItem = ({ item, index }: { item: MessageDetailItem; index: number }) => {
     // Support Request render'ı
     if (item.type === 'support_request' && item.supportRequest) {
       const isExpanded = expandedSupportRequests[item.id];
@@ -1004,6 +1502,8 @@ const SupportMessageDetailScreen: React.FC = () => {
                         requestStatus === 'accepted' ? (isDark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)') :
                         requestStatus === 'rejected' ? (isDark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)') :
                         requestStatus === 'canceled' ? (isDark ? 'rgba(158, 158, 158, 0.2)' : 'rgba(158, 158, 158, 0.1)') :
+                        requestStatus === 'awaiting_completion' ? (isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)') :
+                        requestStatus === 'completed' ? (isDark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)') :
                         (isDark ? '#2A2A2A' : '#E5E5E5')
                       }
                       borderRadius={8}
@@ -1019,11 +1519,13 @@ const SupportMessageDetailScreen: React.FC = () => {
                           requestStatus === 'accepted' ? '#4CAF50' :
                           requestStatus === 'rejected' ? '#F44336' :
                           requestStatus === 'canceled' ? '#9E9E9E' :
+                          requestStatus === 'awaiting_completion' ? '#6366F1' :
+                          requestStatus === 'completed' ? '#4CAF50' :
                           (isDark ? '#FFFFFF' : '#000000')
                         }
                         textTransform="capitalize"
                       >
-                        {requestStatus}
+                        {requestStatus === 'awaiting_completion' ? 'awaiting completion' : requestStatus}
                       </Text>
                     </Box>
                   </VStack>
@@ -1087,6 +1589,45 @@ const SupportMessageDetailScreen: React.FC = () => {
                       </Text>
                     </VStack>
                   )}
+
+                  {/* ✅ FIX: Awaiting Completion - Finalize butonu (support request mesaj item'ında) */}
+                  {requestStatus === 'awaiting_completion' && (
+                    <VStack space="sm" mt="$3">
+                      <Text
+                        fontSize={10}
+                        fontWeight="$normal"
+                        color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                        fontStyle="italic"
+                        mb="$2"
+                      >
+                        Support request is awaiting completion. Please rate and finalize.
+                      </Text>
+                      <Button
+                        onPress={handleFinalizeRequest}
+                        bg={isDark ? '#6366F1' : '#6366F1'}
+                        borderRadius={8}
+                        py="$2"
+                      >
+                        <ButtonText color="#FFFFFF" fontSize={12} fontWeight="$semibold">
+                          Finalize Support Request
+                        </ButtonText>
+                      </Button>
+                    </VStack>
+                  )}
+
+                  {/* ✅ FIX: Completed - Sadece bilgi mesajı */}
+                  {requestStatus === 'completed' && (
+                    <VStack space="sm" mt="$3">
+                      <Text
+                        fontSize={10}
+                        fontWeight="$normal"
+                        color={isDark ? '#4CAF50' : '#4CAF50'}
+                        fontStyle="italic"
+                      >
+                        Support request has been completed.
+                      </Text>
+                    </VStack>
+                  )}
                 </VStack>
               )}
               </Box>
@@ -1126,93 +1667,39 @@ const SupportMessageDetailScreen: React.FC = () => {
       );
     }
 
-    // Normal mesaj render'ı
-    const isSent = item.isSent;
-
+    // Normal mesaj render'ı - MessageItem component'ini kullan
     return (
-      <VStack
-        space="xs"
-        alignItems={isSent ? 'flex-end' : 'flex-start'}
-        px="$4"
-        py="$2"
-      >
-        {!isSent && (
-          <HStack space="sm" alignItems="center" mb="$1">
-            {item.senderAvatar && (
-              <Image
-                source={item.senderAvatar}
-                alt={item.senderName || 'User'}
-                width={24}
-                height={24}
-                borderRadius={12}
-              />
-            )}
-            <Text
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={9}
-              fontWeight="$medium"
-            >
-              {item.senderName || params.expertName}
-            </Text>
-          </HStack>
-        )}
-
-        <HStack
-          space="sm"
-          alignItems="flex-end"
-          maxWidth="80%"
-          flexDirection={isSent ? 'row-reverse' : 'row'}
-        >
-          <Box
-            bg={isSent ? (isDark ? '#6366F1' : '#6366F1') : (isDark ? '#1A1A1A' : '#F2F2F2')}
-            px="$3"
-            py="$2"
-            borderRadius={16}
-            borderTopLeftRadius={isSent ? 16 : 4}
-            borderTopRightRadius={isSent ? 4 : 16}
-          >
-            <Text
-              color={isSent ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000')}
-              fontSize={11}
-              fontWeight="$normal"
-            >
-              {item.text}
-            </Text>
-          </Box>
-
-          <Text
-            color={isDark ? '#8C8C8C' : '#8C8C8C'}
-            fontSize={8}
-            fontWeight="$normal"
-            mb="$1"
-          >
-            {item.timestamp}
-          </Text>
-        </HStack>
-      </VStack>
+      <MessageItem
+        item={item}
+        index={index}
+        messages={messages}
+        isDark={isDark}
+        params={{
+          senderName: params.expertName || 'Expert',
+          senderTitle: params.expertTitle || '',
+          senderAvatar: params.expertAvatar,
+        }}
+        onContextMenuStateChange={(isOpen) => {
+          setIsContextMenuOpen(isOpen);
+        }}
+        currentUserId={user?.id}
+      />
     );
   };
 
   return (
     <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
-      {/* Status Bar - Beyaz arka plan */}
-      <StatusBar 
-        barStyle={isDark ? 'light-content' : 'dark-content'} 
-        backgroundColor="#FFFFFF"
-        translucent={false}
-      />
-      
       {/* Top inset view - Status bar için */}
       <Box 
         height={insets.top} 
-        bg="#FFFFFF"
+        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       />
       
       {/* Header */}
       <MessageDetailHeader
-        senderName={params.expertName ?? 'Expert'}
-        senderTitle={params.expertTitle ?? ''}
-        senderAvatar={params.expertAvatar}
+        senderName="Support Request"
+        senderTitle=""
+        senderAvatar={undefined}
         onBackPress={() => navigation.goBack()}
         onMenuPress={() => {}}
         onShare={async () => {
@@ -1229,12 +1716,12 @@ const SupportMessageDetailScreen: React.FC = () => {
         onReport={() => {
           if (!user?.id || !params.recipientUserId) return;
           RNAlert.alert(
-            'Kullanıcıyı Raporla',
-            'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+            'Report User',
+            'Are you sure you want to report this user?',
             [
-              { text: 'İptal', style: 'cancel' },
+              { text: 'Cancel', style: 'cancel' },
               {
-                text: 'Raporla',
+                text: 'Report',
                 style: 'destructive',
                 onPress: () => {
                   reportUserMutation.mutate({
@@ -1242,8 +1729,8 @@ const SupportMessageDetailScreen: React.FC = () => {
                     targetUserId: params.recipientUserId!,
                     data: { category: 'OTHER', description: 'User reported from support message detail' },
                   }, {
-                    onSuccess: () => RNAlert.alert('Başarılı', 'Kullanıcı raporlandı'),
-                    onError: (error) => RNAlert.alert('Hata', error.message || 'Kullanıcı raporlanırken bir hata oluştu'),
+                    onSuccess: () => RNAlert.alert('Success', 'User reported'),
+                    onError: (error) => RNAlert.alert('Error', error.message || 'An error occurred while reporting the user'),
                   });
                 },
               },
@@ -1253,12 +1740,12 @@ const SupportMessageDetailScreen: React.FC = () => {
         onBlock={() => {
           if (!user?.id || !params.recipientUserId) return;
           RNAlert.alert(
-            'Kullanıcıyı Engelle',
-            `${params.userName || 'Bu kullanıcı'} kullanıcısını engellemek istediğinizden emin misiniz? Bu kullanıcıdan artık mesaj alamayacaksınız.`,
+            'Block User',
+            `Are you sure you want to block ${params.userName || 'this user'}? You will no longer receive messages from this user.`,
             [
-              { text: 'İptal', style: 'cancel' },
+              { text: 'Cancel', style: 'cancel' },
               {
-                text: 'Engelle',
+                text: 'Block',
                 style: 'destructive',
                 onPress: () => {
                   blockUserMutation.mutate({
@@ -1266,11 +1753,11 @@ const SupportMessageDetailScreen: React.FC = () => {
                     targetUserId: params.recipientUserId!,
                   }, {
                     onSuccess: () => {
-                      RNAlert.alert('Başarılı', 'Kullanıcı engellendi', [
-                        { text: 'Tamam', onPress: () => navigation.goBack() },
+                      RNAlert.alert('Success', 'User blocked', [
+                        { text: 'OK', onPress: () => navigation.goBack() },
                       ]);
                     },
-                    onError: (error) => RNAlert.alert('Hata', error.message || 'Kullanıcı engellenirken bir hata oluştu'),
+                    onError: (error) => RNAlert.alert('Error', error.message || 'An error occurred while blocking the user'),
                   });
                 },
               },
@@ -1280,62 +1767,144 @@ const SupportMessageDetailScreen: React.FC = () => {
         recipientUserId={params.recipientUserId}
       />
 
+      {/* Support Chat Participants - Header'ın altında, FlatList'in üstünde sabit */}
+      {/* ✅ FIX: Completed durumunda da participants göster (mesajlar görüntülenebilir) */}
+      {(params.status === 'active' || params.status === 'completed') && threadId && (
+        <SupportChatParticipants
+          user1Name={(() => {
+            // Sol tarafta: Mevcut kullanıcının kendi bilgisi
+            if (supportRequestUserIds.fromUserId === user?.id) {
+              // Mevcut kullanıcı user (fromUserId), kendi bilgisini göster
+              return participantInfo.userName ?? params.userName ?? 'User';
+            } else if (supportRequestUserIds.toUserId === user?.id) {
+              // Mevcut kullanıcı expert (toUserId), kendi bilgisini göster
+              return participantInfo.expertName ?? params.expertName ?? 'Expert';
+            }
+            // Fallback
+            return participantInfo.userName ?? params.userName ?? 'User';
+          })()}
+          user1Title={(() => {
+            if (supportRequestUserIds.fromUserId === user?.id) {
+              return participantInfo.userTitle ?? params.userTitle ?? '';
+            } else if (supportRequestUserIds.toUserId === user?.id) {
+              return participantInfo.expertTitle ?? params.expertTitle ?? '';
+            }
+            return participantInfo.userTitle ?? params.userTitle ?? '';
+          })()}
+          user1Avatar={(() => {
+            if (supportRequestUserIds.fromUserId === user?.id) {
+              return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+            } else if (supportRequestUserIds.toUserId === user?.id) {
+              return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
+            }
+            return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+          })()}
+          user2Name={(() => {
+            // Sağ tarafta: Karşı taraf (konuştuğu kişi)
+            if (supportRequestUserIds.fromUserId === user?.id) {
+              // Mevcut kullanıcı user, karşı taraf expert
+              return participantInfo.expertName ?? params.expertName ?? 'Expert';
+            } else if (supportRequestUserIds.toUserId === user?.id) {
+              // Mevcut kullanıcı expert, karşı taraf user
+              return participantInfo.userName ?? params.userName ?? 'User';
+            }
+            // Fallback
+            return participantInfo.expertName ?? params.expertName ?? 'Expert';
+          })()}
+          user2Title={(() => {
+            if (supportRequestUserIds.fromUserId === user?.id) {
+              return participantInfo.expertTitle ?? params.expertTitle ?? '';
+            } else if (supportRequestUserIds.toUserId === user?.id) {
+              return participantInfo.userTitle ?? params.userTitle ?? '';
+            }
+            return participantInfo.expertTitle ?? params.expertTitle ?? '';
+          })()}
+          user2Avatar={(() => {
+            if (supportRequestUserIds.fromUserId === user?.id) {
+              return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
+            } else if (supportRequestUserIds.toUserId === user?.id) {
+              return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+            }
+            return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
+          })()}
+          supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
+          tipsAmount={supportRequestInfo?.amount || 50}
+          requestDetails={supportRequestInfo?.message || ''}
+        />
+      )}
+
       {/* Mesaj Geçmişi */}
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         enabled={true}
       >
         <Box flex={1}>
           <FlatList
             ref={flatListRef}
-            data={messages}
+            data={useMemo(() => {
+              // ✅ WhatsApp Engine: Inverted FlatList için mesajları ters sırala (en yeni başta)
+              // sentAt'a göre descending order (en yeni başta, en eski sonda)
+              return [...messages].sort((a, b) => {
+                const timeA = new Date(a.sentAt || a.timestamp).getTime();
+                const timeB = new Date(b.sentAt || b.timestamp).getTime();
+                return timeB - timeA; // Descending (en yeni başta)
+              });
+            }, [messages])}
             renderItem={renderMessageItem}
             keyExtractor={(item) => item.id}
-            ListHeaderComponent={
-              params.status === 'active' && threadId ? (
-                <SupportChatParticipants
-                  user1Name={params.expertName ?? 'Expert'}
-                  user1Title={params.expertTitle ?? ''}
-                  user1Avatar={params.expertAvatar}
-                  user2Name={params.userName || 'Trevor Nace'}
-                  user2Title={params.userTitle || 'Technology Enthusiast'}
-                  user2Avatar={params.userAvatar || DEFAULT_USER_AVATAR }
-                  supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
-                  tipsAmount={supportRequestInfo?.amount || 50}
-                  requestDetails={supportRequestInfo?.message || ''}
-                />
-              ) : null
-            }
+            inverted={true}
             ListEmptyComponent={
               isLoadingMessages ? (
-                <Box py={20} alignItems="center">
-                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Yükleniyor...</Text>
+                <Box flex={1} justifyContent="center" alignItems="center">
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Loading...</Text>
                 </Box>
               ) : (
-                <Box py={20} alignItems="center">
-                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz mesaj yok</Text>
+                <Box flex={1} justifyContent="center" alignItems="center">
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No messages yet</Text>
                 </Box>
               )
             }
-            contentContainerStyle={{ paddingTop: 0, paddingBottom: 100 }}
+            contentContainerStyle={{ 
+              // ✅ Inverted FlatList: paddingTop = en yeni mesajların (ekranın altındaki) altına padding ekler
+              paddingTop: isKeyboardVisible ? 80 : 120,
+              // CRITICAL FIX: Butonların üstüne padding ekle
+              paddingBottom: isKeyboardVisible 
+                ? keyboardHeight + 0  // Klavye + Input (~60px) + Butonlar (~100px)
+                : 0, // Input (~60px) + Bottom inset + Butonlar (~100px)
+              // Empty state için: Mesaj yoksa ekranın tamamını kapla ve ortala
+              flexGrow: messages.length === 0 ? 1 : 0,
+              justifyContent: messages.length === 0 ? 'center' : 'flex-start',
+            }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
+            // ✅ WhatsApp Engine: Performance optimizations
+            removeClippedSubviews={true}
+            windowSize={10}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            initialNumToRender={15}
           />
         </Box>
 
       {/* Typing Indicator */}
       {isTyping && typingUserId && typingUserId !== user?.id && (
-        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+        <Box 
+          px="$4" 
+          py="$2" 
+          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
+          zIndex={1002}
+          elevation={1002}
+        >
           <HStack space="xs" alignItems="center">
             <Text
               color={isDark ? '#8C8C8C' : '#8C8C8C'}
               fontSize={10}
               fontStyle="italic"
             >
-              {params.expertName || 'Kullanıcı'} yazıyor
+              {params.expertName || 'User'} is typing
             </Text>
             <HStack space="xs" alignItems="center">
               <Box
@@ -1364,14 +1933,25 @@ const SupportMessageDetailScreen: React.FC = () => {
         </Box>
       )}
 
-      {/* Action Buttons - Görseldeki gibi sohbet içinde, sadece active status'ta göster */}
+      {/* Action Buttons - Klavye ve input üstünde görünmeli */}
+      {/* CRITICAL FIX: Bottom inset artık ayrı view olarak eklendi, burada sadece input height + bottom inset ekle */}
       {params.status === 'active' && threadId && (
-        <SupportMessageDetailActionButtons
-          onCloseRequestPress={handleCloseRequest}
-          onReportPress={handleReport}
-          keyboardHeight={keyboardHeight}
-          isKeyboardVisible={isKeyboardVisible}
-        />
+        <Box
+          position="absolute"
+          bottom={isKeyboardVisible 
+            ? keyboardHeight + 60
+            : 60 + insets.bottom}
+          right={16}
+          zIndex={1003}
+          elevation={1003}
+        >
+          <SupportMessageDetailActionButtons
+            onCloseRequestPress={handleCloseRequest}
+            onReportPress={handleReport}
+            keyboardHeight={keyboardHeight}
+            isKeyboardVisible={isKeyboardVisible}
+          />
+        </Box>
       )}
 
       {/* Mesaj Gönderme Alanı - Sadece active status'ta göster (awaiting_completion ve completed'da kapalı) */}
@@ -1436,7 +2016,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                   fontWeight="$semibold"
                   textAlign="center"
                 >
-                  Reddet
+                  Reject
                 </Text>
               </Box>
             </Pressable>
@@ -1444,21 +2024,6 @@ const SupportMessageDetailScreen: React.FC = () => {
         </Box>
       )}
 
-      {/* Awaiting Completion Status - Mesaj gönderme kapalı, sadece görüntüleme */}
-      {params.status === 'awaiting_completion' && (
-        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
-          <VStack space="sm" alignItems="center">
-            <Text
-              color={isDark ? '#8C8C8C' : '#8C8C8C'}
-              fontSize={12}
-              fontWeight="$normal"
-              textAlign="center"
-            >
-              Support request is awaiting completion. Rating has been submitted.
-            </Text>
-          </VStack>
-        </Box>
-      )}
 
       {/* Completed Status - Sadece görüntüleme */}
       {params.status === 'completed' && (
@@ -1494,107 +2059,536 @@ const SupportMessageDetailScreen: React.FC = () => {
                 fontWeight="$semibold"
                 textAlign="center"
               >
-                Talebi İptal Et
+                Cancel Request
               </Text>
             </Box>
           </Pressable>
         </Box>
       )}
 
-      {/* Close Support Request Modal */}
-      <CloseSupportRequestModal
-        isVisible={isCloseModalVisible}
-        onClose={handleCancelClose}
-        onConfirm={handleConfirmClose}
-        onReport={handleReport}
-        userName={params.expertName ?? 'Expert'}
-        userTitle={params.expertTitle ?? ''}
-        userAvatar={params.expertAvatar}
-      />
+      {/* Close/Finalize Support Request Modal - React Native Modal */}
+      <Modal
+        visible={isCloseModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCancelClose}
+      >
+        <TouchableWithoutFeedback onPress={handleCancelClose}>
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <TouchableWithoutFeedback>
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 24,
+                maxWidth: '90%',
+                minWidth: 280,
+                maxHeight: '80%',
+                width: '90%',
+                overflow: 'hidden',
+              }}>
+                <VStack px={24} py={16} space="md" style={{ width: '100%' }}>
+                  {/* User Profile Section */}
+                  <VStack space="sm" alignItems="center">
+                    {/* User Avatar - Mor/macenta border */}
+                    <Image
+                      source={(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+                        }
+                        return params.expertAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+                      })()}
+                      alt={(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userName ?? params.userName ?? 'User';
+                        }
+                        return params.expertName ?? params.userName ?? 'User';
+                      })()}
+                      style={{
+                        width: 110,
+                        height: 110,
+                        borderRadius: 55,
+                        borderWidth: 4,
+                        borderColor: '#C026D3', // Mor/macenta border
+                      }}
+                    />
+
+                    {/* User Name */}
+                    <Text
+                      fontSize={18}
+                      fontWeight="$bold"
+                      color="#000000"
+                      textAlign="center"
+                    >
+                      {(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userName ?? params.userName ?? 'User';
+                        }
+                        return params.expertName ?? params.userName ?? 'User';
+                      })()}
+                    </Text>
+
+                    {/* User Title */}
+                    <Text
+                      fontSize={13}
+                      fontWeight="$normal"
+                      color="#6B7280"
+                      textAlign="center"
+                      numberOfLines={2}
+                    >
+                      {(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertTitle ?? params.expertTitle ?? '';
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userTitle ?? params.userTitle ?? '';
+                        }
+                        return params.expertTitle ?? params.userTitle ?? '';
+                      })()}
+                    </Text>
+                  </VStack>
+
+                  {/* Divider */}
+                  <Box height={1} bg="#E5E7EB" width="100%" my="$1" />
+
+                  {/* Description Text */}
+                  <VStack space="xs" alignItems="center">
+                    {isFinalizeModal ? (
+                      <>
+                        <Text
+                          fontSize={14}
+                          fontWeight="$normal"
+                          color="#4B5563"
+                          textAlign="center"
+                          lineHeight={20}
+                        >
+                          You are about to finalize the one-on-one
+                        </Text>
+                        <Text
+                          fontSize={14}
+                          fontWeight="$normal"
+                          color="#4B5563"
+                          textAlign="center"
+                          lineHeight={20}
+                        >
+                          support request with the user.
+                        </Text>
+                        <Text
+                          fontSize={15}
+                          fontWeight="$semibold"
+                          color="#000000"
+                          textAlign="center"
+                          mt="$1"
+                        >
+                          Please rate the process!
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text
+                          fontSize={14}
+                          fontWeight="$normal"
+                          color="#4B5563"
+                          textAlign="center"
+                          lineHeight={20}
+                        >
+                          You are about to close the one-on-one
+                        </Text>
+                        <Text
+                          fontSize={14}
+                          fontWeight="$normal"
+                          color="#4B5563"
+                          textAlign="center"
+                          lineHeight={20}
+                        >
+                          support request with the user.
+                        </Text>
+                        <Text
+                          fontSize={15}
+                          fontWeight="$semibold"
+                          color="#000000"
+                          textAlign="center"
+                          mt="$1"
+                        >
+                          Please rate the process!
+                        </Text>
+                      </>
+                    )}
+                  </VStack>
+
+                  {/* Star Rating */}
+                  <Box py="$2" alignItems="center">
+                    <StarRating
+                      rating={closeModalRating}
+                      onRatingChange={setCloseModalRating}
+                      size={36}
+                      color="#FFD700"
+                      outlineColor="#9CA3AF"
+                      showOutline={true}
+                    />
+                  </Box>
+
+                  {/* Action Buttons */}
+                  <VStack space="sm" mt="$2">
+                    {/* Close Support Request ve Flag Butonları - Yan yana */}
+                    <HStack space="sm" width="100%">
+                      {/* Close Support Request Button */}
+                      <Box flex={1}>
+                        <Pressable 
+                          onPress={() => {
+                            if (closeModalRating > 0) {
+                              handleConfirmClose(closeModalRating);
+                              setCloseModalRating(0);
+                            }
+                          }} 
+                          disabled={closeModalRating === 0}
+                        >
+                          <Box
+                            bg={closeModalRating > 0 ? '#E8FF6B' : '#F3F4F6'}
+                            borderRadius={16}
+                            py="$2.5"
+                            alignItems="center"
+                            borderWidth={1}
+                            borderColor={closeModalRating > 0 ? '#D8FF08' : '#E5E7EB'}
+                            opacity={closeModalRating === 0 ? 0.6 : 1}
+                          >
+                            <Text
+                              fontSize={15}
+                              fontWeight="$semibold"
+                              color="#000000"
+                            >
+                              {isFinalizeModal ? 'Finalize Support Request' : 'Close Support Request'}
+                            </Text>
+                          </Box>
+                        </Pressable>
+                      </Box>
+
+                      {/* Flag Button */}
+                      <Pressable onPress={handleReport}>
+                        <Box
+                          bg="#F3F4F6"
+                          borderRadius={16}
+                          py="$2.5"
+                          px="$4"
+                          alignItems="center"
+                          justifyContent="center"
+                          borderWidth={1}
+                          borderColor="#E5E7EB"
+                          minWidth={56}
+                        >
+                          <Feather
+                            name="flag"
+                            size={20}
+                            color="#000000"
+                          />
+                        </Box>
+                      </Pressable>
+                    </HStack>
+
+                    {/* Cancel Button */}
+                    <Pressable onPress={handleCancelClose}>
+                      <Box
+                        bg="#F3F4F6"
+                        borderRadius={16}
+                        py="$2.5"
+                        alignItems="center"
+                        borderWidth={1}
+                        borderColor="#E5E7EB"
+                      >
+                        <Text
+                          fontSize={15}
+                          fontWeight="$semibold"
+                          color="#000000"
+                        >
+                          Cancel
+                        </Text>
+                      </Box>
+                    </Pressable>
+                  </VStack>
+                </VStack>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+        
+        {/* Report Modal - Close modal'ın üzerinde görünmeli */}
+        {isReportModalVisible && (
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+          }}>
+            <TouchableWithoutFeedback onPress={handleCancelReport}>
+              <View style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.7)', // Daha koyu backdrop - close modal'ın üzerinde olduğunu göster
+              }} />
+            </TouchableWithoutFeedback>
+            <TouchableWithoutFeedback>
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 24,
+                maxWidth: '90%',
+                width: '90%',
+                padding: 24,
+                zIndex: 1001,
+              }}>
+                <VStack space="md">
+                  {/* Report Başlığı */}
+                  <Text
+                    fontSize={18}
+                    fontWeight="$bold"
+                    color="#000000"
+                    textAlign="center"
+                  >
+                    Report
+                  </Text>
+
+                  {/* User Profile Section */}
+                  <VStack space="sm" alignItems="center">
+                    {/* User Avatar - Mor/macenta border */}
+                    <Image
+                      source={(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+                        }
+                        return params.expertAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+                      })()}
+                      alt={(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userName ?? params.userName ?? 'User';
+                        }
+                        return params.expertName ?? params.userName ?? 'User';
+                      })()}
+                      style={{
+                        width: 110,
+                        height: 110,
+                        borderRadius: 55,
+                        borderWidth: 4,
+                        borderColor: '#C026D3', // Mor/macenta border
+                      }}
+                    />
+
+                    {/* User Name */}
+                    <Text
+                      fontSize={18}
+                      fontWeight="$bold"
+                      color="#000000"
+                      textAlign="center"
+                    >
+                      {(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertName ?? params.expertName ?? 'Expert';
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userName ?? params.userName ?? 'User';
+                        }
+                        return params.expertName ?? params.userName ?? 'User';
+                      })()}
+                    </Text>
+
+                    {/* User Title */}
+                    <Text
+                      fontSize={13}
+                      fontWeight="$normal"
+                      color="#6B7280"
+                      textAlign="center"
+                      numberOfLines={2}
+                    >
+                      {(() => {
+                        if (supportRequestUserIds.fromUserId === user?.id) {
+                          return participantInfo.expertTitle ?? params.expertTitle ?? '';
+                        } else if (supportRequestUserIds.toUserId === user?.id) {
+                          return participantInfo.userTitle ?? params.userTitle ?? '';
+                        }
+                        return params.expertTitle ?? params.userTitle ?? '';
+                      })()}
+                    </Text>
+                  </VStack>
+
+                  {/* Reason for report Section */}
+                  <VStack space="xs">
+                    <Text
+                      fontSize={14}
+                      fontWeight="$bold"
+                      color="#000000"
+                    >
+                      Reason for report
+                    </Text>
+                    
+                    {/* Custom Dropdown */}
+                    <VStack space="xs" position="relative">
+                      <Pressable onPress={() => setShowReportReasonDropdown((v) => !v)}>
+                        <Box
+                          bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+                          borderWidth={1}
+                          borderColor={isDark ? '#333' : '#E9E9E9'}
+                          borderTopLeftRadius={12}
+                          borderTopRightRadius={12}
+                          borderBottomLeftRadius={showReportReasonDropdown ? 0 : 12}
+                          borderBottomRightRadius={showReportReasonDropdown ? 0 : 12}
+                          height={48}
+                          px="$4"
+                          justifyContent="center"
+                        >
+                          <HStack
+                            flex={1}
+                            alignItems="center"
+                            justifyContent="space-between"
+                          >
+                            <Text
+                              color={
+                                reportReason
+                                  ? (isDark ? '#FFFFFF' : '#000000')
+                                  : (isDark ? '#8C8C8C' : '#8C8C8C')
+                              }
+                              fontSize={13}
+                              fontWeight="$normal"
+                              flex={1}
+                            >
+                              {getReportReasonLabel(reportReason as 'SPAM' | 'INAPPROPRIATE' | 'HARASSMENT' | 'SCAM' | 'OTHER' | '')}
+                            </Text>
+                            <Feather
+                              name={showReportReasonDropdown ? 'chevron-up' : 'chevron-down'}
+                              size={20}
+                              color={isDark ? '#FFFFFF' : '#000000'}
+                            />
+                          </HStack>
+                        </Box>
+                      </Pressable>
+
+                      {showReportReasonDropdown && (
+                        <Box
+                          bg={isDark ? '$backgroundDark800' : '#FDFDFD'}
+                          borderWidth={1}
+                          borderColor={isDark ? '#333' : '#E9E9E9'}
+                          borderTopWidth={0}
+                          borderTopLeftRadius={0}
+                          borderTopRightRadius={0}
+                          borderBottomLeftRadius={12}
+                          borderBottomRightRadius={12}
+                          overflow="hidden"
+                        >
+                          <VStack>
+                            {reportReasons.map((reason, index) => (
+                              <React.Fragment key={reason}>
+                                {index > 0 && (
+                                  <Box height={1} bg={isDark ? '#333' : '#E9E9E9'} width="100%" />
+                                )}
+                                <Pressable
+                                  onPress={() => {
+                                    setReportReason(reason);
+                                    setShowReportReasonDropdown(false);
+                                  }}
+                                >
+                                  <HStack px="$4" py="$3" alignItems="center">
+                                    <Text
+                                      color={isDark ? '#FFFFFF' : '#2F2F2F'}
+                                      fontSize={13}
+                                      fontWeight="$normal"
+                                    >
+                                      {getReportReasonLabel(reason)}
+                                    </Text>
+                                  </HStack>
+                                </Pressable>
+                              </React.Fragment>
+                            ))}
+                          </VStack>
+                        </Box>
+                      )}
+                    </VStack>
+                  </VStack>
+
+                  {/* Description Section */}
+                  <VStack space="xs">
+                    <Text
+                      fontSize={14}
+                      fontWeight="$bold"
+                      color="#000000"
+                    >
+                      Description
+                    </Text>
+                    
+                    <Input
+                      variant="outline"
+                      size="md"
+                      isDisabled={false}
+                      isInvalid={false}
+                      isReadOnly={false}
+                    >
+                      <InputField
+                        placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+                        value={reportDescription}
+                        onChangeText={setReportDescription}
+                        multiline
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        placeholderTextColor={isDark ? '#8C8C8C' : '#9CA3AF'}
+                      />
+                    </Input>
+                  </VStack>
+
+                  {/* Report Button */}
+                  <Pressable
+                    onPress={handleConfirmReport}
+                    disabled={!reportReason || reportReason.trim().length === 0}
+                  >
+                    <Box
+                      bg={reportReason ? '#E8FF6B' : '#F3F4F6'}
+                      borderRadius={16}
+                      py="$2.5"
+                      alignItems="center"
+                      borderWidth={1}
+                      borderColor={reportReason ? '#D8FF08' : '#E5E7EB'}
+                      opacity={!reportReason ? 0.6 : 1}
+                    >
+                      <Text
+                        fontSize={15}
+                        fontWeight="$semibold"
+                        color="#000000"
+                      >
+                        Report
+                      </Text>
+                    </Box>
+                  </Pressable>
+                </VStack>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        )}
+      </Modal>
 
       </KeyboardAvoidingView>
       
-      {/* Bottom inset view - Router bottom bg beyaz (klavye kapalıyken) */}
+      {/* Bottom inset view - Home indicator için (klavye kapalıyken) */}
       {!isKeyboardVisible && (
         <Box 
           height={insets.bottom} 
-          bg="#FFFFFF"
+          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
         />
       )}
 
-      {/* Report Support Request Modal */}
-      <Modal isOpen={isReportModalVisible} onClose={handleCancelReport} flex={1}>
-        <ModalBackdrop bg="rgba(0, 0, 0, 0.5)" />
-        <ModalContent
-          bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-          borderRadius={24}
-          maxWidth="90%"
-          width="90%"
-          mx="$4"
-        >
-          <ModalBody p="$5">
-            <VStack space="md">
-              <Text
-                fontSize={18}
-                fontWeight="$bold"
-                color={isDark ? '#FFFFFF' : '#000000'}
-                textAlign="center"
-              >
-                Raporla
-              </Text>
-
-              <Text
-                fontSize={14}
-                fontWeight="$normal"
-                color={isDark ? '#CCCCCC' : '#4B5563'}
-                textAlign="center"
-                lineHeight={20}
-              >
-                Bu destek talebini raporlamak için bir neden belirtin:
-              </Text>
-
-              <Input
-                variant="outline"
-                size="md"
-                isDisabled={false}
-                isInvalid={false}
-                isReadOnly={false}
-              >
-                <InputField
-                  placeholder="Reason for reporting..."
-                  value={reportReason}
-                  onChangeText={setReportReason}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                  color={isDark ? '#FFFFFF' : '#000000'}
-                  placeholderTextColor={isDark ? '#8C8C8C' : '#9CA3AF'}
-                />
-              </Input>
-
-              <HStack space="sm" mt="$2">
-                <Button
-                  flex={1}
-                  variant="outline"
-                  onPress={handleCancelReport}
-                  bg={isDark ? '#2A2A2A' : '#F3F4F6'}
-                  borderColor={isDark ? '#3A3A3A' : '#E5E7EB'}
-                >
-                  <ButtonText color={isDark ? '#FFFFFF' : '#000000'}>İptal</ButtonText>
-                </Button>
-                <Button
-                  flex={1}
-                  onPress={handleConfirmReport}
-                  bg="#BC6BFF"
-                  isDisabled={!reportReason || reportReason.trim().length === 0}
-                >
-                  <ButtonText color="#FFFFFF">Raporla</ButtonText>
-                </Button>
-              </HStack>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 };

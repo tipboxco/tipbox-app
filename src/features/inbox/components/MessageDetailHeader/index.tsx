@@ -73,6 +73,7 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
       <Box
         px="$4"
         py="$2"
+        minHeight={56}
         justifyContent="center"
       >
         <HStack space="md" alignItems="center" justifyContent="space-between">
@@ -93,34 +94,49 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
             justifyContent="center"
             px="$2"
           >
-            <Image
-              source={
-                toImageSource(senderAvatar) ||
-                require('@/assets/avatar/default-useravatar.png')
-              }
-              alt={senderName}
-              width={48}
-              height={48}
-              borderRadius={16}
-            />
-            <VStack flex={1} space="xs">
+            {senderAvatar ? (
+              <>
+                <Image
+                  source={
+                    toImageSource(senderAvatar) ||
+                    require('@/assets/avatar/default-useravatar.png')
+                  }
+                  alt={senderName}
+                  width={48}
+                  height={48}
+                  borderRadius={16}
+                />
+                <VStack flex={1} space="xs">
+                  <Text
+                    color={isDark ? '#FFFFFF' : '#000000'}
+                    fontSize={12}
+                    fontWeight="$semibold"
+                    numberOfLines={1}
+                  >
+                    {senderName}
+                  </Text>
+                  {senderTitle ? (
+                    <Text
+                      color={isDark ? '#8C8C8C' : '#8C8C8C'}
+                      fontSize={9}
+                      fontWeight="$normal"
+                      numberOfLines={1}
+                    >
+                      {senderTitle}
+                    </Text>
+                  ) : null}
+                </VStack>
+              </>
+            ) : (
               <Text
                 color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={12}
+                fontSize={14}
                 fontWeight="$semibold"
                 numberOfLines={1}
               >
                 {senderName}
               </Text>
-              <Text
-                color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                fontSize={9}
-                fontWeight="$normal"
-                numberOfLines={1}
-              >
-                {senderTitle}
-              </Text>
-            </VStack>
+            )}
           </HStack>
 
           {/* Menü Butonu */}

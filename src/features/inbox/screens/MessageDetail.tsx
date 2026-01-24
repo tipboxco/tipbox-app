@@ -73,6 +73,7 @@ interface MessageDetailItem {
     text: string;
     timestamp: string;
     sentAt: string;
+    senderId?: string; // ✅ FIX: groupedMessages için senderId ekle
   }>;
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
@@ -390,7 +391,9 @@ const MessageDetailScreen: React.FC = () => {
         safeScrollToEnd(true);
       }, 100);
     } catch (error) {
-      console.warn('[MessageDetail] ⚠️ Scroll error, using fallback:', error);
+      if (__DEV__) {
+        console.warn('[MessageDetail] ⚠️ Scroll error, using fallback:', error);
+      }
       // Hata durumunda normal scroll yap
       safeScrollToEnd(true);
     }
@@ -755,6 +758,7 @@ const MessageDetailScreen: React.FC = () => {
                 message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
                 timestamp: formatMessageTime(groupedMsg.sentAt || groupedMsg.timestamp),
                 sentAt: groupedMsg.sentAt || groupedMsg.timestamp,
+                senderId: groupedMsg.senderId || msg.senderId, // ✅ FIX: groupedMessages için senderId ekle (ana mesajın senderId'sini kullan)
               })) : undefined,
             };
             
@@ -870,7 +874,9 @@ const MessageDetailScreen: React.FC = () => {
     const currentRecipientUserId = effectiveRecipientUserId || recipientUserId || initialThreadId;
     
     if (!currentRecipientUserId) {
-      console.warn('[MessageDetail] No recipientUserId or threadId found');
+      if (__DEV__) {
+        console.warn('[MessageDetail] No recipientUserId or threadId found');
+      }
       return;
     }
 
@@ -1028,7 +1034,9 @@ const MessageDetailScreen: React.FC = () => {
         // Fallback: currentRecipientUserId'yi threadId olarak kullan
         // Bu sayede en azından mesaj gönderme çalışabilir
         if (currentRecipientUserId) {
-          console.warn('[MessageDetail] Using fallback threadId:', currentRecipientUserId);
+          if (__DEV__) {
+            console.warn('[MessageDetail] Using fallback threadId:', currentRecipientUserId);
+          }
           currentThreadId = currentRecipientUserId;
           setThreadId(currentRecipientUserId);
           // AppStore'a aktif thread ID'sini kaydet (notification kontrolü için)
@@ -1450,7 +1458,9 @@ const MessageDetailScreen: React.FC = () => {
     const tipsAmount = eventData.amount || 0;
     
     if (!messageId) {
-      console.warn('[MessageDetail] ⚠️ message_sent event missing messageId');
+      if (__DEV__) {
+        console.warn('[MessageDetail] ⚠️ message_sent event missing messageId');
+      }
       return;
     }
 
@@ -1713,7 +1723,9 @@ const MessageDetailScreen: React.FC = () => {
     queryClient.setQueryData(queryKey, (oldData: any[] | undefined) => {
       console.log('[MessageDetail] 📊 THREAD_READ UPDATE - Önceki durum:', oldData?.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
       if (!oldData) {
-        console.warn('[MessageDetail] ⚠️ Old data is null/undefined in thread_read handler');
+        if (__DEV__) {
+          console.warn('[MessageDetail] ⚠️ Old data is null/undefined in thread_read handler');
+        }
         return oldData;
       }
       
@@ -2603,7 +2615,9 @@ const MessageDetailScreen: React.FC = () => {
       }
     } else {
       // Fallback: REST API ile mesaj gönder
-      console.warn('[MessageDetail] ⚠️ Socket not ready, using REST API fallback');
+      if (__DEV__) {
+        console.warn('[MessageDetail] ⚠️ Socket not ready, using REST API fallback');
+      }
       if (finalRecipientUserId) {
         sendDirectMessageMutation.mutate(
           {
@@ -3154,7 +3168,9 @@ const MessageDetailScreen: React.FC = () => {
             // Backend'den gelen timestamp'i kullan (eğer varsa) ve pozisyonu güncelle
             const optimisticIndex = prev.findIndex((msg) => msg.id === optimisticMessageId);
             if (optimisticIndex === -1) {
-              console.warn('[MessageDetail] ⚠️ Optimistic message not found');
+              if (__DEV__) {
+                console.warn('[MessageDetail] ⚠️ Optimistic message not found');
+              }
               return prev;
             }
             
@@ -3189,7 +3205,9 @@ const MessageDetailScreen: React.FC = () => {
             );
           });
         } else {
-          console.warn('[MessageDetail] ⚠️ Response\'da messageId yok!', response.data);
+          if (__DEV__) {
+            console.warn('[MessageDetail] ⚠️ Response\'da messageId yok!', response.data);
+          }
         }
       } else {
         if (result.error) {
@@ -3301,9 +3319,11 @@ const MessageDetailScreen: React.FC = () => {
       const currentDate = item.sentAt;
       
       if (!currentDate) {
-        console.warn('[MessageDetail] ⚠️ Missing sentAt for current message:', { 
-          currentId: item.id,
-        });
+        if (__DEV__) {
+          console.warn('[MessageDetail] ⚠️ Missing sentAt for current message:', { 
+            currentId: item.id,
+          });
+        }
         return false;
       }
       
@@ -3325,9 +3345,11 @@ const MessageDetailScreen: React.FC = () => {
       
       // If sentAt is missing, skip date header (shouldn't happen but safety check)
       if (!nextDate) {
-        console.warn('[MessageDetail] ⚠️ Missing sentAt for next message:', { 
-          nextId: nextItem.id,
-        });
+        if (__DEV__) {
+          console.warn('[MessageDetail] ⚠️ Missing sentAt for next message:', { 
+            nextId: nextItem.id,
+          });
+        }
         return false;
       }
       

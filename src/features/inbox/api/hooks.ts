@@ -11,6 +11,7 @@ import {
   rejectSupportRequest,
   cancelSupportRequest,
   closeSupportRequest,
+  finalizeSupportRequest,
   reportSupportRequest,
   markThreadAsRead,
   addReaction,
@@ -32,6 +33,7 @@ import type {
   GetSupportRequestsParams,
   AcceptSupportRequestResponse,
   CloseSupportRequestRequest,
+  FinalizeSupportRequestRequest,
   ReportSupportRequestRequest,
 } from './messagesApi';
 
@@ -402,7 +404,7 @@ export const useCancelSupportRequest = () => {
 
 /**
  * Close Support Request mutation hook
- * Support request'i rating ile kapatır (completed durumuna geçer)
+ * Support request'i rating ile kapatır (awaiting_completion durumuna geçer)
  *
  * @returns React Query mutation hook result
  *
@@ -413,12 +415,37 @@ export const useCancelSupportRequest = () => {
 export const useCloseSupportRequest = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, { requestId: string; data: CloseSupportRequestRequest }>({
+  return useMutation<{ status: string; message: string }, Error, { requestId: string; data: CloseSupportRequestRequest }>({
     mutationFn: ({ requestId, data }) => closeSupportRequest(requestId, data),
     onSuccess: () => {
-      // Support request listesini invalidate et
+      // ✅ FIX: Sadece supportRequests'i invalidate et (messages invalidate etme - threadMessages kaybolmasın)
+      // SupportMessageDetail.tsx içindeki onSuccess callback'inde zaten kontrol ediliyor
       queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
-      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      // ❌ messages invalidate etme - threadMessages query'si etkilenmesin, mesajlar görünmeye devam etsin
+    },
+  });
+};
+
+/**
+ * Finalize Support Request mutation hook
+ * Support request'i finalize eder (completed durumuna geçer)
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const finalizeMutation = useFinalizeSupportRequest();
+ * finalizeMutation.mutate({ requestId: 'req-123', data: { rating: 5, comment: 'Great!' } });
+ */
+export const useFinalizeSupportRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ status: string; message: string }, Error, { requestId: string; data: FinalizeSupportRequestRequest }>({
+    mutationFn: ({ requestId, data }) => finalizeSupportRequest(requestId, data),
+    onSuccess: () => {
+      // ✅ FIX: Sadece supportRequests'i invalidate et (messages invalidate etme - threadMessages kaybolmasın)
+      // SupportMessageDetail.tsx içindeki onSuccess callback'inde zaten kontrol ediliyor
+      queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+      // ❌ messages invalidate etme - threadMessages query'si etkilenmesin, mesajlar görünmeye devam etsin
     },
   });
 };

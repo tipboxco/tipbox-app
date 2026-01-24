@@ -1,6 +1,6 @@
 import React from 'react';
-import { Platform } from 'react-native';
 import {
+    Box,
     VStack,
     Pressable,
     Text,
@@ -10,8 +10,8 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 interface SupportMessageDetailActionButtonsProps {
     onCloseRequestPress?: () => void;
     onReportPress?: () => void;
-    keyboardHeight?: number;
-    isKeyboardVisible?: boolean;
+    keyboardHeight?: number; // Klavye yüksekliği (kullanılmıyor, KeyboardAvoidingView ile otomatik)
+    isKeyboardVisible?: boolean; // Klavye görünür mü?
 }
 
 export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailActionButtonsProps> = ({
@@ -23,21 +23,16 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
 
-    // Klavye açıkken butonları klavyenin üstünde göster
-    // Input field yüksekliği yaklaşık 60px, butonlar input'un üstünde 100px mesafede
-    // Klavye açıkken: bottom = keyboardHeight + 100 (input'un üstünde)
-    // Klavye kapalıyken: bottom = 100 (input'un üstünde)
-    const bottomOffset = isKeyboardVisible ? keyboardHeight + 100 : 100;
-
     return (
-        <VStack
-            position="absolute"
-            bottom={bottomOffset}
-            right={16}
-            space="sm"
-            zIndex={100}
-            alignItems="flex-end"
+        <Box
+            position="relative"
+            zIndex={1003}
+            elevation={1003}
         >
+            <VStack
+                space="sm"
+                alignItems="flex-end"
+            >
             {/* Close Support Request Button */}
             <Pressable
                 onPress={onCloseRequestPress}
@@ -85,7 +80,8 @@ export const SupportMessageDetailActionButtons: React.FC<SupportMessageDetailAct
                     Report
                 </Text>
             </Pressable>
-        </VStack>
+            </VStack>
+        </Box>
     );
 };
 

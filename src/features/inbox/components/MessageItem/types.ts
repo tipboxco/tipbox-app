@@ -60,6 +60,7 @@ export interface MessageDetailItem {
     text: string;
     timestamp: string;
     sentAt: string;
+    senderId?: string; // ✅ FIX: groupedMessages için senderId ekle
   }>;
   // CRITICAL: Sıralama için ISO timestamp (backend'den gelen sentAt)
   sentAt?: string;
