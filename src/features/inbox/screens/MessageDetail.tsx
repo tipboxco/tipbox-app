@@ -67,14 +67,6 @@ interface MessageDetailItem {
     width: number;
     height: number;
   };
-  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar)
-  groupedMessages?: Array<{
-    id: string;
-    text: string;
-    timestamp: string;
-    sentAt: string;
-    senderId?: string; // ✅ FIX: groupedMessages için senderId ekle
-  }>;
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
   readAt?: string; // Okunma zamanı
@@ -807,48 +799,7 @@ const MessageDetailScreen: React.FC = () => {
                   toUserId: msg.toUserId, // Request'in gönderildiği kullanıcı (expert)
                 };
               })() : undefined,
-              // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
-              // ✅ FIX: groupedMessages'ı timestamp'e göre sırala (en eski üstte, en yeni altta - inverted FlatList için)
-              groupedMessages: msg.groupedMessages ? (() => {
-                const mapped = msg.groupedMessages.map((groupedMsg: any) => ({
-                  id: groupedMsg.id,
-                  text: groupedMsg.text || groupedMsg.message || '', // Backend'den message olarak gelebilir
-                  message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
-                  timestamp: formatMessageTime(groupedMsg.sentAt || groupedMsg.timestamp),
-                  sentAt: groupedMsg.sentAt || groupedMsg.timestamp || msg.sentAt, // ✅ FIX: timestamp yoksa ana mesajın sentAt'ını kullan
-                  senderId: groupedMsg.senderId || msg.senderId, // ✅ FIX: groupedMessages için senderId ekle (ana mesajın senderId'sini kullan)
-                }));
-                
-                // Ascending order (en eski üstte, en yeni altta) - inverted FlatList için
-                const sorted = mapped.sort((a: any, b: any) => {
-                  const timeA = new Date(a.sentAt).getTime();
-                  const timeB = new Date(b.sentAt).getTime();
-                  return timeA - timeB;
-                });
-                
-                return sorted;
-              })() : undefined,
             };
-            
-            // ✅ FIX: Ana mesajın sentAt'ını, groupedMessages içindeki en yeni mesajın sentAt'ı ile karşılaştır
-            // Eğer groupedMessages içinde daha yeni bir mesaj varsa, ana mesajın sentAt'ını güncelle
-            // Bu sayede mesajlar doğru sırada görünecek (en yeni mesaj en altta)
-            if (convertedMessage.groupedMessages && convertedMessage.groupedMessages.length > 0) {
-              const latestGroupedMessage = convertedMessage.groupedMessages[convertedMessage.groupedMessages.length - 1];
-              const mainMessageTime = new Date(convertedMessage.sentAt).getTime();
-              const latestGroupedTime = new Date(latestGroupedMessage.sentAt).getTime();
-              
-              // Eğer groupedMessages içindeki en yeni mesaj, ana mesajdan daha yeni ise
-              if (latestGroupedTime > mainMessageTime) {
-                convertedMessage.sentAt = latestGroupedMessage.sentAt;
-                console.log('[MessageDetail] 🔄 Ana mesajın sentAt güncellendi (groupedMessages içindeki en yeni mesaj):', {
-                  messageId: convertedMessage.id,
-                  oldSentAt: msg.sentAt,
-                  newSentAt: latestGroupedMessage.sentAt,
-                  latestGroupedMessageId: latestGroupedMessage.id,
-                });
-              }
-            }
             
             // ✅ DEBUG: TIPS mesajları için convert sonrası log
             if (messageType === 'tips') {

@@ -294,7 +294,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
           <ReanimatedAnimated.View
             style={isContextMenuOpen ? messageBubbleAnimatedStyle : undefined}
           >
-        <VStack space="xs" maxWidth={isSent ? "90%" : "80%"} alignItems={isSent ? 'flex-end' : 'flex-start'}> {/* ✅ FIX: Gönderilen görsel mesajlar için %90 (text mesajlar ile aynı) */}
+        <VStack space="xs" maxWidth={isSent ? "90%" : "80%"} alignItems={isSent ? 'flex-end' : 'flex-start'}> 
           <Box
             ref={imageContainerRef as any}
             collapsable={false}
@@ -331,7 +331,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                       fontSize="$xs"
                     >
-                      {typeof item.uploadProgress === 'number' ? item.uploadProgress : Number(item.uploadProgress) || 0}%
+                      {`${typeof item.uploadProgress === 'number' ? item.uploadProgress : Number(item.uploadProgress) || 0}%`}
                     </Text>
                   )}
                 </VStack>
@@ -468,7 +468,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                   )}
                 </Pressable>
                 
-                {/* ✅ Okundu bilgisi - Görselin sol altında (sadece gönderilen mesajlar için) */}
+              
                 {isSent && (
                   <Box
                     position="absolute"
@@ -523,23 +523,6 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                   {String(item.text)}
                 </Text>
               </Box>
-            )}
-            
-            {/* ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - görselin altında) */}
-            {item.groupedMessages && item.groupedMessages.length > 0 && (
-              <VStack space="xs" px="$3" py="$2">
-                {item.groupedMessages.map((groupedMsg: any) => (
-                  <Text
-                    key={groupedMsg.id || groupedMsg.timestamp}
-                    color={isDark ? '#FFFFFF' : '#000000'}
-                    fontSize="$xs"
-                    fontWeight="$normal"
-                    opacity={0.9}
-                  >
-                    {String(groupedMsg.text || '(Mesaj içeriği yok)')}
-                  </Text>
-                ))}
-              </VStack>
             )}
           </Box>
           

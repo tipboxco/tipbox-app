@@ -3,6 +3,7 @@ import { ImageSourcePropType } from 'react-native';
 import { Box, HStack, VStack, Text, Pressable } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { CachedImage } from '@/src/components/CachedImage';
+import { TrashIcon } from 'react-native-heroicons/outline';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 
 // Default user avatar
@@ -15,6 +16,12 @@ export interface CommentsCardProps {
   avatar: ImageSourcePropType;
   timeAgo: string;
   content: string;
+  commentId?: string;
+  userId?: string;
+  currentUserId?: string;
+  postId?: string;
+  onDelete?: (commentId: string, postId: string) => void;
+  isDeleting?: boolean;
 }
 
 export const CommentsCard: React.FC<CommentsCardProps> = ({
@@ -23,6 +30,12 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
   avatar,
   timeAgo,
   content,
+  commentId,
+  userId,
+  currentUserId,
+  postId,
+  onDelete,
+  isDeleting = false,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
@@ -105,6 +118,17 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
 
   // Metin uzunluğuna göre basit truncation kontrolü
   const shouldTruncate = useMemo(() => content.length > 160, [content]);
+
+  // Kullanıcının kendi yorumu mu kontrolü
+  const isOwnComment = useMemo(() => {
+    return commentId && userId && currentUserId && userId === currentUserId;
+  }, [commentId, userId, currentUserId]);
+
+  // Delete handler
+  const handleDelete = useCallback(() => {
+    if (!commentId || !postId || !onDelete || isDeleting) return;
+    onDelete(commentId, postId);
+  }, [commentId, postId, onDelete, isDeleting]);
 
   return (
     <Box
@@ -196,17 +220,37 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
         </VStack>
       </HStack>
 
-      {/* Time */}
-      <Text
+      {/* Time and Delete Button */}
+      <HStack
         position="absolute"
         top={8}
         right={12}
-        color={isDark ? '#8C8C8C' : '#8C8C8C'}
-        fontSize="$xs"
-        fontWeight="$medium"
+        alignItems="center"
+        space="sm"
       >
-        {timeAgo}
-      </Text>
+        {/* Delete Button - sadece kullanıcının kendi yorumunda göster */}
+        {isOwnComment && onDelete && (
+          <Pressable
+            onPress={handleDelete}
+            disabled={isDeleting}
+            opacity={isDeleting ? 0.5 : 1}
+            p={4}
+          >
+            <TrashIcon
+              width={16}
+              height={16}
+              color={isDark ? '#FF3040' : '#FF3040'}
+            />
+          </Pressable>
+        )}
+        <Text
+          color={isDark ? '#8C8C8C' : '#8C8C8C'}
+          fontSize="$xs"
+          fontWeight="$medium"
+        >
+          {timeAgo}
+        </Text>
+      </HStack>
     </Box>
   );
 };

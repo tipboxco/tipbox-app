@@ -23,11 +23,14 @@ import { useColorMode } from '@/src/hooks/useColorMode';
 import { ProductInfoCard } from '@/src/components/ProductInfoCard';
 import { ProductInfoType } from '@/src/types/common';
 import { AddProductFromCatalog } from '@/src/components/AddProductFromCatalog';
+import { AddProductFromInventory } from '@/src/components/AddProductFromInventory';
 import { Product } from '@/src/mock/catalog/productCatalog/types';
+import { InventoryItem } from '@/src/features/profile/types';
 
 interface SelectProductProps {
     onProductSelect: (product: { id: string; name: string; brand?: string; description?: string; image: any }) => void;
     selectedProduct?: { id: string; name: string; brand?: string; description?: string; image: any } | null;
+    fromInventory?: boolean;
 }
 
 // Usage options for inventory
@@ -38,6 +41,7 @@ const usagePurposeOptions = ['Personal Use', 'Work', 'Gift', 'Testing', 'Review'
 export const SelectProduct: React.FC<SelectProductProps> = ({
     onProductSelect,
     selectedProduct,
+    fromInventory = false,
 }) => {
     const { colorMode } = useColorMode();
     const isDark = colorMode === 'dark';
@@ -47,7 +51,7 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
     const [selectedPurpose, setSelectedPurpose] = useState<string>('');
 
     const handleProductSelectPress = () => {
-        // Open AddProductFromCatalog
+        // Open product selector (inventory or catalog based on fromInventory prop)
         setShowProductSelector(true);
     };
 
@@ -68,18 +72,44 @@ export const SelectProduct: React.FC<SelectProductProps> = ({
         setShowProductSelector(false);
     };
 
+    const handleInventoryProductSelect = (item: InventoryItem) => {
+        // Convert InventoryItem to product format
+        const brandName = item.brand?.name || 'Unknown Brand';
+        const brandModel = item.brand?.model || '';
+        const productName = brandModel ? `${brandName} ${brandModel}` : brandName;
+        
+        const selectedProductData = {
+            id: item.productId || item.id,
+            name: productName,
+            brand: brandName,
+            description: item.brand?.specs || '',
+            image: item.image,
+        };
+        onProductSelect(selectedProductData);
+        setShowProductSelector(false);
+    };
+
     const handleCloseProductSelector = () => {
         setShowProductSelector(false);
     };
 
-    // Show AddProductFromCatalog if product selector is open
+    // Show AddProductFromInventory if fromInventory is true, otherwise AddProductFromCatalog
     if (showProductSelector) {
-        return (
-            <AddProductFromCatalog
-                onProductSelect={handleCatalogProductSelect}
-                onClose={handleCloseProductSelector}
-            />
-        );
+        if (fromInventory) {
+            return (
+                <AddProductFromInventory
+                    onProductSelect={handleInventoryProductSelect}
+                    onClose={handleCloseProductSelector}
+                />
+            );
+        } else {
+            return (
+                <AddProductFromCatalog
+                    onProductSelect={handleCatalogProductSelect}
+                    onClose={handleCloseProductSelector}
+                />
+            );
+        }
     }
 
     return (

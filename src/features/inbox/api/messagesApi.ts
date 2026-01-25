@@ -235,7 +235,6 @@ export interface ThreadMessageResponseItem {
     thumbnailUrl?: string | null; // Thumbnail URL'i (opsiyonel)
     caption?: string;         // Görsel altı yazı (opsiyonel)
     imageUrl?: string;        // Backward compatibility için (mediaUrl yerine)
-    groupedMessages?: any[];  // ✅ Gruplanmış mesajlar (backend'den gelebilir)
     dimensions?: {            // ✅ Görsel boyutları (opsiyonel)
       width: number;
       height: number;
@@ -404,14 +403,6 @@ export interface ThreadMessage {
   requestId?: string;
   fromUserId?: string; // Support request için: Request'i oluşturan kullanıcı ID'si (required)
   toUserId?: string; // Support request için: Request'in gönderildiği kullanıcı ID'si (required)
-  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
-  groupedMessages?: Array<{
-    id: string;
-    message: string;
-    timestamp: string;
-    sentAt: string;
-    isRead: boolean;
-  }>;
 }
 
 /**
@@ -633,7 +624,6 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
     };
     
     // Backend response'unu normalize et
-    // ✅ YENİ: groupedMessages desteği - önce groupedMessages'ı parse et, sonra ana mesajları
     const allMessagesToNormalize: Array<{ item: ThreadMessageResponseItem; isGrouped: boolean; parentId?: string }> = [];
     
     items.forEach((item) => {
@@ -645,21 +635,12 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
           mediaUrl: item.data.mediaUrl,
           thumbnailUrl: item.data.thumbnailUrl,
           caption: item.data.caption,
-          hasGroupedMessages: !!(item.data.groupedMessages && item.data.groupedMessages.length > 0),
         });
       }
       
-      // ✅ YENİ: groupedMessages varsa, bunları ana mesajın içinde tut (ayrı mesaj olarak ekleme)
-      // Ana mesajı ekle (groupedMessages bilgisi ile birlikte)
+      // Ana mesajı ekle
       allMessagesToNormalize.push({ 
-        item: {
-          ...item,
-          // groupedMessages bilgisini item'a ekle (normalize ederken kullanılacak)
-          data: {
-            ...item.data,
-            _groupedMessages: item.data.groupedMessages, // Geçici olarak sakla
-          },
-        }, 
+        item,
         isGrouped: false 
       });
     });
@@ -797,35 +778,6 @@ export const getThreadMessages = async (threadId: string, params?: GetThreadMess
       }
       
       // ✅ Grup mesajları ekle (5 dakika içinde aynı kullanıcıdan gelen text mesajlar - tek balonda gösterilecek)
-      // ✅ Backend güncellemesi: Sadece type: 'message' olan mesajlar gruplanıyor
-      // Backend'den data.groupedMessages olarak geliyor (data._groupedMessages değil)
-      const groupedMessages = data.groupedMessages || data._groupedMessages;
-      // ✅ Backend güncellemesi: groupedMessages sadece text mesajları için gelir
-      // Eğer baseMessage type: 'message' değilse, groupedMessages olmamalı
-      if (groupedMessages && Array.isArray(groupedMessages) && groupedMessages.length > 0 && baseMessage.messageType === 'message') {
-        baseMessage.groupedMessages = groupedMessages.map((groupedMsg: any) => ({
-          id: groupedMsg.id,
-          text: groupedMsg.message || groupedMsg.text || '', // Backend'den message olarak geliyor
-          message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
-          timestamp: groupedMsg.timestamp || timestamp,
-          sentAt: groupedMsg.timestamp || timestamp,
-          isRead: !groupedMsg.isUnread,
-        }));
-        console.log('[getThreadMessages] 📦 Grouped messages added to message:', {
-          messageId: baseMessage.id,
-          messageType: baseMessage.messageType,
-          groupedCount: baseMessage.groupedMessages.length,
-          groupedMessages: baseMessage.groupedMessages.map(gm => ({ id: gm.id, text: gm.text })),
-        });
-      } else if (groupedMessages && Array.isArray(groupedMessages) && groupedMessages.length > 0 && baseMessage.messageType !== 'message') {
-        // ✅ Backend güncellemesi: Text olmayan mesajlarda groupedMessages olmamalı (backend'den gelse bile)
-        console.warn('[getThreadMessages] ⚠️ groupedMessages received for non-text message, ignoring:', {
-          messageId: baseMessage.id,
-          messageType: baseMessage.messageType,
-          groupedCount: groupedMessages.length,
-        });
-      }
-      
       return baseMessage;
     }).filter((msg): msg is ThreadMessage => msg !== null); // null mesajları filtrele
     

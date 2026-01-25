@@ -6,8 +6,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { navigationService } from '@/src/services/NavigationService';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
 import { Search } from 'lucide-react-native';
-import { VStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
-import { PencilSquareIcon } from 'react-native-heroicons/outline';
+import { VStack, HStack, Box, Input, InputField, Pressable, Text } from '@gluestack-ui/themed';
+import { PlusIcon } from 'react-native-heroicons/outline';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { Platform } from 'react-native';
 
@@ -193,35 +193,34 @@ const InventoryScreen = () => {
       />
 
       {/* Search Bar */}
-      <Box px={15} py={10}>
-        <Input
-          variant="outline"
-          size="md"
-          borderRadius={5}
-          borderColor={isDark ? '$borderDark700' : '#E9E9E9'}
-          bg={isDark ? '$backgroundDark800' : '$white'}
+      <VStack
+        space="md"
+        pb="$4"
+        px="$4"
+        bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
+      >
+        <HStack
+          alignItems="center"
+          bg={isDark ? '#2A2A2A' : '#F2F2F2'}
+          borderWidth={1}
+          borderColor="#E9E9E9"
+          borderRadius={20}
+          px={14}
+          space="sm"
         >
-          <Box
-            position="absolute"
-            left={15}
-            height="100%"
-            alignItems="center"
-            justifyContent="center"
-            zIndex={1}
-          >
-            <Search size={16} color={isDark ? '#666666' : '#B9B9B9'} strokeWidth={2.5} />
-          </Box>
-          <InputField
-            pl={45}
-            placeholder="Search product in your inventory"
-            placeholderTextColor={isDark ? '#666666' : '#B9B9B9'}
-            fontSize={11}
-            color={isDark ? '$textDark50' : '#000'}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </Input>
-      </Box>
+          <Search size={24} color={isDark ? 'rgba(60, 60, 67, 0.6)' : 'rgba(60, 60, 67, 0.6)'} />
+          <Input flex={1} borderWidth={0} bg="transparent">
+            <InputField
+              placeholder="Search product in your inventory"
+              placeholderTextColor={isDark ? '#B9B9B9' : '#B9B9B9'}
+              color={isDark ? '#000' : '#000'}
+              fontSize="$sm"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </Input>
+        </HStack>
+      </VStack>
 
       {isLoading ? (
         <InventorySkeleton count={9} cardWidth={CARD_WIDTH} />
@@ -326,10 +325,39 @@ const InventoryScreen = () => {
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            <Box flex={1} justifyContent="center" alignItems="center" py={40}>
-              <Text color={isDark ? '$textDark400' : '$textLight600'}>
-                {searchQuery ? 'No search results found' : 'Inventory is empty'}
-              </Text>
+            <Box flex={1} justifyContent="center" alignItems="center" py={40} px="$4">
+              <VStack alignItems="center" space="md">
+                <PlusIcon 
+                  width={48} 
+                  height={48} 
+                  color={isDark ? '#666666' : '#B9B9B9'} 
+                  strokeWidth={1.5}
+                />
+                <Text 
+                  color={isDark ? '$textDark400' : '$textLight600'}
+                  fontSize="$md"
+                  textAlign="center"
+                >
+                  {searchQuery ? 'No search results found' : 'Inventory is empty'}
+                </Text>
+                {!searchQuery && showCreateButton && (
+                  <Pressable
+                    onPress={handleCreatePress}
+                    mt="$2"
+                  >
+                    <Box
+                      bg="#E8FF6B"
+                      borderRadius={8}
+                      px="$4"
+                      py="$2"
+                    >
+                      <Text color="#000000" fontSize="$md" fontWeight="$semibold">
+                        Add Product
+                      </Text>
+                    </Box>
+                  </Pressable>
+                )}
+              </VStack>
             </Box>
           }
           ListFooterComponent={
@@ -363,7 +391,7 @@ const InventoryScreen = () => {
           shadowRadius={4.65}
           elevation={8}
         >
-          <PencilSquareIcon width={24} height={24} color="#000000" />
+          <PlusIcon width={24} height={24} color="#000000" />
         </Box>
       </Pressable>
       )}

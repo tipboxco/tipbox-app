@@ -8,14 +8,10 @@ import {
     Text,
     ScrollView,
     Switch,
-    Input,
-    InputField,
-    Pressable,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
-import { Feather } from '@expo/vector-icons';
 import { useNotificationSettings, useUpdateNotificationSettings } from '../api/hooks';
 import { NotificationCode } from '../types';
 import { useToast, Toast, ToastTitle, ToastDescription } from '@gluestack-ui/themed';
@@ -40,7 +36,6 @@ export const NotificationSettingsScreen = () => {
 
     // Local state for UI
     const [localSettings, setLocalSettings] = useState<Record<number, boolean>>({});
-    const [searchQuery, setSearchQuery] = useState('');
 
     // Initialize local state from API data
     useEffect(() => {
@@ -145,14 +140,6 @@ export const NotificationSettingsScreen = () => {
         );
     };
 
-    // Filter notification items based on search query
-    const filteredItems = useMemo(() => {
-        if (!searchQuery.trim()) return notificationItems;
-        const query = searchQuery.toLowerCase();
-        return notificationItems.filter((item) =>
-            item.title.toLowerCase().includes(query)
-        );
-    }, [searchQuery, notificationItems]);
 
     return (
         <View style={{ flex: 1, backgroundColor }}>
@@ -175,41 +162,12 @@ export const NotificationSettingsScreen = () => {
                 >
                 <Header
                     title="Notification Settings"
+                    maxTitleLength={25}
                     showBackButton
                     onBackPress={() => navigation.goBack()}
                 />
 
-                {/* Search Bar */}
-                <Box px="$4" pt="$4" pb="$2">
-                    <Box
-                        borderWidth={1}
-                        borderColor="#B9B9B9"
-                        borderRadius={10}
-                        px="$4"
-                        py="$2"
-                        bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-                    >
-                        <HStack alignItems="center" space="sm">
-                            <Feather 
-                                name="search" 
-                                size={18} 
-                                color={isDark ? '#CCCCCC' : '#666666'} 
-                            />
-                            <Input borderWidth={0} bg="transparent" flex={1}>
-                                <InputField
-                                    placeholder="Select product group or search product name"
-                                    placeholderTextColor="#B9B9B9"
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize="$sm"
-                                />
-                            </Input>
-                        </HStack>
-                    </Box>
-                </Box>
-
-                <ScrollView flex={1} px="$4" py="$2">
+                <ScrollView flex={1} px="$4" pt="$4" pb="$2">
                     {isLoading ? (
                         <Box flex={1} justifyContent="center" alignItems="center" py="$10">
                             <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
@@ -272,7 +230,7 @@ export const NotificationSettingsScreen = () => {
                             </Box>
 
                             {/* Individual Notification Items */}
-                            {filteredItems.map((item) => (
+                            {notificationItems.map((item) => (
                                 <Box
                                     key={item.id}
                                     bg={isDark ? '#1A1A1A' : '#FFFFFF'}

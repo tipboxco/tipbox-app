@@ -24,6 +24,11 @@ import {
   useCreateBrandProductNewsComment,
 } from '../api/hooks';
 import type { NewsComment } from '../types';
+import { useDeleteComment } from '@/src/features/interactions/api/hooks';
+import { useAppStore } from '@/src/store/appStore';
+import { TrashIcon } from 'react-native-heroicons/outline';
+import { useQueryClient } from '@tanstack/react-query';
+import { catalogKeys } from '../api/hooks';
 
 type NewsDetailScreenNavigationProp = NativeStackNavigationProp<NewsStackParamList, 'NewsDetailScreen'>;
 type NewsDetailScreenRouteProp = RouteProp<NewsStackParamList, 'NewsDetailScreen'>;
@@ -374,6 +379,13 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   const [commentText, setCommentText] = useState('');
   const inputRef = useRef<any>(null);
   const { closeBottomSheet } = useGlobalBottomSheet();
+  const deleteCommentMutation = useDeleteComment();
+  const currentUserId = useAppStore((state) => state.user?.id);
+  const queryClient = useQueryClient();
+  
+  // Route params'dan brandId ve productId al (NewsDetailScreen'den geçirilmiş olmalı)
+  const route = useRoute<NewsDetailScreenRouteProp>();
+  const { brandId, productId } = route.params || {};
   
   // Auto focus input when bottom sheet opens
   useEffect(() => {
@@ -389,9 +401,38 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
     onCommentSubmit(commentText.trim());
     setCommentText('');
   };
+
+  // Handle delete comment
+  const handleDeleteComment = useCallback((commentId: string) => {
+    if (!commentId) return;
+    
+    // News comment'ler için postId olarak newsId kullanıyoruz
+    // Genel delete endpoint'i kullanılıyor: DELETE /interactions/comments/:commentId
+    deleteCommentMutation.mutate(
+      { commentId, postId: newsId },
+      {
+        onSuccess: () => {
+          // News comment query key'ini invalidate et
+          if (brandId && productId) {
+            queryClient.invalidateQueries({ 
+              queryKey: [...catalogKeys.all, 'brandProductNewsComments', brandId, productId, newsId] 
+            });
+            // News detail'i de invalidate et (commentsCount güncellenmesi için)
+            queryClient.invalidateQueries({ 
+              queryKey: [...catalogKeys.all, 'brandProductNewsDetail', brandId, productId, newsId] 
+            });
+          }
+        },
+        onError: (error) => {
+          console.error('[NewsCommentsBottomSheet] Delete comment error:', error);
+        },
+      }
+    );
+  }, [deleteCommentMutation, newsId, brandId, productId, queryClient]);
   
   const renderComment = ({ item }: { item: NewsComment }) => {
     const formattedDate = formatRelativeTime(item.createdAt);
+    const isOwnComment = item.userId && currentUserId && item.userId === currentUserId;
     
     return (
       <Box
@@ -422,12 +463,31 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
               >
                 {item.userName}
               </Text>
-              <Text
-                color="#B9B9B9"
-                fontSize={11}
-              >
-                {formattedDate}
-              </Text>
+              <HStack alignItems="center" space="sm">
+                {/* Delete Button - sadece kullanıcının kendi yorumunda göster */}
+                {isOwnComment && (
+                  <Pressable
+                    onPress={() => handleDeleteComment(item.id)}
+                    disabled={deleteCommentMutation.isPending}
+                    style={{
+                      padding: 4,
+                      opacity: deleteCommentMutation.isPending ? 0.5 : 1,
+                    }}
+                  >
+                    <TrashIcon
+                      width={16}
+                      height={16}
+                      color="#FF3040"
+                    />
+                  </Pressable>
+                )}
+                <Text
+                  color="#B9B9B9"
+                  fontSize={11}
+                >
+                  {formattedDate}
+                </Text>
+              </HStack>
             </HStack>
             
             {/* Comment Text */}
@@ -468,6 +528,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
         data={comments}
         keyExtractor={(item) => item.id}
         renderItem={renderComment}
+        extraData={currentUserId} // currentUserId değiştiğinde re-render için
         contentContainerStyle={{ 
           flexGrow: 1,
           paddingBottom: 80, // Input yüksekliği için padding

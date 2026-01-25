@@ -750,18 +750,32 @@ export const useCreateEventPostWithContext = () => {
       // NOTE: eventsKeys.posts(eventId) -> ['events','posts',eventId, undefined, undefined] olduğu için
       // useEventPosts'in key'i (limit içerdiğinden) ile eşleşmeyip invalidate kaçabiliyor.
       // Bu yüzden prefix ile invalidate/refetch yapıyoruz.
+      // CRITICAL: refetchType: 'all' kullanıyoruz ki hem aktif hem inactive query'ler refetch edilsin
+      // EventDetailScreen unmount edilmiş olsa bile, bir sonraki mount'ta fresh data çekilsin
       queryClient.invalidateQueries({
         queryKey: ['events', 'posts', eventId],
-        refetchType: 'active',
+        refetchType: 'all',
       });
       // 2. Event detail'i invalidate et (post sayısı değişebilir)
-      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.detail(eventId),
+        refetchType: 'all',
+      });
       // 3. Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ 
+        queryKey: feedKeys.all,
+        refetchType: 'all',
+      });
       // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['profile'],
+        refetchType: 'all',
+      });
       // 5. Active events listesini invalidate et (event post sayısı değişebilir)
-      queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.active(),
+        refetchType: 'all',
+      });
     },
   });
 };

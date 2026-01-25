@@ -97,7 +97,7 @@ export const UserNFTCard = ({ data, isSelected, onPress }: UserNFTCardProps) => 
       <VStack space="xs" px='$2' mb={8}>
         <Text
           color={isDark ? '$textDark50' : '#000000'}
-          fontSize={10}
+          fontSize={12}
           fontWeight="$bold"
           numberOfLines={1}
         >
@@ -105,7 +105,7 @@ export const UserNFTCard = ({ data, isSelected, onPress }: UserNFTCardProps) => 
         </Text>
         <Text
           color={isDark ? '$textDark400' : '#808080'}
-          fontSize={9}
+          fontSize={10}
           fontWeight="$semibold"
           numberOfLines={1}
         >
@@ -136,7 +136,7 @@ export const UserNFTCard = ({ data, isSelected, onPress }: UserNFTCardProps) => 
         >
           <Text
             color={data.isListed ? '#666666' : (isDark ? '$textDark50' : '#000000')}
-            fontSize={8}
+            fontSize={11}
             fontWeight="$bold"
             textAlign="center"
           >

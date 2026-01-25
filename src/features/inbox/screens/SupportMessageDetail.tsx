@@ -69,14 +69,6 @@ interface MessageDetailItem {
   // Message status indicators
   isRead?: boolean; // Mesaj okundu mu?
   readAt?: string; // Okunma zamanı
-  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar)
-  groupedMessages?: Array<{
-    id: string;
-    text: string;
-    timestamp: string;
-    sentAt: string;
-    senderId?: string; // ✅ FIX: groupedMessages için senderId ekle
-  }>;
   // Message deletion status
   isDeleted?: boolean;
 }
@@ -349,8 +341,6 @@ const SupportMessageDetailScreen: React.FC = () => {
               message: msg.message,
               caption: msg.caption,
               messageType: msg.messageType,
-              hasGroupedMessages: !!(msg.groupedMessages && msg.groupedMessages.length > 0),
-              groupedMessagesCount: msg.groupedMessages?.length || 0,
             });
           }
           
@@ -371,17 +361,6 @@ const SupportMessageDetailScreen: React.FC = () => {
             dimensions: msg.dimensions,
             isRead: msg.isRead,
             readAt: msg.readAt,
-            // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
-            groupedMessages: msg.groupedMessages && Array.isArray(msg.groupedMessages) && msg.groupedMessages.length > 0
-              ? msg.groupedMessages.map((groupedMsg: any) => ({
-                  id: groupedMsg.id,
-                  text: groupedMsg.text || groupedMsg.message || '', // Backend'den message olarak gelebilir
-                  message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
-                  timestamp: formatMessageTime(groupedMsg.sentAt || groupedMsg.timestamp),
-                  sentAt: groupedMsg.sentAt || groupedMsg.timestamp || msg.sentAt, // ✅ FIX: timestamp yoksa ana mesajın sentAt'ını kullan
-                  senderId: groupedMsg.senderId || msg.senderId, // ✅ FIX: groupedMessages için senderId ekle (ana mesajın senderId'sini kullan)
-                }))
-              : undefined,
           };
         });
       

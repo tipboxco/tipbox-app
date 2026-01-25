@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Platform, ActivityIndicator, FlatList, Pressable } from 'react-native';
+import { Platform, ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, interpolate, type SharedValue } from 'react-native-reanimated';
 import { FeedListProvider, useFeedListContext } from '../context/FeedListContext';
 import { Box, HStack, Text, VStack } from '@/src/components/ui';
@@ -844,9 +844,9 @@ const FeedScreenInner = React.memo(() => {
   const renderFooter = useCallback(() => {
     if (!isFetchingNextPage) return null;
     return (
-      <Box py={20} alignItems="center">
+      <View style={{ paddingVertical: 20, alignItems: 'center' }}>
         <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-      </Box>
+      </View>
     );
   }, [isFetchingNextPage, isDark]);
 
@@ -887,8 +887,14 @@ const FeedScreenInner = React.memo(() => {
         }
         
         // Scroll'u en üste götür
-        if (feedListRef?.current) {
-          feedListRef.current.scrollToOffset({ offset: 0, animated: true });
+        // CRITICAL FIX: Reanimated-safe scroll - ref'e direkt erişim yerine method çağrısı
+        if (feedListRef?.current && 'scrollToOffset' in feedListRef.current) {
+          try {
+            feedListRef.current.scrollToOffset({ offset: 0, animated: true });
+          } catch (error) {
+            // Fallback: ScrollRegistry kullan
+            ScrollRegistry.scrollToTop('feed', true);
+          }
         }
       }
     } catch (error) {
@@ -969,31 +975,36 @@ const FeedScreenInner = React.memo(() => {
   );
 
   // FEATURE: Handle scrollToIndex failures - fallback to scrollToOffset
+  // CRITICAL FIX: Reanimated-safe scroll - ref'e direkt erişim yerine method çağrısı
   const handleScrollToIndexFailed = useCallback((info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
     // Fallback: Use scrollToOffset
-    if (feedListRef?.current) {
+    if (feedListRef?.current && 'scrollToOffset' in feedListRef.current) {
       setTimeout(() => {
-        feedListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        try {
+          feedListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        } catch (error) {
+          // Fallback: ScrollRegistry kullan
+          ScrollRegistry.scrollToTop('feed', true);
+        }
       }, 100);
     }
   }, [feedListRef]);
 
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+      <View
+        style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#FAFAFA' }}
       >
         <Header
           logo={require('@/assets/tipbox-nobg.png')}
           leftAction="menu"
           onSearchPress={handleSearchPress}
         />
-        <VStack>
-          <Box pb="$0">
+        <View>
+          <View style={{ paddingBottom: 0 }}>
             <AssetAccessCard onTabChange={handleTabChange} />
-          </Box>
-          <Box pt={0}>
+          </View>
+          <View style={{ paddingTop: 0 }}>
             <FilterBarReanimated 
               filters={filters} 
               onFiltersChange={setFilters}
@@ -1007,14 +1018,14 @@ const FeedScreenInner = React.memo(() => {
                 filterBarPanelHeightRef.current = panelHeight;
               }}
             />
-          </Box>
-        </VStack>
-        <Box flex={1}>
+          </View>
+        </View>
+        <View style={{ flex: 1 }}>
           {isLoading && feedItems.length === 0 ? (
             <FeedSkeleton count={5} />
           ) : error ? (
-            <Box flex={1} justifyContent="center" alignItems="center" px="$4">
-              <VStack space="md" alignItems="center">
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
+              <View style={{ gap: 16, alignItems: 'center' }}>
                 <Text color="#CE4A4A" fontSize="$md" fontWeight="$bold">
                   Feed Yüklenemedi
                 </Text>
@@ -1046,14 +1057,14 @@ const FeedScreenInner = React.memo(() => {
                     )}
                   </>
                 )}
-              </VStack>
-            </Box>
+              </View>
+            </View>
           ) : feedItems.length === 0 ? (
-            <Box flex={1} justifyContent="center" alignItems="center" px="$4">
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
               <Text color={isDark ? '$textDark400' : '$textLight500'} fontSize="$sm">
                 No feed content found yet.
               </Text>
-            </Box>
+            </View>
           ) : (
             <Animated.FlatList<FeedApiItem>
               ref={feedListRef}
@@ -1099,7 +1110,7 @@ const FeedScreenInner = React.memo(() => {
               pointerEvents={isFilterPanelOpen ? 'none' : 'auto'}
             />
           )}
-        </Box>
+        </View>
         {/* Search Modal */}
         <SearchModal
           visible={isSearchVisible}
@@ -1109,14 +1120,14 @@ const FeedScreenInner = React.memo(() => {
         {/* FIX: Filter panel açıkken overlay - tüm ekranı kaplar, paneli kapatır */}
         {/* Overlay z-index: 998 (panel: 1000) - overlay panel'in altında, sadece panel dışındaki alanları kapsar */}
         {isFilterPanelOpen && (
-          <Box
-            position="absolute"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            zIndex={998}
+          <View
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 998,
               backgroundColor: 'transparent',
             }}
           >
@@ -1135,10 +1146,10 @@ const FeedScreenInner = React.memo(() => {
                 }
               }}
             />
-          </Box>
+          </View>
         )}
 
-      </Box>
+      </View>
     </SafeAreaView>
   );
 }, (prevProps, nextProps) => {

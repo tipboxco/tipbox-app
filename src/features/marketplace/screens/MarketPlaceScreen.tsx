@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Header } from '@/src/components/Header';
-import { SearchFilter } from '../components/SearchFilter';
+import { SearchFilter, type NFTType } from '../components/SearchFilter';
 import { NFTCard } from '../components/NFTCard';
 import { FloatingActionButton } from '../components/FloatingActionButton';
 import { Dimensions } from 'react-native';
@@ -62,6 +62,7 @@ const MarketPlaceScreen = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<NFTType>('ALL');
   const [refreshing, setRefreshing] = useState(false);
 
   // Debounce search query for API calls
@@ -89,6 +90,7 @@ const MarketPlaceScreen = () => {
   } = useMarketplaceListings({ 
     limit: 8,
     search: debouncedSearchQuery || undefined,
+    type: selectedType !== 'ALL' ? selectedType : undefined,
   });
 
   // My Listings - Use useMyListings hook (new endpoint)
@@ -363,7 +365,12 @@ const MarketPlaceScreen = () => {
 
         {/* Search Filter */}
         <VStack px={16} py={8} bg="#FFFFFF">
-          <SearchFilter searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+          <SearchFilter 
+            searchQuery={searchQuery} 
+            onSearchChange={setSearchQuery}
+            selectedType={selectedType}
+            onTypeChange={setSelectedType}
+          />
         </VStack>
 
         {/* PagerView - Native swipe tab switching */}

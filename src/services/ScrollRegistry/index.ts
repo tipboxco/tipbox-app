@@ -87,71 +87,47 @@ class ScrollRegistryClass {
           }
         }
         
-        // FlatList için - native ScrollView'e direkt erişim (PRIMARY METHOD)
+        // FlatList için - Reanimated-safe scroll methods
         if ('scrollToOffset' in flatList) {
-          // Method 1: Native ScrollView'e direkt erişim - _scrollRef kullan
-          // DEBUG log'unda _scrollRef key'i görünüyor, bu yüzden bu path'i kullanmalıyız
+          // CRITICAL FIX: Reanimated v3 safe - ref'e direkt atama yapmadan method çağrısı
+          // Method 1: scrollToOffset (PRIMARY METHOD - Reanimated-safe)
           try {
-            const listRef = (flatList as any)._listRef;
-            if (!listRef) {
-            } else {
-              const scrollRef = listRef._scrollRef;
-              
-              if (!scrollRef) {
-              } else {
-                // Path 1: _scrollRef.current (if it's a ref)
-                let nativeScrollView = scrollRef.current || scrollRef;
-                
-                // Path 2: Try scrollTo method directly
-                if (nativeScrollView?.scrollTo) {
-                  nativeScrollView.scrollTo({ y: 0, animated });
-                  return;
-                }
-                
-                // Path 3: Try scrollToOffset (FlatList method on native view)
-                if (nativeScrollView?.scrollToOffset) {
-                  nativeScrollView.scrollToOffset({ offset: 0, animated });
-                  return;
-                }
-                
-                // Path 4: Try getNode() method
-                if (nativeScrollView?.getNode) {
-                  const node = nativeScrollView.getNode();
-                  if (node?.scrollTo) {
-                    node.scrollTo({ y: 0, animated });
-                    return;
-                  }
-                }
-                
-                // Path 5: Try _scrollRef._component (internal structure)
-                if (scrollRef._component?.scrollTo) {
-                  scrollRef._component.scrollTo({ y: 0, animated });
-                  return;
-                }
-                
-              }
-            }
-          } catch (error) {
-          }
-
-          // Method 2: scrollToOffset (fallback)
-          try {
+            // Reanimated-safe: ref.current'ı değiştirmeden direkt method çağrısı
             flatList.scrollToOffset({ offset: 0, animated });
             return;
           } catch (error) {
+            // Method 2: scrollToIndex (fallback)
+            try {
+              if (flatList.props.data && flatList.props.data.length > 0) {
+                flatList.scrollToIndex({ index: 0, animated, viewPosition: 0 });
+                return;
+              }
+            } catch (indexError) {
+              // Method 3: Native ScrollView'e erişim (last resort - internal API)
+              // CRITICAL: Bu method internal API kullanır, Reanimated v3'te sorun olabilir
+              // Sadece yukarıdaki methodlar başarısız olursa kullan
+              try {
+                const listRef = (flatList as any)._listRef;
+                if (listRef) {
+                  const scrollRef = listRef._scrollRef;
+                  if (scrollRef) {
+                    // CRITICAL: scrollRef.current'a atama yapmadan okuma yap
+                    const nativeScrollView = scrollRef.current || scrollRef;
+                    if (nativeScrollView?.scrollTo) {
+                      nativeScrollView.scrollTo({ y: 0, animated });
+                      return;
+                    }
+                  }
+                }
+              } catch (internalError) {
+                // Tüm methodlar başarısız oldu
+              }
+            }
+            
             if (attempt < 4) {
               setTimeout(() => attemptScroll(attempt + 1), 100);
               return;
             }
-          }
-
-          // Method 3: scrollToIndex (last resort)
-          try {
-            if (flatList.props.data && flatList.props.data.length > 0) {
-              flatList.scrollToIndex({ index: 0, animated, viewPosition: 0 });
-              return;
-            }
-          } catch (error) {
           }
         }
 

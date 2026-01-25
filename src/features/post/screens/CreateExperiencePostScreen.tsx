@@ -14,6 +14,7 @@ import { SelectProduct } from '../components/CreateExperienceSteps/SelectProduct
 import { useExperiencePostForm } from '../hooks/useExperiencePostForm';
 import { imagePickerService } from '@/src/services/ExpoImagePickerService';
 import { useCreateExperiencePost, useSplitExperience } from '../api/hooks';
+import { useAddInventoryItem } from '@/src/features/profile/api/hooks';
 import { useCreatePostFlowStore } from '../store/createPostFlowStore';
 import { mapProductInfoTypeToContextType } from '../types';
 import { useAppStore } from '@/src/store/appStore';
@@ -57,6 +58,7 @@ export const CreateExperiencePostScreen = () => {
     const toast = useToast();
     const createExperiencePostMutation = useCreateExperiencePost();
     const splitExperienceMutation = useSplitExperience();
+    const addInventoryItemMutation = useAddInventoryItem();
     const { user } = useAppStore();
     const queryClient = useQueryClient();
     
@@ -371,9 +373,32 @@ export const CreateExperiencePostScreen = () => {
             status: status,
             imagesCount: data.selectedImages?.length || 0,
             experienceSnippetId: experienceSnippetId,
+            experienceOption: experienceOption,
+            fromInventory: fromInventory,
         });
         
         try {
+            // Eğer experienceOption === 'own' VE fromInventory === false (katalogdan seçildi):
+            // Önce envantere ekle, sonra post oluştur
+            if (experienceOption === 'own' && !fromInventory && data.selectedProduct?.id) {
+                console.log('[CreateExperiencePostScreen] 📦 Adding product to inventory first...');
+                
+                // Envantere ekle
+                const inventoryResponse = await addInventoryItemMutation.mutateAsync({
+                    productId: data.selectedProduct.id,
+                    selectedDurationId: selectedDurationId,
+                    selectedLocationId: selectedLocationId,
+                    selectedPurposeId: selectedPurposeId,
+                    content: data.experienceText,
+                    experience: experience,
+                    status: 'own',
+                    images: data.selectedImages || [],
+                });
+                
+                console.log('[CreateExperiencePostScreen] ✅ Product added to inventory:', inventoryResponse);
+            }
+            
+            // Post oluştur
             const response = await createExperiencePostMutation.mutateAsync({
                 contextType: apiContextType,
                 contextId: contextId,
@@ -643,6 +668,7 @@ export const CreateExperiencePostScreen = () => {
                         <SelectProduct
                             onProductSelect={handleProductSelect}
                             selectedProduct={selectedProduct}
+                            fromInventory={fromInventory}
                         />
                     </Box>
                 </FormProvider>

@@ -14,6 +14,7 @@ import { useNotificationStore } from '@/src/store/notificationStore';
 import { useAuth } from './AuthProvider';
 import { useAppState } from './AppStateProvider';
 import { notificationKeys, useUnreadCount } from '@/src/features/notifications/api/hooks';
+import { useNotificationSettingsCheck } from '@/src/features/settings/hooks/useNotificationSettingsCheck';
 import type { Notification, NotificationMetadata } from '@/src/features/notifications/api/types';
 import type { NotificationPayload } from '@/src/types/notification';
 // Toast kaldırıldı - Expo bildirimleri kullanılıyor
@@ -95,6 +96,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // Sadece authenticated olduğunda çalışır (logout durumunda API isteği yapılmaz)
   const { data: unreadCountData, error: unreadCountError } = useUnreadCount(isAuthenticated && isAuthReady);
   const unreadCount = unreadCountData?.data?.count || 0;
+  
+  // Bildirim ayarları kontrolü için hook
+  const { canSendNotification } = useNotificationSettingsCheck();
   
   // Store'daki unread count cache'ini API'den gelen değerle sync et
   // ÖNEMLİ: Sadece store null ise veya çok büyük fark varsa güncelle (optimistic update'i override etme)
@@ -311,7 +315,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
       // Foreground'da local notification göster (OS push notification olarak)
       // Background'da backend'den push notification gelir, burada sadece foreground için local notification gösteriyoruz
-      if (shouldShowNotification && state.permissionStatus === 'granted') {
+      // Bildirim ayarlarını kontrol et
+      const canSendPush = canSendNotification(notification.type, 'push');
+      
+      if (shouldShowNotification && state.permissionStatus === 'granted' && canSendPush) {
         try {
           // Farklı bildirim tipleri için farklı image/icon belirle
           const getNotificationImage = (notif: Notification): string | undefined => {

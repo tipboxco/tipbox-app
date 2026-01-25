@@ -31,6 +31,7 @@ interface HeaderProps {
   logo?: any; // Logo image source (require() veya ImageSourcePropType)
   backgroundColor?: string;
   textColor?: string;
+  maxTitleLength?: number; // Title için maksimum karakter uzunluğu (default: 20)
   // Sol kısım için props
   leftAction?: 'back' | 'menu' | 'cancel';
   onLeftActionPress?: () => void;
@@ -55,6 +56,7 @@ const HeaderComponent = ({
   logo,
   backgroundColor,
   textColor,
+  maxTitleLength = 20,
   leftAction,
   onLeftActionPress,
   showThreeDots,
@@ -267,11 +269,14 @@ const HeaderComponent = ({
             px={rightButton.paddingX !== undefined ? rightButton.paddingX : 16}
             py={rightButton.paddingY !== undefined ? rightButton.paddingY : 8}
             borderRadius={rightButton.borderRadius !== undefined ? rightButton.borderRadius : 8}
+            alignItems="center"
+            justifyContent="center"
           >
             <Text
               color={rightButton.textColor || '#FFFFFF'}
               fontSize={rightButton.fontSize || 14}
               fontWeight="$medium"
+              textAlign="center"
             >
               {rightButton.text}
             </Text>
@@ -317,15 +322,14 @@ const HeaderComponent = ({
   const headerBgColor = useMemo(() => backgroundColor || (isDark ? '#000000' : '#FFFFFF'), [backgroundColor, isDark]);
   const headerTextColor = useMemo(() => textColor || (isDark ? '#FFFFFF' : '#000000'), [textColor, isDark]);
 
-  // Truncate title to max 20 characters for header display
+  // Truncate title to max characters for header display
   const truncatedTitle = useMemo(() => {
     if (!title) return '';
-    const MAX_LENGTH = 20;
-    if (title.length > MAX_LENGTH) {
-      return title.substring(0, MAX_LENGTH).trim() + '...';
+    if (title.length > maxTitleLength) {
+      return title.substring(0, maxTitleLength).trim() + '...';
     }
     return title;
-  }, [title]);
+  }, [title, maxTitleLength]);
 
   return (
     <VStack>
@@ -360,6 +364,7 @@ const HeaderComponent = ({
                   textAlign="center"
                   numberOfLines={1}
                   ellipsizeMode="tail"
+                  maxWidth="100%"
                 >
                   {truncatedTitle}
                 </Text>
@@ -385,6 +390,7 @@ export const Header = memo(HeaderComponent, (prevProps, nextProps) => {
     prevProps.logo === nextProps.logo &&
     prevProps.backgroundColor === nextProps.backgroundColor &&
     prevProps.textColor === nextProps.textColor &&
+    prevProps.maxTitleLength === nextProps.maxTitleLength &&
     prevProps.leftAction === nextProps.leftAction &&
     prevProps.showThreeDots === nextProps.showThreeDots &&
     prevProps.showFilter === nextProps.showFilter &&

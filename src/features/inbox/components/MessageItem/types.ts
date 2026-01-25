@@ -54,14 +54,6 @@ export interface MessageDetailItem {
     width: number;
     height: number;
   };
-  // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar)
-  groupedMessages?: Array<{
-    id: string;
-    text: string;
-    timestamp: string;
-    sentAt: string;
-    senderId?: string; // ✅ FIX: groupedMessages için senderId ekle
-  }>;
   // CRITICAL: Sıralama için ISO timestamp (backend'den gelen sentAt)
   sentAt?: string;
 }

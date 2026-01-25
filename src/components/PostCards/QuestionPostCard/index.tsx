@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions } from 'react-native';
+import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -63,6 +63,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const { openBottomSheet } = useGlobalBottomSheet();
   
   const [isLiked, setIsLiked] = useState(false);
@@ -234,27 +235,173 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
     );
   }, [data.id, deletePostMutation]);
 
-  // Calculate menu position
-  const handleMenuOpen = useCallback(() => {
+  // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
+  // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
+  const handleTriggerLayout = useCallback(() => {
     if (menuTriggerRef.current) {
+      // measureInWindow: Window koordinatları (ekranın en üst soluna göre, scroll dahil)
       menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        const screenWidth = Dimensions.get('window').width;
-        const menuWidth = 180;
-        const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
-        const top = Math.max(12, y - 8);
-        setMenuPosition({ top, left });
-        setIsMenuOpen(true);
+        if (width > 0 && height > 0) {
+          triggerPositionRef.current = { x, y, width, height };
+          console.log('📍 [QuestionPostCard] onLayout - measureInWindow:', {
+            x,
+            y,
+            width,
+            height,
+            reference: 'Window coordinates (top-left of screen, scroll included)',
+          });
+        }
       });
-    } else {
-      setIsMenuOpen(true);
+      
+      // measure: Parent container'a göre koordinatlar
+      menuTriggerRef.current.measure((fx, fy, w, h, px, py) => {
+        console.log('📍 [QuestionPostCard] onLayout - measure (parent relative):', {
+          fx, // Frame X (relative to parent)
+          fy, // Frame Y (relative to parent)
+          width: w,
+          height: h,
+          px, // Page X (absolute position in parent)
+          py, // Page Y (absolute position in parent)
+          reference: 'Parent container coordinates',
+        });
+      });
     }
   }, []);
 
+  // Calculate menu position - stored position'ı öncelikli kullan
+  const handleMenuOpen = useCallback((event?: any) => {
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    
+    // DEBUG: Tıklama event'inden koordinat al (eğer varsa)
+    let clickX = 0;
+    let clickY = 0;
+    if (event?.nativeEvent) {
+      clickX = event.nativeEvent.pageX || event.nativeEvent.locationX || 0;
+      clickY = event.nativeEvent.pageY || event.nativeEvent.locationY || 0;
+      console.log('🖱️ [QuestionPostCard] Click event coordinates:', {
+        pageX: event.nativeEvent.pageX,
+        pageY: event.nativeEvent.pageY,
+        locationX: event.nativeEvent.locationX,
+        locationY: event.nativeEvent.locationY,
+        clickX,
+        clickY,
+        reference: 'Touch event coordinates (page = window, location = relative to element)',
+      });
+    }
+    
+    const calculatePosition = (x: number, y: number, width: number, height: number, source: string) => {
+      const menuWidth = 180;
+      const menuHeight = isPostOwner ? 100 : 100;
+      
+      // Menu'yu trigger button'ın sağında konumlandır
+      let left = x + width - menuWidth + 10;
+      let top = y + height + 8;
+      
+      console.log(`📐 [QuestionPostCard] Position calculation (${source}):`, {
+        triggerPosition: { x, y, width, height },
+        calculatedMenuPosition: { left, top },
+        screenDimensions: { screenWidth, screenHeight },
+        menuDimensions: { menuWidth, menuHeight },
+      });
+      
+      // Ekran sınırları kontrolü
+      if (left < 12) {
+        left = 12;
+      }
+      if (left + menuWidth > screenWidth - 12) {
+        left = screenWidth - menuWidth - 12;
+      }
+      if (top < 12) {
+        top = 12;
+      }
+      if (top + menuHeight > screenHeight - 12) {
+        // Eğer altında yer yoksa, üstünde göster
+        top = y - menuHeight - 8;
+        if (top < 12) {
+          top = 12;
+        }
+      }
+      
+      console.log(`✅ [QuestionPostCard] Final menu position (${source}):`, {
+        top,
+        left,
+        reference: 'Modal uses position: absolute with top/left (relative to window/screen)',
+      });
+      
+      return { top, left };
+    };
+
+    // CRITICAL: Önce stored position'ı kontrol et (onLayout'dan gelen, daha güvenilir)
+    if (triggerPositionRef.current) {
+      const stored = triggerPositionRef.current;
+      console.log('💾 [QuestionPostCard] Using stored position from onLayout:', stored);
+      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // Stored position yoksa, measureInWindow ile ölç
+    // CRITICAL: requestAnimationFrame ile bir frame bekle - layout'un tamamlanmasını garanti et
+    requestAnimationFrame(() => {
+      if (menuTriggerRef.current) {
+        // measureInWindow: Window koordinatları (ekranın en üst soluna göre, scroll dahil)
+        menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+          console.log('📏 [QuestionPostCard] measureInWindow (on click):', {
+            x,
+            y,
+            width,
+            height,
+            reference: 'Window coordinates (top-left of screen, scroll included)',
+            isValid: width > 0 && height > 0 && x >= 0 && y >= 0,
+          });
+          
+          // measure: Parent container'a göre koordinatlar
+          menuTriggerRef.current?.measure((fx, fy, w, h, px, py) => {
+            console.log('📏 [QuestionPostCard] measure (on click, parent relative):', {
+              fx, // Frame X (relative to parent)
+              fy, // Frame Y (relative to parent)
+              width: w,
+              height: h,
+              px, // Page X (absolute position in parent)
+              py, // Page Y (absolute position in parent)
+              reference: 'Parent container coordinates',
+            });
+          });
+          
+          // measureInWindow window koordinatlarını verir (ekranın en üst soluna göre)
+          // FlatList scroll pozisyonu otomatik olarak dahil edilir
+          if (width > 0 && height > 0 && x >= 0 && y >= 0) {
+            // Stored position'ı güncelle
+            triggerPositionRef.current = { x, y, width, height };
+            
+            const position = calculatePosition(x, y, width, height, 'measureInWindow');
+            setMenuPosition(position);
+            setIsMenuOpen(true);
+          } else {
+            // Invalid position - fallback kullan
+            console.warn('⚠️ [QuestionPostCard] Invalid measureInWindow result, using fallback');
+            setMenuPosition({ top: 60, left: screenWidth - 192 });
+            setIsMenuOpen(true);
+          }
+        });
+      } else {
+        // Ref yok - fallback kullan
+        console.warn('⚠️ [QuestionPostCard] menuTriggerRef.current is null, using fallback');
+        setMenuPosition({ top: 60, left: screenWidth - 192 });
+        setIsMenuOpen(true);
+      }
+    });
+  }, [isPostOwner]);
+
   return (
-    <VStack
-      bg={isDark ? '$backgroundDark900' : '$white'}
-      mb={16}
-      position="relative"
+    <View
+      style={{
+        backgroundColor: isDark ? '#000000' : '#FFFFFF',
+        marginBottom: 16,
+        position: 'relative',
+      }}
     >
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
@@ -290,8 +437,12 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               </Text>
             </VStack>
           </Pressable>
-          <View ref={menuTriggerRef} collapsable={false}>
-            <Pressable onPress={handleMenuOpen}>
+          <View 
+            ref={menuTriggerRef} 
+            collapsable={false}
+            onLayout={handleTriggerLayout}
+          >
+            <Pressable onPress={(event) => handleMenuOpen(event)}>
               <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
             </Pressable>
           </View>
@@ -307,19 +458,26 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
               style={{ flex: 1 }}
               onPress={() => setIsMenuOpen(false)}
             />
-            <Box
-              position="absolute"
-              top={menuPosition.top}
-              left={menuPosition.left}
-              width={180}
-              bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-              borderRadius={16}
-              shadowColor="#000"
-              shadowOffset={{ width: 0, height: 2 }}
-              shadowOpacity={0.25}
-              shadowRadius={8}
-              elevation={8}
-              overflow="hidden"
+            <View
+              style={[
+                styles.menuContainer,
+                {
+                  top: menuPosition.top,
+                  left: menuPosition.left,
+                  backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                }
+              ]}
+              onLayout={(event) => {
+                const { x, y, width, height } = event.nativeEvent.layout;
+                console.log('🎯 [QuestionPostCard] Modal opened at position:', {
+                  styleTop: menuPosition.top,
+                  styleLeft: menuPosition.left,
+                  actualLayout: { x, y, width, height },
+                  screenWidth: Dimensions.get('window').width,
+                  screenHeight: Dimensions.get('window').height,
+                  reference: 'Modal View uses position: absolute (relative to window/screen)',
+                });
+              }}
             >
               {isPostOwner ? (
                 <>
@@ -342,7 +500,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                  <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
                   <Pressable
                     onPress={() => {
                       setIsMenuOpen(false);
@@ -384,7 +542,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                       </Text>
                     </HStack>
                   </Pressable>
-                  <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
+                  <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
                   <Pressable
                     onPress={() => {
                       setIsMenuOpen(false);
@@ -406,7 +564,7 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                   </Pressable>
                 </>
               )}
-            </Box>
+            </View>
           </Modal>
         </HStack>
       </VStack>
@@ -648,9 +806,26 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         )}
       </HStack>
 
-    </VStack>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  menuContainer: {
+    position: 'absolute',
+    width: 180,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  divider: {
+    height: 1,
+  },
+});
 
 // PERFORMANCE FIX: Memoize component to prevent unnecessary re-renders in feed lists
 export default React.memo(QuestionPostCard);

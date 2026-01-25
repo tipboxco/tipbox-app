@@ -21,12 +21,13 @@ import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
 import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useComments, useCreateComment } from '@/src/features/interactions/api/hooks';
+import { useComments, useCreateComment, useDeleteComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { usePostDetail } from '../api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useKeyboard } from '@/src/hooks/useKeyboard';
 import ShareBottomSheet from '../components/ShareBottomSheet';
+import { useAppStore } from '@/src/store/appStore';
 
 type PostDetailScreenRouteProp = RouteProp<PostStackParamList, 'PostDetailScreen'>;
 
@@ -134,6 +135,10 @@ export const PostDetailScreen = () => {
     // Fetch comments
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
     const createCommentMutation = useCreateComment();
+    const deleteCommentMutation = useDeleteComment();
+    
+    // Current user ID
+    const currentUserId = useAppStore((state) => state.user?.id);
 
     // Safe area insets
     const insets = useSafeAreaInsets();
@@ -271,6 +276,8 @@ export const PostDetailScreen = () => {
     // Flatten comments with replies for display
     const flattenedComments: Array<{
         id: string;
+        commentId: string;
+        userId: string;
         userName: string;
         userTitle: string;
         avatar: any;
@@ -283,6 +290,8 @@ export const PostDetailScreen = () => {
             // Main comment
             flattenedComments.push({
                 id: item.comment.id,
+                commentId: item.comment.id,
+                userId: item.comment.userId,
                 userName: item.user.name || 'Anonymous',
                 userTitle: item.user.avatar ? '' : '', // API'de title yok, boş bırakıyoruz
                 avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
@@ -296,6 +305,8 @@ export const PostDetailScreen = () => {
                     // Reply'ler için user bilgisi yok, main comment'in user'ını kullanıyoruz
                     flattenedComments.push({
                         id: reply.id,
+                        commentId: reply.id,
+                        userId: reply.userId,
                         userName: item.user.name || 'Anonymous',
                         userTitle: '',
                         avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
@@ -306,6 +317,23 @@ export const PostDetailScreen = () => {
             }
         });
     }
+
+    // Handle delete comment
+    const handleDeleteComment = useCallback((commentId: string, postId: string) => {
+        if (!commentId || !postId) return;
+        
+        deleteCommentMutation.mutate(
+            { commentId, postId },
+            {
+                onSuccess: () => {
+                    // Comment başarıyla silindi
+                },
+                onError: (error) => {
+                    console.error('[PostDetailScreen] Delete comment error:', error);
+                },
+            }
+        );
+    }, [deleteCommentMutation]);
 
     // FlatList için data hazırla
     const listData = flattenedComments;
@@ -401,8 +429,14 @@ export const PostDetailScreen = () => {
             avatar={item.avatar}
             timeAgo={item.timeAgo}
             content={item.content}
+            commentId={item.commentId}
+            userId={item.userId}
+            currentUserId={currentUserId}
+            postId={postId}
+            onDelete={handleDeleteComment}
+            isDeleting={deleteCommentMutation.isPending}
         />
-    ), []);
+    ), [currentUserId, postId, handleDeleteComment, deleteCommentMutation.isPending]);
 
     // FlatList empty component - useMemo ile memoize edildi
     const renderEmpty = useMemo(() => (

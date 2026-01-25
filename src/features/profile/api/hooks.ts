@@ -21,6 +21,7 @@ import {
   getSuggestedUsers,
   updateInventoryItem,
   deleteInventoryItem,
+  addInventoryItem,
   muteUser,
   unmuteUser,
   blockUser,
@@ -34,6 +35,8 @@ import {
   type UpdateInventoryItemRequest,
   type UpdateInventoryItemResponse,
   type DeleteInventoryItemResponse,
+  type AddInventoryItemRequest,
+  type AddInventoryItemResponse,
 } from './profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import type {
@@ -1325,6 +1328,47 @@ export const useUpdateInventoryItem = () => {
     },
     onError: (error) => {
       console.error('[useUpdateInventoryItem] ❌ Mutation error:', error);
+    },
+  });
+};
+
+/**
+ * Add Inventory Item mutation hook
+ * Inventory'ye yeni ürün ekler
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const { mutate: addInventory, isPending } = useAddInventoryItem();
+ * addInventory({
+ *   productId: 'product-123',
+ *   selectedDurationId: 'duration-1',
+ *   selectedLocationId: 'location-1',
+ *   selectedPurposeId: 'purpose-1',
+ *   content: 'Ürün deneyimi',
+ *   experience: [...],
+ *   status: 'own',
+ *   images: [...]
+ * });
+ */
+export const useAddInventoryItem = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    AddInventoryItemResponse,
+    Error,
+    AddInventoryItemRequest
+  >({
+    mutationFn: (data) => addInventoryItem(data),
+    onSuccess: (data, variables) => {
+      // Inventory listesini invalidate et
+      queryClient.invalidateQueries({ queryKey: profileKeys.inventory() });
+      // Cache'i tamamen temizle
+      queryClient.removeQueries({ queryKey: profileKeys.inventory() });
+      console.log('[useAddInventoryItem] ✅ Inventory item added successfully', { productId: variables.productId });
+    },
+    onError: (error) => {
+      console.error('[useAddInventoryItem] ❌ Mutation error:', error);
     },
   });
 };
