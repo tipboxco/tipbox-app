@@ -12,14 +12,15 @@ import {
   ButtonText,
   Pressable,
   useToast,
-  Toast,
-  ToastTitle,
-  ToastDescription,
+  Icon,
 } from '@gluestack-ui/themed';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
 import { useChangePassword } from '../api/hooks';
+import { showCustomToast } from '@/src/components/CustomToast';
+import * as yup from 'yup';
 
 export const ChangePasswordScreen = () => {
   const { colorMode } = useColorMode();
@@ -33,114 +34,125 @@ export const ChangePasswordScreen = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<{
+    currentPassword?: string;
+    newPassword?: string;
+    confirmPassword?: string;
+  }>({});
 
-  const handleChangePassword = async () => {
-    // Validation
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Missing Information</ToastTitle>
-                <ToastDescription>Please fill in all fields.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
-      });
-      return;
-    }
+  // Yup validation schema
+  const validationSchema = yup.object().shape({
+    currentPassword: yup
+      .string()
+      .required('Current password is required'),
+    newPassword: yup
+      .string()
+      .required('New password is required')
+      .min(6, 'Password must be at least 6 characters'),
+    confirmPassword: yup
+      .string()
+      .required('Please confirm your password')
+      .oneOf([yup.ref('newPassword')], 'Passwords must match'),
+  });
 
-    if (newPassword !== confirmPassword) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Passwords Don't Match</ToastTitle>
-                <ToastDescription>New password and confirm password must be the same.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
-      });
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Invalid Password</ToastTitle>
-                <ToastDescription>Password must be at least 6 characters.</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
-      });
-      return;
-    }
-
+  const validateField = async (field: 'currentPassword' | 'newPassword' | 'confirmPassword', value: string) => {
     try {
-      const result = await changePasswordMutation.mutateAsync({
+      await validationSchema.validateAt(field, {
         currentPassword,
         newPassword,
+        confirmPassword,
+        [field]: value,
       });
-
-      // Show success toast
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Password Changed</ToastTitle>
-                <ToastDescription>
-                  {result.message || 'Your password has been successfully updated.'}
-                </ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
-      });
-
-      // Reset form and go back
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      navigation.goBack();
-    } catch (error: any) {
-      // Show error toast
-      // Backend error message format: error.response?.data?.error?.message or error.response?.data?.message
-      const errorMessage =
-        error?.response?.data?.error?.message ||
-        error?.response?.data?.message ||
-        error?.message ||
-        'An error occurred while changing the password';
-
-      toast.show({
-        placement: 'top',
-        render: ({ id }) => {
-          return (
-            <Box maxWidth="90%" alignSelf="center" px="$4">
-              <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Error</ToastTitle>
-                <ToastDescription>{errorMessage}</ToastDescription>
-              </Toast>
-            </Box>
-          );
-        },
-      });
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    } catch (err: any) {
+      setErrors((prev) => ({ ...prev, [field]: err.message }));
     }
   };
 
-  const isFormValid = currentPassword.length > 0 && newPassword.length > 0 && confirmPassword.length > 0;
+  const handleChangePassword = async () => {
+    // Clear previous errors
+    setErrors({});
+
+    // Validate all fields
+    try {
+      await validationSchema.validate({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      }, { abortEarly: false });
+
+      // All validations passed, proceed with API call
+      try {
+        const result = await changePasswordMutation.mutateAsync({
+          currentPassword,
+          newPassword,
+        });
+
+        // Show success toast
+        showCustomToast(toast, {
+          title: 'Password Changed',
+          description: result.message || 'Your password has been successfully updated.',
+          action: 'success',
+          duration: 3000,
+        });
+
+        // Reset form and go back
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setErrors({});
+        navigation.goBack();
+      } catch (error: any) {
+        // Show error toast
+        // Backend error message format: error.response?.data?.error?.message or error.response?.data?.message
+        const errorMessage =
+          error?.response?.data?.error?.message ||
+          error?.response?.data?.message ||
+          error?.message ||
+          'An error occurred while changing the password';
+
+        showCustomToast(toast, {
+          title: 'Error',
+          description: errorMessage,
+          action: 'error',
+          duration: 3000,
+        });
+      }
+    } catch (validationErrors: any) {
+      // Yup validation errors
+      const validationErrorsMap: { [key: string]: string } = {};
+      if (validationErrors.inner) {
+        validationErrors.inner.forEach((err: any) => {
+          if (err.path) {
+            validationErrorsMap[err.path] = err.message;
+          }
+        });
+      }
+      setErrors(validationErrorsMap);
+
+      // Show first error in toast
+      const firstError = validationErrors.inner?.[0];
+      if (firstError) {
+        showCustomToast(toast, {
+          title: 'Validation Error',
+          description: firstError.message,
+          action: 'error',
+          duration: 3000,
+        });
+      }
+    }
+  };
+
+  const isFormValid = 
+    currentPassword.length > 0 && 
+    newPassword.length > 0 && 
+    confirmPassword.length > 0 &&
+    !errors.currentPassword &&
+    !errors.newPassword &&
+    !errors.confirmPassword;
 
   return (
     <View style={{ flex: 1, backgroundColor }}>
@@ -179,25 +191,47 @@ export const ChangePasswordScreen = () => {
             </Text>
             <Box
               borderWidth={1}
-              borderColor="#B9B9B9"
+              borderColor={errors.currentPassword ? '#EF4444' : '#B9B9B9'}
               borderRadius={10}
               px="$4"
               py="$1"
               mt={'$1'}
             >
-              <Input borderWidth={0} bg="transparent">
+              <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
                   placeholder="****************"
                   placeholderTextColor="#B9B9B9"
                   value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                  secureTextEntry
+                  onChangeText={(text) => {
+                    setCurrentPassword(text);
+                    if (text) {
+                      validateField('currentPassword', text);
+                    } else {
+                      setErrors((prev) => ({ ...prev, currentPassword: undefined }));
+                    }
+                  }}
+                  secureTextEntry={!showCurrentPassword}
                   keyboardType="default"
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize="$sm"
                 />
+                <HStack space="sm" alignItems="center" mr="$2">
+                  <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
+                    <Icon
+                      as={showCurrentPassword ? EyeOff : Eye}
+                      color={isDark ? '$textDark300' : '$textLight600'}
+                      size="md"
+                      alignSelf="center"
+                    />
+                  </Pressable>
+                </HStack>
               </Input>
             </Box>
+            {errors.currentPassword && (
+              <Text fontSize="$xs" color="#EF4444" mt="$1">
+                {errors.currentPassword}
+              </Text>
+            )}
           </VStack>
 
           <HStack justifyContent="space-between" alignItems="center">
@@ -240,25 +274,51 @@ export const ChangePasswordScreen = () => {
             </Text>
             <Box
               borderWidth={1}
-              borderColor="#B9B9B9"
+              borderColor={errors.newPassword ? '#EF4444' : '#B9B9B9'}
               borderRadius={10}
               px="$4"
               py="$1"
               mt={'$1'}
             >
-              <Input borderWidth={0} bg="transparent">
+              <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
                   placeholder="****************"
                   placeholderTextColor="#B9B9B9"
                   value={newPassword}
-                  onChangeText={setNewPassword}
-                  secureTextEntry
+                  onChangeText={(text) => {
+                    setNewPassword(text);
+                    if (text) {
+                      validateField('newPassword', text);
+                      // Also validate confirmPassword if it has a value
+                      if (confirmPassword) {
+                        validateField('confirmPassword', confirmPassword);
+                      }
+                    } else {
+                      setErrors((prev) => ({ ...prev, newPassword: undefined }));
+                    }
+                  }}
+                  secureTextEntry={!showNewPassword}
                   keyboardType="default"
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize="$sm"
                 />
+                <HStack space="sm" alignItems="center" mr="$2">
+                  <Pressable onPress={() => setShowNewPassword(!showNewPassword)}>
+                    <Icon
+                      as={showNewPassword ? EyeOff : Eye}
+                      color={isDark ? '$textDark300' : '$textLight600'}
+                      size="md"
+                      alignSelf="center"
+                    />
+                  </Pressable>
+                </HStack>
               </Input>
             </Box>
+            {errors.newPassword && (
+              <Text fontSize="$xs" color="#EF4444" mt="$1">
+                {errors.newPassword}
+              </Text>
+            )}
           </VStack>
 
           {/* Confirm New Password Section */}
@@ -272,25 +332,47 @@ export const ChangePasswordScreen = () => {
             </Text>
             <Box
               borderWidth={1}
-              borderColor="#B9B9B9"
+              borderColor={errors.confirmPassword ? '#EF4444' : '#B9B9B9'}
               borderRadius={10}
               px="$4"
               py="$1"
               mt={'$1'}
             >
-              <Input borderWidth={0} bg="transparent">
+              <Input borderWidth={0} bg="transparent" alignItems="center">
                 <InputField
                   placeholder="****************"
                   placeholderTextColor="#B9B9B9"
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (text) {
+                      validateField('confirmPassword', text);
+                    } else {
+                      setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                    }
+                  }}
+                  secureTextEntry={!showConfirmPassword}
                   keyboardType="default"
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize="$sm"
                 />
+                <HStack space="sm" alignItems="center" mr="$2">
+                  <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    <Icon
+                      as={showConfirmPassword ? EyeOff : Eye}
+                      color={isDark ? '$textDark300' : '$textLight600'}
+                      size="md"
+                      alignSelf="center"
+                    />
+                  </Pressable>
+                </HStack>
               </Input>
             </Box>
+            {errors.confirmPassword && (
+              <Text fontSize="$xs" color="#EF4444" mt="$1">
+                {errors.confirmPassword}
+              </Text>
+            )}
           </VStack>
 
           {/* Change Password Button */}

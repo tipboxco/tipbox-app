@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
-import { Alert, Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet } from 'react-native';
+import { Alert, Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
 // Heroicons imports
 import {
   EllipsisHorizontalIcon,
@@ -69,6 +69,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const [bookmarksCount, setBookmarksCount] = useState(data.stats.bookmarks);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);
+  const triggerPositionRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   // User profile check
@@ -307,20 +308,90 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   }, [data.id, deletePostMutation]);
 
   // Calculate menu position
-  const handleMenuOpen = useCallback(() => {
+  // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
+  const handleTriggerLayout = useCallback(() => {
     if (menuTriggerRef.current) {
       menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        const screenWidth = Dimensions.get('window').width;
-        const menuWidth = 180;
-        const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
-        const top = Math.max(12, y - 8);
-        setMenuPosition({ top, left });
-        setIsMenuOpen(true);
+        if (width > 0 && height > 0) {
+          triggerPositionRef.current = { x, y, width, height };
+        }
       });
-    } else {
-      setIsMenuOpen(true);
     }
   }, []);
+
+  // Calculate menu position - event koordinatlarını öncelikli kullan
+  const handleMenuOpen = useCallback((event?: any) => {
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const menuWidth = 140;
+    const menuHeight = isPostOwner ? 80 : 80;
+    
+    const calculatePosition = (x: number, y: number, width: number, height: number, source: string) => {
+      let left = x + width - menuWidth - 20;
+      let top = y + height - 16;
+      
+      if (left < 12) {
+        left = 12;
+      }
+      if (left + menuWidth > screenWidth - 12) {
+        left = screenWidth - menuWidth - 12;
+      }
+      if (top < 12) {
+        top = 12;
+      }
+      if (top + menuHeight > screenHeight - 12) {
+        top = y - menuHeight - 8;
+        if (top < 12) {
+          top = 12;
+        }
+      }
+      
+      return { top, left };
+    };
+
+    // ÖNCELİK 1: Event'ten gelen koordinatları kullan
+    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
+      const pageX = event.nativeEvent.pageX;
+      const pageY = event.nativeEvent.pageY;
+      const triggerWidth = 44;
+      const triggerHeight = 44;
+      const triggerX = pageX - triggerWidth / 2;
+      const triggerY = pageY - triggerHeight / 2;
+      const position = calculatePosition(triggerX, triggerY, triggerWidth, triggerHeight, 'event-coordinates');
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 2: Stored position'ı kullan
+    if (triggerPositionRef.current) {
+      const stored = triggerPositionRef.current;
+      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 3: measureInWindow ile ölç
+    InteractionManager.runAfterInteractions(() => {
+      if (menuTriggerRef.current) {
+        menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+          if (width > 0 && height > 0 && x >= 0 && y >= 0) {
+            triggerPositionRef.current = { x, y, width, height };
+            const position = calculatePosition(x, y, width, height, 'measureInWindow');
+            setMenuPosition(position);
+            setIsMenuOpen(true);
+          } else {
+            setMenuPosition({ top: 40, left: screenWidth - 152 });
+            setIsMenuOpen(true);
+          }
+        });
+      } else {
+        setMenuPosition({ top: 40, left: screenWidth - 152 });
+        setIsMenuOpen(true);
+      }
+    });
+  }, [isPostOwner]);
 
   const hasContextData = !!data.contextType && !!data.contextData;
   const isProductContext = hasContextData && data.contextType === ProductInfoType.PRODUCT;
@@ -332,10 +403,12 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
   const isBoosted = data.source === 'BOOSTED';
 
   return (
-    <VStack
-      bg={isDark ? '$backgroundDark900' : '$white'}
-      mb={16}
-      position="relative"
+    <View
+      style={{
+        backgroundColor: isDark ? '#000000' : '#FFFFFF',
+        marginBottom: 16,
+        position: 'relative',
+      }}
     >
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
@@ -371,8 +444,12 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               </Text>
             </VStack>
           </Pressable>
-          <View ref={menuTriggerRef} collapsable={false}>
-            <Pressable onPress={handleMenuOpen}>
+          <View 
+            ref={menuTriggerRef} 
+            collapsable={false}
+            onLayout={handleTriggerLayout}
+          >
+            <Pressable onPress={(event) => handleMenuOpen(event)}>
               <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
             </Pressable>
           </View>
@@ -768,7 +845,7 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
         </Box>
       )}
 
-    </VStack >
+    </View>
   );
 };
 

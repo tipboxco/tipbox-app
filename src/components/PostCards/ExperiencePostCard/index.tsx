@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet } from 'react-native';
+import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
 import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
@@ -263,163 +263,111 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
     );
   }, [data.id, deletePostMutation]);
 
-  // Calculate menu position
-  const handleMenuOpen = React.useCallback(() => {
+  // CRITICAL FIX: onLayout ile pozisyonu sürekli güncelle
+  // FlatList scroll edildiğinde pozisyon değişir, onLayout her değişiklikte çağrılır
+  const handleTriggerLayout = useCallback(() => {
     if (menuTriggerRef.current) {
       menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        const screenWidth = Dimensions.get('window').width;
-        const menuWidth = 180;
-        const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
-        const top = Math.max(12, y - 8);
-        setMenuPosition({ top, left });
-        setIsMenuOpen(true);
+        if (width > 0 && height > 0) {
+          triggerPositionRef.current = { x, y, width, height };
+        }
       });
-    } else {
-      setIsMenuOpen(true);
     }
   }, []);
 
+  // Calculate menu position - event koordinatlarını öncelikli kullan
+  const handleMenuOpen = useCallback((event?: any) => {
+    const screenWidth = Dimensions.get('window').width;
+    const screenHeight = Dimensions.get('window').height;
+    const menuWidth = 140;
+    const menuHeight = isPostOwner ? 80 : 80;
+    
+    const calculatePosition = (x: number, y: number, width: number, height: number, source: string) => {
+      // Menu'yu trigger button'ın sağında konumlandır, daha sola kaydır
+      let left = x + width - menuWidth - 20;
+      let top = y + height - 16;
+      
+      // Ekran sınırları kontrolü
+      if (left < 12) {
+        left = 12;
+      }
+      if (left + menuWidth > screenWidth - 12) {
+        left = screenWidth - menuWidth - 12;
+      }
+      if (top < 12) {
+        top = 12;
+      }
+      if (top + menuHeight > screenHeight - 12) {
+        // Eğer altında yer yoksa, üstünde göster
+        top = y - menuHeight - 8;
+        if (top < 12) {
+          top = 12;
+        }
+      }
+      
+      return { top, left };
+    };
+
+    // ÖNCELİK 1: Event'ten gelen koordinatları kullan (en güvenilir)
+    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
+      const pageX = event.nativeEvent.pageX;
+      const pageY = event.nativeEvent.pageY;
+      
+      // Trigger button'ın yaklaşık boyutları (24x24 icon + padding)
+      const triggerWidth = 44;
+      const triggerHeight = 44;
+      
+      // Event koordinatları button'ın merkezine yakın, sağ üst köşesini hesapla
+      const triggerX = pageX - triggerWidth / 2;
+      const triggerY = pageY - triggerHeight / 2;
+      
+      const position = calculatePosition(triggerX, triggerY, triggerWidth, triggerHeight, 'event-coordinates');
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 2: Stored position'ı kullan (onLayout'dan gelen)
+    if (triggerPositionRef.current) {
+      const stored = triggerPositionRef.current;
+      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 3: measureInWindow ile ölç (ref varsa)
+    InteractionManager.runAfterInteractions(() => {
+      if (menuTriggerRef.current) {
+        menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+          if (width > 0 && height > 0 && x >= 0 && y >= 0) {
+            // Stored position'ı güncelle
+            triggerPositionRef.current = { x, y, width, height };
+            const position = calculatePosition(x, y, width, height, 'measureInWindow');
+            setMenuPosition(position);
+            setIsMenuOpen(true);
+          } else {
+            // Invalid position - fallback kullan
+            setMenuPosition({ top: 40, left: screenWidth - 152 });
+            setIsMenuOpen(true);
+          }
+        });
+      } else {
+        // Ref yok - fallback kullan
+        setMenuPosition({ top: 40, left: screenWidth - 152 });
+        setIsMenuOpen(true);
+      }
+    });
+  }, [isPostOwner]);
+
   return (
-    <VStack
-      bg={isDark ? '$backgroundDark900' : '$white'}
-      position="relative"
-      mb={16}
+    <View
+      style={{
+        backgroundColor: isDark ? '#000000' : '#FFFFFF',
+        marginBottom: 16,
+        position: 'relative',
+      }}
     >
-      {/* Action Button */}
-      <Box
-        position="absolute"
-        top={12}
-        right={15}
-        zIndex={1}
-      >
-        <View ref={menuTriggerRef} collapsable={false}>
-          <Pressable onPress={handleMenuOpen}>
-            <EllipsisHorizontalIcon width={20} height={20} color={isDark ? '#fff' : '#A3A3A3'} />
-          </Pressable>
-        </View>
-
-        {/* Menu Modal */}
-        <Modal
-          visible={isMenuOpen}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setIsMenuOpen(false)}
-        >
-          <RNPressable
-            style={{ flex: 1 }}
-            onPress={() => setIsMenuOpen(false)}
-          />
-          <View
-            style={[
-              styles.menuContainer,
-              {
-                top: menuPosition.top,
-                left: menuPosition.left,
-                backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-                borderWidth: 1,
-                borderColor: isDark ? '#333333' : '#E9E9E9',
-                shadowOpacity: isDark ? 0.3 : 0.1,
-              }
-            ]}
-          >
-            <RNPressable 
-              onPress={(e) => e.stopPropagation()}
-              style={{ flex: 1 }}
-            >
-              <VStack px={12} py={8} width="100%">
-                {isPostOwner ? (
-                  <>
-                    <Pressable
-                      onPress={() => {
-                        setIsMenuOpen(false);
-                        handleUpdate();
-                      }}
-                      py={8}
-                    >
-                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                        <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                        <Text
-                          color={isDark ? '#FFFFFF' : '#000000'}
-                          fontSize="$sm"
-                          fontWeight="$medium"
-                        >
-                          Update
-                        </Text>
-                      </HStack>
-                    </Pressable>
-                    <Divider 
-                      bg={isDark ? '#333333' : '#E9E9E9'} 
-                      mx={0}
-                    />
-                    <Pressable
-                      onPress={() => {
-                        setIsMenuOpen(false);
-                        handleDelete();
-                      }}
-                      py={8}
-                    >
-                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                        <TrashIcon width={20} height={20} color="#FF3040" />
-                        <Text
-                          color="#FF3040"
-                          fontSize="$sm"
-                          fontWeight="$medium"
-                        >
-                          Delete
-                        </Text>
-                      </HStack>
-                    </Pressable>
-                  </>
-                ) : (
-                  <>
-                    <Pressable
-                      onPress={() => {
-                        setIsMenuOpen(false);
-                        handleViewProfile();
-                      }}
-                      py={8}
-                    >
-                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                        <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                        <Text
-                          color={isDark ? '#FFFFFF' : '#000000'}
-                          fontSize="$sm"
-                          fontWeight="$medium"
-                        >
-                          View Profile
-                        </Text>
-                      </HStack>
-                    </Pressable>
-                    <Divider 
-                      bg={isDark ? '#333333' : '#E9E9E9'} 
-                      mx={0}
-                    />
-                    <Pressable
-                      onPress={() => {
-                        setIsMenuOpen(false);
-                        handleReport();
-                      }}
-                      py={8}
-                    >
-                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
-                        <FlagIcon width={20} height={20} color="#FF3040" />
-                        <Text
-                          color="#FF3040"
-                          fontSize="$sm"
-                          fontWeight="$medium"
-                        >
-                          Report
-                        </Text>
-                      </HStack>
-                    </Pressable>
-                  </>
-                )}
-              </VStack>
-            </RNPressable>
-          </View>
-        </Modal>
-      </Box>
-
       {/* Header */}
       <VStack px={12} py={8} borderWidth={1} borderTopRightRadius={5} borderTopLeftRadius={5} borderColor="#E9E9E9">
         <HStack alignItems="center" space="xs">
@@ -461,8 +409,138 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               </Text>
             </VStack>
           </Pressable>
+          <View 
+            ref={menuTriggerRef} 
+            collapsable={false}
+            onLayout={handleTriggerLayout}
+          >
+            <Pressable onPress={(event) => handleMenuOpen(event)}>
+              <EllipsisHorizontalIcon width={24} height={24} color={isDark ? '#fff' : '#A3A3A3'} />
+            </Pressable>
+          </View>
         </HStack>
       </VStack>
+
+      {/* Menu Modal */}
+      <Modal
+        visible={isMenuOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsMenuOpen(false)}
+      >
+        <RNPressable
+          style={{ flex: 1 }}
+          onPress={() => setIsMenuOpen(false)}
+        />
+        <View
+          style={[
+            styles.menuContainer,
+            {
+              top: menuPosition.top,
+              left: menuPosition.left,
+              backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+              borderWidth: 1,
+              borderColor: isDark ? '#333333' : '#E9E9E9',
+              shadowOpacity: isDark ? 0.3 : 0.1,
+            }
+          ]}
+        >
+          <RNPressable 
+            onPress={(e) => e.stopPropagation()}
+            style={{ flex: 1 }}
+          >
+            <VStack px={12} py={8} width="100%">
+              {isPostOwner ? (
+                <>
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleUpdate();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Update
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                    mx={0}
+                  />
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleDelete();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <TrashIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Delete
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleViewProfile();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        View Profile
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                  <Divider 
+                    bg={isDark ? '#333333' : '#E9E9E9'} 
+                    mx={0}
+                  />
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      handleReport();
+                    }}
+                    py={8}
+                  >
+                    <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                      <FlagIcon width={20} height={20} color="#FF3040" />
+                      <Text
+                        color="#FF3040"
+                        fontSize="$sm"
+                        fontWeight="$medium"
+                      >
+                        Report
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                </>
+              )}
+            </VStack>
+          </RNPressable>
+        </View>
+      </Modal>
 
       {/* Product */}
       {
@@ -663,7 +741,7 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
         </HStack>
         </Pressable>
       </HStack>
-    </VStack>
+    </View>
   );
 };
 
