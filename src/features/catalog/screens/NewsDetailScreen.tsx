@@ -391,9 +391,6 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   const route = useRoute<NewsDetailScreenRouteProp>();
   const { brandId, productId } = route.params || {};
   
-  // Comment like state tracking
-  const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({});
-  
   // Auto focus input when bottom sheet opens
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -437,51 +434,45 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
     );
   }, [deleteCommentMutation, newsId, brandId, productId, queryClient]);
 
-  // Handle like comment
+  // Handle like comment - no optimistic update, wait for backend response
   const handleLikeComment = useCallback((commentId: string, postId: string) => {
     if (!commentId) return;
     
-    // Optimistic update: UI'da hemen göster
-    setCommentLikes(prev => ({ ...prev, [commentId]: true }));
     likeCommentMutation.mutate(
       { commentId, postId: newsId },
       {
         onSuccess: () => {
-          // News comment query key'ini invalidate et
+          // Invalidate news comment query to get updated like status from backend
           if (brandId && productId) {
             queryClient.invalidateQueries({ 
               queryKey: [...catalogKeys.all, 'brandProductNewsComments', brandId, productId, newsId] 
             });
           }
         },
-        onError: () => {
-          // Revert on error
-          setCommentLikes(prev => ({ ...prev, [commentId]: false }));
+        onError: (error) => {
+          console.error('[NewsCommentsBottomSheet] Like comment error:', error);
         },
       }
     );
   }, [likeCommentMutation, newsId, brandId, productId, queryClient]);
 
-  // Handle unlike comment
+  // Handle unlike comment - no optimistic update, wait for backend response
   const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
     if (!commentId) return;
     
-    // Optimistic update: UI'da hemen göster
-    setCommentLikes(prev => ({ ...prev, [commentId]: false }));
     unlikeCommentMutation.mutate(
       { commentId, postId: newsId },
       {
         onSuccess: () => {
-          // News comment query key'ini invalidate et
+          // Invalidate news comment query to get updated like status from backend
           if (brandId && productId) {
             queryClient.invalidateQueries({ 
               queryKey: [...catalogKeys.all, 'brandProductNewsComments', brandId, productId, newsId] 
             });
           }
         },
-        onError: () => {
-          // Revert on error
-          setCommentLikes(prev => ({ ...prev, [commentId]: true }));
+        onError: (error) => {
+          console.error('[NewsCommentsBottomSheet] Unlike comment error:', error);
         },
       }
     );
@@ -512,7 +503,6 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   const renderComment = ({ item }: { item: NewsComment }) => {
     const formattedDate = formatRelativeTime(item.createdAt);
     const isOwnComment = item.userId && currentUserId && item.userId === currentUserId;
-    const isLiked = commentLikes[item.id] ?? false;
     
     return (
       <CommentsCard
@@ -526,7 +516,7 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
         currentUserId={currentUserId}
         postId={newsId}
         likesCount={item.likesCount || 0}
-        isLiked={isLiked}
+        isLiked={false} // Backend doesn't provide isLiked, will be updated after like/unlike via query invalidation
         onDelete={handleDeleteComment}
         onLike={handleLikeComment}
         onUnlike={handleUnlikeComment}

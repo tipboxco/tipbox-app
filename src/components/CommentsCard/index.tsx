@@ -301,7 +301,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontSize={11}
                       fontWeight="$medium"
                     >
-                      Kaydet
+                      Save
                     </Text>
                   </Pressable>
                   <Pressable
@@ -319,7 +319,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontSize={11}
                       fontWeight="$medium"
                     >
-                      İptal
+                      Cancel
                     </Text>
                   </Pressable>
                 </HStack>
@@ -347,7 +347,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                       fontWeight="$medium"
                       textDecorationLine="underline"
                     >
-                      {isExpanded ? 'Daha az göster' : 'Daha fazla göster'}
+                      {isExpanded ? 'Show less' : 'Show more'}
                     </Text>
                   </Pressable>
                 )}
@@ -378,7 +378,7 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
                   fontSize={11}
                   fontWeight="$medium"
                 >
-                  {localLikesCount > 0 ? localLikesCount : 'Beğen'}
+                  {localLikesCount > 0 ? localLikesCount : 'Like'}
                 </Text>
               </Pressable>
             </HStack>

@@ -142,9 +142,6 @@ export const PostDetailScreen = () => {
     
     // Current user ID
     const currentUserId = useAppStore((state) => state.user?.id);
-    
-    // Comment like state tracking
-    const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({});
 
     // Safe area insets
     const insets = useSafeAreaInsets();
@@ -306,7 +303,7 @@ export const PostDetailScreen = () => {
                 timeAgo: formatRelativeTime(item.comment.createdAt),
                 content: item.comment.comment,
                 likesCount: item.comment.likesCount || 0,
-                isLiked: commentLikes[item.comment.id] ?? false,
+                isLiked: false, // Backend doesn't provide isLiked, will be updated after like/unlike via query invalidation
             });
 
             // Replies
@@ -323,7 +320,7 @@ export const PostDetailScreen = () => {
                         timeAgo: formatRelativeTime(reply.createdAt),
                         content: reply.comment,
                         likesCount: reply.likesCount || 0,
-                        isLiked: commentLikes[reply.id] ?? false,
+                        isLiked: false, // Backend doesn't provide isLiked, will be updated after like/unlike via query invalidation
                     });
                 });
             }
@@ -347,43 +344,35 @@ export const PostDetailScreen = () => {
         );
     }, [deleteCommentMutation]);
 
-    // Handle like comment
+    // Handle like comment - no optimistic update, wait for backend response
     const handleLikeComment = useCallback((commentId: string, postId: string) => {
         if (!commentId || !postId) return;
         
-        // Optimistic update: UI'da hemen göster
-        setCommentLikes(prev => ({ ...prev, [commentId]: true }));
         likeCommentMutation.mutate(
             { commentId, postId },
             {
                 onSuccess: () => {
-                    // Başarılı olduğunda comments query'sini invalidate et
-                    // Hook zaten invalidate ediyor ama emin olmak için
+                    // Backend response will update the UI via query invalidation
                 },
-                onError: () => {
-                    // Revert on error
-                    setCommentLikes(prev => ({ ...prev, [commentId]: false }));
+                onError: (error) => {
+                    console.error('[PostDetailScreen] Like comment error:', error);
                 },
             }
         );
     }, [likeCommentMutation]);
 
-    // Handle unlike comment
+    // Handle unlike comment - no optimistic update, wait for backend response
     const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
         if (!commentId || !postId) return;
         
-        // Optimistic update: UI'da hemen göster
-        setCommentLikes(prev => ({ ...prev, [commentId]: false }));
         unlikeCommentMutation.mutate(
             { commentId, postId },
             {
                 onSuccess: () => {
-                    // Başarılı olduğunda comments query'sini invalidate et
-                    // Hook zaten invalidate ediyor ama emin olmak için
+                    // Backend response will update the UI via query invalidation
                 },
-                onError: () => {
-                    // Revert on error
-                    setCommentLikes(prev => ({ ...prev, [commentId]: true }));
+                onError: (error) => {
+                    console.error('[PostDetailScreen] Unlike comment error:', error);
                 },
             }
         );
