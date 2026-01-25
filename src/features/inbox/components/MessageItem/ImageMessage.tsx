@@ -441,13 +441,15 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                       contentFit="cover"
                       transition={{ duration: 200 }}
                       onLoadStart={() => {
-                        console.log('[ImageMessage] 🖼️ Image load start:', item.mediaUrl);
+                        console.log('[ImageMessage] 🖼️ Image load start:', {
+                          mediaUrl: item.mediaUrl,
+                        });
                         setImageLoading(true);
                         setImageError(false);
                       }}
                       onLoad={(e: { source: { width: number; height: number } }) => {
                         console.log('[ImageMessage] 🖼️ Image loaded successfully:', {
-                          uri: item.mediaUrl,
+                          mediaUrl: item.mediaUrl,
                           width: e.source.width,
                           height: e.source.height,
                         });
@@ -456,7 +458,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                       }}
                       onError={(event: ImageErrorEventData) => {
                         console.error('[ImageMessage] ❌ Image load error:', {
-                          uri: item.mediaUrl,
+                          mediaUrl: item.mediaUrl,
                           error: event.error || 'Unknown error',
                         });
                         setImageLoading(false);

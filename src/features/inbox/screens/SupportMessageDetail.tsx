@@ -675,6 +675,59 @@ const SupportMessageDetailScreen: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
   }, [queryClient]);
 
+  // Support request closed handler (awaiting_completion durumuna geçer)
+  const handleSupportRequestClosed = useCallback((data: { requestId: string; timestamp?: string }) => {
+    console.log('[SupportMessageDetail] ✅ Support request closed event (awaiting_completion):', data);
+    
+    // Local state'te support request'i awaiting_completion olarak güncelle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.type === 'support_request' && msg.supportRequest?.requestId === data.requestId) {
+          return {
+            ...msg,
+            supportRequest: {
+              ...msg.supportRequest,
+              status: 'awaiting_completion',
+            },
+          };
+        }
+        return msg;
+      })
+    );
+    
+    // Navigation params'ı güncelle (awaiting_completion status'e çek)
+    navigation.setParams({ status: 'awaiting_completion' });
+    
+    // Local state'te support request status'ünü güncelle
+    setSupportRequestInfo((prev) => {
+      if (prev) {
+        return {
+          ...prev,
+          status: 'awaiting_completion',
+        };
+      }
+      return prev;
+    });
+    
+    // ✅ CRITICAL FIX: Sadece supportRequests'i invalidate et (messages invalidate etme - threadMessages kaybolmasın)
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    
+    // ✅ Optimistic update - SupportRequestsScreen'deki listeyi anında güncelle
+    queryClient.setQueryData(inboxKeys.supportRequests(), (oldData: any) => {
+      if (!oldData || !Array.isArray(oldData)) return oldData;
+      
+      return oldData.map((request: any) => {
+        if (request.id === data.requestId) {
+          return {
+            ...request,
+            status: 'awaiting_completion',
+          };
+        }
+        return request;
+      });
+    });
+  }, [queryClient, navigation]);
+
   // ✅ WhatsApp Engine: Güvenli scroll helper - Inverted FlatList için scrollToEnd kullan
   const safeScrollToEnd = useCallback((animated: boolean = true) => {
     try {
@@ -735,6 +788,7 @@ const SupportMessageDetailScreen: React.FC = () => {
     on('support_request_accepted', handleSupportRequestAccepted);
     on('support_request_rejected', handleSupportRequestRejected);
     on('support_request_cancelled', handleSupportRequestCancelled);
+    on('support_request_closed', handleSupportRequestClosed); // ✅ FIX: Close request event'ini dinle (awaiting_completion)
 
     return () => {
       off('thread_joined', handleThreadJoined);
@@ -744,6 +798,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       off('support_request_accepted', handleSupportRequestAccepted);
       off('support_request_rejected', handleSupportRequestRejected);
       off('support_request_cancelled', handleSupportRequestCancelled);
+      off('support_request_closed', handleSupportRequestClosed); // ✅ FIX: Close request event listener'ını temizle
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
@@ -764,6 +819,15 @@ const SupportMessageDetailScreen: React.FC = () => {
       Alert.alert(
         'Cannot Send Message',
         'This support request has not been accepted yet. Please wait for the expert to accept your request before sending messages.'
+      );
+      return;
+    }
+
+    // ✅ FIX: awaiting_completion durumunda mesaj gönderilemez
+    if (params.status === 'awaiting_completion') {
+      Alert.alert(
+        'Cannot Send Message',
+        'This support request has been closed. You can view messages but cannot send new ones.'
       );
       return;
     }
@@ -1428,7 +1492,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       
       Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while uploading image');
     }
-  }, [threadId, user?.id]);
+  }, [threadId, user?.id, params.status]);
 
   // Mesaj öğesi render fonksiyonu
   const renderMessageItem = ({ item, index }: { item: MessageDetailItem; index: number }) => {
@@ -1837,7 +1901,8 @@ const SupportMessageDetailScreen: React.FC = () => {
 
       {/* Support Chat Participants - Header'ın altında, FlatList'in üstünde sabit */}
       {/* ✅ FIX: Backend'den gelen participants.userOne ve participants.userTwo direkt kullanılacak */}
-      {(params.status === 'active' || params.status === 'completed') && threadId && participantsData?.participants && (
+      {/* ✅ FIX: awaiting_completion durumunda da participants gösterilmeli (mesajlar görünmeye devam etsin) */}
+      {(params.status === 'active' || params.status === 'completed' || params.status === 'awaiting_completion') && threadId && participantsData?.participants && (
         <SupportChatParticipants
           user1Name={(() => {
             // user1: Backend'den gelen userOne (kullanıcının kendi bilgileri)
@@ -2097,6 +2162,22 @@ const SupportMessageDetailScreen: React.FC = () => {
         </Box>
       )}
 
+
+      {/* Awaiting Completion Status - Mesajlar görünür ama mesaj gönderilemez */}
+      {params.status === 'awaiting_completion' && (
+        <Box px="$4" py="$2" bg={isDark ? '#1A1A1A' : '#FFFFFF'}>
+          <VStack space="sm" alignItems="center">
+            <Text
+              color={isDark ? '#6366F1' : '#6366F1'}
+              fontSize={12}
+              fontWeight="$semibold"
+              textAlign="center"
+            >
+              This support request has been closed. You can view messages but cannot send new ones.
+            </Text>
+          </VStack>
+        </Box>
+      )}
 
       {/* Completed Status - Sadece görüntüleme */}
       {params.status === 'completed' && (
@@ -2391,48 +2472,51 @@ const SupportMessageDetailScreen: React.FC = () => {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
-        
-        {/* Report Modal - Close modal'ın üzerinde görünmeli */}
-        {isReportModalVisible && (
+      </Modal>
+
+      {/* Report Modal - Ayrı Modal component'i */}
+      <Modal
+        visible={isReportModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCancelReport}
+      >
+        <TouchableWithoutFeedback onPress={handleCancelReport}>
           <View style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000,
           }}>
-            <TouchableWithoutFeedback onPress={handleCancelReport}>
-              <View style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.7)', // Daha koyu backdrop - close modal'ın üzerinde olduğunu göster
-              }} />
-            </TouchableWithoutFeedback>
             <TouchableWithoutFeedback>
               <View style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
                 borderRadius: 24,
                 maxWidth: '90%',
                 width: '90%',
                 padding: 24,
-                zIndex: 1001,
+                maxHeight: '90%',
               }}>
                 <VStack space="md">
                   {/* Report Başlığı */}
-                  <Text
-                    fontSize={18}
-                    fontWeight="$bold"
-                    color="#000000"
-                    textAlign="center"
-                  >
-                    Report
-                  </Text>
+                  <HStack alignItems="center" justifyContent="space-between" mb="$2">
+                    <Text
+                      fontSize={18}
+                      fontWeight="$bold"
+                      color={isDark ? '#FFFFFF' : '#000000'}
+                      textAlign="center"
+                      flex={1}
+                    >
+                      Report
+                    </Text>
+                    <Pressable onPress={handleCancelReport}>
+                      <Feather
+                        name="x"
+                        size={24}
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                      />
+                    </Pressable>
+                  </HStack>
 
                   {/* User Profile Section */}
                   <VStack space="sm" alignItems="center">
@@ -2504,7 +2588,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                     <Text
                       fontSize={14}
                       fontWeight="$bold"
-                      color="#000000"
+                      color={isDark ? '#FFFFFF' : '#000000'}
                     >
                       Reason for report
                     </Text>
@@ -2597,7 +2681,7 @@ const SupportMessageDetailScreen: React.FC = () => {
                     <Text
                       fontSize={14}
                       fontWeight="$bold"
-                      color="#000000"
+                      color={isDark ? '#FFFFFF' : '#000000'}
                     >
                       Description
                     </Text>
@@ -2649,7 +2733,7 @@ const SupportMessageDetailScreen: React.FC = () => {
               </View>
             </TouchableWithoutFeedback>
           </View>
-        )}
+        </TouchableWithoutFeedback>
       </Modal>
 
       </KeyboardAvoidingView>
