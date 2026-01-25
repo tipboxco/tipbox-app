@@ -438,9 +438,10 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   }, [deleteCommentMutation, newsId, brandId, productId, queryClient]);
 
   // Handle like comment
-  const handleLikeComment = useCallback((commentId: string) => {
+  const handleLikeComment = useCallback((commentId: string, postId: string) => {
     if (!commentId) return;
     
+    // Optimistic update: UI'da hemen göster
     setCommentLikes(prev => ({ ...prev, [commentId]: true }));
     likeCommentMutation.mutate(
       { commentId, postId: newsId },
@@ -462,9 +463,10 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   }, [likeCommentMutation, newsId, brandId, productId, queryClient]);
 
   // Handle unlike comment
-  const handleUnlikeComment = useCallback((commentId: string) => {
+  const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
     if (!commentId) return;
     
+    // Optimistic update: UI'da hemen göster
     setCommentLikes(prev => ({ ...prev, [commentId]: false }));
     unlikeCommentMutation.mutate(
       { commentId, postId: newsId },

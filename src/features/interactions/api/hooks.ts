@@ -989,16 +989,70 @@ export const useDeleteComment = () => {
 
 /**
  * Like Comment mutation hook
- * Yorumu beğenir
+ * Yorumu beğenir (optimistic update ile)
  *
  * @returns React Query mutation hook result
  */
 export const useLikeComment = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<void>, Error, { commentId: string; postId: string }>({
+  return useMutation<ApiResponse<void>, Error, { commentId: string; postId: string }, { previousComments?: CommentsResponse }>({
     mutationFn: ({ commentId }) => likeComment(commentId),
+    onMutate: async ({ postId, commentId }) => {
+      await queryClient.cancelQueries({ queryKey: interactionKeys.comments(postId) });
+
+      const previousComments = queryClient.getQueryData<CommentsResponse>(
+        interactionKeys.comments(postId)
+      );
+
+      // Optimistic update: likesCount'u artır
+      queryClient.setQueryData<CommentsResponse>(
+        interactionKeys.comments(postId),
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            comments: old.comments.map((item) => {
+              // Main comment
+              if (item.comment.id === commentId) {
+                return {
+                  ...item,
+                  comment: {
+                    ...item.comment,
+                    likesCount: item.comment.likesCount + 1,
+                  },
+                };
+              }
+              // Reply
+              if (item.replies.some((reply) => reply.id === commentId)) {
+                return {
+                  ...item,
+                  replies: item.replies.map((reply) =>
+                    reply.id === commentId
+                      ? { ...reply, likesCount: reply.likesCount + 1 }
+                      : reply
+                  ),
+                };
+              }
+              return item;
+            }),
+          };
+        }
+      );
+
+      return { previousComments };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousComments) {
+        queryClient.setQueryData(
+          interactionKeys.comments(variables.postId),
+          context.previousComments
+        );
+      }
+      console.error('[useLikeComment] Error:', err);
+    },
     onSuccess: (data, variables) => {
+      // Comments'i invalidate et (güncel like durumunu al)
       queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
     },
   });
@@ -1006,16 +1060,70 @@ export const useLikeComment = () => {
 
 /**
  * Unlike Comment mutation hook
- * Yorum beğenisini geri alır
+ * Yorum beğenisini geri alır (optimistic update ile)
  *
  * @returns React Query mutation hook result
  */
 export const useUnlikeComment = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<void>, Error, { commentId: string; postId: string }>({
+  return useMutation<ApiResponse<void>, Error, { commentId: string; postId: string }, { previousComments?: CommentsResponse }>({
     mutationFn: ({ commentId }) => unlikeComment(commentId),
+    onMutate: async ({ postId, commentId }) => {
+      await queryClient.cancelQueries({ queryKey: interactionKeys.comments(postId) });
+
+      const previousComments = queryClient.getQueryData<CommentsResponse>(
+        interactionKeys.comments(postId)
+      );
+
+      // Optimistic update: likesCount'u azalt
+      queryClient.setQueryData<CommentsResponse>(
+        interactionKeys.comments(postId),
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            comments: old.comments.map((item) => {
+              // Main comment
+              if (item.comment.id === commentId) {
+                return {
+                  ...item,
+                  comment: {
+                    ...item.comment,
+                    likesCount: Math.max(0, item.comment.likesCount - 1),
+                  },
+                };
+              }
+              // Reply
+              if (item.replies.some((reply) => reply.id === commentId)) {
+                return {
+                  ...item,
+                  replies: item.replies.map((reply) =>
+                    reply.id === commentId
+                      ? { ...reply, likesCount: Math.max(0, reply.likesCount - 1) }
+                      : reply
+                  ),
+                };
+              }
+              return item;
+            }),
+          };
+        }
+      );
+
+      return { previousComments };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousComments) {
+        queryClient.setQueryData(
+          interactionKeys.comments(variables.postId),
+          context.previousComments
+        );
+      }
+      console.error('[useUnlikeComment] Error:', err);
+    },
     onSuccess: (data, variables) => {
+      // Comments'i invalidate et (güncel like durumunu al)
       queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
     },
   });

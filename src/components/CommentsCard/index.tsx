@@ -156,15 +156,15 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
   const handleDelete = useCallback(() => {
     if (!commentId || !postId || !onDelete || isDeleting) return;
     Alert.alert(
-      'Yorumu Sil',
-      'Bu yorumu silmek istediğinizden emin misiniz?',
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
       [
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Sil',
+          text: 'Delete',
           style: 'destructive',
           onPress: () => onDelete(commentId, postId),
         },
@@ -172,17 +172,13 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
     );
   }, [commentId, postId, onDelete, isDeleting]);
 
-  // Like handler
+  // Like handler - no optimistic update, wait for backend response
   const handleLike = useCallback(() => {
     if (!commentId || !postId || isLiking) return;
     
     if (isLiked) {
-      setIsLiked(false);
-      setLocalLikesCount(prev => Math.max(0, prev - 1));
       onUnlike?.(commentId, postId);
     } else {
-      setIsLiked(true);
-      setLocalLikesCount(prev => prev + 1);
       onLike?.(commentId, postId);
     }
   }, [commentId, postId, isLiked, isLiking, onLike, onUnlike]);
@@ -358,32 +354,32 @@ export const CommentsCard: React.FC<CommentsCardProps> = ({
               </>
             )}
 
-            {/* Like Button */}
+            {/* Like Button - Her zaman görünür */}
             <HStack alignItems="center" space="xs" mt="$1">
               <Pressable
                 onPress={handleLike}
-                disabled={isLiking}
+                disabled={isLiking || !onLike || !onUnlike}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 4,
-                  opacity: isLiking ? 0.5 : 1,
+                  opacity: (isLiking || !onLike || !onUnlike) ? 0.5 : 1,
+                  paddingVertical: 4,
+                  paddingHorizontal: 4,
                 }}
               >
                 {isLiked ? (
-                  <HeartIconSolid width={16} height={16} color="#FF3040" />
+                  <HeartIconSolid width={18} height={18} color="#FF3040" />
                 ) : (
-                  <HeartIcon width={16} height={16} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
+                  <HeartIcon width={18} height={18} color={isDark ? '#8C8C8C' : '#8C8C8C'} />
                 )}
-                {localLikesCount > 0 && (
-                  <Text
-                    color={isDark ? '#8C8C8C' : '#8C8C8C'}
-                    fontSize={11}
-                    fontWeight="$medium"
-                  >
-                    {localLikesCount}
-                  </Text>
-                )}
+                <Text
+                  color={isLiked ? '#FF3040' : (isDark ? '#8C8C8C' : '#8C8C8C')}
+                  fontSize={11}
+                  fontWeight="$medium"
+                >
+                  {localLikesCount > 0 ? localLikesCount : 'Beğen'}
+                </Text>
               </Pressable>
             </HStack>
           </VStack>

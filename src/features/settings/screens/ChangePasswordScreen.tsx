@@ -35,7 +35,7 @@ export const ChangePasswordScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleChangePassword = async () => {
-    // Validasyon
+    // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.show({
         placement: 'top',
@@ -43,8 +43,8 @@ export const ChangePasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Eksik Bilgi</ToastTitle>
-                <ToastDescription>Lütfen tüm alanları doldurun.</ToastDescription>
+                <ToastTitle>Missing Information</ToastTitle>
+                <ToastDescription>Please fill in all fields.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -60,8 +60,8 @@ export const ChangePasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Şifreler Eşleşmiyor</ToastTitle>
-                <ToastDescription>Yeni şifre ve onay şifresi aynı olmalıdır.</ToastDescription>
+                <ToastTitle>Passwords Don't Match</ToastTitle>
+                <ToastDescription>New password and confirm password must be the same.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -70,15 +70,15 @@ export const ChangePasswordScreen = () => {
       return;
     }
 
-    if (newPassword.length < 8) {
+    if (newPassword.length < 6) {
       toast.show({
         placement: 'top',
         render: ({ id }) => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Geçersiz Şifre</ToastTitle>
-                <ToastDescription>Şifre en az 8 karakter olmalıdır.</ToastDescription>
+                <ToastTitle>Invalid Password</ToastTitle>
+                <ToastDescription>Password must be at least 6 characters.</ToastDescription>
               </Toast>
             </Box>
           );
@@ -93,16 +93,16 @@ export const ChangePasswordScreen = () => {
         newPassword,
       });
 
-      // Başarılı toast göster
+      // Show success toast
       toast.show({
         placement: 'top',
         render: ({ id }) => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="success" variant="solid">
-                <ToastTitle>Şifre Değiştirildi</ToastTitle>
+                <ToastTitle>Password Changed</ToastTitle>
                 <ToastDescription>
-                  {result.message || 'Şifreniz başarıyla güncellendi.'}
+                  {result.message || 'Your password has been successfully updated.'}
                 </ToastDescription>
               </Toast>
             </Box>
@@ -110,17 +110,19 @@ export const ChangePasswordScreen = () => {
         },
       });
 
-      // Form'u sıfırla ve geri dön
+      // Reset form and go back
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       navigation.goBack();
     } catch (error: any) {
-      // Hata toast göster
+      // Show error toast
+      // Backend error message format: error.response?.data?.error?.message or error.response?.data?.message
       const errorMessage =
+        error?.response?.data?.error?.message ||
         error?.response?.data?.message ||
         error?.message ||
-        'Şifre değiştirme işlemi sırasında bir hata oluştu';
+        'An error occurred while changing the password';
 
       toast.show({
         placement: 'top',
@@ -128,7 +130,7 @@ export const ChangePasswordScreen = () => {
           return (
             <Box maxWidth="90%" alignSelf="center" px="$4">
               <Toast nativeID={`toast-${id}`} action="error" variant="solid">
-                <ToastTitle>Hata</ToastTitle>
+                <ToastTitle>Error</ToastTitle>
                 <ToastDescription>{errorMessage}</ToastDescription>
               </Toast>
             </Box>
@@ -200,17 +202,17 @@ export const ChangePasswordScreen = () => {
 
           <HStack justifyContent="space-between" alignItems="center">
             <Text
-              fontSize={9}
+              fontSize="$xs"
               fontWeight="$semibold"
               color="#B9B9B9"
             >
-              Son güncelleme: 26.03.2025
+              Last updated: 26.03.2025
             </Text>
             <Pressable
               onPress={() => navigation.navigate('ForgotPassword')}
             >
               <Text
-                fontSize={9}
+                fontSize="$xs"
                 fontWeight="$bold"
                 color={isDark ? '#FFFFFF' : '#000000'}
                 underline

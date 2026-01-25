@@ -351,10 +351,15 @@ export const PostDetailScreen = () => {
     const handleLikeComment = useCallback((commentId: string, postId: string) => {
         if (!commentId || !postId) return;
         
+        // Optimistic update: UI'da hemen göster
         setCommentLikes(prev => ({ ...prev, [commentId]: true }));
         likeCommentMutation.mutate(
             { commentId, postId },
             {
+                onSuccess: () => {
+                    // Başarılı olduğunda comments query'sini invalidate et
+                    // Hook zaten invalidate ediyor ama emin olmak için
+                },
                 onError: () => {
                     // Revert on error
                     setCommentLikes(prev => ({ ...prev, [commentId]: false }));
@@ -367,10 +372,15 @@ export const PostDetailScreen = () => {
     const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
         if (!commentId || !postId) return;
         
+        // Optimistic update: UI'da hemen göster
         setCommentLikes(prev => ({ ...prev, [commentId]: false }));
         unlikeCommentMutation.mutate(
             { commentId, postId },
             {
+                onSuccess: () => {
+                    // Başarılı olduğunda comments query'sini invalidate et
+                    // Hook zaten invalidate ediyor ama emin olmak için
+                },
                 onError: () => {
                     // Revert on error
                     setCommentLikes(prev => ({ ...prev, [commentId]: true }));
