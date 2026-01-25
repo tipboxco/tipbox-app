@@ -12,9 +12,14 @@ export const changePassword = async (
   credentials: ChangePasswordRequest
 ): Promise<ChangePasswordResponse> => {
   try {
-    const response = await apiService.getClient().post<ChangePasswordResponse>(
+    // Şifre değiştirme için özel timeout (30 saniye)
+    const client = apiService.getClient();
+    const response = await client.post<ChangePasswordResponse>(
       '/users/settings/change-password',
-      credentials
+      credentials,
+      {
+        timeout: 30000, // 30 saniye - şifre değiştirme için yeterli süre
+      }
     );
     return response.data;
   } catch (error: any) {

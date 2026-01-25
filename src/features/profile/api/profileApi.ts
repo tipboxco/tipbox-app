@@ -741,8 +741,13 @@ export const getUserPosts = async (
   params.append('limit', limit.toString());
 
   try {
-    const response = await apiService.getClient().get<any>(
-      `/users/${userId}/feed?${params.toString()}`
+    // Büyük veri döndüren endpoint için özel timeout (60 saniye)
+    const client = apiService.getClient();
+    const response = await client.get<any>(
+      `/users/${userId}/feed?${params.toString()}`,
+      {
+        timeout: 60000, // 60 saniye - feed endpoint'i için daha uzun timeout
+      }
     );
     
     // Backend response formatı: { success: true, data: [...] } veya direkt array

@@ -21,7 +21,7 @@ import { Header } from '@/src/components/Header';
 // Config kullanımı kaldırıldı - StyledProvider hatasını önlemek için
 import CommentsCard from '@/src/components/CommentsCard';
 import { toImageSource, formatRelativeTime, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useComments, useCreateComment, useDeleteComment } from '@/src/features/interactions/api/hooks';
+import { useComments, useCreateComment, useDeleteComment, useLikeComment, useUnlikeComment, useUpdateComment } from '@/src/features/interactions/api/hooks';
 import type { CommentWithReplies } from '@/src/features/interactions/types';
 import { usePostDetail } from '../api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
@@ -136,9 +136,15 @@ export const PostDetailScreen = () => {
     const { data: commentsData, isLoading: isLoadingComments } = useComments(postId);
     const createCommentMutation = useCreateComment();
     const deleteCommentMutation = useDeleteComment();
+    const likeCommentMutation = useLikeComment();
+    const unlikeCommentMutation = useUnlikeComment();
+    const updateCommentMutation = useUpdateComment();
     
     // Current user ID
     const currentUserId = useAppStore((state) => state.user?.id);
+    
+    // Comment like state tracking
+    const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({});
 
     // Safe area insets
     const insets = useSafeAreaInsets();
@@ -283,6 +289,8 @@ export const PostDetailScreen = () => {
         avatar: any;
         timeAgo: string;
         content: string;
+        likesCount: number;
+        isLiked: boolean;
     }> = [];
 
     if (commentsData?.comments) {
@@ -297,6 +305,8 @@ export const PostDetailScreen = () => {
                 avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
                 timeAgo: formatRelativeTime(item.comment.createdAt),
                 content: item.comment.comment,
+                likesCount: item.comment.likesCount || 0,
+                isLiked: commentLikes[item.comment.id] ?? false,
             });
 
             // Replies
@@ -312,6 +322,8 @@ export const PostDetailScreen = () => {
                         avatar: item.user.avatar ? toImageSource(item.user.avatar) : DEFAULT_USER_AVATAR,
                         timeAgo: formatRelativeTime(reply.createdAt),
                         content: reply.comment,
+                        likesCount: reply.likesCount || 0,
+                        isLiked: commentLikes[reply.id] ?? false,
                     });
                 });
             }
@@ -334,6 +346,52 @@ export const PostDetailScreen = () => {
             }
         );
     }, [deleteCommentMutation]);
+
+    // Handle like comment
+    const handleLikeComment = useCallback((commentId: string, postId: string) => {
+        if (!commentId || !postId) return;
+        
+        setCommentLikes(prev => ({ ...prev, [commentId]: true }));
+        likeCommentMutation.mutate(
+            { commentId, postId },
+            {
+                onError: () => {
+                    // Revert on error
+                    setCommentLikes(prev => ({ ...prev, [commentId]: false }));
+                },
+            }
+        );
+    }, [likeCommentMutation]);
+
+    // Handle unlike comment
+    const handleUnlikeComment = useCallback((commentId: string, postId: string) => {
+        if (!commentId || !postId) return;
+        
+        setCommentLikes(prev => ({ ...prev, [commentId]: false }));
+        unlikeCommentMutation.mutate(
+            { commentId, postId },
+            {
+                onError: () => {
+                    // Revert on error
+                    setCommentLikes(prev => ({ ...prev, [commentId]: true }));
+                },
+            }
+        );
+    }, [unlikeCommentMutation]);
+
+    // Handle edit comment
+    const handleEditComment = useCallback((commentId: string, postId: string, newContent: string) => {
+        if (!commentId || !postId || !newContent.trim()) return;
+        
+        updateCommentMutation.mutate(
+            { commentId, postId, comment: newContent },
+            {
+                onError: (error) => {
+                    console.error('[PostDetailScreen] Update comment error:', error);
+                },
+            }
+        );
+    }, [updateCommentMutation]);
 
     // FlatList için data hazırla
     const listData = flattenedComments;
@@ -433,10 +491,17 @@ export const PostDetailScreen = () => {
             userId={item.userId}
             currentUserId={currentUserId}
             postId={postId}
+            likesCount={item.likesCount}
+            isLiked={item.isLiked}
             onDelete={handleDeleteComment}
+            onLike={handleLikeComment}
+            onUnlike={handleUnlikeComment}
+            onEdit={handleEditComment}
             isDeleting={deleteCommentMutation.isPending}
+            isLiking={likeCommentMutation.isPending || unlikeCommentMutation.isPending}
+            isEditing={updateCommentMutation.isPending}
         />
-    ), [currentUserId, postId, handleDeleteComment, deleteCommentMutation.isPending]);
+    ), [currentUserId, postId, handleDeleteComment, handleLikeComment, handleUnlikeComment, handleEditComment, deleteCommentMutation.isPending, likeCommentMutation.isPending, unlikeCommentMutation.isPending, updateCommentMutation.isPending]);
 
     // FlatList empty component - useMemo ile memoize edildi
     const renderEmpty = useMemo(() => (

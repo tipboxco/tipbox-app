@@ -24,11 +24,12 @@ import {
   useCreateBrandProductNewsComment,
 } from '../api/hooks';
 import type { NewsComment } from '../types';
-import { useDeleteComment } from '@/src/features/interactions/api/hooks';
+import { useDeleteComment, useLikeComment, useUnlikeComment, useUpdateComment } from '@/src/features/interactions/api/hooks';
 import { useAppStore } from '@/src/store/appStore';
 import { TrashIcon } from 'react-native-heroicons/outline';
 import { useQueryClient } from '@tanstack/react-query';
 import { catalogKeys } from '../api/hooks';
+import CommentsCard from '@/src/components/CommentsCard';
 
 type NewsDetailScreenNavigationProp = NativeStackNavigationProp<NewsStackParamList, 'NewsDetailScreen'>;
 type NewsDetailScreenRouteProp = RouteProp<NewsStackParamList, 'NewsDetailScreen'>;
@@ -380,12 +381,18 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
   const inputRef = useRef<any>(null);
   const { closeBottomSheet } = useGlobalBottomSheet();
   const deleteCommentMutation = useDeleteComment();
+  const likeCommentMutation = useLikeComment();
+  const unlikeCommentMutation = useUnlikeComment();
+  const updateCommentMutation = useUpdateComment();
   const currentUserId = useAppStore((state) => state.user?.id);
   const queryClient = useQueryClient();
   
   // Route params'dan brandId ve productId al (NewsDetailScreen'den geçirilmiş olmalı)
   const route = useRoute<NewsDetailScreenRouteProp>();
   const { brandId, productId } = route.params || {};
+  
+  // Comment like state tracking
+  const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({});
   
   // Auto focus input when bottom sheet opens
   useEffect(() => {
@@ -429,78 +436,103 @@ const NewsCommentsBottomSheet: React.FC<NewsCommentsBottomSheetProps> = ({
       }
     );
   }, [deleteCommentMutation, newsId, brandId, productId, queryClient]);
+
+  // Handle like comment
+  const handleLikeComment = useCallback((commentId: string) => {
+    if (!commentId) return;
+    
+    setCommentLikes(prev => ({ ...prev, [commentId]: true }));
+    likeCommentMutation.mutate(
+      { commentId, postId: newsId },
+      {
+        onSuccess: () => {
+          // News comment query key'ini invalidate et
+          if (brandId && productId) {
+            queryClient.invalidateQueries({ 
+              queryKey: [...catalogKeys.all, 'brandProductNewsComments', brandId, productId, newsId] 
+            });
+          }
+        },
+        onError: () => {
+          // Revert on error
+          setCommentLikes(prev => ({ ...prev, [commentId]: false }));
+        },
+      }
+    );
+  }, [likeCommentMutation, newsId, brandId, productId, queryClient]);
+
+  // Handle unlike comment
+  const handleUnlikeComment = useCallback((commentId: string) => {
+    if (!commentId) return;
+    
+    setCommentLikes(prev => ({ ...prev, [commentId]: false }));
+    unlikeCommentMutation.mutate(
+      { commentId, postId: newsId },
+      {
+        onSuccess: () => {
+          // News comment query key'ini invalidate et
+          if (brandId && productId) {
+            queryClient.invalidateQueries({ 
+              queryKey: [...catalogKeys.all, 'brandProductNewsComments', brandId, productId, newsId] 
+            });
+          }
+        },
+        onError: () => {
+          // Revert on error
+          setCommentLikes(prev => ({ ...prev, [commentId]: true }));
+        },
+      }
+    );
+  }, [unlikeCommentMutation, newsId, brandId, productId, queryClient]);
+
+  // Handle edit comment
+  const handleEditComment = useCallback((commentId: string, postId: string, newContent: string) => {
+    if (!commentId || !newContent.trim()) return;
+    
+    updateCommentMutation.mutate(
+      { commentId, postId: newsId, comment: newContent },
+      {
+        onSuccess: () => {
+          // News comment query key'ini invalidate et
+          if (brandId && productId) {
+            queryClient.invalidateQueries({ 
+              queryKey: [...catalogKeys.all, 'brandProductNewsComments', brandId, productId, newsId] 
+            });
+          }
+        },
+        onError: (error) => {
+          console.error('[NewsCommentsBottomSheet] Update comment error:', error);
+        },
+      }
+    );
+  }, [updateCommentMutation, newsId, brandId, productId, queryClient]);
   
   const renderComment = ({ item }: { item: NewsComment }) => {
     const formattedDate = formatRelativeTime(item.createdAt);
     const isOwnComment = item.userId && currentUserId && item.userId === currentUserId;
+    const isLiked = commentLikes[item.id] ?? false;
     
     return (
-      <Box
-        borderBottomWidth={1}
-        borderBottomColor={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
-        py="$3"
-        px="$4"
-      >
-        <HStack space="sm" alignItems="flex-start">
-          {/* Avatar */}
-          <Image
-            source={toImageSource(item.userAvatar) || require('@/assets/avatar/default-useravatar.png')}
-            alt={item.userName}
-            width={40}
-            height={40}
-            borderRadius={20}
-            resizeMode="cover"
-          />
-          
-          {/* Comment Content */}
-          <VStack flex={1} >
-            {/* User Name and Time */}
-            <HStack justifyContent="space-between" alignItems="center">
-              <Text
-                color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={14}
-                fontWeight="$bold"
-              >
-                {item.userName}
-              </Text>
-              <HStack alignItems="center" space="sm">
-                {/* Delete Button - sadece kullanıcının kendi yorumunda göster */}
-                {isOwnComment && (
-                  <Pressable
-                    onPress={() => handleDeleteComment(item.id)}
-                    disabled={deleteCommentMutation.isPending}
-                    style={{
-                      padding: 4,
-                      opacity: deleteCommentMutation.isPending ? 0.5 : 1,
-                    }}
-                  >
-                    <TrashIcon
-                      width={16}
-                      height={16}
-                      color="#FF3040"
-                    />
-                  </Pressable>
-                )}
-                <Text
-                  color="#B9B9B9"
-                  fontSize={11}
-                >
-                  {formattedDate}
-                </Text>
-              </HStack>
-            </HStack>
-            
-            {/* Comment Text */}
-            <Text
-              color={isDark ? '#FFFFFF' : '#000000'}
-              fontSize={12}
-              lineHeight={18}
-            >
-              {item.comment}
-            </Text>
-      </VStack>
-        </HStack>
-      </Box>
+      <CommentsCard
+        userName={item.userName}
+        userTitle=""
+        avatar={toImageSource(item.userAvatar) || require('@/assets/avatar/default-useravatar.png')}
+        timeAgo={formattedDate}
+        content={item.comment}
+        commentId={item.id}
+        userId={item.userId}
+        currentUserId={currentUserId}
+        postId={newsId}
+        likesCount={item.likesCount || 0}
+        isLiked={isLiked}
+        onDelete={handleDeleteComment}
+        onLike={handleLikeComment}
+        onUnlike={handleUnlikeComment}
+        onEdit={handleEditComment}
+        isDeleting={deleteCommentMutation.isPending}
+        isLiking={likeCommentMutation.isPending || unlikeCommentMutation.isPending}
+        isEditing={updateCommentMutation.isPending}
+      />
     );
   };
   

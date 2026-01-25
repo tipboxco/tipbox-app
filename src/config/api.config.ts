@@ -22,7 +22,7 @@ try {
 // Gerçek cihaz için bilgisayarın IP adresi kullanılmalı
 export const API_CONFIG = {
   BASE_URL: baseUrl,
-    TIMEOUT: 10000,
+  TIMEOUT: 30000, // 30 saniye - büyük veri döndüren endpoint'ler için yeterli süre
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
 };

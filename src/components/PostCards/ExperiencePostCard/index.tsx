@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import { Platform, View, Pressable as RNPressable, Modal, Dimensions } from 'react-native';
-import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet } from 'react-native';
+import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
 import {
@@ -309,106 +309,114 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
             style={{ flex: 1 }}
             onPress={() => setIsMenuOpen(false)}
           />
-          <Box
-            position="absolute"
-            top={menuPosition.top}
-            left={menuPosition.left}
-            width={180}
-            bg={isDark ? '#1A1A1A' : '#FFFFFF'}
-            borderRadius={16}
-            shadowColor="#000"
-            shadowOffset={{ width: 0, height: 2 }}
-            shadowOpacity={0.25}
-            shadowRadius={8}
-            elevation={8}
-            overflow="hidden"
+          <View
+            style={[
+              styles.menuContainer,
+              {
+                top: menuPosition.top,
+                left: menuPosition.left,
+                backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isDark ? '#333333' : '#E9E9E9',
+                shadowOpacity: isDark ? 0.3 : 0.1,
+              }
+            ]}
           >
-            {isPostOwner ? (
-              <>
-                <Pressable
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    handleUpdate();
-                  }}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                    <Text
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize="$md"
-                      fontWeight="$medium"
+            <RNPressable 
+              onPress={(e) => e.stopPropagation()}
+              style={{ flex: 1 }}
+            >
+              <VStack px={12} py={8} width="100%">
+                {isPostOwner ? (
+                  <>
+                    <Pressable
+                      onPress={() => {
+                        setIsMenuOpen(false);
+                        handleUpdate();
+                      }}
+                      py={8}
                     >
-                      Güncelle
-                    </Text>
-                  </HStack>
-                </Pressable>
-                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-                <Pressable
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    handleDelete();
-                  }}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    <TrashIcon width={20} height={20} color="#FF3040" />
-                    <Text
-                      color="#FF3040"
-                      fontSize="$md"
-                      fontWeight="$medium"
+                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                        <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                        <Text
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                          fontSize="$sm"
+                          fontWeight="$medium"
+                        >
+                          Update
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                    <Divider 
+                      bg={isDark ? '#333333' : '#E9E9E9'} 
+                      mx={0}
+                    />
+                    <Pressable
+                      onPress={() => {
+                        setIsMenuOpen(false);
+                        handleDelete();
+                      }}
+                      py={8}
                     >
-                      Sil
-                    </Text>
-                  </HStack>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Pressable
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    handleViewProfile();
-                  }}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                    <Text
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize="$md"
-                      fontWeight="$medium"
+                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                        <TrashIcon width={20} height={20} color="#FF3040" />
+                        <Text
+                          color="#FF3040"
+                          fontSize="$sm"
+                          fontWeight="$medium"
+                        >
+                          Delete
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    <Pressable
+                      onPress={() => {
+                        setIsMenuOpen(false);
+                        handleViewProfile();
+                      }}
+                      py={8}
                     >
-                      Profili Görüntüle
-                    </Text>
-                  </HStack>
-                </Pressable>
-                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-                <Pressable
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    handleReport();
-                  }}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    <FlagIcon width={20} height={20} color="#FF3040" />
-                    <Text
-                      color="#FF3040"
-                      fontSize="$md"
-                      fontWeight="$medium"
+                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                        <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                        <Text
+                          color={isDark ? '#FFFFFF' : '#000000'}
+                          fontSize="$sm"
+                          fontWeight="$medium"
+                        >
+                          View Profile
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                    <Divider 
+                      bg={isDark ? '#333333' : '#E9E9E9'} 
+                      mx={0}
+                    />
+                    <Pressable
+                      onPress={() => {
+                        setIsMenuOpen(false);
+                        handleReport();
+                      }}
+                      py={8}
                     >
-                      Raporla
-                    </Text>
-                  </HStack>
-                </Pressable>
-              </>
-            )}
-          </Box>
+                      <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                        <FlagIcon width={20} height={20} color="#FF3040" />
+                        <Text
+                          color="#FF3040"
+                          fontSize="$sm"
+                          fontWeight="$medium"
+                        >
+                          Report
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                  </>
+                )}
+              </VStack>
+            </RNPressable>
+          </View>
         </Modal>
       </Box>
 
@@ -658,5 +666,19 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
     </VStack>
   );
 };
+
+const styles = StyleSheet.create({
+  menuContainer: {
+    position: 'absolute',
+    width: 140,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+});
 
 export default ExperiencePostCard;

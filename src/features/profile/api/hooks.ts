@@ -423,7 +423,15 @@ export const useUserPosts = (userId: string | undefined, limit: number = 3, opti
     gcTime: 4 * 60 * 60 * 1000,    // 4 saat - cache'de tut
     refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false, // Ekran değişimlerinde refetch yapma
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // Timeout hatalarında retry yap (network sorunları için)
+      if (error?.message?.includes('timeout') || error?.code === 'ECONNABORTED') {
+        return failureCount < 2; // Timeout için 2 kez daha dene
+      }
+      // Diğer hatalar için 1 kez dene
+      return failureCount < 1;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
     // isFetchingNextPage değişikliklerini render tetikleyicisinden çıkar
     // Sadece data, hasNextPage ve error değişiklikleri render tetikler
     notifyOnChangeProps: ['data', 'hasNextPage', 'error', 'isLoading', 'isPending'],
