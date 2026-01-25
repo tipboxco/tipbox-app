@@ -358,10 +358,16 @@ export interface GetThreadMessagesResponse {
   };
   dateGroups?: DateGroup[]; // ✅ YENİ: Optimize format
   items?: ThreadMessageResponseItem[]; // Eski format (backward compatibility)
+  // ✅ YENİ: Support request bilgileri (root seviyede)
+  totalTipsAmount?: number; // Toplam TIPS miktarı
+  supportRequestMessages?: string[]; // Support request mesajları
+  supportRequestType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT'; // Support request type
+  supportRequestAmount?: number; // Support request amount (TIPS miktarı)
   pagination: {
     hasMore: boolean;
     limit: number;
     nextCursor?: string; // Cursor-based pagination için
+    cursor?: string; // Cursor-based pagination için (alternatif)
   };
 }
 
@@ -1371,6 +1377,46 @@ export interface MessageFeedItem {
     isUnread?: boolean;
   };
 }
+
+/**
+ * Mute Thread endpoint
+ * Thread bildirimlerini sessize alır
+ * 
+ * @param threadId - Thread ID
+ */
+export const muteThread = async (threadId: string): Promise<void> => {
+  try {
+    await apiService.getClient().post(`/inbox/threads/${threadId}/mute`);
+  } catch (error: any) {
+    // 404 hatası: Endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      console.warn('[muteThread] Thread mute endpoint not found (404). Backend may not have implemented this endpoint yet.');
+      // 404 hatasını sessizce yut
+      return;
+    }
+    throw error;
+  }
+};
+
+/**
+ * Unmute Thread endpoint
+ * Thread bildirimlerini sessizden çıkarır
+ * 
+ * @param threadId - Thread ID
+ */
+export const unmuteThread = async (threadId: string): Promise<void> => {
+  try {
+    await apiService.getClient().post(`/inbox/threads/${threadId}/unmute`);
+  } catch (error: any) {
+    // 404 hatası: Endpoint backend'de henüz implement edilmemiş olabilir
+    if (error?.response?.status === 404) {
+      console.warn('[unmuteThread] Thread unmute endpoint not found (404). Backend may not have implemented this endpoint yet.');
+      // 404 hatasını sessizce yut
+      return;
+    }
+    throw error;
+  }
+};
 
 /**
  * Get Message Feed endpoint

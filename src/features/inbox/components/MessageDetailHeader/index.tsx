@@ -13,9 +13,8 @@ import { toImageSource } from '@/src/utils';
 import { Modal, Dimensions, Pressable as RNPressable } from 'react-native';
 import { View } from 'react-native';
 import {
-  ArrowUpTrayIcon,
-  FlagIcon,
-  NoSymbolIcon,
+  BellIcon,
+  BellSlashIcon,
 } from 'react-native-heroicons/outline';
 
 interface MessageDetailHeaderProps {
@@ -27,6 +26,9 @@ interface MessageDetailHeaderProps {
   onShare?: () => void;
   onBlock?: () => void;
   onReport?: () => void;
+  onMute?: () => void;
+  onUnmute?: () => void;
+  isMuted?: boolean;
   recipientUserId?: string;
 }
 
@@ -39,35 +41,24 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
   onShare,
   onBlock,
   onReport,
+  onMute,
+  onUnmute,
+  isMuted = false,
   recipientUserId,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTriggerRef = useRef<View>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-
-  // Calculate menu position
-  const handleMenuOpen = useCallback(() => {
-    if (menuTriggerRef.current) {
-      menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-        const screenWidth = Dimensions.get('window').width;
-        const menuWidth = 180;
-        const left = Math.max(12, Math.min(x - menuWidth + 10, screenWidth - menuWidth - 12));
-        const top = Math.max(12, y - 8);
-        setMenuPosition({ top, left });
-        setIsMenuOpen(true);
-      });
-    } else {
-      setIsMenuOpen(true);
-    }
-  }, []);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
 
   return (
     <VStack
       bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}
       borderBottomWidth={1}
       borderColor={isDark ? '#333' : '#E9E9E9'}
+      position="relative"
+      zIndex={1000}
     >
       {/* Header Section */}
       <Box
@@ -75,6 +66,7 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
         py="$2"
         minHeight={56}
         justifyContent="center"
+        position="relative"
       >
         <HStack space="md" alignItems="center" justifyContent="space-between">
           {/* Geri Butonu */}
@@ -140,22 +132,34 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
           </HStack>
 
           {/* Menü Butonu */}
-          <View ref={menuTriggerRef} collapsable={false}>
-            <Pressable onPress={() => {
-              if (recipientUserId) {
-                handleMenuOpen();
-              } else if (onMenuPress) {
-                onMenuPress();
-              }
-            }}>
-              <Feather
-                name="more-vertical"
-                size={20}
-                color={isDark ? '#FFFFFF' : '#000000'}
-              />
-            </Pressable>
-          </View>
+          <Box position="relative">
+            <View ref={menuTriggerRef} collapsable={false}>
+              <Pressable onPress={() => {
+                if (recipientUserId && menuTriggerRef.current) {
+                  // Butonun pozisyonunu ölç ve menu pozisyonunu hesapla
+                  menuTriggerRef.current.measureInWindow((x, y, width, height) => {
+                    const screenWidth = Dimensions.get('window').width;
+                    const menuWidth = 140;
+                    // Butonun sağ altında açılacak: right = screenWidth - x - width, top = y + height + 4
+                    const right = Math.max(12, screenWidth - x - width);
+                    const top = y + height + 4;
+                    setMenuPosition({ top, right });
+                    setIsMenuOpen(true);
+                  });
+                } else if (onMenuPress) {
+                  onMenuPress();
+                }
+              }}>
+                <Feather
+                  name="more-vertical"
+                  size={20}
+                  color={isDark ? '#FFFFFF' : '#000000'}
+                />
+              </Pressable>
+            </View>
+          </Box>
           
+          {/* Dropdown Menu - Modal içinde */}
           {recipientUserId && (
             <Modal
               visible={isMenuOpen}
@@ -167,79 +171,62 @@ export const MessageDetailHeader: React.FC<MessageDetailHeaderProps> = ({
                 style={{ flex: 1 }}
                 onPress={() => setIsMenuOpen(false)}
               />
+              {/* Menu - Butonun sağ altında */}
               <Box
                 position="absolute"
                 top={menuPosition.top}
-                left={menuPosition.left}
-                width={180}
+                right={menuPosition.right}
+                width={140}
                 bg={isDark ? '#1A1A1A' : '#FFFFFF'}
                 borderRadius={16}
                 shadowColor="#000"
                 shadowOffset={{ width: 0, height: 2 }}
                 shadowOpacity={0.25}
                 shadowRadius={8}
-                elevation={8}
+                elevation={10}
                 overflow="hidden"
               >
-                <Pressable
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    if (onShare) onShare();
-                  }}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    <ArrowUpTrayIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                    <Text
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize="$md"
-                      fontWeight="$medium"
-                    >
-                      Share
-                    </Text>
-                  </HStack>
-                </Pressable>
-                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-                <Pressable
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    if (onReport) onReport();
-                  }}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    <FlagIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                    <Text
-                      color={isDark ? '#FFFFFF' : '#000000'}
-                      fontSize="$md"
-                      fontWeight="$medium"
-                    >
-                      Report
-                    </Text>
-                  </HStack>
-                </Pressable>
-                <Box h={1} bg={isDark ? '#333333' : '#E9E9E9'} />
-                <Pressable
-                  onPress={() => {
-                    setIsMenuOpen(false);
-                    if (onBlock) onBlock();
-                  }}
-                  px={16}
-                  py={12}
-                >
-                  <HStack alignItems="center" space="md">
-                    <NoSymbolIcon width={20} height={20} color="#FF3040" />
-                    <Text
-                      color="#FF3040"
-                      fontSize="$md"
-                      fontWeight="$medium"
-                    >
-                      Block
-                    </Text>
-                  </HStack>
-                </Pressable>
+                {isMuted ? (
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      if (onUnmute) onUnmute();
+                    }}
+                    px={16}
+                    py={12}
+                  >
+                    <HStack alignItems="center" space="md">
+                      <BellIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$md"
+                        fontWeight="$medium"
+                      >
+                        Unmute
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      if (onMute) onMute();
+                    }}
+                    px={16}
+                    py={12}
+                  >
+                    <HStack alignItems="center" space="md">
+                      <BellSlashIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                      <Text
+                        color={isDark ? '#FFFFFF' : '#000000'}
+                        fontSize="$md"
+                        fontWeight="$medium"
+                      >
+                        Mute
+                      </Text>
+                    </HStack>
+                  </Pressable>
+                )}
               </Box>
             </Modal>
           )}

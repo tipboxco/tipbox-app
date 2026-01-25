@@ -67,8 +67,6 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
 
     // Socket event handler - new_message event
     const handleNewMessage = useCallback((eventData: any) => {
-      
-        
         // Yeni mesaj geldiğinde, eğer kullanıcı inbox listesindeyse (MessageDetail ekranında değilse),
         // thread'i okunmamış olarak işaretle (optimistic update)
         // Not: Eğer kullanıcı MessageDetail ekranındaysa, MessageDetail'deki handleNewMessage mesajı okundu olarak işaretleyecek
@@ -79,8 +77,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 currentUserId: user?.id,
             });
             
-            // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
-            queryClient.setQueryData([...inboxKeys.messages(), undefined], (oldData: InboxMessage[] | undefined) => {
+            // ✅ FIX: Doğru query key'i kullan - searchParams ile eşleştir
+            const queryKey = [...inboxKeys.messages(), searchParams];
+            queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
                 if (!oldData) {
                     // Eğer data yoksa, backend'den çekilecek (invalidate ile)
                     console.log('[MessagesScreen] ⚠️ Old data is null, will fetch from backend');
@@ -150,15 +149,12 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                 
                 return oldData;
             });
+            
+            // ✅ FIX: Query'yi invalidate et ki React Query cache'i güncellesin ve UI yenilensin
+            // Ancak optimistic update zaten yapıldı, bu sadece UI'ın güncellenmesini sağlar
+            queryClient.invalidateQueries({ queryKey: [...inboxKeys.messages(), searchParams] });
         }
-        
-        // CRITICAL FIX: invalidateQueries kaldırıldı - backend otomatik okundu işaretliyor
-        // invalidateQueries çağrıldığında backend'den veri çekiliyor ve cache'deki optimistic update override ediliyor
-        // Backend'den isUnread: false geldiğinde badge gösterilmiyor
-        // Optimistic update yeterli, backend'den veri çekmeye gerek yok
-        // Sadece kullanıcı manuel pull-to-refresh yaptığında veya ekran açıldığında backend'den veri çekilecek
-        // queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
-    }, [queryClient, user?.id]);
+    }, [queryClient, user?.id, searchParams]);
 
     // Socket event handler - thread_read event (thread okundu olarak işaretlendiğinde)
     // ✅ Backend iyileştirmesi: thread_read event'ine unreadCount ve isUnread eklendi
@@ -182,8 +178,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         const isUnread = eventData.isUnread !== undefined ? eventData.isUnread : false;
         
         // Optimistic update: Local state'te thread'i okundu olarak işaretle (hemen UI'da göster)
-        // CRITICAL FIX: Query key'e params (undefined) ekle - useMessages() params olmadan çağrılıyor
-        const queryKey = [...inboxKeys.messages(), undefined];
+        // ✅ FIX: Doğru query key'i kullan - searchParams ile eşleştir
+        const queryKey = [...inboxKeys.messages(), searchParams];
         console.log('[MessagesScreen] 🔑 Query key for thread_read event:', queryKey);
         
         queryClient.setQueryData(queryKey, (oldData: InboxMessage[] | undefined) => {
@@ -225,11 +221,9 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         const currentData = queryClient.getQueryData<InboxMessage[]>(queryKey);
         console.log('[MessagesScreen] 🔍 Cache kontrolü - thread_read setQueryData sonrası:', currentData?.map(m => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
         
-        // ✅ Backend iyileştirmesi: invalidateQueries kaldırıldı
-        // Backend'den gelen unreadCount ve isUnread değerleri zaten setQueryData ile cache'e yazıldı
-        // invalidateQueries gereksiz refetch yapıp performansı düşürüyor
-        // Sadece kontrollü cache güncellemesi yeterli
-    }, [queryClient]);
+        // ✅ FIX: Query'yi invalidate et ki React Query cache'i güncellesin ve UI yenilensin
+        queryClient.invalidateQueries({ queryKey: [...inboxKeys.messages(), searchParams] });
+    }, [queryClient, searchParams]);
 
     // Socket event handler - user_typing event (kullanıcı typing yapıyor)
     const handleUserTyping = useCallback((eventData: { userId: string; threadId: string; isTyping: boolean }) => {
@@ -318,18 +312,24 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
     }, [isConnected, on, off, handleNewMessage, handleThreadRead, handleUserTyping]);
 
     // FIX: MessagesScreen focus olduğunda bottom sheet'i kapat (Select Interests bottom sheet hatası)
-    // ✅ CRITICAL FIX: refetch() kaldırıldı - optimistic update'i override ediyordu
-    // Socket event'leri (thread_read) zaten cache'i güncelliyor
-    // Sadece bottom sheet'i kapat, refetch yapma (cache optimistic update'i korur)
+    // ✅ FIX: Screen focus olduğunda cache'i kontrol et ve gerekirse refetch yap
     useFocusEffect(
         useCallback(() => {
             // Screen focus olduğunda bottom sheet'i kapat
             closeBottomSheet();
             
-            // ✅ refetch() kaldırıldı - optimistic update'i override ediyordu
-            // Socket event'leri (thread_read) zaten cache'i güncelliyor
-            // Eğer socket bağlı değilse, kullanıcı pull-to-refresh yapabilir
-        }, [closeBottomSheet])
+            // ✅ FIX: MessageDetail'den döndüğünde cache'i kontrol et
+            // Eğer socket bağlı değilse veya thread_read event'i gelmediyse, refetch yap
+            // Ancak sadece cache'de okunmamış mesaj varsa refetch yap (gereksiz refetch'i önle)
+            const queryKey = [...inboxKeys.messages(), searchParams];
+            const cachedData = queryClient.getQueryData<InboxMessage[]>(queryKey);
+            const hasUnreadMessages = cachedData?.some(msg => msg.isUnread || (msg.unreadCount && msg.unreadCount > 0));
+            
+            if (hasUnreadMessages && (!isConnected || !cachedData)) {
+                console.log('[MessagesScreen] 🔄 Screen focused with unread messages, refetching...');
+                refetch();
+            }
+        }, [closeBottomSheet, queryClient, searchParams, isConnected, refetch])
     );
     
     const handleMessagePress = (messageId: string) => {
@@ -377,7 +377,8 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
         }
         
         // Query cache'deki mevcut durumu logla
-        const queryKey = [...inboxKeys.messages(), undefined];
+        // ✅ FIX: Doğru query key'i kullan - searchParams ile eşleştir
+        const queryKey = [...inboxKeys.messages(), searchParams];
         const currentCacheData = queryClient.getQueryData<InboxMessage[]>(queryKey);
         console.log(`[MessagesScreen] 📋 CACHE'DEKİ TÜM MESAJLAR (ÖNCE):`);
         if (currentCacheData && currentCacheData.length > 0) {

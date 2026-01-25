@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { useAppStore } from '@/src/store/appStore';
 import { toImageSource, DEFAULT_USER_AVATAR } from '@/src/utils';
-import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead, useAddReaction, useRemoveReaction, useDeleteMessage } from '../api/hooks';
+import { useSendGift, useCreateSupportRequest, useSendDirectMessage, useThreadMessages, useAcceptSupportRequest, useRejectSupportRequest, useCancelSupportRequest, useMarkThreadAsRead, useAddReaction, useRemoveReaction, useDeleteMessage, useMuteThread, useUnmuteThread, useMessages } from '../api/hooks';
 import { getThreadMessages } from '../api/messagesApi';
 import type { ThreadMessage } from '../api/messagesApi';
 import { useSocket } from '@/src/providers/SocketProvider';
@@ -236,6 +236,13 @@ const MessageDetailScreen: React.FC = () => {
   const [messages, setMessages] = useState<MessageDetailItem[]>([]);
   const [expandedSupportRequests, setExpandedSupportRequests] = useState<{ [key: string]: boolean }>({});
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  // Seçilen görsel state'i (caption için)
+  const [selectedImage, setSelectedImage] = useState<{
+    uri: string;
+    type: string;
+    name: string;
+    fileSize?: number;
+  } | null>(null);
   // Emoji picker state for each message
   const [emojiPickerOpen, setEmojiPickerOpen] = useState<{ [key: string]: boolean }>({});
   const emojiPickerAnimations = useRef<{ [key: string]: { width: Animated.Value; opacity: Animated.Value } }>({}).current;
@@ -307,6 +314,13 @@ const MessageDetailScreen: React.FC = () => {
   const queryClient = useQueryClient();
   const reportUserMutation = useReportUser();
   const blockUserMutation = useBlockUser();
+  const muteThreadMutation = useMuteThread();
+  const unmuteThreadMutation = useUnmuteThread();
+  
+  // Thread'in muted durumunu almak için messages listesini kontrol et
+  const { data: messagesList } = useMessages({ threadType: 'ALL' });
+  const currentThread = messagesList?.find(msg => msg.id === threadId);
+  const isMuted = currentThread?.isMuted ?? false;
   
   // Socket context
   const {
@@ -794,15 +808,47 @@ const MessageDetailScreen: React.FC = () => {
                 };
               })() : undefined,
               // ✅ Grup mesajları (5 dakika içinde aynı kullanıcıdan gelen mesajlar - tek balonda gösterilecek)
-              groupedMessages: msg.groupedMessages ? msg.groupedMessages.map((groupedMsg: any) => ({
-                id: groupedMsg.id,
-                text: groupedMsg.text || groupedMsg.message || '', // Backend'den message olarak gelebilir
-                message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
-                timestamp: formatMessageTime(groupedMsg.sentAt || groupedMsg.timestamp),
-                sentAt: groupedMsg.sentAt || groupedMsg.timestamp,
-                senderId: groupedMsg.senderId || msg.senderId, // ✅ FIX: groupedMessages için senderId ekle (ana mesajın senderId'sini kullan)
-              })) : undefined,
+              // ✅ FIX: groupedMessages'ı timestamp'e göre sırala (en eski üstte, en yeni altta - inverted FlatList için)
+              groupedMessages: msg.groupedMessages ? (() => {
+                const mapped = msg.groupedMessages.map((groupedMsg: any) => ({
+                  id: groupedMsg.id,
+                  text: groupedMsg.text || groupedMsg.message || '', // Backend'den message olarak gelebilir
+                  message: groupedMsg.message || groupedMsg.text || '', // Backward compatibility
+                  timestamp: formatMessageTime(groupedMsg.sentAt || groupedMsg.timestamp),
+                  sentAt: groupedMsg.sentAt || groupedMsg.timestamp || msg.sentAt, // ✅ FIX: timestamp yoksa ana mesajın sentAt'ını kullan
+                  senderId: groupedMsg.senderId || msg.senderId, // ✅ FIX: groupedMessages için senderId ekle (ana mesajın senderId'sini kullan)
+                }));
+                
+                // Ascending order (en eski üstte, en yeni altta) - inverted FlatList için
+                const sorted = mapped.sort((a: any, b: any) => {
+                  const timeA = new Date(a.sentAt).getTime();
+                  const timeB = new Date(b.sentAt).getTime();
+                  return timeA - timeB;
+                });
+                
+                return sorted;
+              })() : undefined,
             };
+            
+            // ✅ FIX: Ana mesajın sentAt'ını, groupedMessages içindeki en yeni mesajın sentAt'ı ile karşılaştır
+            // Eğer groupedMessages içinde daha yeni bir mesaj varsa, ana mesajın sentAt'ını güncelle
+            // Bu sayede mesajlar doğru sırada görünecek (en yeni mesaj en altta)
+            if (convertedMessage.groupedMessages && convertedMessage.groupedMessages.length > 0) {
+              const latestGroupedMessage = convertedMessage.groupedMessages[convertedMessage.groupedMessages.length - 1];
+              const mainMessageTime = new Date(convertedMessage.sentAt).getTime();
+              const latestGroupedTime = new Date(latestGroupedMessage.sentAt).getTime();
+              
+              // Eğer groupedMessages içindeki en yeni mesaj, ana mesajdan daha yeni ise
+              if (latestGroupedTime > mainMessageTime) {
+                convertedMessage.sentAt = latestGroupedMessage.sentAt;
+                console.log('[MessageDetail] 🔄 Ana mesajın sentAt güncellendi (groupedMessages içindeki en yeni mesaj):', {
+                  messageId: convertedMessage.id,
+                  oldSentAt: msg.sentAt,
+                  newSentAt: latestGroupedMessage.sentAt,
+                  latestGroupedMessageId: latestGroupedMessage.id,
+                });
+              }
+            }
             
             // ✅ DEBUG: TIPS mesajları için convert sonrası log
             if (messageType === 'tips') {
@@ -1758,11 +1804,17 @@ const MessageDetailScreen: React.FC = () => {
     
     // CRITICAL FIX: Component unmount olsa bile inbox listesini güncelle
     // Kullanıcı mesaj detayından çıktığında inbox listesinde yeşil tik görünmemeli
-    // Optimistic update: Local state'te thread'i okundu olarak işaretle (hemen UI'da göster)
-    const queryKey = [...inboxKeys.messages(), undefined];
-    console.log('[MessageDetail] 🔑 Query key for thread_read event:', queryKey);
+    // ✅ FIX: Tüm olası query key'leri güncelle (searchParams farklı olabilir)
+    // MessagesScreen'de farklı searchParams ile çağrılabilir, bu yüzden tüm kombinasyonları güncelle
+    const allQueryKeys = queryClient.getQueryCache().findAll({
+      queryKey: inboxKeys.messages(),
+    });
     
-    queryClient.setQueryData(queryKey, (oldData: any[] | undefined) => {
+    console.log('[MessageDetail] 🔑 Found query keys for thread_read event:', allQueryKeys.map(q => q.queryKey));
+    
+    // Tüm query key'leri güncelle
+    allQueryKeys.forEach((query) => {
+      queryClient.setQueryData(query.queryKey, (oldData: any[] | undefined) => {
       console.log('[MessageDetail] 📊 THREAD_READ UPDATE - Önceki durum:', oldData?.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
       if (!oldData) {
         if (__DEV__) {
@@ -1794,13 +1846,13 @@ const MessageDetailScreen: React.FC = () => {
         console.log(`[MessageDetail]     unreadCount: ${threadAfter.unreadCount || 0} (ÖNCE: ${threadBefore?.unreadCount || 0}, Backend: ${unreadCount})`);
       }
       
-      console.log('[MessageDetail] ✅ THREAD_READ UPDATE - Sonraki durum:', updatedData.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
-      return updatedData;
+        console.log('[MessageDetail] ✅ THREAD_READ UPDATE - Sonraki durum:', updatedData.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
+        return updatedData;
+      });
     });
     
-    // Query data'yı tekrar kontrol et
-    const currentData = queryClient.getQueryData<any[]>(queryKey);
-    console.log('[MessageDetail] 🔍 Cache kontrolü - thread_read setQueryData sonrası:', currentData?.map((m: any) => ({ id: m.id, isUnread: m.isUnread, unreadCount: m.unreadCount })));
+    // ✅ FIX: Tüm messages query'lerini invalidate et ki UI güncellensin
+    queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     
     // ✅ Backend iyileştirmesi: invalidateQueries kaldırıldı
     // Backend'den gelen unreadCount ve isUnread değerleri zaten setQueryData ile cache'e yazıldı
@@ -1916,8 +1968,10 @@ const MessageDetailScreen: React.FC = () => {
       );
     }
     
-    // Inbox listesini invalidate et
+    // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
     
     // Support thread'e yönlendir (eğer kullanıcı recipient ise)
     if (data.threadId) {
@@ -1926,7 +1980,7 @@ const MessageDetailScreen: React.FC = () => {
       }, 500);
     }
     // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
-  }, [handleGoToSupportChat]);
+  }, [handleGoToSupportChat, queryClient]);
 
   const handleSupportRequestRejected = useCallback((data: { requestId: string }) => {
     console.log('[MessageDetail] ❌ Support request rejected event:', data);
@@ -1949,10 +2003,12 @@ const MessageDetailScreen: React.FC = () => {
       );
     }
     
-    // Inbox listesini invalidate et
+    // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
     // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
-  }, []);
+  }, [queryClient]);
 
   const handleSupportRequestCancelled = useCallback((data: { requestId: string }) => {
     console.log('[MessageDetail] 🚫 Support request cancelled event:', data);
@@ -1975,10 +2031,12 @@ const MessageDetailScreen: React.FC = () => {
       );
     }
     
-    // Inbox listesini invalidate et
+    // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
     // CRITICAL FIX: queryClient stable olduğu için dependency'den çıkarıldı
-  }, []);
+  }, [queryClient]);
 
   // Handle Message Deleted (socket event)
   const handleMessageDeleted = useCallback((eventData: { messageId: string; threadId?: string }) => {
@@ -2236,6 +2294,32 @@ const MessageDetailScreen: React.FC = () => {
   }, [user?.id, effectiveRecipientUserId, reportUserMutation]);
 
   // Handle Block
+  const handleMute = useCallback(() => {
+    if (!threadId) return;
+    
+    muteThreadMutation.mutate(threadId, {
+      onSuccess: () => {
+        Alert.alert('Success', 'Notifications for this conversation have been muted');
+      },
+      onError: (error: any) => {
+        Alert.alert('Error', error?.message || 'Failed to mute notifications');
+      },
+    });
+  }, [threadId, muteThreadMutation]);
+
+  const handleUnmute = useCallback(() => {
+    if (!threadId) return;
+    
+    unmuteThreadMutation.mutate(threadId, {
+      onSuccess: () => {
+        Alert.alert('Success', 'Notifications for this conversation have been unmuted');
+      },
+      onError: (error: any) => {
+        Alert.alert('Error', error?.message || 'Failed to unmute notifications');
+      },
+    });
+  }, [threadId, unmuteThreadMutation]);
+
   const handleBlock = useCallback(() => {
     if (!user?.id || !effectiveRecipientUserId) return;
     
@@ -2728,6 +2812,22 @@ const MessageDetailScreen: React.FC = () => {
       return;
     }
 
+    // ✅ CRITICAL FIX: Optimistic update - Hemen accepted olarak işaretle
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.type === 'support_request' && msg.supportRequest && (msg.supportRequest.requestId === requestId || msg.id === requestId)) {
+          return {
+            ...msg,
+            supportRequest: {
+              ...msg.supportRequest,
+              status: 'accepted' as const,
+            },
+          };
+        }
+        return msg;
+      })
+    );
+
     if (isConnected && isSocketReady) {
       // Socket ile accept et
       console.log('[MessageDetail] ✅ Accepting support request via socket:', requestId);
@@ -2738,7 +2838,29 @@ const MessageDetailScreen: React.FC = () => {
       acceptSupportRequestMutation.mutate(requestId, {
         onSuccess: (data) => {
           console.log('[MessageDetail] ✅ Support request accepted, threadId:', data.threadId);
-          Alert.alert('Success', 'Support request accepted');
+          
+          // ✅ CRITICAL FIX: ThreadId'yi optimistic update'e ekle
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.type === 'support_request' && msg.supportRequest && (msg.supportRequest.requestId === requestId || msg.id === requestId)) {
+                return {
+                  ...msg,
+                  supportRequest: {
+                    ...msg.supportRequest,
+                    status: 'accepted' as const,
+                    threadId: data.threadId,
+                  },
+                };
+              }
+              return msg;
+            })
+          );
+          
+          // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et
+          queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+          queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+          queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
+          
           // Support thread'e yönlendir
           if (data.threadId) {
             handleGoToSupportChat(data.threadId, requestId);
@@ -2746,11 +2868,28 @@ const MessageDetailScreen: React.FC = () => {
         },
         onError: (error: any) => {
           console.error('[MessageDetail] ❌ Support request accept error:', error);
+          
+          // ✅ CRITICAL FIX: Hata durumunda optimistic update'i geri al
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.type === 'support_request' && msg.supportRequest && (msg.supportRequest.requestId === requestId || msg.id === requestId)) {
+                return {
+                  ...msg,
+                  supportRequest: {
+                    ...msg.supportRequest,
+                    status: 'pending' as const,
+                  },
+                };
+              }
+              return msg;
+            })
+          );
+          
           Alert.alert('Error', error.message || 'Support request could not be accepted');
         },
       });
     }
-  }, [isConnected, isSocketReady, socketAcceptSupportRequest, acceptSupportRequestMutation]);
+  }, [isConnected, isSocketReady, socketAcceptSupportRequest, acceptSupportRequestMutation, queryClient, handleGoToSupportChat]);
 
   // Handle Reject Support Request
   const handleRejectSupportRequest = useCallback((requestId: string) => {
@@ -3059,21 +3198,13 @@ const MessageDetailScreen: React.FC = () => {
     }
   }, [messages, user?.id, addReactionMutation, removeReactionMutation]);
 
-  // Handle Add Image - Galeriyi aç ve görseli mesaj olarak gönder
+  // Handle Add Image - Galeriyi aç ve görseli seç (caption için)
   const handleAddImage = useCallback(async () => {
-    if (!threadId || !effectiveRecipientUserId) {
-      Alert.alert('Error', 'Thread ID or recipient user not found');
-      return;
-    }
-
     try {
       const result = await imagePickerService.pickFromGallery();
       
       if (result.success && result.asset) {
         console.log('[MessageDetail] 📷 Image selected:', result.asset.uri);
-        
-        // Görseli FormData ile backend'e gönder
-        const formData = new FormData();
         
         // File extension ve mime type belirle
         let fileExtension = 'jpg';
@@ -3090,18 +3221,50 @@ const MessageDetailScreen: React.FC = () => {
           }
         }
         
-        // FormData'ya görseli ekle
-        const mediaFile = {
+        // Görseli state'e kaydet (caption için)
+        setSelectedImage({
           uri: result.asset.uri,
           type: mimeType,
           name: `image_${Date.now()}.${fileExtension}`,
-        } as any;
-        
-        formData.append('media', mediaFile);
-        formData.append('mediaType', 'image');
-        if (result.asset.fileSize) {
-          formData.append('fileSize', result.asset.fileSize.toString());
+          fileSize: result.asset.fileSize,
+        });
+      } else {
+        if (result.error) {
+          Alert.alert('Error', typeof result.error === 'string' ? result.error : 'An error occurred while selecting image');
         }
+      }
+    } catch (error: any) {
+      console.error('[MessageDetail] ❌ Image picker error:', error);
+      Alert.alert('Error', 'An error occurred while selecting image');
+    }
+  }, []);
+  
+  // Handle Send Image - Görsel + caption gönder
+  const handleSendImage = useCallback(async (image: { uri: string; type: string; name: string; fileSize?: number }, caption: string) => {
+    if (!threadId || !effectiveRecipientUserId) {
+      Alert.alert('Error', 'Thread ID or recipient user not found');
+      return;
+    }
+
+    try {
+      // Görseli FormData ile backend'e gönder
+      const formData = new FormData();
+      
+      // FormData'ya görseli ekle
+      const mediaFile = {
+        uri: image.uri,
+        type: image.type,
+        name: image.name,
+      } as any;
+      
+      formData.append('media', mediaFile);
+      formData.append('mediaType', 'image');
+      if (caption.trim()) {
+        formData.append('caption', caption.trim());
+      }
+      if (image.fileSize) {
+        formData.append('fileSize', image.fileSize.toString());
+      }
         
         // 🔍 REQUEST YAPISI LOG'U
         console.log('[MessageDetail] 📤 BACKEND REQUEST YAPISI:', {
@@ -3113,13 +3276,14 @@ const MessageDetailScreen: React.FC = () => {
           },
           formData: {
             media: {
-              uri: result.asset.uri,
-              type: mimeType,
-              name: mediaFile.name,
-              fileSize: result.asset.fileSize,
+              uri: image.uri,
+              type: image.type,
+              name: image.name,
+              fileSize: image.fileSize,
             },
             mediaType: 'image',
-            fileSize: result.asset.fileSize?.toString(),
+            caption: caption.trim() || undefined,
+            fileSize: image.fileSize?.toString(),
           },
           threadId,
           recipientUserId: effectiveRecipientUserId,
@@ -3129,12 +3293,12 @@ const MessageDetailScreen: React.FC = () => {
         const optimisticMessageId = `pending-image-${Date.now()}`;
         const optimisticImageMessage: MessageDetailItem = {
           id: optimisticMessageId,
-          text: '',
+          text: caption.trim() || '',
           timestamp: formatMessageTime(new Date()),
-      sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
+          sentAt: new Date().toISOString(), // CRITICAL: Sıralama için ISO timestamp
           isSent: true,
           type: 'image',
-          mediaUrl: result.asset.uri,
+          mediaUrl: image.uri,
           mediaType: 'image',
           uploadStatus: 'uploading',
           uploadProgress: 0,
@@ -3145,6 +3309,7 @@ const MessageDetailScreen: React.FC = () => {
           id: optimisticMessageId,
           type: optimisticImageMessage.type,
           mediaUrl: optimisticImageMessage.mediaUrl,
+          caption: caption.trim(),
           uploadStatus: optimisticImageMessage.uploadStatus,
         });
         
@@ -3160,6 +3325,9 @@ const MessageDetailScreen: React.FC = () => {
           return newMessages;
         });
         setTimeout(() => safeScrollToEnd(true), 100);
+        
+        // Seçilen görseli temizle
+        setSelectedImage(null);
         
         // Backend'e görseli yükle
         const apiClient = (await import('@/src/services/ApiService')).apiService.getClient();
@@ -3188,6 +3356,7 @@ const MessageDetailScreen: React.FC = () => {
           messageId: response.data?.messageId,
           mediaUrl: response.data?.mediaUrl,
           thumbnailUrl: response.data?.thumbnailUrl,
+          caption: response.data?.caption,
         });
         
         // Optimistic mesajı gerçek mesajla değiştir
@@ -3196,6 +3365,7 @@ const MessageDetailScreen: React.FC = () => {
             optimisticId: optimisticMessageId,
             realId: response.data.messageId,
             mediaUrl: response.data.mediaUrl,
+            caption: response.data?.caption || caption.trim(),
           });
           
           setMessages((prev) => {
@@ -3218,9 +3388,11 @@ const MessageDetailScreen: React.FC = () => {
             
             const optimisticMsg = prev[optimisticIndex];
             const backendTimestamp = response.data.timestamp || response.data.sentAt;
+            const backendCaption = response.data.caption || caption.trim() || '';
             const updatedMessage: MessageDetailItem = {
               ...optimisticMsg,
               id: response.data.messageId,
+              text: backendCaption,
               mediaUrl: response.data.mediaUrl || response.data.imageUrl,
               thumbnailUrl: response.data.thumbnailUrl,
               uploadStatus: 'uploaded',
@@ -3251,39 +3423,33 @@ const MessageDetailScreen: React.FC = () => {
             console.warn('[MessageDetail] ⚠️ Response\'da messageId yok!', response.data);
           }
         }
-      } else {
-        if (result.error) {
-          Alert.alert('Error', typeof result.error === 'string' ? result.error : 'An error occurred while selecting image');
-        }
+      } catch (error: any) {
+        console.error('[MessageDetail] ❌ Image upload error:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          error: error,
+        });
+        
+        // ✅ FIX: Optimistic mesajı direkt kaldır (failed olarak işaretlemek yerine)
+        // Gönderilemeyen mesajlar ekranda görünmemeli
+        setMessages((prev) =>
+          prev.filter((msg) => !msg.id.startsWith('pending-image-'))
+        );
+        
+        // Seçilen görseli geri yükle (hata durumunda)
+        setSelectedImage(image);
+        
+        const errorMessage = error.response?.data?.error?.message || 
+                            error.response?.data?.message || 
+                            error.message || 
+                            'An error occurred while uploading image';
+        
+        console.error('[MessageDetail] ❌ Image upload failed, showing alert:', errorMessage);
+        Alert.alert('Error', errorMessage);
       }
-    } catch (error: any) {
-      console.error('[MessageDetail] ❌ Image upload error:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        error: error,
-      });
-      
-      // Optimistic mesajı kaldır veya hata durumuna geçir
-      // Tüm pending-image- ile başlayan mesajları hata durumuna geçir
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id.startsWith('pending-image-')
-            ? { ...msg, uploadStatus: 'failed' }
-            : msg
-        )
-      );
-      
-      const errorMessage = error.response?.data?.error?.message || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          'An error occurred while uploading image';
-      
-      console.error('[MessageDetail] ❌ Image upload failed, showing alert:', errorMessage);
-      Alert.alert('Error', errorMessage);
-    }
-  }, [threadId, effectiveRecipientUserId, safeScrollToEnd]);
+    }, [threadId, effectiveRecipientUserId, safeScrollToEnd]);
 
 
 
@@ -3346,9 +3512,15 @@ const MessageDetailScreen: React.FC = () => {
 
   const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-  // ✅ FIX: Silinen mesajları filtrele - ekrandan tamamen kaldır
+  // ✅ FIX: Silinen ve gönderilemeyen mesajları filtrele - ekrandan tamamen kaldır
   const visibleMessages = useMemo(() => {
-    return messages.filter(msg => !msg.isDeleted);
+    return messages.filter(msg => {
+      // Silinen mesajları kaldır
+      if (msg.isDeleted) return false;
+      // Gönderilemeyen (failed) mesajları kaldır
+      if (msg.uploadStatus === 'failed') return false;
+      return true;
+    });
   }, [messages]);
 
   const renderMessageItem = useCallback(({ item, index }: { item: MessageDetailItem; index: number }) => {
@@ -3931,6 +4103,9 @@ const MessageDetailScreen: React.FC = () => {
           onShare={handleShare}
           onReport={handleReport}
           onBlock={handleBlock}
+          onMute={handleMute}
+          onUnmute={handleUnmute}
+          isMuted={isMuted}
           recipientUserId={effectiveRecipientUserId}
         />
 
@@ -4105,10 +4280,13 @@ const MessageDetailScreen: React.FC = () => {
             <MessageInput
               onSendMessage={handleSendMessage}
               onAddImage={handleAddImage}
+              onSendImage={handleSendImage}
               placeholder="Type your message..."
               threadId={threadId}
               onTypingStart={handleTypingStart}
               onTypingStop={handleTypingStop}
+              selectedImage={selectedImage}
+              onClearSelectedImage={() => setSelectedImage(null)}
             />
           </Box>
 

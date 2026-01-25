@@ -10,6 +10,7 @@ export interface Notification {
   avatar?: string | null; // CRITICAL FIX: avatarUrl → avatar (backend format)
   // CRITICAL FIX: imageUrl root seviyede olmamalı, sadece data içinde olmalı
   // imageUrl?: string | null; // KALDIRILDI - sadece data.imageUrl kullanılacak
+  threadId?: string; // DM_REQUEST_RECEIVED için threadId root seviyede olabilir
   read: boolean;
   readAt?: string;
   createdAt: string;

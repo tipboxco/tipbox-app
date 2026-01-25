@@ -267,7 +267,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
               toImageSource(item.senderAvatar || params.senderAvatar) ||
               DEFAULT_USER_AVATAR
             }
-            alt={item.senderName || params.senderName || 'User'}
+            alt={String(item.senderName || params.senderName || 'User')}
             width={24}
             height={24}
             borderRadius={12}
@@ -277,7 +277,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
             fontSize="$xs"
             fontWeight="$medium"
           >
-            {item.senderName || params.senderName || 'Unknown User'}
+            {String(item.senderName || params.senderName || 'Unknown User')}
           </Text>
         </HStack>
       )}
@@ -511,14 +511,14 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
               </Box>
             )}
             
-            {item.text && item.text.trim() && (
+            {item.text && String(item.text).trim() && (
               <Box px="$3" py="$2">
                 <Text
                   color={isDark ? '#FFFFFF' : '#000000'}
                   fontSize="$xs"
                   fontWeight="$normal"
                 >
-                  {item.text}
+                  {String(item.text)}
                 </Text>
               </Box>
             )}
@@ -534,7 +534,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                     fontWeight="$normal"
                     opacity={0.9}
                   >
-                    {groupedMsg.text || '(Mesaj içeriği yok)'}
+                    {String(groupedMsg.text || '(Mesaj içeriği yok)')}
                   </Text>
                 ))}
               </VStack>
@@ -548,7 +548,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
               fontSize="$2xs"
               fontWeight="$normal"
             >
-              {formatMessageTime(item.timestamp)}
+              {String(formatMessageTime(item.timestamp) || '')}
             </Text>
           </VStack>
         </VStack>

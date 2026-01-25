@@ -196,6 +196,14 @@ const SupportMessageDetailScreen: React.FC = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const insets = useSafeAreaInsets();
   
+  // Seçilen görsel state'i (caption için)
+  const [selectedImage, setSelectedImage] = useState<{
+    uri: string;
+    type: string;
+    name: string;
+    fileSize?: number;
+  } | null>(null);
+  
   // Support request bilgilerini thread mesajlarından al
   const [supportRequestInfo, setSupportRequestInfo] = useState<{
     supportType?: string;
@@ -425,7 +433,16 @@ const SupportMessageDetailScreen: React.FC = () => {
 
   // Socket bağlantısı ve thread join
   useEffect(() => {
-    if (!threadId || !isConnected) return;
+    // Pending request'lerde threadId yok, bu durumda socket kullanılamaz
+    if (!threadId) {
+      setIsSocketReady(false);
+      return;
+    }
+
+    if (!isConnected) {
+      setIsSocketReady(false);
+      return;
+    }
 
     console.log('[SupportMessageDetail] ✅ Socket connected, joining thread:', threadId);
     joinThread(threadId);
@@ -435,6 +452,7 @@ const SupportMessageDetailScreen: React.FC = () => {
       if (threadId && isConnected) {
         leaveThread(threadId);
       }
+      setIsSocketReady(false);
     };
   }, [threadId, isConnected, joinThread, leaveThread]);
 
@@ -592,9 +610,10 @@ const SupportMessageDetailScreen: React.FC = () => {
       })
     );
     
-    // Inbox listesini invalidate et
+    // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
     
     // Eğer bu ekrandaki request ise, threadId'yi güncelle
     if (data.requestId === requestId) {
@@ -624,9 +643,10 @@ const SupportMessageDetailScreen: React.FC = () => {
       })
     );
     
-    // Inbox listesini invalidate et
+    // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
   }, [queryClient]);
 
   // Support request cancelled handler
@@ -649,9 +669,10 @@ const SupportMessageDetailScreen: React.FC = () => {
       })
     );
     
-    // Inbox listesini invalidate et
+    // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
     queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
     queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+    queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
   }, [queryClient]);
 
   // ✅ WhatsApp Engine: Güvenli scroll helper - Inverted FlatList için scrollToEnd kullan
@@ -737,8 +758,13 @@ const SupportMessageDetailScreen: React.FC = () => {
   // Yeni mesaj gönderme
   const handleSendMessage = (messageText: string) => {
     if (!messageText.trim()) return;
+    
+    // Pending request'lerde threadId yok, mesaj gönderilemez
     if (!threadId) {
-      Alert.alert('Error', 'Thread ID not found');
+      Alert.alert(
+        'Cannot Send Message',
+        'This support request has not been accepted yet. Please wait for the expert to accept your request before sending messages.'
+      );
       return;
     }
 
@@ -762,10 +788,24 @@ const SupportMessageDetailScreen: React.FC = () => {
     }, 100);
 
     // Socket ile mesaj gönder
-    if (isConnected && isSocketReady) {
-      socketSendSupportMessage(threadId, messageText.trim());
+    if (isConnected && isSocketReady && threadId) {
+      try {
+        socketSendSupportMessage(threadId, messageText.trim());
+      } catch (error) {
+        console.error('[SupportMessageDetail] Socket send error:', error);
+        Alert.alert('Error', 'Failed to send message. Please try again.');
+        // Optimistic mesajı geri al
+        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
+      }
     } else {
-      Alert.alert('Error', 'Socket connection not available');
+      // Socket bağlantısı yoksa veya threadId yoksa
+      const errorMessage = !threadId 
+        ? 'Thread ID not found. Please wait for the request to be accepted.'
+        : !isConnected
+        ? 'Socket connection not available. Please check your internet connection and try again.'
+        : 'Socket is not ready. Please wait a moment and try again.';
+      
+      Alert.alert('Cannot Send Message', errorMessage);
       // Optimistic mesajı geri al
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessageId));
     }
@@ -803,9 +843,10 @@ const SupportMessageDetailScreen: React.FC = () => {
         onSuccess: (data) => {
           console.log('[SupportMessageDetail] ✅ Support request accepted, threadId:', data.threadId);
           Alert.alert('Success', 'Support request accepted');
-          // Inbox listesini invalidate et
+          // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
           queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
           queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+          queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
           // Eğer bu ekrandaki request ise, threadId'yi güncelle
           if (targetRequestId === requestId) {
             navigation.setParams({ threadId: data.threadId, status: 'active' });
@@ -847,9 +888,10 @@ const SupportMessageDetailScreen: React.FC = () => {
                 onSuccess: () => {
                   console.log('[SupportMessageDetail] ✅ Support request rejected');
                   Alert.alert('Success', 'Support request rejected');
-                  // Inbox listesini invalidate et
+                  // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
                   queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
                   queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+                  queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
                   // Eğer bu ekrandaki request ise, geri dön
                   if (targetRequestId === requestId) {
                     navigation.goBack();
@@ -893,9 +935,10 @@ const SupportMessageDetailScreen: React.FC = () => {
                 onSuccess: () => {
                   console.log('[SupportMessageDetail] ✅ Support request canceled');
                   Alert.alert('Success', 'Support request cancelled');
-                  // Inbox listesini invalidate et
+                  // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
                   queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
                   queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
+                  queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
                   // Eğer bu ekrandaki request ise, geri dön
                   if (targetRequestId === requestId) {
                     navigation.goBack();
@@ -1215,21 +1258,13 @@ const SupportMessageDetailScreen: React.FC = () => {
     return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Handle Add Image - Galeriyi aç ve görseli mesaj olarak gönder
+  // Handle Add Image - Galeriyi aç ve görseli seç (caption için)
   const handleAddImage = useCallback(async () => {
-    if (!threadId) {
-      Alert.alert('Error', 'Thread ID not found');
-      return;
-    }
-
     try {
       const result = await imagePickerService.pickFromGallery();
       
       if (result.success && result.asset) {
         console.log('[SupportMessageDetail] 📷 Image selected:', result.asset.uri);
-        
-        // Görseli FormData ile backend'e gönder
-        const formData = new FormData();
         
         // File extension ve mime type belirle
         let fileExtension = 'jpg';
@@ -1246,121 +1281,154 @@ const SupportMessageDetailScreen: React.FC = () => {
           }
         }
         
-        // FormData'ya görseli ekle
-        formData.append('media', {
+        // Görseli state'e kaydet (caption için)
+        setSelectedImage({
           uri: result.asset.uri,
           type: mimeType,
           name: `image_${Date.now()}.${fileExtension}`,
-        } as any);
-        formData.append('mediaType', 'image');
-        if (result.asset.fileSize) {
-          formData.append('fileSize', result.asset.fileSize.toString());
-        }
-        
-        // Optimistic update: Görsel mesajını anında local state'e ekle
-        const optimisticMessageId = `pending-image-${Date.now()}`;
-        const now = new Date();
-        const optimisticImageMessage: MessageDetailItem = {
-          id: optimisticMessageId,
-          text: '',
-          timestamp: formatMessageTime(now),
-          sentAt: now.toISOString(), // CRITICAL: Sıralama için ISO timestamp
-          isSent: true,
-          senderId: user?.id, // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
-          type: 'image',
-          mediaUrl: result.asset.uri,
-          mediaType: 'image',
-          uploadStatus: 'uploading',
-          uploadProgress: 0,
-          isRead: false,
-        };
-        
-        setMessages((prev) => insertMessageInOrder(prev, optimisticImageMessage));
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-        
-        // Backend'e görseli yükle
-        const apiClient = (await import('@/src/services/ApiService')).apiService.getClient();
-        const response = await apiClient.post(`/inbox/threads/${threadId}/media`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === optimisticMessageId
-                    ? { ...msg, uploadProgress: progress }
-                    : msg
-                )
-              );
-            }
-          },
+          fileSize: result.asset.fileSize,
         });
-        
-        // Optimistic mesajı gerçek mesajla değiştir
-        if (response.data.messageId) {
-          setMessages((prev) => {
-            // Optimistic mesajı bul
-            const optimisticIndex = prev.findIndex(msg => msg.id === optimisticMessageId);
-            if (optimisticIndex === -1) {
-              // Optimistic mesaj bulunamadı, yeni mesaj ekle
-              const newMessage: MessageDetailItem = {
-                id: response.data.messageId,
-                text: '',
-                timestamp: formatMessageTime(new Date()),
-                sentAt: new Date().toISOString(),
-                isSent: true,
-                senderId: user?.id,
-                type: 'image',
-                mediaUrl: response.data.mediaUrl,
-                mediaType: 'image',
-                thumbnailUrl: response.data.thumbnailUrl,
-                uploadStatus: 'uploaded',
-                uploadProgress: 100,
-                isRead: false,
-              };
-              return insertMessageInOrder(prev, newMessage);
-            }
-            
-            // Optimistic mesajı gerçek mesajla değiştir
-            const updated = [...prev];
-            updated[optimisticIndex] = {
-              ...updated[optimisticIndex],
-              id: response.data.messageId,
-              mediaUrl: response.data.mediaUrl,
-              thumbnailUrl: response.data.thumbnailUrl,
-              uploadStatus: 'uploaded',
-              uploadProgress: 100,
-            };
-            // ✅ FIX: insertMessageInOrder ile doğru pozisyona taşı
-            return insertMessageInOrder(updated.filter((_, idx) => idx !== optimisticIndex), updated[optimisticIndex]);
-          });
-        }
-        
-        console.log('[SupportMessageDetail] ✅ Image uploaded successfully:', response.data);
       } else {
         if (result.error) {
           Alert.alert('Error', typeof result.error === 'string' ? result.error : 'An error occurred while selecting image');
         }
       }
     } catch (error: any) {
+      console.error('[SupportMessageDetail] ❌ Image picker error:', error);
+      Alert.alert('Error', 'An error occurred while selecting image');
+    }
+  }, []);
+  
+  // Handle Send Image - Görsel + caption gönder
+  const handleSendImage = useCallback(async (image: { uri: string; type: string; name: string; fileSize?: number }, caption: string) => {
+    if (!threadId) {
+      Alert.alert('Error', 'Thread ID not found');
+      return;
+    }
+
+    try {
+      // Görseli FormData ile backend'e gönder
+      const formData = new FormData();
+      
+      // FormData'ya görseli ekle
+      formData.append('media', {
+        uri: image.uri,
+        type: image.type,
+        name: image.name,
+      } as any);
+      formData.append('mediaType', 'image');
+      if (caption.trim()) {
+        formData.append('caption', caption.trim());
+      }
+      if (image.fileSize) {
+        formData.append('fileSize', image.fileSize.toString());
+      }
+        
+      // Optimistic update: Görsel mesajını anında local state'e ekle
+      const optimisticMessageId = `pending-image-${Date.now()}`;
+      const now = new Date();
+      const optimisticImageMessage: MessageDetailItem = {
+        id: optimisticMessageId,
+        text: caption.trim() || '',
+        timestamp: formatMessageTime(now),
+        sentAt: now.toISOString(), // CRITICAL: Sıralama için ISO timestamp
+        isSent: true,
+        senderId: user?.id, // ✅ WhatsApp Engine: Mesaj gruplama için gerekli
+        type: 'image',
+        mediaUrl: image.uri,
+        mediaType: 'image',
+        uploadStatus: 'uploading',
+        uploadProgress: 0,
+        isRead: false,
+      };
+      
+      setMessages((prev) => insertMessageInOrder(prev, optimisticImageMessage));
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+      
+      // Seçilen görseli temizle
+      setSelectedImage(null);
+      
+      // Backend'e görseli yükle
+      const apiClient = (await import('@/src/services/ApiService')).apiService.getClient();
+      const response = await apiClient.post(`/inbox/threads/${threadId}/media`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === optimisticMessageId
+                  ? { ...msg, uploadProgress: progress }
+                  : msg
+              )
+            );
+          }
+        },
+      });
+      
+      // Optimistic mesajı gerçek mesajla değiştir
+      if (response.data.messageId) {
+        setMessages((prev) => {
+          // Optimistic mesajı bul
+          const optimisticIndex = prev.findIndex(msg => msg.id === optimisticMessageId);
+          if (optimisticIndex === -1) {
+            // Optimistic mesaj bulunamadı, yeni mesaj ekle
+            const backendCaption = response.data.caption || caption.trim() || '';
+            const newMessage: MessageDetailItem = {
+              id: response.data.messageId,
+              text: backendCaption,
+              timestamp: formatMessageTime(new Date()),
+              sentAt: new Date().toISOString(),
+              isSent: true,
+              senderId: user?.id,
+              type: 'image',
+              mediaUrl: response.data.mediaUrl,
+              mediaType: 'image',
+              thumbnailUrl: response.data.thumbnailUrl,
+              uploadStatus: 'uploaded',
+              uploadProgress: 100,
+              isRead: false,
+            };
+            return insertMessageInOrder(prev, newMessage);
+          }
+          
+          // Optimistic mesajı gerçek mesajla değiştir
+          const backendCaption = response.data.caption || caption.trim() || '';
+          const updated = [...prev];
+          updated[optimisticIndex] = {
+            ...updated[optimisticIndex],
+            id: response.data.messageId,
+            text: backendCaption,
+            mediaUrl: response.data.mediaUrl,
+            thumbnailUrl: response.data.thumbnailUrl,
+            uploadStatus: 'uploaded',
+            uploadProgress: 100,
+          };
+          // ✅ FIX: insertMessageInOrder ile doğru pozisyona taşı
+          return insertMessageInOrder(updated.filter((_, idx) => idx !== optimisticIndex), updated[optimisticIndex]);
+        });
+      }
+      
+      console.log('[SupportMessageDetail] ✅ Image uploaded successfully:', response.data);
+    } catch (error: any) {
       console.error('[SupportMessageDetail] ❌ Image upload error:', error);
       
-      // Optimistic mesajı kaldır veya hata durumuna geçir
+      // ✅ FIX: Optimistic mesajı direkt kaldır (failed olarak işaretlemek yerine)
+      // Gönderilemeyen mesajlar ekranda görünmemeli
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id.startsWith('pending-image-')
-            ? { ...msg, uploadStatus: 'failed' }
-            : msg
-        )
+        prev.filter((msg) => !msg.id.startsWith('pending-image-'))
       );
+      
+      // Seçilen görseli geri yükle (hata durumunda)
+      setSelectedImage(image);
       
       Alert.alert('Error', error.response?.data?.error || error.message || 'An error occurred while uploading image');
     }
-  }, [threadId]);
+  }, [threadId, user?.id]);
 
   // Mesaj öğesi render fonksiyonu
   const renderMessageItem = ({ item, index }: { item: MessageDetailItem; index: number }) => {
@@ -1768,68 +1836,61 @@ const SupportMessageDetailScreen: React.FC = () => {
       />
 
       {/* Support Chat Participants - Header'ın altında, FlatList'in üstünde sabit */}
-      {/* ✅ FIX: Completed durumunda da participants göster (mesajlar görüntülenebilir) */}
-      {(params.status === 'active' || params.status === 'completed') && threadId && (
+      {/* ✅ FIX: Backend'den gelen participants.userOne ve participants.userTwo direkt kullanılacak */}
+      {(params.status === 'active' || params.status === 'completed') && threadId && participantsData?.participants && (
         <SupportChatParticipants
           user1Name={(() => {
-            // Sol tarafta: Mevcut kullanıcının kendi bilgisi
-            if (supportRequestUserIds.fromUserId === user?.id) {
-              // Mevcut kullanıcı user (fromUserId), kendi bilgisini göster
-              return participantInfo.userName ?? params.userName ?? 'User';
-            } else if (supportRequestUserIds.toUserId === user?.id) {
-              // Mevcut kullanıcı expert (toUserId), kendi bilgisini göster
-              return participantInfo.expertName ?? params.expertName ?? 'Expert';
+            // user1: Backend'den gelen userOne (kullanıcının kendi bilgileri)
+            const userOne = (participantsData.participants as any)?.userOne;
+            if (userOne && 'name' in userOne) {
+              return userOne.name || 'User';
             }
-            // Fallback
             return participantInfo.userName ?? params.userName ?? 'User';
           })()}
           user1Title={(() => {
-            if (supportRequestUserIds.fromUserId === user?.id) {
-              return participantInfo.userTitle ?? params.userTitle ?? '';
-            } else if (supportRequestUserIds.toUserId === user?.id) {
-              return participantInfo.expertTitle ?? params.expertTitle ?? '';
+            const userOne = (participantsData.participants as any)?.userOne;
+            if (userOne && 'title' in userOne) {
+              return userOne.title || '';
             }
             return participantInfo.userTitle ?? params.userTitle ?? '';
           })()}
           user1Avatar={(() => {
-            if (supportRequestUserIds.fromUserId === user?.id) {
-              return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
-            } else if (supportRequestUserIds.toUserId === user?.id) {
-              return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
+            const userOne = (participantsData.participants as any)?.userOne;
+            if (userOne && 'avatar' in userOne && userOne.avatar) {
+              return toImageSource(userOne.avatar);
             }
             return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
           })()}
           user2Name={(() => {
-            // Sağ tarafta: Karşı taraf (konuştuğu kişi)
-            if (supportRequestUserIds.fromUserId === user?.id) {
-              // Mevcut kullanıcı user, karşı taraf expert
-              return participantInfo.expertName ?? params.expertName ?? 'Expert';
-            } else if (supportRequestUserIds.toUserId === user?.id) {
-              // Mevcut kullanıcı expert, karşı taraf user
-              return participantInfo.userName ?? params.userName ?? 'User';
+            // user2: Backend'den gelen userTwo (2. kullanıcının bilgileri)
+            const userTwo = (participantsData.participants as any)?.userTwo;
+            if (userTwo && 'name' in userTwo) {
+              return userTwo.name || 'User';
             }
-            // Fallback
             return participantInfo.expertName ?? params.expertName ?? 'Expert';
           })()}
           user2Title={(() => {
-            if (supportRequestUserIds.fromUserId === user?.id) {
-              return participantInfo.expertTitle ?? params.expertTitle ?? '';
-            } else if (supportRequestUserIds.toUserId === user?.id) {
-              return participantInfo.userTitle ?? params.userTitle ?? '';
+            const userTwo = (participantsData.participants as any)?.userTwo;
+            if (userTwo && 'title' in userTwo) {
+              return userTwo.title || '';
             }
             return participantInfo.expertTitle ?? params.expertTitle ?? '';
           })()}
           user2Avatar={(() => {
-            if (supportRequestUserIds.fromUserId === user?.id) {
-              return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
-            } else if (supportRequestUserIds.toUserId === user?.id) {
-              return participantInfo.userAvatar ?? params.userAvatar ?? DEFAULT_USER_AVATAR;
+            const userTwo = (participantsData.participants as any)?.userTwo;
+            if (userTwo && 'avatar' in userTwo && userTwo.avatar) {
+              return toImageSource(userTwo.avatar);
             }
             return participantInfo.expertAvatar ?? params.expertAvatar ?? DEFAULT_USER_AVATAR;
           })()}
           supportTitle={supportRequestInfo?.supportType || 'Support Chat'}
-          tipsAmount={supportRequestInfo?.amount || 50}
+          tipsAmount={supportRequestInfo?.amount || 0}
           requestDetails={supportRequestInfo?.message || ''}
+          // ✅ YENİ: Response formatından gelen bilgiler
+          totalTipsAmount={participantsData?.totalTipsAmount}
+          supportRequestMessages={participantsData?.supportRequestMessages}
+          supportRequestType={participantsData?.supportRequestType}
+          supportRequestAmount={participantsData?.supportRequestAmount}
         />
       )}
 
@@ -1844,9 +1905,18 @@ const SupportMessageDetailScreen: React.FC = () => {
           <FlatList
             ref={flatListRef}
             data={useMemo(() => {
+              // ✅ FIX: Silinen ve gönderilemeyen mesajları filtrele - ekrandan tamamen kaldır
+              const filteredMessages = messages.filter(msg => {
+                // Silinen mesajları kaldır
+                if (msg.isDeleted) return false;
+                // Gönderilemeyen (failed) mesajları kaldır
+                if (msg.uploadStatus === 'failed') return false;
+                return true;
+              });
+              
               // ✅ WhatsApp Engine: Inverted FlatList için mesajları ters sırala (en yeni başta)
               // sentAt'a göre descending order (en yeni başta, en eski sonda)
-              return [...messages].sort((a, b) => {
+              return [...filteredMessages].sort((a, b) => {
                 const timeA = new Date(a.sentAt || a.timestamp).getTime();
                 const timeB = new Date(b.sentAt || b.timestamp).getTime();
                 return timeB - timeA; // Descending (en yeni başta)
@@ -1968,10 +2038,13 @@ const SupportMessageDetailScreen: React.FC = () => {
           <MessageInput
             onSendMessage={handleSendMessage}
             onAddImage={handleAddImage}
+            onSendImage={handleSendImage}
             placeholder="Write a message..."
             threadId={threadId}
             onTypingStart={handleTypingStart}
             onTypingStop={handleTypingStop}
+            selectedImage={selectedImage}
+            onClearSelectedImage={() => setSelectedImage(null)}
           />
         </Box>
       )}

@@ -19,6 +19,8 @@ import {
   getMessageReactions,
   getMessageFeed,
   deleteMessage,
+  muteThread,
+  unmuteThread,
   type GetMessagesParams,
   type AddReactionRequest,
   type MessageFeedItem,
@@ -376,9 +378,11 @@ export const useAcceptSupportRequest = () => {
   return useMutation<AcceptSupportRequestResponse, Error, string>({
     mutationFn: acceptSupportRequest,
     onSuccess: () => {
-      // Support request listesini invalidate et (socket event'ten sonra güncellenecek)
+      // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
       queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      // ✅ CRITICAL FIX: Tüm thread messages cache'lerini invalidate et (support request thread'leri dahil)
+      queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
     },
   });
 };
@@ -399,9 +403,11 @@ export const useRejectSupportRequest = () => {
   return useMutation<void, Error, string>({
     mutationFn: rejectSupportRequest,
     onSuccess: () => {
-      // Support request listesini invalidate et (socket event'ten sonra güncellenecek)
+      // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
       queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      // ✅ CRITICAL FIX: Tüm thread messages cache'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
     },
   });
 };
@@ -422,9 +428,11 @@ export const useCancelSupportRequest = () => {
   return useMutation<void, Error, string>({
     mutationFn: cancelSupportRequest,
     onSuccess: () => {
-      // Support request listesini invalidate et (socket event'ten sonra güncellenecek)
+      // ✅ CRITICAL FIX: Tüm ilgili cache'leri invalidate et (realtime güncelleme için)
       queryClient.invalidateQueries({ queryKey: inboxKeys.supportRequests() });
       queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+      // ✅ CRITICAL FIX: Tüm thread messages cache'lerini invalidate et
+      queryClient.invalidateQueries({ queryKey: [...inboxKeys.all, 'thread-messages'] });
     },
   });
 };
@@ -596,6 +604,70 @@ export const useMessageReactions = (messageId: string) => {
     queryKey: [...inboxKeys.all, 'reactions', messageId],
     queryFn: () => getMessageReactions(messageId),
     enabled: !!messageId,
+  });
+};
+
+/**
+ * Mute Thread mutation hook
+ * Thread bildirimlerini sessize alır
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const muteMutation = useMuteThread();
+ * muteMutation.mutate('thread-123');
+ */
+export const useMuteThread = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: muteThread,
+    onSuccess: (_, threadId) => {
+      // Optimistic update: Local state'te thread'i muted olarak işaretle
+      queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map((msg) => 
+          msg.id === threadId 
+            ? { ...msg, isMuted: true }
+            : msg
+        );
+      });
+      
+      // Mesaj listesini invalidate et (backend'den güncel veri gelsin)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
+  });
+};
+
+/**
+ * Unmute Thread mutation hook
+ * Thread bildirimlerini sessizden çıkarır
+ *
+ * @returns React Query mutation hook result
+ *
+ * @example
+ * const unmuteMutation = useUnmuteThread();
+ * unmuteMutation.mutate('thread-123');
+ */
+export const useUnmuteThread = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: unmuteThread,
+    onSuccess: (_, threadId) => {
+      // Optimistic update: Local state'te thread'i unmuted olarak işaretle
+      queryClient.setQueryData(inboxKeys.messages(), (oldData: InboxMessage[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map((msg) => 
+          msg.id === threadId 
+            ? { ...msg, isMuted: false }
+            : msg
+        );
+      });
+      
+      // Mesaj listesini invalidate et (backend'den güncel veri gelsin)
+      queryClient.invalidateQueries({ queryKey: inboxKeys.messages() });
+    },
   });
 };
 

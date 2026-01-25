@@ -17,7 +17,7 @@ import {
 } from '@gluestack-ui/themed';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DrawerActions } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
@@ -33,9 +33,13 @@ const InboxScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation<InboxScreenNavigationProp>();
+  const route = useRoute();
   const pagerRef = useRef<PagerView>(null);
   const tabContainerRef = useRef<any>(null);
   const [tabContainerWidth, setTabContainerWidth] = useState(0);
+  
+  // Route params'tan initialTab al (Support Requests için 1)
+  const initialTab = (route.params as any)?.initialTab ?? 0;
   
   // CRITICAL: Drawer gesture'ı disable et (yatay PagerView swipe ile çakışmasını önle)
   const setGestureEnabled = useDrawerStore((state) => state.setGestureEnabled);
@@ -56,9 +60,16 @@ const InboxScreen: React.FC = () => {
   );
   
   // 🎯 CORE: Shared progress value (0 = Messages, 1 = Support)
-  const progress = useSharedValue(0);
-  const [currentPage, setCurrentPage] = useState(0);
+  const progress = useSharedValue(initialTab);
+  const [currentPage, setCurrentPage] = useState(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Initial tab ayarlandıysa PagerView'i o tab'a yönlendir
+  React.useEffect(() => {
+    if (initialTab > 0 && pagerRef.current) {
+      pagerRef.current.setPage(initialTab);
+    }
+  }, [initialTab]);
   
   // PERFORMANCE FIX: Memoize background colors to prevent re-renders
   const backgroundColor = useMemo(() => isDark ? '$backgroundDark950' : '$backgroundLight0', [isDark]);
@@ -259,7 +270,7 @@ const InboxScreen: React.FC = () => {
           <AnimatedPagerView
             ref={pagerRef}
             style={{ flex: 1 }}
-            initialPage={0}
+            initialPage={initialTab}
             onPageScroll={handlePageScroll}
             onPageSelected={handlePageSelected}
           >

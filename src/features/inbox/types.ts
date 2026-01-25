@@ -13,6 +13,7 @@ export interface InboxMessage {
   isUnread: boolean;
   unreadCount: number;
   threadType?: 'DM' | 'SUPPORT'; // ✅ Opsiyonel: Thread tipi bilgisi
+  isMuted?: boolean; // ✅ Opsiyonel: Thread muted mu?
 }
 
 

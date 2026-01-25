@@ -438,7 +438,7 @@ const TrustCard: React.FC<{
 
 /**
  * Chat Button Component
- * Mesaj isteği kabul edildi bildirimleri için özel buton tasarımı
+ * Mesaj isteği kabul edildi ve alındı bildirimleri için özel buton tasarımı
  */
 const ChatButton: React.FC<{
     notification: Notification;
@@ -458,7 +458,7 @@ const ChatButton: React.FC<{
                 fontSize="$xs"
                 fontWeight="$semibold"
             >
-                Go to Chat
+                View
             </Text>
         </Pressable>
     );
@@ -891,10 +891,21 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
             // 4. Mesajlaşma Bildirimleri → MessageDetail veya SupportMessageDetail
             if (type === 'DM_REQUEST_RECEIVED') {
-                if (data.threadId) {
+                // Yeni yapıda threadId root seviyede veya data içinde olabilir
+                const threadId = notification.threadId || data.threadId;
+                
+                if (threadId && notification.userId) {
                     navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
-                        messageId: data.threadId,
-                        threadId: data.threadId,
+                        messageId: threadId,
+                        threadId: threadId,
+                        recipientUserId: notification.userId,
+                    });
+                    return;
+                } else if (notification.userId) {
+                    // Fallback: threadId yoksa userId ile thread oluşturulabilir
+                    navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
+                        messageId: notification.userId,
+                        threadId: notification.userId,
                         recipientUserId: notification.userId,
                     });
                     return;
@@ -1148,19 +1159,22 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         }
     };
 
-    // Handle Chat button press - Navigate to MessageDetail with threadId
+    // Handle Chat button press - Navigate to SupportRequestsScreen (all tab)
     const handleChatPress = () => {
-        const data = notification.data || notification.metadata || {};
-        if (data.threadId) {
-            try {
-                navigateToSharedScreenWithPruning(ROOT_ROUTES.MESSAGE_DETAIL, {
-                    messageId: data.threadId,
-                    threadId: data.threadId,
-                    recipientUserId: notification.userId,
-                });
-            } catch (error) {
-                console.error('[NotificationCard] Chat navigation error:', error);
-            }
+        // ✅ FIX: DM_REQUEST_RECEIVED bildirimi için SupportRequestsScreen'e, "all" tab'ına yönlendir
+        // Thread'e yönlendirme yapılmamalı
+        try {
+            // Inbox tab'ına navigate et (Support Requests tab'ı orada)
+            // initialTab: 1 = Support Requests tab (SupportRequestsScreen default filter zaten 'all')
+            navigationService.navigateNested(TAB_ROUTES.INBOX, 'InboxScreen', {
+                params: {
+                    initialTab: 1, // Support Requests tab index
+                },
+                priority: 'high',
+                force: false,
+            });
+        } catch (error) {
+            console.error('[NotificationCard] SupportRequestsScreen navigation error:', error);
         }
     };
 
@@ -1600,7 +1614,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     const showTipsButton = category === 'tips' && tipsAmount; // Tips bildirimlerinde buton gösterilecek
     const showTrustButton = category === 'trust';
     const showCommentText = ((category === 'post' && notification.type === 'POST_COMMENTED') || category === 'message') && commentContent; // POST_COMMENTED ve DM_REQUEST için
-    const showChatButton = notification.type === 'DM_REQUEST_ACCEPTED'; // Mesaj isteği kabul edildi bildirimi için
+    const showChatButton = notification.type === 'DM_REQUEST_ACCEPTED' || notification.type === 'DM_REQUEST_RECEIVED'; // Mesaj isteği kabul edildi ve alındı bildirimleri için
     const showPostCard = (category === 'post' || category === 'comment') && postId && data.postContent; // Post bildirimlerinde post içeriği varsa PostCard gösterilecek (görsel YOK)
     // Request card gösterimi - Support request ve DM request bildirimleri için
     const showRequestCard = (
@@ -1787,15 +1801,67 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                                     }
                                 }
                                 
-                                // Username'i bold yap (aynı font size, sadece bold) - tekil bildirimler için
+                                // Username'i bold yap ve tıklanabilir yap - tekil bildirimler için
+                                // DM_REQUEST_RECEIVED için username'e tıklandığında profile'a git
                                 if (username && message.includes(username)) {
                                     const parts = message.split(username);
+                                    const handleUsernamePress = () => {
+                                        // Username'e tıklandığında profile'a git
+                                        let targetUserId: string | undefined;
+                                        
+                                        if (isGrouped && primaryUser?.id) {
+                                            targetUserId = primaryUser.id;
+                                        } else if (notification.userId) {
+                                            targetUserId = notification.userId;
+                                        }
+                                        
+                                        if (!targetUserId) {
+                                            console.warn('[NotificationCard] Username press: userId is missing', {
+                                                isGrouped,
+                                                primaryUserId: primaryUser?.id,
+                                                notificationUserId: notification.userId,
+                                                notificationId: notification.id,
+                                                notificationType: notification.type,
+                                            });
+                                            return;
+                                        }
+                                        
+                                        const userIdString = String(targetUserId).trim();
+                                        
+                                        if (!userIdString || userIdString.length === 0) {
+                                            console.warn('[NotificationCard] Username press: userId is empty after conversion', {
+                                                originalUserId: targetUserId,
+                                                notification,
+                                            });
+                                            return;
+                                        }
+                                        
+                                        try {
+                                            navigationService.navigate(ROOT_ROUTES.PROFILE, {
+                                                screen: 'ProfileMain',
+                                                params: { userId: userIdString },
+                                            }, {
+                                                priority: 'high',
+                                                force: false,
+                                            });
+                                        } catch (error) {
+                                            console.error('[NotificationCard] Username navigation error:', error);
+                                        }
+                                    };
+                                    
                                     return (
-                                        <>
+                                        <Text fontSize="$sm">
                                             {parts[0]}
-                                            <Text fontWeight="semibold" fontSize="$sm">{username}</Text>
+                                            <Text 
+                                                fontSize="$sm" 
+                                                fontWeight="$semibold"
+                                                onPress={handleUsernamePress}
+                                                suppressHighlighting={true}
+                                            >
+                                                {username}
+                                            </Text>
                                             {parts[1]}
-                                        </>
+                                        </Text>
                                     );
                                 }
                                 return message;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   VStack,
@@ -6,7 +6,6 @@ import {
   Text,
   Image,
 } from '@gluestack-ui/themed';
-import { Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColorMode } from '@/src/hooks/useColorMode';
 
@@ -22,6 +21,11 @@ interface SupportChatParticipantsProps {
   category?: string;
   requestDetails?: string;
   attachments?: string[];
+  // ✅ YENİ: Response formatından gelen bilgiler
+  totalTipsAmount?: number; // Toplam TIPS miktarı
+  supportRequestMessages?: string[]; // Support request mesajları
+  supportRequestType?: 'GENERAL' | 'TECHNICAL' | 'PRODUCT'; // Support request type
+  supportRequestAmount?: number; // Support request amount (TIPS miktarı)
 }
 
 export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = ({
@@ -31,19 +35,19 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
   user2Name,
   user2Title,
   user2Avatar,
-  supportTitle = 'Smartwatches',
-  tipsAmount = 50,
-  category = 'Product Authentication',
-  requestDetails = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolorem fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-  attachments = ['photo1.jpg', 'photo2.jpg'],
+  supportTitle = 'Support Chat',
+  tipsAmount = 0,
+  category = '',
+  requestDetails = '',
+  attachments = [],
+  // ✅ YENİ: Response formatından gelen bilgiler
+  totalTipsAmount,
+  supportRequestMessages = [],
+  supportRequestType,
+  supportRequestAmount,
 }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
-  };
 
   return (
     <VStack
@@ -145,70 +149,140 @@ export const SupportChatParticipants: React.FC<SupportChatParticipantsProps> = (
 
       <Box height={1} bg={isDark ? '$borderDark800' : '$borderLight200'} width="100%"></Box>
 
-      {/* Support Title and TIPS Amount Section */}
-      <Pressable onPress={toggleExpanded}>
-        <HStack
-          px="$3"
-          py="$3"
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          {/* Support Title with Icon */}
-          <HStack space="xs" alignItems="center" flex={1}>
-            <Box
-              bg={isDark ? '$backgroundDark800' : '#F3F4F6'}
-              p="$2"
-              borderRadius="$full"
-            >
-              <Feather
-                name="help-circle"
-                size={16}
-                color={isDark ? '#A0AEC0' : '#4A5568'}
-              />
-            </Box>
+      {/* Tips Amount and Support Request Message Section */}
+      <VStack px="$3" py="$3" space="sm">
+        {/* Support Request Type */}
+        {supportRequestType && (
+          <HStack alignItems="center" justifyContent="space-between" mb="$1">
             <Text
-              color={isDark ? '$textDark50' : '$textLight950'}
-              fontSize={11}
-              fontWeight="$semibold"
+              color={isDark ? '$textDark400' : '$textLight500'}
+              fontSize={10}
+              fontWeight="$normal"
             >
-              {supportTitle}
+              Request Type
             </Text>
+            <Box
+              bg="#3B82F6"
+              borderRadius={12}
+              px="$2"
+              py="$1"
+            >
+              <Text
+                color="#FFFFFF"
+                fontSize={10}
+                fontWeight="$semibold"
+              >
+                {supportRequestType === 'GENERAL' ? 'Genel' : supportRequestType === 'TECHNICAL' ? 'Teknik' : 'Ürün'}
+              </Text>
+            </Box>
           </HStack>
+        )}
 
-          {/* TIPS Amount */}
-          <HStack space="xs" alignItems="center">
+        {/* Support Request Amount */}
+        {supportRequestAmount !== undefined && supportRequestAmount > 0 && (
+          <HStack alignItems="center" justifyContent="space-between" mb="$1">
+            <Text
+              color={isDark ? '$textDark400' : '$textLight500'}
+              fontSize={10}
+              fontWeight="$normal"
+            >
+              Request Amount
+            </Text>
             <Text
               color="#000000"
-              fontSize={12}
+              fontSize={14}
+              fontWeight="$bold"
+            >
+              {supportRequestAmount} TIPS
+            </Text>
+          </HStack>
+        )}
+
+        {/* Total Tips Amount */}
+        {totalTipsAmount !== undefined && totalTipsAmount > 0 && (
+          <HStack alignItems="center" justifyContent="space-between" mb="$1">
+            <Text
+              color={isDark ? '$textDark400' : '$textLight500'}
+              fontSize={10}
+              fontWeight="$normal"
+            >
+              Total Tips
+            </Text>
+            <Text
+              color="#000000"
+              fontSize={14}
+              fontWeight="$bold"
+            >
+              {totalTipsAmount.toFixed(2)} TIPS
+            </Text>
+          </HStack>
+        )}
+
+        {/* Tips Amount (Fallback - eski format için) */}
+        {(!totalTipsAmount || totalTipsAmount === 0) && tipsAmount > 0 && (
+          <HStack alignItems="center" justifyContent="space-between" mb="$1">
+            <Text
+              color={isDark ? '$textDark400' : '$textLight500'}
+              fontSize={10}
+              fontWeight="$normal"
+            >
+              Tips Amount
+            </Text>
+            <Text
+              color="#000000"
+              fontSize={14}
               fontWeight="$bold"
             >
               {tipsAmount} TIPS
             </Text>
-            <Feather
-              name={isExpanded ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={isDark ? '#A0AEC0' : '#4A5568'}
-            />
           </HStack>
-        </HStack>
-      </Pressable>
+        )}
 
-      {/* Expanded Details Section */}
-      {isExpanded && (
-        <VStack px="$3" pb="$3" space="sm">
-          {/* Request Details */}
+        {/* Support Request Messages */}
+        {supportRequestMessages && supportRequestMessages.length > 0 && (
           <VStack space="xs" mt="$1">
             <Text
+              color={isDark ? '$textDark400' : '$textLight500'}
               fontSize={10}
               fontWeight="$normal"
-              color={isDark ? '#CCCCCC' : '#666666'}
-              lineHeight={15}
+            >
+              Request Messages
+            </Text>
+            {supportRequestMessages.map((msg, index) => (
+              <Text
+                key={index}
+                fontSize={11}
+                fontWeight="$normal"
+                color={isDark ? '$textDark50' : '$textLight950'}
+                lineHeight={16}
+              >
+                {msg}
+              </Text>
+            ))}
+          </VStack>
+        )}
+
+        {/* Support Request Message (Fallback - eski format için) */}
+        {(!supportRequestMessages || supportRequestMessages.length === 0) && requestDetails && (
+          <VStack space="xs" mt="$1">
+            <Text
+              color={isDark ? '$textDark400' : '$textLight500'}
+              fontSize={10}
+              fontWeight="$normal"
+            >
+              Request Message
+            </Text>
+            <Text
+              fontSize={11}
+              fontWeight="$normal"
+              color={isDark ? '$textDark50' : '$textLight950'}
+              lineHeight={16}
             >
               {requestDetails}
             </Text>
           </VStack>
-        </VStack>
-      )}
+        )}
+      </VStack>
     </VStack>
   );
 };
