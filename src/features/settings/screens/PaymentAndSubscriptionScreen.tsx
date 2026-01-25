@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
+import { View } from 'react-native';
 import { Box, VStack, HStack, Pressable, Text } from '@gluestack-ui/themed';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
@@ -14,6 +15,8 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const backgroundColor = '#FFFFFF';
 
   const [activeTab, setActiveTab] = useState<'payment' | 'subscription'>('payment');
   
@@ -60,8 +63,21 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
   }, [activeTab, handleAddPaymentMethod]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-    <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Top safe area */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <Box flex={1} bg={isDark ? '$backgroundDark950' : '$backgroundLight0'}>
       <Header
         title="Payment & Subscription"
         showBackButton={true}
@@ -82,7 +98,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
               <VStack alignItems="center" space="xs">
                 <Text
                   color={activeTab === 'payment' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                  fontSize={12}
+                  fontSize="$sm"
                   fontWeight="$bold"
                 >
                   Payment Methods
@@ -108,7 +124,7 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
               <VStack alignItems="center" space="xs">
                 <Text
                   color={activeTab === 'subscription' ? (isDark ? '#FFF' : '#000') : '#8C8C8C'}
-                  fontSize={12}
+                  fontSize="$sm"
                   fontWeight="$bold"
                 >
                   Premium Plans
@@ -133,7 +149,20 @@ export const PaymentAndSubscriptionScreen: React.FC = () => {
         </Box>
       </VStack>
     </Box>
-    </SafeAreaView>
+      </SafeAreaView>
+      {/* Bottom safe area */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };
 

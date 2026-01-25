@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -16,13 +17,28 @@ export const TwoFactorAuthScreen = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const backgroundColor = '#FFFFFF';
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-      >
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Top safe area */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+        >
         <Header
           title="Two-Factor Authentication"
           showBackButton={true}
@@ -81,7 +97,7 @@ export const TwoFactorAuthScreen = () => {
                 </Box>
                 <VStack flex={1}>
                   <Text
-                    fontSize={14}
+                    fontSize="$sm"
                     fontWeight="$bold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
@@ -89,7 +105,7 @@ export const TwoFactorAuthScreen = () => {
                     Google Authenticator
                   </Text>
                   <Text
-                    fontSize={11}
+                    fontSize="$sm"
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
                     Use Google Authenticator to protect your account
@@ -131,7 +147,7 @@ export const TwoFactorAuthScreen = () => {
                 </Box>
                 <VStack flex={1}>
                   <Text
-                    fontSize={14}
+                    fontSize="$sm"
                     fontWeight="$bold"
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mb="$1"
@@ -139,7 +155,7 @@ export const TwoFactorAuthScreen = () => {
                     SMS
                   </Text>
                   <Text
-                    fontSize={11}
+                    fontSize="$sm"
                     color={isDark ? '#CCCCCC' : '#666666'}
                   >
                     Receive a verification code via SMS to secure your account.
@@ -164,7 +180,7 @@ export const TwoFactorAuthScreen = () => {
             pb="$4"
           >
             <Text
-              fontSize={11}
+              fontSize="$sm"
               fontWeight="$semibold"
               color={isDark ? '#FFFFFF' : '#000000'}
               textAlign="center"
@@ -175,7 +191,20 @@ export const TwoFactorAuthScreen = () => {
           </Pressable>
         </VStack>
       </Box>
-    </SafeAreaView>
+      </SafeAreaView>
+      {/* Bottom safe area */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };
 

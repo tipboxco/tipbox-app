@@ -53,7 +53,7 @@ export const SetPasswordScreen = ({
         {/* New Password Section */}
         <VStack space="xs">
           <Text
-            fontSize={11}
+            fontSize="$sm"
             fontWeight="$bold"
             color={isDark ? '#FFFFFF' : '#000000'}
           >
@@ -75,7 +75,7 @@ export const SetPasswordScreen = ({
                 onChangeText={setNewPassword}
                 secureTextEntry
                 color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={11}
+                fontSize="$sm"
               />
             </Input>
           </Box>
@@ -84,7 +84,7 @@ export const SetPasswordScreen = ({
         {/* Confirm New Password Section */}
         <VStack space="xs">
           <Text
-            fontSize={11}
+            fontSize="$sm"
             fontWeight="$bold"
             color={isDark ? '#FFFFFF' : '#000000'}
           >
@@ -106,7 +106,7 @@ export const SetPasswordScreen = ({
                 onChangeText={setConfirmPassword}
                 secureTextEntry
                 color={isDark ? '#FFFFFF' : '#000000'}
-                fontSize={11}
+                fontSize="$sm"
               />
             </Input>
           </Box>
@@ -122,7 +122,7 @@ export const SetPasswordScreen = ({
         >
           <ButtonText
             color="#000000"
-            fontSize={14}
+            fontSize="$sm"
             fontWeight="$bold"
             textAlign="center"
           >

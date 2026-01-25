@@ -331,7 +331,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({
                       color={isDark ? '#8C8C8C' : '#8C8C8C'}
                       fontSize="$xs"
                     >
-                      {item.uploadProgress}%
+                      {typeof item.uploadProgress === 'number' ? item.uploadProgress : Number(item.uploadProgress) || 0}%
                     </Text>
                   )}
                 </VStack>

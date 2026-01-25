@@ -634,7 +634,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
             {/* Messages List - Full Height */}
             {error ? (
                 <Box py={20} alignItems="center">
-                    <Text color="#CE4A4A">Hata: {error.message}</Text>
+                    <Text color="#CE4A4A">Error: {error.message}</Text>
                 </Box>
             ) : (
                 <FlatList
@@ -664,7 +664,7 @@ const MessagesScreen: React.FC<MessagesScreenProps> = ({ onDrawerOpen, isActiveT
                     ListEmptyComponent={
                         !isLoading ? (
                             <Box py={40} alignItems="center" justifyContent="center" flex={1}>
-                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Bir konuşma başlat</Text>
+                                <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Start a conversation</Text>
                             </Box>
                         ) : null
                     }

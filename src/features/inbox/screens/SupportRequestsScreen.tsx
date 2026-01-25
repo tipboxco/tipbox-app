@@ -336,7 +336,7 @@ const SupportRequestsScreen: React.FC = () => {
         {/* Support Requests List - Full Width */}
         {error ? (
           <Box py={20} alignItems="center">
-            <Text color="#CE4A4A">Hata: {error.message}</Text>
+            <Text color="#CE4A4A">Error: {error.message}</Text>
           </Box>
         ) : (
           <FlatList
@@ -364,7 +364,7 @@ const SupportRequestsScreen: React.FC = () => {
             ListEmptyComponent={
               !isLoading ? (
                 <Box py={40} alignItems="center" justifyContent="center" flex={1}>
-                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>Henüz destek talebiniz yok</Text>
+                  <Text color={isDark ? '#8C8C8C' : '#8C8C8C'}>No support requests yet</Text>
                 </Box>
               ) : null
             }

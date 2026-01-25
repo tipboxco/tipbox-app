@@ -1,4 +1,5 @@
 import React from 'react';
+import { ActivityIndicator } from 'react-native';
 import {
   Box,
   VStack,
@@ -11,32 +12,53 @@ import {
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { Feather } from '@expo/vector-icons';
+import { useCurrentSubscription, useSubscriptionPlans } from '../../api/hooks';
 
 export const SubscriptionTab: React.FC = () => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
 
-  // Mock subscription data
-  const subscriptionData = {
-    planName: 'Premium Plan Name',
-    renewalDate: '12.11.2025',
+  // API hooks
+  const { data: subscription, isLoading: isLoadingSubscription, error: subscriptionError } = useCurrentSubscription();
+  const { data: subscriptionPlans, isLoading: isLoadingPlans, error: plansError } = useSubscriptionPlans();
+
+  const isLoading = isLoadingSubscription || isLoadingPlans;
+
+  // Use subscription data from API or fallback to default
+  const subscriptionData = subscription ? {
+    planName: subscription.planName,
+    renewalDate: subscription.renewalDate,
+  } : {
+    planName: 'No Active Subscription',
+    renewalDate: '',
   };
 
-  const benefits = [
-    'Avantajları şöyle böyle şu kadar',
-    'Avantajları şöyle böyle şu kadar',
-    'Avantajları şöyle böyle şu kadar',
-    'Avantajları şöyle böyle şu kadar',
-    'Avantajları şöyle böyle şu kadar',
+  // Use benefits from subscription or fallback to default
+  const benefits = subscription?.benefits || [
+    'Unlimited access to premium features',
+    'Priority customer support',
+    'Advanced analytics and insights',
+    'Exclusive content and early access',
+    'Ad-free experience',
   ];
 
   const handleManage = () => {
+    // TODO: Implement manage subscription functionality
     console.log('Manage subscription');
   };
 
   const handleViewOtherPlans = () => {
-    console.log('View other premium plans');
+    // TODO: Navigate to subscription plans screen or show plans modal
+    console.log('View other premium plans', subscriptionPlans);
   };
+
+  if (isLoading) {
+    return (
+      <Box flex={1} justifyContent="center" alignItems="center" py="$10">
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }
 
   return (
     <ScrollView flex={1} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0 }}>
@@ -44,7 +66,7 @@ export const SubscriptionTab: React.FC = () => {
         {/* My Subscriptions Section */}
         <VStack space="md">
           <Text
-            fontSize={11}
+            fontSize="$sm"
             fontWeight="$bold"
             color={isDark ? '#FFFFFF' : '#000000'}
             px="$2"
@@ -62,19 +84,21 @@ export const SubscriptionTab: React.FC = () => {
             <HStack alignItems="center" justifyContent="space-between">
               <VStack flex={1} space="xs">
                 <Text
-                  fontSize={11}
+                  fontSize="$sm"
                   fontWeight="$bold"
                   color={isDark ? '#FFFFFF' : '#000000'}
                 >
                   {subscriptionData.planName}
                 </Text>
-                <Text
-                  fontSize={10}
-                  fontWeight="$normal"
-                  color="#B9B9B9"
-                >
-                  Will renew on {subscriptionData.renewalDate}.
-                </Text>
+                {subscriptionData.renewalDate && (
+                  <Text
+                    fontSize="$xs"
+                    fontWeight="$normal"
+                    color="#B9B9B9"
+                  >
+                    Will renew on {subscriptionData.renewalDate}.
+                  </Text>
+                )}
               </VStack>
               <Button
                 px="$4"
@@ -86,7 +110,7 @@ export const SubscriptionTab: React.FC = () => {
                 ml="$3"
               >
                 <ButtonText
-                  fontSize={10}
+                  fontSize="$xs"
                   fontWeight="$medium"
                   color={isDark ? '#FFFFFF' : '#000000'}
                 >
@@ -100,7 +124,7 @@ export const SubscriptionTab: React.FC = () => {
         {/* My Plan Benefits Section */}
         <VStack space="md">
           <Text
-            fontSize={11}
+            fontSize="$sm"
             fontWeight="$bold"
             color={isDark ? '#FFFFFF' : '#000000'}
             px="$2"
@@ -117,7 +141,7 @@ export const SubscriptionTab: React.FC = () => {
           >
             <VStack space="sm">
               <Text
-                fontSize={11}
+                fontSize="$sm"
                 fontWeight="$bold"
                 color={isDark ? '#FFFFFF' : '#000000'}
                 mb="$2"
@@ -127,7 +151,7 @@ export const SubscriptionTab: React.FC = () => {
               {benefits.map((benefit, index) => (
                 <HStack key={index} alignItems="flex-start" space="sm">
                   <Text
-                    fontSize={10}
+                    fontSize="$xs"
                     fontWeight="$normal"
                     color={isDark ? '#FFFFFF' : '#000000'}
                     mt="$1"
@@ -135,7 +159,7 @@ export const SubscriptionTab: React.FC = () => {
                     •
                   </Text>
                   <Text
-                    fontSize={10}
+                    fontSize="$xs"
                     fontWeight="$normal"
                     color={isDark ? '#FFFFFF' : '#000000'}
                     flex={1}
@@ -161,7 +185,7 @@ export const SubscriptionTab: React.FC = () => {
             justifyContent="space-between"
           >
             <Text
-              fontSize={11}
+              fontSize="$sm"
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >

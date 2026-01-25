@@ -8,6 +8,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
+import { useResetPassword } from '../api/hooks';
 
 type ResetPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ResetPassword'>;
 type ResetPasswordScreenRouteProp = RouteProp<AuthStackParamList, 'ResetPassword'>;
@@ -28,7 +29,7 @@ export const ResetPasswordScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isNewPasswordValid, setIsNewPasswordValid] = useState(false);
   const [isConfirmPasswordValid, setIsConfirmPasswordValid] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const resetPasswordMutation = useResetPassword();
 
   const validateNewPassword = (text: string) => {
     setNewPassword(text);
@@ -81,14 +82,11 @@ export const ResetPasswordScreen = () => {
       return;
     }
 
-    setIsLoading(true);
     try {
-      // TODO: Endpoint'e istek atılacak
-      // const response = await forgotPasswordApi.resetPassword({ email, newPassword });
-      console.log('Reset Password - Setting new password:', { email, newPassword: '***' });
-
-      // Simüle edilmiş başarılı response
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await resetPasswordMutation.mutateAsync({
+        email,
+        password: newPassword,
+      });
 
       toast.show({
         placement: 'top',
@@ -127,8 +125,6 @@ export const ResetPasswordScreen = () => {
           );
         },
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -230,11 +226,11 @@ export const ResetPasswordScreen = () => {
             rounded="$lg"
             mt="$4"
             onPress={handleResetPassword}
-            opacity={isNewPasswordValid && isConfirmPasswordValid && !isLoading ? 1 : 0.5}
-            disabled={!isNewPasswordValid || !isConfirmPasswordValid || isLoading}
+            opacity={isNewPasswordValid && isConfirmPasswordValid && !resetPasswordMutation.isPending ? 1 : 0.5}
+            disabled={!isNewPasswordValid || !isConfirmPasswordValid || resetPasswordMutation.isPending}
           >
             <ButtonText color="$textLight900">
-              {isLoading ? 'Saving...' : 'Reset Password'}
+              {resetPasswordMutation.isPending ? 'Saving...' : 'Reset Password'}
             </ButtonText>
           </Button>
 

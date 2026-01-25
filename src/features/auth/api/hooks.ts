@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { register, login, setupProfile, updateUserInterests, googleLogin, verifyEmail, checkUsernameAvailability, getUsernameSuggestions, getUserCategories } from './authApi';
+import { register, login, setupProfile, updateUserInterests, googleLogin, verifyEmail, checkUsernameAvailability, getUsernameSuggestions, getUserCategories, forgotPassword, verifyResetCode, resetPassword } from './authApi';
 import type { RegisterCredentials, LoginCredentials } from '../../../types/auth';
 import type { RegisterResponse, ApiLoginResponse } from '../types';
-import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse, VerifyEmailRequest, VerifyEmailResponse, UsernameCheckResponse, UsernameSuggestionsResponse, UserCategory } from './authApi';
+import type { SetupProfileRequest, SetupProfileResponse, UpdateUserInterestsResponse, VerifyEmailRequest, VerifyEmailResponse, UsernameCheckResponse, UsernameSuggestionsResponse, UserCategory, ForgotPasswordResponse, VerifyResetCodeRequest, VerifyResetCodeResponse, ResetPasswordRequest, ResetPasswordResponse } from './authApi';
 import { useAppStore } from '../../../store/appStore';
 import { notificationService } from '@/src/services/ExpoNotificationService';
 import { notificationKeys } from '@/src/features/notifications/api/hooks';
@@ -363,6 +363,66 @@ export const useGoogleLogin = () => {
     onError: (error) => {
       // Hata durumunda işlemler burada yapılabilir
       console.error('[useGoogleLogin] ❌ Google login error:', error);
+    },
+  });
+};
+
+/**
+ * Forgot Password mutation hook
+ * Şifre sıfırlama kodu göndermek için React Query mutation hook'u
+ * 
+ * @example
+ * const forgotPasswordMutation = useForgotPassword();
+ * forgotPasswordMutation.mutate('user@example.com');
+ */
+export const useForgotPassword = () => {
+  return useMutation<ForgotPasswordResponse, Error, string>({
+    mutationFn: forgotPassword,
+    onSuccess: (data) => {
+      console.log('[useForgotPassword] ✅ Password reset code sent:', data.message);
+    },
+    onError: (error) => {
+      console.error('[useForgotPassword] ❌ Forgot password error:', error);
+    },
+  });
+};
+
+/**
+ * Verify Reset Code mutation hook
+ * Şifre sıfırlama kodunu doğrulamak için React Query mutation hook'u
+ * 
+ * @example
+ * const verifyResetCodeMutation = useVerifyResetCode();
+ * verifyResetCodeMutation.mutate({ mail: 'user@example.com', code: '123456' });
+ */
+export const useVerifyResetCode = () => {
+  return useMutation<VerifyResetCodeResponse, Error, VerifyResetCodeRequest>({
+    mutationFn: verifyResetCode,
+    onSuccess: (data) => {
+      console.log('[useVerifyResetCode] ✅ Reset code verified:', data.message);
+    },
+    onError: (error) => {
+      console.error('[useVerifyResetCode] ❌ Verify reset code error:', error);
+    },
+  });
+};
+
+/**
+ * Reset Password mutation hook
+ * Şifreyi sıfırlamak için React Query mutation hook'u
+ * 
+ * @example
+ * const resetPasswordMutation = useResetPassword();
+ * resetPasswordMutation.mutate({ email: 'user@example.com', password: 'newPassword123' });
+ */
+export const useResetPassword = () => {
+  return useMutation<ResetPasswordResponse, Error, ResetPasswordRequest>({
+    mutationFn: resetPassword,
+    onSuccess: (data) => {
+      console.log('[useResetPassword] ✅ Password reset successful:', data.message);
+    },
+    onError: (error) => {
+      console.error('[useResetPassword] ❌ Reset password error:', error);
     },
   });
 };

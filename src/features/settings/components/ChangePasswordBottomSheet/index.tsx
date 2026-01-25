@@ -307,7 +307,7 @@ export const ChangePasswordBottomSheet = ({ onClose }: ChangePasswordBottomSheet
           fontWeight="$bold"
           textAlign="center"
         >
-          {changePasswordMutation.isPending ? 'Değiştiriliyor...' : 'Change Password'}
+          {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
         </ButtonText>
       </Button>
     </VStack>

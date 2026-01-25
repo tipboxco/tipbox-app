@@ -608,16 +608,58 @@ const MessageDetailScreen: React.FC = () => {
     }
   }, [threadId, hasMoreMessages, isLoadingMoreMessages, oldestMessageId, user?.id]);
 
-  // ThreadId değiştiğinde pagination state'ini reset et
+  // ThreadId değiştiğinde pagination state'ini reset et ve eski thread cache'ini temizle
+  const prevThreadIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (threadId) {
+      // ✅ FIX: Thread değiştiğinde eski thread'in cache'ini temizle
+      if (prevThreadIdRef.current && prevThreadIdRef.current !== threadId) {
+        console.log('[MessageDetail] 🔄 Thread değişti, eski thread cache temizleniyor:', {
+          oldThreadId: prevThreadIdRef.current,
+          newThreadId: threadId,
+        });
+        
+        // Eski thread'in tüm cache'ini temizle (tüm params kombinasyonları için)
+        queryClient.removeQueries({ 
+          queryKey: inboxKeys.threadMessages(prevThreadIdRef.current),
+        });
+        
+        // Local state'i temizle (pending mesajlar hariç)
+        setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
+      }
+      
       setHasMoreMessages(true);
       setOldestMessageId(undefined);
+      prevThreadIdRef.current = threadId;
     }
-  }, [threadId]);
+  }, [threadId, queryClient]);
 
   // Thread mesajlarını local state'e dönüştür
   useEffect(() => {
+    // ✅ FIX: Thread ID kontrolü - Eğer mesajlar başka bir thread'e aitse, göz ardı et
+    if (threadMessages && Array.isArray(threadMessages) && threadMessages.length > 0 && threadId) {
+      // Backend'den gelen mesajların thread ID'sini kontrol et
+      // ThreadMessage interface'inde threadId property'si var
+      const firstMessage = threadMessages[0];
+      const messageThreadId = firstMessage.threadId;
+      
+      // Eğer mesajlar mevcut thread'e ait değilse, göz ardı et
+      if (messageThreadId && messageThreadId !== threadId) {
+        console.log('[MessageDetail] ⚠️ Thread ID eşleşmiyor, mesajlar göz ardı ediliyor:', {
+          currentThreadId: threadId,
+          messageThreadId,
+          messageCount: threadMessages.length,
+          firstMessageId: firstMessage.id,
+        });
+        // Cache'i temizle ve mesajları sıfırla
+        queryClient.removeQueries({ 
+          queryKey: inboxKeys.threadMessages(threadId),
+        });
+        setMessages([]);
+        return;
+      }
+    }
+    
     if (threadMessages && Array.isArray(threadMessages)) {
       if (threadMessages.length > 0) {
         console.log('[MessageDetail] 📥 Thread messages loaded:', threadMessages.length);
@@ -859,9 +901,9 @@ const MessageDetailScreen: React.FC = () => {
       setMessages((prev) => prev.filter(msg => msg.id.startsWith('pending-')));
     }
     // CRITICAL FIX: params değerleri paramsRef.current üzerinden kullanılıyor, dependency'den çıkarıldı
-    // queryClient, socketMarkThreadRead, markThreadAsReadMutation stable olduğu için dependency'den çıkarıldı
+    // queryClient stable olduğu için dependency'den çıkarıldı
     // safeScrollToEnd dependency'den çıkarıldı - flatListRef.current zaten güncel
-  }, [threadMessages, isLoadingMessages, user?.id, threadId, isConnected]);
+  }, [threadMessages, isLoadingMessages, user?.id, threadId, isConnected, queryClient]);
 
   // 4️⃣ CHAT EKRANI AÇILDIĞINDA - Thread ID kontrolü, socket bağlantısı, thread join, event listener'lar
   useEffect(() => {
@@ -3211,7 +3253,7 @@ const MessageDetailScreen: React.FC = () => {
         }
       } else {
         if (result.error) {
-          Alert.alert('Error', result.error);
+          Alert.alert('Error', typeof result.error === 'string' ? result.error : 'An error occurred while selecting image');
         }
       }
     } catch (error: any) {

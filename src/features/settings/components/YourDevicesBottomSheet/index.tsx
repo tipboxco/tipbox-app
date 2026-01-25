@@ -22,7 +22,7 @@ import {
   ButtonText,
 } from '@gluestack-ui/themed';
 import { useColorMode } from '@/src/hooks/useColorMode';
-import { XMarkIcon } from 'react-native-heroicons/outline';
+import { XMarkIcon, DevicePhoneMobileIcon, EllipsisHorizontalIcon, ChevronLeftIcon } from 'react-native-heroicons/outline';
 import { useDevices, useDeleteDevice } from '../../api/hooks';
 import type { Device } from '../../types';
 
@@ -124,10 +124,10 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
         justifyContent="center"
         mr="$3"
       >
-        <Feather
-          name="smartphone"
-          size={20}
-          color={isDark ? '#666666' : '#999999'}
+        <DevicePhoneMobileIcon 
+          width={20} 
+          height={20} 
+          color={isDark ? '#666666' : '#999999'} 
         />
       </Box>
 
@@ -201,10 +201,10 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
             justifyContent="center"
             opacity={deleteMutation.isPending ? 0.5 : 1}
           >
-            <Feather
-              name="more-horizontal"
-              size={16}
-              color={isDark ? '#666666' : '#999999'}
+            <EllipsisHorizontalIcon 
+              width={16} 
+              height={16} 
+              color={isDark ? '#666666' : '#999999'} 
             />
           </Box>
         </Pressable>
@@ -217,10 +217,10 @@ export const YourDevicesBottomSheet = ({ onClose }: YourDevicesBottomSheetProps)
       {/* Header */}
       <HStack justifyContent="space-between" alignItems="center" mb="$4">
         <Pressable onPress={onClose}>
-          <Feather
-            name="chevron-left"
-            size={24}
-            color={isDark ? '#FFFFFF' : '#000000'}
+          <ChevronLeftIcon 
+            width={24} 
+            height={24} 
+            color={isDark ? '#FFFFFF' : '#000000'} 
           />
         </Pressable>
         <Text

@@ -271,6 +271,8 @@ export const useSendDirectMessage = () => {
  * const { data, isLoading, error } = useThreadMessages('thread-123', { limit: 50, beforeMessageId: 'msg-123' });
  */
 export const useThreadMessages = (threadId: string | null, params?: GetThreadMessagesParams) => {
+  const queryClient = useQueryClient();
+  
   const query = useQuery<ThreadMessage[], Error>({
     queryKey: [...inboxKeys.threadMessages(threadId || ''), params],
     queryFn: () => {
@@ -281,13 +283,38 @@ export const useThreadMessages = (threadId: string | null, params?: GetThreadMes
       return getThreadMessages(threadId, params);
     },
     enabled: !!threadId,
-    // ✅ Cache ayarları: Mesajlar invalid olana veya silinene kadar cache'te tutulsun
-    staleTime: Infinity,  // Veri hiçbir zaman stale olmaz, sadece invalidate edilince güncellenir
-    gcTime: Infinity,     // Veri hiçbir zaman garbage collect edilmez, sadece manuel olarak silinince kaldırılır
-    refetchOnMount: false,     // Cache varsa kullan, yoksa fetch et
+    // ✅ FIX: Cache ayarları - Thread bazlı veri çekilmesi için refetchOnMount: true
+    // Yeni thread açıldığında her zaman backend'den veri çek (cache'deki eski thread verilerini gösterme)
+    staleTime: 0,  // Veri her zaman stale olsun, böylece thread değiştiğinde yeni veri çekilsin
+    gcTime: 5 * 60 * 1000,     // 5 dakika sonra garbage collect et (eski thread'lerin cache'i temizlensin)
+    refetchOnMount: true,     // ✅ FIX: Thread açıldığında her zaman backend'den veri çek
     refetchOnWindowFocus: false,
     retry: 1,
   });
+  
+  // ✅ FIX: Thread değiştiğinde eski thread'in cache'ini temizle
+  useEffect(() => {
+    if (!threadId) return;
+    
+    // Query key'e göre cache'deki veriyi kontrol et
+    const queryKey = [...inboxKeys.threadMessages(threadId), params];
+    const cachedData = queryClient.getQueryData<ThreadMessage[]>(queryKey);
+    
+    if (cachedData && cachedData.length > 0) {
+      // Cache'deki ilk mesajın thread ID'sini kontrol et
+      const firstMessage = cachedData[0];
+      const messageThreadId = (firstMessage as any).threadId;
+      
+      // Eğer cache'deki mesajlar başka bir thread'e aitse, cache'i temizle
+      if (messageThreadId && messageThreadId !== threadId) {
+        console.log("[useThreadMessages] ⚠️ Cache'deki mesajlar başka thread'e ait, cache temizleniyor:", {
+          currentThreadId: threadId,
+          cachedThreadId: messageThreadId,
+        });
+        queryClient.removeQueries({ queryKey });
+      }
+    }
+  }, [threadId, params, queryClient]);
 
   // DEBUG: Query durumunu logla
   useEffect(() => {

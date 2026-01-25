@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     Box,
     VStack,
@@ -31,6 +31,8 @@ export const NotificationSettingsScreen = () => {
     const isDark = colorMode === 'dark';
     const navigation = useNavigation();
     const toast = useToast();
+    const insets = useSafeAreaInsets();
+    const backgroundColor = '#FFFFFF';
 
     // API hooks
     const { data: notificationSettings, isLoading, error } = useNotificationSettings();
@@ -153,11 +155,24 @@ export const NotificationSettingsScreen = () => {
     }, [searchQuery, notificationItems]);
 
     return (
-        <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-            <Box
-                flex={1}
-                bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-            >
+        <View style={{ flex: 1, backgroundColor }}>
+            {/* Top safe area */}
+            <View 
+                style={{ 
+                    height: insets.top, 
+                    backgroundColor,
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1,
+                }} 
+            />
+            <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+                <Box
+                    flex={1}
+                    bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+                >
                 <Header
                     title="Notification Settings"
                     showBackButton
@@ -187,7 +202,7 @@ export const NotificationSettingsScreen = () => {
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
                                     color={isDark ? '#FFFFFF' : '#000000'}
-                                    fontSize={11}
+                                    fontSize="$sm"
                                 />
                             </Input>
                         </HStack>
@@ -202,7 +217,7 @@ export const NotificationSettingsScreen = () => {
                     ) : error ? (
                         <Box flex={1} justifyContent="center" alignItems="center" py="$10" px="$4">
                             <Text color="#CE4A4A" fontSize="$sm" textAlign="center">
-                                {error.message || 'Bildirim ayarları yüklenirken bir hata oluştu'}
+                                {error.message || 'An error occurred while loading notification settings'}
                             </Text>
                         </Box>
                     ) : (
@@ -228,14 +243,14 @@ export const NotificationSettingsScreen = () => {
                                 <HStack justifyContent="space-between" alignItems="center">
                                     <VStack space="xs" flex={1}>
                                         <Text
-                                            fontSize={11}
+                                            fontSize="$sm"
                                             fontWeight="$bold"
                                             color={isDark ? '#FFFFFF' : '#000000'}
                                         >
                                             All Notifications
                                         </Text>
                                         <Text
-                                            fontSize={10}
+                                            fontSize="$xs"
                                             fontWeight="$normal"
                                             color="#B9B9B9"
                                         >
@@ -267,7 +282,7 @@ export const NotificationSettingsScreen = () => {
                                 >
                                     <HStack justifyContent="space-between" alignItems="center">
                                         <Text
-                                            fontSize={11}
+                                            fontSize="$sm"
                                             fontWeight="$semibold"
                                             color={isDark ? '#FFFFFF' : '#000000'}
                                         >
@@ -291,7 +306,20 @@ export const NotificationSettingsScreen = () => {
                     )}
                 </ScrollView>
             </Box>
-        </SafeAreaView>
+            </SafeAreaView>
+            {/* Bottom safe area */}
+            <View 
+                style={{ 
+                    height: insets.bottom, 
+                    backgroundColor,
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1,
+                }} 
+            />
+        </View>
     );
 };
 

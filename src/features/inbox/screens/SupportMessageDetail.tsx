@@ -1343,7 +1343,7 @@ const SupportMessageDetailScreen: React.FC = () => {
         console.log('[SupportMessageDetail] ✅ Image uploaded successfully:', response.data);
       } else {
         if (result.error) {
-          Alert.alert('Error', result.error);
+          Alert.alert('Error', typeof result.error === 'string' ? result.error : 'An error occurred while selecting image');
         }
       }
     } catch (error: any) {

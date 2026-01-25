@@ -4,6 +4,8 @@ import { getNotificationSettings, updateNotificationSettings } from './notificat
 import { getPrivacySettings, updatePrivacySettings } from './privacyApi';
 import { getSupportSessionPrice, updateSupportSessionPrice } from './supportSessionPriceApi';
 import { getDevices, deleteDevice } from './devicesApi';
+import { getPaymentMethods, getBillingHistory, getLinkedPaymentMethod } from './paymentApi';
+import { getCurrentSubscription, getSubscriptionPlans } from './subscriptionApi';
 import { useAppStore } from '../../../store/appStore';
 import type { ChangePasswordRequest, ChangePasswordResponse } from '../types';
 import type { 
@@ -22,6 +24,8 @@ import type {
   UpdateSupportSessionPriceResponse 
 } from '../types';
 import type { Device, DeleteDeviceResponse } from '../types';
+import type { PaymentMethod, BillingHistoryEntry, LinkedPaymentMethod } from './paymentApi';
+import type { Subscription, SubscriptionPlan } from './subscriptionApi';
 
 /**
  * Query Keys - Settings feature için cache key pattern'leri
@@ -32,6 +36,11 @@ export const settingsKeys = {
   privacy: () => [...settingsKeys.all, 'privacy'] as const,
   supportSessionPrice: () => [...settingsKeys.all, 'supportSessionPrice'] as const,
   devices: () => [...settingsKeys.all, 'devices'] as const,
+  paymentMethods: () => [...settingsKeys.all, 'paymentMethods'] as const,
+  billingHistory: () => [...settingsKeys.all, 'billingHistory'] as const,
+  linkedPaymentMethod: () => [...settingsKeys.all, 'linkedPaymentMethod'] as const,
+  subscription: () => [...settingsKeys.all, 'subscription'] as const,
+  subscriptionPlans: () => [...settingsKeys.all, 'subscriptionPlans'] as const,
 };
 
 /**
@@ -208,6 +217,111 @@ export const useDeleteDevice = () => {
       // Cihaz silindiğinde cache'i invalidate et
       queryClient.invalidateQueries({ queryKey: settingsKeys.devices() });
     },
+  });
+};
+
+/**
+ * Get Payment Methods query hook
+ * Kayıtlı ödeme yöntemlerini getirir
+ * 
+ * @example
+ * const { data, isLoading, error } = usePaymentMethods();
+ */
+export const usePaymentMethods = () => {
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  return useQuery<PaymentMethod[], Error>({
+    queryKey: settingsKeys.paymentMethods(),
+    queryFn: getPaymentMethods,
+    enabled: isAuthenticated,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: 1,
+  });
+};
+
+/**
+ * Get Billing History query hook
+ * Fatura geçmişini getirir
+ * 
+ * @param startDate - Başlangıç tarihi (optional)
+ * @param endDate - Bitiş tarihi (optional)
+ * @param sort - Sıralama (optional)
+ * @example
+ * const { data, isLoading, error } = useBillingHistory('2024-01-01', '2024-12-31', 'date');
+ */
+export const useBillingHistory = (
+  startDate?: string,
+  endDate?: string,
+  sort?: string
+) => {
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  return useQuery<BillingHistoryEntry[], Error>({
+    queryKey: [...settingsKeys.billingHistory(), startDate, endDate, sort],
+    queryFn: () => getBillingHistory(startDate, endDate, sort),
+    enabled: isAuthenticated,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: 1,
+  });
+};
+
+/**
+ * Get Linked Payment Method query hook
+ * Bağlı ödeme yöntemini getirir
+ * 
+ * @example
+ * const { data, isLoading, error } = useLinkedPaymentMethod();
+ */
+export const useLinkedPaymentMethod = () => {
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  return useQuery<LinkedPaymentMethod | null, Error>({
+    queryKey: settingsKeys.linkedPaymentMethod(),
+    queryFn: getLinkedPaymentMethod,
+    enabled: isAuthenticated,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: 1,
+  });
+};
+
+/**
+ * Get Current Subscription query hook
+ * Mevcut abonelik bilgisini getirir
+ * 
+ * @example
+ * const { data, isLoading, error } = useCurrentSubscription();
+ */
+export const useCurrentSubscription = () => {
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  return useQuery<Subscription | null, Error>({
+    queryKey: settingsKeys.subscription(),
+    queryFn: getCurrentSubscription,
+    enabled: isAuthenticated,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: 1,
+  });
+};
+
+/**
+ * Get Subscription Plans query hook
+ * Mevcut abonelik planlarını getirir
+ * 
+ * @example
+ * const { data, isLoading, error } = useSubscriptionPlans();
+ */
+export const useSubscriptionPlans = () => {
+  return useQuery<SubscriptionPlan[], Error>({
+    queryKey: settingsKeys.subscriptionPlans(),
+    queryFn: getSubscriptionPlans,
+    staleTime: 5 * 60 * 1000, // 5 dakika - planlar nadiren değişir
+    gcTime: 30 * 60 * 1000, // 30 dakika - cache'de tut
+    refetchOnMount: false,
+    retry: 1,
   });
 };
 

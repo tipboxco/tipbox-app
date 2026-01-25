@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Box,
   VStack,
@@ -26,6 +27,8 @@ export const ChangePasswordScreen = () => {
   const navigation = useNavigation();
   const toast = useToast();
   const changePasswordMutation = useChangePassword();
+  const insets = useSafeAreaInsets();
+  const backgroundColor = '#FFFFFF';
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -138,11 +141,24 @@ export const ChangePasswordScreen = () => {
   const isFormValid = currentPassword.length > 0 && newPassword.length > 0 && confirmPassword.length > 0;
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-      >
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Top safe area */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+        >
         <Header
           title="Change Password"
           showBackButton={true}
@@ -153,7 +169,7 @@ export const ChangePasswordScreen = () => {
           {/* Current Password Section */}
           <VStack space="xs">
             <Text
-              fontSize={11}
+              fontSize="$sm"
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
@@ -176,7 +192,7 @@ export const ChangePasswordScreen = () => {
                   secureTextEntry
                   keyboardType="default"
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={11}
+                  fontSize="$sm"
                 />
               </Input>
             </Box>
@@ -214,7 +230,7 @@ export const ChangePasswordScreen = () => {
           {/* New Password Section */}
           <VStack space="xs">
             <Text
-              fontSize={11}
+              fontSize="$sm"
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
@@ -237,7 +253,7 @@ export const ChangePasswordScreen = () => {
                   secureTextEntry
                   keyboardType="default"
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={11}
+                  fontSize="$sm"
                 />
               </Input>
             </Box>
@@ -246,7 +262,7 @@ export const ChangePasswordScreen = () => {
           {/* Confirm New Password Section */}
           <VStack space="xs">
             <Text
-              fontSize={11}
+              fontSize="$sm"
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
             >
@@ -269,7 +285,7 @@ export const ChangePasswordScreen = () => {
                   secureTextEntry
                   keyboardType="default"
                   color={isDark ? '#FFFFFF' : '#000000'}
-                  fontSize={11}
+                  fontSize="$sm"
                 />
               </Input>
             </Box>
@@ -285,16 +301,29 @@ export const ChangePasswordScreen = () => {
           >
             <ButtonText
               color="#000000"
-              fontSize={14}
+              fontSize="$sm"
               fontWeight="$bold"
               textAlign="center"
             >
-              {changePasswordMutation.isPending ? 'Değiştiriliyor...' : 'Change Password'}
+              {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
             </ButtonText>
           </Button>
         </VStack>
       </Box>
-    </SafeAreaView>
+      </SafeAreaView>
+      {/* Bottom safe area */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };
 

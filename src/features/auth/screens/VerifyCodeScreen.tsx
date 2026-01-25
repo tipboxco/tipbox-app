@@ -6,7 +6,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '../navigation';
 import { useAppStore } from '@/src/store/appStore';
 import VerifyCodeScreen from '@/src/components/VerifyCodeScreen';
-import { useVerifyEmail } from '../api/hooks';
+import { useVerifyEmail, useVerifyResetCode } from '../api/hooks';
 import { Alert } from 'react-native';
 
 type VerifyCodeScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'VerifyCode'>;
@@ -17,6 +17,7 @@ export const AuthVerifyCodeScreen = () => {
   const route = useRoute<VerifyCodeScreenRouteProp>();
   const { email, context = 'signUp' } = route.params;
   const verifyEmailMutation = useVerifyEmail();
+  const verifyResetCodeMutation = useVerifyResetCode();
 
   const handleVerify = async (verificationCode: string) => {
     if (verificationCode.length !== 6) {
@@ -25,9 +26,20 @@ export const AuthVerifyCodeScreen = () => {
     }
 
     if (context === 'forgotPassword') {
-      // ForgotPassword akışı: ResetPassword ekranına yönlendir
-      // TODO: Forgot password için verify endpoint'i kullanılacak
-      navigation.navigate('ResetPassword', { email });
+      // ForgotPassword akışı: Reset code doğrulama API'sini çağır
+      try {
+        await verifyResetCodeMutation.mutateAsync({
+          mail: email,
+          code: verificationCode,
+        });
+
+        // Başarılı doğrulama sonrası ResetPassword ekranına yönlendir
+        navigation.navigate('ResetPassword', { email });
+      } catch (error: any) {
+        console.error('[AuthVerifyCodeScreen] Reset code verification error:', error);
+        const errorMessage = error.response?.data?.message || error.message || 'Invalid or expired verification code';
+        Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+      }
       return;
     }
 
@@ -60,6 +72,10 @@ export const AuthVerifyCodeScreen = () => {
     ? 'To reset your password, enter the 6-digit code we sent to'
     : 'To confirm your account, enter the 6-digit code we sent to';
 
+  const isLoading = context === 'forgotPassword' 
+    ? verifyResetCodeMutation.isPending 
+    : verifyEmailMutation.isPending;
+
   return (
       <VerifyCodeScreen
         headerTitle={headerTitle}
@@ -68,7 +84,7 @@ export const AuthVerifyCodeScreen = () => {
         maskedEmail={maskedEmail}
         onVerify={handleVerify}
         onBackPress={() => navigation.goBack()}
-        isLoading={verifyEmailMutation.isPending}
+        isLoading={isLoading}
       />
   );
 };

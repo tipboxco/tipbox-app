@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import {
   Box,
   VStack,
@@ -15,7 +15,7 @@ import {
 import { useColorMode } from '@/src/hooks/useColorMode';
 import { useNavigation } from '@react-navigation/native';
 import { Header } from '@/src/components/Header';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSupportSessionPrice, useUpdateSupportSessionPrice } from '../api/hooks';
 import { CustomToast } from '@/src/components/CustomToast';
 
@@ -27,6 +27,8 @@ export const SupportSettingsScreen = () => {
   const isDark = colorMode === 'dark';
   const navigation = useNavigation();
   const toast = useToast();
+  const insets = useSafeAreaInsets();
+  const backgroundColor = '#FFFFFF';
 
   // API hooks
   const { data: priceData, isLoading, error } = useSupportSessionPrice();
@@ -117,11 +119,24 @@ export const SupportSettingsScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
-      <Box
-        flex={1}
-        bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
-      >
+    <View style={{ flex: 1, backgroundColor }}>
+      {/* Top safe area */}
+      <View 
+        style={{ 
+          height: insets.top, 
+          backgroundColor,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{ flex: 1 }}>
+        <Box
+          flex={1}
+          bg={isDark ? '$backgroundDark950' : '#FAFAFA'}
+        >
         <Header
           title="1-on-1 Support Settings"
           showBackButton
@@ -145,7 +160,7 @@ export const SupportSettingsScreen = () => {
               <VStack space="md">
                 {/* Title */}
                 <Text
-                  fontSize={11}
+                  fontSize="$sm"
                   fontWeight="$bold"
                   color={isDark ? '#FFFFFF' : '#000000'}
                 >
@@ -155,7 +170,7 @@ export const SupportSettingsScreen = () => {
                 {/* Description */}
                 <VStack space="xs">
                   <Text
-                    fontSize={10}
+                    fontSize="$xs"
                     fontWeight="$normal"
                     color="#B9B9B9"
                     lineHeight={14}
@@ -163,7 +178,7 @@ export const SupportSettingsScreen = () => {
                     Set the minimum TIPS amount users must pay to open a 1-on-1
                   </Text>
                   <Text
-                    fontSize={10}
+                    fontSize="$xs"
                     fontWeight="$normal"
                     color="#B9B9B9"
                     lineHeight={14}
@@ -171,7 +186,7 @@ export const SupportSettingsScreen = () => {
                     Support Request.
                   </Text>
                   <Text
-                    fontSize={10}
+                    fontSize="$xs"
                     fontWeight="$normal"
                     color="#B9B9B9"
                     lineHeight={14}
@@ -219,7 +234,7 @@ export const SupportSettingsScreen = () => {
                     ml="$3"
                   >
                     <Text
-                      fontSize={14}
+                      fontSize="$sm"
                       fontWeight="$medium"
                       color={isDark ? '#FFFFFF' : '#000000'}
                     >
@@ -272,7 +287,20 @@ export const SupportSettingsScreen = () => {
           )}
         </ScrollView>
       </Box>
-    </SafeAreaView>
+      </SafeAreaView>
+      {/* Bottom safe area */}
+      <View 
+        style={{ 
+          height: insets.bottom, 
+          backgroundColor,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1,
+        }} 
+      />
+    </View>
   );
 };
 

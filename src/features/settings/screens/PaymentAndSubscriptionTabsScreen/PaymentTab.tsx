@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { ActivityIndicator } from 'react-native';
 import {
   Box,
   VStack,
@@ -12,64 +13,61 @@ import { Feather } from '@expo/vector-icons';
 import { SavedCard, SavedCardData } from '@/src/features/settings/components/SavedCard';
 import { BillingHistoryEntry, BillingHistoryEntryData } from '@/src/features/settings/components/BillingHistoryEntry';
 import { LinkedPaymentMethod, LinkedPaymentMethodData } from '@/src/features/settings/components/LinkedPaymentMethod';
+import { usePaymentMethods, useBillingHistory, useLinkedPaymentMethod } from '../../api/hooks';
 
 interface PaymentTabProps {
   onAddPaymentMethod?: () => void;
 }
 
-// Mock saved cards data - This should come from your state management or API
-const mockSavedCards: SavedCardData[] = [
-  {
-    id: '1',
-    nameOnCard: 'Ozan Mutluoglu',
-    cardNumber: '520939843945',
-    expirationDate: '12/25',
-    cardName: 'Work Card',
-    cardType: 'mastercard',
-  },
-  {
-    id: '2',
-    nameOnCard: 'Ozan Mutluoglu',
-    cardNumber: '520939843945',
-    expirationDate: '12/25',
-    cardType: 'mastercard',
-  },
-];
-
-// Mock billing history data
-const mockBillingHistory: BillingHistoryEntryData[] = [
-  {
-    id: '1',
-    planName: 'Premium Plan Name',
-    date: '12.10.2025',
-    amount: '$10',
-    cardLastFour: '3945',
-  },
-  {
-    id: '2',
-    planName: 'Premium Plan Name',
-    date: '12.09.2025',
-    amount: '$10',
-    cardLastFour: '3945',
-  },
-];
-
-// Mock linked payment method
-const mockLinkedPaymentMethod: LinkedPaymentMethodData = {
-  cardType: 'Mastercard',
-  cardNumber: '52093984******3945',
-};
 
 export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) => {
   const { colorMode } = useColorMode();
   const isDark = colorMode === 'dark';
-  const [savedCards, setSavedCards] = useState<SavedCardData[]>(mockSavedCards);
-  const [billingHistory] = useState<BillingHistoryEntryData[]>(mockBillingHistory);
   const [dateRange, setDateRange] = useState('14 May - 14 July');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
+  // API hooks
+  const { data: paymentMethods, isLoading: isLoadingPaymentMethods, error: paymentMethodsError } = usePaymentMethods();
+  const { data: billingHistoryData, isLoading: isLoadingBillingHistory, error: billingHistoryError } = useBillingHistory();
+  const { data: linkedPaymentMethodData, isLoading: isLoadingLinkedPaymentMethod, error: linkedPaymentMethodError } = useLinkedPaymentMethod();
+
+  // Transform API data to component data
+  const savedCards: SavedCardData[] = useMemo(() => {
+    if (!paymentMethods) return [];
+    return paymentMethods.map((method) => ({
+      id: method.id,
+      nameOnCard: method.nameOnCard,
+      cardNumber: method.cardNumber,
+      expirationDate: method.expirationDate,
+      cardName: method.cardName,
+      cardType: method.cardType,
+    }));
+  }, [paymentMethods]);
+
+  const billingHistory: BillingHistoryEntryData[] = useMemo(() => {
+    if (!billingHistoryData) return [];
+    return billingHistoryData.map((entry) => ({
+      id: entry.id,
+      planName: entry.planName,
+      date: entry.date,
+      amount: entry.amount,
+      cardLastFour: entry.cardLastFour,
+    }));
+  }, [billingHistoryData]);
+
+  const linkedPaymentMethod: LinkedPaymentMethodData | null = useMemo(() => {
+    if (!linkedPaymentMethodData) return null;
+    return {
+      cardType: linkedPaymentMethodData.cardType,
+      cardNumber: linkedPaymentMethodData.cardNumber,
+    };
+  }, [linkedPaymentMethodData]);
+
+  const isLoading = isLoadingPaymentMethods || isLoadingBillingHistory || isLoadingLinkedPaymentMethod;
+
   const handleCardDelete = (cardId: string) => {
-    setSavedCards(savedCards.filter(card => card.id !== cardId));
+    // TODO: Implement delete payment method API call
+    console.log('Delete card:', cardId);
   };
 
   const handleCardPress = (cardId: string) => {
@@ -101,6 +99,14 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
     console.log('View payment method pressed');
   };
 
+  if (isLoading) {
+    return (
+      <Box flex={1} justifyContent="center" alignItems="center" py="$10">
+        <ActivityIndicator size="large" color={isDark ? '#FFFFFF' : '#000000'} />
+      </Box>
+    );
+  }
+
   return (
     <ScrollView 
       flex={1} 
@@ -110,10 +116,10 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
     >
       <VStack space="lg" pt="$4">
         {/* Saved Cards Section */}
-        {savedCards.length > 0 && (
+        {savedCards && savedCards.length > 0 && (
           <VStack space="md">
             <Text
-              fontSize={11}
+              fontSize="$sm"
               fontWeight="$bold"
               color={isDark ? '#FFFFFF' : '#000000'}
               px="$2"
@@ -157,7 +163,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
                 color={isDark ? '#FFFFFF' : '#000000'}
               />
               <Text
-                fontSize={11}
+                fontSize="$sm"
                 fontWeight="$bold"
                 color={isDark ? '#FFFFFF' : '#000000'}
               >
@@ -198,7 +204,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
               >
                 <HStack alignItems="center" space="xs">
                   <Text
-                    fontSize={10}
+                    fontSize="$xs"
                     fontWeight="$medium"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
@@ -225,7 +231,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
               >
                 <HStack alignItems="center" space="xs">
                   <Text
-                    fontSize={10}
+                    fontSize="$xs"
                     fontWeight="$medium"
                     color={isDark ? '#FFFFFF' : '#000000'}
                   >
@@ -242,7 +248,7 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
           </HStack>
 
           {/* Billing History Entries */}
-          {billingHistory.length > 0 && (
+          {billingHistory && billingHistory.length > 0 && (
             <VStack space="sm">
               {billingHistory.map((entry) => (
                 <BillingHistoryEntry
@@ -255,10 +261,12 @@ export const PaymentTab: React.FC<PaymentTabProps> = ({ onAddPaymentMethod }) =>
           )}
 
           {/* Linked Payment Method */}
-          <LinkedPaymentMethod
-            data={mockLinkedPaymentMethod}
-            onViewPress={handleViewPaymentMethod}
-          />
+          {linkedPaymentMethod && (
+            <LinkedPaymentMethod
+              data={linkedPaymentMethod}
+              onViewPress={handleViewPaymentMethod}
+            />
+          )}
         </VStack>
       </VStack>
     </ScrollView>

@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation';
 import { CustomToast } from '@/src/components/CustomToast';
+import { useForgotPassword } from '../api/hooks';
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'>;
 
@@ -23,7 +24,7 @@ export const ForgotPasswordScreen = () => {
 
   const [email, setEmail] = useState('');
   const [isEmailValid, setIsEmailValid] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const forgotPasswordMutation = useForgotPassword();
 
   const validateEmail = (text: string) => {
     const lowerText = text.toLowerCase();
@@ -52,14 +53,8 @@ export const ForgotPasswordScreen = () => {
       return;
     }
 
-    setIsLoading(true);
     try {
-      // TODO: Endpoint'e istek atılacak
-      // const response = await forgotPasswordApi.sendCode({ email });
-      console.log('Forgot Password - Sending email:', email);
-
-      // Simüle edilmiş başarılı response
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await forgotPasswordMutation.mutateAsync(email);
 
       toast.show({
         placement: 'top',
@@ -97,7 +92,7 @@ export const ForgotPasswordScreen = () => {
           return (
             <CustomToast
               id={id}
-              title="Hata"
+              title="Error"
               description={errorMessage}
               action="error"
               duration={4000}
@@ -105,8 +100,6 @@ export const ForgotPasswordScreen = () => {
           );
         },
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -186,11 +179,11 @@ export const ForgotPasswordScreen = () => {
             rounded="$lg"
             mt="$4"
             onPress={handleSendCode}
-            opacity={isEmailValid && !isLoading ? 1 : 0.5}
-            disabled={!isEmailValid || isLoading}
+            opacity={isEmailValid && !forgotPasswordMutation.isPending ? 1 : 0.5}
+            disabled={!isEmailValid || forgotPasswordMutation.isPending}
           >
             <ButtonText color="$textLight900">
-              {isLoading ? 'Sending...' : 'Send Code'}
+              {forgotPasswordMutation.isPending ? 'Sending...' : 'Send Code'}
             </ButtonText>
           </Button>
 
