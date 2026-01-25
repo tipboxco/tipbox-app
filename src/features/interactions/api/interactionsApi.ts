@@ -8,6 +8,7 @@ import type {
   ShareRequest,
   ShareResponse,
   CreateCommentRequest,
+  UpdateCommentRequest,
   ApiResponse,
 } from '../types';
 
@@ -134,6 +135,30 @@ export const getComments = async (
   
   const response = await client.get<ApiResponse<CommentsResponse>>(
     `/interactions/posts/${postId}/comments?${params.toString()}`
+  );
+  return response.data;
+};
+
+/**
+ * Update Comment endpoint function
+ * Yorumu günceller
+ *
+ * @param commentId - Güncellenecek yorumun ID'si
+ * @param comment - Yeni yorum metni
+ * @returns ApiResponse<Comment>
+ */
+export const updateComment = async (
+  commentId: string,
+  comment: string
+): Promise<ApiResponse<Comment>> => {
+  const client = apiService.getClient();
+  const body: UpdateCommentRequest = {
+    comment,
+  };
+  
+  const response = await client.put<ApiResponse<Comment>>(
+    `/interactions/comments/${commentId}`,
+    body
   );
   return response.data;
 };

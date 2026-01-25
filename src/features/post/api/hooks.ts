@@ -139,26 +139,49 @@ export const useCreateFreePost = () => {
       
       // Event ID varsa event posts'u da invalidate et (event'e bağlı post için)
       if (variables.eventId) {
-        queryClient.invalidateQueries({ queryKey: eventsKeys.posts(variables.eventId) });
-        queryClient.invalidateQueries({ queryKey: eventsKeys.detail(variables.eventId) });
-        queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
+        // CRITICAL: refetchType: 'all' kullanıyoruz ki hem aktif hem inactive query'ler refetch edilsin
+        queryClient.invalidateQueries({ 
+          queryKey: ['events', 'posts', variables.eventId],
+          refetchType: 'all',
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: eventsKeys.detail(variables.eventId),
+          refetchType: 'all',
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: eventsKeys.active(),
+          refetchType: 'all',
+        });
       }
       
       // Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ 
+        queryKey: feedKeys.all,
+        refetchType: 'all',
+      });
       // Post listesini de invalidate et
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ 
+        queryKey: postKeys.all,
+        refetchType: 'all',
+      });
       
       // Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['profile'],
+        refetchType: 'all',
+      });
       
       // Mevcut kullanıcının profil postlarını spesifik olarak invalidate et
       if (userId) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.userPosts(userId) });
+        queryClient.invalidateQueries({ 
+          queryKey: profileKeys.userPosts(userId),
+          refetchType: 'all',
+        });
         // Tüm limit varyasyonlarını da invalidate et
         queryClient.invalidateQueries({ 
           queryKey: ['profile', 'posts', userId],
-          exact: false 
+          exact: false,
+          refetchType: 'all',
         });
       }
     },

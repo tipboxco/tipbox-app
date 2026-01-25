@@ -123,6 +123,14 @@ export interface CreateCommentRequest {
 }
 
 /**
+ * Update Comment Request
+ * PUT /interactions/comments/:commentId request body
+ */
+export interface UpdateCommentRequest {
+  comment: string;
+}
+
+/**
  * API Response Wrapper
  * Tüm API response'ları için genel wrapper
  */

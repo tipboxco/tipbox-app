@@ -353,15 +353,31 @@ export const useCreateEventPost = (eventId: string) => {
     mutationFn: (data) => createEventPost(eventId, data),
     onSuccess: () => {
       // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
-      queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
+      // CRITICAL: refetchType: 'all' kullanıyoruz ki hem aktif hem inactive query'ler refetch edilsin
+      queryClient.invalidateQueries({ 
+        queryKey: ['events', 'posts', eventId],
+        refetchType: 'all',
+      });
       // 2. Event detail'i invalidate et (post sayısı değişebilir)
-      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.detail(eventId),
+        refetchType: 'all',
+      });
       // 3. Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ 
+        queryKey: feedKeys.all,
+        refetchType: 'all',
+      });
       // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['profile'],
+        refetchType: 'all',
+      });
       // 5. Active events listesini invalidate et (event post sayısı değişebilir)
-      queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.active(),
+        refetchType: 'all',
+      });
     },
   });
 };
@@ -467,15 +483,31 @@ export const useCreateEventPostNew = (eventId: string) => {
     mutationFn: (data) => createEventPostNew(eventId, data),
     onSuccess: () => {
       // 1. Event posts'u invalidate et - yeni post eklendiğinde listeyi güncelle
-      queryClient.invalidateQueries({ queryKey: eventsKeys.posts(eventId) });
+      // CRITICAL: refetchType: 'all' kullanıyoruz ki hem aktif hem inactive query'ler refetch edilsin
+      queryClient.invalidateQueries({ 
+        queryKey: ['events', 'posts', eventId],
+        refetchType: 'all',
+      });
       // 2. Event detail'i invalidate et (post sayısı değişebilir)
-      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(eventId) });
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.detail(eventId),
+        refetchType: 'all',
+      });
       // 3. Ana feed'i invalidate et ki yeni post görünsün
-      queryClient.invalidateQueries({ queryKey: feedKeys.all });
+      queryClient.invalidateQueries({ 
+        queryKey: feedKeys.all,
+        refetchType: 'all',
+      });
       // 4. Profil feed'lerini invalidate et (kullanıcı kendi gönderisini görebilsin)
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['profile'],
+        refetchType: 'all',
+      });
       // 5. Active events listesini invalidate et (event post sayısı değişebilir)
-      queryClient.invalidateQueries({ queryKey: eventsKeys.active() });
+      queryClient.invalidateQueries({ 
+        queryKey: eventsKeys.active(),
+        refetchType: 'all',
+      });
     },
   });
 };

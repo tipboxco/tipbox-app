@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { VStack, HStack, Text, Image, Pressable, Box } from '@gluestack-ui/themed';
+import { VStack, HStack, Text, Image, Pressable, Box, Divider } from '@gluestack-ui/themed';
 import { Platform, View, Pressable as RNPressable, Modal, Dimensions, StyleSheet, InteractionManager } from 'react-native';
 import { useColorMode } from '@/src/hooks/useColorMode';
 // Heroicons imports
@@ -39,6 +39,7 @@ import {
   usePostStatus,
 } from '@/src/features/interactions/api/hooks';
 import { useReportUser } from '@/src/features/profile/api/hooks';
+import type { UserReportCategory } from '@/src/features/profile/api/profileApi';
 import { useAppStore } from '@/src/store/appStore';
 import { Alert } from 'react-native';
 import { ROOT_ROUTES } from '@/src/navigation/constants/rootRoutes';
@@ -158,34 +159,59 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
     }
   }, [data.user.id]);
 
+  // Report categories with labels
+  const reportCategories = React.useMemo<Array<{ value: UserReportCategory; label: string }>>(() => [
+    { value: 'SPAM', label: 'Spam' },
+    { value: 'HARASSMENT', label: 'Harassment' },
+    { value: 'SCAM', label: 'Scam' },
+    { value: 'INAPPROPRIATE_CONTENT', label: 'Inappropriate Content' },
+    { value: 'FAKE_ACCOUNT', label: 'Fake Account' },
+    { value: 'OTHER', label: 'Other' },
+  ], []);
+
   const handleReport = React.useCallback(() => {
     if (!user?.id || !targetUserId) return;
     
+    const username = data.user?.name || 'User';
+    
+    // Report category seçimi için alert
     Alert.alert(
-      'Kullanıcıyı Raporla',
-      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      'Report User',
+      `Why are you reporting ${username}?`,
       [
+        ...reportCategories.map((category) => ({
+          text: category.label,
+          onPress: () => {
+            // Seçilen kategori ile raporla
+            reportUser(
+              {
+                userId: user.id,
+                targetUserId,
+                data: {
+                  category: category.value,
+                  description: `Reported for: ${category.label}`,
+                },
+              },
+              {
+                onSuccess: () => {
+                  Alert.alert('Success', 'User reported successfully. Thank you for your review.');
+                },
+                onError: (error: any) => {
+                  const errorMessage = error?.response?.data?.message || error?.message || 'Failed to report user';
+                  Alert.alert('Error', errorMessage);
+                },
+              }
+            );
+          },
+        })),
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
-        {
-          text: 'Raporla',
-          style: 'destructive',
-          onPress: () => {
-            reportUser({
-              userId: user.id,
-              targetUserId,
-              data: {
-                category: 'OTHER',
-                description: 'User reported',
-              },
-            });
-          },
-        },
-      ]
+      ],
+      { cancelable: true }
     );
-  }, [user?.id, targetUserId, reportUser]);
+  }, [user?.id, targetUserId, reportUser, reportCategories, data.user?.name]);
 
   // Post owner actions
   const handleUpdate = useCallback(() => {
@@ -268,35 +294,17 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
     }
   }, []);
 
-  // Calculate menu position - stored position'ı öncelikli kullan
+  // Calculate menu position - event koordinatlarını öncelikli kullan
   const handleMenuOpen = useCallback((event?: any) => {
     const screenWidth = Dimensions.get('window').width;
     const screenHeight = Dimensions.get('window').height;
-    
-    // DEBUG: Tıklama event'inden koordinat al (eğer varsa)
-    let clickX = 0;
-    let clickY = 0;
-    if (event?.nativeEvent) {
-      clickX = event.nativeEvent.pageX || event.nativeEvent.locationX || 0;
-      clickY = event.nativeEvent.pageY || event.nativeEvent.locationY || 0;
-      console.log('🖱️ [QuestionPostCard] Click event coordinates:', {
-        pageX: event.nativeEvent.pageX,
-        pageY: event.nativeEvent.pageY,
-        locationX: event.nativeEvent.locationX,
-        locationY: event.nativeEvent.locationY,
-        clickX,
-        clickY,
-        reference: 'Touch event coordinates (page = window, location = relative to element)',
-      });
-    }
+    const menuWidth = 140;
+    const menuHeight = isPostOwner ? 80 : 80;
     
     const calculatePosition = (x: number, y: number, width: number, height: number, source: string) => {
-      const menuWidth = 180;
-      const menuHeight = isPostOwner ? 100 : 100;
-      
-      // Menu'yu trigger button'ın sağında konumlandır
-      let left = x + width - menuWidth + 10;
-      let top = y + height + 8;
+      // Menu'yu trigger button'ın sağında konumlandır, daha sola kaydır
+      let left = x + width - menuWidth - 20;
+      let top = y + height - 16;
       
       console.log(`📐 [QuestionPostCard] Position calculation (${source}):`, {
         triggerPosition: { x, y, width, height },
@@ -323,73 +331,62 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
         }
       }
       
-      console.log(`✅ [QuestionPostCard] Final menu position (${source}):`, {
-        top,
-        left,
-        reference: 'Modal uses position: absolute with top/left (relative to window/screen)',
-      });
-      
       return { top, left };
     };
 
-    // CRITICAL: Önce stored position'ı kontrol et (onLayout'dan gelen, daha güvenilir)
-    if (triggerPositionRef.current) {
-      const stored = triggerPositionRef.current;
-      console.log('💾 [QuestionPostCard] Using stored position from onLayout:', stored);
-      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
+    // ÖNCELİK 1: Event'ten gelen koordinatları kullan (en güvenilir)
+    if (event?.nativeEvent?.pageX !== undefined && event?.nativeEvent?.pageY !== undefined) {
+      const pageX = event.nativeEvent.pageX;
+      const pageY = event.nativeEvent.pageY;
+      
+      // Trigger button'ın yaklaşık boyutları (24x24 icon + padding)
+      const triggerWidth = 44;
+      const triggerHeight = 44;
+      
+      // Event koordinatları button'ın merkezine yakın, sağ üst köşesini hesapla
+      const triggerX = pageX - triggerWidth / 2;
+      const triggerY = pageY - triggerHeight / 2;
+      
+      const position = calculatePosition(triggerX, triggerY, triggerWidth, triggerHeight, 'event-coordinates');
       setMenuPosition(position);
       setIsMenuOpen(true);
       return;
     }
 
-    // Stored position yoksa, measureInWindow ile ölç
-    // CRITICAL: requestAnimationFrame ile bir frame bekle - layout'un tamamlanmasını garanti et
-    requestAnimationFrame(() => {
+    // ÖNCELİK 2: Stored position'ı kullan (onLayout'dan gelen)
+    if (triggerPositionRef.current) {
+      const stored = triggerPositionRef.current;
+      console.log('💾 [QuestionPostCard] Using stored position from onLayout:', stored);
+      const position = calculatePosition(stored.x, stored.y, stored.width, stored.height, 'stored');
+      console.log('✅ [QuestionPostCard] Final menu position (stored):', {
+        top: position.top,
+        left: position.left,
+        reference: 'Modal uses position: absolute with top/left (relative to window/screen)',
+      });
+      setMenuPosition(position);
+      setIsMenuOpen(true);
+      return;
+    }
+
+    // ÖNCELİK 3: measureInWindow ile ölç (ref varsa)
+    InteractionManager.runAfterInteractions(() => {
       if (menuTriggerRef.current) {
-        // measureInWindow: Window koordinatları (ekranın en üst soluna göre, scroll dahil)
         menuTriggerRef.current.measureInWindow((x, y, width, height) => {
-          console.log('📏 [QuestionPostCard] measureInWindow (on click):', {
-            x,
-            y,
-            width,
-            height,
-            reference: 'Window coordinates (top-left of screen, scroll included)',
-            isValid: width > 0 && height > 0 && x >= 0 && y >= 0,
-          });
-          
-          // measure: Parent container'a göre koordinatlar
-          menuTriggerRef.current?.measure((fx, fy, w, h, px, py) => {
-            console.log('📏 [QuestionPostCard] measure (on click, parent relative):', {
-              fx, // Frame X (relative to parent)
-              fy, // Frame Y (relative to parent)
-              width: w,
-              height: h,
-              px, // Page X (absolute position in parent)
-              py, // Page Y (absolute position in parent)
-              reference: 'Parent container coordinates',
-            });
-          });
-          
-          // measureInWindow window koordinatlarını verir (ekranın en üst soluna göre)
-          // FlatList scroll pozisyonu otomatik olarak dahil edilir
           if (width > 0 && height > 0 && x >= 0 && y >= 0) {
             // Stored position'ı güncelle
             triggerPositionRef.current = { x, y, width, height };
-            
             const position = calculatePosition(x, y, width, height, 'measureInWindow');
             setMenuPosition(position);
             setIsMenuOpen(true);
           } else {
             // Invalid position - fallback kullan
-            console.warn('⚠️ [QuestionPostCard] Invalid measureInWindow result, using fallback');
-            setMenuPosition({ top: 60, left: screenWidth - 192 });
+            setMenuPosition({ top: 40, left: screenWidth - 152 });
             setIsMenuOpen(true);
           }
         });
       } else {
         // Ref yok - fallback kullan
-        console.warn('⚠️ [QuestionPostCard] menuTriggerRef.current is null, using fallback');
-        setMenuPosition({ top: 60, left: screenWidth - 192 });
+        setMenuPosition({ top: 40, left: screenWidth - 152 });
         setIsMenuOpen(true);
       }
     });
@@ -465,6 +462,9 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                   top: menuPosition.top,
                   left: menuPosition.left,
                   backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: isDark ? '#333333' : '#E9E9E9',
+                  shadowOpacity: isDark ? 0.3 : 0.1,
                 }
               ]}
               onLayout={(event) => {
@@ -479,91 +479,100 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
                 });
               }}
             >
-              {isPostOwner ? (
-                <>
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleUpdate();
-                    }}
-                    px={16}
-                    py={12}
-                  >
-                    <HStack alignItems="center" space="md">
-                      <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize="$md"
-                        fontWeight="$medium"
+              <RNPressable 
+                onPress={(e) => e.stopPropagation()}
+                style={{ flex: 1 }}
+              >
+                <VStack px={8}pl={12} py={2}  width="100%">
+                  {isPostOwner ? (
+                    <>
+                      <Pressable
+                        onPress={() => {
+                          setIsMenuOpen(false);
+                          handleUpdate();
+                        }}
+                        py={8}
                       >
-                        Güncelle
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                  <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleDelete();
-                    }}
-                    px={16}
-                    py={12}
-                  >
-                    <HStack alignItems="center" space="md">
-                      <TrashIcon width={20} height={20} color="#FF3040" />
-                      <Text
-                        color="#FF3040"
-                        fontSize="$md"
-                        fontWeight="$medium"
+                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                          <PencilIcon width={20} height={20} color={isDark ? '#fff' : '#000'} />
+                          <Text
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize="$sm"
+                            fontWeight="$medium"
+                          >
+                            Update
+                          </Text>
+                        </HStack>
+                      </Pressable>
+                      <Divider 
+                        bg={isDark ? '#333333' : '#E9E9E9'} 
+                        mx={0}
+                      />
+                      <Pressable
+                        onPress={() => {
+                          setIsMenuOpen(false);
+                          handleDelete();
+                        }}
+                        py={8}
                       >
-                        Sil
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleViewProfile();
-                    }}
-                    px={16}
-                    py={12}
-                  >
-                    <HStack alignItems="center" space="md">
-                      <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
-                      <Text
-                        color={isDark ? '#FFFFFF' : '#000000'}
-                        fontSize="$md"
-                        fontWeight="$medium"
+                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                          <TrashIcon width={20} height={20} color="#FF3040" />
+                          <Text
+                            color="#FF3040"
+                            fontSize="$sm"
+                            fontWeight="$medium"
+                          >
+                            Delete
+                          </Text>
+                        </HStack>
+                      </Pressable>
+                    </>
+                  ) : (
+                    <>
+                      <Pressable
+                        onPress={() => {
+                          setIsMenuOpen(false);
+                          handleViewProfile();
+                        }}
+                        py={8}
                       >
-                        Profili Görüntüle
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                  <View style={[styles.divider, { backgroundColor: isDark ? '#333333' : '#E9E9E9' }]} />
-                  <Pressable
-                    onPress={() => {
-                      setIsMenuOpen(false);
-                      handleReport();
-                    }}
-                    px={16}
-                    py={12}
-                  >
-                    <HStack alignItems="center" space="md">
-                      <FlagIcon width={20} height={20} color="#FF3040" />
-                      <Text
-                        color="#FF3040"
-                        fontSize="$md"
-                        fontWeight="$medium"
+                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                          <UserIcon width={20} height={20} color={isDark ? '#FFFFFF' : '#000000'} />
+                          <Text
+                            color={isDark ? '#FFFFFF' : '#000000'}
+                            fontSize="$sm"
+                            fontWeight="$medium"
+                          >
+                            View Profile
+                          </Text>
+                        </HStack>
+                      </Pressable>
+                      <Divider 
+                        bg={isDark ? '#333333' : '#E9E9E9'} 
+                        mx={0}
+                      />
+                      <Pressable
+                        onPress={() => {
+                          setIsMenuOpen(false);
+                          handleReport();
+                        }}
+                        py={8}
                       >
-                        Raporla
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                </>
-              )}
+                        <HStack alignItems="center" justifyContent="flex-start" space="xs">
+                          <FlagIcon width={20} height={20} color="#FF3040" />
+                          <Text
+                            color="#FF3040"
+                            fontSize="$sm"
+                            fontWeight="$medium"
+                          >
+                            Report
+                          </Text>
+                        </HStack>
+                      </Pressable>
+                    </>
+                  )}
+                </VStack>
+              </RNPressable>
             </View>
           </Modal>
         </HStack>
@@ -813,17 +822,14 @@ export const QuestionPostCard = ({ data, hideProduct = false, isDetailMode = fal
 const styles = StyleSheet.create({
   menuContainer: {
     position: 'absolute',
-    width: 180,
-    borderRadius: 16,
+    width: 140,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 10,
     overflow: 'hidden',
-  },
-  divider: {
-    height: 1,
   },
 });
 

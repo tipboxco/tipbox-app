@@ -98,13 +98,14 @@ const EventDetailScreen: React.FC = () => {
     // Fetch event detail from API
     const { data: event, isLoading, error, refetch: refetchEvent } = useEventDetail(eventId);
     
-    // Ekran focus olduğunda event detail'i yeniden yükle (Collections'dan geri dönünce)
+    // Ekran focus olduğunda event detail ve posts'u yeniden yükle (Collections'dan geri dönünce)
     useFocusEffect(
         useCallback(() => {
             if (eventId) {
                 refetchEvent();
+                refetchPosts();
             }
-        }, [eventId, refetchEvent])
+        }, [eventId, refetchEvent, refetchPosts])
     );
     
     // YENİ: Event posts endpoint kullan (Yeni Backend yapısı)

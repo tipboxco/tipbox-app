@@ -40,6 +40,7 @@ import { useAppStore } from '@/src/store/appStore';
 import {
   useReportUser,
 } from '@/src/features/profile/api/hooks';
+import type { UserReportCategory } from '@/src/features/profile/api/profileApi';
 import { useUpdatePost, useDeletePost } from '@/src/features/post/api/hooks';
 import { useGlobalBottomSheet } from '@/src/hooks/useGlobalBottomSheet';
 import { PostOptionsMenu } from '@/src/components/PostOptionsMenu';
@@ -180,34 +181,59 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
     }
   }, [data.user.id]);
 
+  // Report categories with labels
+  const reportCategories = React.useMemo<Array<{ value: UserReportCategory; label: string }>>(() => [
+    { value: 'SPAM', label: 'Spam' },
+    { value: 'HARASSMENT', label: 'Harassment' },
+    { value: 'SCAM', label: 'Scam' },
+    { value: 'INAPPROPRIATE_CONTENT', label: 'Inappropriate Content' },
+    { value: 'FAKE_ACCOUNT', label: 'Fake Account' },
+    { value: 'OTHER', label: 'Other' },
+  ], []);
+
   const handleReport = useCallback(() => {
     if (!user?.id || !targetUserId) return;
     
+    const username = data.user?.name || 'User';
+    
+    // Report category seçimi için alert
     Alert.alert(
-      'Kullanıcıyı Raporla',
-      'Bu kullanıcıyı raporlamak istediğinizden emin misiniz?',
+      'Report User',
+      `Why are you reporting ${username}?`,
       [
+        ...reportCategories.map((category) => ({
+          text: category.label,
+          onPress: () => {
+            // Seçilen kategori ile raporla
+            reportUser(
+              {
+                userId: user.id,
+                targetUserId,
+                data: {
+                  category: category.value,
+                  description: `Reported for: ${category.label}`,
+                },
+              },
+              {
+                onSuccess: () => {
+                  Alert.alert('Success', 'User reported successfully. Thank you for your review.');
+                },
+                onError: (error: any) => {
+                  const errorMessage = error?.response?.data?.message || error?.message || 'Failed to report user';
+                  Alert.alert('Error', errorMessage);
+                },
+              }
+            );
+          },
+        })),
         {
-          text: 'İptal',
+          text: 'Cancel',
           style: 'cancel',
         },
-        {
-          text: 'Raporla',
-          style: 'destructive',
-          onPress: () => {
-            reportUser({
-              userId: user.id,
-              targetUserId,
-              data: {
-                category: 'OTHER',
-                description: 'User reported',
-              },
-            });
-          },
-        },
-      ]
+      ],
+      { cancelable: true }
     );
-  }, [user?.id, targetUserId, reportUser]);
+  }, [user?.id, targetUserId, reportUser, reportCategories, data.user?.name]);
 
   const handleBlock = useCallback(() => {
     if (!targetUserId) return;

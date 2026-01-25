@@ -7,6 +7,7 @@ import {
   getBookmarks,
   createComment,
   getComments,
+  updateComment,
   deleteComment,
   likeComment,
   unlikeComment,
@@ -889,6 +890,48 @@ export const useCreateComment = () => {
       // Comments'i invalidate et (yeni yorum eklendi)
       queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
       // Feed'i invalidate etme - optimistic update zaten comment sayısını artırdı
+    },
+  });
+};
+
+/**
+ * Update Comment mutation hook
+ * Yorumu günceller
+ *
+ * @returns React Query mutation hook result
+ */
+export const useUpdateComment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<Comment>,
+    Error,
+    { commentId: string; postId: string; comment: string },
+    { previousComments?: CommentsResponse }
+  >({
+    mutationFn: ({ commentId, comment }) => updateComment(commentId, comment),
+    onMutate: async ({ postId }) => {
+      await queryClient.cancelQueries({ queryKey: interactionKeys.comments(postId) });
+
+      const previousComments = queryClient.getQueryData<CommentsResponse>(
+        interactionKeys.comments(postId)
+      );
+
+      return { previousComments };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousComments) {
+        queryClient.setQueryData(
+          interactionKeys.comments(variables.postId),
+          context.previousComments
+        );
+      }
+      // Error logging
+      console.error('[useUpdateComment] Error:', err);
+    },
+    onSuccess: (data, variables) => {
+      // Comments'i invalidate et (yorum güncellendi)
+      queryClient.invalidateQueries({ queryKey: interactionKeys.comments(variables.postId) });
     },
   });
 };
