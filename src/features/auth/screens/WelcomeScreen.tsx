@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Box, Text, Button, ButtonText, VStack, HStack, Icon, Image, useToast } from '@gluestack-ui/themed';
 import { showCustomToast } from '@/src/components/CustomToast';
@@ -66,10 +66,11 @@ export const WelcomeScreen = () => {
   return (
     <View style={{ flex: 1, backgroundColor }}>
       {/* Üst Güvenli Alan - Status Bar arkasını beyaz boyar */}
+<StatusBar barStyle="light-content" />
       <View 
         style={{ 
           height: insets.top, 
-          backgroundColor,
+          backgroundColor: '#000000',
           position: 'absolute',
           top: 0,
           left: 0,
@@ -77,6 +78,7 @@ export const WelcomeScreen = () => {
           zIndex: 1,
         }} 
       />
+     
 
       {/* Ana İçerik */}
       <View style={{ flex: 1 }}>
@@ -85,18 +87,17 @@ export const WelcomeScreen = () => {
           bg={isDark ? '$backgroundDark50' : '$backgroundLight0'}
         >
       {/* Hero Image - Tipbox Logo */}
-      <Box h={350} bg={isDark ? '$backgroundDark50' : '$backgroundLight0'} alignItems="center" justifyContent="center">
+      <Box bg={isDark ? '$backgroundDark50' : '$backgroundLight0'} mt="-$20" alignItems="center" justifyContent="center">
         <Image
           source={require('@/src/Onboarding/onboarding0.png')}
           alt="Tipbox Logo"
-          width={200}
-          height={200}
-          resizeMode="contain"
+          style={{ width: '100%', height: '60%' }}
+          resizeMode="cover"
         />
       </Box>
 
       {/* Content */}
-      <VStack flex={1} px="$10" space="md" mt="$8">
+      <VStack flex={1} px="$10" space="md" mt="-$8">
         <VStack space="md" alignItems="center">
           <Button
             bg="$buttonPrimary"
@@ -181,7 +182,7 @@ export const WelcomeScreen = () => {
             fontSize="$xs"
             color={isDark ? '$textDark50' : '$textLight900'}
             fontWeight="$bold"
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => navigation.navigate('Login', {})}
           >
             Sign In
           </Text>
