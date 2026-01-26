@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { getCatalogCategories, getCatalogSubCategories, getCatalogProductGroups, getCatalogProducts, getProductDetail, getProductPosts, getProductNews, getNewsDetail, getSubCategoryPosts, getProductGroupPosts, getCatalogProductPosts, likeNews, unlikeNews, shareNews, favoriteNews, unfavoriteNews, searchGlobalProducts, type CatalogPaginationResponse } from './catalogApi';
 import { getBrandCategories, getBrandsByCategory, getBrandCatalog, getBrandFeed, getBrandProductBook, getBrandSurveys, getBrandTrends, getBrandEvents, getBrandHistory, getBrandStats, getBrandProductGroupProducts, searchGlobalBrands } from './brandApi';
 import type { CatalogCategory, CatalogSubCategory, CatalogProductGroup, CatalogProduct, BrandCategory, BrandListItem, BrandCatalogResponse, BrandFeedResponse, BrandProductBookResponse, BrandSurveysResponse, BrandTrendsResponse, BrandEventsResponse, ProductDetail, ProductPostsResponse, ProductNewsResponse, NewsDetail, BrandHistory, BrandStats, NewsCommentCreateRequest, NewsCommentsResponse, NewsCommentCreateResponse, NewsShareRequest, NewsShareResponse, NewsApiResponse, BrandProductGroupProductsResponse, GlobalProductSearchResponse, GlobalBrandSearchResponse } from '../types';
@@ -60,16 +60,16 @@ export const useCatalogPrefetch = () => {
 
   const prefetchSubCategories = useCallback((categoryId: string) => {
     queryClient.prefetchQuery({
-      queryKey: catalogKeys.subCategories(categoryId, undefined, 1000),
-      queryFn: () => getCatalogSubCategories(categoryId, undefined, 1000),
+      queryKey: catalogKeys.subCategories(categoryId, undefined, 100),
+      queryFn: () => getCatalogSubCategories(categoryId, undefined, 100),
       staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     });
   }, [queryClient]);
 
   const prefetchProductGroups = useCallback((subCategoryId: string) => {
     queryClient.prefetchQuery({
-      queryKey: catalogKeys.productGroups(subCategoryId, undefined, 1000),
-      queryFn: () => getCatalogProductGroups(subCategoryId, undefined, 1000),
+      queryKey: catalogKeys.productGroups(subCategoryId, undefined, 100),
+      queryFn: () => getCatalogProductGroups(subCategoryId, undefined, 100),
       staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     });
   }, [queryClient]);
@@ -99,7 +99,7 @@ export const useCatalogPrefetch = () => {
  * @example
  * const { data, isLoading, error } = useCatalogCategories();
  */
-export const useCatalogCategories = (limit: number = 1000) => {
+export const useCatalogCategories = (limit: number = 100) => {
   return useQuery<CatalogPaginationResponse<CatalogCategory>, Error>({
     queryKey: catalogKeys.categories(undefined, limit),
     queryFn: () => getCatalogCategories(undefined, limit),
@@ -155,7 +155,14 @@ export const useBrandsByCategory = (categoryId: string | undefined) => {
     gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
     refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
     refetchOnWindowFocus: false,
-    retry: 3, // Dokümana göre retry mekanizması
+    retry: (failureCount, error: any) => {
+      // 404 hatası için retry yapma (kategori bulunamadı - geçici bir hata değil)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      // Diğer hatalar için 3 kez retry yap
+      return failureCount < 3;
+    },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
@@ -171,8 +178,8 @@ export const useBrandsByCategory = (categoryId: string | undefined) => {
  * @example
  * const { data, isLoading, error } = useCatalogSubCategories('category-123');
  */
-export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 1000) => {
-  return useQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
+export const useCatalogSubCategories = (categoryId: string | undefined, limit: number = 100) => {
+  const query = useQuery<CatalogPaginationResponse<CatalogSubCategory>, Error>({
     queryKey: categoryId ? catalogKeys.subCategories(categoryId, undefined, limit) : ['catalog', 'subCategories', 'disabled'],
     queryFn: () => {
       if (!categoryId) {
@@ -183,11 +190,49 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
     enabled: !!categoryId,
     staleTime: 2 * 60 * 60 * 1000, // 2 saat - dokümana göre backend cache TTL
     gcTime: 24 * 60 * 60 * 1000, // 24 saat - cache'de tut
-    refetchOnMount: false, // Cache varsa kullan, yoksa fetch et
+    refetchOnMount: 'always', // FIX: Her mount'ta refetch yap - cache'deki boş veriyi önlemek için
     refetchOnWindowFocus: false,
     retry: 3, // Dokümana göre retry mekanizması
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
+  
+  // DEBUG: React Query response'unu log'la
+  if (__DEV__) {
+    useEffect(() => {
+      console.log('[useCatalogSubCategories] 🔍 React Query State:', {
+        categoryId,
+        limit,
+        enabled: !!categoryId,
+        isLoading: query.isLoading,
+        isFetching: query.isFetching,
+        isError: query.isError,
+        error: query.error,
+        hasData: !!query.data,
+        dataType: typeof query.data,
+        itemsCount: query.data?.items?.length || 0,
+        data: query.data,
+      });
+      
+      if (query.data) {
+        console.log('[useCatalogSubCategories] 📦 React Query Data:', {
+          categoryId,
+          limit,
+          itemsCount: query.data.items?.length || 0,
+          items: query.data.items?.map(item => ({ subCategoryId: item.subCategoryId, name: item.name })) || [],
+          pagination: query.data.pagination,
+        });
+      }
+      if (query.isError) {
+        console.error('[useCatalogSubCategories] ❌ React Query Error:', {
+          categoryId,
+          limit,
+          error: query.error,
+        });
+      }
+    }, [query.data, query.isLoading, query.isFetching, query.isError, query.error, categoryId, limit]);
+  }
+  
+  return query;
 };
 
 /**
@@ -201,7 +246,7 @@ export const useCatalogSubCategories = (categoryId: string | undefined, limit: n
  * @example
  * const { data, isLoading, error } = useCatalogProductGroups('subcategory-123');
  */
-export const useCatalogProductGroups = (subCategoryId: string | undefined, limit: number = 1000) => {
+export const useCatalogProductGroups = (subCategoryId: string | undefined, limit: number = 100) => {
   return useQuery<CatalogPaginationResponse<CatalogProductGroup>, Error>({
     queryKey: subCategoryId ? catalogKeys.productGroups(subCategoryId, undefined, limit) : ['catalog', 'productGroups', 'disabled'],
     queryFn: () => {

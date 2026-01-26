@@ -47,6 +47,22 @@ export const getBrandsByCategory = async (
     }
     return response.data;
   } catch (error: any) {
+    // 404 hatası: Kategori bulunamadı - bu normal bir durum olabilir (kategori silinmiş veya mevcut değil)
+    if (error.response?.status === 404) {
+      // Sadece debug modunda log bas (production'da sessiz)
+      if (__DEV__) {
+        console.warn('[getBrandsByCategory] ⚠️ Category not found (404):', {
+          categoryId,
+          url: `/brands/categories/${categoryId}/brands`,
+          message: 'Category may have been deleted or does not exist.',
+        });
+      }
+      
+      // Boş array döndür (kullanıcıya hata göstermek yerine boş sonuç göster)
+      return [];
+    }
+    
+    // Diğer hatalar için error log
     console.error('Brands By Category API Error:', {
       url: `/brands/categories/${categoryId}/brands`,
       status: error.response?.status,

@@ -111,9 +111,35 @@ export const getCatalogSubCategories = async (
       `/catalog/categories/${categoryId}/sub-categories?${params.toString()}`
     );
     
+    // DEBUG: API response'unu log'la
+    if (__DEV__) {
+      console.log('[getCatalogSubCategories] 📡 API Response:', {
+        url: `/catalog/categories/${categoryId}/sub-categories`,
+        categoryId,
+        limit,
+        responseDataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        hasItems: response.data && typeof response.data === 'object' && 'items' in response.data,
+        hasPagination: response.data && typeof response.data === 'object' && 'pagination' in response.data,
+        itemsCount: (response.data as any)?.items?.length || (Array.isArray(response.data) ? response.data.length : 0),
+        responseData: response.data,
+      });
+    }
+    
     // Backend pagination destekliyorsa direkt döndür
     if (response.data && typeof response.data === 'object' && 'items' in response.data && 'pagination' in response.data) {
-      return response.data as CatalogPaginationResponse<CatalogSubCategory>;
+      const result = response.data as CatalogPaginationResponse<CatalogSubCategory>;
+      
+      // DEBUG: Parse edilmiş sonucu log'la
+      if (__DEV__) {
+        console.log('[getCatalogSubCategories] ✅ Parsed Response:', {
+          itemsCount: result.items?.length || 0,
+          items: result.items?.map(item => ({ subCategoryId: item.subCategoryId, name: item.name })) || [],
+          pagination: result.pagination,
+        });
+      }
+      
+      return result;
     }
     
     // Backend pagination desteklemiyorsa, array döndürebilir - fallback

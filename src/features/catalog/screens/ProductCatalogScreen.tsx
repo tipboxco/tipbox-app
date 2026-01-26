@@ -149,14 +149,25 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   const { 
     data: catalogSubCategoriesData, 
     isLoading: isLoadingSubCategories,
+    isError: isSubCategoriesError,
+    error: subCategoriesError,
   } = useCatalogSubCategories(selectedCategoryId);
   
   // subcategories verisi takibi (debug mode'da aktif)
   useEffect(() => {
-    if (__DEV__ && selectedCategoryId && catalogSubCategoriesData) {
-      // Sadece development'ta ve veri yoksa log
+    if (__DEV__) {
+      console.log('[ProductCatalogScreen] 🔍 useCatalogSubCategories Hook State:', {
+        selectedCategoryId,
+        isLoading: isLoadingSubCategories,
+        isError: isSubCategoriesError,
+        error: subCategoriesError,
+        hasData: !!catalogSubCategoriesData,
+        dataType: typeof catalogSubCategoriesData,
+        itemsCount: catalogSubCategoriesData?.items?.length || 0,
+        data: catalogSubCategoriesData,
+      });
     }
-  }, [catalogSubCategoriesData, selectedCategoryId, isLoadingSubCategories]);
+  }, [catalogSubCategoriesData, selectedCategoryId, isLoadingSubCategories, isSubCategoriesError, subCategoriesError]);
   
   // API'den seçili alt kategoriye ait product groups'u getir
   const { 
@@ -200,8 +211,22 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   // SubCategories için
   const catalogSubCategories = useMemo(() => {
     if (!catalogSubCategoriesData?.items) return [];
+    
+    // DEBUG: Backend'den gelen veriyi log'la
+    if (__DEV__) {
+      console.log('[ProductCatalogScreen] 📦 SubCategories Data:', {
+        itemsCount: catalogSubCategoriesData.items.length,
+        items: catalogSubCategoriesData.items.map(item => ({
+          subCategoryId: item.subCategoryId,
+          name: item.name,
+          categoryId: item.categoryId,
+        })),
+        selectedCategoryId,
+      });
+    }
+    
     return catalogSubCategoriesData.items;
-  }, [catalogSubCategoriesData]);
+  }, [catalogSubCategoriesData, selectedCategoryId]);
 
   // ProductGroups için
   const catalogProductGroups = useMemo(() => {
@@ -239,16 +264,36 @@ export const ProductCatalogScreen: React.FC<ProductCatalogScreenProps> = ({
   // API'den gelen subcategories'i formatla - useMemo ile cache'le
   const currentSubCategories = useMemo(() => {
     if (!catalogSubCategories || catalogSubCategories.length === 0) {
+      if (__DEV__) {
+        console.warn('[ProductCatalogScreen] ⚠️ No subcategories found:', {
+          catalogSubCategoriesLength: catalogSubCategories?.length || 0,
+          selectedCategoryId,
+        });
+      }
       return [];
     }
     
-    return catalogSubCategories.map(subCat => ({
+    const formatted = catalogSubCategories.map(subCat => ({
       id: subCat.subCategoryId,
       name: subCat.name,
       image: subCat.image || undefined, // Boş string ise undefined yap
       categoryId: subCat.categoryId,
       productGroups: [], // API'den productGroups gelmiyor, boş array
     }));
+    
+    // DEBUG: Formatlanmış veriyi log'la
+    if (__DEV__) {
+      console.log('[ProductCatalogScreen] ✅ Formatted SubCategories:', {
+        count: formatted.length,
+        items: formatted.map(item => ({
+          id: item.id,
+          name: item.name,
+          categoryId: item.categoryId,
+        })),
+      });
+    }
+    
+    return formatted;
   }, [catalogSubCategories, selectedCategoryId]);
 
   // API'den gelen product groups'u formatla - useMemo ile cache'le
@@ -1299,9 +1344,25 @@ const handleBreadcrumbPress = (item: BreadcrumbItem, index: number) => {
             category.name.toLowerCase().includes(searchQuery.toLowerCase())
           );
         case 'subcategories':
-          return currentSubCategories.filter(subCategory =>
+          const filtered = currentSubCategories.filter(subCategory =>
             subCategory.name.toLowerCase().includes(searchQuery.toLowerCase())
           );
+          
+          // DEBUG: Filtrelenmiş veriyi log'la
+          if (__DEV__) {
+            console.log('[ProductCatalogScreen] 🔍 Filtered SubCategories:', {
+              currentView,
+              searchQuery,
+              totalCount: currentSubCategories.length,
+              filteredCount: filtered.length,
+              filteredItems: filtered.map(item => ({
+                id: item.id,
+                name: item.name,
+              })),
+            });
+          }
+          
+          return filtered;
         case 'productgroups':
           return currentProductGroups.filter(productGroup =>
             productGroup.name.toLowerCase().includes(searchQuery.toLowerCase())
