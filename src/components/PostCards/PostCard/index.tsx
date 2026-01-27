@@ -426,7 +426,10 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleAvatarPress}>
-            <VStack flex={1} justifyContent="center">
+            <VStack 
+              flex={1}
+              justifyContent={data.user?.title ? 'flex-start' : 'center'}
+            >
               <Text
                 color={isDark ? '$textDark50' : '#000'}
                 fontSize="$sm"
@@ -434,14 +437,16 @@ const PostCard = ({ data, hideProduct = false, isDetailMode = false }: PostCardP
               >
                 {data.user?.name || 'Unknown User'}
               </Text>
-              <Text
-                color={isDark ? '$textDark400' : '#787878'}
-                fontSize={11}
-                numberOfLines={1}
-                maxWidth={250}
-              >
-                {data.user?.title || ''}
-              </Text>
+              {data.user?.title ? (
+                <Text
+                  color={isDark ? '$textDark400' : '#787878'}
+                  fontSize={11}
+                  numberOfLines={1}
+                  maxWidth={250}
+                >
+                  {data.user.title}
+                </Text>
+              ) : null}
             </VStack>
           </Pressable>
           <View 

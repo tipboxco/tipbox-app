@@ -392,14 +392,19 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
             </Pressable>
           )}
           <Pressable flex={1} onPress={handleViewProfile}>
-            <VStack flex={1}>
-              <Text
-                color={isDark ? '$textDark400' : '#C7C7C7'}
-                fontSize={8}
-                fontWeight="$semibold"
-              >
-                {data.user?.action || ''}
-              </Text>
+            <VStack 
+              flex={1}
+              justifyContent={data.user?.title ? 'flex-start' : 'center'}
+            >
+              {data.user?.action ? (
+                <Text
+                  color={isDark ? '$textDark400' : '#C7C7C7'}
+                  fontSize={8}
+                  fontWeight="$semibold"
+                >
+                  {data.user.action}
+                </Text>
+              ) : null}
               <Text
                 color={isDark ? '$textDark50' : '#000'}
                 fontSize='$xs'
@@ -407,14 +412,16 @@ export const ExperiencePostCard = ({ data, hideProduct = false, isDetailMode = f
               >
                 {data.user?.name || 'Unknown User'}
               </Text>
-              <Text
-                color={isDark ? '$textDark400' : '#787878'}
-                fontSize={9}
-                numberOfLines={1}
-                maxWidth={250}
-              >
-                {data.user?.title || ''}
-              </Text>
+              {data.user?.title ? (
+                <Text
+                  color={isDark ? '$textDark400' : '#787878'}
+                  fontSize={9}
+                  numberOfLines={1}
+                  maxWidth={250}
+                >
+                  {data.user.title}
+                </Text>
+              ) : null}
             </VStack>
           </Pressable>
           <View 

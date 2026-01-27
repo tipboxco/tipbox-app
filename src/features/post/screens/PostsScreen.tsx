@@ -1023,6 +1023,10 @@ export const PostsScreen = () => {
 
     const itemId = item.data.id;
     
+    // Eğer tüm gönderiler aynı product'a aitse (feedContextType === 'product'), 
+    // product content'ini gizle çünkü zaten üstte ProductInfoCard gösteriliyor
+    const shouldHideProduct = feedContextType === 'product';
+    
     if (__DEV__) {
       console.log('[PostsScreen] 🎨 Rendering feed item:', {
         itemId,
@@ -1031,6 +1035,8 @@ export const PostsScreen = () => {
         hasContextType: 'contextType' in item.data,
         hasContextData: 'contextData' in item.data,
         hasIsBoosted: 'isBoosted' in item.data,
+        feedContextType,
+        shouldHideProduct,
       });
     }
 
@@ -1043,6 +1049,7 @@ export const PostsScreen = () => {
             <ExperiencePostCard
               key={itemId}
               data={mapExperienceToCardData(item.data as ReviewApiItem & { type: 'experience' })}
+              hideProduct={shouldHideProduct}
             />
           );
         }
@@ -1053,7 +1060,7 @@ export const PostsScreen = () => {
           <PostCard
             key={itemId}
             data={mapFeedToCardData(item.data as ProfilePost)}
-            hideProduct={true}
+            hideProduct={shouldHideProduct}
           />
         );
       case CardType.BENCHMARK:
@@ -1073,6 +1080,7 @@ export const PostsScreen = () => {
             <QuestionPostCard
               key={itemId}
               data={mapQuestionToCardData(item.data as QuestionApiItem & { type: 'question' })}
+              hideProduct={shouldHideProduct}
             />
           );
         }
@@ -1090,6 +1098,7 @@ export const PostsScreen = () => {
           <TipsAndTricksPostCard
             key={itemId}
             data={mapTipsToCardData(item.data as TipsApiItem & { type: 'tipsAndTricks' })}
+            hideProduct={shouldHideProduct}
           />
         );
       case CardType.UPDATE:
@@ -1098,12 +1107,13 @@ export const PostsScreen = () => {
           <UpdatePostCard
             key={itemId}
             data={mapUpdateToCardData(item.data as UpdateApiItem & { type: 'update' })}
+            hideProduct={shouldHideProduct}
           />
         );
       default:
         return null;
     }
-  }, [mapFeedToCardData, mapExperienceToCardData, mapBenchmarkToCardData, mapQuestionToCardData, mapTipsToCardData, mapUpdateToCardData]);
+  }, [mapFeedToCardData, mapExperienceToCardData, mapBenchmarkToCardData, mapQuestionToCardData, mapTipsToCardData, mapUpdateToCardData, feedContextType]);
 
   // Query client for invalidating queries
   const queryClient = useQueryClient();

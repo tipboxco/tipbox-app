@@ -342,14 +342,14 @@ const HeaderComponent = ({
         minHeight={HEADER_MIN_HEIGHT}
       >
         <HStack space="md" alignItems="center">
-            {/* Sol kısım - Flex1, flex-start */}
-            <Box flex={1} alignItems="flex-start" justifyContent="center">
+            {/* Sol kısım - Sabit genişlik, flex-start */}
+            <Box width={40} alignItems="flex-start" justifyContent="center">
               {renderLeftAction}
             </Box>
 
-            {/* Orta kısım - Flex3, center */}
+            {/* Orta kısım - Flex9 (%90), center */}
             {/* PERFORMANCE FIX: Static configuration - logo/title render memoized */}
-            <Box flex={3} alignItems="center" justifyContent="center">
+            <Box flex={9} alignItems="center" justifyContent="center">
               {logo ? (
                 <Image
                   source={logo}
@@ -373,8 +373,8 @@ const HeaderComponent = ({
               ) : null}
             </Box>
 
-            {/* Sağ kısım - Flex1, flex-end */}
-            <Box flex={1} alignItems="flex-end" justifyContent="center">
+            {/* Sağ kısım - Sabit genişlik, flex-end */}
+            <Box width={40} alignItems="flex-end" justifyContent="center">
               {renderRightActions}
             </Box>
           </HStack>
